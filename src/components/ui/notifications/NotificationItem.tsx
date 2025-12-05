@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { formatDistanceToNow } from 'date-fns';
 import {
   User,
   Briefcase,
@@ -16,8 +16,8 @@ import {
   Clock,
   FileText,
   Check,
-} from "lucide-react";
-import { INotification, NotificationType } from "@/lib/models/notification";
+} from 'lucide-react';
+import { INotification, NotificationType } from '@/lib/models/notification';
 
 interface NotificationItemProps {
   notification: INotification;
@@ -61,27 +61,27 @@ const getNotificationIcon = (type: NotificationType) => {
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case "high":
-      return "text-red-500";
-    case "medium":
-      return "text-yellow-500";
-    case "low":
-      return "text-blue-500";
+    case 'high':
+      return 'text-red-500';
+    case 'medium':
+      return 'text-yellow-500';
+    case 'low':
+      return 'text-blue-500';
     default:
-      return "text-gray-500";
+      return 'text-gray-500';
   }
 };
 
 const getPriorityBadgeVariant = (priority: string) => {
   switch (priority) {
-    case "high":
-      return "destructive" as const;
-    case "medium":
-      return "secondary" as const;
-    case "low":
-      return "outline" as const;
+    case 'high':
+      return 'destructive' as const;
+    case 'medium':
+      return 'secondary' as const;
+    case 'low':
+      return 'outline' as const;
     default:
-      return "outline" as const;
+      return 'outline' as const;
   }
 };
 
@@ -113,19 +113,19 @@ export function NotificationItem({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 p-3 hover:bg-accent/50 transition-colors cursor-pointer border-l-2",
+        'flex items-start gap-3 p-3 hover:bg-accent/50 transition-colors cursor-pointer border-l-2',
         notification.isRead
-          ? "border-l-transparent opacity-75"
-          : "border-l-primary bg-accent/20",
-        className
+          ? 'border-l-transparent opacity-75'
+          : 'border-l-primary bg-accent/20',
+        className,
       )}
       onClick={handleClick}
     >
       {/* Icon */}
       <div
         className={cn(
-          "flex-shrink-0 mt-0.5",
-          getPriorityColor(notification.priority)
+          'flex-shrink-0 mt-0.5',
+          getPriorityColor(notification.priority),
         )}
       >
         {getNotificationIcon(notification.type)}
@@ -136,14 +136,14 @@ export function NotificationItem({
         <div className="flex items-start justify-between gap-2">
           <h4
             className={cn(
-              "text-sm font-medium leading-tight",
-              !disableReadStyling && notification.isRead ? "text-muted-foreground" : "text-foreground"
+              'text-sm font-medium leading-tight',
+              !disableReadStyling && notification.isRead ? 'text-muted-foreground' : 'text-foreground',
             )}
           >
             {notification.title}
           </h4>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {notification.priority !== "medium" && (
+            {notification.priority !== 'medium' && (
               <Badge
                 variant={getPriorityBadgeVariant(notification.priority)}
                 className="text-xs px-1.5 py-0.5"
@@ -170,8 +170,8 @@ export function NotificationItem({
 
         <p
           className={cn(
-            "text-sm leading-relaxed",
-            !disableReadStyling && notification.isRead ? "text-muted-foreground" : "text-foreground"
+            'text-sm leading-relaxed',
+            !disableReadStyling && notification.isRead ? 'text-muted-foreground' : 'text-foreground',
           )}
         >
           {notification.message}
@@ -180,7 +180,9 @@ export function NotificationItem({
         {/* Metadata */}
         {notification.triggerUserName && (
           <p className="text-xs text-muted-foreground">
-            by {notification.triggerUserName}
+            by
+            {' '}
+            {notification.triggerUserName}
           </p>
         )}
 

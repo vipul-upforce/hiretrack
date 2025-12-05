@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema, Document } from 'mongoose';
 
 // Define user roles for visibility control
 export type UserRole = 'admin' | 'hr' | 'interviewer' | 'candidate' | 'system';
@@ -61,7 +61,7 @@ const checklistFieldSchema = new Schema<IChecklistField>({
   type: {
     type: String,
     required: true,
-    enum: ['text', 'number', 'email', 'date', 'time', 'datetime', 'checkbox', 'radio', 'select', 'multiSelect', 'textarea', 'password', 'file']
+    enum: ['text', 'number', 'email', 'date', 'time', 'datetime', 'checkbox', 'radio', 'select', 'multiSelect', 'textarea', 'password', 'file'],
   },
   required: { type: Boolean, default: false },
   placeholder: String,
@@ -70,20 +70,20 @@ const checklistFieldSchema = new Schema<IChecklistField>({
     min: Number,
     max: Number,
     pattern: String,
-    message: String
+    message: String,
   },
   order: { type: Number, required: true },
   // Role-based visibility controls
   visibleOnForm: {
     type: [String],
     enum: ['admin', 'hr', 'interviewer', 'candidate'],
-    default: ['admin', 'hr', 'interviewer'] // Default visibility for backward compatibility
+    default: ['admin', 'hr', 'interviewer'], // Default visibility for backward compatibility
   },
   visibleInHistory: {
     type: [String],
     enum: ['admin', 'hr', 'interviewer', 'candidate'],
-    default: ['admin', 'hr', 'interviewer'] // Default visibility for backward compatibility
-  }
+    default: ['admin', 'hr', 'interviewer'], // Default visibility for backward compatibility
+  },
 });
 
 const checklistSchema = new Schema<IChecklist>({
@@ -94,35 +94,35 @@ const checklistSchema = new Schema<IChecklist>({
   isMandatory: { type: Boolean, default: false },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+    ref: 'User',
+    required: true,
   },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const laneConfigSchema = new Schema<ILaneConfig>({
   laneId: { type: String, required: true },
   laneName: { type: String, required: true },
   incomingChecklist: checklistSchema,
-  outgoingChecklist: checklistSchema
+  outgoingChecklist: checklistSchema,
 });
 
 export const jobLaneConfigSchema = new Schema<IJobLaneConfig>({
   jobId: {
     type: Schema.Types.ObjectId,
-    ref: "Job",
+    ref: 'Job',
     required: true,
-    unique: true
+    unique: true,
   },
   organizationId: {
     type: Schema.Types.ObjectId,
-    ref: "Organization",
-    required: true
+    ref: 'Organization',
+    required: true,
   },
   laneConfigs: [laneConfigSchema],
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now }
+  updatedAt: { type: Date, default: Date.now },
 });
 
 // Add indexes for performance

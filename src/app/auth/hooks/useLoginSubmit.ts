@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { useLoginMutation } from "@/lib/features/auth/authApi";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useLoginMutation } from '@/lib/features/auth/authApi';
+import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 
-import { LoginFormValues, UserWithoutCF } from "@/types/login";
-import { useCallback } from "react";
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
-import { signToken } from "@/lib/jwt";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchUserFromToken } from "@/lib/redux/authSlice";
-import { AppDispatch } from "@/lib/redux/store";
+import { LoginFormValues, UserWithoutCF } from '@/types/login';
+import { useCallback } from 'react';
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import { signToken } from '@/lib/jwt';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUserFromToken } from '@/lib/redux/authSlice';
+import { AppDispatch } from '@/lib/redux/store';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -39,49 +39,48 @@ export const useHandleLoginSubmit = ({
   // debugger
 
   const getRedirectUrl = () => {
-    const redirectTo =
-      searchParams?.get("redirect") || searchParams?.get("returnUrl");
+    const redirectTo = searchParams?.get('redirect') || searchParams?.get('returnUrl');
 
     if (redirectTo) {
       try {
         const decodedUrl = decodeURIComponent(redirectTo);
-        if (decodedUrl.startsWith("/") && !decodedUrl.startsWith("//")) {
+        if (decodedUrl.startsWith('/') && !decodedUrl.startsWith('//')) {
           return decodedUrl;
         }
       } catch (error) {
-        console.warn("Invalid redirect URL:", redirectTo);
+        console.warn('Invalid redirect URL:', redirectTo);
       }
     }
 
-    if (user?.role === "candidate") {
+    if (user?.role === 'candidate') {
       return isMultiple
         ? `/apply-jobs?o=${user.organizationInfo?.name}`
-        : "/apply-jobs";
-    } else if (
-      user?.role === "admin" ||
-      user?.role === "interviewer" ||
-      user?.role === "hr"
+        : '/apply-jobs';
+    } if (
+      user?.role === 'admin'
+      || user?.role === 'interviewer'
+      || user?.role === 'hr'
     ) {
-      return "/dashboard";
+      return '/dashboard';
     }
 
-    return "/";
+    return '/';
   };
 
   const handleSubmit = useCallback(
     async (
       values: LoginFormValues,
       setIsSubmitting: (isSubmitting: boolean) => void,
-      { setStatus }: { setStatus: (message: string) => void }
+      { setStatus }: { setStatus: (message: string) => void },
     ) => {
       // debugger
       setLoginFormValues(values);
-      //firstly check the license
+      // firstly check the license
       try {
-        const response = await fetch("/api/license-validate", {
-          method: "GET",
+        const response = await fetch('/api/license-validate', {
+          method: 'GET',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         });
         const data = await response.json();
@@ -91,12 +90,12 @@ export const useHandleLoginSubmit = ({
         setIsSubmitting(false);
       } catch (e: unknown) {
         toast({
-          title: "Error",
+          title: 'Error',
           description:
             e instanceof Error
               ? e.message
-              : "License not verified. Please contact support or try re-installing the platform.",
-          variant: "destructive",
+              : 'License not verified. Please contact support or try re-installing the platform.',
+          variant: 'destructive',
         });
         setIsSubmitting(false);
         return;
@@ -107,18 +106,18 @@ export const useHandleLoginSubmit = ({
           email: values.email.toLowerCase().trim(),
           orgId: selectedOrg,
         }).unwrap();
-        console.log(response, "login response");
+        console.log(response, 'login response');
 
         if (
-          response.organizations &&
-          response.organizations.length > 1 &&
-          !selectedOrg
+          response.organizations
+          && response.organizations.length > 1
+          && !selectedOrg
         ) {
           setOrganizations(response.organizations);
           setOrganizationDialogOpen(true);
           return;
         }
-        let is2FAEnabled = response.twofa;
+        const is2FAEnabled = response.twofa;
 
         // try {
         //   const check2FA = await fetch(
@@ -141,11 +140,11 @@ export const useHandleLoginSubmit = ({
         // const { is2FAEnabled } = await check2FA(String(response.user));
 
         if (is2FAEnabled) {
-          const organizationId = response.organizationId;
+          const { organizationId } = response;
           try {
-            const otpResponse = await fetch("/api/auth/2fa/send-otp", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
+            const otpResponse = await fetch('/api/auth/2fa/send-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 email: values.email.toLowerCase().trim(),
                 organizationId,
@@ -154,28 +153,27 @@ export const useHandleLoginSubmit = ({
             // const data = await otpResponse.json();
             if (!otpResponse.ok) {
               const errorData = await otpResponse.json();
-              throw new Error(errorData.message || "Failed to send OTP");
+              throw new Error(errorData.message || 'Failed to send OTP');
             }
 
             toast({
-              title: "Check your email",
-              description: "An OTP has been sent to your email address.",
-              variant: "default",
+              title: 'Check your email',
+              description: 'An OTP has been sent to your email address.',
+              variant: 'default',
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`,
             );
           } catch (error) {
             console.error(error);
-            const errorMessage =
-              error instanceof Error
-                ? error.message
-                : "An unknown error occurred";
+            const errorMessage = error instanceof Error
+              ? error.message
+              : 'An unknown error occurred';
             setStatus(errorMessage);
             toast({
-              title: "Error",
+              title: 'Error',
               description: errorMessage,
-              variant: "destructive",
+              variant: 'destructive',
             });
           }
           return;
@@ -200,34 +198,33 @@ export const useHandleLoginSubmit = ({
         if (isAuthenticated) {
           // router.refresh();
           // router.push(redirectUrl);
-          if (redirectUrl !== "/") {
+          if (redirectUrl !== '/') {
             window.location.href = redirectUrl;
           }
 
           setUserLoggedIn(true);
 
           toast({
-            title: "Success",
-            description: "Login successful",
-            variant: "default",
+            title: 'Success',
+            description: 'Login successful',
+            variant: 'default',
           });
         }
 
         dispatch(fetchUserFromToken());
       } catch (err: unknown) {
         console.log(err);
-        const errorMessage =
-          err &&
-          typeof err === "object" &&
-          "data" in err &&
-          (err.data as { error: string }).error
-            ? (err.data as { error: string }).error
-            : "An unknown error occurred";
+        const errorMessage = err
+          && typeof err === 'object'
+          && 'data' in err
+          && (err.data as { error: string }).error
+          ? (err.data as { error: string }).error
+          : 'An unknown error occurred';
         setStatus(errorMessage);
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
@@ -242,7 +239,7 @@ export const useHandleLoginSubmit = ({
       toast,
       searchParams,
       // check2FA,
-    ]
+    ],
   );
 
   return { handleSubmit, isLoading };

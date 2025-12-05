@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
-import { licenseValidateRateLimiter } from "@/lib/rateLimiter";
-import { machineIdSync, machineId } from "node-machine-id";
-import { execSync } from "child_process";
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { licenseValidateRateLimiter } from '@/lib/rateLimiter';
+import { machineIdSync, machineId } from 'node-machine-id';
+import { execSync } from 'child_process';
 
 // const fs ("fs");
 // const crypto = require("crypto");
-import { hostname } from "os";
+import { hostname } from 'os';
 // Common variable for license.json path (in project root).,
-const LICENSE_PATH = path.join(process.cwd(), "..", "license.json");
+const LICENSE_PATH = path.join(process.cwd(), '..', 'license.json');
 
 // Common variable for package.json path (parent of parent of current project root)
-const PACKAGE_JSON_PATH = path.join(process.cwd(), "package.json");
+const PACKAGE_JSON_PATH = path.join(process.cwd(), 'package.json');
 
 interface LicenseData {
   licenseKey: string;
@@ -87,10 +87,10 @@ export function generateMachineCode(): string {
     const osType = process.platform;
     let id: string;
 
-    if (osType === "linux") {
+    if (osType === 'linux') {
       // On Linux, reads from /etc/machine-id
-      id = execSync("cat /etc/machine-id").toString().trim();
-    } else if (osType === "darwin") {
+      id = execSync('cat /etc/machine-id').toString().trim();
+    } else if (osType === 'darwin') {
       // On macOS, executes: hostname | shasum -a 256 | awk '{print $1}'
       // This:
       // 1. Gets the hostname,
@@ -99,15 +99,15 @@ export function generateMachineCode(): string {
       id = execSync("system_profiler SPHardwareDataType | awk '/Hardware UUID/ { print $3; }'")
         .toString()
         .trim();
-    } else if (osType === "win32") {
+    } else if (osType === 'win32') {
       // On Windows, retrieves the system UUID using PowerShell
       id = execSync(
-        'powershell -Command "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"'
+        'powershell -Command "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"',
       )
         .toString()
         .trim();
-      if (!id || id === "Not Available") {
-        throw new Error("Machine UUID not available");
+      if (!id || id === 'Not Available') {
+        throw new Error('Machine UUID not available');
       }
     } else {
       throw new Error(`Unsupported OS: ${osType}`);
@@ -115,25 +115,25 @@ export function generateMachineCode(): string {
 
     return id;
   } catch (err) {
-    console.error("Failed to get machine ID:", err);
-    return "unknown-machine-id";
+    console.error('Failed to get machine ID:', err);
+    return 'unknown-machine-id';
   }
 }
 
 // Read license data from license.json file
 function readLicenseData(): LicenseData | null {
-  console.log("LICENSE_PATH: ", LICENSE_PATH);
+  console.log('LICENSE_PATH: ', LICENSE_PATH);
   try {
     if (!fs.existsSync(LICENSE_PATH)) {
       return null;
     }
 
-    const licenseContent = fs.readFileSync(LICENSE_PATH, "utf8");
+    const licenseContent = fs.readFileSync(LICENSE_PATH, 'utf8');
     const licenseData = JSON.parse(licenseContent) as LicenseData;
 
     return licenseData;
   } catch (error) {
-    console.error("Error reading license data:", error);
+    console.error('Error reading license data:', error);
     return null;
   }
 }
@@ -141,7 +141,7 @@ function readLicenseData(): LicenseData | null {
 // Validate license with external API
 async function validateLicenseWithAPI(
   licenseKey: string,
-  machineCode: string
+  machineCode: string,
   // version?: string
 ): Promise<LicenseValidationResponse> {
   try {
@@ -150,18 +150,18 @@ async function validateLicenseWithAPI(
     if (!licenseValidationUrl) {
       return {
         valid: false,
-        error: "License validation URL not configured",
+        error: 'License validation URL not configured',
       };
     }
-    console.log("licenseValidationUrl: ", licenseValidationUrl);
-    console.log("licenseKey: ", licenseKey);
-    console.log("machineCode: ", machineCode);
+    console.log('licenseValidationUrl: ', licenseValidationUrl);
+    console.log('licenseKey: ', licenseKey);
+    console.log('machineCode: ', machineCode);
     const response = await fetch(
       `${licenseValidationUrl}/api/license/validate`,
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           licenseKey: licenseKey.trim(),
@@ -169,9 +169,9 @@ async function validateLicenseWithAPI(
           // installedVersion:
           //   version || process.env.npm_package_version || "1.0.0",
         }),
-      }
+      },
     );
-    console.log("response: ", response);
+    console.log('response: ', response);
 
     if (!response.ok) {
       return {
@@ -181,17 +181,17 @@ async function validateLicenseWithAPI(
     }
 
     const data = await response.json();
-    console.log("data: ", data);
+    console.log('data: ', data);
     return {
       valid: data.valid || false,
       asset: data.asset,
       error: data.error,
     };
   } catch (error) {
-    console.error("License validation API error:", error);
+    console.error('License validation API error:', error);
     return {
       valid: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -205,16 +205,16 @@ async function handleLicenseValidation(request: NextRequest) {
       return NextResponse.json({
         valid: false,
         error:
-          "No license found. Please ensure license.json exists in the project root.",
+          'No license found. Please ensure license.json exists in the project root.',
         hasLicenseFile: false,
       });
     }
 
     // Get current machine code
     const currentMachineCode = generateMachineCode();
-    console.log("currentMachineCode: ", currentMachineCode);
-    console.log("licenseData.machineCode: ", licenseData.machineCode);
-    console.log("licenseData: ", licenseData);
+    console.log('currentMachineCode: ', currentMachineCode);
+    console.log('licenseData.machineCode: ', licenseData.machineCode);
+    console.log('licenseData: ', licenseData);
     // console.log(
     //   "licenseData.machineCode != currentMachineCode: ",
     //   licenseData.machineCode != currentMachineCode
@@ -233,7 +233,7 @@ async function handleLicenseValidation(request: NextRequest) {
     // Validate with external API
     const validationResult = await validateLicenseWithAPI(
       licenseData.licenseKey,
-      currentMachineCode
+      currentMachineCode,
       // licenseData.version
     );
 
@@ -246,7 +246,7 @@ async function handleLicenseValidation(request: NextRequest) {
       try {
         fs.writeFileSync(LICENSE_PATH, JSON.stringify(licenseData, null, 2));
       } catch (error) {
-        console.error("Error updating license file:", error);
+        console.error('Error updating license file:', error);
       }
 
       return NextResponse.json({
@@ -258,32 +258,31 @@ async function handleLicenseValidation(request: NextRequest) {
         },
         asset: validationResult.asset,
       });
-    } else {
-      // Update license as invalid
-      licenseData.isValid = false;
-
-      try {
-        fs.writeFileSync(LICENSE_PATH, JSON.stringify(licenseData, null, 2));
-      } catch (error) {
-        console.error("Error updating license file:", error);
-      }
-
-      return NextResponse.json({
-        valid: false,
-        error: validationResult.error || "License validation failed",
-        hasLicenseFile: true,
-        apiError: true,
-      });
     }
+    // Update license as invalid
+    licenseData.isValid = false;
+
+    try {
+      fs.writeFileSync(LICENSE_PATH, JSON.stringify(licenseData, null, 2));
+    } catch (error) {
+      console.error('Error updating license file:', error);
+    }
+
+    return NextResponse.json({
+      valid: false,
+      error: validationResult.error || 'License validation failed',
+      hasLicenseFile: true,
+      apiError: true,
+    });
   } catch (error) {
-    console.error("License validation error:", error);
+    console.error('License validation error:', error);
     return NextResponse.json(
       {
         valid: false,
-        error: "Internal server error during license validation",
+        error: 'Internal server error during license validation',
         hasLicenseFile: false,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -303,7 +302,7 @@ async function handleForceLicenseValidation(request: NextRequest) {
       return NextResponse.json({
         valid: false,
         error:
-          "No license found. Please ensure license.json exists in the project root.",
+          'No license found. Please ensure license.json exists in the project root.',
         hasLicenseFile: false,
       });
     }
@@ -311,17 +310,17 @@ async function handleForceLicenseValidation(request: NextRequest) {
     // Get current machine code
     const currentMachineCode = generateMachineCode();
 
-    console.log("currentMachineCode: ", currentMachineCode);
-    console.log("licenseData.machineCode: ", licenseData.machineCode);
-    console.log("force: ", force);
-    console.log("licenseData: ", licenseData);
+    console.log('currentMachineCode: ', currentMachineCode);
+    console.log('licenseData.machineCode: ', licenseData.machineCode);
+    console.log('force: ', force);
+    console.log('licenseData: ', licenseData);
 
     // Check if machine code matches
     if (licenseData.machineCode !== currentMachineCode) {
       return NextResponse.json({
         valid: false,
         error:
-          "Machine code mismatch. This license is not valid for this machine.",
+          'Machine code mismatch. This license is not valid for this machine.',
         hasLicenseFile: true,
         machineCodeMismatch: true,
       });
@@ -330,7 +329,7 @@ async function handleForceLicenseValidation(request: NextRequest) {
     // Force validation with external API
     const validationResult = await validateLicenseWithAPI(
       licenseData.licenseKey,
-      licenseData.machineCode
+      licenseData.machineCode,
       // licenseData.version
     );
 
@@ -343,7 +342,7 @@ async function handleForceLicenseValidation(request: NextRequest) {
       try {
         fs.writeFileSync(LICENSE_PATH, JSON.stringify(licenseData, null, 2));
       } catch (error) {
-        console.error("Error updating license file:", error);
+        console.error('Error updating license file:', error);
       }
 
       return NextResponse.json({
@@ -355,32 +354,31 @@ async function handleForceLicenseValidation(request: NextRequest) {
         },
         asset: validationResult.asset,
       });
-    } else {
-      // Update license as invalid
-      licenseData.isValid = false;
-
-      try {
-        fs.writeFileSync(LICENSE_PATH, JSON.stringify(licenseData, null, 2));
-      } catch (error) {
-        console.error("Error updating license file:", error);
-      }
-
-      return NextResponse.json({
-        valid: false,
-        error: validationResult.error || "License validation failed",
-        hasLicenseFile: true,
-        apiError: true,
-      });
     }
+    // Update license as invalid
+    licenseData.isValid = false;
+
+    try {
+      fs.writeFileSync(LICENSE_PATH, JSON.stringify(licenseData, null, 2));
+    } catch (error) {
+      console.error('Error updating license file:', error);
+    }
+
+    return NextResponse.json({
+      valid: false,
+      error: validationResult.error || 'License validation failed',
+      hasLicenseFile: true,
+      apiError: true,
+    });
   } catch (error) {
-    console.error("License validation error:", error);
+    console.error('License validation error:', error);
     return NextResponse.json(
       {
         valid: false,
-        error: "Internal server error during license validation",
+        error: 'Internal server error during license validation',
         hasLicenseFile: false,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

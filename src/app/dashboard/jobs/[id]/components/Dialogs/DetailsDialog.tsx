@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Maximize, Minimize } from "lucide-react";
+import * as React from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Maximize, Minimize } from 'lucide-react';
 
 interface DetailsDialogProps {
   open: boolean;
@@ -32,10 +32,10 @@ export function DetailsDialog({
     checkViewportSize();
 
     // Add event listener for resize
-    window.addEventListener("resize", checkViewportSize);
+    window.addEventListener('resize', checkViewportSize);
 
     // Cleanup
-    return () => window.removeEventListener("resize", checkViewportSize);
+    return () => window.removeEventListener('resize', checkViewportSize);
   }, []);
 
   // Reset maximize state when dialog opens/closes
@@ -45,36 +45,34 @@ export function DetailsDialog({
     }
   }, [open]);
 
-  const dialogClassName =
-    isLargeViewport && !isMaximized
-      ? "!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[50vw] overflow-hidden flex flex-col"
-      : "!max-w-none !w-screen !h-[100dvh] !min-h-screen !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col";
+  const dialogClassName = isLargeViewport && !isMaximized
+    ? '!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[50vw] overflow-hidden flex flex-col'
+    : '!max-w-none !w-screen !h-[100dvh] !min-h-screen !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col';
 
-  const dialogStyle =
-    !isLargeViewport || isMaximized
-      ? {
-          position: "fixed" as const,
-          inset: 0,
-          width: "100vw",
-          height: "100dvh",
-          minHeight: "100dvh",
-          maxHeight: "100dvh",
-          maxWidth: "none",
-          transform: "none",
-          left: 0,
-          top: 0,
-          margin: 0,
-          border: 0,
-          borderRadius: 0,
-        }
-      : {};
+  const dialogStyle = !isLargeViewport || isMaximized
+    ? {
+      position: 'fixed' as const,
+      inset: 0,
+      width: '100vw',
+      height: '100dvh',
+      minHeight: '100dvh',
+      maxHeight: '100dvh',
+      maxWidth: 'none',
+      transform: 'none',
+      left: 0,
+      top: 0,
+      margin: 0,
+      border: 0,
+      borderRadius: 0,
+    }
+    : {};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={className || dialogClassName}
         style={dialogStyle}
-        data-fullscreen={!isLargeViewport || isMaximized ? "true" : "false"}
+        data-fullscreen={!isLargeViewport || isMaximized ? 'true' : 'false'}
       >
         <div className="sr-only">
           <DialogTitle>Details</DialogTitle>
@@ -84,9 +82,9 @@ export function DetailsDialog({
           <Button
             variant="ghost"
             size="icon"
-            className={`absolute top-2 right-10  z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? "hidden" : ""}`}
+            className={`absolute top-2 right-10  z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? 'hidden' : ''}`}
             onClick={() => setIsMaximized(!isMaximized)}
-            title={isMaximized ? "Restore" : "Maximize"}
+            title={isMaximized ? 'Restore' : 'Maximize'}
           >
             {isMaximized ? (
               <Minimize className="h-3 w-3" />
@@ -98,7 +96,7 @@ export function DetailsDialog({
         {!isLargeViewport || isMaximized ? (
           <div
             className="h-full flex flex-col"
-            style={{ height: "100dvh", minHeight: "100dvh" }}
+            style={{ height: '100dvh', minHeight: '100dvh' }}
           >
             {children}
           </div>

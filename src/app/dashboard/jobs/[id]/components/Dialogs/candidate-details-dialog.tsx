@@ -1,44 +1,42 @@
-"use client";
+'use client';
 
-import { DialogHeader } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Candidate } from "@/types/candidate";
-import { EditCandidateDialog } from "./edit-candidate-dialog";
-import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
+import { DialogHeader } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Candidate } from '@/types/candidate';
+import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 import {
   useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
-} from "@/lib/features/candidate/candidateApi";
-import { useParams } from "next/navigation";
-import { AssignCandidateDialog } from "./assign-candidate-dialog";
-import { usePathname } from "next/navigation";
-import { ICandidateHistory } from "@/lib/models/history";
-import { AssignJobDialog } from "./assign-job-dialog";
-import { User } from "@/lib/features/users/usersApi";
-import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
-import { CandidateDetailsDialogProps } from "../../schemas/candidateDetailsDialogProps";
-import { IEditRemark } from "../../schemas/EditRemarkDialog";
-import EditRemarkDialog from "./EditRemarkDialog";
-import ConfirmationDialog from "./ConfirmationDialog";
-import handleCandidateInfoCopy from "../../hooks/handleCandidateInfoCopy";
-import DetailsDialogHeader from "../Candidate/candidate-details-header";
-import RemarkInputSection from "../Remarks/RemarkInputSection";
-import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
-import dayjs from "dayjs";
-import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
-import { DetailsDialog } from "./DetailsDialog";
-import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
-import AddFollowUpDialog from "./add-followup-dialog";
-import ConfirmAndRemarkDialog from "./mark-as-done-dialog";
-import { useSelector } from "react-redux";
-import { EvaluationResult } from "@/lib/ai-providers/evaluation-provider";
-import { CandidateDetailsTabs } from "./tabs/CandidateDetailsTabs";
-import { CandidateDetailsActions } from "./tabs/CandidateDetailsActions";
-import { getJobId } from "../../utils/candidateAccessors";
-import { followUpSepretorPatternRegex } from "@/lib/constants";
-
+} from '@/lib/features/candidate/candidateApi';
+import { useParams, usePathname } from 'next/navigation';
+import { ICandidateHistory } from '@/lib/models/history';
+import { User } from '@/lib/features/users/usersApi';
+import { evaluateCandidate } from '@/app/apply-jobs/ApplyAsGuest';
+import dayjs from 'dayjs';
+import { useSelector } from 'react-redux';
+import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
+import { followUpSepretorPatternRegex } from '@/lib/constants';
+import { EditCandidateDialog } from "./edit-candidate-dialog";
+import { AssignCandidateDialog } from './assign-candidate-dialog';
+import { AssignJobDialog } from './assign-job-dialog';
+import { CandidateDetailsDialogProps } from '../../schemas/candidateDetailsDialogProps';
+import { IEditRemark } from '../../schemas/EditRemarkDialog';
+import EditRemarkDialog from './EditRemarkDialog';
+import ConfirmationDialog from './ConfirmationDialog';
+import handleCandidateInfoCopy from '../../hooks/handleCandidateInfoCopy';
+import DetailsDialogHeader from '../Candidate/candidate-details-header';
+import RemarkInputSection from '../Remarks/RemarkInputSection';
+import { useRemarkHandlers } from '../../hooks/useRemarkHandlers';
+import { useUnassignHandlers } from '../../hooks/useUnassignHandlers';
+import { DetailsDialog } from './DetailsDialog';
+import { candidateDetailsFields } from '../Candidate/candidate-details-fields';
+import AddFollowUpDialog from './add-followup-dialog';
+import ConfirmAndRemarkDialog from './mark-as-done-dialog';
+import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
+import { CandidateDetailsActions } from './tabs/CandidateDetailsActions';
+import { getJobId } from '../../utils/candidateAccessors';
 
 export function CandidateDetailsDialog({
   candidate,
@@ -54,8 +52,7 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const id = useParams()?.id as string;
 
-  const [refetchCandidate, { data: candidateData }] =
-    useLazyFetchCandidatesQuery();
+  const [refetchCandidate, { data: candidateData }] = useLazyFetchCandidatesQuery();
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -63,7 +60,7 @@ export function CandidateDetailsDialog({
   const [isAssigningJob, setIsAssigningJob] = useState(false);
   // const [user, setuser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
@@ -72,9 +69,9 @@ export function CandidateDetailsDialog({
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
   const [isEvaluatingFor, setIsEvaluatingFor] = useState<string | null>(null);
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
-    candidate
+    candidate,
   );
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState('overview');
 
   // History loading state
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
@@ -85,11 +82,10 @@ export function CandidateDetailsDialog({
   // fetch candidate history when history tab is opened
   const fetchCandidateHistory = async () => {
     if (
-      (!isRefetching && historyLoaded) ||
-      !localCandidate?._id ||
-      (isRefetching && isHistoryLoading)
-    )
-      return;
+      (!isRefetching && historyLoaded)
+      || !localCandidate?._id
+      || (isRefetching && isHistoryLoading)
+    ) return;
 
     // Only show loading indicator for initial fetch, not for refetches
     // if (!isRefetching) {
@@ -98,29 +94,29 @@ export function CandidateDetailsDialog({
 
     try {
       const response = await fetch(
-        `/api/candidates/${localCandidate._id}/history`
+        `/api/candidates/${localCandidate._id}/history`,
       );
       if (response.ok) {
         const data = await response.json();
         setCandidateHistory(data.history || []);
         setHistoryLoaded(true);
       } else {
-        console.error("Failed to fetch candidate history");
+        console.error('Failed to fetch candidate history');
         if (!isRefetching) {
           toast({
-            title: "Error",
-            description: "Failed to load candidate history",
-            variant: "destructive",
+            title: 'Error',
+            description: 'Failed to load candidate history',
+            variant: 'destructive',
           });
         }
       }
     } catch (error) {
-      console.error("Error fetching candidate history:", error);
+      console.error('Error fetching candidate history:', error);
       if (!isRefetching) {
         toast({
-          title: "Error",
-          description: "Failed to load candidate history",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to load candidate history',
+          variant: 'destructive',
         });
       }
     } finally {
@@ -132,7 +128,7 @@ export function CandidateDetailsDialog({
 
   // Load history when history tab is activated
   useEffect(() => {
-    if ((activeTab === "history" || activeTab === "logs") && !historyLoaded) {
+    if ((activeTab === 'history' || activeTab === 'logs') && !historyLoaded) {
       fetchCandidateHistory();
     }
   }, [activeTab, historyLoaded, localCandidate?._id]);
@@ -147,11 +143,9 @@ export function CandidateDetailsDialog({
 
   const refetch = async () => {
     setIsRefetching(true);
-    const jobId = (id as string) || getJobId(candidate) || "";
+    const jobId = (id as string) || getJobId(candidate) || '';
     const result = await refetchCandidate(jobId);
-    const updatedCandidate = result.data!.find((c) => {
-      return c._id === localCandidate?._id;
-    });
+    const updatedCandidate = result.data!.find((c) => c._id === localCandidate?._id);
 
     // Fetch updated history silently if already loaded
     if (historyLoaded) {
@@ -193,7 +187,7 @@ export function CandidateDetailsDialog({
     refetch,
     refetchAssignment,
     onUpdate,
-    refetchCandidates
+    refetchCandidates,
   );
 
   const {
@@ -209,7 +203,7 @@ export function CandidateDetailsDialog({
     setLocalCandidate,
     onUpdate,
     refetchAssignment,
-    onOpenChange
+    onOpenChange,
   );
 
   const handleEditClick = () => {
@@ -218,12 +212,11 @@ export function CandidateDetailsDialog({
 
   const handleReEvaluationClick = () => {
     // Check if candidate already has AI scores (indicating previous evaluation)
-    const hasExistingScores =
-      localCandidate?.scores &&
-      (localCandidate.scores.overall !== undefined ||
-        localCandidate.scores.experience !== undefined ||
-        localCandidate.scores.skills !== undefined ||
-        localCandidate.scores.affordability !== undefined);
+    const hasExistingScores = localCandidate?.scores
+      && (localCandidate.scores.overall !== undefined
+        || localCandidate.scores.experience !== undefined
+        || localCandidate.scores.skills !== undefined
+        || localCandidate.scores.affordability !== undefined);
 
     if (hasExistingScores && !confirmReEvaluateOpen) {
       // Show confirmation dialog for re-evaluation
@@ -243,38 +236,36 @@ export function CandidateDetailsDialog({
         candidate?: EvaluationResult;
       } = await evaluateCandidate(
         localCandidate?._id as string,
-        evaluateCandidateMutation
+        evaluateCandidateMutation,
       );
       if (!result.candidate) {
         return toast({
-          title: "Error",
-          description: (result as string) || "Failed to Re-evaluate the resume",
-          variant: "destructive",
+          title: 'Error',
+          description: (result as string) || 'Failed to Re-evaluate the resume',
+          variant: 'destructive',
         });
       }
       toast({
-        title: "Success",
-        description: "Candidate re-evaluation completed successfully",
-        variant: "default",
+        title: 'Success',
+        description: 'Candidate re-evaluation completed successfully',
+        variant: 'default',
       });
     } catch (error) {
-      console.error("Re-evaluation error:", error);
+      console.error('Re-evaluation error:', error);
       toast({
-        title: "Error",
-        description: (error as string) || "Failed to re-evaluate candidate",
-        variant: "destructive",
+        title: 'Error',
+        description: (error as string) || 'Failed to re-evaluate candidate',
+        variant: 'destructive',
       });
     } finally {
       setIsReEvaluating(false);
     }
   };
 
-  useEffect(() => {
-    return () => {
-      setNewRemark("");
-      setRemarkRating(0);
-      setRemarkRatingHistory(0);
-    };
+  useEffect(() => () => {
+    setNewRemark('');
+    setRemarkRating(0);
+    setRemarkRatingHistory(0);
   }, []);
 
   useEffect(() => {
@@ -287,31 +278,29 @@ export function CandidateDetailsDialog({
     if (isAddingFollowUp) {
       console.log(
         localCandidate?.followUp?.note,
-        "localCandidate?.followUp?.note"
+        'localCandidate?.followUp?.note',
       );
 
       const parts = localCandidate?.followUp?.note
         ? localCandidate.followUp.note
-            .split(followUpSepretorPatternRegex)
-            .map((p) => p.trim())
-            .filter(Boolean)
+          .split(followUpSepretorPatternRegex)
+          .map((p) => p.trim())
+          .filter(Boolean)
         : [];
-      console.log(parts, "Parts --=  ");
+      console.log(parts, 'Parts --=  ');
 
       const followUpParts = parts.filter((p) => {
-        if (p.endsWith("has completed the last step.")) {
+        if (p.endsWith('has completed the last step.')) {
           setMADFollowup(p);
           return false;
-        } else {
-          return true;
         }
+        return true;
       });
 
-      console.log(followUpParts, "followUpParts = -iru8r8fi");
+      console.log(followUpParts, 'followUpParts = -iru8r8fi');
 
       // use the most recent follow-up note for editing, or empty string
-      const userNote =
-        followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : "";
+      const userNote = followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
       setNewFollowUp(userNote);
 
       if (localCandidate?.followUp?.date) {
@@ -333,13 +322,13 @@ export function CandidateDetailsDialog({
   // Reset active tab when dialog opens or candidate changes
   useEffect(() => {
     if (isOpen) {
-      setActiveTab("overview");
+      setActiveTab('overview');
     }
   }, [isOpen, candidate?._id]);
 
   if (!localCandidate) return null;
 
-  const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
+  const validTimeLineItems = timeLineItems.filter((item) => item.title !== '');
   const header = (
     <DialogHeader className="px-3 pt-3 pr-8 lg:px-4 lg:pt-4 lg:pr-10">
       {localCandidate && (
@@ -349,8 +338,8 @@ export function CandidateDetailsDialog({
           user={user}
           refetch={async () => {
             if (
-              pathname !== "/dashboard" &&
-              pathname !== "/dashboard/calendar"
+              pathname !== '/dashboard'
+              && pathname !== '/dashboard/calendar'
             ) {
               await refetch();
             } else {
@@ -388,7 +377,7 @@ export function CandidateDetailsDialog({
   const footer = (
     <div className="flex flex-col space-y-4 bg-background px-6 py-4 pt-0">
       {/* Remark Input Section - Always visible */}
-      {user?.role !== "candidate" && (
+      {user?.role !== 'candidate' && (
         <RemarkInputSection
           newRemark={newRemark}
           setNewRemark={setNewRemark}
@@ -419,7 +408,7 @@ export function CandidateDetailsDialog({
           onEdit={handleEditClick}
           onClose={() => {
             onOpenChange(false);
-            setNewRemark("");
+            setNewRemark('');
             setRemarkRating(null);
             setRemarkRatingHistory(null);
           }}
@@ -434,7 +423,7 @@ export function CandidateDetailsDialog({
       <DetailsDialog
         open={isOpen && !isAssigning && !isEditing}
         onOpenChange={(e) => {
-          setNewRemark("");
+          setNewRemark('');
           setRemarkRating(null);
           setRemarkRatingHistory(null);
           onOpenChange(e);
@@ -443,7 +432,7 @@ export function CandidateDetailsDialog({
         {header}
         {body}
 
-        {user?.role !== "candidate" && footer}
+        {user?.role !== 'candidate' && footer}
       </DetailsDialog>
       {isAssigning && localCandidate && (
         <AssignCandidateDialog
@@ -455,7 +444,7 @@ export function CandidateDetailsDialog({
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={() => {
-            if (pathname === "/dashboard/calendar") {
+            if (pathname === '/dashboard/calendar') {
               setIsAssigning(false);
               onOpenChange(false);
             } else {
@@ -499,7 +488,7 @@ export function CandidateDetailsDialog({
             // refetch();
             setIsAddingFollowUp(false);
             setIsAddingFollowUp(false);
-            setNewFollowUp("");
+            setNewFollowUp('');
             setNewFollowUpDate(null);
           }}
         />

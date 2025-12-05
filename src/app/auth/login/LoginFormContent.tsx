@@ -1,30 +1,33 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, Building2, Sparkles } from "lucide-react";
-import { cx } from "@/lib/cx";
-import { useRouter } from "next/navigation";
-import { useHandleLoginSubmit } from "@/app/auth/hooks/useLoginSubmit";
-import { useTheme } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import Image from "next/image";
-import Cookies from "js-cookie";
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
-import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
-import OrganizationDialog from "@/components/auth/OrganizationDialog";
-import { LoginFormValues } from "@/types/login";
-import ReCAPTCHA from "react-google-recaptcha";
-import "./recaptcha-theme.css";
-import { useSelector } from "react-redux";
+import React, {
+  useState, useEffect, useRef, useCallback,
+} from 'react';
+import { motion } from 'framer-motion';
+import {
+  Eye, EyeOff, Mail, Lock, Building2, Sparkles,
+} from 'lucide-react';
+import { cx } from '@/lib/cx';
+import { useRouter } from 'next/navigation';
+import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
+import { useTheme } from '@/components/theme-provider';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import Image from 'next/image';
+import Cookies from 'js-cookie';
+import OrganizationDialog, { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
+import { LoginFormValues } from '@/types/login';
+import ReCAPTCHA from 'react-google-recaptcha';
+import './recaptcha-theme.css';
+import { useSelector } from 'react-redux';
 import {
   useGetCaptchaConfigsQuery,
   useGetPortalConfigsQuery,
-} from "@/lib/features/settings/settingsApi";
-import { getDecodedCaptcha } from "@/hooks/useSSE";
-import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
-import LoadingScreen from "@/app/loading-screen";
-import packageJson from "@/../package.json";
+} from '@/lib/features/settings/settingsApi';
+import { getDecodedCaptcha } from '@/hooks/useSSE';
+import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
+import LoadingScreen from '@/app/loading-screen';
+import packageJson from '@/../package.json';
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -73,16 +76,12 @@ export function AnimatedGridPattern({
   }
 
   const updateSquarePosition = (id: number) => {
-    setSquares((currentSquares) =>
-      currentSquares.map((sq) =>
-        sq.id === id
-          ? {
-              ...sq,
-              pos: getPos(),
-            }
-          : sq
-      )
-    );
+    setSquares((currentSquares) => currentSquares.map((sq) => (sq.id === id
+      ? {
+        ...sq,
+        pos: getPos(),
+      }
+      : sq)));
   };
 
   useEffect(() => {
@@ -93,7 +92,7 @@ export function AnimatedGridPattern({
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         setDimensions({
           width: entry.contentRect.width,
           height: entry.contentRect.height,
@@ -117,8 +116,8 @@ export function AnimatedGridPattern({
       ref={containerRef}
       aria-hidden="true"
       className={cx(
-        "pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30",
-        className
+        'pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30',
+        className,
       )}
       {...props}
     >
@@ -148,7 +147,7 @@ export function AnimatedGridPattern({
               duration,
               repeat: 1,
               delay: index * 0.1,
-              repeatType: "reverse",
+              repeatType: 'reverse',
             }}
             onAnimationComplete={() => updateSquarePosition(id)}
             key={`${x}-${y}-${index}`}
@@ -181,7 +180,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   squareSize = 4,
   gridGap = 6,
   flickerChance = 0.3,
-  color = "rgb(0, 0, 0)",
+  color = 'rgb(0, 0, 0)',
   width,
   height,
   className,
@@ -194,13 +193,13 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
 
   const memoizedColor = React.useMemo(() => {
     const toRGBA = (color: string) => {
-      if (typeof window === "undefined") {
-        return `rgba(0, 0, 0,`;
+      if (typeof window === 'undefined') {
+        return 'rgba(0, 0, 0,';
       }
-      const canvas = document.createElement("canvas");
+      const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 1;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return "rgba(255, 0, 0,";
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return 'rgba(255, 0, 0,';
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, 1, 1);
       const [r, g, b] = Array.from(ctx.getImageData(0, 0, 1, 1).data);
@@ -224,9 +223,11 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
         squares[i] = Math.random() * maxOpacity;
       }
 
-      return { cols, rows, squares, dpr };
+      return {
+        cols, rows, squares, dpr,
+      };
     },
-    [squareSize, gridGap, maxOpacity]
+    [squareSize, gridGap, maxOpacity],
   );
 
   const updateSquares = useCallback(
@@ -237,7 +238,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
         }
       }
     },
-    [flickerChance, maxOpacity]
+    [flickerChance, maxOpacity],
   );
 
   const drawGrid = useCallback(
@@ -248,10 +249,10 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       cols: number,
       rows: number,
       squares: Float32Array,
-      dpr: number
+      dpr: number,
     ) => {
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "transparent";
+      ctx.fillStyle = 'transparent';
       ctx.fillRect(0, 0, width, height);
 
       for (let i = 0; i < cols; i++) {
@@ -262,12 +263,12 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
             i * (squareSize + gridGap) * dpr,
             j * (squareSize + gridGap) * dpr,
             squareSize * dpr,
-            squareSize * dpr
+            squareSize * dpr,
           );
         }
       }
     },
-    [memoizedColor, squareSize, gridGap]
+    [memoizedColor, squareSize, gridGap],
   );
 
   useEffect(() => {
@@ -275,7 +276,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     let animationFrameId: number;
@@ -305,7 +306,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
         gridParams.cols,
         gridParams.rows,
         gridParams.squares,
-        gridParams.dpr
+        gridParams.dpr,
       );
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -320,7 +321,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       ([entry]) => {
         setIsInView(entry.isIntersecting);
       },
-      { threshold: 0 }
+      { threshold: 0 },
     );
 
     intersectionObserver.observe(canvas);
@@ -361,9 +362,9 @@ export default function LoginFormContent({
   const router = useRouter();
   const { theme } = useTheme();
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    companyName: "",
+    email: '',
+    password: '',
+    companyName: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -372,7 +373,7 @@ export default function LoginFormContent({
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [organizationDialogOpen, setOrganizationDialogOpen] = useState(false);
   const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
-    []
+    [],
   );
   const { user } = useSelector((state: any) => state.auth || {});
   const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
@@ -381,9 +382,9 @@ export default function LoginFormContent({
   const [portalLogo, setPortalLogo] = useState<string | null>(null);
   const [portalLogoDark, setPortalLogoDark] = useState<string | null>(null);
   const [portalFavicon, setPortalFavicon] = useState<string | null>(null);
-  const [portalName, setPortalName] = useState<string>("");
-  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
-  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+  const [portalName, setPortalName] = useState<string>('');
+  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
+  const [secondaryColor, setSecondaryColor] = useState<string>('#8b5cf6');
   // const [captcha, setCaptcha] = useState<string>();
   const [captcha, setCaptcha] = useState<string | null>(null); // Allow null for no CAPTCHA
   const [portalError, setPortalError] = useState<boolean>(false);
@@ -419,7 +420,7 @@ export default function LoginFormContent({
   useEffect(() => {
     // debugger;
     if (user && user.id && user.role) {
-      router.push("/dashboard");
+      router.push('/dashboard');
     }
   }, [user]);
   // console.log(data, "data og captcha ");
@@ -432,13 +433,13 @@ export default function LoginFormContent({
         // Use the organizationId from the first element of the orgResponse.data array
         const organizationId = orgResponse?.data?.[0]?.organizationId;
         if (!organizationId) {
-          console.log("No organizationId found in orgResponse.data[0]");
+          console.log('No organizationId found in orgResponse.data[0]');
           return;
         }
 
         const decrypted = await getDecodedCaptcha(
           captchaConfig.captcha.siteKey,
-          organizationId
+          organizationId,
         );
         if (decrypted) {
           setDecryptedSiteKey(decrypted);
@@ -454,7 +455,7 @@ export default function LoginFormContent({
   }, [orgResponse]);
 
   useEffect(() => {
-    if (selectedOrg != "" && formData.email != "" && formData.password != "") {
+    if (selectedOrg != '' && formData.email != '' && formData.password != '') {
       handleFormSubmit({
         preventDefault: () => {},
       } as unknown as React.FormEvent);
@@ -471,44 +472,39 @@ export default function LoginFormContent({
     if (!portalConfig) return;
 
     try {
-      if (portalConfig.portalLogo?.url)
-        setPortalLogo(portalConfig.portalLogo.url);
-      if (portalConfig.portalLogoDark?.url)
-        setPortalLogoDark(portalConfig.portalLogoDark.url);
+      if (portalConfig.portalLogo?.url) setPortalLogo(portalConfig.portalLogo.url);
+      if (portalConfig.portalLogoDark?.url) setPortalLogoDark(portalConfig.portalLogoDark.url);
       if (portalConfig.portalFavicon?.url) {
         setPortalFavicon(portalConfig.portalFavicon.url);
         const favicon = document.querySelector(
-          "link[rel*='icon']"
+          "link[rel*='icon']",
         ) as HTMLLinkElement;
         if (favicon) {
           favicon.href = portalConfig.portalFavicon.url;
         } else {
-          const newFavicon = document.createElement("link");
-          newFavicon.rel = "icon";
+          const newFavicon = document.createElement('link');
+          newFavicon.rel = 'icon';
           newFavicon.href = portalConfig.portalFavicon.url;
           document.head.appendChild(newFavicon);
         }
       }
       if (portalConfig.primaryColor) setPrimaryColor(portalConfig.primaryColor);
-      if (portalConfig.secondaryColor)
-        setSecondaryColor(portalConfig.secondaryColor);
+      if (portalConfig.secondaryColor) setSecondaryColor(portalConfig.secondaryColor);
       if (portalConfig.portalName) {
         setPortalName(portalConfig.portalName);
         document.title = portalConfig.portalName;
       } else {
-        document.title = "HireTrack";
+        document.title = 'HireTrack';
       }
     } catch (error) {
-      console.error("Error applying portal settings:", error);
+      console.error('Error applying portal settings:', error);
       setPortalError(true);
-      document.title = "HireTrack";
+      document.title = 'HireTrack';
     }
   }, [portalConfig]);
 
   // Get default logo based on theme
-  const getDefaultLogo = () => {
-    return theme === "dark" ? "/logo_dark.png" : "/logo.png";
-  };
+  const getDefaultLogo = () => (theme === 'dark' ? '/logo_dark.png' : '/logo.png');
 
   // Get logo URL with fallback
   const getLogoUrl = () => {
@@ -518,13 +514,13 @@ export default function LoginFormContent({
     }
 
     // Use appropriate logo based on theme
-    if (theme === "dark" && portalLogoDark) {
+    if (theme === 'dark' && portalLogoDark) {
       return portalLogoDark;
-    } else if (portalLogo) {
+    } if (portalLogo) {
       return portalLogo;
     }
 
-    return "";
+    return '';
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -544,7 +540,7 @@ export default function LoginFormContent({
         password: formData.password,
       },
       setIsSubmitting,
-      { setStatus: () => {} }
+      { setStatus: () => {} },
     );
   };
 
@@ -556,12 +552,12 @@ export default function LoginFormContent({
   useEffect(() => {
     if (!portalError && !isLoadingPortal) {
       document.documentElement.style.setProperty(
-        "--portal-primary",
-        primaryColor
+        '--portal-primary',
+        primaryColor,
       );
       document.documentElement.style.setProperty(
-        "--portal-secondary",
-        secondaryColor
+        '--portal-secondary',
+        secondaryColor,
       );
     }
   }, [primaryColor, secondaryColor, portalError, isLoadingPortal]);
@@ -583,8 +579,8 @@ export default function LoginFormContent({
           duration={3}
           repeatDelay={1}
           className={cx(
-            "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
-            "inset-x-0 inset-y-[-30%] h-[200%] skew-y-12"
+            '[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]',
+            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
           )}
         />
         <FlickeringGrid
@@ -640,7 +636,7 @@ export default function LoginFormContent({
               <div className="relative w-72 max-sm:w-64 h-36">
                 <Image
                   src={getLogoUrl()}
-                  alt={portalName || (portalError ? "HireTrack" : "")}
+                  alt={portalName || (portalError ? 'HireTrack' : '')}
                   fill
                   className="object-contain"
                   priority
@@ -655,11 +651,11 @@ export default function LoginFormContent({
                 className="text-transparent"
                 style={{
                   backgroundImage: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  display: "inline-block",
-                  backgroundRepeat: "no-repeat",
-                  backgroundSize: "100%",
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  display: 'inline-block',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '100%',
                 }}
               >
                 Made Simple
@@ -673,7 +669,7 @@ export default function LoginFormContent({
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-            {["AI Matching", "Smart Screening", "Analytics"].map(
+            {['AI Matching', 'Smart Screening', 'Analytics'].map(
               (feature, index) => (
                 <motion.div
                   key={feature}
@@ -688,7 +684,7 @@ export default function LoginFormContent({
                   />
                   <span className="text-sm">{feature}</span>
                 </motion.div>
-              )
+              ),
             )}
           </div>
         </motion.div>
@@ -711,7 +707,7 @@ export default function LoginFormContent({
                 background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20, ${primaryColor}15)`,
                 transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
               }}
-              transition={{ type: "spring", damping: 30, stiffness: 200 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 200 }}
             />
           )}
 
@@ -726,11 +722,11 @@ export default function LoginFormContent({
                     style={{
                       color: primaryColor,
                       animation: selectedOrg
-                        ? "fadeInOrg 0.9s ease-in-out forwards"
-                        : "none",
+                        ? 'fadeInOrg 0.9s ease-in-out forwards'
+                        : 'none',
                     }}
                     onClick={() => {
-                      setSelectedOrg("");
+                      setSelectedOrg('');
                       setOrganizationDialogOpen(true);
                     }}
                   >
@@ -752,20 +748,16 @@ export default function LoginFormContent({
                     <input
                       type="text"
                       value={formData.companyName}
-                      onChange={(e) =>
-                        handleInputChange("companyName", e.target.value)
-                      }
+                      onChange={(e) => handleInputChange('companyName', e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
                       style={
                         {
-                          "--tw-ring-color": `${primaryColor}50`,
-                          "--tw-border-opacity": "1",
+                          '--tw-ring-color': `${primaryColor}50`,
+                          '--tw-border-opacity': '1',
                         } as React.CSSProperties
                       }
-                      onFocus={(e) =>
-                        (e.target.style.borderColor = primaryColor)
-                      }
-                      onBlur={(e) => (e.target.style.borderColor = "")}
+                      onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                      onBlur={(e) => (e.target.style.borderColor = '')}
                       placeholder="Enter your company name"
                     />
                   </div>
@@ -779,16 +771,16 @@ export default function LoginFormContent({
                   <input
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
                     style={
                       {
-                        "--tw-ring-color": `${primaryColor}50`,
-                        "--tw-border-opacity": "1",
+                        '--tw-ring-color': `${primaryColor}50`,
+                        '--tw-border-opacity': '1',
                       } as React.CSSProperties
                     }
                     onFocus={(e) => (e.target.style.borderColor = primaryColor)}
-                    onBlur={(e) => (e.target.style.borderColor = "")}
+                    onBlur={(e) => (e.target.style.borderColor = '')}
                     placeholder="Enter your email"
                     required
                   />
@@ -800,20 +792,18 @@ export default function LoginFormContent({
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     value={formData.password}
-                    onChange={(e) =>
-                      handleInputChange("password", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('password', e.target.value)}
                     className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
                     style={
                       {
-                        "--tw-ring-color": `${primaryColor}50`,
-                        "--tw-border-opacity": "1",
+                        '--tw-ring-color': `${primaryColor}50`,
+                        '--tw-border-opacity': '1',
                       } as React.CSSProperties
                     }
                     onFocus={(e) => (e.target.style.borderColor = primaryColor)}
-                    onBlur={(e) => (e.target.style.borderColor = "")}
+                    onBlur={(e) => (e.target.style.borderColor = '')}
                     placeholder="Enter your password"
                     required
                   />
@@ -851,7 +841,7 @@ export default function LoginFormContent({
                     <ReCAPTCHA
                       sitekey={decryptedSiteKey}
                       onChange={(token) => setCaptcha(token)}
-                      theme={theme as "light" | "dark"}
+                      theme={theme as 'light' | 'dark'}
                     />
                   </div>
                 </div>
@@ -883,9 +873,9 @@ export default function LoginFormContent({
                 type="submit"
                 // disabled={isLoading || !captcha}
                 disabled={
-                  isLoading ||
-                  isSubmitting ||
-                  (captchaConfig?.captcha?.enableCaptcha && !captcha)
+                  isLoading
+                  || isSubmitting
+                  || (captchaConfig?.captcha?.enableCaptcha && !captcha)
                 }
                 className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
                 style={{
@@ -901,7 +891,7 @@ export default function LoginFormContent({
                     Signing in...
                   </div>
                 ) : (
-                  "Sign In"
+                  'Sign In'
                 )}
               </motion.button>
             </form>
@@ -927,7 +917,8 @@ export default function LoginFormContent({
         className="fixed bottom-2 right-4 text-xs text-gray-400 select-none pointer-events-none z-50"
         aria-label="App Version"
       >
-        v{appVersion}
+        v
+        {appVersion}
       </div>
     </div>
   );

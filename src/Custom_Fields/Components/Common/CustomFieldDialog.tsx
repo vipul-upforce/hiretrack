@@ -4,9 +4,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogContent,
-} from "@/components/ui/dialog";
-import { CustomFieldDialogProps } from "../../Types";
-import React from "react";
+} from '@/components/ui/dialog';
+import React from 'react';
+import { CustomFieldDialogProps } from '../../Types';
 
 function CustomFieldDialog({
   isOpen,
@@ -19,7 +19,7 @@ function CustomFieldDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
       <DialogContent
-        size={!regular ? "2xl" : "lg"}
+        size={!regular ? '2xl' : 'lg'}
         className="p-0 flex flex-col overflow-hidden"
         aria-describedby="custom-field-dialog-description"
       >

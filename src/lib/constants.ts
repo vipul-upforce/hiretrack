@@ -1,4 +1,4 @@
-import { IEmailTemplate } from "@/app/dashboard/settings/components/types";
+import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
 
 export interface EmailTemplate {
   id: string;
@@ -204,244 +204,244 @@ export const OTP = `<div style="font-family: Arial, sans-serif; line-height: 1.6
 
 export const defaultTemplates: EmailTemplate[] = [
   {
-    id: "job-application-hr",
-    name: "Job Application (HR Notification)",
-    subject: "New Job Application - {{jobTitle}}",
+    id: 'job-application-hr',
+    name: 'Job Application (HR Notification)',
+    subject: 'New Job Application - {{jobTitle}}',
     content: jobD,
     variables: [
-      "jobTitle",
-      "candidateName",
-      "candidateEmail",
-      "candidatePhone",
-      "applicationDate",
-      "dashboardLink",
+      'jobTitle',
+      'candidateName',
+      'candidateEmail',
+      'candidatePhone',
+      'applicationDate',
+      'dashboardLink',
     ],
   },
   {
-    id: "password-reset",
-    name: "Password Reset Request",
-    subject: "Password Reset Request - {{organizationName}}",
+    id: 'password-reset',
+    name: 'Password Reset Request',
+    subject: 'Password Reset Request - {{organizationName}}',
     content: ResetP,
-    variables: ["userName", "organizationName", "resetLink"],
+    variables: ['userName', 'organizationName', 'resetLink'],
   },
   {
-    id: "interview-assignment",
-    name: "Interview Assignment Event",
-    subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
+    id: 'interview-assignment',
+    name: 'Interview Assignment Event',
+    subject: 'Interview Assigned - {{candidateName}} for {{jobTitle}}',
     content: assE,
     variables: [
-      "interviewerName",
-      "candidateName",
-      "jobTitle",
-      "interviewDate",
+      'interviewerName',
+      'candidateName',
+      'jobTitle',
+      'interviewDate',
       // "interviewTime",
       // "duration",
-      "interviewType",
-      "meetingLink",
-      "outlookCalendarLink",
-      "candidateProfileLink",
-      "dashboardLink",
-      "organizationName",
+      'interviewType',
+      'meetingLink',
+      'outlookCalendarLink',
+      'candidateProfileLink',
+      'dashboardLink',
+      'organizationName',
     ],
   },
   {
-    id: "status-update",
-    name: "Status Update Notification",
-    subject: "Application Status Update - {{jobTitle}}",
+    id: 'status-update',
+    name: 'Status Update Notification',
+    subject: 'Application Status Update - {{jobTitle}}',
     content: StatusU,
     variables: [
-      "candidateName",
-      "jobTitle",
-      "organizationName",
-      "newStatus",
-      "statusMessage",
-      "nextSteps",
-      "hrContactInfo",
+      'candidateName',
+      'jobTitle',
+      'organizationName',
+      'newStatus',
+      'statusMessage',
+      'nextSteps',
+      'hrContactInfo',
     ],
   },
   {
-    id: "new-remark",
-    name: "New Remark Added",
-    subject: "New Feedback Added - {{candidateName}}",
+    id: 'new-remark',
+    name: 'New Remark Added',
+    subject: 'New Feedback Added - {{candidateName}}',
     content: RemA,
     variables: [
       // "recipientName",
-      "candidateName",
-      "jobTitle",
-      "reviewerName",
-      "remarkDate",
-      "rating",
-      "remarkText",
-      "candidateProfileLink",
-      "organizationName",
+      'candidateName',
+      'jobTitle',
+      'reviewerName',
+      'remarkDate',
+      'rating',
+      'remarkText',
+      'candidateProfileLink',
+      'organizationName',
     ],
   },
   {
-    id: "step-completed",
-    name: "Step Completed",
-    subject: "Interview Step Completed - {{candidateName}}",
+    id: 'step-completed',
+    name: 'Step Completed',
+    subject: 'Interview Step Completed - {{candidateName}}',
     content: MAD,
     variables: [
       // "recipientName",
-      "candidateName",
-      "jobTitle",
-      "stepName",
-      "completedBy",
-      "completionDate",
-      "feedback",
-      "nextStep",
-      "candidateProfileLink",
-      "organizationName",
+      'candidateName',
+      'jobTitle',
+      'stepName',
+      'completedBy',
+      'completionDate',
+      'feedback',
+      'nextStep',
+      'candidateProfileLink',
+      'organizationName',
     ],
   },
   {
-    id: "send-otp",
-    name: "Send OTP",
-    subject: "Your OTP Code - {{organizationName}}",
+    id: 'send-otp',
+    name: 'Send OTP',
+    subject: 'Your OTP Code - {{organizationName}}',
     content: OTP,
-    variables: ["userName", "organizationName", "otpCode", "expirationTime"],
+    variables: ['userName', 'organizationName', 'otpCode', 'expirationTime'],
   },
 ];
 
 export const Data = {
-  orgName: "Acme Inc",
-  candidateName: "John Doe",
-  jobName: "Senior Developer",
-  email: "john.doe@example.com",
-  status: "Applied",
-  applicationDate: "2024-01-15",
-  hrNotificationTitle: "New Job Application Received",
-  candidateDetails: "https://example.com/candidate/123",
-  resetUrl: "https://example.com/reset?token=abc123",
-  eventTitle: "Interview Scheduled",
-  interviewerName: "Jane Smith",
-  startDate: "2024-01-20 10:00 AM",
-  candidateDetailsPage: "https://example.com/candidate/123",
+  orgName: 'Acme Inc',
+  candidateName: 'John Doe',
+  jobName: 'Senior Developer',
+  email: 'john.doe@example.com',
+  status: 'Applied',
+  applicationDate: '2024-01-15',
+  hrNotificationTitle: 'New Job Application Received',
+  candidateDetails: 'https://example.com/candidate/123',
+  resetUrl: 'https://example.com/reset?token=abc123',
+  eventTitle: 'Interview Scheduled',
+  interviewerName: 'Jane Smith',
+  startDate: '2024-01-20 10:00 AM',
+  candidateDetailsPage: 'https://example.com/candidate/123',
   googleCalendarLink:
-    "https://calendar.google.com/calendar/render?action=TEMPLATE",
-  outlookCalendarLink: "https://outlook.live.com/calendar/0/deeplink/compose",
-  eventSubTitle: "Status has been updated for this candidate",
-  actionBy: "HR Manager",
-  remark: "Great technical skills, good communication",
-  rating: "4.5/5",
-  remark_for: "John Doe",
-  remark_adder: "Technical Lead",
-  unassigner: "HR Manager",
-  candidate_name: "John Doe",
-  otp: "234533",
+    'https://calendar.google.com/calendar/render?action=TEMPLATE',
+  outlookCalendarLink: 'https://outlook.live.com/calendar/0/deeplink/compose',
+  eventSubTitle: 'Status has been updated for this candidate',
+  actionBy: 'HR Manager',
+  remark: 'Great technical skills, good communication',
+  rating: '4.5/5',
+  remark_for: 'John Doe',
+  remark_adder: 'Technical Lead',
+  unassigner: 'HR Manager',
+  candidate_name: 'John Doe',
+  otp: '234533',
 };
 
 export const editorOptions = {
   minimap: { enabled: false },
   fontSize: 14,
-  lineNumbers: "on" as const,
+  lineNumbers: 'on' as const,
   roundedSelection: false,
   scrollBeyondLastLine: false,
   automaticLayout: true,
   tabSize: 2,
-  wordWrap: "on" as const,
+  wordWrap: 'on' as const,
   formatOnPaste: true,
   formatOnType: true,
 };
 
 export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
-  "job-application-hr": {
-    templateId: "job-application-hr",
-    templateName: "Job Application (HR Notification)",
-    subject: "New Job Application - {{jobTitle}}",
+  'job-application-hr': {
+    templateId: 'job-application-hr',
+    templateName: 'Job Application (HR Notification)',
+    subject: 'New Job Application - {{jobTitle}}',
     html: jobD,
     variables: [
-      "jobTitle",
-      "candidateName",
-      "candidateEmail",
-      "candidatePhone",
-      "applicationDate",
-      "dashboardLink",
+      'jobTitle',
+      'candidateName',
+      'candidateEmail',
+      'candidatePhone',
+      'applicationDate',
+      'dashboardLink',
     ],
   },
-  "password-reset": {
-    templateId: "password-reset",
-    templateName: "Password Reset Request",
-    subject: "Password Reset Request - {{organizationName}}",
+  'password-reset': {
+    templateId: 'password-reset',
+    templateName: 'Password Reset Request',
+    subject: 'Password Reset Request - {{organizationName}}',
     html: ResetP,
-    variables: ["userName", "organizationName", "resetLink"],
+    variables: ['userName', 'organizationName', 'resetLink'],
   },
-  "interview-assignment": {
-    templateId: "interview-assignment",
-    templateName: "Interview Assignment Event",
-    subject: "Interview Assigned - {{candidateName}} for {{jobTitle}}",
+  'interview-assignment': {
+    templateId: 'interview-assignment',
+    templateName: 'Interview Assignment Event',
+    subject: 'Interview Assigned - {{candidateName}} for {{jobTitle}}',
     html: assE,
     variables: [
-      "interviewerName",
-      "candidateName",
-      "jobTitle",
-      "interviewDate",
+      'interviewerName',
+      'candidateName',
+      'jobTitle',
+      'interviewDate',
       // "interviewTime",
       // "duration",
-      "interviewType",
-      "meetingLink",
-      "outlookCalendarLink",
-      "candidateProfileLink",
-      "dashboardLink",
-      "organizationName",
+      'interviewType',
+      'meetingLink',
+      'outlookCalendarLink',
+      'candidateProfileLink',
+      'dashboardLink',
+      'organizationName',
     ],
   },
-  "status-update": {
-    templateId: "status-update",
-    templateName: "Status Update Notification",
-    subject: "Application Status Update - {{jobTitle}}",
+  'status-update': {
+    templateId: 'status-update',
+    templateName: 'Status Update Notification',
+    subject: 'Application Status Update - {{jobTitle}}',
     html: StatusU,
     variables: [
-      "candidateName",
-      "jobTitle",
-      "organizationName",
-      "newStatus",
-      "statusMessage",
-      "nextSteps",
-      "hrContactInfo",
+      'candidateName',
+      'jobTitle',
+      'organizationName',
+      'newStatus',
+      'statusMessage',
+      'nextSteps',
+      'hrContactInfo',
     ],
   },
-  "new-remark": {
-    templateId: "new-remark",
-    templateName: "New Remark Added",
-    subject: "New Feedback Added - {{candidateName}}",
+  'new-remark': {
+    templateId: 'new-remark',
+    templateName: 'New Remark Added',
+    subject: 'New Feedback Added - {{candidateName}}',
     html: RemA,
     variables: [
       // "recipientName",
-      "candidateName",
-      "jobTitle",
-      "reviewerName",
-      "remarkDate",
-      "rating",
-      "remarkText",
-      "candidateProfileLink",
-      "organizationName",
+      'candidateName',
+      'jobTitle',
+      'reviewerName',
+      'remarkDate',
+      'rating',
+      'remarkText',
+      'candidateProfileLink',
+      'organizationName',
     ],
   },
-  "step-completed": {
-    templateId: "step-completed",
-    templateName: "Step Completed",
-    subject: "Interview Step Completed - {{candidateName}}",
+  'step-completed': {
+    templateId: 'step-completed',
+    templateName: 'Step Completed',
+    subject: 'Interview Step Completed - {{candidateName}}',
     html: MAD,
     variables: [
       // "recipientName",
-      "candidateName",
-      "jobTitle",
-      "stepName",
-      "completedBy",
-      "completionDate",
-      "feedback",
-      "nextStep",
-      "candidateProfileLink",
-      "organizationName",
+      'candidateName',
+      'jobTitle',
+      'stepName',
+      'completedBy',
+      'completionDate',
+      'feedback',
+      'nextStep',
+      'candidateProfileLink',
+      'organizationName',
     ],
   },
-  "send-otp": {
-    templateId: "send-otp",
-    templateName: "Send OTP",
-    subject: "Your OTP Code - {{organizationName}}",
+  'send-otp': {
+    templateId: 'send-otp',
+    templateName: 'Send OTP',
+    subject: 'Your OTP Code - {{organizationName}}',
     html: OTP,
-    variables: ["userName", "organizationName", "otpCode", "expirationTime"],
+    variables: ['userName', 'organizationName', 'otpCode', 'expirationTime'],
   },
 };
 
@@ -568,107 +568,107 @@ export const scoreColors: Record<
   }
 > = {
   1: {
-    bg: "rgba(254, 202, 202, 1)", // bg-red-200
-    text: "rgba(127, 29, 29, 1)", // text-red-900 - darker for better contrast
-    border: "rgba(252, 165, 165, 1)", // border-red-300
+    bg: 'rgba(254, 202, 202, 1)', // bg-red-200
+    text: 'rgba(127, 29, 29, 1)', // text-red-900 - darker for better contrast
+    border: 'rgba(252, 165, 165, 1)', // border-red-300
     dark: {
-      bg: "rgba(185, 28, 28, 0.2)", // dark:bg-red-900/20
-      text: "rgba(252, 165, 165, 1)", // dark:text-red-300
-      border: "rgba(159, 18, 18, 1)", // dark:border-red-700
+      bg: 'rgba(185, 28, 28, 0.2)', // dark:bg-red-900/20
+      text: 'rgba(252, 165, 165, 1)', // dark:text-red-300
+      border: 'rgba(159, 18, 18, 1)', // dark:border-red-700
     },
   },
   2: {
-    bg: "rgba(254, 226, 226, 1)", // bg-red-100
-    text: "rgba(153, 27, 27, 1)", // text-red-800 - darker for better contrast
-    border: "rgba(254, 202, 202, 1)", // border-red-200
+    bg: 'rgba(254, 226, 226, 1)', // bg-red-100
+    text: 'rgba(153, 27, 27, 1)', // text-red-800 - darker for better contrast
+    border: 'rgba(254, 202, 202, 1)', // border-red-200
     dark: {
-      bg: "rgba(185, 28, 28, 0.1)", // dark:bg-red-900/10
-      text: "rgba(239, 68, 68, 1)", // dark:text-red-400
-      border: "rgba(153, 27, 27, 1)", // dark:border-red-800
+      bg: 'rgba(185, 28, 28, 0.1)', // dark:bg-red-900/10
+      text: 'rgba(239, 68, 68, 1)', // dark:text-red-400
+      border: 'rgba(153, 27, 27, 1)', // dark:border-red-800
     },
   },
   3: {
-    bg: "rgba(254, 226, 226, 1)", // bg-red-100
-    text: "rgba(153, 27, 27, 1)", // text-red-800 - darker for better contrast
-    border: "rgba(254, 202, 202, 1)", // border-red-200
+    bg: 'rgba(254, 226, 226, 1)', // bg-red-100
+    text: 'rgba(153, 27, 27, 1)', // text-red-800 - darker for better contrast
+    border: 'rgba(254, 202, 202, 1)', // border-red-200
     dark: {
-      bg: "rgba(185, 28, 28, 0.1)", // dark:bg-red-900/10
-      text: "rgba(239, 68, 68, 1)", // dark:text-red-400
-      border: "rgba(153, 27, 27, 1)", // dark:border-red-800
+      bg: 'rgba(185, 28, 28, 0.1)', // dark:bg-red-900/10
+      text: 'rgba(239, 68, 68, 1)', // dark:text-red-400
+      border: 'rgba(153, 27, 27, 1)', // dark:border-red-800
     },
   },
   4: {
-    bg: "rgba(255, 237, 213, 1)", // bg-orange-100
-    text: "rgba(194, 65, 12, 1)", // text-orange-800 - darker for better contrast
-    border: "rgba(251, 191, 36, 1)", // border-orange-200
+    bg: 'rgba(255, 237, 213, 1)', // bg-orange-100
+    text: 'rgba(194, 65, 12, 1)', // text-orange-800 - darker for better contrast
+    border: 'rgba(251, 191, 36, 1)', // border-orange-200
     dark: {
-      bg: "rgba(234, 88, 12, 0.1)", // dark:bg-orange-900/10
-      text: "rgba(249, 115, 22, 1)", // dark:text-orange-400
-      border: "rgba(194, 65, 12, 1)", // dark:border-orange-800
+      bg: 'rgba(234, 88, 12, 0.1)', // dark:bg-orange-900/10
+      text: 'rgba(249, 115, 22, 1)', // dark:text-orange-400
+      border: 'rgba(194, 65, 12, 1)', // dark:border-orange-800
     },
   },
   // Average (5): Amber theme
   5: {
-    bg: "rgba(254, 243, 199, 1)", // bg-amber-50 - fixed alpha value
-    text: "rgba(180, 83, 9, 1)", // text-amber-800 - darker for better contrast
-    border: "rgba(252, 211, 77, 1)", // border-amber-200
+    bg: 'rgba(254, 243, 199, 1)', // bg-amber-50 - fixed alpha value
+    text: 'rgba(180, 83, 9, 1)', // text-amber-800 - darker for better contrast
+    border: 'rgba(252, 211, 77, 1)', // border-amber-200
     dark: {
-      bg: "rgba(146, 64, 14, 0.1)", // dark:bg-amber-900/10
-      text: "rgba(251, 191, 36, 1)", // dark:text-amber-400
-      border: "rgba(180, 83, 9, 1)", // dark:border-amber-800
+      bg: 'rgba(146, 64, 14, 0.1)', // dark:bg-amber-900/10
+      text: 'rgba(251, 191, 36, 1)', // dark:text-amber-400
+      border: 'rgba(180, 83, 9, 1)', // dark:border-amber-800
     },
   },
   // Above Average (6): Lime theme
   6: {
-    bg: "rgba(236, 252, 203, 1)", // bg-lime-100 - corrected from lime-500
-    text: "rgba(77, 124, 15, 1)", // text-lime-800 - darker for better contrast
-    border: "rgba(190, 242, 100, 1)", // border-lime-200
+    bg: 'rgba(236, 252, 203, 1)', // bg-lime-100 - corrected from lime-500
+    text: 'rgba(77, 124, 15, 1)', // text-lime-800 - darker for better contrast
+    border: 'rgba(190, 242, 100, 1)', // border-lime-200
     dark: {
-      bg: "rgba(77, 124, 15, 0.1)", // dark:bg-lime-900/10
-      text: "rgba(163, 230, 53, 1)", // dark:text-lime-400
-      border: "rgba(77, 124, 15, 1)", // dark:border-lime-800
+      bg: 'rgba(77, 124, 15, 0.1)', // dark:bg-lime-900/10
+      text: 'rgba(163, 230, 53, 1)', // dark:text-lime-400
+      border: 'rgba(77, 124, 15, 1)', // dark:border-lime-800
     },
   },
   // Good (7): Teal theme
   7: {
-    bg: "rgba(204, 251, 241, 1)", // bg-teal-100
-    text: "rgba(19, 78, 74, 1)", // text-teal-800 - darker for better contrast
-    border: "rgba(45, 212, 191, 1)", // border-teal-200
+    bg: 'rgba(204, 251, 241, 1)', // bg-teal-100
+    text: 'rgba(19, 78, 74, 1)', // text-teal-800 - darker for better contrast
+    border: 'rgba(45, 212, 191, 1)', // border-teal-200
     dark: {
-      bg: "rgba(17, 94, 89, 0.1)", // dark:bg-teal-900/10
-      text: "rgba(45, 212, 191, 1)", // dark:text-teal-400
-      border: "rgba(19, 78, 74, 1)", // dark:border-teal-800
+      bg: 'rgba(17, 94, 89, 0.1)', // dark:bg-teal-900/10
+      text: 'rgba(45, 212, 191, 1)', // dark:text-teal-400
+      border: 'rgba(19, 78, 74, 1)', // dark:border-teal-800
     },
   },
   8: {
-    bg: "rgba(204, 251, 241, 1)", // bg-teal-100
-    text: "rgba(17, 94, 89, 1)", // text-teal-900 - darker for better contrast
-    border: "rgba(45, 212, 191, 1)", // border-teal-200
+    bg: 'rgba(204, 251, 241, 1)', // bg-teal-100
+    text: 'rgba(17, 94, 89, 1)', // text-teal-900 - darker for better contrast
+    border: 'rgba(45, 212, 191, 1)', // border-teal-200
     dark: {
-      bg: "rgba(17, 94, 89, 0.1)", // dark:bg-teal-900/10
-      text: "rgba(45, 212, 191, 1)", // dark:text-teal-400
-      border: "rgba(19, 78, 74, 1)", // dark:border-teal-800
+      bg: 'rgba(17, 94, 89, 0.1)', // dark:bg-teal-900/10
+      text: 'rgba(45, 212, 191, 1)', // dark:text-teal-400
+      border: 'rgba(19, 78, 74, 1)', // dark:border-teal-800
     },
   },
   // Excellent (9-10): Green theme
   9: {
-    bg: "rgba(209, 250, 229, 1)", // bg-emerald-100
-    text: "rgba(6, 95, 70, 1)", // text-emerald-800 - darker for better contrast
-    border: "rgba(52, 211, 153, 1)", // border-emerald-200
+    bg: 'rgba(209, 250, 229, 1)', // bg-emerald-100
+    text: 'rgba(6, 95, 70, 1)', // text-emerald-800 - darker for better contrast
+    border: 'rgba(52, 211, 153, 1)', // border-emerald-200
     dark: {
-      bg: "rgba(6, 78, 59, 0.1)", // dark:bg-emerald-900/10
-      text: "rgba(52, 211, 153, 1)", // dark:text-emerald-400
-      border: "rgba(6, 95, 70, 1)", // dark:border-emerald-800
+      bg: 'rgba(6, 78, 59, 0.1)', // dark:bg-emerald-900/10
+      text: 'rgba(52, 211, 153, 1)', // dark:text-emerald-400
+      border: 'rgba(6, 95, 70, 1)', // dark:border-emerald-800
     },
   },
   10: {
-    bg: "rgba(220, 252, 231, 1)", // bg-green-100
-    text: "rgba(22, 101, 52, 1)", // text-green-800 - darker for better contrast
-    border: "rgba(74, 222, 128, 1)", // border-green-200
+    bg: 'rgba(220, 252, 231, 1)', // bg-green-100
+    text: 'rgba(22, 101, 52, 1)', // text-green-800 - darker for better contrast
+    border: 'rgba(74, 222, 128, 1)', // border-green-200
     dark: {
-      bg: "rgba(20, 83, 45, 0.1)", // dark:bg-green-900/10
-      text: "rgba(74, 222, 128, 1)", // dark:text-green-400
-      border: "rgba(22, 101, 52, 1)", // dark:border-green-800
+      bg: 'rgba(20, 83, 45, 0.1)', // dark:bg-green-900/10
+      text: 'rgba(74, 222, 128, 1)', // dark:text-green-400
+      border: 'rgba(22, 101, 52, 1)', // dark:border-green-800
     },
   },
 };

@@ -1,23 +1,22 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCcwIcon, DownloadIcon } from "lucide-react";
-import { useInterviewAssignments } from "../../hooks/useAnalytics";
-import { AnalyticsFilters } from "../../hooks/useAnalytics";
-import { exportToCSV } from "../../utils/export";
-import InterviewAssignmentSkeleton from "./../loading-skeletons/interview-assignment";
-import { WorkloadDistributionChart } from "./workload-assignment-chart";
-import { SummaryCards } from "./summary-cards";
-import InsightsCards from "./insights-cards";
-import EmptyState from "./../empty-state";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCcwIcon, DownloadIcon } from 'lucide-react';
+import { useInterviewAssignments, AnalyticsFilters } from '../../hooks/useAnalytics';
+import { exportToCSV } from '../../utils/export';
+import InterviewAssignmentSkeleton from '../loading-skeletons/interview-assignment';
+import { WorkloadDistributionChart } from './workload-assignment-chart';
+import { SummaryCards } from './summary-cards';
+import InsightsCards from './insights-cards';
+import EmptyState from '../empty-state';
 
 interface InterviewAssignmentChartProps {
   filters?: AnalyticsFilters;
@@ -58,9 +57,11 @@ interface AssignmentData {
 export const InterviewAssignmentChart: React.FC<
   InterviewAssignmentChartProps
 > = ({ filters, organizationId }) => {
-  const { data, loading, error, refetch } = useInterviewAssignments(
+  const {
+    data, loading, error, refetch,
+  } = useInterviewAssignments(
     filters,
-    organizationId
+    organizationId,
   );
   const [assignmentData, setAssignmentData] = useState<AssignmentData[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -80,7 +81,7 @@ export const InterviewAssignmentChart: React.FC<
 
   const handleExport = () => {
     if (!assignmentData || assignmentData.length === 0) {
-      console.warn("No interview assignment data to export");
+      console.warn('No interview assignment data to export');
       return;
     }
 
@@ -88,122 +89,122 @@ export const InterviewAssignmentChart: React.FC<
       Interviewer: interviewer.interviewerName,
       Email: interviewer.interviewerEmail,
       Role: interviewer.role,
-      "Total Assignments": interviewer.assignments,
+      'Total Assignments': interviewer.assignments,
       Completed: interviewer.completions,
       Pending: interviewer.pending,
       Accepted: interviewer.accepted,
       Rejected: interviewer.rejected,
-      "Completion Rate (%)": interviewer.completionRate.toFixed(2),
-      "Success Rate (%)": interviewer.successRate.toFixed(2),
-      "Average Rating": interviewer.avgRating.toFixed(2),
-      "Average Experience Score": interviewer.avgExperienceScore.toFixed(2),
-      "Average Skills Score": interviewer.avgSkillsScore.toFixed(2),
-      "Average Daily Assignments": interviewer.avgDailyAssignments.toFixed(1),
+      'Completion Rate (%)': interviewer.completionRate.toFixed(2),
+      'Success Rate (%)': interviewer.successRate.toFixed(2),
+      'Average Rating': interviewer.avgRating.toFixed(2),
+      'Average Experience Score': interviewer.avgExperienceScore.toFixed(2),
+      'Average Skills Score': interviewer.avgSkillsScore.toFixed(2),
+      'Average Daily Assignments': interviewer.avgDailyAssignments.toFixed(1),
     }));
 
     // Add summary data as additional rows
     if (summary) {
       csvData.push(
         {
-          Interviewer: "",
-          Email: "",
-          Role: "",
-          "Total Assignments": 0,
+          Interviewer: '',
+          Email: '',
+          Role: '',
+          'Total Assignments': 0,
           Completed: 0,
           Pending: 0,
           Accepted: 0,
           Rejected: 0,
-          "Completion Rate (%)": "",
-          "Success Rate (%)": "",
-          "Average Rating": "",
-          "Average Experience Score": "",
-          "Average Skills Score": "",
-          "Average Daily Assignments": "",
+          'Completion Rate (%)': '',
+          'Success Rate (%)': '',
+          'Average Rating': '',
+          'Average Experience Score': '',
+          'Average Skills Score': '',
+          'Average Daily Assignments': '',
         },
         {
-          Interviewer: "SUMMARY",
-          Email: "",
-          Role: "",
-          "Total Assignments": 0,
+          Interviewer: 'SUMMARY',
+          Email: '',
+          Role: '',
+          'Total Assignments': 0,
           Completed: 0,
           Pending: 0,
           Accepted: 0,
           Rejected: 0,
-          "Completion Rate (%)": "",
-          "Success Rate (%)": "",
-          "Average Rating": "",
-          "Average Experience Score": "",
-          "Average Skills Score": "",
-          "Average Daily Assignments": "",
+          'Completion Rate (%)': '',
+          'Success Rate (%)': '',
+          'Average Rating': '',
+          'Average Experience Score': '',
+          'Average Skills Score': '',
+          'Average Daily Assignments': '',
         },
         {
-          Interviewer: "Total Interviewers",
-          Email: "",
-          Role: "",
-          "Total Assignments": summary.totalInterviewers,
+          Interviewer: 'Total Interviewers',
+          Email: '',
+          Role: '',
+          'Total Assignments': summary.totalInterviewers,
           Completed: 0,
           Pending: 0,
           Accepted: 0,
           Rejected: 0,
-          "Completion Rate (%)": "",
-          "Success Rate (%)": "",
-          "Average Rating": "",
-          "Average Experience Score": "",
-          "Average Skills Score": "",
-          "Average Daily Assignments": "",
+          'Completion Rate (%)': '',
+          'Success Rate (%)': '',
+          'Average Rating': '',
+          'Average Experience Score': '',
+          'Average Skills Score': '',
+          'Average Daily Assignments': '',
         },
         {
-          Interviewer: "Total Assignments",
-          Email: "",
-          Role: "",
-          "Total Assignments": summary.totalAssignments,
+          Interviewer: 'Total Assignments',
+          Email: '',
+          Role: '',
+          'Total Assignments': summary.totalAssignments,
           Completed: 0,
           Pending: 0,
           Accepted: 0,
           Rejected: 0,
-          "Completion Rate (%)": "",
-          "Success Rate (%)": "",
-          "Average Rating": "",
-          "Average Experience Score": "",
-          "Average Skills Score": "",
-          "Average Daily Assignments": "",
+          'Completion Rate (%)': '',
+          'Success Rate (%)': '',
+          'Average Rating': '',
+          'Average Experience Score': '',
+          'Average Skills Score': '',
+          'Average Daily Assignments': '',
         },
         {
-          Interviewer: "Overall Completion Rate",
-          Email: "",
-          Role: "",
-          "Total Assignments": 0,
+          Interviewer: 'Overall Completion Rate',
+          Email: '',
+          Role: '',
+          'Total Assignments': 0,
           Completed: 0,
           Pending: 0,
           Accepted: 0,
           Rejected: 0,
-          "Completion Rate (%)": `${summary.overallCompletionRate}%`,
-          "Success Rate (%)": "",
-          "Average Rating": "",
-          "Average Experience Score": "",
-          "Average Skills Score": "",
-          "Average Daily Assignments": "",
+          'Completion Rate (%)': `${summary.overallCompletionRate}%`,
+          'Success Rate (%)': '',
+          'Average Rating': '',
+          'Average Experience Score': '',
+          'Average Skills Score': '',
+          'Average Daily Assignments': '',
         },
         {
-          Interviewer: "Overall Success Rate",
-          Email: "",
-          Role: "",
-          "Total Assignments": 0,
+          Interviewer: 'Overall Success Rate',
+          Email: '',
+          Role: '',
+          'Total Assignments': 0,
           Completed: 0,
           Pending: 0,
           Accepted: 0,
           Rejected: 0,
-          "Completion Rate (%)": "",
-          "Success Rate (%)": `${summary.overallSuccessRate}%`,
-          "Average Rating": "",
-          "Average Experience Score": "",
-          "Average Skills Score": "",
-          "Average Daily Assignments": "",
-        }
+          'Completion Rate (%)': '',
+          'Success Rate (%)': `${summary.overallSuccessRate}%`,
+          'Average Rating': '',
+          'Average Experience Score': '',
+          'Average Skills Score': '',
+          'Average Daily Assignments': '',
+        },
       );
     }
 
-    exportToCSV(csvData, "interview_assignment_analysis");
+    exportToCSV(csvData, 'interview_assignment_analysis');
   };
 
   if (loading) {

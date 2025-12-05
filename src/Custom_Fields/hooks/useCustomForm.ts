@@ -1,8 +1,8 @@
-import { useCustomFields } from "./use-customFields";
-import { getYupSchema } from "../utils/validations";
-import { FormObject } from "../Types/CustomField";
-import dayjs, { Dayjs } from "dayjs";
-import useRoles from "@/hooks/useRoles";
+import dayjs, { Dayjs } from 'dayjs';
+import useRoles from '@/hooks/useRoles';
+import { useCustomFields } from './use-customFields';
+import { getYupSchema } from '../utils/validations';
+import { FormObject } from '../Types/CustomField';
 
 export type FileData = {
   base64: string;
@@ -26,7 +26,7 @@ const useCustomForm = (
   formName: string,
   jobId?: string,
   candidateId?: string,
-  fetchGlobal?: boolean
+  fetchGlobal?: boolean,
 ) => {
   // debugger;
   const { customFields } = useCustomFields();
@@ -50,9 +50,9 @@ const useCustomForm = (
     filteredFields = fields.filter(
       (field) =>
         // Include job-specific fields for this job
-        (field.jobId === jobId && !field.candidateId) ||
+        (field.jobId === jobId && !field.candidateId)
         // Include global fields (no jobId, no candidateId)
-        (!field.jobId && !field.candidateId)
+        || (!field.jobId && !field.candidateId),
     );
   }
   // For existing candidates (with candidateId)
@@ -60,17 +60,17 @@ const useCustomForm = (
     filteredFields = fields.filter(
       (field) =>
         // Include candidate-specific fields for this candidate
-        field.candidateId === candidateId ||
+        field.candidateId === candidateId
         // Include job-specific fields if we have a jobId
-        (jobId && field.jobId === jobId && !field.candidateId) ||
+        || (jobId && field.jobId === jobId && !field.candidateId)
         // Include global fields (no jobId, no candidateId)
-        (!field.jobId && !field.candidateId)
+        || (!field.jobId && !field.candidateId),
     );
   }
   // For global fields only (fetchGlobal is true)
   else if (fetchGlobal) {
     filteredFields = fields.filter(
-      (field) => !field.jobId && !field.candidateId
+      (field) => !field.jobId && !field.candidateId,
     );
   }
   // Default case - include all fields that don't have specific restrictions
@@ -80,27 +80,26 @@ const useCustomForm = (
 
   const validationSchema = getYupSchema(
     filteredFields,
-    role === "" ? "candidate" : role || undefined
+    role === '' ? 'candidate' : role || undefined,
   );
 
   const initialValues = filteredFields.reduce(
     (acc, field) => {
-      if (field.type === "date") {
-        acc[field.label] = field.defaultValue || dayjs().format("YYYY-MM-DD");
-      } else if (field.type === "time") {
-        acc[field.label] = field.defaultValue || dayjs().format("HH:mm");
-      } else if (field.type === "datetime") {
-        acc[field.label] =
-          field.defaultValue || dayjs().format("YYYY-MM-DDTHH:mm:ss");
+      if (field.type === 'date') {
+        acc[field.label] = field.defaultValue || dayjs().format('YYYY-MM-DD');
+      } else if (field.type === 'time') {
+        acc[field.label] = field.defaultValue || dayjs().format('HH:mm');
+      } else if (field.type === 'datetime') {
+        acc[field.label] = field.defaultValue || dayjs().format('YYYY-MM-DDTHH:mm:ss');
       } else {
-        acc[field.label] = field.defaultValue || "";
+        acc[field.label] = field.defaultValue || '';
       }
       return acc;
     },
     {} as Record<
       string,
       string | string[] | boolean | File[] | Dayjs | FileData[]
-    >
+    >,
   );
 
   const getDefaultValues = (formValues: CustomFieldValues) => {
@@ -117,10 +116,10 @@ const useCustomForm = (
       // Only process this field if it's in our filtered fields list
       if (fieldLabels.includes(key)) {
         if (
-          (typeof formValues[key] === "string" && formValues[key] !== "") ||
-          (typeof formValues[key] === "object" &&
-            Object.entries(formValues[key]).length > 0) ||
-          (Array.isArray(formValues[key]) && formValues[key].length > 0)
+          (typeof formValues[key] === 'string' && formValues[key] !== '')
+          || (typeof formValues[key] === 'object'
+            && Object.entries(formValues[key]).length > 0)
+          || (Array.isArray(formValues[key]) && formValues[key].length > 0)
         ) {
           filteredValues[key] = formValues[key];
         }

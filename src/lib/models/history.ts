@@ -1,6 +1,7 @@
-import { Attachment } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
-import { Schema } from "mongoose";
-import { CustomFieldFile } from "../fileUtils";
+import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { Schema } from 'mongoose';
+import { CustomFieldFile } from '../fileUtils';
+
 export interface IinfoUpdateLog {
   title: string;
   previousValue?: unknown;
@@ -37,23 +38,23 @@ const candidateHistory = {
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: false,
     },
   },
   previousInterviewer: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     default: null,
   },
   currentInterviewer: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     default: null,
   },
   assignmentBy: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     default: null,
   },
   note: {
@@ -72,7 +73,7 @@ const candidateHistory = {
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
   },
   attachments: [
@@ -80,7 +81,7 @@ const candidateHistory = {
       id: String,
       name: String,
       url: String,
-      type: { type: String, default: "pdf" },
+      type: { type: String, default: 'pdf' },
       size: Number,
     },
   ],
@@ -89,7 +90,7 @@ const candidateHistory = {
     checklistName: String,
     checklistType: {
       type: String,
-      enum: ["incoming", "outgoing"],
+      enum: ['incoming', 'outgoing'],
     },
     laneId: String,
     laneName: String,
@@ -115,7 +116,7 @@ const candidateHistory = {
     completedAt: Date,
     completedBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
   },
 };
@@ -133,12 +134,12 @@ export const historySchema = new Schema({
 });
 // 4. History - Candidate + Job + DateTime (N+1 queries)
 historySchema.index(
-  { 
-    candidateId: 1, 
-    jobId: 1, 
-    "history.dateTime": -1 
+  {
+    candidateId: 1,
+    jobId: 1,
+    'history.dateTime': -1,
   },
-  { name: "idx_history_candidate_job_datetime", background: true }
+  { name: 'idx_history_candidate_job_datetime', background: true },
 );
 
 export interface ICandidateHistory {
@@ -206,7 +207,7 @@ export interface ICandidateHistory {
   checklistForm?: {
     checklistId: string;
     checklistName: string;
-    checklistType: "incoming" | "outgoing";
+    checklistType: 'incoming' | 'outgoing';
     laneId: string;
     laneName: string;
 

@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Star } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { PortalSettings } from "../../types";
-import { PREDEFINED_COLOR_COMBINATIONS } from "../../constants";
-import { ColorPickerPopover } from "../color-picker-popover";
+} from '@/components/ui/card';
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { PortalSettings } from '../../types';
+import { PREDEFINED_COLOR_COMBINATIONS } from '../../constants';
+import { ColorPickerPopover } from '../color-picker-popover';
 
 interface ColorsTabProps {
   settings: PortalSettings;
@@ -33,21 +33,19 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
               <button
                 key={combo.name}
                 className={cn(
-                  "p-3 rounded-lg border-2 transition-all hover:scale-105 relative",
-                  settings.primaryColor === combo.primary &&
-                    settings.secondaryColor === combo.secondary
-                    ? "border-primary ring-2 ring-primary ring-offset-2"
-                    : "border-border hover:border-primary/50",
-                  combo.isDefault &&
-                    "bg-gradient-to-br from-primary/5 to-secondary/5"
+                  'p-3 rounded-lg border-2 transition-all hover:scale-105 relative',
+                  settings.primaryColor === combo.primary
+                    && settings.secondaryColor === combo.secondary
+                    ? 'border-primary ring-2 ring-primary ring-offset-2'
+                    : 'border-border hover:border-primary/50',
+                  combo.isDefault
+                    && 'bg-gradient-to-br from-primary/5 to-secondary/5',
                 )}
-                onClick={() =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    primaryColor: combo.primary,
-                    secondaryColor: combo.secondary,
-                  }))
-                }
+                onClick={() => setSettings((prev) => ({
+                  ...prev,
+                  primaryColor: combo.primary,
+                  secondaryColor: combo.secondary,
+                }))}
               >
                 {combo.isDefault && (
                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
@@ -66,8 +64,8 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
                 </div>
                 <p
                   className={cn(
-                    "text-xs font-medium text-center",
-                    combo.isDefault && "font-semibold"
+                    'text-xs font-medium text-center',
+                    combo.isDefault && 'font-semibold',
                   )}
                 >
                   {combo.name}
@@ -88,22 +86,18 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
             <ColorPickerPopover
               label="Primary Color"
               value={settings.primaryColor}
-              onChange={(color) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  primaryColor: color,
-                }))
-              }
+              onChange={(color) => setSettings((prev) => ({
+                ...prev,
+                primaryColor: color,
+              }))}
             />
             <ColorPickerPopover
               label="Secondary Color"
               value={settings.secondaryColor}
-              onChange={(color) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  secondaryColor: color,
-                }))
-              }
+              onChange={(color) => setSettings((prev) => ({
+                ...prev,
+                secondaryColor: color,
+              }))}
             />
           </div>
         </CardContent>

@@ -1,286 +1,286 @@
-"use client"
+'use client';
 
-import { useState, useEffect, useMemo } from "react"
-import { HeaderControls } from "./components/header-controls"
-import { AnalyticsTabs } from "./components/analytics-tabs"
+import { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import type { User } from '@/lib/features/org/orgApi';
+import { HeaderControls } from './components/header-controls';
+import { AnalyticsTabs } from './components/analytics-tabs';
 import {
   useCandidateFunnel,
   useJobPerformance,
   useInterviewAssignments,
   useApplicationTrends,
-} from "./hooks/useAnalytics"
-import { exportToCSV } from "./utils/export"
-import { useSelector } from "react-redux"
-import type { User } from "@/lib/features/org/orgApi"
-import type { Filters } from "./components/types"
+} from './hooks/useAnalytics';
+import { exportToCSV } from './utils/export';
+import type { Filters } from './components/types';
 
 export default function AnalyticsPage() {
   const toDate = (dateValue: any): Date | null => {
-    if (!dateValue) return null
-    if (dateValue instanceof Date) return dateValue
-    if (typeof dateValue === "string" || typeof dateValue === "number") {
-      const date = new Date(dateValue)
-      return isNaN(date.getTime()) ? null : date
+    if (!dateValue) return null;
+    if (dateValue instanceof Date) return dateValue;
+    if (typeof dateValue === 'string' || typeof dateValue === 'number') {
+      const date = new Date(dateValue);
+      return isNaN(date.getTime()) ? null : date;
     }
-    if (dateValue.toDate && typeof dateValue.toDate === "function") {
-      return dateValue.toDate()
+    if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+      return dateValue.toDate();
     }
-    if (dateValue.toISOString && typeof dateValue.toISOString === "function") {
-      return new Date(dateValue.toISOString())
+    if (dateValue.toISOString && typeof dateValue.toISOString === 'function') {
+      return new Date(dateValue.toISOString());
     }
-    return null
-  }
+    return null;
+  };
 
   const [dateRange, setDateRange] = useState<Date[] | null>(() => {
-    const now = new Date()
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    return [thirtyDaysAgo, now]
-  })
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    return [thirtyDaysAgo, now];
+  });
 
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [organizationId, setOrganizationId] = useState<string | undefined>(undefined)
-  const [isLoadingOrg, setIsLoadingOrg] = useState(true)
-  const [activeTab, setActiveTab] = useState("overview")
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [organizationId, setOrganizationId] = useState<string | undefined>(undefined);
+  const [isLoadingOrg, setIsLoadingOrg] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const { user }: { user: User } = useSelector((state: any) => state.auth || {})
+  const { user }: { user: User } = useSelector((state: any) => state.auth || {});
 
   const filters = useMemo(() => {
-    if (!dateRange || dateRange.length !== 2) return {}
+    if (!dateRange || dateRange.length !== 2) return {};
 
-    const fromDate = toDate(dateRange[0])
-    const toDateValue = toDate(dateRange[1])
+    const fromDate = toDate(dateRange[0]);
+    const toDateValue = toDate(dateRange[1]);
 
     return {
       dateRange: fromDate && toDateValue ? { from: fromDate, to: toDateValue } : undefined,
-    } as Filters
-  }, [dateRange?.[0], dateRange?.[1]])
+    } as Filters;
+  }, [dateRange?.[0], dateRange?.[1]]);
 
   const {
     data: funnelData,
     loading: funnelLoading,
     refetch: refetchFunnel,
-  } = useCandidateFunnel(filters, organizationId)
-  const { data: jobData, loading: jobLoading, refetch: refetchJob } = useJobPerformance(filters, organizationId)
+  } = useCandidateFunnel(filters, organizationId);
+  const { data: jobData, loading: jobLoading, refetch: refetchJob } = useJobPerformance(filters, organizationId);
   const {
     data: interviewData,
     loading: interviewLoading,
     refetch: refetchInterview,
-  } = useInterviewAssignments(filters, organizationId)
+  } = useInterviewAssignments(filters, organizationId);
   const {
     data: trendsData,
     loading: trendsLoading,
     refetch: refetchTrends,
-  } = useApplicationTrends(filters, organizationId)
+  } = useApplicationTrends(filters, organizationId);
 
   // Get user's organization ID from token
   useEffect(() => {
     const getUserOrganization = async () => {
       try {
         if (user) {
-          setOrganizationId(user.organizationId)
+          setOrganizationId(user.organizationId);
         }
       } catch (error) {
-        console.error("Error getting user organization:", error)
+        console.error('Error getting user organization:', error);
       } finally {
-        setIsLoadingOrg(false)
+        setIsLoadingOrg(false);
       }
-    }
+    };
 
-    getUserOrganization()
-  }, [user])
+    getUserOrganization();
+  }, [user]);
 
   const handleRefresh = async () => {
-    setIsRefreshing(true)
+    setIsRefreshing(true);
     try {
-      await Promise.all([refetchFunnel(), refetchJob(), refetchInterview(), refetchTrends()])
+      await Promise.all([refetchFunnel(), refetchJob(), refetchInterview(), refetchTrends()]);
     } catch (error) {
-      console.error("Error refreshing analytics data:", error)
+      console.error('Error refreshing analytics data:', error);
     } finally {
-      setIsRefreshing(false)
+      setIsRefreshing(false);
     }
-  }
+  };
 
   const handleExport = () => {
     try {
-      const exportData: any[] = []
+      const exportData: any[] = [];
 
       // Add export timestamp and filters
       exportData.push({
-        "Report Type": "COMPREHENSIVE ANALYTICS REPORT",
-        "Generated At": new Date().toLocaleString(),
-        "Date Range":
+        'Report Type': 'COMPREHENSIVE ANALYTICS REPORT',
+        'Generated At': new Date().toLocaleString(),
+        'Date Range':
           dateRange && dateRange.length === 2
             ? `${toDate(dateRange[0])?.toLocaleDateString()} - ${toDate(dateRange[1])?.toLocaleDateString()}`
-            : "All time",
-        "Organization ID": organizationId || "N/A",
-      })
+            : 'All time',
+        'Organization ID': organizationId || 'N/A',
+      });
 
-      exportData.push({})
+      exportData.push({});
 
       // ... existing export logic ...
-      const funnelInfo = funnelData
+      const funnelInfo = funnelData;
       if (funnelInfo?.funnelData && funnelInfo.funnelData.length > 0) {
-        exportData.push({ "Report Type": "=== CANDIDATE FUNNEL ANALYSIS ===" })
+        exportData.push({ 'Report Type': '=== CANDIDATE FUNNEL ANALYSIS ===' });
 
         funnelInfo.funnelData.forEach((stage) => {
           exportData.push({
             Stage: stage.stage,
             Count: stage.count,
-            "Conversion Rate (%)": stage.conversionRate.toFixed(2),
-            "Average Time (Days)": stage.avgTimeInDays.toFixed(1),
-            "Previous Stage Count": stage.previousStageCount,
-          })
-        })
+            'Conversion Rate (%)': stage.conversionRate.toFixed(2),
+            'Average Time (Days)': stage.avgTimeInDays.toFixed(1),
+            'Previous Stage Count': stage.previousStageCount,
+          });
+        });
 
         if (funnelInfo.summary) {
-          exportData.push({})
-          exportData.push({ Stage: "FUNNEL SUMMARY" })
+          exportData.push({});
+          exportData.push({ Stage: 'FUNNEL SUMMARY' });
           exportData.push({
-            Stage: "Total Candidates",
+            Stage: 'Total Candidates',
             Count: funnelInfo.summary.totalCandidates,
-          })
+          });
           exportData.push({
-            Stage: "Accepted Candidates",
+            Stage: 'Accepted Candidates',
             Count: funnelInfo.summary.acceptedCandidates,
-          })
+          });
           exportData.push({
-            Stage: "Rejected Candidates",
+            Stage: 'Rejected Candidates',
             Count: funnelInfo.summary.rejectedCandidates,
-          })
+          });
           exportData.push({
-            Stage: "Overall Conversion Rate",
-            "Conversion Rate (%)": `${funnelInfo.summary.overallConversionRate}%`,
-          })
+            Stage: 'Overall Conversion Rate',
+            'Conversion Rate (%)': `${funnelInfo.summary.overallConversionRate}%`,
+          });
           exportData.push({
-            Stage: "Average Time to Hire",
-            "Average Time (Days)": `${funnelInfo.summary.avgTimeToHire} days`,
-          })
+            Stage: 'Average Time to Hire',
+            'Average Time (Days)': `${funnelInfo.summary.avgTimeToHire} days`,
+          });
         }
 
-        exportData.push({})
+        exportData.push({});
       }
 
-      const jobInfo = jobData
+      const jobInfo = jobData;
       if (jobInfo?.jobPerformanceData && jobInfo.jobPerformanceData.length > 0) {
-        exportData.push({ "Report Type": "=== JOB PERFORMANCE ANALYSIS ===" })
+        exportData.push({ 'Report Type': '=== JOB PERFORMANCE ANALYSIS ===' });
 
         jobInfo.jobPerformanceData.forEach((job) => {
           exportData.push({
-            "Job Title": job.title,
+            'Job Title': job.title,
             Status: job.status,
             Applications: job.applications,
             Accepted: job.accepted,
             Rejected: job.rejected,
             Processing: job.processing,
-            "Success Rate (%)": job.successRate.toFixed(2),
-            "Time to Fill (Days)": job.timeToFill.toFixed(1),
-            "Job Duration (Days)": job.jobDuration,
-            "Required Experience": job.requiredExperience,
-            "Skills Required": job.skillsRequired,
-            "Salary Range": job.salaryRange?.inText || "Not specified",
-            "Created Date": new Date(job.createdAt).toLocaleDateString(),
-            "Closed Date": job.closedAt ? new Date(job.closedAt).toLocaleDateString() : "Still open",
-          })
-        })
+            'Success Rate (%)': job.successRate.toFixed(2),
+            'Time to Fill (Days)': job.timeToFill.toFixed(1),
+            'Job Duration (Days)': job.jobDuration,
+            'Required Experience': job.requiredExperience,
+            'Skills Required': job.skillsRequired,
+            'Salary Range': job.salaryRange?.inText || 'Not specified',
+            'Created Date': new Date(job.createdAt).toLocaleDateString(),
+            'Closed Date': job.closedAt ? new Date(job.closedAt).toLocaleDateString() : 'Still open',
+          });
+        });
 
         if (jobInfo.summary) {
-          exportData.push({})
-          exportData.push({ "Job Title": "JOB PERFORMANCE SUMMARY" })
+          exportData.push({});
+          exportData.push({ 'Job Title': 'JOB PERFORMANCE SUMMARY' });
           exportData.push({
-            "Job Title": "Total Jobs",
+            'Job Title': 'Total Jobs',
             Applications: jobInfo.summary.totalJobs,
-          })
+          });
           exportData.push({
-            "Job Title": "Total Applications",
+            'Job Title': 'Total Applications',
             Applications: jobInfo.summary.totalApplications,
-          })
+          });
           exportData.push({
-            "Job Title": "Open Jobs",
-            Status: "open",
+            'Job Title': 'Open Jobs',
+            Status: 'open',
             Applications: jobInfo.summary.openJobs,
-          })
+          });
           exportData.push({
-            "Job Title": "Closed Jobs",
-            Status: "closed",
+            'Job Title': 'Closed Jobs',
+            Status: 'closed',
             Applications: jobInfo.summary.closedJobs,
-          })
+          });
           exportData.push({
-            "Job Title": "Published Jobs",
-            Status: "published",
+            'Job Title': 'Published Jobs',
+            Status: 'published',
             Applications: jobInfo.summary.publishedJobs,
-          })
+          });
           exportData.push({
-            "Job Title": "Overall Success Rate",
-            "Success Rate (%)": `${jobInfo.summary.overallSuccessRate}%`,
-          })
+            'Job Title': 'Overall Success Rate',
+            'Success Rate (%)': `${jobInfo.summary.overallSuccessRate}%`,
+          });
           exportData.push({
-            "Job Title": "Average Time to Fill",
-            "Time to Fill (Days)": `${jobInfo.summary.avgTimeToFill} days`,
-          })
+            'Job Title': 'Average Time to Fill',
+            'Time to Fill (Days)': `${jobInfo.summary.avgTimeToFill} days`,
+          });
         }
 
-        exportData.push({})
+        exportData.push({});
       }
 
-      const interviewInfo = interviewData
+      const interviewInfo = interviewData;
       if (interviewInfo?.assignmentData && interviewInfo.assignmentData.length > 0) {
         exportData.push({
-          "Report Type": "=== INTERVIEW ASSIGNMENT ANALYSIS ===",
-        })
+          'Report Type': '=== INTERVIEW ASSIGNMENT ANALYSIS ===',
+        });
 
         interviewInfo.assignmentData.forEach((interviewer) => {
           exportData.push({
             Interviewer: interviewer.interviewerName,
             Email: interviewer.interviewerEmail,
             Role: interviewer.role,
-            "Total Assignments": interviewer.assignments,
+            'Total Assignments': interviewer.assignments,
             Completed: interviewer.completions,
             Pending: interviewer.pending,
             Accepted: interviewer.accepted,
             Rejected: interviewer.rejected,
-            "Completion Rate (%)": interviewer.completionRate.toFixed(2),
-            "Success Rate (%)": interviewer.successRate.toFixed(2),
-            "Average Rating": interviewer.avgRating.toFixed(2),
-            "Average Experience Score": interviewer.avgExperienceScore.toFixed(2),
-            "Average Skills Score": interviewer.avgSkillsScore.toFixed(2),
-            "Average Daily Assignments": interviewer.avgDailyAssignments.toFixed(1),
-          })
-        })
+            'Completion Rate (%)': interviewer.completionRate.toFixed(2),
+            'Success Rate (%)': interviewer.successRate.toFixed(2),
+            'Average Rating': interviewer.avgRating.toFixed(2),
+            'Average Experience Score': interviewer.avgExperienceScore.toFixed(2),
+            'Average Skills Score': interviewer.avgSkillsScore.toFixed(2),
+            'Average Daily Assignments': interviewer.avgDailyAssignments.toFixed(1),
+          });
+        });
 
         if (interviewInfo.summary) {
-          exportData.push({})
-          exportData.push({ Interviewer: "INTERVIEW ASSIGNMENT SUMMARY" })
+          exportData.push({});
+          exportData.push({ Interviewer: 'INTERVIEW ASSIGNMENT SUMMARY' });
           exportData.push({
-            Interviewer: "Total Interviewers",
-            "Total Assignments": interviewInfo.summary.totalInterviewers,
-          })
+            Interviewer: 'Total Interviewers',
+            'Total Assignments': interviewInfo.summary.totalInterviewers,
+          });
           exportData.push({
-            Interviewer: "Total Assignments",
-            "Total Assignments": interviewInfo.summary.totalAssignments,
-          })
+            Interviewer: 'Total Assignments',
+            'Total Assignments': interviewInfo.summary.totalAssignments,
+          });
           exportData.push({
-            Interviewer: "Overall Completion Rate",
-            "Completion Rate (%)": `${interviewInfo.summary.overallCompletionRate}%`,
-          })
+            Interviewer: 'Overall Completion Rate',
+            'Completion Rate (%)': `${interviewInfo.summary.overallCompletionRate}%`,
+          });
           exportData.push({
-            Interviewer: "Overall Success Rate",
-            "Success Rate (%)": `${interviewInfo.summary.overallSuccessRate}%`,
-          })
+            Interviewer: 'Overall Success Rate',
+            'Success Rate (%)': `${interviewInfo.summary.overallSuccessRate}%`,
+          });
         }
 
-        exportData.push({})
+        exportData.push({});
       }
 
-      const trendsInfo = trendsData
+      const trendsInfo = trendsData;
       if (trendsInfo?.trendData && trendsInfo.trendData.length > 0) {
         exportData.push({
-          "Report Type": "=== APPLICATION TRENDS ANALYSIS ===",
-        })
+          'Report Type': '=== APPLICATION TRENDS ANALYSIS ===',
+        });
 
         trendsInfo.trendData.forEach((trend) => {
           exportData.push({
             Date: trend.date,
-            "Period Type": trend.periodType,
+            'Period Type': trend.periodType,
             Applications: trend.applications,
             Applied: trend.appliedCount,
             Screening: trend.screeningCount,
@@ -288,63 +288,63 @@ export default function AnalyticsPage() {
             Processing: trend.processingCount,
             Accepted: trend.acceptedCount,
             Rejected: trend.rejectedCount,
-            "Growth Rate (%)": trend.growthRate.toFixed(2),
-            "Conversion Rate (%)": trend.conversionRate.toFixed(2),
-            "Rejection Rate (%)": trend.rejectionRate.toFixed(2),
-            "Job Diversity": trend.jobDiversity,
+            'Growth Rate (%)': trend.growthRate.toFixed(2),
+            'Conversion Rate (%)': trend.conversionRate.toFixed(2),
+            'Rejection Rate (%)': trend.rejectionRate.toFixed(2),
+            'Job Diversity': trend.jobDiversity,
             Trend: trend.trend,
-            "Moving Average": trend.movingAverage || "N/A",
-          })
-        })
+            'Moving Average': trend.movingAverage || 'N/A',
+          });
+        });
 
         if (trendsInfo.summary) {
-          exportData.push({})
-          exportData.push({ Date: "APPLICATION TRENDS SUMMARY" })
+          exportData.push({});
+          exportData.push({ Date: 'APPLICATION TRENDS SUMMARY' });
           exportData.push({
-            Date: "Total Applications",
+            Date: 'Total Applications',
             Applications: trendsInfo.summary.totalApplications,
-          })
+          });
           exportData.push({
-            Date: "Total Accepted",
+            Date: 'Total Accepted',
             Accepted: trendsInfo.summary.totalAccepted,
-          })
+          });
           exportData.push({
-            Date: "Total Rejected",
+            Date: 'Total Rejected',
             Rejected: trendsInfo.summary.totalRejected,
-          })
+          });
           exportData.push({
-            Date: "Average per Period",
+            Date: 'Average per Period',
             Applications: trendsInfo.summary.avgApplicationsPerPeriod,
-          })
+          });
           exportData.push({
-            Date: "Overall Conversion Rate",
-            "Conversion Rate (%)": `${trendsInfo.summary.overallConversionRate}%`,
-          })
+            Date: 'Overall Conversion Rate',
+            'Conversion Rate (%)': `${trendsInfo.summary.overallConversionRate}%`,
+          });
         }
       }
 
       if (exportData.length > 2) {
-        exportToCSV(exportData, "comprehensive_analytics_report")
+        exportToCSV(exportData, 'comprehensive_analytics_report');
       } else {
-        console.warn("No analytics data available to export")
+        console.warn('No analytics data available to export');
         if (exportData.length > 0) {
-          exportToCSV(exportData, "analytics_report_empty")
+          exportToCSV(exportData, 'analytics_report_empty');
         }
       }
     } catch (error) {
-      console.error("Error exporting analytics data:", error)
+      console.error('Error exporting analytics data:', error);
     }
-  }
+  };
 
   // Show loading while getting organizationId
   if (isLoadingOrg) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </div>
-    )
+    );
   }
 
   // Show error if no organizationId found
@@ -358,7 +358,7 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -390,5 +390,5 @@ export default function AnalyticsPage() {
         dateRange={dateRange}
       />
     </div>
-  )
+  );
 }

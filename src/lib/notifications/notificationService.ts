@@ -1,16 +1,16 @@
-import connectToDatabase, { Notification, User } from "@/lib/mongodb";
+import connectToDatabase, { Notification, User } from '@/lib/mongodb';
 import {
   broadcastNotification,
   broadcastNotifications,
   broadcastNotificationCount,
-} from "@/lib/broadcast/broadcastNotifications";
-import { INotification } from "@/lib/models/notification";
-import { findMentionedUsers } from "@/lib/services/userMentionService";
+} from '@/lib/broadcast/broadcastNotifications';
+import { INotification } from '@/lib/models/notification';
+import { findMentionedUsers } from '@/lib/services/userMentionService';
 import {
   batchCheckNotifications,
   NotificationType,
   NotificationDecisionContext,
-} from "@/lib/services/emailDecisionEngine";
+} from '@/lib/services/emailDecisionEngine';
 
 interface CreateNotificationParams {
   organizationId: string;
@@ -19,31 +19,31 @@ interface CreateNotificationParams {
   title: string;
   message: string;
   relatedEntity:
-    | "candidate"
-    | "job"
-    | "user"
-    | "meeting"
-    | "followup"
-    | "checklist"
-    | "system"
-    | "cvBatch";
+    | 'candidate'
+    | 'job'
+    | 'user'
+    | 'meeting'
+    | 'followup'
+    | 'checklist'
+    | 'system'
+    | 'cvBatch';
   relatedId?: string;
   actionUrl?: string;
   triggerUserId?: string;
   triggerUserName?: string;
-  priority?: "high" | "medium" | "low";
+  priority?: 'high' | 'medium' | 'low';
   metadata?: Record<string, any>;
 }
 
 export class NotificationService {
   static async createNotification(
-    params: CreateNotificationParams
+    params: CreateNotificationParams,
   ): Promise<INotification | null> {
     try {
       await connectToDatabase();
 
       if (!Notification) {
-        throw new Error("Notification model not available");
+        throw new Error('Notification model not available');
       }
       console.log(params, "params to direct notification");
       const notification = await Notification.create({
@@ -57,7 +57,7 @@ export class NotificationService {
         actionUrl: params.actionUrl,
         triggerUserId: params.triggerUserId,
         triggerUserName: params.triggerUserName,
-        priority: params.priority || "medium",
+        priority: params.priority || 'medium',
         metadata: params.metadata || {},
         isRead: false,
       });
@@ -66,7 +66,7 @@ export class NotificationService {
         await broadcastNotification(
           params.organizationId,
           params.recipientId,
-          obj
+          obj,
         );
         const unread = await Notification.countDocuments({
           organizationId: params.organizationId,
@@ -76,30 +76,30 @@ export class NotificationService {
         broadcastNotificationCount(
           params.organizationId,
           params.recipientId,
-          unread
+          unread,
         );
       } catch (e) {
-        console.error("Failed to broadcast notification:", e);
+        console.error('Failed to broadcast notification:', e);
       }
 
       return obj;
     } catch (error) {
-      console.error("❌ Error creating notification:", error);
+      console.error('❌ Error creating notification:', error);
       return null;
     }
   }
 
   static async createBulkNotifications(
-    baseParams: Omit<CreateNotificationParams, "recipientId">,
-    recipientIds: string[]
+    baseParams: Omit<CreateNotificationParams, 'recipientId'>,
+    recipientIds: string[],
   ): Promise<INotification[]> {
     try {
       await connectToDatabase();
 
       if (!Notification) {
-        throw new Error("Notification model not available");
+        throw new Error('Notification model not available');
       }
-      console.log(baseParams, "baseParams");
+      console.log(baseParams, 'baseParams');
 
       const recipients = recipientIds.filter(
         (id) =>
@@ -118,21 +118,21 @@ export class NotificationService {
         actionUrl: baseParams.actionUrl,
         triggerUserId: baseParams.triggerUserId,
         triggerUserName: baseParams.triggerUserName,
-        priority: baseParams.priority || "medium",
+        priority: baseParams.priority || 'medium',
         metadata: baseParams.metadata || {},
         isRead: false,
       }));
       // console.log(notifications, "notifications- fotr bulkkkkk");
 
       const createdNotifications = await Notification.insertMany(notifications);
-      console.log(createdNotifications, "createdNotifications");
+      console.log(createdNotifications, 'createdNotifications');
       const created = createdNotifications.map((n) => n.toObject());
 
       try {
         await broadcastNotifications(baseParams.organizationId, created);
         // send updated counts per recipient
         const uniqRecipients = Array.from(
-          new Set(created.map((n) => n.recipientId))
+          new Set(created.map((n) => n.recipientId)),
         );
         for (const recipientId of uniqRecipients) {
           const unread = await Notification.countDocuments({
@@ -143,24 +143,47 @@ export class NotificationService {
           broadcastNotificationCount(
             baseParams.organizationId,
             recipientId,
-            unread
+            unread,
           );
         }
       } catch (e) {
-        console.error("Failed to broadcast bulk notifications:", e);
+        console.error('Failed to broadcast bulk notifications:', e);
       }
 
       return created;
     } catch (error) {
-      console.error("❌ Error creating bulk notifications:", error);
+      console.error('❌ Error creating bulk notifications:', error);
       return [];
     }
   }
 
   static async getUsersByRole(
     organizationId: string,
-    roles: string[]
+    roles: string[],
   ): Promise<string[]> {
+    try {
+      await connectToDatabase();
+
+      if (!User) {
+        throw new Error('User model not available');
+      }
+
+      const users = await User.find({
+        organizationId,
+        role: { $in: roles },
+        isDeleted: { $ne: true },
+      }).select('_id role name email');
+
+      return users.map((user) => user._id.toString());
+    } catch (error) {
+      console.error('❌ Error getting users by role:', error);
+      return [];
+    }
+  }
+  static async getUsersEmailByRole(
+    organizationId: string,
+    roles: string[]
+  ): Promise<{ id: string; email: string }[]> {
     try {
       await connectToDatabase();
 
@@ -173,8 +196,10 @@ export class NotificationService {
         role: { $in: roles },
         isDeleted: { $ne: true },
       }).select("_id role name email");
-
-      return users.map((user) => user._id.toString());
+      const userEmails = users.map((user) => {
+        return { id: user._id.toString(), email: user.email };
+      });
+      return userEmails as { id: string; email: string }[];
     } catch (error) {
       console.error("❌ Error getting users by role:", error);
       return [];
@@ -220,15 +245,15 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -245,15 +270,15 @@ export class NotificationService {
       console.log(decisionContexts, "decisionContexts");
 
       const decisions = await batchCheckNotifications(decisionContexts);
-      console.log(decisions, "decisions Notification");
+      console.log(decisions, 'decisions Notification');
 
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
-      console.log(eligibleUserIds, "eligibleUserIds Notifications");
+      console.log(eligibleUserIds, 'eligibleUserIds Notifications');
 
       if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled NEW_APPLICATIONS notifications");
+        console.log('No users have enabled NEW_APPLICATIONS notifications');
         return;
       }
 
@@ -268,7 +293,7 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "high",
+          priority: 'high',
           metadata: {
             candidateName: params.candidateName,
             candidateEmail: params.candidateEmail,
@@ -408,17 +433,17 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       console.log(adminHrIds.length, "adminHrIds");
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       console.log(filteredAdminHrIds.length, "filteredAdminHrIds");
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -435,11 +460,11 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled STATUS_UPDATES notifications");
+        console.log('No users have enabled STATUS_UPDATES notifications');
         return;
       }
 
@@ -454,7 +479,7 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
@@ -463,16 +488,16 @@ export class NotificationService {
             newStatus: params.newStatus,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error(
-        "Failed to send candidate status updated notification:",
-        error
+        'Failed to send candidate status updated notification:',
+        error,
       );
     }
   }
@@ -489,11 +514,11 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
@@ -514,7 +539,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -533,14 +558,14 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
             jobId: params.jobId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
@@ -619,7 +644,7 @@ export class NotificationService {
             toJobId: params.toJobId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
@@ -642,11 +667,11 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
@@ -667,7 +692,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -688,7 +713,7 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.toJobId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateCount,
             candidateIds: params.candidateIds,
@@ -697,7 +722,7 @@ export class NotificationService {
             isBulkMove: true,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
@@ -720,15 +745,15 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -745,7 +770,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -773,11 +798,11 @@ export class NotificationService {
             jobId: params.jobId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error(
@@ -798,15 +823,15 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const allUserIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredUserIds = allUserIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredUserIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -823,11 +848,11 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredUserIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled JOB_CREATED notifications");
+        console.log('No users have enabled JOB_CREATED notifications');
         return;
       }
 
@@ -835,27 +860,27 @@ export class NotificationService {
         {
           organizationId: params.organizationId,
           type: NotificationType.JOB_CREATED,
-          title: "New Job Created",
+          title: 'New Job Created',
           message: `${params.triggerUserName} created a new job: ${params.jobTitle}`,
-          relatedEntity: "job",
+          relatedEntity: 'job',
           relatedId: params.jobId,
           actionUrl: `/dashboard/jobs/${params.jobId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             jobTitle: params.jobTitle,
             jobId: params.jobId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
-      console.error("Failed to send job created notification:", error);
+      console.error('Failed to send job created notification:', error);
     }
   }
 
@@ -920,11 +945,11 @@ export class NotificationService {
             jobId: params.jobId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error("Failed to send job updated notification:", error);
@@ -984,11 +1009,11 @@ export class NotificationService {
 
       // Notify admin/hr
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
@@ -1010,7 +1035,7 @@ export class NotificationService {
       const decisions = await batchCheckNotifications(decisionContexts);
       console.log(decisions, "decisions Notification");
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
       console.log(eligibleUserIds, "eligibleUserIds Notifications");
       if (eligibleUserIds.length === 0) {
@@ -1040,7 +1065,7 @@ export class NotificationService {
             interviewerId: params.interviewerId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
@@ -1106,15 +1131,15 @@ export class NotificationService {
 
       // Notify admin/hr
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible admin/hr recipients for notification");
+        console.log('No eligible admin/hr recipients for notification');
         return;
       }
 
@@ -1131,7 +1156,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -1150,7 +1175,7 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
@@ -1160,11 +1185,11 @@ export class NotificationService {
             meetingDate: params.meetingDate,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`
+        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`,
       );
     } catch (error) {
       console.error("Failed to send meeting scheduled notification:", error);
@@ -1205,14 +1230,14 @@ export class NotificationService {
             organizationId: params.organizationId,
             recipientId: params.interviewerId,
             type: NotificationType.MEETING_UPDATED,
-            title: "Meeting Updated",
+            title: 'Meeting Updated',
             message: `Meeting with ${params.candidateName} has been updated`,
-            relatedEntity: "meeting",
+            relatedEntity: 'meeting',
             relatedId: params.candidateId,
             actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
             triggerUserId: params.triggerUserId,
             triggerUserName: params.triggerUserName,
-            priority: "high",
+            priority: 'high',
             metadata: {
               candidateName: params.candidateName,
               jobTitle: params.jobTitle,
@@ -1226,15 +1251,15 @@ export class NotificationService {
 
       // Notify admin/hr
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible admin/hr recipients for notification");
+        console.log('No eligible admin/hr recipients for notification');
         return;
       }
 
@@ -1251,11 +1276,11 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled MEETING_UPDATED notifications");
+        console.log('No users have enabled MEETING_UPDATED notifications');
         return;
       }
 
@@ -1263,14 +1288,14 @@ export class NotificationService {
         {
           organizationId: params.organizationId,
           type: NotificationType.MEETING_UPDATED,
-          title: "Meeting Updated",
+          title: 'Meeting Updated',
           message: `Meeting between ${params.interviewerName} and ${params.candidateName} has been updated`,
-          relatedEntity: "meeting",
+          relatedEntity: 'meeting',
           relatedId: params.candidateId,
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
@@ -1280,14 +1305,14 @@ export class NotificationService {
             meetingDate: params.meetingDate.toISOString(),
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`
+        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`,
       );
     } catch (error) {
-      console.error("Failed to send meeting updated notification:", error);
+      console.error('Failed to send meeting updated notification:', error);
     }
   }
 
@@ -1324,14 +1349,14 @@ export class NotificationService {
             organizationId: params.organizationId,
             recipientId: params.interviewerId,
             type: NotificationType.MEETING_CANCELLED,
-            title: "Meeting Cancelled",
+            title: 'Meeting Cancelled',
             message: `Meeting with ${params.candidateName} has been cancelled`,
-            relatedEntity: "meeting",
+            relatedEntity: 'meeting',
             relatedId: params.candidateId,
             actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
             triggerUserId: params.triggerUserId,
             triggerUserName: params.triggerUserName,
-            priority: "high",
+            priority: 'high',
             metadata: {
               candidateName: params.candidateName,
               jobTitle: params.jobTitle,
@@ -1344,15 +1369,15 @@ export class NotificationService {
 
       // Notify admin/hr
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible admin/hr recipients for notification");
+        console.log('No eligible admin/hr recipients for notification');
         return;
       }
 
@@ -1369,11 +1394,11 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
-        console.log("No users have enabled MEETING_CANCELLED notifications");
+        console.log('No users have enabled MEETING_CANCELLED notifications');
         return;
       }
 
@@ -1381,14 +1406,14 @@ export class NotificationService {
         {
           organizationId: params.organizationId,
           type: NotificationType.MEETING_CANCELLED,
-          title: "Meeting Cancelled",
+          title: 'Meeting Cancelled',
           message: `Meeting between ${params.interviewerName} and ${params.candidateName} has been cancelled`,
-          relatedEntity: "meeting",
+          relatedEntity: 'meeting',
           relatedId: params.candidateId,
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
@@ -1397,14 +1422,14 @@ export class NotificationService {
             interviewerName: params.interviewerName,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`
+        `Sent in-app notifications to ${eligibleUserIds.length + (decisions[0]?.shouldSend ? 1 : 0)} users`,
       );
     } catch (error) {
-      console.error("Failed to send meeting cancelled notification:", error);
+      console.error('Failed to send meeting cancelled notification:', error);
     }
   }
 
@@ -1461,11 +1486,11 @@ export class NotificationService {
 
       // Notify admin/hr
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
@@ -1486,7 +1511,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -1514,7 +1539,7 @@ export class NotificationService {
             interviewerId: params.previousInterviewerId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
@@ -1542,12 +1567,12 @@ export class NotificationService {
 
       // Notify admin/hr
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
 
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
@@ -1568,7 +1593,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -1595,7 +1620,7 @@ export class NotificationService {
             interviewerName: params.interviewerName,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
@@ -1621,15 +1646,15 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -1646,7 +1671,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -1665,7 +1690,7 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "low",
+          priority: 'low',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
@@ -1676,11 +1701,11 @@ export class NotificationService {
             followupDate: params.followupDate,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error("Failed to send follow-up added notification:", error);
@@ -1744,18 +1769,18 @@ export class NotificationService {
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "low",
+          priority: 'low',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
             jobId: params.jobId,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error("Failed to send follow-up updated notification:", error);
@@ -1775,15 +1800,15 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -1800,7 +1825,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -1893,18 +1918,18 @@ export class NotificationService {
           actionUrl: `/dashboard/users`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             newUserName: params.newUserName,
             newUserEmail: params.newUserEmail,
             newUserRole: params.newUserRole,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error("Failed to send user added notification:", error);
@@ -1923,15 +1948,15 @@ export class NotificationService {
     try {
       await connectToDatabase();
       const adminHrIds = await this.getUsersByRole(params.organizationId, [
-        "admin",
-        "hr",
+        'admin',
+        'hr',
       ]);
       const filteredAdminHrIds = adminHrIds.filter(
-        (id) => id !== params.triggerUserId
+        (id) => id !== params.triggerUserId,
       );
 
       if (filteredAdminHrIds.length === 0) {
-        console.log("No eligible recipients for notification");
+        console.log('No eligible recipients for notification');
         return;
       }
 
@@ -1947,7 +1972,7 @@ export class NotificationService {
 
       const decisions = await batchCheckNotifications(decisionContexts);
       const eligibleUserIds = filteredAdminHrIds.filter(
-        (userId, index) => decisions[index].shouldSend
+        (userId, index) => decisions[index].shouldSend,
       );
 
       if (eligibleUserIds.length === 0) {
@@ -1968,18 +1993,18 @@ export class NotificationService {
           actionUrl: `/dashboard/cv-upload`,
           triggerUserId: params.triggerUserId,
           triggerUserName: params.triggerUserName,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             batchId: params.batchId,
             successCount: params.successCount,
             failureCount: params.failureCount,
           },
         },
-        eligibleUserIds
+        eligibleUserIds,
       );
 
       console.log(
-        `Sent in-app notifications to ${eligibleUserIds.length} users`
+        `Sent in-app notifications to ${eligibleUserIds.length} users`,
       );
     } catch (error) {
       console.error(
@@ -2020,12 +2045,12 @@ export class NotificationService {
         organizationId: params.organizationId,
         recipientId: params.interviewerId,
         type: NotificationType.MEETING_INVITE_ACCEPTED,
-        title: "Meeting Invite Accepted",
+        title: 'Meeting Invite Accepted',
         message: `${params.attendeeName} has accepted the interview invitation with ${params.candidateName}`,
-        relatedEntity: "meeting",
+        relatedEntity: 'meeting',
         relatedId: params.candidateId,
         actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-        priority: "medium",
+        priority: 'medium',
         metadata: {
           candidateName: params.candidateName,
           jobTitle: params.jobTitle,
@@ -2072,12 +2097,12 @@ export class NotificationService {
         {
           organizationId: params.organizationId,
           type: NotificationType.MEETING_INVITE_ACCEPTED,
-          title: "Meeting Invite Accepted",
+          title: 'Meeting Invite Accepted',
           message: `${params.attendeeName} has accepted the interview invitation with ${params.candidateName}`,
-          relatedEntity: "meeting",
+          relatedEntity: 'meeting',
           relatedId: params.candidateId,
           actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-          priority: "medium",
+          priority: 'medium',
           metadata: {
             candidateName: params.candidateName,
             jobTitle: params.jobTitle,
@@ -2122,12 +2147,12 @@ export class NotificationService {
         organizationId: params.organizationId,
         recipientId: params.interviewerId!,
         type: NotificationType.MEETING_INVITE_DECLINED,
-        title: "Meeting Invite Declined",
+        title: 'Meeting Invite Declined',
         message: `⚠️ ${params.attendeeName} has declined the interview invitation with ${params.candidateName}`,
-        relatedEntity: "meeting",
+        relatedEntity: 'meeting',
         relatedId: params.candidateId,
         actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-        priority: "high",
+        priority: 'high',
         metadata: {
           candidateName: params.candidateName,
           jobTitle: params.jobTitle,
@@ -2228,12 +2253,12 @@ export class NotificationService {
         organizationId: params.organizationId,
         recipientId: params.interviewerId!,
         type: NotificationType.MEETING_INVITE_TENTATIVE,
-        title: "Meeting Invite - Maybe",
+        title: 'Meeting Invite - Maybe',
         message: `${params.attendeeName} tentatively accepted the interview invitation with ${params.candidateName}`,
-        relatedEntity: "meeting",
+        relatedEntity: 'meeting',
         relatedId: params.candidateId,
         actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
-        priority: "medium",
+        priority: 'medium',
         metadata: {
           candidateName: params.candidateName,
           jobTitle: params.jobTitle,

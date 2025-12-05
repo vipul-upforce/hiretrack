@@ -1,15 +1,16 @@
-"use client";
+'use client';
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/hooks/use-toast';
 
 interface EditLaneDialogProps {
   isEditLaneDialogOpen: boolean;
@@ -21,7 +22,7 @@ interface EditLaneDialogProps {
   isLoading: boolean;
 }
 
-const EditLaneDialog = ({
+function EditLaneDialog({
   isEditLaneDialogOpen,
   setIsEditLaneDialogOpen,
   editingLane,
@@ -29,7 +30,7 @@ const EditLaneDialog = ({
   setEditingLane,
   handleLaneUpdate,
   isLoading,
-}: EditLaneDialogProps) => {
+}: EditLaneDialogProps) {
   // //   const [prevLaneId, setPrevLaneId] = useState("");
   // const prevLaneId = editingLane
   //   //   editingLane &&
@@ -48,7 +49,7 @@ const EditLaneDialog = ({
             <Input
               id="lane-name"
               placeholder="Enter lane name..."
-              value={editingLane || ""}
+              value={editingLane || ''}
               onChange={(e) => {
                 const newValue = e.target.value;
                 const regex = /^[A-Za-z0-9\s]*$/;
@@ -72,28 +73,28 @@ const EditLaneDialog = ({
             variant="primary"
             onClick={() => {
               if (
-                prevLane &&
-                prevLane.length > 0 &&
-                editingLane &&
-                editingLane.length > 0
+                prevLane
+                && prevLane.length > 0
+                && editingLane
+                && editingLane.length > 0
               ) {
                 handleLaneUpdate(prevLane, editingLane);
               } else {
                 toast({
-                  title: "Error",
-                  description: "Something is missing...",
-                  variant: "destructive",
+                  title: 'Error',
+                  description: 'Something is missing...',
+                  variant: 'destructive',
                 });
               }
               setIsEditLaneDialogOpen(false);
             }}
           >
-            {isLoading ? "Saving..." : "Confirm"}
+            {isLoading ? 'Saving...' : 'Confirm'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default EditLaneDialog;

@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Confetti from "react-confetti";
-import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, Sparkles, Settings, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useOnboarding } from "../OnboardingProvider";
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Confetti from 'react-confetti';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  CheckCircle2, Sparkles, Settings, ArrowRight,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useOnboarding } from '../OnboardingProvider';
 
 const CompletionStep: React.FC = () => {
   const { progress, steps, setIsOpen } = useOnboarding();
@@ -30,7 +32,7 @@ const CompletionStep: React.FC = () => {
     };
 
     handleResize();
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
 
     // Stop confetti after 5 seconds
     const timer = setTimeout(() => {
@@ -38,19 +40,19 @@ const CompletionStep: React.FC = () => {
     }, 5000);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener('resize', handleResize);
       clearTimeout(timer);
     };
   }, []);
 
   const handleGoToJobsBoard = () => {
     setIsOpen(false);
-    router.push("/dashboard/jobs-board");
+    router.push('/dashboard/jobs-board');
   };
 
   const handleGoToSettings = () => {
     setIsOpen(false);
-    router.push("/dashboard/settings");
+    router.push('/dashboard/settings');
   };
 
   return (

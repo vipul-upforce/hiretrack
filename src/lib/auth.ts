@@ -1,8 +1,8 @@
-import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { NextRequest } from "next/server";
-import { jwtDecode } from "jwt-decode";
-import CryptoJS from "crypto-js";
-import { generateOrgJwtSecret } from "./jwtSecretGenerator";
+import { verifyAndDecryptToken } from '@/app/actions/auth';
+import { NextRequest } from 'next/server';
+import { jwtDecode } from 'jwt-decode';
+import CryptoJS from 'crypto-js';
+import { generateOrgJwtSecret } from './jwtSecretGenerator';
 
 interface JWTPayload {
   user: string;
@@ -20,15 +20,15 @@ interface User {
 }
 export async function auth(request: NextRequest) {
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
-  const httpOnlyToken = request.cookies.get("auth_token");
-  const regularToken = request.cookies.get("auth_token");
+  const httpOnlyToken = request.cookies.get('auth_token');
+  const regularToken = request.cookies.get('auth_token');
   const token = httpOnlyToken?.value || regularToken?.value;
-  let orgId = request.cookies.get("org_id")?.value;
+  let orgId = request.cookies.get('org_id')?.value;
 
   if (!orgId) {
     try {
       // Fetch the first organization's ID if orgId is missing
-      const response = await fetch("/api/organization?page=1&limit=1");
+      const response = await fetch('/api/organization?page=1&limit=1');
       if (response.ok) {
         const data = await response.json();
         if (data && data.length > 0) {
@@ -36,21 +36,21 @@ export async function auth(request: NextRequest) {
         } else {
           return {
             success: false,
-            error: "No organizations found",
+            error: 'No organizations found',
           };
         }
       } else {
         return {
           success: false,
-          error: "Failed to fetch organization ID",
+          error: 'Failed to fetch organization ID',
         };
       }
     } catch (error) {
       return {
         success: false,
         error:
-          "Error fetching organization ID: " +
-          (error instanceof Error ? error.message : "Unknown error"),
+          `Error fetching organization ID: ${
+            error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
@@ -71,11 +71,11 @@ export async function verifyAndDecryptJWTToken(token: string, orgId: string) {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
   // console.log(JWT_SECRET, "JWT_SECRET-5");
   try {
-    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+    if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 
     const decoded = jwtDecode<JWTPayload>(token);
-    if (!decoded || typeof decoded !== "object" || !decoded.user) {
-      throw new Error("Invalid token structure");
+    if (!decoded || typeof decoded !== 'object' || !decoded.user) {
+      throw new Error('Invalid token structure');
     }
 
     const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
@@ -91,7 +91,7 @@ export async function verifyAndDecryptJWTToken(token: string, orgId: string) {
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+      error: err instanceof Error ? err.message : 'Unknown Error Occurred',
     };
   }
 }
@@ -105,14 +105,14 @@ export async function verifyAndDecryptSSE(token: string, orgId: string) {
 
   try {
     // console.log(JWT_SECRET, "JWT_SECRET-6");
-    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+    if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
     // console.log("type of JWT_SECRET", typeof JWT_SECRET);
     // console.log("type of token", typeof token);
     // console.log("token", token);
     const decoded = jwtDecode<JWTPayload>(token);
     // console.log(decoded, "decoded");
-    if (!decoded || typeof decoded !== "object" || !decoded.user) {
-      throw new Error("Invalid token structure");
+    if (!decoded || typeof decoded !== 'object' || !decoded.user) {
+      throw new Error('Invalid token structure');
     }
     // console.log("type of JWT_SECRET", typeof JWT_SECRET);
     const bytes = CryptoJS.AES.decrypt(decoded.user, String(JWT_SECRET));
@@ -121,13 +121,13 @@ export async function verifyAndDecryptSSE(token: string, orgId: string) {
   } catch (err) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+      error: err instanceof Error ? err.message : 'Unknown Error Occurred',
     };
   }
 }
 // Add getCurrentUser
 export async function getCurrentUser(
-  request?: NextRequest
+  request?: NextRequest,
 ): Promise<User | null> {
   const authResult = await auth(request);
   if (!authResult || !authResult.user) {
@@ -144,8 +144,8 @@ export async function verifyAndDecrypCaptcha(token: string, orgId: string) {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
 
   try {
-    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
-    if (!token) throw new Error("Token is empty");
+    if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
+    if (!token) throw new Error('Token is empty');
 
     // console.log(token, "token");
     // console.log(JWT_SECRET, "JWT_SECRET-7");
@@ -156,7 +156,7 @@ export async function verifyAndDecrypCaptcha(token: string, orgId: string) {
     const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
     // console.log(decryptedData, "decryptedData");
     if (!decryptedData) {
-      throw new Error("Decryption failed: no data returned");
+      throw new Error('Decryption failed: no data returned');
     }
 
     return decryptedData; // Return decrypted string

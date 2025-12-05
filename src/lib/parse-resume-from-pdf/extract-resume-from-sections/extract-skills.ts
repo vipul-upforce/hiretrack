@@ -1,17 +1,17 @@
-import type { ResumeSkills } from "@/lib/redux/types";
-import type { ResumeSectionToLines } from "@/lib/parse-resume-from-pdf/types";
-import { deepClone } from "@/lib/deep-clone";
-import { initialFeaturedSkills } from "@/lib/redux/resumeSlice";
+import type { ResumeSkills } from '@/lib/redux/types';
+import type { ResumeSectionToLines } from '@/lib/parse-resume-from-pdf/types';
+import { deepClone } from '@/lib/deep-clone';
+import { initialFeaturedSkills } from '@/lib/redux/resumeSlice';
 
 const SKILL_KEYWORDS = [
-  "skills",
-  "technical skills",
-  "core competencies",
-  "expertise",
-  "proficiencies",
-  "technologies",
-  "programming languages",
-  "tools",
+  'skills',
+  'technical skills',
+  'core competencies',
+  'expertise',
+  'proficiencies',
+  'technologies',
+  'programming languages',
+  'tools',
 ];
 const SKILL_HEADER_PATTERNS = [
   /^(technical )?skills:?\s*/i,
@@ -23,15 +23,15 @@ const SKILL_HEADER_PATTERNS = [
   /^tools:?\s*/i,
 ];
 const NOISE_WORDS = [
-  "proficient in",
-  "experienced with",
-  "knowledge of",
-  "familiar with",
-  "working knowledge",
-  "experience in",
-  "skilled in",
+  'proficient in',
+  'experienced with',
+  'knowledge of',
+  'familiar with',
+  'working knowledge',
+  'experience in',
+  'skilled in',
 ];
-const SKILL_DELIMITERS = [",", ";", "|", "•", "·", "-"];
+const SKILL_DELIMITERS = [',', ';', '|', '•', '·', '-'];
 
 // Common non-skill terms that should be excluded
 const NON_SKILL_PATTERNS = [
@@ -70,7 +70,7 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
     if (trimmed.split(/\s+/).length > 3) return false;
 
     // Check against non-skill patterns
-    if (NON_SKILL_PATTERNS.some(pattern => pattern.test(trimmed))) return false;
+    if (NON_SKILL_PATTERNS.some((pattern) => pattern.test(trimmed))) return false;
 
     // Exclude common non-skill terms
     const nonSkillTerms = [
@@ -78,7 +78,7 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
       'knowledge', 'working', 'hands', 'strong', 'solid', 'extensive',
       'responsible', 'duties', 'tasks', 'projects', 'worked', 'developed',
       'created', 'managed', 'led', 'team', 'project', 'client', 'customer',
-      'company', 'organization', 'department', 'position', 'role', 'job'
+      'company', 'organization', 'department', 'position', 'role', 'job',
     ];
 
     if (nonSkillTerms.includes(trimmed.toLowerCase())) return false;
@@ -90,7 +90,7 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
     // Remove noise words first
     let cleanText = text;
     NOISE_WORDS.forEach((noise) => {
-      cleanText = cleanText.replace(new RegExp(`\\b${noise}\\b`, "gi"), "").trim();
+      cleanText = cleanText.replace(new RegExp(`\\b${noise}\\b`, 'gi'), '').trim();
     });
 
     // Try to split by delimiters
@@ -109,9 +109,9 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
     skills.forEach((skill) => {
       // Clean up the skill text
       const cleanSkill = skill
-        .replace(/\s+/g, " ")
-        .replace(/^(?:-|\*|\+|\d+\.)\s*/, "")
-        .replace(/[^\w\s]/g, " ") // Replace special chars with spaces
+        .replace(/\s+/g, ' ')
+        .replace(/^(?:-|\*|\+|\d+\.)\s*/, '')
+        .replace(/[^\w\s]/g, ' ') // Replace special chars with spaces
         .trim();
 
       if (isLikelySkill(cleanSkill)) {
@@ -146,11 +146,7 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
   };
 
   // Step 1: Look for dedicated skills sections first
-  const skillsSection = Object.entries(sections).find(([sectionName]) =>
-    SKILL_KEYWORDS.some((keyword) =>
-      sectionName.toLowerCase().includes(keyword.toLowerCase())
-    )
-  );
+  const skillsSection = Object.entries(sections).find(([sectionName]) => SKILL_KEYWORDS.some((keyword) => sectionName.toLowerCase().includes(keyword.toLowerCase())));
 
   if (skillsSection) {
     const [, lines] = skillsSection;
@@ -164,10 +160,10 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
       const excludeSections = [
         'profile', 'experience', 'education', 'work', 'employment', 'projects',
         'project', 'job', 'career', 'history', 'background', 'summary', 'objective',
-        'contact', 'personal', 'reference', 'award', 'achievement', 'certification'
+        'contact', 'personal', 'reference', 'award', 'achievement', 'certification',
       ];
 
-      if (excludeSections.some(section => sectionName.toLowerCase().includes(section))) {
+      if (excludeSections.some((section) => sectionName.toLowerCase().includes(section))) {
         return;
       }
 
@@ -178,7 +174,7 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
           // Look for lines that start with skill headers
           if (SKILL_HEADER_PATTERNS.some((pattern) => pattern.test(text))) {
             const matchedPattern = SKILL_HEADER_PATTERNS.find((p) => p.test(text))!;
-            const remainingText = text.replace(matchedPattern, "").trim();
+            const remainingText = text.replace(matchedPattern, '').trim();
 
             if (remainingText && remainingText.length > 3) {
               processSkillsFromText(remainingText);

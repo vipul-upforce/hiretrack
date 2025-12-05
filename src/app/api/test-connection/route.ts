@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
-import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import nodemailer from "nodemailer";
-import { Resend } from "resend";
+import { NextResponse } from 'next/server';
+import { v2 as cloudinary } from 'cloudinary';
+import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 // import Brevo from "@getbrevo/brevo";
 interface CustomError {
   error: {
@@ -13,22 +13,21 @@ interface CustomError {
 export async function POST(request: Request) {
   const { storageType, credentials } = await request.json(); // Expecting storageType and credentials in the request body
 
-  if (storageType === "cloudinary") {
+  if (storageType === 'cloudinary') {
     return await testCloudinary(credentials);
-  } else if (storageType === "s3") {
+  } if (storageType === 's3') {
     return await testAWSConnection(credentials);
-  } else if (storageType === "smtp") {
+  } if (storageType === 'smtp') {
     return await testSMTPConnection(credentials);
-  } else if (storageType === "resend") {
+  } if (storageType === 'resend') {
     return await testResendConnection(credentials);
-  } else if (storageType === "brevo") {
+  } if (storageType === 'brevo') {
     return await testBrevoConnection(credentials);
-  } else {
-    return NextResponse.json(
-      { success: false, message: "Invalid storage type" },
-      { status: 400 }
-    );
   }
+  return NextResponse.json(
+    { success: false, message: 'Invalid storage type' },
+    { status: 400 },
+  );
 }
 
 const testCloudinary = async (credentials: {
@@ -48,13 +47,13 @@ const testCloudinary = async (credentials: {
     await cloudinary.api.resources(); // This can be kept or removed based on your needs
     return NextResponse.json({
       success: true,
-      message: "Cloudinary connection successful",
+      message: 'Cloudinary connection successful',
     });
   } catch (error) {
     const customError = error as CustomError; // Type assertion to CustomError
     return NextResponse.json(
-      { success: false, message: customError.error.message || "Unknown error" },
-      { status: 400 }
+      { success: false, message: customError.error.message || 'Unknown error' },
+      { status: 400 },
     );
   }
 };
@@ -78,16 +77,16 @@ const testAWSConnection = async (credentials: {
       new ListObjectsV2Command({
         Bucket: credentials.bucketName,
         MaxKeys: 1, // Limit to just 1 object for a quick check
-      })
+      }),
     );
     return NextResponse.json({
       success: true,
-      message: "AWS connection successful",
+      message: 'AWS connection successful',
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "" },
-      { status: 400 }
+      { success: false, message: error instanceof Error ? error.message : '' },
+      { status: 400 },
     );
   }
 };
@@ -113,12 +112,12 @@ const testSMTPConnection = async (credentials: {
     await transporter.verify();
     return NextResponse.json({
       success: true,
-      message: "SMTP connection successful",
+      message: 'SMTP connection successful',
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "" },
-      { status: 400 }
+      { success: false, message: error instanceof Error ? error.message : '' },
+      { status: 400 },
     );
   }
 };
@@ -132,23 +131,23 @@ const testResendConnection = async (credentials: {
   try {
     const { error } = await resend.emails.send({
       from: credentials.resend_from,
-      to: "delivered@resend.dev",
-      subject: "Test Connection",
+      to: 'delivered@resend.dev',
+      subject: 'Test Connection',
       replyTo: credentials.reply_to,
-      html: "<p>This is a test email to verify the Resend connection.</p>",
+      html: '<p>This is a test email to verify the Resend connection.</p>',
     });
     if (error) {
-      throw new Error("Failed to send test email");
+      throw new Error('Failed to send test email');
     }
 
     return NextResponse.json({
       success: true,
-      message: "Resend connection successful",
+      message: 'Resend connection successful',
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: error instanceof Error ? error.message : "" },
-      { status: 400 }
+      { success: false, message: error instanceof Error ? error.message : '' },
+      { status: 400 },
     );
   }
 };
@@ -161,17 +160,17 @@ const testBrevoConnection = async (credentials: {
   try {
     // Validate API key
     if (!credentials.brevo_api_key) {
-      throw new Error("Brevo API key is missing");
+      throw new Error('Brevo API key is missing');
     }
-    if (!credentials.brevo_api_key.startsWith("xkeysib-")) {
+    if (!credentials.brevo_api_key.startsWith('xkeysib-')) {
       throw new Error(
-        "Invalid Brevo API key. It must start with 'xkeysib-'. Generate a new API key in the Brevo dashboard (SMTP & API > API Keys)."
+        "Invalid Brevo API key. It must start with 'xkeysib-'. Generate a new API key in the Brevo dashboard (SMTP & API > API Keys).",
       );
     }
 
     console.log(
-      "API Key (partial):",
-      credentials.brevo_api_key.substring(0, 10) + "..."
+      'API Key (partial):',
+      `${credentials.brevo_api_key.substring(0, 10)}...`,
     );
 
     // // Log reply_to for debugging
@@ -182,37 +181,37 @@ const testBrevoConnection = async (credentials: {
     // Validate emails
     const emailRegex = /^[\w\.\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$/;
     if (
-      !credentials.brevo_from ||
-      !emailRegex.test(credentials.brevo_from.trim())
+      !credentials.brevo_from
+      || !emailRegex.test(credentials.brevo_from.trim())
     ) {
-      throw new Error("Invalid brevo_from email address");
+      throw new Error('Invalid brevo_from email address');
     }
     if (
-      !credentials.reply_to ||
-      !emailRegex.test(credentials.reply_to.trim())
+      !credentials.reply_to
+      || !emailRegex.test(credentials.reply_to.trim())
     ) {
       throw new Error(
-        `Invalid reply_to email address: "${credentials.reply_to}". Ensure it's a valid email (e.g., user@domain.com).`
+        `Invalid reply_to email address: "${credentials.reply_to}". Ensure it's a valid email (e.g., user@domain.com).`,
       );
     }
 
     const emailData = {
       sender: { email: credentials.brevo_from.trim() },
       to: [{ email: credentials.brevo_from.trim() }],
-      subject: "Test Brevo Connection",
+      subject: 'Test Brevo Connection',
       replyTo: { email: credentials.reply_to.trim() },
       htmlContent:
-        "<p>This is a test email to verify the Brevo connection.</p>",
+        '<p>This is a test email to verify the Brevo connection.</p>',
     };
 
     // console.log("Email config:", emailData);
 
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
       headers: {
-        accept: "application/json",
-        "api-key": credentials.brevo_api_key,
-        "content-type": "application/json",
+        accept: 'application/json',
+        'api-key': credentials.brevo_api_key,
+        'content-type': 'application/json',
       },
       body: JSON.stringify(emailData),
     });
@@ -220,36 +219,34 @@ const testBrevoConnection = async (credentials: {
     // Parse response
     const responseData = await response.json();
 
-    console.log("Brevo API Response:", responseData);
-    console.log("Response Status:", response.status);
+    console.log('Brevo API Response:', responseData);
+    console.log('Response Status:', response.status);
 
     if (response.ok && responseData.messageId) {
       return NextResponse.json({
         success: true,
-        message: "Brevo connection successful! Test email sent.",
+        message: 'Brevo connection successful! Test email sent.',
         messageId: responseData.messageId,
       });
-    } else {
-      const errorMessage =
-        responseData.message || responseData.error || "Unknown API error";
-      throw new Error(`Brevo API error (${response.status}): ${errorMessage}`);
     }
+    const errorMessage = responseData.message || responseData.error || 'Unknown API error';
+    throw new Error(`Brevo API error (${response.status}): ${errorMessage}`);
   } catch (error: unknown) {
-    console.error("Brevo connection test failed:", error);
+    console.error('Brevo connection test failed:', error);
 
-    let errorMessage = "Unknown error occurred";
+    let errorMessage = 'Unknown error occurred';
     let statusCode = 400;
 
     if (error) {
-      errorMessage = error instanceof Error ? error.message : "Unknown error";
+      errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    if (error instanceof Error && error.name === "TypeError" && error.message.includes("fetch")) {
-      errorMessage = "Network error: Unable to connect to Brevo API";
+    if (error instanceof Error && error.name === 'TypeError' && error.message.includes('fetch')) {
+      errorMessage = 'Network error: Unable to connect to Brevo API';
       statusCode = 503;
     }
-    if (error instanceof Error && error.name === "AbortError") {
-      errorMessage = "Request timeout: Brevo API took too long to respond";
+    if (error instanceof Error && error.name === 'AbortError') {
+      errorMessage = 'Request timeout: Brevo API took too long to respond';
       statusCode = 408;
     }
 
@@ -258,9 +255,9 @@ const testBrevoConnection = async (credentials: {
         success: false,
         message: errorMessage,
         error:
-          process.env.ENVIRONMENT === "development" ? error instanceof Error ? error.message : "Unknown error" : undefined,
+          process.env.ENVIRONMENT === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined,
       },
-      { status: statusCode }
+      { status: statusCode },
     );
   }
 };

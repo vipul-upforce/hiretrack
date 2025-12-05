@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { CreateCandidateDialog } from "../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog";
-import { Button } from "@/components/ui/button";
-import useRoles from "@/hooks/useRoles";
-import { Dialog } from "@headlessui/react";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ApplyAsGuestDialog } from "./ApplyAsGuest";
-import { X, UserPlus, LogIn } from "lucide-react";
-import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
-import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
+import { Button } from '@/components/ui/button';
+import useRoles from '@/hooks/useRoles';
+import { Dialog } from '@headlessui/react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { X, UserPlus, LogIn } from 'lucide-react';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
+import { ApplyAsGuestDialog } from './ApplyAsGuest';
+import { CreateCandidateDialog } from '../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog';
 
 // Define a type for the job object
 interface Job {
@@ -37,8 +37,8 @@ export default function ApplyOptions({
   readOnly,
 }: JobModalProps) {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
-  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
+  const [secondaryColor, setSecondaryColor] = useState<string>('#8b5cf6');
 
   const roles = useRoles();
   const router = useRouter();
@@ -66,14 +66,14 @@ export default function ApplyOptions({
 
   const handleSignupRedirect = () => {
     if (orgResponse && orgResponse.allow === false) {
-      router.push("/signup");
+      router.push('/signup');
       return;
     }
     router.push(`/signup?o=${orgName}`);
   };
 
   const handleLoginRedirect = () => {
-    router.push("/auth/login");
+    router.push('/auth/login');
   };
 
   return (
@@ -126,7 +126,7 @@ export default function ApplyOptions({
           </p>
 
           <div className="space-y-3">
-            {roles === "" ? (
+            {roles === '' ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Sign Up Button */}
@@ -141,11 +141,11 @@ export default function ApplyOptions({
                     onMouseEnter={(e) => {
                       const target = e.target as HTMLElement;
                       target.style.backgroundColor = primaryColor;
-                      target.style.color = "white";
+                      target.style.color = 'white';
                     }}
                     onMouseLeave={(e) => {
                       const target = e.target as HTMLElement;
-                      target.style.backgroundColor = "transparent";
+                      target.style.backgroundColor = 'transparent';
                       target.style.color = primaryColor;
                     }}
                   >
@@ -165,11 +165,11 @@ export default function ApplyOptions({
                     onMouseEnter={(e) => {
                       const target = e.target as HTMLElement;
                       target.style.backgroundColor = secondaryColor;
-                      target.style.color = "white";
+                      target.style.color = 'white';
                     }}
                     onMouseLeave={(e) => {
                       const target = e.target as HTMLElement;
-                      target.style.backgroundColor = "transparent";
+                      target.style.backgroundColor = 'transparent';
                       target.style.color = secondaryColor;
                     }}
                   >

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export function useIsIframe() {
   const [isIframe, setIsIframe] = useState(false);
@@ -22,7 +22,7 @@ export function IframeWrapper({ children }: { children: React.ReactNode }) {
   const isIframe = useIsIframe();
 
   return (
-    <div className={isIframe ? "iframe-embedded" : ""}>
+    <div className={isIframe ? 'iframe-embedded' : ''}>
       {children}
     </div>
   );

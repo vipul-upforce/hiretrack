@@ -1,19 +1,19 @@
-import React, { useState } from "react";
-import { Formik, Form, Field } from "formik";
-import * as Yup from "yup";
+import React, { useState } from 'react';
+import { Formik, Form, Field } from 'formik';
+import * as Yup from 'yup';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useCreateResetTokenMutation } from "@/lib/features/settings/settingsApi";
-import { toast } from "@/hooks/use-toast";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useCreateResetTokenMutation } from '@/lib/features/settings/settingsApi';
+import { toast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface ForgotPasswordDialogProps {
   isOpen: boolean;
@@ -30,11 +30,11 @@ interface OrgAccount {
 
 const validationSchema = Yup.object({
   email: Yup.string()
-    .transform((value) => (typeof value === "string" ? value.trim() : value))
-    .required("Email is required")
+    .transform((value) => (typeof value === 'string' ? value.trim() : value))
+    .required('Email is required')
     .matches(
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-      "Invalid Email"
+      'Invalid Email',
     ),
 });
 
@@ -44,12 +44,12 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
 }) => {
   const [createResetToken, { isLoading }] = useCreateResetTokenMutation();
   const [orgAccounts, setOrgAccounts] = useState<OrgAccount[]>([]);
-  const [step, setStep] = useState<"email" | "select-org">("email");
-  const [emailValue, setEmailValue] = useState("");
+  const [step, setStep] = useState<'email' | 'select-org'>('email');
+  const [emailValue, setEmailValue] = useState('');
 
   const handleEmailSubmit = async (
     values: { email: string },
-    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
+    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void },
   ) => {
     try {
       setSubmitting(true);
@@ -62,27 +62,26 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       // If multiple accounts were found
       if (response.multipleAccounts && response.accounts) {
         setOrgAccounts(response.accounts);
-        setStep("select-org");
+        setStep('select-org');
         return;
       }
 
       // Success - single account case
       toast({
-        title: "Success",
-        description: "Password reset link has been sent to your email",
-        variant: "default",
+        title: 'Success',
+        description: 'Password reset link has been sent to your email',
+        variant: 'default',
       });
       setTimeout(() => onClose(), 2000);
     } catch (err: unknown) {
-      const errorMessage =
-        typeof err === "object" && err !== null && "data" in err
-          ? (err as any).data?.error || "Failed to send reset link."
-          : "An unexpected error occurred.";
+      const errorMessage = typeof err === 'object' && err !== null && 'data' in err
+        ? (err as any).data?.error || 'Failed to send reset link.'
+        : 'An unexpected error occurred.';
 
       toast({
-        title: "Alert",
+        title: 'Alert',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
@@ -91,7 +90,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
 
   const handleOrgSelection = async (
     values: { selectedOrgId: string },
-    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
+    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void },
   ) => {
     try {
       setSubmitting(true);
@@ -104,24 +103,23 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       }).unwrap();
 
       toast({
-        title: "Success",
-        description: "Password reset link has been sent to your email",
-        variant: "default",
+        title: 'Success',
+        description: 'Password reset link has been sent to your email',
+        variant: 'default',
       });
       setTimeout(() => {
         resetDialog();
         onClose();
       }, 2000);
     } catch (err: unknown) {
-      const errorMessage =
-        typeof err === "object" && err !== null && "data" in err
-          ? (err as any).data?.error || "Failed to send reset link."
-          : "An unexpected error occurred.";
+      const errorMessage = typeof err === 'object' && err !== null && 'data' in err
+        ? (err as any).data?.error || 'Failed to send reset link.'
+        : 'An unexpected error occurred.';
 
       toast({
-        title: "Alert",
+        title: 'Alert',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
@@ -129,9 +127,9 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
   };
 
   const resetDialog = () => {
-    setStep("email");
+    setStep('email');
     setOrgAccounts([]);
-    setEmailValue("");
+    setEmailValue('');
   };
 
   const handleClose = () => {
@@ -144,9 +142,9 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>
-            {step === "email" ? "Forgot Password" : "Select Organization"}
+            {step === 'email' ? 'Forgot Password' : 'Select Organization'}
           </DialogTitle>
-          {step === "select-org" && (
+          {step === 'select-org' && (
             <DialogDescription>
               We found your email in multiple organizations. Please select which
               account you want to reset the password for.
@@ -155,9 +153,9 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
         </DialogHeader>
         <div className="p-4">
 
-          {step === "email" ? (
+          {step === 'email' ? (
             <Formik
-              initialValues={{ email: "" }}
+              initialValues={{ email: '' }}
               validationSchema={validationSchema}
               onSubmit={handleEmailSubmit}
             >
@@ -174,7 +172,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                           placeholder="Enter your email"
                           disabled={isSubmitting || isLoading}
                           className={
-                            errors.email && touched.email ? "border-red-500" : ""
+                            errors.email && touched.email ? 'border-red-500' : ''
                           }
                         />
                       )}
@@ -194,8 +192,8 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                     </Button>
                     <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
                       {isSubmitting || isLoading
-                        ? "Sending..."
-                        : "Send Reset Link"}
+                        ? 'Sending...'
+                        : 'Send Reset Link'}
                     </Button>
                   </div>
                 </Form>
@@ -205,7 +203,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
             <Formik
               initialValues={{
                 selectedOrgId:
-                  orgAccounts.length > 0 ? orgAccounts[0].organizationId : "",
+                  orgAccounts.length > 0 ? orgAccounts[0].organizationId : '',
               }}
               onSubmit={handleOrgSelection}
             >
@@ -218,9 +216,7 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                       {({ field, form }: any) => (
                         <RadioGroup
                           value={field.value}
-                          onValueChange={(value) =>
-                            form.setFieldValue("selectedOrgId", value)
-                          }
+                          onValueChange={(value) => form.setFieldValue('selectedOrgId', value)}
                           className="space-y-2 max-h-[40vh] overflow-y-auto"
                         >
                           {orgAccounts.map((account) => (
@@ -237,12 +233,12 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                                   htmlFor={account.id}
                                   className="font-medium"
                                 >
-                                  {account.organizationName || "Organization"}
+                                  {account.organizationName || 'Organization'}
                                 </Label>
                                 <span className="text-xs text-gray-500">
                                   {account.isCandidate
-                                    ? "Candidate Account"
-                                    : "User Account"}
+                                    ? 'Candidate Account'
+                                    : 'User Account'}
                                 </span>
                               </div>
                             </div>
@@ -256,13 +252,13 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setStep("email")}
+                      onClick={() => setStep('email')}
                       disabled={isSubmitting}
                     >
                       Back
                     </Button>
                     <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
-                      {isSubmitting || isLoading ? "Sending..." : "Continue"}
+                      {isSubmitting || isLoading ? 'Sending...' : 'Continue'}
                     </Button>
                   </div>
                 </Form>

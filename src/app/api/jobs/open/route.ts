@@ -13,26 +13,26 @@ export async function GET(request: NextRequest) {
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (!Job) {
       return NextResponse.json(
-        { error: "Job or Candidate not found" },
-        { status: 404 }
+        { error: 'Job or Candidate not found' },
+        { status: 404 },
       );
     }
     const jobs = await Job.find(
       {
         organizationId: user.organizationId,
-        status: "open",
+        status: 'open',
         $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       },
       {
         _id: 1,
         title: 1,
-      }
+      },
     ).sort({
-      "tracking.createdAt": -1,
+      'tracking.createdAt': -1,
     }).lean().exec();
     return NextResponse.json(jobs);
   } catch (error: unknown) {
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
@@ -57,15 +57,15 @@ export async function POST(req: NextRequest) {
 
     if (!jobId || !candidateId) {
       return NextResponse.json(
-        { error: "Job ID and Candidate ID are required" },
-        { status: 400 }
+        { error: 'Job ID and Candidate ID are required' },
+        { status: 400 },
       );
     }
 
     if (!Candidate && !History) {
       return NextResponse.json(
-        { error: "Candidate & History not found" },
-        { status: 404 }
+        { error: 'Candidate & History not found' },
+        { status: 404 },
       );
     }
 
@@ -74,21 +74,21 @@ export async function POST(req: NextRequest) {
 
     if (!candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
 
     // Check if candidate is already assigned to this job
     if (candidate.jobId?.toString() === jobId) {
       return NextResponse.json(
-        { error: "Candidate is already assigned to this job" },
-        { status: 400 }
+        { error: 'Candidate is already assigned to this job' },
+        { status: 400 },
       );
     }
 
     const existingHistory = await History!.findOne({
-      candidateId: candidateId,
+      candidateId,
       jobId: candidate.jobId,
     }).lean().exec();
 
@@ -96,14 +96,14 @@ export async function POST(req: NextRequest) {
       ? user?.organizationInfo?.lanes[0]
       : user?.organizationInfo?.defaultLanes
         ? user?.organizationInfo?.defaultLanes[0]
-        : "applied";
+        : 'applied';
 
     // Update candidate with new job assignment and set status to "applied"
     const latestCandidate = await Candidate!.findByIdAndUpdate(candidateId, {
-      jobId: jobId,
+      jobId,
       status: lane,
       $set: {
-        "tracking.assignedToJobDate": new Date().toISOString(),
+        'tracking.assignedToJobDate': new Date().toISOString(),
       },
     });
 
@@ -111,12 +111,12 @@ export async function POST(req: NextRequest) {
     if (existingHistory) {
       await History!.findOneAndUpdate(
         {
-          candidateId: candidateId,
+          candidateId,
           jobId: candidate.jobId,
         },
         {
-          $set: { jobId: jobId },
-        }
+          $set: { jobId },
+        },
       );
     }
 
@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
     const job = await Job!.findById(jobId);
 
     if (!job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     // Fetch both previous and new job details
@@ -134,15 +134,15 @@ export async function POST(req: NextRequest) {
     const nextJob = await Job!.findById(jobId);
 
     if (!nextJob) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     // Create a new history entry for the job assignment
     const historyEntry: ICandidateHistory = {
       dateTime: new Date().toISOString(),
-      title: "Assigned to Job",
+      title: 'Assigned to Job',
       note: {
-        description: `Candidate moved from ${previousJob?.title || "No previous job"} to ${nextJob.title}`,
+        description: `Candidate moved from ${previousJob?.title || 'No previous job'} to ${nextJob.title}`,
         date: new Date().toISOString(),
         rating: 0,
         userId: user.id || null,
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     await History!.findOneAndUpdate(
       { jobId, candidateId },
       { $push: { history: historyEntry } },
-      { upsert: true }
+      { upsert: true },
     );
     
     // Send notification about candidate being moved
@@ -187,23 +187,23 @@ export async function POST(req: NextRequest) {
         jobId,
         candidateId,
       })
-      .populate("history.currentInterviewer", "_id name email")
-      .populate("history.previousInterviewer", "_id name email")
-      .populate("history.assignmentBy", "_id name email")
-      .populate("history.note.userId", "_id name email");
+      .populate('history.currentInterviewer', '_id name email')
+      .populate('history.previousInterviewer', '_id name email')
+      .populate('history.assignmentBy', '_id name email')
+      .populate('history.note.userId', '_id name email');
 
     const populatedCandidate = await candidate.populate([
       {
-        path: "assignment.interviewerId",
-        select: "_id name email",
+        path: 'assignment.interviewerId',
+        select: '_id name email',
       },
       {
-        path: "remarks.userId",
-        select: "name email",
+        path: 'remarks.userId',
+        select: 'name email',
       },
       {
-        path: "jobId",
-        select: "title description ",
+        path: 'jobId',
+        select: 'title description ',
       },
     ]);
     const candidateObj = populatedCandidate.toObject();

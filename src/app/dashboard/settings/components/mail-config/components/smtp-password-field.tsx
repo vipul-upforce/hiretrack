@@ -1,16 +1,15 @@
-import { useState } from "react";
-import { ErrorMessage, useFormikContext } from "formik";
-import { Eye, EyeOff } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { SMTPFormValues } from "../types";
+import { useState } from 'react';
+import { ErrorMessage, useFormikContext } from 'formik';
+import { Eye, EyeOff } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SMTPFormValues } from '../types';
 
-export const SmtpPasswordField = () => {
-  const { values, handleChange, handleBlur } =
-    useFormikContext<SMTPFormValues>();
+export function SmtpPasswordField() {
+  const { values, handleChange, handleBlur } = useFormikContext<SMTPFormValues>();
   const [showPassword, setShowPassword] = useState(false);
 
-  if (values.mailProvider !== "smtp") return null;
+  if (values.mailProvider !== 'smtp') return null;
 
   return (
     <div className="space-y-2 relative">
@@ -19,7 +18,7 @@ export const SmtpPasswordField = () => {
         <Input
           id="smtp_password"
           name="smtp_password"
-          type={showPassword ? "text" : "password"}
+          type={showPassword ? 'text' : 'password'}
           value={values.smtp_password}
           onChange={handleChange}
           onBlur={handleBlur}
@@ -40,4 +39,4 @@ export const SmtpPasswordField = () => {
       />
     </div>
   );
-};
+}

@@ -1,38 +1,40 @@
-"use client";
+'use client';
 
-import React, { Suspense } from "react";
-import { motion } from "framer-motion";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useSignupLogic } from "./hooks/useSignupLogic";
-import { BackgroundEffects } from "./components/background-effects";
-import { BrandingSection } from "./components/branding-section";
-import { SignupForm } from "./components/signup-form";
+import React, { Suspense } from 'react';
+import { motion } from 'framer-motion';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useSignupLogic } from './hooks/useSignupLogic';
+import { BackgroundEffects } from './components/background-effects';
+import { BrandingSection } from './components/branding-section';
+import { SignupForm } from './components/signup-form';
 
-const LoadingState = () => (
-  <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
-    <div className="absolute inset-0">
-      <div className="w-full h-full bg-background"></div>
-    </div>
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5 }}
-      className="relative z-10 flex flex-col items-center gap-6"
-    >
-      <div className="relative">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 animate-pulse" />
-        <div className="absolute inset-2">
-          <div className="w-full h-full rounded-full border-3 border-primary/30 border-t-primary animate-spin" />
-        </div>
+function LoadingState() {
+  return (
+    <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
+      <div className="absolute inset-0">
+        <div className="w-full h-full bg-background" />
       </div>
-      <p className="text-sm text-muted-foreground animate-pulse">
-        Please wait...
-      </p>
-    </motion.div>
-  </div>
-);
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 flex flex-col items-center gap-6"
+      >
+        <div className="relative">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 animate-pulse" />
+          <div className="absolute inset-2">
+            <div className="w-full h-full rounded-full border-3 border-primary/30 border-t-primary animate-spin" />
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground animate-pulse">
+          Please wait...
+        </p>
+      </motion.div>
+    </div>
+  );
+}
 
-const SignupContent = () => {
+function SignupContent() {
   const { portalSettings, getLogoUrl } = useSignupLogic();
 
   if (portalSettings.isLoading) {
@@ -81,7 +83,7 @@ const SignupContent = () => {
       </div>
     </div>
   );
-};
+}
 
 export default function Signup() {
   return (

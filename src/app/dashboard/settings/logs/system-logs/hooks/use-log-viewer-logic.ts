@@ -4,7 +4,7 @@ import {
   useState,
   useCallback,
   useLayoutEffect,
-} from "react";
+} from 'react';
 import {
   useGetNginxLogFilesQuery,
   useGetPm2LogFilesQuery,
@@ -15,9 +15,9 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { SystemLogsResponse } from "../types";
 import packageJson from "../../../../../../../package.json";
 
-export type LogType = "nginx" | "pm2";
+export type LogType = 'nginx' | 'pm2';
 
-interface UseLogViewerLogicProps extends Omit<SystemLogsResponse, "onError"> {
+interface UseLogViewerLogicProps extends Omit<SystemLogsResponse, 'onError'> {
   logType: LogType;
   onError?: (error: string | null) => void;
 }
@@ -57,7 +57,7 @@ export function useLogViewerLogic({
     isError: isNginxError,
     error: nginxError,
   } = useGetNginxLogFilesQuery(undefined, {
-    skip: logType !== "nginx" || !!searchQuery,
+    skip: logType !== 'nginx' || !!searchQuery,
   });
 
   const {
@@ -66,29 +66,26 @@ export function useLogViewerLogic({
     isError: isPm2Error,
     error: pm2Error,
   } = useGetPm2LogFilesQuery(undefined, {
-    skip: logType !== "pm2" || !!searchQuery,
+    skip: logType !== 'pm2' || !!searchQuery,
   });
 
-  const isFilesLoading = logType === "nginx" ? isNginxLoading : isPm2Loading;
-  const isFilesError = logType === "nginx" ? isNginxError : isPm2Error;
-  const filesError = logType === "nginx" ? nginxError : pm2Error;
-  const activeData = logType === "nginx" ? nginxData : pm2Data;
+  const isFilesLoading = logType === 'nginx' ? isNginxLoading : isPm2Loading;
+  const isFilesError = logType === 'nginx' ? isNginxError : isPm2Error;
+  const filesError = logType === 'nginx' ? nginxError : pm2Error;
+  const activeData = logType === 'nginx' ? nginxData : pm2Data;
 
-  const [triggerNginxContent, { isFetching: isNginxFileLoading }] =
-    useLazyGetNginxFileContentQuery();
+  const [triggerNginxContent, { isFetching: isNginxFileLoading }] = useLazyGetNginxFileContentQuery();
 
-  const [triggerPm2Content, { isFetching: isPm2FileLoading }] =
-    useLazyGetPm2LogFileContentQuery();
+  const [triggerPm2Content, { isFetching: isPm2FileLoading }] = useLazyGetPm2LogFileContentQuery();
 
-  const isFileLoading =
-    logType === "nginx" ? isNginxFileLoading : isPm2FileLoading;
+  const isFileLoading = logType === 'nginx' ? isNginxFileLoading : isPm2FileLoading;
 
   const fetchLogs = useCallback(
     (args: any) => {
       if (logType === "nginx") return triggerNginxContent(args).unwrap();
       return triggerPm2Content(args).unwrap();
     },
-    [logType, triggerNginxContent, triggerPm2Content]
+    [logType, triggerNginxContent, triggerPm2Content],
   );
 
   // Reset on Search Change
@@ -112,7 +109,7 @@ export function useLogViewerLogic({
   useEffect(() => {
     if (isFilesError) {
       onError?.(
-        `Error fetching ${logType} logs: ` + (filesError as any)?.message
+        `Error fetching ${logType} logs: ${(filesError as any)?.message}`,
       );
       setIsAvailable(false);
       return;
@@ -151,7 +148,7 @@ export function useLogViewerLogic({
       file: selectedFile,
       mode: "tail",
       limit: linesPerLoad,
-      query: searchQuery || "",
+      query: searchQuery || '',
     })
       .then((data) => {
         setFileContent(data.content || []);
@@ -269,7 +266,7 @@ export function useLogViewerLogic({
       setSearchQuery("");
       setSelectedFile(file);
     },
-    [selectedFile, setSearchQuery]
+    [selectedFile, setSearchQuery],
   );
 
   const handleSearchChange = useCallback((v: string) => {

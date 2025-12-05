@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-const AssetsLoadingSkeleton = () => {
+function AssetsLoadingSkeleton() {
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4 animate-pulse">
       <div className="mb-4">
@@ -20,6 +20,6 @@ const AssetsLoadingSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AssetsLoadingSkeleton;

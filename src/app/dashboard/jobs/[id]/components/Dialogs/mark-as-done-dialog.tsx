@@ -5,23 +5,23 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { MentionTextarea } from "@/components/ui/mention-textarea";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import Rating from "@mui/material/Rating";
+} from '@/components/ui/dialog';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import Rating from '@mui/material/Rating';
 
-const ConfirmAndRemarkDialog = ({
+function ConfirmAndRemarkDialog({
   isOpen,
   setIsOpen,
   onConfirm,
   onCancel,
   isLoading = false,
-  loadingText = "Marking as done...",
+  loadingText = 'Marking as done...',
   message,
-  title = "Mark as Done",
+  title = 'Mark as Done',
 }: {
   isOpen: boolean;
   setIsOpen: (x: boolean) => void;
@@ -33,17 +33,17 @@ const ConfirmAndRemarkDialog = ({
   assignmentId?: string;
   onAddHistoryEntry?: (historyEntry: any) => void;
   message?: string;
-}) => {
+}) {
   const { user } = useSelector((state: any) => state.auth || {});
 
   // Local state for the form
-  const [remarkDescription, setRemarkDescription] = useState("");
+  const [remarkDescription, setRemarkDescription] = useState('');
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
     if (!isOpen) {
-      setRemarkDescription("");
+      setRemarkDescription('');
       setRemarkRating(null);
     }
   }, [isOpen]);
@@ -79,13 +79,13 @@ const ConfirmAndRemarkDialog = ({
               value={remarkDescription}
               onChange={setRemarkDescription}
               onKeyDown={(e) => {
-                if (e.altKey && e.key === "Enter") {
+                if (e.altKey && e.key === 'Enter') {
                   e.preventDefault();
                   handleConfirm();
                 }
               }}
-              organizationId={user?.organizationId || ""}
-              currentUserRole={user?.role || ""}
+              organizationId={user?.organizationId || ''}
+              currentUserRole={user?.role || ''}
               rows={5}
             />
           </div>
@@ -111,12 +111,12 @@ const ConfirmAndRemarkDialog = ({
             Cancel
           </Button>
           <Button disabled={isLoading} onClick={handleConfirm} variant="info">
-            {isLoading ? loadingText : "Mark as done"}
+            {isLoading ? loadingText : 'Mark as done'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default ConfirmAndRemarkDialog;

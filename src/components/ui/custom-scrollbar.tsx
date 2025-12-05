@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import React, { useEffect, useRef, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface CustomScrollbarProps {
   children: React.ReactNode;
@@ -40,11 +40,11 @@ export function CustomScrollbar({
     const observer = new ResizeObserver(updateScrollInfo);
     observer.observe(container);
 
-    container.addEventListener("scroll", updateScrollInfo);
+    container.addEventListener('scroll', updateScrollInfo);
 
     return () => {
       observer.disconnect();
-      container.removeEventListener("scroll", updateScrollInfo);
+      container.removeEventListener('scroll', updateScrollInfo);
     };
   }, []);
 
@@ -61,29 +61,27 @@ export function CustomScrollbar({
     container.scrollTop = newScrollTop;
   };
 
-  const scrollbarHeight =
-    clientHeight > 0 ? (clientHeight / scrollHeight) * clientHeight : 0;
-  const scrollbarTop =
-    scrollHeight > clientHeight
-      ? (scrollTop / (scrollHeight - clientHeight)) *
-        (clientHeight - scrollbarHeight)
-      : 0;
+  const scrollbarHeight = clientHeight > 0 ? (clientHeight / scrollHeight) * clientHeight : 0;
+  const scrollbarTop = scrollHeight > clientHeight
+    ? (scrollTop / (scrollHeight - clientHeight))
+        * (clientHeight - scrollbarHeight)
+    : 0;
 
   return (
-    <div className={cn("relative", className)} style={style}>
+    <div className={cn('relative', className)} style={style}>
       <div
         // ref={containerRef}
         ref={(el) => {
           containerRef.current = el;
-          if (typeof ref === "function") ref(el);
+          if (typeof ref === 'function') ref(el);
           else if (ref) ref.current = el;
         }}
-        className={`h-full scrollbar-hide ${isDragging ? "overflow-hidden" : "overflow-y-scroll"}`}
+        className={`h-full scrollbar-hide ${isDragging ? 'overflow-hidden' : 'overflow-y-scroll'}`}
         // className={cn("h-full scrollbar-hide overflow-y-auto")} //
         style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-          maxHeight: "100%",
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          maxHeight: '100%',
         }}
       >
         {children}
@@ -117,10 +115,10 @@ const scrollbarHideStyles = `
 `;
 
 // Inject styles if not already present
-if (typeof document !== "undefined") {
-  const styleId = "custom-scrollbar-styles";
+if (typeof document !== 'undefined') {
+  const styleId = 'custom-scrollbar-styles';
   if (!document.getElementById(styleId)) {
-    const style = document.createElement("style");
+    const style = document.createElement('style');
     style.id = styleId;
     style.textContent = scrollbarHideStyles;
     document.head.appendChild(style);

@@ -1,10 +1,10 @@
-import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { CustomFieldDef } from "./types";
+import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { CustomFieldDef } from './types';
 
 interface JobsTableHeaderProps {
   sortField: string | null;
-  sortDirection: "asc" | "desc";
+  sortDirection: 'asc' | 'desc';
   onSort: (field: string) => void;
   visibleColumns: Set<string>;
   customFields: CustomFieldDef[];
@@ -19,40 +19,40 @@ export function JobsTableHeader({
 }: JobsTableHeaderProps) {
   const getSortIcon = (field: string) => {
     if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    return sortDirection === "asc" ? (
+    return sortDirection === 'asc' ? (
       <ArrowUp className="ml-2 h-4 w-4" />
     ) : (
       <ArrowDown className="ml-2 h-4 w-4" />
     );
   };
 
-  const HeaderCell = ({
+  function HeaderCell({
     field,
     label,
     sortable = false,
-    className = "",
+    className = '',
   }: {
     field?: string;
     label: string;
     sortable?: boolean;
     className?: string;
-  }) => {
+  }) {
     return (
       <TableHead
         className={`font-medium text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400 h-12 ${
-          sortable ? "cursor-pointer" : ""
+          sortable ? 'cursor-pointer' : ''
         } ${className}`}
         onClick={() => (sortable && field ? onSort(field) : undefined)}
       >
         <div
-          className={`flex items-center gap-1 ${className === "text-right" ? "justify-end" : ""}`}
+          className={`flex items-center gap-1 ${className === 'text-right' ? 'justify-end' : ''}`}
         >
           <span>{label}</span>
           {sortable && field && getSortIcon(field)}
         </div>
       </TableHead>
     );
-  };
+  }
 
   return (
     <TableHeader>
@@ -64,17 +64,17 @@ export function JobsTableHeader({
         <HeaderCell field="status" label="Status" sortable />
 
         {/* Optional Column: Applications */}
-        {visibleColumns.has("applications") && (
+        {visibleColumns.has('applications') && (
           <HeaderCell field="candidateCount" label="Applications" sortable />
         )}
 
         {/* Optional Column: Experience */}
-        {visibleColumns.has("experience") && (
+        {visibleColumns.has('experience') && (
           <HeaderCell field="experience" label="Experience" sortable />
         )}
 
         {/* Optional Column: Skills */}
-        {visibleColumns.has("skills") && <HeaderCell label="Skills" />}
+        {visibleColumns.has('skills') && <HeaderCell label="Skills" />}
 
         {/* Dynamic Custom Fields */}
         {customFields.map((field) => {
@@ -82,7 +82,7 @@ export function JobsTableHeader({
           return (
             <HeaderCell
               key={field.label}
-              label={field.label.split(" |||||(")[0]}
+              label={field.label.split(' |||||(')[0]}
             />
           );
         })}

@@ -1,5 +1,5 @@
-import type { FetchArgs } from "@reduxjs/toolkit/query";
-import Cookies from "js-cookie";
+import type { FetchArgs } from '@reduxjs/toolkit/query';
+import Cookies from 'js-cookie';
 
 interface CookieContext {
   token: string;
@@ -29,12 +29,12 @@ export function runIfCookiePresent<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   baseQuery: (args: TArgs) => any,
   buildRequest: (context?: CookieContext) => TArgs,
-  options: CookieGuardOptions<TResult> = {}
+  options: CookieGuardOptions<TResult> = {},
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   const {
-    cookieName = "auth_state",
-    orgIdCookieName = "org_id",
+    cookieName = 'auth_state',
+    orgIdCookieName = 'org_id',
     emptyResponse = null as TResult,
   } = options;
 
@@ -46,14 +46,14 @@ export function runIfCookiePresent<
   }
 
   const request = buildRequest({ token, orgId: orgId ?? undefined });
-  
-  if (typeof request === "string") {
+
+  if (typeof request === 'string') {
     return baseQuery(request as TArgs);
   }
 
   const fetchArgs: FetchArgs = request as FetchArgs;
   return baseQuery({
     ...fetchArgs,
-    credentials: fetchArgs.credentials ?? "include",
+    credentials: fetchArgs.credentials ?? 'include',
   } as TArgs);
 }

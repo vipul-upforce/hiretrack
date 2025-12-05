@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,15 +30,15 @@ const CalendarStep: React.FC = () => {
 
       <Card className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}>
         <CardContent className="p-6">
-          <Button 
-            variant='primary'
+          <Button
+            variant="primary"
             onClick={() => window.open('/dashboard/settings?config=google-calendar', '_blank')}
             className="flex items-center gap-2"
           >
             Connect Google Calendar
             <ExternalLink className="w-4 h-4" />
           </Button>
-          
+
           {isConfigured && (
             <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400">
               <CheckCircle2 className="w-4 h-4" />

@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { VersionInfo } from "../types";
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { VersionInfo } from '../types';
 
 export interface ChangelogSectionProps {
   changelogVersions: VersionInfo[];
@@ -32,7 +32,13 @@ export function ChangelogSection({
       <CardHeader className="pb-3 pt-0">
         <CardTitle>What's New</CardTitle>
         <CardDescription>
-          Changes from version {currentVersion} to {latestVersion}
+          Changes from version
+          {' '}
+          {currentVersion}
+          {' '}
+          to
+          {' '}
+          {latestVersion}
         </CardDescription>
       </CardHeader>
 
@@ -40,9 +46,8 @@ export function ChangelogSection({
         <div className="space-y-4">
           {changelogVersions
             .sort(
-              (a, b) =>
-                new Date(b.publishedAt).getTime() -
-                new Date(a.publishedAt).getTime()
+              (a, b) => new Date(b.publishedAt).getTime()
+                - new Date(a.publishedAt).getTime(),
             )
             .map((version, idx) => (
               <div key={version.version} className="space-y-2">

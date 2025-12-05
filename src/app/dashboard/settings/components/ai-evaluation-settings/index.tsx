@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React from "react";
+import React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { RotateCcw } from "lucide-react";
-import { useEvaluationSettings } from "./hooks/useEvaluationSettings";
-import { EvaluationSettingsContent } from "./content";
-import { EvaluationSkeleton } from "./loading-skeleton";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { RotateCcw } from 'lucide-react';
+import { useEvaluationSettings } from './hooks/useEvaluationSettings';
+import { EvaluationSettingsContent } from './content';
+import { EvaluationSkeleton } from './loading-skeleton';
 
 interface EvaluationSettingsProps {
   isOpen: boolean;
@@ -73,7 +73,7 @@ export function EvaluationSettings({
               onClick={saveSettings}
               disabled={isFetching || isSaving}
             >
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

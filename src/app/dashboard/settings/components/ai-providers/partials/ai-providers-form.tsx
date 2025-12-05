@@ -1,14 +1,14 @@
-import React from "react";
-import { Form, Formik } from "formik";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useUpdateAIProvidersMutation } from "@/lib/features/settings/settingsApi";
-import { AIProvidersValues } from "./../types";
-import { aiProvidersSchema } from "./../schema";
-import { PROVIDER_CONFIGS } from "./../constants";
-import { useAiVerification } from "../hooks/useAiVerification";
-import { ProviderCard } from "./provider-card";
+import React from 'react';
+import { Form, Formik } from 'formik';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useUpdateAIProvidersMutation } from '@/lib/features/settings/settingsApi';
+import { AIProvidersValues } from '../types';
+import { aiProvidersSchema } from '../schema';
+import { PROVIDER_CONFIGS } from '../constants';
+import { useAiVerification } from '../hooks/useAiVerification';
+import { ProviderCard } from './provider-card';
 
 interface AIProvidersFormProps {
   initialValues: AIProvidersValues;
@@ -24,8 +24,7 @@ export default function AIProvidersForm({
   onRefetch,
 }: AIProvidersFormProps) {
   const { toast } = useToast();
-  const [updateAIProviders, { isLoading: isUpdating }] =
-    useUpdateAIProvidersMutation();
+  const [updateAIProviders, { isLoading: isUpdating }] = useUpdateAIProvidersMutation();
   const {
     verificationStatus,
     verificationMessages,
@@ -39,11 +38,11 @@ export default function AIProvidersForm({
       const formatProviderData = (
         apiKey: string,
         model: string,
-        customModel: string
+        customModel: string,
       ) => ({
         api_key: apiKey.trim(),
-        model: model === "custom" ? customModel.trim() : model,
-        customModel: model === "custom" ? customModel.trim() : "",
+        model: model === 'custom' ? customModel.trim() : model,
+        customModel: model === 'custom' ? customModel.trim() : '',
       });
 
       const dataToSubmit = {
@@ -51,37 +50,37 @@ export default function AIProvidersForm({
         gemini: formatProviderData(
           values.gemini_api_key,
           values.gemini_model,
-          values.gemini_custom_model
+          values.gemini_custom_model,
         ),
         openai: formatProviderData(
           values.openai_api_key,
           values.openai_model,
-          values.openai_custom_model
+          values.openai_custom_model,
         ),
         anthropic: formatProviderData(
           values.anthropic_api_key,
           values.anthropic_model,
-          values.anthropic_custom_model
+          values.anthropic_custom_model,
         ),
         perplexity: formatProviderData(
           values.perplexity_api_key,
           values.perplexity_model,
-          values.perplexity_custom_model
+          values.perplexity_custom_model,
         ),
       };
 
       await updateAIProviders(dataToSubmit).unwrap();
       toast({
-        title: "Success",
-        description: "AI provider settings updated successfully",
+        title: 'Success',
+        description: 'AI provider settings updated successfully',
       });
       onRefetch();
       onClose();
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update AI provider settings",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update AI provider settings',
+        variant: 'destructive',
       });
     }
   };
@@ -106,16 +105,12 @@ export default function AIProvidersForm({
                   primaryColor={primaryColor}
                   isUpdating={isUpdating}
                   verificationStatus={
-                    verificationStatus[config.provider] || "idle"
+                    verificationStatus[config.provider] || 'idle'
                   }
                   verificationMessage={verificationMessages[config.provider]}
                   showApiKey={!!showApiKeys[config.provider]}
-                  onVerify={(key, model) =>
-                    verifyApiKey(config.provider, key, model)
-                  }
-                  onToggleVisibility={() =>
-                    toggleApiKeyVisibility(config.provider)
-                  }
+                  onVerify={(key, model) => verifyApiKey(config.provider, key, model)}
+                  onToggleVisibility={() => toggleApiKeyVisibility(config.provider)}
                 />
               ))}
             </div>
@@ -166,8 +161,8 @@ export default function AIProvidersForm({
               disabled={formik.isSubmitting || isUpdating}
             >
               {formik.isSubmitting || isUpdating
-                ? "Saving..."
-                : "Save Configuration"}
+                ? 'Saving...'
+                : 'Save Configuration'}
             </Button>
           </div>
         </Form>

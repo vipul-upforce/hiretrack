@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Field, FieldProps, FormikErrors, FormikTouched } from "formik";
-import { Eye, EyeOff, LucideIcon } from "lucide-react";
+import React, { useState } from 'react';
+import {
+  Field, FieldProps, FormikErrors, FormikTouched,
+} from 'formik';
+import { Eye, EyeOff, LucideIcon } from 'lucide-react';
 
 interface FormInputProps {
   name: string;
@@ -16,20 +18,20 @@ interface FormInputProps {
   touched: FormikTouched<any>;
 }
 
-export const FormInput = ({
+export function FormInput({
   name,
   label,
   placeholder,
-  type = "text",
+  type = 'text',
   icon: Icon,
   primaryColor,
   disabled,
   errors,
   touched,
-}: FormInputProps) => {
+}: FormInputProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const isPassword = type === "password";
-  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
+  const isPassword = type === 'password';
+  const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
   return (
     <div className="space-y-2">
@@ -48,12 +50,12 @@ export const FormInput = ({
               className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
               style={
                 {
-                  "--tw-ring-color": `${primaryColor}50`,
-                  "--tw-border-opacity": "1",
+                  '--tw-ring-color': `${primaryColor}50`,
+                  '--tw-border-opacity': '1',
                 } as React.CSSProperties
               }
               onFocus={(e) => (e.target.style.borderColor = primaryColor)}
-              onBlur={(e) => (e.target.style.borderColor = "")}
+              onBlur={(e) => (e.target.style.borderColor = '')}
             />
           )}
         </Field>
@@ -80,4 +82,4 @@ export const FormInput = ({
       )}
     </div>
   );
-};
+}

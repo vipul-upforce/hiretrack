@@ -4,11 +4,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Skeleton, Table } from "@mui/material";
-import React from "react";
+} from '@/components/ui/table';
+import { Skeleton, Table } from '@mui/material';
+import React from 'react';
 
-const DesktopSkeletonHistroyLogs = () => {
+function DesktopSkeletonHistroyLogs() {
   return (
     <div className="hidden md:block overflow-x-auto px-4">
       <Table>
@@ -77,6 +77,6 @@ const DesktopSkeletonHistroyLogs = () => {
       </Table>
     </div>
   );
-};
+}
 
 export default DesktopSkeletonHistroyLogs;

@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, Mail } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2, Mail } from 'lucide-react';
 import {
   EmailNotificationToggle,
   EmailNotificationType,
@@ -161,7 +161,10 @@ export function GlobalEmailNotificationSettingsDialog({
           <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-600">
-            <span>Error loading settings: {error}</span>
+            <span>
+              Error loading settings:
+              {error}
+            </span>
           </div>
         ) : (
           <>

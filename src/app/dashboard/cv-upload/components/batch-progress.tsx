@@ -1,13 +1,12 @@
-"use client";
+'use client';
 
-import { Batch } from "./cv-batch-processor";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from '@/components/ui/progress';
+import { Batch } from './cv-batch-processor';
 
 export function BatchProgress({ batch }: { batch: Batch }) {
-  const progress =
-    batch.totalFiles > 0
-      ? ((batch.successCount + batch.failureCount) / batch.totalFiles) * 100
-      : 0;
+  const progress = batch.totalFiles > 0
+    ? ((batch.successCount + batch.failureCount) / batch.totalFiles) * 100
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -47,9 +46,9 @@ export function BatchProgress({ batch }: { batch: Batch }) {
                 <span className="truncate flex-1">{item.filename}</span>
                 <span
                   className={`ml-2 px-2 py-1 rounded-full text-xs ${
-                    item.status === "success"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
+                    item.status === 'success'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
                   }`}
                 >
                   {item.status}

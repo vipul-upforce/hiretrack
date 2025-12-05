@@ -1,15 +1,15 @@
-import { CalendarClockIcon, XIcon } from "lucide-react";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
+import { CalendarClockIcon, XIcon } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import ConfirmationDialog from "../Dialogs/ConfirmationDialog";
-import { useState } from "react";
+} from '@/components/ui/tooltip';
+import { useState } from 'react';
+import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
+import ConfirmationDialog from '../Dialogs/ConfirmationDialog';
 
-const FollowupDisplay = ({
+function FollowupDisplay({
   note,
   date,
   showToolTip = true,
@@ -19,14 +19,17 @@ const FollowupDisplay = ({
   date: Date | null;
   showToolTip?: boolean;
   handleRemoveFollowUp?: () => void;
-}) => {
+}) {
   const [removeFUOpen, setRemoveFUOpen] = useState(false);
   const contentWithDate = (
     <div className="border cursor-default dark:border-accent rounded w-fit px-2 py-1 flex flex-row items-center justify-between dark:bg-black bg-blue-50 hover:bg-blue-100 dark:hover:bg-gray-900 transition-colors duration-200">
       <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
       <div className="flex flex-row items-center justify-between w-full">
         <p className="text-foreground text-xs">
-          {formatDate(date || new Date())} at {formatTime(date || new Date())}
+          {formatDate(date || new Date())}
+          {' '}
+          at
+          {formatTime(date || new Date())}
         </p>
       </div>
       {showToolTip && (
@@ -86,6 +89,6 @@ const FollowupDisplay = ({
   ) : (
     contentWODate
   );
-};
+}
 
 export default FollowupDisplay;

@@ -1,31 +1,32 @@
-"use client";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import dayjs, { Dayjs } from "dayjs";
-import { FileDropZone } from "@/components/ui/file-drop-zone";
-import { ChipInput } from "@/components/ui/chip-input";
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import dayjs, { Dayjs } from 'dayjs';
+import { FileDropZone } from '@/components/ui/file-drop-zone';
+import { ChipInput } from '@/components/ui/chip-input';
 import {
   SelectValue,
   Select,
   SelectTrigger,
   SelectItem,
   SelectContent,
-} from "@/components/ui/select";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import PasswordField from "@/components/ui/PasswordField";
-import TimePicker from "@/components/ui/time-picker";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/select';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import PasswordField from '@/components/ui/PasswordField';
+import TimePicker from '@/components/ui/time-picker';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Label } from '@/components/ui/label';
 
 interface FileData {
   base64: string;
@@ -65,16 +66,14 @@ interface RenderFieldProps {
   name?: string;
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-};
+const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result as string);
+  reader.onerror = (error) => reject(error);
+});
 
-export const RenderFieldInFilter = ({
+export function RenderFieldInFilter({
   label,
   type,
   value,
@@ -85,69 +84,53 @@ export const RenderFieldInFilter = ({
   min,
   max,
   name,
-}: RenderFieldProps) => {
+}: RenderFieldProps) {
   switch (type) {
-    case "text":
+    case 'text':
       return (
         <Input
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange?.(e.target.value)
-          }
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onBlur?.(e.target.value)
-          }
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
           placeholder={`Enter ${label}`}
         />
       );
 
-    case "password":
+    case 'password':
       return (
         <PasswordField
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange?.(e.target.value)
-          }
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onBlur?.(e.target.value)
-          }
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
           name={name as string}
         />
       );
 
-    case "number":
+    case 'number':
       return (
         <Input
           type="number"
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onChange?.(e.target.value)
-          }
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
-            onBlur?.(e.target.value)
-          }
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
           placeholder={`Enter ${label} in numbers`}
         />
       );
 
-    case "textarea":
+    case 'textarea':
       return (
         <Textarea
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            onChange?.(e.target.value)
-          }
-          onBlur={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            onBlur?.(e.target.value)
-          }
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange?.(e.target.value)}
+          onBlur={(e: React.ChangeEvent<HTMLTextAreaElement>) => onBlur?.(e.target.value)}
           placeholder={`Enter ${label}`}
         />
       );
 
-    case "select":
+    case 'select':
       return (
         <Select
           value={value as string}
@@ -165,14 +148,14 @@ export const RenderFieldInFilter = ({
           </SelectContent>
           <Button
             style={{
-              marginLeft: "-10px",
-              color: "rgb(121, 121, 121)",
-              display: "contents",
+              marginLeft: '-10px',
+              color: 'rgb(121, 121, 121)',
+              display: 'contents',
             }}
             variant="link"
             onClick={(e) => {
               e.preventDefault();
-              onChange?.("");
+              onChange?.('');
             }}
           >
             Clear
@@ -180,7 +163,7 @@ export const RenderFieldInFilter = ({
         </Select>
       );
 
-    case "checkbox":
+    case 'checkbox':
       return (
         <div className="flex flex-row gap-4">
           {options?.map((option, index) => (
@@ -202,7 +185,7 @@ export const RenderFieldInFilter = ({
         </div>
       );
 
-    case "date":
+    case 'date':
       return (
         <div className="flex gap-2">
           {/* Start Date */}
@@ -214,7 +197,7 @@ export const RenderFieldInFilter = ({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {value && (value as [Dayjs, Dayjs])[0] ? (
-                  format((value as [Dayjs, Dayjs])[0].toDate(), "PPP")
+                  format((value as [Dayjs, Dayjs])[0].toDate(), 'PPP')
                 ) : (
                   <span>Start date</span>
                 )}
@@ -250,7 +233,7 @@ export const RenderFieldInFilter = ({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {value && (value as [Dayjs, Dayjs])[1] ? (
-                  format((value as [Dayjs, Dayjs])[1].toDate(), "PPP")
+                  format((value as [Dayjs, Dayjs])[1].toDate(), 'PPP')
                 ) : (
                   <span>End date</span>
                 )}
@@ -279,15 +262,15 @@ export const RenderFieldInFilter = ({
         </div>
       );
 
-    case "time":
+    case 'time':
       return (
         <div className="flex gap-2">
           <TimePicker
-            value={(value as [string, string])?.[0] || ""}
+            value={(value as [string, string])?.[0] || ''}
             onChange={(time) => {
               const newRange = [
                 time,
-                (value as [string, string])?.[1] || "",
+                (value as [string, string])?.[1] || '',
               ] as [string, string];
               onChange?.(newRange);
             }}
@@ -295,10 +278,10 @@ export const RenderFieldInFilter = ({
             name={name as string}
           />
           <TimePicker
-            value={(value as [string, string])?.[1] || ""}
+            value={(value as [string, string])?.[1] || ''}
             onChange={(time) => {
               const newRange = [
-                (value as [string, string])?.[0] || "",
+                (value as [string, string])?.[0] || '',
                 time,
               ] as [string, string];
               onChange?.(newRange);
@@ -309,7 +292,7 @@ export const RenderFieldInFilter = ({
         </div>
       );
 
-    case "datetime":
+    case 'datetime':
       return (
         <div className="flex gap-2">
           {/* Start DateTime */}
@@ -321,7 +304,7 @@ export const RenderFieldInFilter = ({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {value && (value as [Dayjs, Dayjs])[0] ? (
-                  format((value as [Dayjs, Dayjs])[0].toDate(), "PPp")
+                  format((value as [Dayjs, Dayjs])[0].toDate(), 'PPp')
                 ) : (
                   <span>Start date & time</span>
                 )}
@@ -356,7 +339,7 @@ export const RenderFieldInFilter = ({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {value && (value as [Dayjs, Dayjs])[1] ? (
-                  format((value as [Dayjs, Dayjs])[1].toDate(), "PPp")
+                  format((value as [Dayjs, Dayjs])[1].toDate(), 'PPp')
                 ) : (
                   <span>End date & time</span>
                 )}
@@ -384,7 +367,7 @@ export const RenderFieldInFilter = ({
         </div>
       );
 
-    case "radio":
+    case 'radio':
       return (
         <RadioGroup
           value={value as string}
@@ -402,7 +385,7 @@ export const RenderFieldInFilter = ({
         </RadioGroup>
       );
 
-    case "file":
+    case 'file':
       return (
         <FileDropZone
           value={value as FileData[]}
@@ -413,12 +396,10 @@ export const RenderFieldInFilter = ({
                   let fileurl;
                   if ((file as FileData).base64) {
                     fileurl = (file as FileData).base64;
+                  } else if ((file as FileData).base64 === '') {
+                    fileurl = '';
                   } else {
-                    if ((file as FileData).base64 === "") {
-                      fileurl = "";
-                    } else {
-                      fileurl = await fileToBase64(file as File);
-                    }
+                    fileurl = await fileToBase64(file as File);
                   }
                   return {
                     base64: fileurl,
@@ -426,11 +407,10 @@ export const RenderFieldInFilter = ({
                     type: file.type,
                     size: file.size,
                   };
-                })
+                }),
               );
               const fileNames = base64Files.map((file) => file.name);
-              const hasDuplicates =
-                new Set(fileNames).size !== fileNames.length;
+              const hasDuplicates = new Set(fileNames).size !== fileNames.length;
               if (hasDuplicates) {
                 return;
               }
@@ -442,17 +422,17 @@ export const RenderFieldInFilter = ({
           existingFiles={
             Array.isArray(value)
               ? (value as FileData[]).map((file) => ({
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                  preview: file.base64,
-                }))
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                preview: file.base64,
+              }))
               : []
           }
         />
       );
 
-    case "multiSelect":
+    case 'multiSelect':
       return (
         <ChipInput
           value={(value as string[]) || []}
@@ -460,7 +440,7 @@ export const RenderFieldInFilter = ({
             onChange?.(
               newOptions
                 .map((option) => option.trim())
-                .filter((option) => option.length > 0)
+                .filter((option) => option.length > 0),
             );
           }}
           //   onBlur={onBlur}
@@ -473,7 +453,7 @@ export const RenderFieldInFilter = ({
           }}
           suggestions={
             options?.filter(
-              (option) => !(value as string[])?.includes(option)
+              (option) => !(value as string[])?.includes(option),
             ) || []
           }
         />
@@ -482,4 +462,4 @@ export const RenderFieldInFilter = ({
     default:
       return null;
   }
-};
+}

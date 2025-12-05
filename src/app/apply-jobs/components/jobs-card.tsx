@@ -1,6 +1,7 @@
-"use client";
-import { Briefcase, ChevronRight } from "lucide-react";
-import CustomFieldBadge from "../../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge";
+'use client';
+
+import { Briefcase, ChevronRight } from 'lucide-react';
+import CustomFieldBadge from '../../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge';
 
 interface JobCardProps {
   job: {
@@ -30,16 +31,16 @@ export function JobCard({
 }: JobCardProps) {
   const customFieldsToShow = job?.customFields
     ? Object.entries(job.customFields).filter(([key, value]) => {
-        const field = formNameObject?.fields.find((f: any) => f.label === key);
-        if (field?.jobId && field.jobId !== job?._id) return false;
-        if (
-          (typeof value === "string" && value === "") ||
-          (typeof value === "object" && Object.keys(value).length === 0)
-        ) {
-          return false;
-        }
-        return field?.showOnCard;
-      })
+      const field = formNameObject?.fields.find((f: any) => f.label === key);
+      if (field?.jobId && field.jobId !== job?._id) return false;
+      if (
+        (typeof value === 'string' && value === '')
+          || (typeof value === 'object' && Object.keys(value).length === 0)
+      ) {
+        return false;
+      }
+      return field?.showOnCard;
+    })
     : [];
 
   return (
@@ -60,7 +61,7 @@ export function JobCard({
           <div
             className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3 mb-4"
             dangerouslySetInnerHTML={{
-              __html: job?.description || "No description found",
+              __html: job?.description || 'No description found',
             }}
           />
 
@@ -81,7 +82,10 @@ export function JobCard({
             ))}
             {job.skills.length > 3 && (
               <span className="px-3 py-1 text-xs font-medium rounded-full bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-500">
-                +{job.skills.length - 3} more
+                +
+                {job.skills.length - 3}
+                {' '}
+                more
               </span>
             )}
           </div>
@@ -93,7 +97,11 @@ export function JobCard({
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
               <Briefcase className="w-4 h-4" />
-              <span className="font-medium">{job.experience} years exp</span>
+              <span className="font-medium">
+                {job.experience}
+                {' '}
+                years exp
+              </span>
             </div>
 
             {job.salary && job.salary.inText && (
@@ -101,24 +109,24 @@ export function JobCard({
                 <span className="w-4 h-4 flex items-center justify-center text-sm font-semibold">
                   ₹
                 </span>
-                {job.salary?.inText || job.salary?.inText === "" ? (
+                {job.salary?.inText || job.salary?.inText === '' ? (
                   <span className="text-sm font-semibold">
                     {job.salary.inText}
                   </span>
                 ) : (
                   <span className="text-sm font-semibold">
-                    {job.salary?.min &&
-                      job.salary.min !== 0 &&
-                      `${job.salary.min}`}
-                    {job.salary?.min &&
-                      job.salary.min !== 0 &&
-                      job.salary?.max &&
-                      job.salary.max !== 0 &&
-                      "-"}
-                    {job.salary?.max &&
-                      job.salary.max !== 0 &&
-                      `${job.salary.max}`}
-                    {(job.salary?.min || job.salary?.max) && " LPA"}
+                    {job.salary?.min
+                      && job.salary.min !== 0
+                      && `${job.salary.min}`}
+                    {job.salary?.min
+                      && job.salary.min !== 0
+                      && job.salary?.max
+                      && job.salary.max !== 0
+                      && '-'}
+                    {job.salary?.max
+                      && job.salary.max !== 0
+                      && `${job.salary.max}`}
+                    {(job.salary?.min || job.salary?.max) && ' LPA'}
                   </span>
                 )}
               </div>

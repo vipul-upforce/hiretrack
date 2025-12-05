@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -16,7 +16,7 @@ interface RateLimitStore {
 // In-memory store for rate limiting
 // In production, you might want to use Redis for distributed systems
 const rateLimitStore = new Map<string, RateLimitStore>();
-console.log("💬💬 rateLimitStore: ", rateLimitStore);
+console.log('💬💬 rateLimitStore: ', rateLimitStore);
 // Clean up expired entries periodically
 setInterval(() => {
   const now = Date.now();
@@ -35,14 +35,14 @@ export function createRateLimiter(config: RateLimitConfig) {
   const {
     windowMs,
     maxRequests,
-    message = "Too many requests, please try again later",
+    message = 'Too many requests, please try again later',
     skipSuccessfulRequests = false,
     keyGenerator = defaultKeyGenerator,
   } = config;
 
   return async function rateLimitMiddleware(
     request: NextRequest,
-    handler: (req: NextRequest) => Promise<NextResponse>
+    handler: (req: NextRequest) => Promise<NextResponse>,
   ): Promise<NextResponse> {
     const key = keyGenerator(request);
     const now = Date.now();
@@ -68,12 +68,12 @@ export function createRateLimiter(config: RateLimitConfig) {
         {
           status: 429,
           headers: {
-            "Retry-After": retryAfter.toString(),
-            "X-RateLimit-Limit": maxRequests.toString(),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": new Date(rateLimit.resetTime).toISOString(),
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': maxRequests.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(rateLimit.resetTime).toISOString(),
           },
-        }
+        },
       );
     }
 
@@ -87,11 +87,11 @@ export function createRateLimiter(config: RateLimitConfig) {
 
     // Add rate limit headers to response
     const remaining = Math.max(0, maxRequests - rateLimit.requests);
-    response.headers.set("X-RateLimit-Limit", maxRequests.toString());
-    response.headers.set("X-RateLimit-Remaining", remaining.toString());
+    response.headers.set('X-RateLimit-Limit', maxRequests.toString());
+    response.headers.set('X-RateLimit-Remaining', remaining.toString());
     response.headers.set(
-      "X-RateLimit-Reset",
-      new Date(rateLimit.resetTime).toISOString()
+      'X-RateLimit-Reset',
+      new Date(rateLimit.resetTime).toISOString(),
     );
 
     return response;
@@ -103,12 +103,12 @@ export function createRateLimiter(config: RateLimitConfig) {
  */
 function defaultKeyGenerator(req: NextRequest): string {
   // Get IP address from various headers (works with proxies/load balancers)
-  const forwardedFor = req.headers.get("x-forwarded-for");
-  const realIp = req.headers.get("x-real-ip");
-  const ip = forwardedFor?.split(",")[0] || realIp || "unknown";
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
 
   // Include pathname to have separate limits per endpoint
-  const pathname = req.nextUrl.pathname;
+  const { pathname } = req.nextUrl;
 
   return `${ip}:${pathname}`;
 }
@@ -118,7 +118,7 @@ function defaultKeyGenerator(req: NextRequest): string {
  * Useful for authenticated endpoints
  */
 export function createUserBasedKeyGenerator(
-  getUserId: (req: NextRequest) => string | null
+  getUserId: (req: NextRequest) => string | null,
 ) {
   return (req: NextRequest): string => {
     const userId = getUserId(req);
@@ -143,15 +143,15 @@ export function createEmailPasswordResetLimiter() {
   return async function emailPasswordResetMiddleware(
     request: NextRequest,
     handler: (req: NextRequest) => Promise<NextResponse>,
-    email?: string
+    email?: string,
   ): Promise<NextResponse> {
     // Extract email if not provided
     if (!email) {
       email = await extractEmailFromRequest(request);
       if (!email) {
         return NextResponse.json(
-          { error: "Email is required" },
-          { status: 400 }
+          { error: 'Email is required' },
+          { status: 400 },
         );
       }
     }
@@ -174,14 +174,14 @@ export function createEmailPasswordResetLimiter() {
       return NextResponse.json(
         {
           error:
-            "Too many password reset requests for this email, please try again in 1 hour",
+            'Too many password reset requests for this email, please try again in 1 hour',
         },
         {
           status: 429,
           headers: {
-            "Retry-After": retryAfter.toString(),
+            'Retry-After': retryAfter.toString(),
           },
-        }
+        },
       );
     }
 
@@ -202,15 +202,15 @@ export function createEmailOTPLimiter() {
   return async function emailOTPMiddleware(
     request: NextRequest,
     handler: (req: NextRequest) => Promise<NextResponse>,
-    email?: string
+    email?: string,
   ): Promise<NextResponse> {
     // Extract email if not provided
     if (!email) {
       email = await extractEmailFromRequest(request);
       if (!email) {
         return NextResponse.json(
-          { error: "Email is required" },
-          { status: 400 }
+          { error: 'Email is required' },
+          { status: 400 },
         );
       }
     }
@@ -231,13 +231,13 @@ export function createEmailOTPLimiter() {
     if (emailRateLimit.requests >= maxRequests) {
       const retryAfter = Math.ceil((emailRateLimit.resetTime - now) / 1000);
       return NextResponse.json(
-        { error: "Please wait before requesting a new OTP" },
+        { error: 'Please wait before requesting a new OTP' },
         {
           status: 429,
           headers: {
-            "Retry-After": retryAfter.toString(),
+            'Retry-After': retryAfter.toString(),
           },
-        }
+        },
       );
     }
 
@@ -257,7 +257,7 @@ export const otpRateLimiter = createEmailOTPLimiter();
 export const apiRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   maxRequests: 50, // 50 requests per minute
-  message: "API rate limit exceeded",
+  message: 'API rate limit exceeded',
 });
 
 // Email-based signup rate limiter
@@ -265,15 +265,15 @@ export function createEmailSignupLimiter() {
   return async function emailSignupMiddleware(
     request: NextRequest,
     handler: (req: NextRequest) => Promise<NextResponse>,
-    email?: string
+    email?: string,
   ): Promise<NextResponse> {
     // Extract email if not provided
     if (!email) {
       email = await extractEmailFromRequest(request);
       if (!email) {
         return NextResponse.json(
-          { error: "Email is required" },
-          { status: 400 }
+          { error: 'Email is required' },
+          { status: 400 },
         );
       }
     }
@@ -294,13 +294,13 @@ export function createEmailSignupLimiter() {
     if (emailRateLimit.requests >= maxRequests) {
       const retryAfter = Math.ceil((emailRateLimit.resetTime - now) / 1000);
       return NextResponse.json(
-        { error: "Too many signup attempts for this email address" },
+        { error: 'Too many signup attempts for this email address' },
         {
           status: 429,
           headers: {
-            "Retry-After": retryAfter.toString(),
+            'Retry-After': retryAfter.toString(),
           },
-        }
+        },
       );
     }
 
@@ -323,18 +323,16 @@ export const signupRateLimiter = createEmailSignupLimiter();
  */
 export function withRateLimit(
   handler: (req: NextRequest) => Promise<NextResponse>,
-  rateLimiter = apiRateLimiter
+  rateLimiter = apiRateLimiter,
 ) {
-  return async (req: NextRequest) => {
-    return rateLimiter(req, handler);
-  };
+  return async (req: NextRequest) => rateLimiter(req, handler);
 }
 
 /**
  * Helper function to extract email from request body
  */
 async function extractEmailFromRequest(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<string | null> {
   try {
     const body = await request.clone().json();
@@ -351,7 +349,7 @@ export function createEmailLoginRateLimiter() {
   return async function emailRateLimitMiddleware(
     request: NextRequest,
     handler: (req: NextRequest) => Promise<NextResponse>,
-    email?: string
+    email?: string,
   ): Promise<NextResponse> {
     const emailKey = email || (await extractEmailFromRequest(request));
     const now = Date.now();
@@ -372,19 +370,19 @@ export function createEmailLoginRateLimiter() {
       return NextResponse.json(
         {
           error:
-            "Too many login attempts for this email address, please try again in 15 minutes",
+            'Too many login attempts for this email address, please try again in 15 minutes',
         },
         {
           status: 429,
           headers: {
-            "Retry-After": retryAfter.toString(),
-            "X-RateLimit-Limit": maxRequests.toString(),
-            "X-RateLimit-Remaining": "0",
-            "X-RateLimit-Reset": new Date(
-              emailRateLimit.resetTime
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': maxRequests.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(
+              emailRateLimit.resetTime,
             ).toISOString(),
           },
-        }
+        },
       );
     }
 
@@ -398,11 +396,11 @@ export function createEmailLoginRateLimiter() {
 
     // Add rate limit headers to response
     const remaining = Math.max(0, maxRequests - emailRateLimit.requests);
-    response.headers.set("X-RateLimit-Limit", maxRequests.toString());
-    response.headers.set("X-RateLimit-Remaining", remaining.toString());
+    response.headers.set('X-RateLimit-Limit', maxRequests.toString());
+    response.headers.set('X-RateLimit-Remaining', remaining.toString());
     response.headers.set(
-      "X-RateLimit-Reset",
-      new Date(emailRateLimit.resetTime).toISOString()
+      'X-RateLimit-Reset',
+      new Date(emailRateLimit.resetTime).toISOString(),
     );
 
     return response;
@@ -413,7 +411,7 @@ export const emailLoginRateLimiter = createEmailLoginRateLimiter();
 export const licenseValidateRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, //  1 minute
   maxRequests: 7, // 7 requests per minute
-  message: "License validation rate limit exceeded",
+  message: 'License validation rate limit exceeded',
 });
 
 // Email-based rate limiting for login attempts

@@ -1,17 +1,17 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Code, Minimize2, Expand } from "lucide-react";
-import { Editor } from "@monaco-editor/react";
-import { useTheme } from "@/components/theme-provider";
-import { HEADER_EXAMPLE_HTML, FOOTER_EXAMPLE_HTML } from "../../constants";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Code, Minimize2, Expand } from 'lucide-react';
+import { Editor } from '@monaco-editor/react';
+import { useTheme } from '@/components/theme-provider';
+import { HEADER_EXAMPLE_HTML, FOOTER_EXAMPLE_HTML } from '../../constants';
 
 interface AdvancedTabProps {
   headerHtml: string;
@@ -40,9 +40,15 @@ export function AdvancedTab({
             Custom Header HTML
           </CardTitle>
           <CardDescription>
-            Add custom HTML content for the portal header. Use CSS variables:{" "}
-            <code>var(--portal-primary)</code> and{" "}
-            <code>var(--portal-secondary)</code> for dynamic colors.
+            Add custom HTML content for the portal header. Use CSS variables:
+            {' '}
+            <code>var(--portal-primary)</code>
+            {' '}
+            and
+            {' '}
+            <code>var(--portal-secondary)</code>
+            {' '}
+            for dynamic colors.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -74,17 +80,17 @@ export function AdvancedTab({
             </div>
             <div className="border rounded-lg overflow-hidden">
               <Editor
-                height={isHeaderExpanded ? "600px" : "200px"}
+                height={isHeaderExpanded ? '600px' : '200px'}
                 language="html"
-                theme={theme === "dark" ? "vs-dark" : "vs"}
+                theme={theme === 'dark' ? 'vs-dark' : 'vs'}
                 value={headerHtml}
-                onChange={(value) => setHeaderHtml(value || "")}
+                onChange={(value) => setHeaderHtml(value || '')}
                 options={{
                   fontSize: 14,
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
-                  wordWrap: "on",
-                  lineNumbers: "on",
+                  wordWrap: 'on',
+                  lineNumbers: 'on',
                   folding: true,
                   automaticLayout: true,
                 }}
@@ -102,9 +108,15 @@ export function AdvancedTab({
             Custom Footer HTML
           </CardTitle>
           <CardDescription>
-            Add custom HTML content for the portal footer. Use CSS variables:{" "}
-            <code>var(--portal-primary)</code> and{" "}
-            <code>var(--portal-secondary)</code> for dynamic colors.
+            Add custom HTML content for the portal footer. Use CSS variables:
+            {' '}
+            <code>var(--portal-primary)</code>
+            {' '}
+            and
+            {' '}
+            <code>var(--portal-secondary)</code>
+            {' '}
+            for dynamic colors.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -136,17 +148,17 @@ export function AdvancedTab({
             </div>
             <div className="border rounded-lg overflow-hidden">
               <Editor
-                height={isFooterExpanded ? "600px" : "200px"}
+                height={isFooterExpanded ? '600px' : '200px'}
                 language="html"
-                theme={theme === "dark" ? "vs-dark" : "vs"}
+                theme={theme === 'dark' ? 'vs-dark' : 'vs'}
                 value={footerHtml}
-                onChange={(value) => setFooterHtml(value || "")}
+                onChange={(value) => setFooterHtml(value || '')}
                 options={{
                   fontSize: 14,
                   minimap: { enabled: false },
                   scrollBeyondLastLine: false,
-                  wordWrap: "on",
-                  lineNumbers: "on",
+                  wordWrap: 'on',
+                  lineNumbers: 'on',
                   folding: true,
                   automaticLayout: true,
                 }}

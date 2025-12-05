@@ -1,33 +1,33 @@
 /* eslint-disable no-console */
 
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-import path from "path";
-import fs, { existsSync, mkdir, promises } from "fs";
+import path from 'path';
+import fs, { existsSync, mkdir, promises } from 'fs';
 
 import {
   v2 as cloudinary,
   UploadApiResponse,
   UploadApiOptions,
-} from "cloudinary";
-import { Settings, FileUrlMapping } from "./mongodb";
+} from 'cloudinary';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { Settings, FileUrlMapping } from './mongodb';
 // import { NextRequest } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 export const uploadFile = async (
   base64: string,
-  type: "images" | "documents" | "organizations" | string,
+  type: 'images' | 'documents' | 'organizations' | string,
   organizationId: string,
-  fileName?: string
+  fileName?: string,
 ) => {
   if (!Settings) {
-    console.error("Settings Model not found");
-    return "";
+    console.error('Settings Model not found');
+    return '';
   }
   const settings = await Settings.findOne({ organizationId });
   if (!settings) {
-    console.error("Settings not found");
-    return "";
+    console.error('Settings not found');
+    return '';
   }
   const fileStorageSettings = settings.fileStorage;
   cloudinary.config({
@@ -37,14 +37,14 @@ export const uploadFile = async (
   });
 
   // Extract format from base64 MIME type
-  const mimeType = base64.split(";")[0].split(":")[1];
-  const format = mimeType.split("/")[1];
+  const mimeType = base64.split(';')[0].split(':')[1];
+  const format = mimeType.split('/')[1];
 
   const timestamp = new Date().getTime();
 
   const uploadOptions: UploadApiOptions = {
-    resource_type: "auto" satisfies "auto",
-    ...(type === "images" && { format }),
+    resource_type: 'auto' satisfies 'auto',
+    ...(type === 'images' && { format }),
     public_id: fileName || `file_${timestamp}`,
     use_filename: true,
     unique_filename: false,
@@ -55,36 +55,36 @@ export const uploadFile = async (
   try {
     const uploadResult: UploadApiResponse = await cloudinary.uploader.upload(
       base64,
-      uploadOptions
+      uploadOptions,
     );
     return uploadResult?.secure_url;
   } catch (error) {
-    console.error("Cloudinary upload error:", error);
-    if (typeof error === "object" && error !== null && "message" in error) {
+    console.error('Cloudinary upload error:', error);
+    if (typeof error === 'object' && error !== null && 'message' in error) {
       throw new Error(
-        `File upload to Cloudinary failed: ${(error as { message: string }).message}`
+        `File upload to Cloudinary failed: ${(error as { message: string }).message}`,
       );
     }
 
-    throw new Error("File upload to Cloudinary failed: Unknown error");
+    throw new Error('File upload to Cloudinary failed: Unknown error');
   }
 };
 
 export const uploadFileToS3 = async (
   base64: string,
-  type: "images" | "documents" | "organizations" | string,
+  type: 'images' | 'documents' | 'organizations' | string,
   organizationId: string,
-  fileName?: string
+  fileName?: string,
 ) => {
   if (!Settings) {
-    console.error("Settings Model not found");
-    return "";
+    console.error('Settings Model not found');
+    return '';
   }
 
   const settings = await Settings.findOne({ organizationId });
   if (!settings) {
-    console.error("Settings not found");
-    return "";
+    console.error('Settings not found');
+    return '';
   }
 
   const s3Settings = settings.fileStorage as {
@@ -96,12 +96,12 @@ export const uploadFileToS3 = async (
   };
 
   if (
-    !s3Settings.awsRegion ||
-    !s3Settings.awsAccessKeyId ||
-    !s3Settings.awsSecretAccessKey
+    !s3Settings.awsRegion
+    || !s3Settings.awsAccessKeyId
+    || !s3Settings.awsSecretAccessKey
   ) {
-    console.error("Missing S3 credentials");
-    return "";
+    console.error('Missing S3 credentials');
+    return '';
   }
 
   const s3Client = new S3Client({
@@ -113,9 +113,9 @@ export const uploadFileToS3 = async (
   });
 
   // Extract format and data from base64
-  const mimeType = base64.split(";")[0].split(":")[1];
-  const base64Data = base64.replace(/^data:[^;]+;base64,/, "");
-  const buffer = Buffer.from(base64Data, "base64");
+  const mimeType = base64.split(';')[0].split(':')[1];
+  const base64Data = base64.replace(/^data:[^;]+;base64,/, '');
+  const buffer = Buffer.from(base64Data, 'base64');
 
   const timestamp = new Date().getTime();
   const finalFileName = fileName || `file_${timestamp}`;
@@ -126,7 +126,7 @@ export const uploadFileToS3 = async (
       Key: `${type}/${finalFileName}`,
       Body: buffer,
       ContentType: mimeType,
-      ACL: "public-read",
+      ACL: 'public-read',
     });
 
     await s3Client.send(command);
@@ -134,15 +134,14 @@ export const uploadFileToS3 = async (
     // Construct the S3 URL
     return `https://${s3Settings.awsBucketName}.s3.${s3Settings.awsRegion}.amazonaws.com/${type}/${finalFileName}`;
   } catch (error) {
-    console.error("S3 upload error:", error);
+    console.error('S3 upload error:', error);
 
-    let userFriendlyMessage = "File upload failed. Please try again later.";
+    let userFriendlyMessage = 'File upload failed. Please try again later.';
 
-    if (typeof error === "object" && error !== null) {
+    if (typeof error === 'object' && error !== null) {
       // If it's a standard error with a message
-      if ("message" in error) {
-        userFriendlyMessage =
-          "File upload failed. Please check your AWS API Storage configuration and try again";
+      if ('message' in error) {
+        userFriendlyMessage = 'File upload failed. Please check your AWS API Storage configuration and try again';
       }
     }
 
@@ -152,15 +151,15 @@ export const uploadFileToS3 = async (
 
 export async function saveFileLocally(
   base64: string,
-  folder: "documents" | "images" | "organizations" | string,
-  fileName: string
+  folder: 'documents' | 'images' | 'organizations' | string,
+  fileName: string,
 ) {
-  const publicPath = path.join(process.cwd(), "..", "assets");
+  const publicPath = path.join(process.cwd(), '..', 'assets');
   await ensureDirectoryExists(publicPath);
   await ensureDirectoryExists(path.join(publicPath, folder));
 
-  const base64Data = base64.replace(/^data:[^;]+;base64,/, "");
-  let filePath = path.join("..", "assets", folder, fileName);
+  const base64Data = base64.replace(/^data:[^;]+;base64,/, '');
+  let filePath = path.join('..', 'assets', folder, fileName);
 
   // Check for existing file and make the name unique if needed
   const ext = path.extname(fileName);
@@ -170,12 +169,12 @@ export async function saveFileLocally(
   let uniqueFilePath = filePath;
   while (fs.existsSync(uniqueFilePath)) {
     uniqueFileName = `${base}_${counter}${ext}`;
-    uniqueFilePath = path.join("..", "assets", folder, uniqueFileName);
+    uniqueFilePath = path.join('..', 'assets', folder, uniqueFileName);
     counter++;
   }
   filePath = uniqueFilePath;
 
-  await fs.promises.writeFile(filePath, Buffer.from(base64Data, "base64"));
+  await fs.promises.writeFile(filePath, Buffer.from(base64Data, 'base64'));
 
   return `/api/files?pathName=${filePath}`;
 }
@@ -231,42 +230,42 @@ async function ensureDirectoryExists(dirPath: string) {
 export async function handleFileAttachments(
   newAttachments: Attachments,
   fileStorage: string,
-  organizationId: string
+  organizationId: string,
 ) {
   const updatedAttachments: Attachments = { files: [], images: [] };
   async function processFiles(
     items: FileAttachment[],
-    folder: "documents" | "images"
+    folder: 'documents' | 'images',
   ) {
     const processedItems: FileAttachment[] = [];
     for (const item of items) {
-      if (item.url.startsWith("data:")) {
-        let realUrl = "";
+      if (item.url.startsWith('data:')) {
+        let realUrl = '';
         const timestamp = new Date().getTime();
         const uploadName = item.name || `file_${timestamp}`;
 
         switch (fileStorage) {
-          case "cloudinary":
+          case 'cloudinary':
             realUrl = await uploadFile(
               item.url,
               folder,
               organizationId,
-              uploadName
+              uploadName,
             );
             break;
-          case "s3":
+          case 's3':
             realUrl = await uploadFileToS3(
               item.url,
               folder,
               organizationId,
-              uploadName
+              uploadName,
             );
             break;
           default:
             const localUrl = await saveFileLocally(
               item.url,
               folder,
-              uploadName
+              uploadName,
             );
             processedItems.push({ ...item, url: localUrl });
             continue; // Skip the rest for local files
@@ -281,7 +280,7 @@ export async function handleFileAttachments(
           processedItems.push({ ...item, url: proxiedUrl });
         } else {
           // Handle upload failure
-          processedItems.push({ ...item, url: "" });
+          processedItems.push({ ...item, url: '' });
         }
       } else {
         processedItems.push(item);
@@ -292,11 +291,11 @@ export async function handleFileAttachments(
 
   updatedAttachments.files = await processFiles(
     newAttachments.files || [],
-    "documents"
+    'documents',
   );
   updatedAttachments.images = await processFiles(
     newAttachments.images || [],
-    "images"
+    'images',
   );
   return updatedAttachments;
 }
@@ -304,63 +303,62 @@ export async function handleFileAttachments(
 export async function handleCustomFieldFiles(
   customFields: CustomFields,
   fileStorage: string,
-  organizationId: string
+  organizationId: string,
 ) {
   for (const fieldKey in customFields) {
     const field = customFields[fieldKey];
     if (
-      Array.isArray(field) &&
-      field.length > 0 &&
-      typeof field[0] === "object" &&
-      field[0] !== null &&
-      "base64" in field[0] &&
-      "type" in field[0] &&
-      "name" in field[0]
+      Array.isArray(field)
+      && field.length > 0
+      && typeof field[0] === 'object'
+      && field[0] !== null
+      && 'base64' in field[0]
+      && 'type' in field[0]
+      && 'name' in field[0]
     ) {
       const files = field as CustomFieldFile[];
       const processedFiles = [];
 
       for (const file of files) {
-        if (file.base64?.startsWith("data:")) {
-          const isImage = file.type.startsWith("image/");
-          const folder = isImage ? "images" : "documents";
-          let realUrl = "";
+        if (file.base64?.startsWith('data:')) {
+          const isImage = file.type.startsWith('image/');
+          const folder = isImage ? 'images' : 'documents';
+          let realUrl = '';
 
           switch (fileStorage) {
-            case "cloudinary":
+            case 'cloudinary':
               realUrl = await uploadFile(
                 file.base64,
                 folder,
                 organizationId,
-                file.name
+                file.name,
               );
               break;
-            case "s3":
+            case 's3':
               realUrl = await uploadFileToS3(
                 file.base64,
                 folder,
                 organizationId,
-                file.name
+                file.name,
               );
               break;
             default:
               const localUrl = await saveFileLocally(
                 file.base64,
                 folder,
-                file.name
+                file.name,
               );
               processedFiles.push({ ...file, base64: localUrl });
               continue; // Skip the rest for local files
           }
 
           if (realUrl && FileUrlMapping) {
-            const fileId =
-              file.id || new mongoose.Types.ObjectId().toHexString();
+            const fileId = file.id || new mongoose.Types.ObjectId().toHexString();
             await FileUrlMapping.create({ fileId, realUrl });
             const proxiedUrl = `/api/file/${fileId}`;
             processedFiles.push({ ...file, base64: proxiedUrl, id: fileId });
           } else {
-            processedFiles.push({ ...file, base64: "" });
+            processedFiles.push({ ...file, base64: '' });
           }
         } else {
           processedFiles.push(file);
@@ -376,29 +374,29 @@ export async function handleSingleFile(
   file: SingleFileField | null,
   fileStorage: string,
   organizationId: string,
-  orgName?: string
+  orgName?: string,
 ) {
   if (!file) return null;
-  if (file.url?.startsWith("data:")) {
-    const isImage = file.type.startsWith("image/");
-    const isHtml = file.type === "text/html";
+  if (file.url?.startsWith('data:')) {
+    const isImage = file.type.startsWith('image/');
+    const isHtml = file.type === 'text/html';
     const folder = isImage
-      ? "images"
+      ? 'images'
       : isHtml
         ? `organizations/${orgName}`
-        : "documents";
-    let realUrl = "";
+        : 'documents';
+    let realUrl = '';
 
     switch (fileStorage) {
-      case "cloudinary":
+      case 'cloudinary':
         realUrl = await uploadFile(file.url, folder, organizationId, file.name);
         break;
-      case "s3":
+      case 's3':
         realUrl = await uploadFileToS3(
           file.url,
           folder,
           organizationId,
-          file.name
+          file.name,
         );
         break;
       default:
@@ -411,12 +409,10 @@ export async function handleSingleFile(
       await FileUrlMapping.create({ fileId, realUrl });
       const proxiedUrl = `/api/file/${fileId}`;
       return { ...file, url: proxiedUrl, id: fileId };
-    } else {
-      return { ...file, url: "" };
     }
-  } else {
-    return file;
+    return { ...file, url: '' };
   }
+  return file;
 }
 
 // Helper function for file sharing module
@@ -424,7 +420,7 @@ export async function uploadFileToProvider(
   base64: string,
   fileStorage: any,
   organizationId: string,
-  filePath: string
+  filePath: string,
 ): Promise<{
   success: boolean;
   url?: string;
@@ -435,12 +431,12 @@ export async function uploadFileToProvider(
     const fileName = path.basename(filePath);
     const folder = path.dirname(filePath);
 
-    let url = "";
+    let url = '';
     switch (fileStorage.storageType) {
-      case "cloudinary":
+      case 'cloudinary':
         url = await uploadFile(base64, folder, organizationId, fileName);
         break;
-      case "s3":
+      case 's3':
         url = await uploadFileToS3(base64, folder, organizationId, fileName);
         break;
       default: // local storage
@@ -452,13 +448,13 @@ export async function uploadFileToProvider(
     }
 
     if (!url) {
-      return { success: false, error: "Failed to upload file" };
+      return { success: false, error: 'Failed to upload file' };
     }
 
     return { success: true, url, fileName };
   } catch (error: unknown) {
-    console.error("Error uploading file to provider:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Upload failed" };
+    console.error('Error uploading file to provider:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
   }
 }
 
@@ -466,50 +462,50 @@ export async function uploadFileToProvider(
 export async function getFileFromProvider(
   filePath: string,
   fileStorage: any,
-  organizationId: string
+  organizationId: string,
 ): Promise<{ success: boolean; buffer?: Buffer; error?: string }> {
   try {
     switch (fileStorage.storageType) {
-      case "local":
+      case 'local':
         // For local files, read from the file system
-        const publicPath = path.join(process.cwd(), "..", "assets");
+        const publicPath = path.join(process.cwd(), '..', 'assets');
         const fullPath = path.join(publicPath, filePath);
 
         if (!fs.existsSync(fullPath)) {
-          return { success: false, error: "File not found" };
+          return { success: false, error: 'File not found' };
         }
 
         const buffer = await fs.promises.readFile(fullPath);
         return { success: true, buffer };
 
-      case "cloudinary":
+      case 'cloudinary':
         // For Cloudinary, fetch the file from URL
         const response = await fetch(filePath);
         if (!response.ok) {
           return {
             success: false,
-            error: "Failed to fetch file from Cloudinary",
+            error: 'Failed to fetch file from Cloudinary',
           };
         }
         const arrayBuffer = await response.arrayBuffer();
         return { success: true, buffer: Buffer.from(arrayBuffer) };
 
-      case "s3":
+      case 's3':
         // For S3, use AWS SDK to get the file
         // This would need to be implemented based on your S3 setup
         // For now, we'll fetch from the URL
         const s3Response = await fetch(filePath);
         if (!s3Response.ok) {
-          return { success: false, error: "Failed to fetch file from S3" };
+          return { success: false, error: 'Failed to fetch file from S3' };
         }
         const s3ArrayBuffer = await s3Response.arrayBuffer();
         return { success: true, buffer: Buffer.from(s3ArrayBuffer) };
 
       default:
-        return { success: false, error: "Unknown storage provider" };
+        return { success: false, error: 'Unknown storage provider' };
     }
   } catch (error: unknown) {
-    console.error("Error getting file from provider:", error);
-    return { success: false, error: error instanceof Error ? error.message : "Failed to get file" };
+    console.error('Error getting file from provider:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to get file' };
   }
 }

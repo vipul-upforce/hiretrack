@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
-import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs/promises';
+import path from 'path';
+import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    const backupsDir = path.join(process.cwd(), "..", "backups");
+    const backupsDir = path.join(process.cwd(), '..', 'backups');
     // console.log("BACKUPDS DI:R: ", backupsDir);
-    const session = await getAuthenticatedUser(req,"admin");
+    const session = await getAuthenticatedUser(req, 'admin');
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const entries = await fs.readdir(backupsDir, { withFileTypes: true });
     // console.log("BACKUPDS Entries ", entries);
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
           const formattedDate = await getFormattedDate(
             req,
             stats.birthtime,
-            true
+            true,
           );
           return {
             name: file.name,
@@ -64,14 +64,14 @@ export async function GET(req: NextRequest) {
             createdAt: formattedDate,
             size: stats.size,
           };
-        })
+        }),
     );
 
     return NextResponse.json({ files });
   } catch (error: unknown) {
     return NextResponse.json(
-      { error: "Could not list backup files", detail: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { error: 'Could not list backup files', detail: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 },
     );
   }
 }

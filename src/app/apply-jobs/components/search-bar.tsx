@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface SearchBarProps {
   searchTerm: string;
@@ -19,7 +19,7 @@ export function SearchBar({
   onSearch,
   primaryColor,
   secondaryColor,
-  placeholder = "Search...",
+  placeholder = 'Search...',
 }: SearchBarProps) {
   return (
     <div className="flex gap-3 mb-8 w-full flex-row">
@@ -33,13 +33,13 @@ export function SearchBar({
             e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
           }}
           onBlur={(e) => {
-            e.target.style.borderColor = "rgb(209 213 219)";
-            e.target.style.boxShadow = "none";
+            e.target.style.borderColor = 'rgb(209 213 219)';
+            e.target.style.boxShadow = 'none';
           }}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === 'Enter') {
               onSearch();
             }
           }}

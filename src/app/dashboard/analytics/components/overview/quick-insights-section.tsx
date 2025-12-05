@@ -1,13 +1,14 @@
-"use client";
+'use client';
+
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { JobData, TrendsData } from "./../types";
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { JobData, TrendsData } from '../types';
 
 interface QuickInsightsSectionProps {
   jobData: JobData;
@@ -30,15 +31,15 @@ export function QuickInsightsSection({
 }: QuickInsightsSectionProps) {
   // Helper function to format date range
   const formatDateRange = () => {
-    if (!dateRange || dateRange.length !== 2) return "Selected date range";
+    if (!dateRange || dateRange.length !== 2) return 'Selected date range';
     try {
       const fromDate = dateRange[0];
       const toDate = dateRange[1];
       return fromDate && toDate
         ? `${fromDate.toLocaleDateString()} - ${toDate.toLocaleDateString()}`
-        : "Selected date range";
+        : 'Selected date range';
     } catch {
-      return "Selected date range";
+      return 'Selected date range';
     }
   };
 
@@ -50,8 +51,8 @@ export function QuickInsightsSection({
           <CardTitle className="text-lg">Quick Insights</CardTitle>
           <CardDescription>
             {jobData?.summary?.totalJobs === 0
-              ? "Create some jobs and receive applications to see insights"
-              : "Key trends and highlights"}
+              ? 'Create some jobs and receive applications to see insights'
+              : 'Key trends and highlights'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -63,9 +64,9 @@ export function QuickInsightsSection({
                 {isLoadingJob ? (
                   <Skeleton className="w-20 h-4 rounded-lg mt-1" />
                 ) : (
-                  jobData?.insights?.topPerformingJobs?.[0]?.title ||
-                  jobData?.jobPerformanceData?.[0]?.title ||
-                  "No jobs available"
+                  jobData?.insights?.topPerformingJobs?.[0]?.title
+                  || jobData?.jobPerformanceData?.[0]?.title
+                  || 'No jobs available'
                 )}
               </div>
             </div>
@@ -75,9 +76,9 @@ export function QuickInsightsSection({
                   <Skeleton className="w-10 h-6 rounded-lg" />
                 ) : (
                   `${
-                    jobData?.insights?.topPerformingJobs?.[0]?.successRate ||
-                    jobData?.jobPerformanceData?.[0]?.successRate ||
-                    0
+                    jobData?.insights?.topPerformingJobs?.[0]?.successRate
+                    || jobData?.jobPerformanceData?.[0]?.successRate
+                    || 0
                   }%`
                 )}
               </div>
@@ -91,7 +92,7 @@ export function QuickInsightsSection({
               <div className="text-sm text-muted-foreground">
                 {jobData?.summary?.totalJobs
                   ? `Across ${jobData.summary.totalJobs} jobs`
-                  : "Across all jobs"}
+                  : 'Across all jobs'}
               </div>
             </div>
             <div className="text-right">
@@ -101,7 +102,7 @@ export function QuickInsightsSection({
                 ) : jobData?.summary?.avgTimeToFill > 0 ? (
                   `${jobData.summary.avgTimeToFill} days`
                 ) : (
-                  "No hires yet"
+                  'No hires yet'
                 )}
               </div>
             </div>

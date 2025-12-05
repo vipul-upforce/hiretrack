@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from "react";
 import {
@@ -6,9 +6,9 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, Mail } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2, Mail } from 'lucide-react';
 import {
   EmailNotificationToggle,
   EmailNotificationType,
@@ -150,8 +150,7 @@ export function JobEmailNotificationSettingsDialog({
     if (!settings) return false;
     const original = settings.currentJobSettings || {};
     const effective = settings.effectiveSettings || {};
-    const compareSource =
-      Object.keys(original).length > 0 ? original : effective;
+    const compareSource = Object.keys(original).length > 0 ? original : effective;
 
     return visibleNotificationTypes.some((key) => {
       const currentValue = localSettings[key];
@@ -204,7 +203,10 @@ export function JobEmailNotificationSettingsDialog({
           <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-500">
-            <span>Error loading settings: {error}</span>
+            <span>
+              Error loading settings:
+              {error}
+            </span>
           </div>
         ) : (
           <>

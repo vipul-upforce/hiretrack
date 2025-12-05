@@ -1,22 +1,22 @@
-import CryptoJS from "crypto-js";
-import Cookies from "js-cookie";
-import { generateOrgJwtSecret } from "./jwtSecretGenerator";
+import CryptoJS from 'crypto-js';
+import Cookies from 'js-cookie';
+import { generateOrgJwtSecret } from './jwtSecretGenerator';
 /**
  * Encrypts a string using AES encryption
  * @param text - The text to encrypt
  * @returns The encrypted text
  */
 export function encryptText(text: string, orgId: string): string {
-  if (!text) return "";
-  console.log(orgId, "orgId in encryptText");
+  if (!text) return '';
+  console.log(orgId, 'orgId in encryptText');
   const ENCRYPTION_KEY = generateOrgJwtSecret(orgId);
-  console.log(ENCRYPTION_KEY, "ENCRYPTION_KEY in encryptText");
+  console.log(ENCRYPTION_KEY, 'ENCRYPTION_KEY in encryptText');
   try {
     const encrypted = CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
     return encrypted;
   } catch (error) {
-    console.error("Encryption error:", error);
-    throw new Error("Failed to encrypt text");
+    console.error('Encryption error:', error);
+    throw new Error('Failed to encrypt text');
   }
 }
 
@@ -26,14 +26,14 @@ export function encryptText(text: string, orgId: string): string {
  * @returns The decrypted text
  */
 export function decryptText(encryptedText: string, orgId: string): string {
-  if (!encryptedText) return "";
+  if (!encryptedText) return '';
   const ENCRYPTION_KEY = generateOrgJwtSecret(orgId);
   try {
     const bytes = CryptoJS.AES.decrypt(encryptedText, ENCRYPTION_KEY);
     const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     return decrypted;
   } catch (error) {
-    console.error("Decryption error:", error);
+    console.error('Decryption error:', error);
     // If decryption fails, assume it's already plaintext (for backward compatibility)
     return encryptedText;
   }
@@ -59,13 +59,13 @@ export function encryptProviderKeys(providers: any, orgId: string): any {
   if (encrypted.anthropic?.api_key) {
     encrypted.anthropic.api_key = encryptText(
       encrypted.anthropic.api_key,
-      orgId
+      orgId,
     );
   }
   if (encrypted.perplexity?.api_key) {
     encrypted.perplexity.api_key = encryptText(
       encrypted.perplexity.api_key,
-      orgId
+      orgId,
     );
   }
 
@@ -76,7 +76,7 @@ export function encryptProviderKeys(providers: any, orgId: string): any {
   if (encrypted.captcha?.secretKey) {
     encrypted.captcha.secretKey = encryptText(
       encrypted.captcha.secretKey,
-      orgId
+      orgId,
     );
   }
 
@@ -103,13 +103,13 @@ export function decryptProviderKeys(providers: any, orgId: string): any {
   if (decrypted.anthropic?.api_key) {
     decrypted.anthropic.api_key = decryptText(
       decrypted.anthropic.api_key,
-      orgId
+      orgId,
     );
   }
   if (decrypted.perplexity?.api_key) {
     decrypted.perplexity.api_key = decryptText(
       decrypted.perplexity.api_key,
-      orgId
+      orgId,
     );
   }
 
@@ -120,7 +120,7 @@ export function decryptProviderKeys(providers: any, orgId: string): any {
   if (decrypted.captcha?.secretKey) {
     decrypted.captcha.secretKey = decryptText(
       decrypted.captcha.secretKey,
-      orgId
+      orgId,
     );
   }
 

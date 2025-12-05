@@ -77,7 +77,7 @@
 //                 onClose();
 //               }}
 //             >
-//               Apply Now 
+//               Apply Now
 //             </button>
 //             <button
 //               type="button"

@@ -1,5 +1,7 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import { FunnelData } from "./CandidateFunnelChart";
+import {
+  Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip,
+} from 'recharts';
+import { FunnelData } from './CandidateFunnelChart';
 
 export const StageDistributionChart: React.FC<{ data: FunnelData[] }> = ({ data }) => {
   const pieData = data.filter((item) => item.count > 0);
@@ -21,16 +23,16 @@ export const StageDistributionChart: React.FC<{ data: FunnelData[] }> = ({ data 
     const radius = outerRadius + 30;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    
-  // Hide labels <2%
-  if (percent < 0.02) return null;
+
+    // Hide labels <2%
+    if (percent < 0.02) return null;
 
     return (
       <text
         x={x}
         y={y}
         fill="hsl(var(--foreground))"
-        textAnchor={x > cx ? "start" : "end"}
+        textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         fontSize="12"
         fontWeight="500"
@@ -64,19 +66,25 @@ export const StageDistributionChart: React.FC<{ data: FunnelData[] }> = ({ data 
             if (active && payload && payload[0]) {
               const data = payload[0].payload;
               const count = payload[0].value as number;
-              const percentage =
-                totalCount > 0
-                  ? ((count / totalCount) * 100).toFixed(1)
-                  : "0.0";
+              const percentage = totalCount > 0
+                ? ((count / totalCount) * 100).toFixed(1)
+                : '0.0';
 
               return (
                 <div className="bg-background border rounded-lg shadow-lg p-3">
                   <p className="font-semibold text-foreground">{data.stage}</p>
                   <p className="text-foreground">
-                    Count: <span className="font-bold">{count}</span>
+                    Count:
+                    {' '}
+                    <span className="font-bold">{count}</span>
                   </p>
                   <p className="text-foreground">
-                    Percentage: <span className="font-bold">{percentage}%</span>
+                    Percentage:
+                    {' '}
+                    <span className="font-bold">
+                      {percentage}
+                      %
+                    </span>
                   </p>
                 </div>
               );

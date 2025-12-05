@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { ChevronRight, Home } from "lucide-react";
-import Link from "next/link";
-import React from "react";
+import { ChevronRight, Home } from 'lucide-react';
+import Link from 'next/link';
+import React from 'react';
 
 interface BreadcrumbProps {
   jobTitle?: string;

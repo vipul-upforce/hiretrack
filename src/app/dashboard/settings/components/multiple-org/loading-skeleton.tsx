@@ -1,8 +1,9 @@
-"use client";
-import { Skeleton } from "@/components/ui/skeleton";
-import React from "react";
+'use client';
 
-const MultipleOrgLoadingSkeleton = () => {
+import { Skeleton } from '@/components/ui/skeleton';
+import React from 'react';
+
+function MultipleOrgLoadingSkeleton() {
   return (
     <div className="px-6 py-4 space-y-6 animate-in fade-in duration-200">
       <div className="space-y-2">
@@ -14,6 +15,6 @@ const MultipleOrgLoadingSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default MultipleOrgLoadingSkeleton;

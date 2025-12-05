@@ -1,13 +1,13 @@
-import React from "react";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { PortalSettings } from "../../types";
+import React from 'react';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import { PortalSettings } from '../../types';
 
 interface LivePreviewProps {
   settings: PortalSettings;
   headerHtml: string;
   footerHtml: string;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
 }
 
 export function LivePreview({
@@ -19,13 +19,13 @@ export function LivePreview({
   return (
     <div
       className={cn(
-        "rounded-lg overflow-hidden border",
-        theme === "dark" ? "bg-slate-900" : "bg-white"
+        'rounded-lg overflow-hidden border',
+        theme === 'dark' ? 'bg-slate-900' : 'bg-white',
       )}
       style={
         {
-          "--portal-primary": settings.primaryColor,
-          "--portal-secondary": settings.secondaryColor,
+          '--portal-primary': settings.primaryColor,
+          '--portal-secondary': settings.secondaryColor,
         } as React.CSSProperties
       }
     >
@@ -46,15 +46,15 @@ export function LivePreview({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {(theme === "dark"
+              {(theme === 'dark'
                 ? settings.portalLogoDark
                 : settings.portalLogo) && (
                 <div className="h-10 w-32 relative bg-white/10 rounded">
                   <Image
                     src={
-                      theme === "dark"
-                        ? settings.portalLogoDark?.url || ""
-                        : settings.portalLogo?.url || ""
+                      theme === 'dark'
+                        ? settings.portalLogoDark?.url || ''
+                        : settings.portalLogo?.url || ''
                     }
                     alt="Logo"
                     fill
@@ -63,7 +63,7 @@ export function LivePreview({
                 </div>
               )}
               <h3 className="text-white font-semibold">
-                {settings.portalName || "Portal Name"}
+                {settings.portalName || 'Portal Name'}
               </h3>
             </div>
           </div>
@@ -74,8 +74,8 @@ export function LivePreview({
       <div className="p-6 space-y-6">
         <div
           className={cn(
-            "space-y-4",
-            theme === "dark" ? "text-white" : "text-gray-900"
+            'space-y-4',
+            theme === 'dark' ? 'text-white' : 'text-gray-900',
           )}
         >
           {/* Job Application Header */}
@@ -109,13 +109,13 @@ export function LivePreview({
                     className="h-9 border rounded"
                     style={{
                       backgroundColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.1)"
-                          : "rgba(0,0,0,0.05)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'rgba(0,0,0,0.05)',
                       borderColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.2)"
-                          : "rgba(0,0,0,0.15)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.2)'
+                          : 'rgba(0,0,0,0.15)',
                     }}
                   />
                 </div>
@@ -127,13 +127,13 @@ export function LivePreview({
                     className="h-9 border rounded"
                     style={{
                       backgroundColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.1)"
-                          : "rgba(0,0,0,0.05)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'rgba(0,0,0,0.05)',
                       borderColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.2)"
-                          : "rgba(0,0,0,0.15)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.2)'
+                          : 'rgba(0,0,0,0.15)',
                     }}
                   />
                 </div>
@@ -146,13 +146,13 @@ export function LivePreview({
                   className="h-9 border rounded"
                   style={{
                     backgroundColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.1)"
-                        : "rgba(0,0,0,0.05)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.1)'
+                        : 'rgba(0,0,0,0.05)',
                     borderColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.2)"
-                        : "rgba(0,0,0,0.15)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'rgba(0,0,0,0.15)',
                   }}
                 />
               </div>
@@ -164,13 +164,13 @@ export function LivePreview({
                   className="h-20 border-2 border-dashed rounded flex items-center justify-center"
                   style={{
                     backgroundColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.1)"
-                        : "rgba(0,0,0,0.05)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.1)'
+                        : 'rgba(0,0,0,0.05)',
                     borderColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.2)"
-                        : "rgba(0,0,0,0.15)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'rgba(0,0,0,0.15)',
                   }}
                 >
                   <span className="text-xs opacity-60">

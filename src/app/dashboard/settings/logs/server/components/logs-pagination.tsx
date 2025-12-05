@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRightIcon } from "lucide-react";
-import { Dispatch, SetStateAction } from "react";
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRightIcon } from 'lucide-react';
+import { Dispatch, SetStateAction } from 'react';
 
 interface LogsPaginationProps {
   currentPage: number;
@@ -34,7 +34,13 @@ export function LogsPagination({
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <p className="text-sm text-muted-foreground">
-        Page {currentPage} of {totalPages}
+        Page
+        {' '}
+        {currentPage}
+        {' '}
+        of
+        {' '}
+        {totalPages}
       </p>
       <Button
         variant="outline"

@@ -1,27 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization } from "@/lib/mongodb";
-import { Job } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Organization, Job } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(request, ["admin", "hr"]),
+      getAuthenticatedUser(request, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { status, openJobCardsOrder } = await request.json();
     const { id } = await params;
     if (!Job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
-    const organizationId = user.organizationId;
+    const { organizationId } = user;
 
     const [updatedJob] = await Promise.all([
       Job.findByIdAndUpdate(
@@ -30,7 +29,7 @@ export async function PATCH(
           status,
           updatedAt: new Date(),
         },
-        { new: true }
+        { new: true },
       ),
       Organization.findByIdAndUpdate(organizationId, {
         $set: {
@@ -40,7 +39,7 @@ export async function PATCH(
     ]);
 
     if (!updatedJob) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
     return NextResponse.json(updatedJob);

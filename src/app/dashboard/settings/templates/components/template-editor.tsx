@@ -142,17 +142,16 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                     fontSize: 14,
                     minimap: { enabled: false },
                     scrollBeyondLastLine: false,
-                    wordWrap: "on",
-                    lineNumbers: "on",
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
                     folding: true,
                     automaticLayout: true,
                   }}
-                />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+              />
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+);

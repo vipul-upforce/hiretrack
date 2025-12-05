@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { DownloadIcon, RefreshCcwIcon, CalendarIcon } from "lucide-react";
-import { DatePicker } from "@/components/ui/date-picker";
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { DownloadIcon, RefreshCcwIcon, CalendarIcon } from 'lucide-react';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface HeaderControlsProps {
   dateRange: Date[] | null;
@@ -43,10 +43,10 @@ export function HeaderControls({
   const handleDone = () => {
     // only apply if both dates are present (for range)
     if (
-      !tempRange ||
-      tempRange.length !== 2 ||
-      !tempRange[0] ||
-      !tempRange[1]
+      !tempRange
+      || tempRange.length !== 2
+      || !tempRange[0]
+      || !tempRange[1]
     ) {
       setShowPicker(false);
       return;
@@ -72,9 +72,9 @@ export function HeaderControls({
             <span>
               {dateRange && dateRange.length === 2
                 ? `${new Date(dateRange[0]).toLocaleDateString()} - ${new Date(
-                    dateRange[1]
-                  ).toLocaleDateString()}`
-                : "Select date range"}
+                  dateRange[1],
+                ).toLocaleDateString()}`
+                : 'Select date range'}
             </span>
           </Button>
         ) : (
@@ -85,7 +85,7 @@ export function HeaderControls({
               onChange={(newRange) => {
                 setTempRange(newRange);
               }}
-              range={true}
+              range
               showTimePicker={false}
               format="MM/DD/YYYY"
               placeholder="Select date range"
@@ -113,7 +113,7 @@ export function HeaderControls({
           disabled={isRefreshing}
         >
           <RefreshCcwIcon
-            className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+            className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
           />
           Refresh
         </Button>

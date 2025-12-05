@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,7 @@ import { Loader2, Mail, Shield, Settings } from "lucide-react";
 import {
   EmailNotificationToggle,
   EmailNotificationType,
-} from "@/components/ui/email-notification-toggle";
-
+} from '@/components/ui/email-notification-toggle';
 import {
   useOrganizationEmailNotificationSettings,
   useUpdateOrganizationEmailNotificationSettings,
@@ -31,9 +30,8 @@ import { useToast } from "@/hooks/use-toast";
 const createDefaultNotificationSettings = (): Record<
   EmailNotificationType,
   boolean
-> =>
-  Object.fromEntries(
-    (
+> => Object.fromEntries(
+  (
       [
         "newApplications",
         "interviewAssignments",
@@ -59,8 +57,8 @@ const createDefaultNotificationSettings = (): Record<
         "candidateRejected",
         "candidateMoved",
       ] satisfies EmailNotificationType[]
-    ).map((type) => [type, true])
-  ) as Record<EmailNotificationType, boolean>;
+  ).map((type) => [type, true]),
+) as Record<EmailNotificationType, boolean>;
 
 interface EmailNotificationSettingsDialogProps {
   isOpen: boolean;

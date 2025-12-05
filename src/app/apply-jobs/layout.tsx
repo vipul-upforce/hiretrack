@@ -1,9 +1,9 @@
-import { Metadata } from "next";
-import { getPortalMetadata } from "@/lib/getPortalMetadata";
+import { Metadata } from 'next';
+import { getPortalMetadata } from '@/lib/getPortalMetadata';
 
 export async function generateMetadata(): Promise<Metadata> {
   const portalData = await getPortalMetadata();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   // Construct absolute URLs for images
   const logoUrl = portalData.portalLogo?.url
@@ -17,14 +17,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const description = `Explore exciting career opportunities at ${portalData.portalName}. Apply to open positions and join our team.`;
 
   return {
-    title: "Careers",
+    title: 'Careers',
     description,
     openGraph: {
       title,
       description,
       siteName: portalData.portalName,
-      locale: "en_US",
-      type: "website",
+      locale: 'en_US',
+      type: 'website',
       ...(logoUrl && {
         images: [
           {
@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       }),
     },
     twitter: {
-      card: "summary_large_image",
+      card: 'summary_large_image',
       title,
       description,
       ...(logoUrl && {

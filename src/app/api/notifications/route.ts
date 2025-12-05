@@ -1,29 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Notification } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Notification } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+
 export async function GET(request: NextRequest) {
   try {
     const [user] = await Promise.all([
       getAuthenticatedUser(request),
-      connectToDatabase()
+      connectToDatabase(),
     ]);
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-    const isRead = searchParams.get("isRead");
-    const type = searchParams.get("type");
-    const priority = searchParams.get("priority");
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const isRead = searchParams.get('isRead');
+    const type = searchParams.get('type');
+    const priority = searchParams.get('priority');
 
     if (!Notification) {
       return NextResponse.json(
-        { error: "Notification Model not found" },
-        { status: 404 }
+        { error: 'Notification Model not found' },
+        { status: 404 },
       );
     }
 
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (isRead !== null && isRead !== undefined) {
-      query.isRead = isRead === "true";
+      query.isRead = isRead === 'true';
     }
 
     if (type) {
@@ -73,8 +74,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 500 }
+      { error: 'Unknown error occurred' },
+      { status: 500 },
     );
   }
 }

@@ -1,22 +1,22 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { AIProviderFactory } from "@/lib/ai-providers";
-import { decryptText } from "@/lib/encryption";
+import { NextRequest, NextResponse } from 'next/server';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { AIProviderFactory } from '@/lib/ai-providers';
+import { decryptText } from '@/lib/encryption';
 
 export async function POST(req: NextRequest) {
   try {
     // Verify user authentication
-    const userData = await getAuthenticatedUser(req, "admin");
+    const userData = await getAuthenticatedUser(req, 'admin');
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { provider, apiKey, model } = await req.json();
 
     if (!provider || !apiKey) {
       return NextResponse.json(
-        { error: "Provider and API key are required" },
-        { status: 400 }
+        { error: 'Provider and API key are required' },
+        { status: 400 },
       );
     }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     try {
       const validationResult = await providerInstance.validateApiKey(
         apiKey,
-        model
+        model,
       );
 
       if (!validationResult.isValid) {
@@ -36,16 +36,16 @@ export async function POST(req: NextRequest) {
           isValid: false,
           error:
             validationResult.error || `Invalid ${provider} API key or model`,
-          provider: provider,
-          model: model,
+          provider,
+          model,
         });
       }
 
       return NextResponse.json({
         isValid: true,
-        message: `${provider} API key${model ? ` and model '${model}'` : ""} is valid`,
-        provider: provider,
-        model: model,
+        message: `${provider} API key${model ? ` and model '${model}'` : ''} is valid`,
+        provider,
+        model,
       });
     } catch (validationError) {
       console.error(`Validation error for ${provider}:`, validationError);
@@ -54,18 +54,18 @@ export async function POST(req: NextRequest) {
         error:
           validationError instanceof Error
             ? validationError.message
-            : "API key validation failed",
-        provider: provider,
-        model: model,
+            : 'API key validation failed',
+        provider,
+        model,
       });
     }
   } catch (error) {
-    console.error("API key validation error:", error);
+    console.error('API key validation error:', error);
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

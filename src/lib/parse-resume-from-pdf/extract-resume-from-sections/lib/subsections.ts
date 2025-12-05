@@ -1,10 +1,10 @@
-import { BULLET_POINTS } from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/bullet-points";
-import { isBold } from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/common-features";
+import { BULLET_POINTS } from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/bullet-points';
+import { isBold } from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/common-features';
 import type {
   Lines,
   Line,
   Subsections,
-} from "@/lib/parse-resume-from-pdf/types";
+} from '@/lib/parse-resume-from-pdf/types';
 
 /**
  * Divide lines into subsections based on difference in line gap or bold text.
@@ -18,8 +18,7 @@ import type {
 export const divideSectionIntoSubsections = (lines: Lines): Subsections => {
   // The main heuristic to determine a subsection is to check if its vertical line gap
   // is larger than the typical line gap * 1.4
-  const isLineNewSubsectionByLineGap =
-    createIsLineNewSubsectionByLineGap(lines);
+  const isLineNewSubsectionByLineGap = createIsLineNewSubsectionByLineGap(lines);
 
   let subsections = createSubsections(lines, isLineNewSubsectionByLineGap);
 
@@ -27,10 +26,10 @@ export const divideSectionIntoSubsections = (lines: Lines): Subsections => {
   if (subsections.length === 1) {
     const isLineNewSubsectionByBold = (line: Line, prevLine: Line) => {
       if (
-        !isBold(prevLine[0]) &&
-        isBold(line[0]) &&
+        !isBold(prevLine[0])
+        && isBold(line[0])
         // Ignore bullet points that sometimes being marked as bolded
-        !BULLET_POINTS.includes(line[0].text)
+        && !BULLET_POINTS.includes(line[0].text)
       ) {
         return true;
       }
@@ -46,7 +45,7 @@ export const divideSectionIntoSubsections = (lines: Lines): Subsections => {
 type IsLineNewSubsection = (line: Line, prevLine: Line) => boolean;
 
 const createIsLineNewSubsectionByLineGap = (
-  lines: Lines
+  lines: Lines,
 ): IsLineNewSubsection => {
   // Extract the common typical line gap
   const lineGapToCount: { [lineGap: number]: number } = {};
@@ -65,16 +64,14 @@ const createIsLineNewSubsectionByLineGap = (
   // Use common line gap to set a sub section threshold
   const subsectionLineGapThreshold = lineGapWithMostCount * 1.4;
 
-  const isLineNewSubsection = (line: Line, prevLine: Line) => {
-    return Math.round(prevLine[0].y - line[0].y) > subsectionLineGapThreshold;
-  };
+  const isLineNewSubsection = (line: Line, prevLine: Line) => Math.round(prevLine[0].y - line[0].y) > subsectionLineGapThreshold;
 
   return isLineNewSubsection;
 };
 
 const createSubsections = (
   lines: Lines,
-  isLineNewSubsection: IsLineNewSubsection
+  isLineNewSubsection: IsLineNewSubsection,
 ): Subsections => {
   const subsections: Subsections = [];
   let subsection: Lines = [];

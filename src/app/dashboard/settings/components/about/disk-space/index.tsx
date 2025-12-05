@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import { Folder, FolderOpen, ChevronRight, ChevronDown } from "lucide-react";
@@ -11,7 +11,7 @@ import { DiskSpaceSkeleton } from "./loading-skeleton";
 export function DiskSpaceSection() {
   const { data, isLoading } = useGetDiskSpaceQuery();
   const [expandedRoots, setExpandedRoots] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
 
   const toggleRoot = (rootName: string) => {

@@ -1,10 +1,14 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mail, ExternalLink, Settings, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  Mail, ExternalLink, Settings, CheckCircle2, XCircle,
+} from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
 const EmailConfigStep: React.FC = () => {
@@ -33,16 +37,16 @@ const EmailConfigStep: React.FC = () => {
   };
 
   const emailProviders = [
-    { name: "SMTP", description: "Connect your existing email server" },
-    { name: "Resend", description: "Modern email API with excellent deliverability" },
-    { name: "Brevo", description: "All-in-one email marketing platform" }
+    { name: 'SMTP', description: 'Connect your existing email server' },
+    { name: 'Resend', description: 'Modern email API with excellent deliverability' },
+    { name: 'Brevo', description: 'All-in-one email marketing platform' },
   ];
 
   const emailTypes = [
-    "Application confirmations",
-    "Interview invitations", 
-    "Status update notifications",
-    "Team assignment alerts"
+    'Application confirmations',
+    'Interview invitations',
+    'Status update notifications',
+    'Team assignment alerts',
   ];
 
   return (
@@ -51,7 +55,7 @@ const EmailConfigStep: React.FC = () => {
         <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full flex items-center justify-center mx-auto border border-border/50">
           <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
         </div>
-        
+
         <div>
           <h2 className="text-xl font-bold text-foreground mb-1">
             Email Configuration
@@ -76,8 +80,8 @@ const EmailConfigStep: React.FC = () => {
                 <XCircle className="w-5 h-5 text-muted-foreground" />
               )}
             </CardTitle>
-            <Badge variant={isConfigured ? "default" : "secondary"} className={isConfigured ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : ""}>
-              {isConfigured ? "Connected" : "Not Set"}
+            <Badge variant={isConfigured ? 'default' : 'secondary'} className={isConfigured ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : ''}>
+              {isConfigured ? 'Connected' : 'Not Set'}
             </Badge>
           </div>
         </CardHeader>
@@ -98,10 +102,10 @@ const EmailConfigStep: React.FC = () => {
                 ))}
               </div>
             </div>
-            
+
             <div className="flex gap-3 pt-4">
-              <Button 
-              variant='primary'
+              <Button
+                variant="primary"
                 onClick={handleConfigureEmail}
                 className="flex items-center gap-2"
               >
@@ -109,13 +113,13 @@ const EmailConfigStep: React.FC = () => {
                 Configure Email
                 <ExternalLink className="w-3 h-3" />
               </Button>
-              
-              <Button 
+
+              <Button
                 variant="outline"
                 onClick={checkConfiguration}
                 disabled={isChecking}
               >
-                {isChecking ? "Checking..." : "Refresh Status"}
+                {isChecking ? 'Checking...' : 'Refresh Status'}
               </Button>
             </div>
           </div>

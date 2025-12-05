@@ -5,8 +5,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
 import {
   Calendar,
   ChevronLeft,
@@ -14,10 +14,10 @@ import {
   Eye,
   Mail,
   Paperclip,
-} from "lucide-react";
-import { format } from "date-fns";
-import { EmailHistoryRecord } from "../types";
-import { getStatusBadge, getStatusIcon } from "../utils";
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { EmailHistoryRecord } from '../types';
+import { getStatusBadge, getStatusIcon } from '../utils';
 
 interface EmailHistoryTableProps {
   emails: EmailHistoryRecord[];
@@ -71,41 +71,41 @@ export function EmailHistoryTable({
               <TableCell>
                 <div className="flex flex-col">
                   <span className="font-medium">
-                    {email.recipientName || email.recipientEmail || "Unknown"}
+                    {email.recipientName || email.recipientEmail || 'Unknown'}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {email.recipientEmail || "No email"}
+                    {email.recipientEmail || 'No email'}
                   </span>
-                  {((email.cc && email.cc.length > 0) ||
-                    (email.bcc && email.bcc.length > 0)) && (
+                  {((email.cc && email.cc.length > 0)
+                    || (email.bcc && email.bcc.length > 0)) && (
                     <span className="text-xs text-muted-foreground">
-                      {email.cc &&
-                        email.cc.length > 0 &&
-                        `CC: ${email.cc.length}`}
-                      {email.cc &&
-                        email.cc.length > 0 &&
-                        email.bcc &&
-                        email.bcc.length > 0 &&
-                        ", "}
-                      {email.bcc &&
-                        email.bcc.length > 0 &&
-                        `BCC: ${email.bcc.length}`}
+                      {email.cc
+                        && email.cc.length > 0
+                        && `CC: ${email.cc.length}`}
+                      {email.cc
+                        && email.cc.length > 0
+                        && email.bcc
+                        && email.bcc.length > 0
+                        && ', '}
+                      {email.bcc
+                        && email.bcc.length > 0
+                        && `BCC: ${email.bcc.length}`}
                     </span>
                   )}
                 </div>
               </TableCell>
               <TableCell>
                 <div className="max-w-[200px] truncate font-medium">
-                  {email.subject || "No subject"}
+                  {email.subject || 'No subject'}
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex flex-col">
                   <span className="font-medium">
-                    {email.sentByName || email.sentByEmail || "Unknown"}
+                    {email.sentByName || email.sentByEmail || 'Unknown'}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {email.sentByEmail || "No email"}
+                    {email.sentByEmail || 'No email'}
                   </span>
                 </div>
               </TableCell>
@@ -113,11 +113,11 @@ export function EmailHistoryTable({
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    {format(new Date(email.createdAt), "MMM dd, yyyy")}
+                    {format(new Date(email.createdAt), 'MMM dd, yyyy')}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {format(new Date(email.createdAt), "HH:mm")}
+                  {format(new Date(email.createdAt), 'HH:mm')}
                 </div>
               </TableCell>
               <TableCell>
@@ -154,7 +154,13 @@ export function EmailHistoryTable({
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <p className="text-sm text-muted-foreground">
-          Page {page} of {totalPages}
+          Page
+          {' '}
+          {page}
+          {' '}
+          of
+          {' '}
+          {totalPages}
         </p>
         <Button
           variant="outline"

@@ -1,14 +1,14 @@
-import { Field, FieldProps, useFormikContext } from "formik";
-import { Label } from "@/components/ui/label";
+import { Field, FieldProps, useFormikContext } from 'formik';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { User } from "@/lib/features/users/usersApi";
-import { Interviewer } from "@/lib/features/user/userApi";
+} from '@/components/ui/select';
+import { User } from '@/lib/features/users/usersApi';
+import { Interviewer } from '@/lib/features/user/userApi';
 
 interface InterviewerSelectorProps {
   interviewers: Interviewer[] | undefined;
@@ -24,7 +24,7 @@ export function InterviewerSelector({ interviewers }: InterviewerSelectorProps) 
         {({ field }: FieldProps) => (
           <Select
             value={field.value}
-            onValueChange={(value) => setFieldValue("interviewerId", value)}
+            onValueChange={(value) => setFieldValue('interviewerId', value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select interviewer" />
@@ -47,4 +47,3 @@ export function InterviewerSelector({ interviewers }: InterviewerSelectorProps) 
     </div>
   );
 }
-

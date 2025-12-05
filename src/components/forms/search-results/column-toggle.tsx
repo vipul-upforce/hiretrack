@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Eye } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu";
-import { memo, useCallback } from "react";
+} from '@/components/ui/dropdown-menu';
+import { memo, useCallback } from 'react';
 
 interface ColumnToggleProps {
   visibleColumns: Record<string, boolean>;
@@ -16,29 +16,29 @@ interface ColumnToggleProps {
 }
 
 const COLUMN_LABELS: Record<string, string> = {
-  select: "SELECT",
-  name: "NAME",
-  skills: "SKILLS",
-  location: "LOCATION",
-  jobAssignment: "JOB ASSIGNMENT",
-  overallScore: "OVERALL SCORE",
-  expectedCTC: "ECTC",
-  currentCTC: "CCTC",
-  experience: "EXPERIENCE",
-  createdAt: "APPLIED",
-  archived: "ARCHIVED",
-  actions: "ACTIONS",
+  select: 'SELECT',
+  name: 'NAME',
+  skills: 'SKILLS',
+  location: 'LOCATION',
+  jobAssignment: 'JOB ASSIGNMENT',
+  overallScore: 'OVERALL SCORE',
+  expectedCTC: 'ECTC',
+  currentCTC: 'CCTC',
+  experience: 'EXPERIENCE',
+  createdAt: 'APPLIED',
+  archived: 'ARCHIVED',
+  actions: 'ACTIONS',
 };
 
-export const ColumnToggle = memo(function ColumnToggle({
+export const ColumnToggle = memo(({
   visibleColumns,
   onColumnToggle,
-}: ColumnToggleProps) {
+}: ColumnToggleProps) => {
   const handleCheckedChange = useCallback(
-    (column: string, checked: boolean | "indeterminate") => {
+    (column: string, checked: boolean | 'indeterminate') => {
       onColumnToggle(column, !!checked);
     },
-    [onColumnToggle]
+    [onColumnToggle],
   );
 
   return (
@@ -64,4 +64,4 @@ export const ColumnToggle = memo(function ColumnToggle({
   );
 });
 
-ColumnToggle.displayName = "ColumnToggle";
+ColumnToggle.displayName = 'ColumnToggle';

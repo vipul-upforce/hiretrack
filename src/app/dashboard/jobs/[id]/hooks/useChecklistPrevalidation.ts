@@ -21,27 +21,25 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
   // Helper to get checklist config from lane config
   const getChecklistFromLaneConfig = useCallback((laneId: string, type: 'incoming' | 'outgoing') => {
     if (!jobLaneConfig) return null;
-    
-    const laneConfig = jobLaneConfig.laneConfigs.find(config => config.laneId === laneId);
+
+    const laneConfig = jobLaneConfig.laneConfigs.find((config) => config.laneId === laneId);
     if (!laneConfig) return null;
-    
+
     return type === 'incoming' ? laneConfig.incomingChecklist : laneConfig.outgoingChecklist;
   }, [jobLaneConfig]);
 
   // Check if lane has checklist without API call
-  const hasChecklist = useCallback((laneId: string, type: 'incoming' | 'outgoing') => {
-    return !!getChecklistFromLaneConfig(laneId, type);
-  }, [getChecklistFromLaneConfig]);
+  const hasChecklist = useCallback((laneId: string, type: 'incoming' | 'outgoing') => !!getChecklistFromLaneConfig(laneId, type), [getChecklistFromLaneConfig]);
 
   // Pre-validate a single checklist
   const prevalidateSingle = useCallback(async (
     candidateId: string,
     currentLane: string,
     targetLane: string,
-    movementType: 'incoming' | 'outgoing'
+    movementType: 'incoming' | 'outgoing',
   ) => {
     const cacheKey = `${candidateId}-${currentLane}-${targetLane}-${movementType}`;
-    
+
     // Return cached result if available
     if (prevalidationCache[cacheKey]) {
       return prevalidationCache[cacheKey];
@@ -64,9 +62,9 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
       };
 
       // Cache the result
-      setPrevalidationCache(prev => ({
+      setPrevalidationCache((prev) => ({
         ...prev,
-        [cacheKey]: result
+        [cacheKey]: result,
       }));
 
       return result;
@@ -80,7 +78,7 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
   const prevalidateCandidate = useCallback(async (
     candidateId: string,
     currentLaneId: string,
-    allLaneIds: string[]
+    allLaneIds: string[],
   ) => {
     if (!jobLaneConfig) return;
 
@@ -88,26 +86,26 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
 
     // Check outgoing from current lane (only if it has an outgoing checklist)
     if (hasChecklist(currentLaneId, 'outgoing')) {
-      allLaneIds.forEach(targetLaneId => {
+      allLaneIds.forEach((targetLaneId) => {
         if (targetLaneId !== currentLaneId) {
           validationPromises.push(
-            prevalidateSingle(candidateId, currentLaneId, targetLaneId, 'outgoing').catch(err => {
+            prevalidateSingle(candidateId, currentLaneId, targetLaneId, 'outgoing').catch((err) => {
               console.error('Prevalidation error:', err);
               return null;
-            })
+            }),
           );
         }
       });
     }
 
     // Check incoming to lanes that have incoming checklists
-    allLaneIds.forEach(targetLaneId => {
+    allLaneIds.forEach((targetLaneId) => {
       if (targetLaneId !== currentLaneId && hasChecklist(targetLaneId, 'incoming')) {
         validationPromises.push(
-          prevalidateSingle(candidateId, currentLaneId, targetLaneId, 'incoming').catch(err => {
+          prevalidateSingle(candidateId, currentLaneId, targetLaneId, 'incoming').catch((err) => {
             console.error('Prevalidation error:', err);
             return null;
-          })
+          }),
         );
       }
     });
@@ -117,7 +115,7 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
       try {
         await Promise.race([
           Promise.all(validationPromises),
-          new Promise(resolve => setTimeout(resolve, 2000)) // 2 second timeout
+          new Promise((resolve) => setTimeout(resolve, 2000)), // 2 second timeout
         ]);
       } catch (error) {
         console.error('Prevalidation timeout or error:', error);
@@ -130,7 +128,7 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
     candidateId: string,
     currentLane: string,
     targetLane: string,
-    movementType: 'incoming' | 'outgoing'
+    movementType: 'incoming' | 'outgoing',
   ) => {
     const cacheKey = `${candidateId}-${currentLane}-${targetLane}-${movementType}`;
     return prevalidationCache[cacheKey] || null;
@@ -138,9 +136,9 @@ export const useChecklistPrevalidation = (jobLaneConfig: IJobLaneConfig | undefi
 
   // Clear cache for a specific candidate
   const clearCandidateCache = useCallback((candidateId: string) => {
-    setPrevalidationCache(prev => {
+    setPrevalidationCache((prev) => {
       const newCache = { ...prev };
-      Object.keys(newCache).forEach(key => {
+      Object.keys(newCache).forEach((key) => {
         if (key.startsWith(candidateId)) {
           delete newCache[key];
         }

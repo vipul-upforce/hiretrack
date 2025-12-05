@@ -1,7 +1,7 @@
-import { AIProviderFactory } from "./factory";
-import { AIProviderType } from "./types";
-import { ICandidate } from "../models/candidate";
-import { decryptProviderKeys } from "../encryption";
+import { AIProviderFactory } from './factory';
+import { AIProviderType } from './types';
+import { ICandidate } from '../models/candidate';
+import { decryptProviderKeys } from '../encryption';
 
 interface JobForEvaluate {
   description: string;
@@ -40,7 +40,7 @@ export interface EvaluationResult {
   };
   redFlags?: Array<{
     type: string;
-    severity: "low" | "medium" | "high";
+    severity: 'low' | 'medium' | 'high';
     description: string;
     evidence: string;
   }>;
@@ -66,49 +66,49 @@ export interface EvaluationResult {
     affordabilityPercentile: number;
     hasTie: boolean;
     tiedWithCount: number;
-    rankingBasedOn: "overall" | "weighted";
+    rankingBasedOn: 'overall' | 'weighted';
   };
 }
 
 export class AIEvaluationService {
-  private static modelUsed: string = "";
+  private static modelUsed: string = '';
 
   static async evaluateResume(
     resumeBase64: string,
     settings: any,
     jobData: JobForEvaluate,
-    candidate: ICandidate
+    candidate: ICandidate,
   ): Promise<EvaluationResult> {
     try {
       // Get AI providers configuration with backward compatibility
-      let aiProviders = settings.aiProviders;
+      let { aiProviders } = settings;
 
       // Handle backward compatibility for legacy Gemini-only installations
       if (!aiProviders) {
         // Check if there's a legacy gemini configuration
-        const legacyGeminiKey = settings.gemini?.gemini_key || "";
+        const legacyGeminiKey = settings.gemini?.gemini_key || '';
 
         aiProviders = {
-          activeProvider: "gemini",
+          activeProvider: 'gemini',
           gemini: {
             api_key: legacyGeminiKey,
-            model: "gemini-1.5-flash",
-            customModel: "",
+            model: 'gemini-1.5-flash',
+            customModel: '',
           },
           openai: {
-            api_key: "",
-            model: "gpt-4o-mini",
-            customModel: "",
+            api_key: '',
+            model: 'gpt-4o-mini',
+            customModel: '',
           },
           anthropic: {
-            api_key: "",
-            model: "claude-3-5-sonnet-20241022",
-            customModel: "",
+            api_key: '',
+            model: 'claude-3-5-sonnet-20241022',
+            customModel: '',
           },
           perplexity: {
-            api_key: "",
-            model: "sonar-pro",
-            customModel: "",
+            api_key: '',
+            model: 'sonar-pro',
+            customModel: '',
           },
         };
 
@@ -137,7 +137,7 @@ export class AIEvaluationService {
 
       const activeProvider = aiProviders.activeProvider as AIProviderType;
 
-      console.log("Looking for API key:", {
+      console.log('Looking for API key:', {
         activeProvider,
         providerData: aiProviders[activeProvider],
         hasProviderObject: !!aiProviders[activeProvider],
@@ -148,11 +148,11 @@ export class AIEvaluationService {
 
       if (!apiKey) {
         console.error(
-          "API key not found. Full aiProviders structure:",
-          JSON.stringify(aiProviders, null, 2)
+          'API key not found. Full aiProviders structure:',
+          JSON.stringify(aiProviders, null, 2),
         );
         throw new Error(
-          `API key not found for active provider: ${activeProvider}`
+          `API key not found for active provider: ${activeProvider}`,
         );
       }
 
@@ -167,26 +167,25 @@ export class AIEvaluationService {
       // Use custom prompt if available, otherwise use default
       const prompt = evaluationConfig.customPrompt
         ? this.buildPromptWithCustomTemplate(
-            evaluationConfig.customPrompt,
-            jobData,
-            candidate
-          )
+          evaluationConfig.customPrompt,
+          jobData,
+          candidate,
+        )
         : this.getEvaluationPrompt(jobData, candidate);
 
       // Get the appropriate AI provider
       const provider = AIProviderFactory.getProvider(activeProvider);
 
       // Get the selected model for this provider
-      const selectedModel =
-        aiProviders[activeProvider]?.customModel ||
-        aiProviders[activeProvider]?.model;
+      const selectedModel = aiProviders[activeProvider]?.customModel
+        || aiProviders[activeProvider]?.model;
 
       const response = await provider.evaluateResume(
         resumeBase64,
         apiKey,
         prompt,
         selectedModel,
-        evaluationConfig.temperature
+        evaluationConfig.temperature,
       );
 
       let evaluationResult = this.parseEvaluationResponse(response);
@@ -194,36 +193,36 @@ export class AIEvaluationService {
       // Filter response based on enabled features
       evaluationResult = this.filterEvaluationBySettings(
         evaluationResult,
-        evaluationConfig
+        evaluationConfig,
       );
 
       // Add evaluation metadata
       const evaluationMetadata = await this.getEvaluationMetadata(
         activeProvider,
-        settings
+        settings,
       );
       // Ensure notes is a string before concatenation
-      const currentNotes =
-        typeof evaluationResult.notes === "string"
-          ? evaluationResult.notes
-          : "";
+      const currentNotes = typeof evaluationResult.notes === 'string'
+        ? evaluationResult.notes
+        : '';
       evaluationResult.notes = currentNotes + evaluationMetadata;
 
       return evaluationResult;
     } catch (error) {
       throw new Error(
-        error instanceof Error ? error.message : "Failed to evaluate resume"
+        error instanceof Error ? error.message : 'Failed to evaluate resume',
       );
     }
   }
+
   private static parseEvaluationResponse(response: string): EvaluationResult {
     try {
       // console.log("Raw evaluation response:", response);
 
       // Clean the response - handle multiple formats
       let jsonString = response
-        .replace(/```json\n?/g, "")
-        .replace(/```\n?/g, "")
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
         .trim();
 
       // If response starts with explanation text, extract JSON
@@ -238,20 +237,19 @@ export class AIEvaluationService {
       try {
         // Try to parse the JSON directly first
         parsedObject = JSON.parse(jsonString);
-
       } catch (parseError) {
-        console.error("JSON Parse Error:", parseError);
+        console.error('JSON Parse Error:', parseError);
         console.error(
-          "Failed JSON string (first 1000 chars):",
-          jsonString.substring(0, 1000)
+          'Failed JSON string (first 1000 chars):',
+          jsonString.substring(0, 1000),
         );
         console.error(
-          "Failed JSON string (last 500 chars):",
-          jsonString.substring(Math.max(0, jsonString.length - 500))
+          'Failed JSON string (last 500 chars):',
+          jsonString.substring(Math.max(0, jsonString.length - 500)),
         );
       }
 
-      let redFlags = parsedObject.redFlags;
+      let { redFlags } = parsedObject;
       if (redFlags && Array.isArray(redFlags)) {
         redFlags = redFlags.map((flag: any) => ({
           ...flag,
@@ -264,55 +262,55 @@ export class AIEvaluationService {
         overall: parsedObject.overall || 0,
         experience: parsedObject.experience || 0,
         skills: parsedObject.skills || 0,
-        contact: parsedObject.contact || "",
+        contact: parsedObject.contact || '',
         education: parsedObject.education || 0,
         projects: parsedObject.projects || 0,
         certifications: parsedObject.certifications || 0,
         strengths: parsedObject.strengths || [],
         areas_for_improvement: parsedObject.areas_for_improvement || [],
-        recommendation: parsedObject.recommendation || "Not Recommended",
-        notes: parsedObject.notes || "",
+        recommendation: parsedObject.recommendation || 'Not Recommended',
+        notes: parsedObject.notes || '',
         // Handle different field names that AI might use
         affordability: parsedObject.affordability || parsedObject.salary || 0,
         // Enhanced evaluation fields
         confidenceScores: parsedObject.confidenceScores,
         evidenceLinks: parsedObject.evidenceLinks,
-        redFlags: redFlags,
+        redFlags,
         skillsMatrix: parsedObject.skillsMatrix,
       };
 
       return result;
     } catch (error) {
-      console.error("Failed to parse evaluation response:", error);
-      console.error("Original response:", response);
+      console.error('Failed to parse evaluation response:', error);
+      console.error('Original response:', response);
 
       // Create a minimal valid response as fallback
-      console.warn("Creating fallback evaluation response");
+      console.warn('Creating fallback evaluation response');
       return {
         overall: 5,
         experience: 5,
         skills: 5,
-        contact: "",
+        contact: '',
         education: 0,
         projects: 0,
         certifications: 0,
-        strengths: ["Could not parse AI response"],
-        areas_for_improvement: ["Could not parse complete AI response"],
-        recommendation: "AI evaluation failed - manual review required",
+        strengths: ['Could not parse AI response'],
+        areas_for_improvement: ['Could not parse complete AI response'],
+        recommendation: 'AI evaluation failed - manual review required',
         notes:
-          "The AI evaluation response could not be fully parsed. Please review the candidate manually. Error: " +
-          (error instanceof Error ? error.message : "Unknown error"),
+          `The AI evaluation response could not be fully parsed. Please review the candidate manually. Error: ${
+            error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }
 
   private static getEvaluationPrompt(
     jobData: JobForEvaluate,
-    candidate: ICandidate
+    candidate: ICandidate,
   ): string {
-    const jobDescription = jobData.description.replace(/<[^>]*>/g, ""); // Strip HTML
+    const jobDescription = jobData.description.replace(/<[^>]*>/g, ''); // Strip HTML
     const jobTitle = jobData.title;
-    const jobSkills = jobData.skills.join(", ");
+    const jobSkills = jobData.skills.join(', ');
 
     return `
     As a seasoned senior technology leader with expertise in talent acquisition, you are conducting a rigorous evaluation of a candidate. You must evaluate each dimension independently and avoid giving similar scores across categories.
@@ -433,15 +431,15 @@ export class AIEvaluationService {
   private static buildPromptWithCustomTemplate(
     customPrompt: string,
     jobData: JobForEvaluate,
-    candidate: ICandidate
+    candidate: ICandidate,
   ): string {
-    const jobDescription = jobData.description.replace(/<[^>]*>/g, ""); // Strip HTML
+    const jobDescription = jobData.description.replace(/<[^>]*>/g, ''); // Strip HTML
     const jobTitle = jobData.title;
-    const jobSkills = jobData.skills.join(", ");
-    const ctcRange = jobData.salary || "Not specified";
+    const jobSkills = jobData.skills.join(', ');
+    const ctcRange = jobData.salary || 'Not specified';
     const experience = jobData.experience
       ? `${jobData.experience} years`
-      : "Not specified";
+      : 'Not specified';
 
     // Replace placeholders with actual values
     let prompt = customPrompt
@@ -454,11 +452,11 @@ export class AIEvaluationService {
       .replace(/\{\{CANDIDATE_CURRENT_CTC\}\}/g, String(candidate.currentCTC))
       .replace(
         /\{\{CANDIDATE_EXPECTED_CTC\}\}/g,
-        String(candidate.expectedCTC)
+        String(candidate.expectedCTC),
       );
 
     // Ensure the JSON format instruction is always present at the end if not in custom prompt
-    if (!prompt.includes("Return your evaluation in this JSON format")) {
+    if (!prompt.includes('Return your evaluation in this JSON format')) {
       prompt += `
 
     IMPORTANT: Return your evaluation in this exact JSON format:
@@ -514,42 +512,42 @@ export class AIEvaluationService {
 
   private static async getEvaluationMetadata(
     provider: AIProviderType,
-    settings: any
+    settings: any,
   ): Promise<string> {
     const now = new Date();
 
     // Get the user's timezone from settings, fallback to UTC
-    const userTimezone = settings?.timeZone?.name || "UTC";
+    const userTimezone = settings?.timeZone?.name || 'UTC';
 
     // Format date and time using user's timezone
-    const dateStr = now.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    const dateStr = now.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
       timeZone: userTimezone,
     });
-    const timeStr = now.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
       hour12: true,
       timeZone: userTimezone,
     });
 
     const providerNames = {
-      gemini: "Google Gemini",
-      openai: "OpenAI",
-      anthropic: "Anthropic Claude",
-      perplexity: "Perplexity AI",
+      gemini: 'Google Gemini',
+      openai: 'OpenAI',
+      anthropic: 'Anthropic Claude',
+      perplexity: 'Perplexity AI',
     };
 
     const providerName = providerNames[provider] || provider;
 
-    return `\n\nEvaluated by ${providerName} ${this.modelUsed ? `using ${this.modelUsed}` : ""} on ${dateStr} at ${timeStr}`;
+    return `\n\nEvaluated by ${providerName} ${this.modelUsed ? `using ${this.modelUsed}` : ''} on ${dateStr} at ${timeStr}`;
   }
 
   private static filterEvaluationBySettings(
     evaluation: EvaluationResult,
-    config: any
+    config: any,
   ): EvaluationResult {
     // Remove fields that are disabled in settings
     if (config.enableConfidenceScores === false) {
@@ -562,7 +560,6 @@ export class AIEvaluationService {
     if (config.enableSkillsMatrix === false) {
       delete evaluation.skillsMatrix;
     }
-   
 
     return evaluation;
   }
@@ -579,23 +576,22 @@ export class AIEvaluationService {
       skills: number;
       experience: number;
       affordability: number;
-    }
+    },
   ): number {
     // Normalize weights to sum to 100
-    const totalWeight =
-      weights.overall +
-      weights.skills +
-      weights.experience +
-      weights.affordability;
+    const totalWeight = weights.overall
+      + weights.skills
+      + weights.experience
+      + weights.affordability;
 
     if (totalWeight === 0) {
       // If no weights set, return simple average
       return (
-        (scores.overall +
-          scores.skills +
-          scores.experience +
-          (scores.affordability || 0)) /
-        4
+        (scores.overall
+          + scores.skills
+          + scores.experience
+          + (scores.affordability || 0))
+        / 4
       );
     }
 
@@ -607,11 +603,10 @@ export class AIEvaluationService {
     };
 
     // Calculate weighted score
-    const weightedScore =
-      scores.overall * normalizedWeights.overall +
-      scores.skills * normalizedWeights.skills +
-      scores.experience * normalizedWeights.experience +
-      (scores.affordability || 0) * normalizedWeights.affordability;
+    const weightedScore = scores.overall * normalizedWeights.overall
+      + scores.skills * normalizedWeights.skills
+      + scores.experience * normalizedWeights.experience
+      + (scores.affordability || 0) * normalizedWeights.affordability;
 
     return Math.round(weightedScore * 100) / 100; // Round to 2 decimal places
   }

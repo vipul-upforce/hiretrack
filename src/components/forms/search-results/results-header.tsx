@@ -1,7 +1,7 @@
-import { memo } from "react";
-import { QuickFilters } from "./quick-filters";
-import { ColumnToggle } from "./column-toggle";
-import { BulkActions } from "./bulk-actions";
+import { memo } from 'react';
+import { QuickFilters } from './quick-filters';
+import { ColumnToggle } from './column-toggle';
+import { BulkActions } from './bulk-actions';
 
 interface ResultsHeaderProps {
   activeFilters: string[];
@@ -15,7 +15,7 @@ interface ResultsHeaderProps {
   onBulkUnarchive: () => void;
 }
 
-export const ResultsHeader = memo(function ResultsHeader({
+export const ResultsHeader = memo(({
   activeFilters,
   onFilterToggle,
   onClearAllFilters,
@@ -50,4 +50,4 @@ export const ResultsHeader = memo(function ResultsHeader({
   );
 });
 
-ResultsHeader.displayName = "ResultsHeader";
+ResultsHeader.displayName = 'ResultsHeader';

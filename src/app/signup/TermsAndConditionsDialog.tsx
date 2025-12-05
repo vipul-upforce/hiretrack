@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import React from "react";
+} from '@/components/ui/dialog';
+import React from 'react';
 
 interface TermsAndConditionsDialogProps {
   open: boolean;
@@ -29,7 +29,10 @@ export function TermsAndConditionsDialog({
           <div className="space-y-6 pr-4 text-sm leading-relaxed">
             <h3 className="text-lg font-semibold">1. Introduction</h3>
             <p>
-              Welcome to <strong>Hire Track</strong>, our AI-powered hiring
+              Welcome to
+              {' '}
+              <strong>Hire Track</strong>
+              , our AI-powered hiring
               management platform. These Terms and Conditions govern your access
               to and use of the Hire Track platform, including features
               integrated with Google’s Gemini AI model.
@@ -84,14 +87,17 @@ export function TermsAndConditionsDialog({
                 human users.
               </li>
               <li>
-                Your use of Gemini AI features is subject to Google’s{" "}
+                Your use of Gemini AI features is subject to Google’s
+                {' '}
                 <a
                   href="https://policies.google.com/terms"
                   className="underline text-blue-600"
                 >
                   Terms of Service
-                </a>{" "}
-                and{" "}
+                </a>
+                {' '}
+                and
+                {' '}
                 <a
                   href="https://policies.google.com/privacy"
                   className="underline text-blue-600"
@@ -197,7 +203,8 @@ export function TermsAndConditionsDialog({
 
             <h3 className="text-lg font-semibold">11. Contact Us</h3>
             <p>
-              For questions or support, contact us at{" "}
+              For questions or support, contact us at
+              {' '}
               <a
                 href="mailto:support@quikcv.com"
                 className="text-blue-600 underline"

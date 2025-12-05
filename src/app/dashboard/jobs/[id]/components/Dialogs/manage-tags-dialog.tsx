@@ -1,23 +1,23 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useToast } from "@/hooks/use-toast";
-import { MuiColorInput } from "mui-color-input";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useToast } from '@/hooks/use-toast';
+import { MuiColorInput } from 'mui-color-input';
 import {
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
-} from "@/lib/features/org/orgApi";
-import { ITag } from "@/lib/models/organization";
+} from '@/lib/features/org/orgApi';
+import { ITag } from '@/lib/models/organization';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { useEffect, useState } from "react";
-import ConfirmationDialog from "./ConfirmationDialog";
-import { X, Edit2 } from "lucide-react";
+} from '@/components/ui/dialog';
+import { useEffect, useState } from 'react';
+import { X, Edit2 } from 'lucide-react';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface ManageTagsDialogProps {
   orgId?: string;
@@ -25,27 +25,26 @@ interface ManageTagsDialogProps {
   isOpen?: boolean;
 }
 
-const ManageTagsDialog = ({
-  orgId = "681a1ee3a73fc6b5449caa81",
+function ManageTagsDialog({
+  orgId = '681a1ee3a73fc6b5449caa81',
   onClose,
   isOpen,
-}: ManageTagsDialogProps) => {
+}: ManageTagsDialogProps) {
   const {
     data: tagsObj,
     isLoading,
     error,
   } = useFetchOrgTagsQuery({ organizationId: orgId });
-  const [updateOrgTags, { isLoading: isUpdating, error: updateError }] =
-    useUpdateOrgTagsMutation();
+  const [updateOrgTags, { isLoading: isUpdating, error: updateError }] = useUpdateOrgTagsMutation();
   const [orgTags, setOrgTags] = useState<ITag[]>([]);
-  const [newTagTitle, setNewTagTitle] = useState("");
-  const [newTagColor, setNewTagColor] = useState("#FF4D4F");
+  const [newTagTitle, setNewTagTitle] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#FF4D4F');
   const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false);
-  const [titleToDelete, setTitleToDelete] = useState("");
+  const [titleToDelete, setTitleToDelete] = useState('');
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<ITag | null>(null);
-  const [editTagTitle, setEditTagTitle] = useState("");
-  const [editTagColor, setEditTagColor] = useState("#FF4D4F");
+  const [editTagTitle, setEditTagTitle] = useState('');
+  const [editTagColor, setEditTagColor] = useState('#FF4D4F');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -64,40 +63,40 @@ const ManageTagsDialog = ({
   const handleAddTag = () => {
     if (!newTagTitle.trim()) {
       toast({
-        title: "Error",
-        description: "Tag title is required.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Tag title is required.',
+        variant: 'destructive',
       });
       return;
     }
     if (
       orgTags.some(
-        (tag) => tag.title.toLowerCase() === newTagTitle.trim().toLowerCase()
+        (tag) => tag.title.toLowerCase() === newTagTitle.trim().toLowerCase(),
       )
     ) {
       toast({
-        title: "Error",
-        description: "Tag title already exists.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Tag title already exists.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (orgTags.some((tag) => tag.color === newTagColor)) {
       toast({
-        title: "Error",
-        description: "Tag color already exists.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Tag color already exists.',
+        variant: 'destructive',
       });
       return;
     }
     const newTag: ITag = { title: newTagTitle.trim(), color: newTagColor };
     setOrgTags((prev) => [...prev, newTag]);
-    setNewTagTitle("");
+    setNewTagTitle('');
     // setNewTagColor(predefinedColors[0].value);
     toast({
-      title: "Success",
-      description: "Tag added successfully.",
+      title: 'Success',
+      description: 'Tag added successfully.',
     });
   };
 
@@ -111,48 +110,43 @@ const ManageTagsDialog = ({
   const handleSaveEdit = () => {
     if (!editTagTitle.trim()) {
       toast({
-        title: "Error",
-        description: "Tag title is required.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Tag title is required.',
+        variant: 'destructive',
       });
       return;
     }
     if (
       orgTags.some(
-        (tag) =>
-          tag.title.toLowerCase() === editTagTitle.trim().toLowerCase() &&
-          tag.title !== editingTag?.title
+        (tag) => tag.title.toLowerCase() === editTagTitle.trim().toLowerCase()
+          && tag.title !== editingTag?.title,
       )
     ) {
       toast({
-        title: "Error",
-        description: "Tag title already exists.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Tag title already exists.',
+        variant: 'destructive',
       });
       return;
     }
-    setOrgTags((prev) =>
-      prev.map((tag) =>
-        tag.title === editingTag?.title
-          ? { title: editTagTitle.trim(), color: editTagColor }
-          : tag
-      )
-    );
+    setOrgTags((prev) => prev.map((tag) => (tag.title === editingTag?.title
+      ? { title: editTagTitle.trim(), color: editTagColor }
+      : tag)));
     setEditDialogOpen(false);
     setEditingTag(null);
-    setEditTagTitle("");
-    setEditTagColor("#FF4D4F");
+    setEditTagTitle('');
+    setEditTagColor('#FF4D4F');
     toast({
-      title: "Success",
-      description: "Tag updated successfully.",
+      title: 'Success',
+      description: 'Tag updated successfully.',
     });
   };
 
   const handleCancelEdit = () => {
     setEditDialogOpen(false);
     setEditingTag(null);
-    setEditTagTitle("");
-    setEditTagColor("#FF4D4F");
+    setEditTagTitle('');
+    setEditTagColor('#FF4D4F');
   };
 
   const handleDeleteTag = (tagTitle: string) => {
@@ -167,15 +161,15 @@ const ManageTagsDialog = ({
     try {
       await updateOrgTags({ tags: orgTags, organizationId: orgId }).unwrap();
       toast({
-        title: "Success",
-        description: "Tags updated successfully.",
+        title: 'Success',
+        description: 'Tags updated successfully.',
       });
       onClose();
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to update tags. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update tags. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -324,7 +318,7 @@ const ManageTagsDialog = ({
                   className="min-w-[80px]"
                   variant="primary"
                 >
-                  {isUpdating ? <LoadingSpinner w={4} /> : "Save"}
+                  {isUpdating ? <LoadingSpinner w={4} /> : 'Save'}
                 </Button>
               </div>
             </div>
@@ -371,6 +365,6 @@ const ManageTagsDialog = ({
       </Dialog>
     </>
   );
-};
+}
 
 export default ManageTagsDialog;

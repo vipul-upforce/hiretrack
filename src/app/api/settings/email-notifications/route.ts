@@ -21,15 +21,15 @@ export async function GET(request: NextRequest) {
     const currentUser = await getAuthenticatedUser(request,["admin", "hr"]);
     if (!currentUser) {
       return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
+        { error: 'Admin access required' },
+        { status: 403 },
       );
     }
 
     // Get organization settings
-    const settings = await Settings.findOne({
+    const settings = await Settings?.findOne({
       organizationId: new mongoose.Types.ObjectId(currentUser.organizationId),
-    }).select("organizationEmailNotifications").lean();
+    }).select('organizationEmailNotifications').lean();
 
     const orgNotifications = settings?.organizationEmailNotifications || {
       defaultSettings: DEFAULT_NOTIFICATION_SETTINGS,
@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
     };
 
     // Get all HR/Admin users for override management
-    const users = await User.find({
+    const users = await User?.find({
       organizationId: new mongoose.Types.ObjectId(currentUser.organizationId),
-      role: { $in: ["admin", "hr"] },
+      role: { $in: ['admin', 'hr'] },
       isDeleted: { $ne: true },
     })
-      .select("_id name email role emailNotificationSettings")
+      .select('_id name email role emailNotificationSettings')
       .lean();
 
     // Convert adminOverrides Map to object for JSON response
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       organizationSettings: orgNotifications,
-      users: users.map((user) => ({
+      users: users?.map((user) => ({
         _id: user._id,
         name: user.name,
         email: user.email,
@@ -70,10 +70,10 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error("Get email notification settings error:", error);
+    console.error('Get email notification settings error:', error);
     return NextResponse.json(
-      { error: "Failed to get email notification settings" },
-      { status: 500 }
+      { error: 'Failed to get email notification settings' },
+      { status: 500 },
     );
   }
 }
@@ -85,14 +85,14 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const [currentUser, body] = await Promise.all([
-      getAuthenticatedUser(request, "admin"),
+      getAuthenticatedUser(request, 'admin'),
       request.json(),
       connectToDatabase(),
     ]);
     if (!currentUser) {
       return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
+        { error: 'Admin access required' },
+        { status: 403 },
       );
     }
 
@@ -102,12 +102,12 @@ export async function PUT(request: NextRequest) {
     if (defaultSettings) {
       for (const key of VALID_NOTIFICATION_KEYS) {
         if (
-          defaultSettings[key] !== undefined &&
-          typeof defaultSettings[key] !== "boolean"
+          defaultSettings[key] !== undefined
+          && typeof defaultSettings[key] !== 'boolean'
         ) {
           return NextResponse.json(
             { error: `Invalid value for ${key}` },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -122,14 +122,14 @@ export async function PUT(request: NextRequest) {
         if (!mongoose.Types.ObjectId.isValid(userId)) {
           return NextResponse.json(
             { error: `Invalid user ID: ${userId}` },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
 
       // Verify all users exist and belong to the same organization
       if (userIds.length > 0) {
-        const users = await User.find({
+        const users = await User?.find({
           _id: { $in: userIds.map((id) => new mongoose.Types.ObjectId(id)) },
           organizationId: new mongoose.Types.ObjectId(
             currentUser.organizationId
@@ -139,7 +139,7 @@ export async function PUT(request: NextRequest) {
           .select("_id")
           .lean();
 
-        const foundUserIds = new Set(users.map((u) => u._id.toString()));
+        const foundUserIds = new Set(users?.map((u) => u._id.toString()));
         const missingUserIds = userIds.filter((id) => !foundUserIds.has(id));
 
         if (missingUserIds.length > 0) {
@@ -157,14 +157,14 @@ export async function PUT(request: NextRequest) {
         if (overrideSettings && typeof overrideSettings === "object") {
           for (const key of VALID_NOTIFICATION_KEYS) {
             if (
-              (overrideSettings as any)[key] !== undefined &&
-              typeof (overrideSettings as any)[key] !== "boolean"
+              (overrideSettings as any)[key] !== undefined
+              && typeof (overrideSettings as any)[key] !== 'boolean'
             ) {
               return NextResponse.json(
                 {
                   error: `Invalid override value for ${key} in user ${userId}`,
                 },
-                { status: 400 }
+                { status: 400 },
               );
             }
           }
@@ -173,15 +173,14 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get existing settings to merge admin overrides
-    const existingSettings = await Settings.findOne({
+    const existingSettings = await Settings?.findOne({
       organizationId: new mongoose.Types.ObjectId(currentUser.organizationId),
     }).lean();
 
     // Update organization settings
     const updateData: any = {};
     if (defaultSettings) {
-      updateData["organizationEmailNotifications.defaultSettings"] =
-        defaultSettings;
+      updateData['organizationEmailNotifications.defaultSettings'] = defaultSettings;
     }
 
     if (adminOverrides !== undefined) {
@@ -242,7 +241,7 @@ export async function PUT(request: NextRequest) {
       updateData["organizationEmailNotifications.adminOverrides"] = overrideMap;
     }
 
-    const result = await Settings.findOneAndUpdate(
+    const result = await Settings?.findOneAndUpdate(
       {
         organizationId: new mongoose.Types.ObjectId(currentUser.organizationId),
       },
@@ -251,19 +250,19 @@ export async function PUT(request: NextRequest) {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true,
-      }
+      },
     );
 
     return NextResponse.json({
       success: true,
-      message: "Email notification settings updated successfully",
+      message: 'Email notification settings updated successfully',
       settings: result?.organizationEmailNotifications,
     });
   } catch (error) {
-    console.error("Update email notification settings error:", error);
+    console.error('Update email notification settings error:', error);
     return NextResponse.json(
-      { error: "Failed to update email notification settings" },
-      { status: 500 }
+      { error: 'Failed to update email notification settings' },
+      { status: 500 },
     );
   }
 }

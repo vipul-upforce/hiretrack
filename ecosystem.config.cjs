@@ -1,12 +1,12 @@
-const { version : VERSION } = require('./package.json');
 const path = require('path');
+const { version : VERSION } = require('./package.json');
 
 const LOG_DIR = path.resolve('../../.hiretrack/logs');
 
 module.exports = {
   apps: [
     {
-      name: "hiretrack-v" +VERSION,
+      name: `hiretrack-v${ VERSION}`,
       script: "node_modules/next/dist/bin/next",
       args: "start -p 3000",
       cwd: "./",

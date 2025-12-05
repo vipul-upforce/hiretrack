@@ -1,4 +1,4 @@
-import { EvaluationResult } from "./evaluation-provider";
+import { EvaluationResult } from './evaluation-provider';
 
 export interface ProcessedResumeData {
   name: string;
@@ -43,7 +43,7 @@ export interface AIProvider {
   ): Promise<{ isValid: boolean; error?: string }>;
 }
 
-export type AIProviderType = "gemini" | "openai" | "anthropic" | "perplexity";
+export type AIProviderType = 'gemini' | 'openai' | 'anthropic' | 'perplexity';
 
 export interface AIProviderConfig {
   api_key: string;

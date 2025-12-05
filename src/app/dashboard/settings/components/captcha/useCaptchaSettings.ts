@@ -1,26 +1,26 @@
-import { useState, useEffect } from "react";
-import Cookies from "js-cookie";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect } from 'react';
+import Cookies from 'js-cookie';
+import { useToast } from '@/hooks/use-toast';
 import {
   useGetCaptchaConfigsQuery,
   useUpdateCaptchaMutation,
-} from "@/lib/features/settings/settingsApi";
-import { getDecodedCaptcha } from "@/hooks/useSSE";
-import { CaptchaValues } from "./types";
+} from '@/lib/features/settings/settingsApi';
+import { getDecodedCaptcha } from '@/hooks/useSSE';
+import { CaptchaValues } from './types';
 
 export const useCaptchaSettings = (onClose: () => void) => {
   const { toast } = useToast();
-  const orgId = Cookies.get("org_id");
+  const orgId = Cookies.get('org_id');
 
-  const { data, isLoading, refetch, error } =
-    useGetCaptchaConfigsQuery(undefined);
-  const [updateCaptchaConfigs, { isLoading: isUpdating }] =
-    useUpdateCaptchaMutation();
+  const {
+    data, isLoading, refetch, error,
+  } = useGetCaptchaConfigsQuery(undefined);
+  const [updateCaptchaConfigs, { isLoading: isUpdating }] = useUpdateCaptchaMutation();
 
   const [decryptedValues, setDecryptedValues] = useState<{
     siteKey: string;
     secretKey: string;
-  }>({ siteKey: "", secretKey: "" });
+  }>({ siteKey: '', secretKey: '' });
 
   // Decrypt siteKey and secretKey when data is available
   useEffect(() => {
@@ -28,16 +28,16 @@ export const useCaptchaSettings = (onClose: () => void) => {
       if (data?.captcha) {
         try {
           const [decryptedSiteKey, decryptedSecretKey] = await Promise.all([
-            getDecodedCaptcha(data.captcha.siteKey || "", orgId),
-            getDecodedCaptcha(data.captcha.secretKey || "", orgId),
+            getDecodedCaptcha(data.captcha.siteKey || '', orgId),
+            getDecodedCaptcha(data.captcha.secretKey || '', orgId),
           ]);
 
           setDecryptedValues({
-            siteKey: decryptedSiteKey || "",
-            secretKey: decryptedSecretKey || "",
+            siteKey: decryptedSiteKey || '',
+            secretKey: decryptedSecretKey || '',
           });
         } catch (e) {
-          console.error("Failed to decrypt captcha keys", e);
+          console.error('Failed to decrypt captcha keys', e);
         }
       }
     };
@@ -54,14 +54,14 @@ export const useCaptchaSettings = (onClose: () => void) => {
     secretKey: decryptedValues.secretKey,
   };
 
-  const isPermissionDenied = error && "status" in error && error.status === 403;
+  const isPermissionDenied = error && 'status' in error && error.status === 403;
 
   const handleSubmit = async (values: CaptchaValues) => {
     if (isPermissionDenied) {
       return toast({
-        title: "Not Allowed",
-        description: "This action is not allowed.",
-        variant: "destructive",
+        title: 'Not Allowed',
+        description: 'This action is not allowed.',
+        variant: 'destructive',
       });
     }
 
@@ -73,17 +73,17 @@ export const useCaptchaSettings = (onClose: () => void) => {
       }).unwrap();
 
       toast({
-        title: "Success",
-        description: "CAPTCHA settings updated successfully",
+        title: 'Success',
+        description: 'CAPTCHA settings updated successfully',
       });
 
       refetch();
       onClose();
     } catch (e: any) {
       toast({
-        title: "Error",
-        description: e.data?.error || "Failed to update CAPTCHA settings",
-        variant: "destructive",
+        title: 'Error',
+        description: e.data?.error || 'Failed to update CAPTCHA settings',
+        variant: 'destructive',
       });
     }
   };

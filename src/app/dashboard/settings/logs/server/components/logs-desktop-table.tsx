@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -6,13 +6,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Calendar, Eye } from "lucide-react";
+} from '@/components/ui/table';
+import { Calendar, Eye } from 'lucide-react';
 import {
   formatDate,
   formatTime,
-} from "@/app/dashboard/jobs/[id]/hooks/dateTimeFormatting";
-import { LogEntry } from "../types";
+} from '@/app/dashboard/jobs/[id]/hooks/dateTimeFormatting';
+import { LogEntry } from '../types';
 
 interface LogsDesktopTableProps {
   logs: LogEntry[];
@@ -60,31 +60,31 @@ export function LogsDesktopTable({
               <TableCell className="align-top">
                 <div className="max-w-[420px] space-y-1">
                   <div className="font-medium truncate">{renderTitle(log)}</div>
-                  {log.note?.description &&
-                    typeof log.note.description === "string" && (
+                  {log.note?.description
+                    && typeof log.note.description === 'string' && (
                       <div className="text-xs text-muted-foreground line-clamp-2">
                         {log.note.description}
                       </div>
-                    )}
+                  )}
                 </div>
               </TableCell>
               <TableCell className="align-top">
                 <div className="flex flex-col">
                   <span className="font-medium truncate">
-                    {log.candidateData?.name || "Unknown"}
+                    {log.candidateData?.name || 'Unknown'}
                   </span>
                   <span className="text-xs text-muted-foreground truncate">
-                    {log.candidateData?.email || "—"}
+                    {log.candidateData?.email || '—'}
                   </span>
                 </div>
               </TableCell>
               <TableCell className="align-top">
                 <div className="flex flex-col">
                   <span className="font-medium truncate">
-                    {log.jobData?.title || "—"}
+                    {log.jobData?.title || '—'}
                   </span>
                   <span className="text-xs text-muted-foreground truncate">
-                    {(log.jobData?.skills || []).slice(0, 3).join(", ") || "—"}
+                    {(log.jobData?.skills || []).slice(0, 3).join(', ') || '—'}
                   </span>
                 </div>
               </TableCell>
@@ -102,7 +102,7 @@ export function LogsDesktopTable({
                   <span className="font-medium">
                     {log?.assignmentBy.length
                       ? log?.assignmentBy[0]?.name
-                      : "SELF"}
+                      : 'SELF'}
                   </span>
                   <span className="text-xs text-muted-foreground truncate">
                     {log?.assignmentBy.length

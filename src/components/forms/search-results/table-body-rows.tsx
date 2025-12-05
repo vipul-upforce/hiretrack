@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import type React from "react";
-import { TableCell, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
+import type React from 'react';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   MoreHorizontal,
   Info,
@@ -42,25 +42,24 @@ interface TableBodyRowsProps {
 }
 
 function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "INR",
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'INR',
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
 function getJobAssignmentInfo(candidate: Candidate) {
   if (
-    candidate.jobId &&
-    typeof candidate.jobId === "object" &&
-    candidate.jobId.title
+    candidate.jobId
+    && typeof candidate.jobId === 'object'
+    && candidate.jobId.title
   ) {
-    const hasValidInterviewer =
-      candidate.assignment &&
-      candidate.assignment.interviewerId &&
-      typeof candidate.assignment.interviewerId === "object" &&
-      candidate.assignment.interviewerId._id &&
-      candidate.assignment.interviewerId.name;
+    const hasValidInterviewer = candidate.assignment
+      && candidate.assignment.interviewerId
+      && typeof candidate.assignment.interviewerId === 'object'
+      && candidate.assignment.interviewerId._id
+      && candidate.assignment.interviewerId.name;
 
     return {
       isAssigned: true,
@@ -75,7 +74,7 @@ function getJobAssignmentInfo(candidate: Candidate) {
   };
 }
 
-export const TableBodyRows = memo(function TableBodyRows({
+export const TableBodyRows = memo(({
   candidates,
   visibleColumns,
   selectedCandidates,
@@ -120,7 +119,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onViewDetails(candidate);
     },
-    [onViewDetails]
+    [onViewDetails],
   );
 
   const handleEdit = useCallback(
@@ -128,7 +127,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onEdit(candidate);
     },
-    [onEdit]
+    [onEdit],
   );
 
   const handleAssignInterviewer = useCallback(
@@ -136,7 +135,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onAssignInterviewer(candidate);
     },
-    [onAssignInterviewer]
+    [onAssignInterviewer],
   );
 
   const handleAssignJob = useCallback(
@@ -144,7 +143,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onAssignJob(candidate);
     },
-    [onAssignJob]
+    [onAssignJob],
   );
 
   const handleDelete = useCallback(
@@ -152,7 +151,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onDelete(candidate);
     },
-    [onDelete]
+    [onDelete],
   );
 
   const handleAddRemark = useCallback(
@@ -160,7 +159,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onAddRemark(candidate);
     },
-    [onAddRemark]
+    [onAddRemark],
   );
 
   const handleJobClick = useCallback(
@@ -168,7 +167,7 @@ export const TableBodyRows = memo(function TableBodyRows({
       e.stopPropagation();
       onJobClick(job);
     },
-    [onJobClick]
+    [onJobClick],
   );
 
   return (
@@ -256,7 +255,10 @@ export const TableBodyRows = memo(function TableBodyRows({
                       variant="secondary"
                       className="text-xs text-muted-foreground"
                     >
-                      +{candidate.skills.length - 5} more
+                      +
+                      {candidate.skills.length - 5}
+                      {' '}
+                      more
                     </Badge>
                   )}
                 </div>
@@ -311,13 +313,17 @@ export const TableBodyRows = memo(function TableBodyRows({
               </TableCell>
             )}
             {visibleColumns.experience && (
-              <TableCell>{candidate.experience} years</TableCell>
+              <TableCell>
+                {candidate.experience}
+                {' '}
+                years
+              </TableCell>
             )}
             {visibleColumns.createdAt && (
               <TableCell>
                 {format(
                   new Date(candidate.tracking?.createdAt || Date.now()),
-                  "MMM d, yyyy"
+                  'MMM d, yyyy',
                 )}
               </TableCell>
             )}
@@ -359,18 +365,16 @@ export const TableBodyRows = memo(function TableBodyRows({
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    {candidate.jobId &&
-                      typeof candidate.jobId === "object" &&
-                      candidate.jobId.title && (
+                    {candidate.jobId
+                      && typeof candidate.jobId === 'object'
+                      && candidate.jobId.title && (
                         <DropdownMenuItem
-                          onClick={(e) =>
-                            handleAssignInterviewer(candidate, e as any)
-                          }
+                          onClick={(e) => handleAssignInterviewer(candidate, e as any)}
                         >
                           <UserPlus className="mr-2 h-4 w-4" />
                           Assign Interviewer
                         </DropdownMenuItem>
-                      )}
+                    )}
                     <DropdownMenuItem
                       onClick={(e) => handleAssignJob(candidate, e as any)}
                     >
@@ -381,23 +385,21 @@ export const TableBodyRows = memo(function TableBodyRows({
                       onClick={(e) => handleDelete(candidate, e as any)}
                     >
                       <Archive className="mr-2 h-4 w-4" />
-                      {candidate.isDeleted ? "Unarchived" : "Archive"}
+                      {candidate.isDeleted ? 'Unarchived' : 'Archive'}
                     </DropdownMenuItem>
-                    {candidate.jobId &&
-                      typeof candidate.jobId === "object" &&
-                      candidate.jobId.title && (
+                    {candidate.jobId
+                      && typeof candidate.jobId === 'object'
+                      && candidate.jobId.title && (
                         <>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            onClick={(e) =>
-                              handleAddRemark(candidate, e as any)
-                            }
+                            onClick={(e) => handleAddRemark(candidate, e as any)}
                           >
                             <Plus className="mr-2 h-4 w-4" />
                             Add Remark
                           </DropdownMenuItem>
                         </>
-                      )}
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
@@ -409,4 +411,4 @@ export const TableBodyRows = memo(function TableBodyRows({
   );
 });
 
-TableBodyRows.displayName = "TableBodyRows";
+TableBodyRows.displayName = 'TableBodyRows';

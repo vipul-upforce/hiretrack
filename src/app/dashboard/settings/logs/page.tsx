@@ -1,34 +1,32 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useState } from "react";
-import { Home, ChevronRight } from "lucide-react";
-import withAuthGuard from "@/components/withAuthGuard";
-import { Card, CardHeader } from "@/components/ui/card";
-import { SystemLogViewer } from "./system-logs/system-log-viewer";
-import { ServerHistoryLogs } from "./server/server-history-logs";
-import { EmailHistory } from "./email/email-history";
+import Link from 'next/link';
+import { useState } from 'react';
+import { Home, ChevronRight } from 'lucide-react';
+import withAuthGuard from '@/components/withAuthGuard';
+import { Card, CardHeader } from '@/components/ui/card';
+import { SystemLogViewer } from './system-logs/system-log-viewer';
+import { ServerHistoryLogs } from './server/server-history-logs';
+import { EmailHistory } from './email/email-history';
 
 function SystemLogsPage() {
   const [activeTab, setActiveTab] = useState<
-    "nginx" | "pm2" | "server" | "emails"
-  >("nginx");
+    'nginx' | 'pm2' | 'server' | 'emails'
+  >('nginx');
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleTabChange = (tab: typeof activeTab) => {
     setActiveTab(tab);
-    setSearchQuery("");
+    setSearchQuery('');
     setError(null);
   };
 
-  const getTabClass = (tab: typeof activeTab) => {
-    return `py-2 px-4 text-sm font-medium rounded-t-md transition-colors${
-      activeTab === tab
-        ? " border-b-2 border-blue-500 text-blue-600 dark:text-blue-400"
-        : " text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-    }`;
-  };
+  const getTabClass = (tab: typeof activeTab) => `py-2 px-4 text-sm font-medium rounded-t-md transition-colors${
+    activeTab === tab
+      ? ' border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+      : ' text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+  }`;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
@@ -68,30 +66,30 @@ function SystemLogsPage() {
           <div className="flex border-b mb-6 flex-shrink-0 justify-between">
             <div className="flex space-x-2">
               <button
-                className={getTabClass("nginx")}
-                disabled={activeTab === "nginx"}
-                onClick={() => handleTabChange("nginx")}
+                className={getTabClass('nginx')}
+                disabled={activeTab === 'nginx'}
+                onClick={() => handleTabChange('nginx')}
               >
                 Nginx Logs
               </button>
               <button
-                className={getTabClass("pm2")}
-                disabled={activeTab === "pm2"}
-                onClick={() => handleTabChange("pm2")}
+                className={getTabClass('pm2')}
+                disabled={activeTab === 'pm2'}
+                onClick={() => handleTabChange('pm2')}
               >
                 PM2 Logs
               </button>
               <button
-                className={getTabClass("server")}
-                disabled={activeTab === "server"}
-                onClick={() => handleTabChange("server")}
+                className={getTabClass('server')}
+                disabled={activeTab === 'server'}
+                onClick={() => handleTabChange('server')}
               >
                 History Logs
               </button>
               <button
-                className={getTabClass("emails")}
-                disabled={activeTab === "emails"}
-                onClick={() => handleTabChange("emails")}
+                className={getTabClass('emails')}
+                disabled={activeTab === 'emails'}
+                onClick={() => handleTabChange('emails')}
               >
                 Email History
               </button>
@@ -105,7 +103,7 @@ function SystemLogsPage() {
 
           {/* Content */}
           <div className="flex-1 flex flex-col min-h-0">
-            {activeTab === "nginx" && (
+            {activeTab === 'nginx' && (
               <SystemLogViewer
                 logType="nginx"
                 searchQuery={searchQuery}
@@ -113,7 +111,7 @@ function SystemLogsPage() {
                 onError={setError}
               />
             )}
-            {activeTab === "pm2" && (
+            {activeTab === 'pm2' && (
               <SystemLogViewer
                 logType="pm2"
                 searchQuery={searchQuery}
@@ -121,14 +119,14 @@ function SystemLogsPage() {
                 onError={setError}
               />
             )}
-            {activeTab === "server" && (
+            {activeTab === 'server' && (
               <ServerHistoryLogs
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 onError={setError}
               />
             )}
-            {activeTab === "emails" && (
+            {activeTab === 'emails' && (
               <div className="flex-1 flex flex-col min-h-0">
                 <EmailHistory />
               </div>
@@ -141,8 +139,8 @@ function SystemLogsPage() {
 }
 
 export default withAuthGuard(SystemLogsPage, {
-  requiredRoles: ["admin"],
-  fallbackPath: "/dashboard",
+  requiredRoles: ['admin'],
+  fallbackPath: '/dashboard',
   checkAllowance: false,
   allowAuthenticated: true,
 });

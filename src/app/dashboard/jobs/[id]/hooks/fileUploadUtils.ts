@@ -1,5 +1,5 @@
-import { v4 as uuidv4 } from "uuid";
-import { Attachment } from "../schemas/AssignCandidateSchema";
+import { v4 as uuidv4 } from 'uuid';
+import { Attachment } from '../schemas/AssignCandidateSchema';
 
 interface FileSelectParams {
   files: File[];
@@ -16,14 +16,12 @@ interface SetterParams {
 }
 
 // Function to convert a file to a data URL
-export const readFileAsDataURL = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
+export const readFileAsDataURL = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(reader.result as string);
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
 
 // Handle file selection and renaming duplicates
 export const handleFileSelect = async ({
@@ -42,14 +40,14 @@ export const handleFileSelect = async ({
       // Check for duplicate names in existing candidate attachments or current form attachments
       if (
         existingAttachments.some(
-          (existingFile) => existingFile.name === file.name
-        ) ||
-        currentFormAttachments.some(
-          (existingFile) => existingFile.name === file.name
+          (existingFile) => existingFile.name === file.name,
+        )
+        || currentFormAttachments.some(
+          (existingFile) => existingFile.name === file.name,
         )
       ) {
-        const fileExtension = file.name.split(".").pop();
-        const baseName = file.name.replace(/\.[^/.]+$/, "");
+        const fileExtension = file.name.split('.').pop();
+        const baseName = file.name.replace(/\.[^/.]+$/, '');
         newFileName = `${baseName}_${uuidv4()}.${fileExtension}`;
       }
 
@@ -60,10 +58,10 @@ export const handleFileSelect = async ({
         type: file.type,
         size: file.size,
       };
-    })
+    }),
   );
 
-  setFieldValue("attachments", [...currentFormAttachments, ...newAttachments]);
+  setFieldValue('attachments', [...currentFormAttachments, ...newAttachments]);
 };
 
 // Handle setter logic for updating attachments
@@ -79,9 +77,8 @@ export const handleSetter = ({
   });
 
   const updatedAttachments = uiFiles.map((file, index) => {
-    const existingAttachment =
-      currentFormAttachments[index] ||
-      currentFormAttachments.find((att) => att.size === file.size);
+    const existingAttachment = currentFormAttachments[index]
+      || currentFormAttachments.find((att) => att.size === file.size);
 
     if (existingAttachment) {
       return {
@@ -89,32 +86,29 @@ export const handleSetter = ({
         name: file.name,
         type: file.type,
       };
-    } else {
-      return {
-        id: uuidv4(),
-        name: file.name,
-        url: "",
-        type: file.type,
-        size: file.size,
-      };
     }
+    return {
+      id: uuidv4(),
+      name: file.name,
+      url: '',
+      type: file.type,
+      size: file.size,
+    };
   });
 
   // Identify duplicate files
   const duplicateFiles = updatedAttachments.filter(
-    (newFile) =>
-      existingAttachments.some(
-        (existingFile) => existingFile.name === newFile.name
-      ) ||
-      currentFormAttachments.some(
-        (existingFile) => existingFile.name === newFile.name
-      )
+    (newFile) => existingAttachments.some(
+      (existingFile) => existingFile.name === newFile.name,
+    )
+      || currentFormAttachments.some(
+        (existingFile) => existingFile.name === newFile.name,
+      ),
   );
 
   // Filter out duplicates to keep unique/renamed attachments
   updatedAttachments.filter(
-    (newFile) =>
-      !duplicateFiles.some((duplicate) => duplicate.name === newFile.name)
+    (newFile) => !duplicateFiles.some((duplicate) => duplicate.name === newFile.name),
   );
-  setFieldValue("attachments", updatedAttachments);
+  setFieldValue('attachments', updatedAttachments);
 };

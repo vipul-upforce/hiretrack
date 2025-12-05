@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -6,25 +6,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Plus, Maximize, Minimize } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Formik, Form } from "formik";
-import { candidateSchema } from "../../schemas/candidate-schema";
-import { useState, useEffect } from "react";
-import { CandidateForm } from "../Candidate/candidate-form";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Plus, Maximize, Minimize } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Formik, Form } from 'formik';
+import { useState, useEffect } from 'react';
 import useCustomForm, {
   CustomFieldValues,
-} from "@/Custom_Fields/hooks/useCustomForm";
-import { Resume } from "@/lib/redux/types";
-import FormUpdater from "../Utils/FormUpdater";
-import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
-import { TermsConfirmationDialog } from "@/components/TermsConfirmationDialog";
-import { useSelector } from "react-redux";
-import { CreateCandidateDialogHeader } from "./create-candidate-components/CreateCandidateDialogHeader";
-import { CreateCandidateDialogFooter } from "./create-candidate-components/CreateCandidateDialogFooter";
-import { useCreateCandidateSubmission } from "./create-candidate-components/useCreateCandidateSubmission";
+} from '@/Custom_Fields/hooks/useCustomForm';
+import { Resume } from '@/lib/redux/types';
+import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
+import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
+import { useSelector } from 'react-redux';
+import FormUpdater from '../Utils/FormUpdater';
+import { CandidateForm } from '../Candidate/candidate-form';
+import { candidateSchema } from '../../schemas/candidate-schema';
+import { CreateCandidateDialogHeader } from './create-candidate-components/CreateCandidateDialogHeader';
+import { CreateCandidateDialogFooter } from './create-candidate-components/CreateCandidateDialogFooter';
+import { useCreateCandidateSubmission } from './create-candidate-components/useCreateCandidateSubmission';
 
 interface User {
   id: string;
@@ -45,8 +45,8 @@ interface CreateCandidateDialogProps {
 }
 
 const getInitialValues = (customFields: CustomFieldValues) => ({
-  name: "",
-  location: "",
+  name: '',
+  location: '',
   experience: 0,
   relevantExperience: 0,
   skills: [],
@@ -54,28 +54,28 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   currentCTC: 0,
   noticePeriod: 0,
   resume: null as File | null,
-  remarks: "",
+  remarks: '',
   attachments: [] as File[],
-  assignee: "",
+  assignee: '',
   time: undefined,
   customFields: { ...customFields },
-  email: "",
+  email: '',
 });
 
 const handleFileParse = async (
   file: File | null,
-  setParsedResume: (data: Resume | null) => void
+  setParsedResume: (data: Resume | null) => void,
 ) => {
-  if (file && file.type === "application/pdf") {
+  if (file && file.type === 'application/pdf') {
     const reader = new FileReader();
     reader.onload = async () => {
-      const result = reader.result;
-      if (result && typeof result === "string") {
+      const { result } = reader;
+      if (result && typeof result === 'string') {
         try {
           const fileUrl = result;
           // Dynamically import PDF parsing only on client side
           const { parseResumeFromPdf } = await import(
-            "@/lib/parse-resume-from-pdf"
+            '@/lib/parse-resume-from-pdf'
           );
           const parsedData = await parseResumeFromPdf(fileUrl);
           setParsedResume(parsedData);
@@ -92,15 +92,15 @@ const handleFileParse = async (
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
 // Add this function before handleSubmit
-const checkPdfPageCount = async (file: File): Promise<number> => {
+const checkPdfPageCount = async (file: File): Promise<number> =>
   // console.log("%%%%%%% ", file);
-  return new Promise((resolve, reject) => {
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async () => {
       const arrayBuffer = reader.result as ArrayBuffer;
       try {
         // Dynamically import pdfjs only on client side
-        const pdfjs = await import("pdfjs-dist");
+        const pdfjs = await import('pdfjs-dist');
 
         // Configure worker if not already set
         if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -116,8 +116,6 @@ const checkPdfPageCount = async (file: File): Promise<number> => {
     reader.onerror = (error) => reject(error);
     reader.readAsArrayBuffer(file);
   });
-};
-
 export function CreateCandidateDialog({
   jobId,
   isOpen,
@@ -130,22 +128,21 @@ export function CreateCandidateDialog({
 }: CreateCandidateDialogProps) {
   const { formikRef, handleApply } = useApplyHandler<any>();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-  const formName = "Candidate";
+  const formName = 'Candidate';
   const { validationSchema, initialValues: inits } = useCustomForm(
     formName,
     jobId, // Pass the jobId to filter job-specific fields
     undefined, // No candidateId for new candidates
-    false // Don't use fetchGlobal, as we want job-specific fields too
+    false, // Don't use fetchGlobal, as we want job-specific fields too
   );
   const [resetForm, setResetForm] = useState(false);
   // const [user, setuser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
   const [isClient, setIsClient] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
-  const [pendingFormValues, setPendingFormValues] =
-    useState<CandidateFormValues | null>(null);
+  const [pendingFormValues, setPendingFormValues] = useState<CandidateFormValues | null>(null);
   const [isLargeViewport, setIsLargeViewport] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -170,9 +167,9 @@ export function CreateCandidateDialog({
     };
 
     checkScreenSize();
-    window.addEventListener("resize", checkScreenSize);
+    window.addEventListener('resize', checkScreenSize);
 
-    return () => window.removeEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   useEffect(() => {
@@ -180,8 +177,6 @@ export function CreateCandidateDialog({
       setIsMaximized(false);
     }
   }, [isOpen]);
-
-
 
   useEffect(() => {
     if (isOpen && isClient) {
@@ -206,7 +201,7 @@ export function CreateCandidateDialog({
   const handleSubmit = async (values: CandidateFormValues) => {
     // Only show terms confirmation dialog for candidates applying through portal
     // Admin/HR users adding candidates internally should skip the terms dialog
-    if (user?.role === "candidate" || user?.role === "") {
+    if (user?.role === 'candidate' || user?.role === '') {
       setPendingFormValues(values);
       setShowTermsDialog(true);
     } else {
@@ -218,7 +213,7 @@ export function CreateCandidateDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {user && (user.role === "candidate" || user?.role === "") ? (
+        {user && (user.role === 'candidate' || user?.role === '') ? (
           <button
             type="button"
             disabled={isSubmissionLoading || isCreating}
@@ -234,8 +229,8 @@ export function CreateCandidateDialog({
             className="inline-flex justify-center w-full rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
             {isSubmissionLoading || isCreating
-              ? "Processing..."
-              : "Apply Now"}
+              ? 'Processing...'
+              : 'Apply Now'}
           </button>
         ) : (
           <Button variant="primary" className="w-full">
@@ -247,27 +242,27 @@ export function CreateCandidateDialog({
       <DialogContent
         className={
           !isLargeViewport || isMaximized
-            ? "!max-w-none !w-screen !h-[100dvh] !min-h-100dvh !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0"
-            : "lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg p-0 overflow-hidden flex flex-col"
+            ? '!max-w-none !w-screen !h-[100dvh] !min-h-100dvh !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0'
+            : 'lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg p-0 overflow-hidden flex flex-col'
         }
         style={
           !isLargeViewport || isMaximized
             ? {
-                position: "fixed" as const,
-                inset: 0,
-                width: "100vw",
-                height: "100dvh",
-                minHeight: "100dvh",
-                maxHeight: "100dvh",
-                maxWidth: "none",
-                transform: "none",
-                left: 0,
-                top: 0,
-                margin: 0,
-                border: 0,
-                borderRadius: 0,
-                zIndex: 9999,
-              }
+              position: 'fixed' as const,
+              inset: 0,
+              width: '100vw',
+              height: '100dvh',
+              minHeight: '100dvh',
+              maxHeight: '100dvh',
+              maxWidth: 'none',
+              transform: 'none',
+              left: 0,
+              top: 0,
+              margin: 0,
+              border: 0,
+              borderRadius: 0,
+              zIndex: 9999,
+            }
             : undefined
         }
       >
@@ -303,12 +298,12 @@ export function CreateCandidateDialog({
                 <CandidateForm
                   jobId={jobId}
                   onFileUpload={async (file: File) => {
-                    setFieldValue("resume", file);
+                    setFieldValue('resume', file);
                     await handleFileParse(file, setParsedResume);
                     Object?.entries(values?.customFields).forEach(
                       ([key, value]) => {
                         setTouched({ [key]: true });
-                      }
+                      },
                     );
                   }}
                 />

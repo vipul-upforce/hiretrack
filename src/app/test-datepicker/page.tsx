@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { DatePicker } from "@/components/ui/date-picker";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import dayjs from "dayjs";
+import { useState } from 'react';
+import { DatePicker } from '@/components/ui/date-picker';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import dayjs from 'dayjs';
 
 // Helper function to safely convert any date value to a Date object
 const safeDateToString = (dateValue: any): string => {
-  if (!dateValue) return "None";
+  if (!dateValue) return 'None';
 
   try {
     // If it's already a Date object
@@ -16,7 +16,7 @@ const safeDateToString = (dateValue: any): string => {
     }
 
     // If it's a string, try to convert to Date
-    if (typeof dateValue === "string") {
+    if (typeof dateValue === 'string') {
       const date = new Date(dateValue);
       if (!isNaN(date.getTime())) {
         return date.toLocaleDateString();
@@ -24,25 +24,25 @@ const safeDateToString = (dateValue: any): string => {
     }
 
     // If it's a Date object from the library (has toDate method)
-    if (dateValue && typeof dateValue.toDate === "function") {
+    if (dateValue && typeof dateValue.toDate === 'function') {
       return dateValue.toDate().toLocaleDateString();
     }
 
     // If it's a Date object from the library (has format method)
-    if (dateValue && typeof dateValue.format === "function") {
-      return dateValue.format("MM/DD/YYYY");
+    if (dateValue && typeof dateValue.format === 'function') {
+      return dateValue.format('MM/DD/YYYY');
     }
 
     // Fallback: try to convert to string
     return String(dateValue);
   } catch (error) {
-    return "Invalid date";
+    return 'Invalid date';
   }
 };
 
 // Helper function to safely convert any date value to a string for display
 const safeDateToLocaleString = (dateValue: any): string => {
-  if (!dateValue) return "None";
+  if (!dateValue) return 'None';
 
   try {
     // If it's already a Date object
@@ -51,7 +51,7 @@ const safeDateToLocaleString = (dateValue: any): string => {
     }
 
     // If it's a string, try to convert to Date
-    if (typeof dateValue === "string") {
+    if (typeof dateValue === 'string') {
       const date = new Date(dateValue);
       if (!isNaN(date.getTime())) {
         return date.toLocaleString();
@@ -59,19 +59,19 @@ const safeDateToLocaleString = (dateValue: any): string => {
     }
 
     // If it's a Date object from the library (has toDate method)
-    if (dateValue && typeof dateValue.toDate === "function") {
+    if (dateValue && typeof dateValue.toDate === 'function') {
       return dateValue.toDate().toLocaleString();
     }
 
     // If it's a Date object from the library (has format method)
-    if (dateValue && typeof dateValue.format === "function") {
-      return dateValue.format("MM/DD/YYYY HH:mm");
+    if (dateValue && typeof dateValue.format === 'function') {
+      return dateValue.format('MM/DD/YYYY HH:mm');
     }
 
     // Fallback: try to convert to string
     return String(dateValue);
   } catch (error) {
-    return "Invalid date";
+    return 'Invalid date';
   }
 };
 
@@ -97,7 +97,9 @@ export default function TestDatePickerPage() {
             placeholder="Select date and time"
           />
           <p className="text-sm text-muted-foreground">
-            Selected: {safeDateToLocaleString(date)}
+            Selected:
+            {' '}
+            {safeDateToLocaleString(date)}
           </p>
         </div>
 
@@ -111,7 +113,9 @@ export default function TestDatePickerPage() {
             placeholder="Select date only"
           />
           <p className="text-sm text-muted-foreground">
-            Selected: {safeDateToString(dateOnly)}
+            Selected:
+            {' '}
+            {safeDateToString(dateOnly)}
           </p>
         </div>
 
@@ -120,15 +124,16 @@ export default function TestDatePickerPage() {
           <DatePicker
             value={dateRange}
             onChange={setDateRange}
-            range={true}
+            range
             format="MM/DD/YYYY"
             placeholder="Select date range"
           />
           <p className="text-sm text-muted-foreground">
-            Selected:{" "}
+            Selected:
+            {' '}
             {dateRange && dateRange[0] && dateRange[1]
               ? `${safeDateToString(dateRange[0])} - ${safeDateToString(dateRange[1])}`
-              : "None"}
+              : 'None'}
           </p>
         </div>
 
@@ -141,7 +146,9 @@ export default function TestDatePickerPage() {
             placeholder="Select with custom format"
           />
           <p className="text-sm text-muted-foreground">
-            Selected: {safeDateToLocaleString(customFormat)}
+            Selected:
+            {' '}
+            {safeDateToLocaleString(customFormat)}
           </p>
         </div>
 
@@ -155,7 +162,9 @@ export default function TestDatePickerPage() {
             placeholder="Select date and time (legacy)"
           />
           <p className="text-sm text-muted-foreground">
-            Selected: {dateTime ? dateTime.format("MM/DD/YYYY HH:mm") : "None"}
+            Selected:
+            {' '}
+            {dateTime ? dateTime.format('MM/DD/YYYY HH:mm') : 'None'}
           </p>
         </div>
 
@@ -164,7 +173,7 @@ export default function TestDatePickerPage() {
           <DatePicker
             value={date}
             onChange={setDate}
-            disabled={true}
+            disabled
             placeholder="Disabled picker"
           />
         </div>
@@ -209,30 +218,46 @@ export default function TestDatePickerPage() {
         <h2 className="text-lg font-semibold mb-2">Features to Test:</h2>
         <ul className="list-disc list-inside space-y-1 text-sm">
           <li>
-            <strong>Theme Support:</strong> Switch between light/dark themes
+            <strong>Theme Support:</strong>
+            {' '}
+            Switch between light/dark themes
           </li>
           <li>
-            <strong>Custom Actions:</strong> Today, Now, Clear, and Done buttons
+            <strong>Custom Actions:</strong>
+            {' '}
+            Today, Now, Clear, and Done buttons
           </li>
           <li>
-            <strong>Time Picker:</strong> Configurable position and visibility
+            <strong>Time Picker:</strong>
+            {' '}
+            Configurable position and visibility
           </li>
           <li>
-            <strong>Date Range:</strong> Select start and end dates
+            <strong>Date Range:</strong>
+            {' '}
+            Select start and end dates
           </li>
           <li>
-            <strong>Custom Format:</strong> Different date format displays
+            <strong>Custom Format:</strong>
+            {' '}
+            Different date format displays
           </li>
           <li>
-            <strong>Clear Functionality:</strong> Clear button to reset
+            <strong>Clear Functionality:</strong>
+            {' '}
+            Clear button to reset
             selection
           </li>
           <li>
-            <strong>Accessibility:</strong> Keyboard navigation and screen
+            <strong>Accessibility:</strong>
+            {' '}
+            Keyboard navigation and screen
             readers
           </li>
           <li>
-            <strong>Responsive:</strong> Works on mobile and desktop
+            <strong>Responsive:</strong>
+            {' '}
+            Works on mobile and desktop
           </li>
         </ul>
       </div>

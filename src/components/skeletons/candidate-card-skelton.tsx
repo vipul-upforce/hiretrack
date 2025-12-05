@@ -1,8 +1,8 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "../ui/skeleton";
-import { Separator } from "../ui/separator";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '../ui/skeleton';
+import { Separator } from '../ui/separator';
 
-export const CandidateCardSkeleton = () => {
+export function CandidateCardSkeleton() {
   return (
     <Card className="w-[380px] border rounded-xl animate-pulse">
       <CardHeader className="space-y-2">
@@ -59,4 +59,4 @@ export const CandidateCardSkeleton = () => {
       </CardContent>
     </Card>
   );
-};
+}

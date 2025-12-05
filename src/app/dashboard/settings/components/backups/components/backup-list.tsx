@@ -1,6 +1,6 @@
-import { FileIcon } from "lucide-react";
-import { BackupFile } from "../types";
-import { BackupListItem } from "./backup-list-item";
+import { FileIcon } from 'lucide-react';
+import { BackupFile } from '../types';
+import { BackupListItem } from './backup-list-item';
 
 interface BackupListProps {
   files: BackupFile[];
@@ -13,7 +13,9 @@ export function BackupList({ files, loading, onDelete }: BackupListProps) {
     <div>
       <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
         <FileIcon className="h-4 w-4" />
-        Backup Files ({files.length})
+        Backup Files (
+        {files.length}
+        )
       </h3>
       <ul className="space-y-2 max-h-[40vh] overflow-y-auto">
         {files.map((file, i) => (

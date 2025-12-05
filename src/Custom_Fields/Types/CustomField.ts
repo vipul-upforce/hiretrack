@@ -41,18 +41,18 @@ export type CustomFieldFormProps = {
 };
 
 export type Types =
-  | "text"
-  | "number"
-  | "email"
-  | "password"
-  | "date"
-  | "time"
-  | "datetime"
-  | "checkbox"
-  | "radio"
-  | "select"
-  | "multiSelect"
-  | "textarea"
-  | "file";
+  | 'text'
+  | 'number'
+  | 'email'
+  | 'password'
+  | 'date'
+  | 'time'
+  | 'datetime'
+  | 'checkbox'
+  | 'radio'
+  | 'select'
+  | 'multiSelect'
+  | 'textarea'
+  | 'file';
 
-export type Persistance = "permanent" | "temporary";
+export type Persistance = 'permanent' | 'temporary';

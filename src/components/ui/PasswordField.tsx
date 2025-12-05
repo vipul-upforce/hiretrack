@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import * as React from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function PasswordField({
   name,
@@ -23,7 +23,7 @@ export default function PasswordField({
     <div className="relative">
       <Input
         id={id}
-        type={showPassword ? "text" : "password"}
+        type={showPassword ? 'text' : 'password'}
         placeholder="Enter your password"
         className="pr-10"
         name={name}
@@ -41,7 +41,7 @@ export default function PasswordField({
         size="icon"
         className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
         onClick={() => setShowPassword(!showPassword)}
-        aria-label={showPassword ? "Hide password" : "Show password"}
+        aria-label={showPassword ? 'Hide password' : 'Show password'}
         aria-controls={id}
       >
         {!showPassword ? (

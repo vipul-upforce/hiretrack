@@ -1,34 +1,36 @@
-import React from "react";
-import { FormikProps, ErrorMessage } from "formik";
+import React from 'react';
+import { FormikProps, ErrorMessage } from 'formik';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { CheckCircle, XCircle, Loader2, Eye, EyeOff } from "lucide-react";
-import { getProviderModels } from "@/lib/ai-providers/models-config";
-import { AIProvidersValues, ProviderConfigItem } from "./../types";
-import { getProviderIcon } from "./../utils";
+} from '@/components/ui/select';
+import {
+  CheckCircle, XCircle, Loader2, Eye, EyeOff,
+} from 'lucide-react';
+import { getProviderModels } from '@/lib/ai-providers/models-config';
+import { AIProvidersValues, ProviderConfigItem } from '../types';
+import { getProviderIcon } from '../utils';
 
 interface ProviderCardProps {
   config: ProviderConfigItem;
   formik: FormikProps<AIProvidersValues>;
   primaryColor: string;
   isUpdating: boolean;
-  verificationStatus: "idle" | "loading" | "success" | "error";
+  verificationStatus: 'idle' | 'loading' | 'success' | 'error';
   verificationMessage?: string;
   showApiKey: boolean;
   onVerify: (apiKey: string, model: string) => void;
@@ -55,22 +57,23 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
     provider,
     description,
   } = config;
-  const { values, handleChange, handleBlur, setFieldValue, errors, touched } =
-    formik;
+  const {
+    values, handleChange, handleBlur, setFieldValue, errors, touched,
+  } = formik;
 
   const isActive = values.activeProvider === provider;
-  const apiKeyValue = values[apiKeyField] || "";
-  const modelValue = values[modelField] || "";
-  const customModelValue = values[customModelField] || "";
+  const apiKeyValue = values[apiKeyField] || '';
+  const modelValue = values[modelField] || '';
+  const customModelValue = values[customModelField] || '';
   const providerModels = getProviderModels(provider);
 
   const getVerificationIcon = () => {
     switch (verificationStatus) {
-      case "loading":
+      case 'loading':
         return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
-      case "success":
+      case 'success':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "error":
+      case 'error':
         return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return null;
@@ -79,18 +82,18 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
 
   const activeStyle = isActive
     ? ({
-        borderColor: `${primaryColor}80`,
-        backgroundColor: `${primaryColor}0D`,
-        "--tw-ring-color": `${primaryColor}33`,
-      } as React.CSSProperties)
+      borderColor: `${primaryColor}80`,
+      backgroundColor: `${primaryColor}0D`,
+      '--tw-ring-color': `${primaryColor}33`,
+    } as React.CSSProperties)
     : {};
 
   return (
     <Card
       className={`transition-all duration-300 hover:shadow-lg ${
         isActive
-          ? "border-2 shadow-md ring-1"
-          : "border border-border hover:border-border/80 dark:hover:border-border/60"
+          ? 'border-2 shadow-md ring-1'
+          : 'border border-border hover:border-border/80 dark:hover:border-border/60'
       }`}
       style={activeStyle}
     >
@@ -98,13 +101,13 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={`p-2 rounded-lg ${isActive ? "" : "bg-muted text-muted-foreground"}`}
+              className={`p-2 rounded-lg ${isActive ? '' : 'bg-muted text-muted-foreground'}`}
               style={
                 isActive
                   ? {
-                      backgroundColor: `${primaryColor}33`,
-                      color: primaryColor,
-                    }
+                    backgroundColor: `${primaryColor}33`,
+                    color: primaryColor,
+                  }
                   : {}
               }
             >
@@ -121,12 +124,12 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
             {getVerificationIcon()}
             <Button
               type="button"
-              variant={isActive ? "primary" : "outline"}
+              variant={isActive ? 'primary' : 'outline'}
               size="sm"
-              onClick={() => setFieldValue("activeProvider", provider)}
+              onClick={() => setFieldValue('activeProvider', provider)}
               disabled={formik.isSubmitting || isUpdating}
             >
-              {isActive ? "Active" : "Make Active"}
+              {isActive ? 'Active' : 'Make Active'}
             </Button>
           </div>
         </div>
@@ -141,15 +144,15 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
             <Input
               id={apiKeyField}
               name={apiKeyField}
-              type={showApiKey ? "text" : "password"}
+              type={showApiKey ? 'text' : 'password'}
               value={apiKeyValue}
               onChange={handleChange}
               onBlur={handleBlur}
               placeholder={placeholder}
               className={`pr-20 ${
                 errors[apiKeyField] && touched[apiKeyField]
-                  ? "border-destructive focus-visible:ring-destructive"
-                  : ""
+                  ? 'border-destructive focus-visible:ring-destructive'
+                  : ''
               }`}
               style={isActive && !errors[apiKeyField] ? activeStyle : {}}
             />
@@ -173,14 +176,13 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                 size="sm"
                 className="h-6 px-2 text-xs"
                 onClick={() => {
-                  const finalModel =
-                    modelValue === "custom" ? customModelValue : modelValue;
+                  const finalModel = modelValue === 'custom' ? customModelValue : modelValue;
                   onVerify(apiKeyValue, finalModel);
                 }}
                 disabled={
-                  verificationStatus === "loading" ||
-                  !apiKeyValue.trim() ||
-                  (modelValue === "custom" && !customModelValue.trim())
+                  verificationStatus === 'loading'
+                  || !apiKeyValue.trim()
+                  || (modelValue === 'custom' && !customModelValue.trim())
                 }
               >
                 Verify
@@ -195,11 +197,11 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
           {verificationMessage && (
             <p
               className={`text-xs ${
-                verificationStatus === "success"
-                  ? "text-green-600"
-                  : verificationStatus === "error"
-                    ? "text-red-600"
-                    : "text-gray-600"
+                verificationStatus === 'success'
+                  ? 'text-green-600'
+                  : verificationStatus === 'error'
+                    ? 'text-red-600'
+                    : 'text-gray-600'
               }`}
             >
               {verificationMessage}
@@ -267,10 +269,12 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         </div>
 
         {/* Custom Model Input */}
-        {modelValue === "custom" && (
+        {modelValue === 'custom' && (
           <div className="space-y-2">
             <Label htmlFor={customModelField} className="text-sm font-medium">
-              Custom Model Name <span className="text-red-500">*</span>
+              Custom Model Name
+              {' '}
+              <span className="text-red-500">*</span>
             </Label>
             <Input
               id={customModelField}
@@ -281,8 +285,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
               onBlur={handleBlur}
               className={
                 errors[customModelField] && touched[customModelField]
-                  ? "border-destructive"
-                  : ""
+                  ? 'border-destructive'
+                  : ''
               }
             />
             <p className="text-xs text-gray-500">
@@ -309,13 +313,13 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         )}
 
         {/* Capabilities Display */}
-        {modelValue && modelValue !== "custom" && (
+        {modelValue && modelValue !== 'custom' && (
           <div className="mt-4 p-3 bg-white dark:bg-black rounded-lg">
             <h4 className="text-sm font-medium mb-2">Model Capabilities</h4>
             <div className="flex flex-wrap gap-2">
               {(() => {
                 const modelInfo = providerModels.find(
-                  (m) => m.id === modelValue
+                  (m) => m.id === modelValue,
                 );
                 if (!modelInfo) return null;
                 const caps = modelInfo.capabilities;
@@ -337,7 +341,9 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-xs">
-                      {caps.maxTokens.toLocaleString()} tokens
+                      {caps.maxTokens.toLocaleString()}
+                      {' '}
+                      tokens
                     </Badge>
                   </>
                 );

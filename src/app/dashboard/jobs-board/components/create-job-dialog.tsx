@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -7,35 +7,35 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Formik, Form, FormikHelpers } from "formik";
-import { JobFormValues, jobSchema } from "../schemas/job-schema";
-import { useState } from "react";
-import { JobForm } from "./job-form";
-import CustomFields from "@/Custom_Fields/Components/CustomFields";
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import { scrollToError } from "@/lib/formUtils";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Formik, Form, FormikHelpers } from 'formik';
+import { useState } from 'react';
+import CustomFields from '@/Custom_Fields/Components/CustomFields';
+import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { scrollToError } from '@/lib/formUtils';
+import { JobForm } from './job-form';
+import { JobFormValues, jobSchema } from '../schemas/job-schema';
 
 interface CreateJobDialogProps {
   onJobCreated: (
     job: JobFormValues & {
-      status: "draft" | "open" | "closed";
+      status: 'draft' | 'open' | 'closed';
       attachments: {
         files: Array<{
           id: string;
           name: string;
           url: string; // Base64 string
-          type: "pdf";
+          type: 'pdf';
           size: number;
         }>;
         images: Array<{
           id: string;
           name: string;
           url: string; // Base64 string
-          type: "image";
+          type: 'image';
           size: number;
         }>;
       };
@@ -56,29 +56,29 @@ export function CreateJobDialog({
 }: CreateJobDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
-  const formName = "Job Position";
+  const formName = 'Job Position';
 
   const { validationSchema, initialValues: inits } = useCustomForm(
     formName,
     undefined,
     undefined,
-    true
+    true,
   );
 
-  if (userRole !== "hr" && userRole !== "admin") {
+  if (userRole !== 'hr' && userRole !== 'admin') {
     return null;
   }
 
   const initialValues: JobFormValues = {
-    _id: "",
-    title: "",
-    status: "draft",
-    description: "",
+    _id: '',
+    title: '',
+    status: 'draft',
+    description: '',
     skills: [] as string[],
     salary: {
       min: 0,
       max: 0,
-      inText: "",
+      inText: '',
       isPrivate: false,
     },
     experience: 0,
@@ -99,24 +99,24 @@ export function CreateJobDialog({
 
   const handleSubmit = async (
     values: JobFormValues,
-    { resetForm, setSubmitting }: FormikHelpers<JobFormValues>
+    { resetForm, setSubmitting }: FormikHelpers<JobFormValues>,
   ) => {
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
     if (hasDuplicates) {
       toast({
-        title: "Alert",
+        title: 'Alert',
         description:
-          "Duplicate file names found! Please rename before submitting.",
-        variant: "destructive",
+          'Duplicate file names found! Please rename before submitting.',
+        variant: 'destructive',
       });
       return;
     }
     try {
       const newJob = {
         ...values,
-        status: values?.status || "draft",
+        status: values?.status || 'draft',
         candidateCount: 0,
         attachments: {
           files:
@@ -127,10 +127,10 @@ export function CreateJobDialog({
                   id: Math.random().toString(36).substr(2, 9),
                   name: file.name,
                   url: base64, // Store Base64 string
-                  type: "pdf" as const,
+                  type: 'pdf' as const,
                   size: file.size,
                 };
-              })
+              }),
             )) || [],
           images:
             (await Promise.all(
@@ -140,10 +140,10 @@ export function CreateJobDialog({
                   id: Math.random().toString(36).substr(2, 9),
                   name: image.name,
                   url: base64, // Store Base64 string
-                  type: "image" as const,
+                  type: 'image' as const,
                   size: image.size,
                 };
-              })
+              }),
             )) || [],
         },
         tracking: {
@@ -157,23 +157,21 @@ export function CreateJobDialog({
       setIsOpen(false);
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to create job",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create job',
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
+  const convertFileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
   const validationSchemas = jobSchema(validationSchema);
 
@@ -220,7 +218,7 @@ export function CreateJobDialog({
                   onClick={() => scrollToError(errors)}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Saving..." : "Create Job"}
+                  {isSubmitting ? 'Saving...' : 'Create Job'}
                 </Button>
               </div>
             </Form>

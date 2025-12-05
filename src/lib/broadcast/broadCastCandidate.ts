@@ -1,6 +1,6 @@
-import { signToken } from "@/app/actions/auth";
-import { ICandidate } from "../models/candidate";
-import { ICandidateHistory } from "../models/history";
+import { signToken } from '@/app/actions/auth';
+import { ICandidate } from '../models/candidate';
+import { ICandidateHistory } from '../models/history';
 // import { auth } from "../auth";
 
 interface NotificationSSEClient {
@@ -16,7 +16,7 @@ declare global {
 
 // Broadcast candidate updates to all SSE clients via notification stream
 export function broadcastCandidateUpdate(
-  candidate: ICandidate & { history?: ICandidateHistory[] }
+  candidate: ICandidate & { history?: ICandidateHistory[] },
 ) {
   const orgId = candidate.organizationId;
   const orgClients = global.sseNotificationClients?.get(orgId);
@@ -27,13 +27,13 @@ export function broadcastCandidateUpdate(
     try {
       const encodedSSE = await signToken(candidate, orgId);
       // console.log(encodedSSE, " .......encodedSSE");
-      const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
+      const data = `data: ${JSON.stringify({ type: 'candidateUpdate', candidate: encodedSSE })}\n\n`;
       const clientsCount = orgClients.size;
       client.controller.enqueue(encoder.encode(data));
       client.controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
-        )
+          `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`,
+        ),
       );
     } catch (error) {
       console.error(`Failed to send message to client ${client.id}:`, error);
@@ -41,7 +41,7 @@ export function broadcastCandidateUpdate(
   });
 }
 export function broadcastMultipleCandidateUpdate(
-  candidates: (ICandidate & { history?: ICandidateHistory[] })[]
+  candidates: (ICandidate & { history?: ICandidateHistory[] })[],
 ) {
   const orgId = candidates[0]?.organizationId;
   const orgClients = global.sseNotificationClients?.get(orgId);
@@ -51,7 +51,7 @@ export function broadcastMultipleCandidateUpdate(
   orgClients?.forEach(async (client: any) => {
     try {
       const encodedSSE = await signToken(candidates, orgId);
-      const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates: encodedSSE })}\n\n`;
+      const data = `data: ${JSON.stringify({ type: 'multipleCandidateUpdate', candidates: encodedSSE })}\n\n`;
       client.controller.enqueue(encoder.encode(data));
     } catch (error) {
       console.error(`Failed to send message to client ${client.id}:`, error);
@@ -61,7 +61,7 @@ export function broadcastMultipleCandidateUpdate(
 export function broadcastLaneUpdate(
   orgId: string,
   lanes: string[],
-  jobId?: string
+  jobId?: string,
 ) {
   const orgClients = global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
@@ -69,14 +69,14 @@ export function broadcastLaneUpdate(
   const encoder = new TextEncoder();
   orgClients?.forEach((client: any) => {
     try {
-      const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
+      const data = `data: ${JSON.stringify({ type: 'lanesUpdate', lanes })}\n\n`;
       const clientsCount = orgClients.size;
 
       client.controller.enqueue(encoder.encode(data));
       client.controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
-        )
+          `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`,
+        ),
       );
     } catch (error) {
       console.error(`Failed to send message to client ${client.id}:`, error);

@@ -1,7 +1,9 @@
-import { Button } from "@/components/ui/button";
-import { formatFileSize } from "@/components/ui/file-upload";
-import { Calendar, Database, FileIcon, HardDrive, Loader2 } from "lucide-react";
-import { BackupStats } from "../types";
+import { Button } from '@/components/ui/button';
+import { formatFileSize } from '@/components/ui/file-upload';
+import {
+  Calendar, Database, FileIcon, HardDrive, Loader2,
+} from 'lucide-react';
+import { BackupStats } from '../types';
 
 interface BackupSummaryCardProps {
   stats: BackupStats;
@@ -54,14 +56,14 @@ export function BackupSummaryCard({
           <Calendar className="h-3 w-3 text-gray-500" />
           <span className="text-gray-600 dark:text-gray-400">Oldest:</span>
           <span className="font-medium text-xs">
-            {stats.oldestBackup || "N/A"}
+            {stats.oldestBackup || 'N/A'}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-3 w-3 text-gray-500" />
           <span className="text-gray-600 dark:text-gray-400">Newest:</span>
           <span className="font-medium text-xs">
-            {stats.newestBackup || "N/A"}
+            {stats.newestBackup || 'N/A'}
           </span>
         </div>
         <div className="flex items-center gap-2 col-span-2">

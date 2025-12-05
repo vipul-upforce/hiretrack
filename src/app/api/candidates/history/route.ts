@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, {
   Candidate,
   History,
@@ -9,13 +9,13 @@ import {
   Attachments,
   FileAttachment,
   handleFileAttachments,
-} from "@/lib/fileUtils";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { v4 as uuidv4 } from "uuid";
-import mongoose, { Types } from "mongoose";
-import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
-import { ICandidate } from "@/lib/models/candidate";
-import { ICandidateHistory } from "@/lib/models/history";
+} from '@/lib/fileUtils';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { v4 as uuidv4 } from 'uuid';
+import mongoose, { Types } from 'mongoose';
+import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { ICandidate } from '@/lib/models/candidate';
+import { ICandidateHistory } from '@/lib/models/history';
 import {
   filterChecklistResponses,
 } from "@/lib/utils/checklistVisibility";
@@ -25,7 +25,7 @@ import { sendRemarkNotificationWithMentions } from "@/lib/unifiedEmailService";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 
 export async function POST(request: NextRequest) {
-  //Getting the history data
+  // Getting the history data
   try {
     const [userData, data] = await Promise.all([
       getAuthenticatedUser(request),
@@ -33,27 +33,27 @@ export async function POST(request: NextRequest) {
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (!History) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
 
     if (!data || !data.jobId || !data.candidateId) {
       return NextResponse.json(
-        { error: "Job ID and Candidate ID are required" },
-        { status: 400 }
+        { error: 'Job ID and Candidate ID are required' },
+        { status: 400 },
       );
     }
     const populateFields = [
-      { path: "history.currentInterviewer", select: "_id name email" },
-      { path: "history.previousInterviewer", select: "_id name email" },
-      { path: "history.assignmentBy", select: "_id name email" },
-      { path: "history.note.userId", select: "_id name email" },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
     ];
     const [historyEntry, laneConfig] = await Promise.all([
       History.findOne({
@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
 
     if (!historyEntry) {
       return NextResponse.json(
-        { error: "No Assignment History Found" },
-        { status: 404 }
+        { error: 'No Assignment History Found' },
+        { status: 404 },
       );
     }
 
@@ -82,13 +82,12 @@ export async function POST(request: NextRequest) {
       let checklistFields: any[] = [];
       if (laneConfig) {
         const targetLane = laneConfig.laneConfigs.find(
-          (lc: any) => lc.laneId === entry.checklistForm.laneId
+          (lc: any) => lc.laneId === entry.checklistForm.laneId,
         );
         if (targetLane) {
-          const checklist =
-            entry.checklistForm.checklistType === "incoming"
-              ? targetLane.incomingChecklist
-              : targetLane.outgoingChecklist;
+          const checklist = entry.checklistForm.checklistType === 'incoming'
+            ? targetLane.incomingChecklist
+            : targetLane.outgoingChecklist;
 
           if (checklist && checklist.fields) {
             checklistFields = checklist.fields;
@@ -100,7 +99,7 @@ export async function POST(request: NextRequest) {
       const filteredResponses = filterChecklistResponses(
         entry.checklistForm.responses,
         checklistFields,
-        userData.role as UserRole
+        userData.role as UserRole,
       );
 
       return {
@@ -128,18 +127,20 @@ export async function PATCH(request: NextRequest) {
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { id, description, isPrivate, rating } = data;
+    const {
+      id, description, isPrivate, rating,
+    } = data;
     const user = userData;
 
     if (!History) {
-      throw new Error("Database not connected");
+      throw new Error('Database not connected');
     }
 
     // Detect type by checking DB, not by UUID format
     const remarkExists = await History.findOne({
-      "history.remark.id": id,
+      'history.remark.id': id,
     });
 
     const isRemark = !!remarkExists;
@@ -149,93 +150,91 @@ export async function PATCH(request: NextRequest) {
 
     if (isRemark) {
       // 🔹 Update remark
-      filter["history.remark.id"] = id;
-      if (user.role === "interviewer") {
-        filter["history.assignmentBy"] = new mongoose.Types.ObjectId(user.id);
+      filter['history.remark.id'] = id;
+      if (user.role === 'interviewer') {
+        filter['history.assignmentBy'] = new mongoose.Types.ObjectId(user.id);
       }
 
-      updateFields["history.$.remark.description"] = description;
-      updateFields["history.$.remark.isPrivate"] = isPrivate;
-      updateFields["history.$.remark.rating"] = rating;
-      updateFields["history.$.remark.updatedAt"] = new Date();
-      updateFields["history.$.assignmentBy"] = new mongoose.Types.ObjectId(
-        user.id
+      updateFields['history.$.remark.description'] = description;
+      updateFields['history.$.remark.isPrivate'] = isPrivate;
+      updateFields['history.$.remark.rating'] = rating;
+      updateFields['history.$.remark.updatedAt'] = new Date();
+      updateFields['history.$.assignmentBy'] = new mongoose.Types.ObjectId(
+        user.id,
       );
-      updateFields["history.$.remark.userId"] = new mongoose.Types.ObjectId(
-        user.id
+      updateFields['history.$.remark.userId'] = new mongoose.Types.ObjectId(
+        user.id,
       );
       // updateFields["history.$.title"] = "Remark Updated";
     } else {
       // 🔹 Update note
-      filter["history._id"] = new mongoose.Types.ObjectId(id);
-      if (user.role === "interviewer") {
-        filter["history._id"] = new mongoose.Types.ObjectId(id);
+      filter['history._id'] = new mongoose.Types.ObjectId(id);
+      if (user.role === 'interviewer') {
+        filter['history._id'] = new mongoose.Types.ObjectId(id);
       }
 
-      updateFields["history.$.note.description"] = description;
-      updateFields["history.$.note.rating"] = rating;
-      updateFields["history.$.assignmentBy"] = new mongoose.Types.ObjectId(
-        user.id
+      updateFields['history.$.note.description'] = description;
+      updateFields['history.$.note.rating'] = rating;
+      updateFields['history.$.assignmentBy'] = new mongoose.Types.ObjectId(
+        user.id,
       );
     }
 
-    console.log(updateFields, "updateFields");
+    console.log(updateFields, 'updateFields');
 
-    console.log(filter, "filter");
+    console.log(filter, 'filter');
 
     // 🔹 Update doc
     const updatedHistory = await History.findOneAndUpdate(
       filter,
       { $set: updateFields },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedHistory) {
       return NextResponse.json(
-        { error: `${isRemark ? "Remark" : "Note"} not found or unauthorized` },
-        { status: 404 }
+        { error: `${isRemark ? 'Remark' : 'Note'} not found or unauthorized` },
+        { status: 404 },
       );
     }
-    console.log(updatedHistory, "updatedHistory");
+    console.log(updatedHistory, 'updatedHistory');
 
     // 🔹 Populate refs
     const populatedHistory = await updatedHistory.populate([
-      { path: "history.assignmentBy", select: "_id name email" },
-      { path: "history.currentInterviewer", select: "_id name email" },
-      { path: "history.previousInterviewer", select: "_id name email" },
-      { path: "history.note.userId", select: "_id name email" },
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
     ]);
-    console.log(populatedHistory, "populatedHistory");
+    console.log(populatedHistory, 'populatedHistory');
 
     // 🔹 Extract updated item
-    const updatedItem = populatedHistory.history.find((item) =>
-      isRemark
-        ? item.remark && item.remark.id === id
-        : item.note && item?._id.toString() === id
-    );
-    console.log(updatedItem, "updatedItem");
+    const updatedItem = populatedHistory.history.find((item) => (isRemark
+      ? item.remark && item.remark.id === id
+      : item.note && item?._id.toString() === id));
+    console.log(updatedItem, 'updatedItem');
 
     if (!updatedItem) {
       return NextResponse.json(
         {
-          error: `${isRemark ? "Remark" : "Note"} not found in updated document`,
+          error: `${isRemark ? 'Remark' : 'Note'} not found in updated document`,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
     const candidateData = await Candidate?.findById(updatedHistory.candidateId)
       .populate([
         {
-          path: "assignment.interviewerId",
-          select: "_id name email",
+          path: 'assignment.interviewerId',
+          select: '_id name email',
         },
         {
-          path: "remarks.userId",
-          select: "name email",
+          path: 'remarks.userId',
+          select: 'name email',
         },
         {
-          path: "jobId",
-          select: "title description",
+          path: 'jobId',
+          select: 'title description',
         },
       ])
       .lean();
@@ -247,16 +246,16 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: `Successfully updated the ${isRemark ? "remark" : "note"}`,
+        message: `Successfully updated the ${isRemark ? 'remark' : 'note'}`,
         data: updatedItem,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Error updating remark/note:", error);
+    console.error('Error updating remark/note:', error);
     return NextResponse.json(
-      { error: "Failed to update remark/note" },
-      { status: 500 }
+      { error: 'Failed to update remark/note' },
+      { status: 500 },
     );
   }
 }
@@ -264,8 +263,8 @@ export async function PATCH(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   if (!History) {
     return NextResponse.json(
-      { error: "Database not connected" },
-      { status: 400 }
+      { error: 'Database not connected' },
+      { status: 400 },
     );
   }
   try {
@@ -275,7 +274,7 @@ export async function PUT(request: NextRequest) {
     ]);
     let data = await request.json();
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // data = { ...data, id: uuidv4() };
@@ -296,29 +295,27 @@ export async function PUT(request: NextRequest) {
       // console.log("⏭️⏭️⏭️⏭️ ", data);
     }
 
-    const fileStorage = userData.fileStorage || "local";
-    const organizationId = userData.organizationId;
+    const fileStorage = userData.fileStorage || 'local';
+    const { organizationId } = userData;
     // Extracted history saving feature
     if (!data || !data.jobId || !data.candidateId) {
       return NextResponse.json(
-        { error: "Job ID and Candidate ID are required" },
-        { status: 400 }
+        { error: 'Job ID and Candidate ID are required' },
+        { status: 400 },
       );
     }
 
     if (data.newEntry.attachments) {
       const newAttachments: Attachments = {
         files: data.newEntry.attachments.filter(
-          (attachment: FileAttachment) => !attachment.type.startsWith("image/")
+          (attachment: FileAttachment) => !attachment.type.startsWith('image/'),
         ) as FileAttachment[],
-        images: data.newEntry.attachments.filter((attachment: FileAttachment) =>
-          attachment.type.startsWith("image/")
-        ) as FileAttachment[],
+        images: data.newEntry.attachments.filter((attachment: FileAttachment) => attachment.type.startsWith('image/')) as FileAttachment[],
       };
       const updatedFiles = await handleFileAttachments(
         newAttachments,
         fileStorage,
-        organizationId
+        organizationId,
       );
 
       data.newEntry.attachments = [
@@ -331,49 +328,49 @@ export async function PUT(request: NextRequest) {
     }
 
     if (!Candidate) {
-      throw new Error("Database not connceted");
+      throw new Error('Database not connceted');
     }
 
     const candidateId = new Types.ObjectId(data.candidateId);
     const jobId = new Types.ObjectId(
-      typeof data.jobId === "object" && "_id" in data.jobId
+      typeof data.jobId === 'object' && '_id' in data.jobId
         ? data.jobId._id
-        : data.jobId || ""
+        : data.jobId || '',
     );
 
     const populateHistoryFields = [
-      { path: "history.currentInterviewer", select: "_id name email" },
-      { path: "history.previousInterviewer", select: "_id name email" },
-      { path: "history.assignmentBy", select: "_id name email" },
-      { path: "history.note.userId", select: "_id name email" },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
     ];
     const populateCandidateFields = [
-      { path: "assignment.interviewerId", select: "_id name email" },
-      { path: "remarks.userId", select: "name email" },
-      { path: "jobId", select: "title description" },
-      { path: "followUp.userId", select: "name _id email" },
+      { path: 'assignment.interviewerId', select: '_id name email' },
+      { path: 'remarks.userId', select: 'name email' },
+      { path: 'jobId', select: 'title description' },
+      { path: 'followUp.userId', select: 'name _id email' },
     ];
     const [candidateData, historyEntry] = await Promise.all([
       Candidate.findById(candidateId).populate(populateCandidateFields).lean(),
       History?.findOneAndUpdate(
         { jobId: data.jobId, candidateId: data.candidateId },
         { $push: { history: data.newEntry } },
-        { upsert: true, new: true, runValidators: true }
+        { upsert: true, new: true, runValidators: true },
       )
         .populate(populateHistoryFields)
         .lean(),
     ]);
- 
+
     if (!historyEntry) {
       return NextResponse.json(
-        { error: "No Assignment History Found" },
-        { status: 404 }
+        { error: 'No Assignment History Found' },
+        { status: 404 },
       );
     }
     if (!candidateData?.name) {
       return NextResponse.json(
-        { error: "Candidate data is incomplete" },
-        { status: 400 }
+        { error: 'Candidate data is incomplete' },
+        { status: 400 },
       );
     }
 
@@ -452,13 +449,13 @@ export async function PUT(request: NextRequest) {
             checklistForm: {
               ...historyItem.checklistForm,
               responses: new Map(
-                Object.entries(historyItem.checklistForm.responses)
+                Object.entries(historyItem.checklistForm.responses),
               ),
             },
           };
         }
         return historyItem;
-      }
+      },
     );
 
     broadcastCandidateUpdate({

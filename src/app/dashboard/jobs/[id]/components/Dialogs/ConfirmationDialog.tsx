@@ -4,21 +4,21 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
-const ConfirmationDialog = ({
+function ConfirmationDialog({
   isOpen,
   setIsOpen,
-  title = "Are you sure?",
-  message = "This action cannot be undone.",
+  title = 'Are you sure?',
+  message = 'This action cannot be undone.',
 
   onConfirm,
   onCancel,
   isLoading = false,
-  loadingText = "Processing...",
-  className = "sm:max-w-[400px]",
-  buttonName = "Confirm",
+  loadingText = 'Processing...',
+  className = 'sm:max-w-[400px]',
+  buttonName = 'Confirm',
 }: {
   isOpen: boolean;
   setIsOpen: (x: boolean) => void;
@@ -30,7 +30,7 @@ const ConfirmationDialog = ({
   loadingText?: string;
   className?: string;
   buttonName?: string;
-}) => {
+}) {
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
@@ -61,9 +61,9 @@ const ConfirmationDialog = ({
             onClick={handleConfirm}
             variant="primary"
             className={
-              buttonName === "Archive"
-                ? "bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600"
-                : ""
+              buttonName === 'Archive'
+                ? 'bg-red-600 hover:bg-red-700 text-white dark:bg-red-500 dark:hover:bg-red-600'
+                : ''
             }
           >
             {isLoading ? loadingText : buttonName}
@@ -72,6 +72,6 @@ const ConfirmationDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default ConfirmationDialog;

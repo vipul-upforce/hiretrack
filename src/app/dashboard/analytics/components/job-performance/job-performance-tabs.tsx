@@ -1,16 +1,18 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import React from "react";
-import { ApplicationsTimeScatterChart } from "./application-time-to-fill-chart";
-import { TopJobsChart } from "./top-jobs-chart";
-import { SuccessRateChart } from "./success-rate-chart";
-import { JobStatusChart } from "./job-status-chart";
-import type { JobPerformanceData } from "../types";
+import {
+  Tabs, TabsContent, TabsList, TabsTrigger,
+} from '@/components/ui/tabs';
+import React from 'react';
+import { ApplicationsTimeScatterChart } from './application-time-to-fill-chart';
+import { TopJobsChart } from './top-jobs-chart';
+import { SuccessRateChart } from './success-rate-chart';
+import { JobStatusChart } from './job-status-chart';
+import type { JobPerformanceData } from '../types';
 
 interface JobPerformanceTabsProps {
   jobData: JobPerformanceData[];
 }
 
-const JobPerformanceTabs = ({ jobData }: JobPerformanceTabsProps) => {
+function JobPerformanceTabs({ jobData }: JobPerformanceTabsProps) {
   return (
     <Tabs defaultValue="scatter" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -81,6 +83,6 @@ const JobPerformanceTabs = ({ jobData }: JobPerformanceTabsProps) => {
       </TabsContent>
     </Tabs>
   );
-};
+}
 
 export default JobPerformanceTabs;

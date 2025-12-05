@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import { useState, useEffect, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -13,7 +13,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,7 +21,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   Search,
   Filter,
@@ -36,16 +36,16 @@ import {
   FileText,
   FileX,
   Target,
-} from "lucide-react";
-import { Job } from "@/types/job";
-import { Candidate } from "@/types/candidate";
-import { getInterviewerName } from "../utils/candidateAccessors";
-import { useRouter } from "next/navigation";
-import { useFetchJobsQuery } from "@/lib/features/job/jobApi";
+} from 'lucide-react';
+import { Job } from '@/types/job';
+import { Candidate } from '@/types/candidate';
+import { useRouter } from 'next/navigation';
+import { useFetchJobsQuery } from '@/lib/features/job/jobApi';
+import { getInterviewerName } from '../utils/candidateAccessors';
 
 interface FilterState {
   search: string;
-  logicalOperator: "AND" | "OR";
+  logicalOperator: 'AND' | 'OR';
   topCandidates: boolean;
   appliedThisWeek: boolean;
   appliedToday: boolean;
@@ -74,8 +74,8 @@ export function QuickSelectAndFilter({
 }: QuickSelectAndFilterProps) {
   const router = useRouter();
   const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    logicalOperator: "AND",
+    search: '',
+    logicalOperator: 'AND',
     topCandidates: false,
     appliedThisWeek: false,
     appliedToday: false,
@@ -95,36 +95,31 @@ export function QuickSelectAndFilter({
 
     // Apply archived filter
     filtered = filtered.filter(
-      (candidate) => showArchived || !candidate.isDeleted
+      (candidate) => showArchived || !candidate.isDeleted,
     );
 
     // Apply text search
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter((candidate) => {
-        return (
-          candidate.name.toLowerCase().includes(searchLower) ||
-          candidate.skills.some((skill) =>
-            skill.toLowerCase().includes(searchLower)
-          ) ||
-          candidate.experience.toString().includes(searchLower) ||
-          getInterviewerName(candidate)
+      filtered = filtered.filter((candidate) => (
+        candidate.name.toLowerCase().includes(searchLower)
+          || candidate.skills.some((skill) => skill.toLowerCase().includes(searchLower))
+          || candidate.experience.toString().includes(searchLower)
+          || getInterviewerName(candidate)
             ?.toLowerCase()
-            .includes(searchLower) ||
-          candidate.location.toLowerCase().includes(searchLower)
-        );
-      });
+            .includes(searchLower)
+          || candidate.location.toLowerCase().includes(searchLower)
+      ));
     }
 
     // Apply other filters
     const activeFilters = [
       {
-        key: "topCandidates",
-        filter: (candidate: Candidate) =>
-          candidate.scores?.overall && candidate.scores.overall >= 7,
+        key: 'topCandidates',
+        filter: (candidate: Candidate) => candidate.scores?.overall && candidate.scores.overall >= 7,
       },
       {
-        key: "appliedThisWeek",
+        key: 'appliedThisWeek',
         filter: (candidate: Candidate) => {
           if (!candidate.tracking?.createdAt) return false;
           const oneWeekAgo = new Date();
@@ -133,7 +128,7 @@ export function QuickSelectAndFilter({
         },
       },
       {
-        key: "appliedToday",
+        key: 'appliedToday',
         filter: (candidate: Candidate) => {
           if (!candidate.tracking?.createdAt) return false;
           const today = new Date();
@@ -141,13 +136,13 @@ export function QuickSelectAndFilter({
           const tomorrow = new Date(today);
           tomorrow.setDate(tomorrow.getDate() + 1);
           return (
-            new Date(candidate.tracking.createdAt) >= today &&
-            new Date(candidate.tracking.createdAt) < tomorrow
+            new Date(candidate.tracking.createdAt) >= today
+            && new Date(candidate.tracking.createdAt) < tomorrow
           );
         },
       },
       {
-        key: "appliedIn15Days",
+        key: 'appliedIn15Days',
         filter: (candidate: Candidate) => {
           if (!candidate.tracking?.createdAt) return false;
           const fifteenDaysAgo = new Date();
@@ -156,40 +151,32 @@ export function QuickSelectAndFilter({
         },
       },
       {
-        key: "toFollowUp",
-        filter: (candidate: Candidate) =>
-          candidate.followUp && candidate.followUp.note,
+        key: 'toFollowUp',
+        filter: (candidate: Candidate) => candidate.followUp && candidate.followUp.note,
       },
       {
-        key: "assigned",
-        filter: (candidate: Candidate) =>
-          candidate.assignment && candidate.assignment.interviewerId,
+        key: 'assigned',
+        filter: (candidate: Candidate) => candidate.assignment && candidate.assignment.interviewerId,
       },
       {
-        key: "notAssigned",
+        key: 'notAssigned',
         filter: (candidate: Candidate) => !candidate.assignment,
       },
       {
-        key: "withRemarks",
-        filter: (candidate: Candidate) =>
-          candidate.remarks && candidate.remarks.length > 0,
+        key: 'withRemarks',
+        filter: (candidate: Candidate) => candidate.remarks && candidate.remarks.length > 0,
       },
       {
-        key: "withoutRemarks",
-        filter: (candidate: Candidate) =>
-          !candidate.remarks || candidate.remarks.length === 0,
+        key: 'withoutRemarks',
+        filter: (candidate: Candidate) => !candidate.remarks || candidate.remarks.length === 0,
       },
     ].filter((filter) => filters[filter.key as keyof FilterState] === true);
 
     if (activeFilters.length > 0) {
-      if (filters.logicalOperator === "AND") {
-        filtered = filtered.filter((candidate) =>
-          activeFilters.every(({ filter }) => filter(candidate))
-        );
+      if (filters.logicalOperator === 'AND') {
+        filtered = filtered.filter((candidate) => activeFilters.every(({ filter }) => filter(candidate)));
       } else {
-        filtered = filtered.filter((candidate) =>
-          activeFilters.some(({ filter }) => filter(candidate))
-        );
+        filtered = filtered.filter((candidate) => activeFilters.some(({ filter }) => filter(candidate)));
       }
     }
 
@@ -209,14 +196,14 @@ export function QuickSelectAndFilter({
       (acc, job) => {
         if (job.isDeleted) {
           acc.closed.push(job);
-        } else if (job.status === "open") {
+        } else if (job.status === 'open') {
           acc.open.push(job);
         } else {
           acc.draft.push(job);
         }
         return acc;
       },
-      { open: [], draft: [], closed: [] } as Record<string, Job[]>
+      { open: [], draft: [], closed: [] } as Record<string, Job[]>,
     );
   }, [jobs]);
 
@@ -245,8 +232,8 @@ export function QuickSelectAndFilter({
 
   const clearAllFilters = () => {
     setFilters({
-      search: "",
-      logicalOperator: "AND",
+      search: '',
+      logicalOperator: 'AND',
       topCandidates: false,
       appliedThisWeek: false,
       appliedToday: false,
@@ -260,10 +247,9 @@ export function QuickSelectAndFilter({
   };
 
   const activeFiltersCount = Object.keys(filters).filter(
-    (key) =>
-      key !== "search" &&
-      key !== "logicalOperator" &&
-      filters[key as keyof FilterState] === true
+    (key) => key !== 'search'
+      && key !== 'logicalOperator'
+      && filters[key as keyof FilterState] === true,
   ).length;
 
   return (
@@ -285,7 +271,12 @@ export function QuickSelectAndFilter({
 
               {groupedJobs.open.map((job) => (
                 <SelectItem key={job._id} value={job._id}>
-                  {job.title} ({jobCandidateCounts[job._id] || 0} candidates)
+                  {job.title}
+                  {' '}
+                  (
+                  {jobCandidateCounts[job._id] || 0}
+                  {' '}
+                  candidates)
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -305,7 +296,12 @@ export function QuickSelectAndFilter({
               </SelectLabel>
               {groupedJobs.draft.map((job) => (
                 <SelectItem key={job._id} value={job._id}>
-                  {job.title} ({jobCandidateCounts[job._id] || 0} candidates)
+                  {job.title}
+                  {' '}
+                  (
+                  {jobCandidateCounts[job._id] || 0}
+                  {' '}
+                  candidates)
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -326,7 +322,12 @@ export function QuickSelectAndFilter({
               </SelectLabel>
               {groupedJobs.closed.map((job) => (
                 <SelectItem key={job._id} value={job._id}>
-                  {job.title} ({jobCandidateCounts[job._id] || 0} candidates)
+                  {job.title}
+                  {' '}
+                  (
+                  {jobCandidateCounts[job._id] || 0}
+                  {' '}
+                  candidates)
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -341,9 +342,7 @@ export function QuickSelectAndFilter({
           <Input
             placeholder="Search candidates..."
             value={filters.search}
-            onChange={(e) =>
-              setFilters((prev) => ({ ...prev, search: e.target.value }))
-            }
+            onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
             className="pl-10 bg-white dark:bg-black border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
           />
           {filters.search && (
@@ -351,7 +350,7 @@ export function QuickSelectAndFilter({
               variant="ghost"
               size="sm"
               className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-              onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
+              onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
             >
               <X className="h-3 w-3" />
             </Button>
@@ -384,24 +383,20 @@ export function QuickSelectAndFilter({
               <div className="flex items-center space-x-2">
                 <Button
                   variant={
-                    filters.logicalOperator === "AND" ? "primary" : "outline"
+                    filters.logicalOperator === 'AND' ? 'primary' : 'outline'
                   }
                   size="sm"
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, logicalOperator: "AND" }))
-                  }
+                  onClick={() => setFilters((prev) => ({ ...prev, logicalOperator: 'AND' }))}
                   className="h-6 px-2 text-xs"
                 >
                   AND
                 </Button>
                 <Button
                   variant={
-                    filters.logicalOperator === "OR" ? "primary" : "outline"
+                    filters.logicalOperator === 'OR' ? 'primary' : 'outline'
                   }
                   size="sm"
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, logicalOperator: "OR" }))
-                  }
+                  onClick={() => setFilters((prev) => ({ ...prev, logicalOperator: 'OR' }))}
                   className="h-6 px-2 text-xs"
                 >
                   OR
@@ -414,7 +409,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.topCandidates}
-            onCheckedChange={() => handleFilterToggle("topCandidates")}
+            onCheckedChange={() => handleFilterToggle('topCandidates')}
           >
             <Star className="h-4 w-4 mr-2" />
             Top Candidates (7+ score)
@@ -422,7 +417,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.appliedThisWeek}
-            onCheckedChange={() => handleFilterToggle("appliedThisWeek")}
+            onCheckedChange={() => handleFilterToggle('appliedThisWeek')}
           >
             <Calendar className="h-4 w-4 mr-2" />
             Applied This Week
@@ -430,7 +425,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.appliedToday}
-            onCheckedChange={() => handleFilterToggle("appliedToday")}
+            onCheckedChange={() => handleFilterToggle('appliedToday')}
           >
             <Clock className="h-4 w-4 mr-2" />
             Applied Today
@@ -438,7 +433,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.appliedIn15Days}
-            onCheckedChange={() => handleFilterToggle("appliedIn15Days")}
+            onCheckedChange={() => handleFilterToggle('appliedIn15Days')}
           >
             <Target className="h-4 w-4 mr-2" />
             Applied in 15 Days
@@ -448,7 +443,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.toFollowUp}
-            onCheckedChange={() => handleFilterToggle("toFollowUp")}
+            onCheckedChange={() => handleFilterToggle('toFollowUp')}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             To Follow Up
@@ -456,7 +451,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.assigned}
-            onCheckedChange={() => handleFilterToggle("assigned")}
+            onCheckedChange={() => handleFilterToggle('assigned')}
           >
             <UserCheck className="h-4 w-4 mr-2" />
             Assigned
@@ -464,7 +459,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.notAssigned}
-            onCheckedChange={() => handleFilterToggle("notAssigned")}
+            onCheckedChange={() => handleFilterToggle('notAssigned')}
           >
             <UserX className="h-4 w-4 mr-2" />
             Not Assigned
@@ -474,7 +469,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.withRemarks}
-            onCheckedChange={() => handleFilterToggle("withRemarks")}
+            onCheckedChange={() => handleFilterToggle('withRemarks')}
           >
             <FileText className="h-4 w-4 mr-2" />
             With Remarks
@@ -482,7 +477,7 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuCheckboxItem
             checked={filters.withoutRemarks}
-            onCheckedChange={() => handleFilterToggle("withoutRemarks")}
+            onCheckedChange={() => handleFilterToggle('withoutRemarks')}
           >
             <FileX className="h-4 w-4 mr-2" />
             Without Remarks
@@ -514,7 +509,12 @@ export function QuickSelectAndFilter({
 
       {/* Results Count */}
       <div className="text-sm text-gray-500 dark:text-gray-400">
-        {filteredCandidates.length} of {candidates.length} candidates
+        {filteredCandidates.length}
+        {' '}
+        of
+        {candidates.length}
+        {' '}
+        candidates
       </div>
     </div>
   );

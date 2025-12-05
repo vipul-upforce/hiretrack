@@ -1,5 +1,6 @@
-"use client";
-import { useEffect, useState } from "react";
+'use client';
+
+import { useEffect, useState } from 'react';
 
 interface MetadataOptions {
   title?: string;
@@ -33,7 +34,7 @@ export const useDocumentMetadata = ({
     // Batch title updates with other DOM changes for smoothness
     const timeoutId = setTimeout(() => {
       document.title = title;
-      console.log("title>>>>>>>>>>>> ", title);
+      console.log('title>>>>>>>>>>>> ', title);
     }, 10);
 
     return () => clearTimeout(timeoutId);
@@ -48,9 +49,9 @@ export const useDocumentMetadata = ({
       // Get or create the favicon link element
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!link) {
-        link = document.createElement("link");
-        link.rel = "shortcut icon";
-        link.type = "image/x-icon";
+        link = document.createElement('link');
+        link.rel = 'shortcut icon';
+        link.type = 'image/x-icon';
         document.head.appendChild(link);
       }
 
@@ -61,11 +62,11 @@ export const useDocumentMetadata = ({
 
       // Also update apple-touch-icon for iOS devices
       let touchIcon = document.querySelector(
-        "link[rel~='apple-touch-icon']"
+        "link[rel~='apple-touch-icon']",
       ) as HTMLLinkElement;
       if (!touchIcon) {
-        touchIcon = document.createElement("link");
-        touchIcon.rel = "apple-touch-icon";
+        touchIcon = document.createElement('link');
+        touchIcon.rel = 'apple-touch-icon';
         document.head.appendChild(touchIcon);
       }
 
@@ -81,7 +82,7 @@ export const useDocumentMetadata = ({
       const img = new Image();
       img.onload = () => updateFavicon(favicon);
       img.onerror = () => {
-        console.error("Failed to load favicon:", favicon);
+        console.error('Failed to load favicon:', favicon);
         // You could set a default favicon here
       };
       img.src = favicon;

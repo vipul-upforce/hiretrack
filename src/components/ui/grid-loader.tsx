@@ -1,6 +1,6 @@
-import UniqueLoading from "./morph-loading";
+import UniqueLoading from './morph-loading';
 
-export const GridLoader = () => {
+export function GridLoader() {
   return (
     <div className="w-full flex items-center justify-center min-h-[500px]">
       <div className="text-center">
@@ -11,4 +11,4 @@ export const GridLoader = () => {
       </div>
     </div>
   );
-};
+}

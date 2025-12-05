@@ -1,32 +1,32 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "@/components/theme-provider";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import * as React from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface ThemeToggleProps {
   className?: string;
-  variant?: "default" | "ghost" | "outline";
-  size?: "default" | "sm" | "lg" | "icon";
+  variant?: 'default' | 'ghost' | 'outline';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
   showLabel?: boolean;
 }
 
 export function ThemeToggle({
   className,
-  variant = "ghost",
-  size = "default",
+  variant = 'ghost',
+  size = 'default',
   showLabel = false,
 }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    const newTheme = theme === "light" ? "dark" : "light";
+    const newTheme = theme === 'light' ? 'dark' : 'light';
 
     if (
-      !document.startViewTransition ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      !document.startViewTransition
+      || window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
       setTheme(newTheme);
       return;
@@ -54,9 +54,9 @@ export function ThemeToggle({
         },
         {
           duration: 500,
-          easing: "ease-in-out",
-          pseudoElement: "::view-transition-new(root)",
-        }
+          easing: 'ease-in-out',
+          pseudoElement: '::view-transition-new(root)',
+        },
       );
     });
   };
@@ -65,32 +65,32 @@ export function ThemeToggle({
     <Button
       variant={variant}
       size={size}
-      className={cn("group relative overflow-hidden", className)}
+      className={cn('group relative overflow-hidden', className)}
       onClick={toggleTheme}
       aria-label="Toggle theme"
     >
       <div className="relative flex h-4 w-4 items-center justify-center">
         <Sun
           className={cn(
-            "absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring",
-            theme === "dark"
-              ? "-rotate-90 scale-0 opacity-0"
-              : "rotate-0 scale-100 opacity-100"
+            'absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring',
+            theme === 'dark'
+              ? '-rotate-90 scale-0 opacity-0'
+              : 'rotate-0 scale-100 opacity-100',
           )}
         />
         <Moon
           className={cn(
-            "absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring",
-            theme === "dark"
-              ? "rotate-0 scale-100 opacity-100"
-              : "rotate-90 scale-0 opacity-0"
+            'absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring',
+            theme === 'dark'
+              ? 'rotate-0 scale-100 opacity-100'
+              : 'rotate-90 scale-0 opacity-0',
           )}
         />
       </div>
 
       {showLabel && (
         <span className="ml-2 font-medium transition-all">
-          {theme === "light" ? "Light" : "Dark"}
+          {theme === 'light' ? 'Light' : 'Dark'}
         </span>
       )}
 

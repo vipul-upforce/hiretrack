@@ -1,8 +1,9 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useSelector } from "react-redux";
-import { User } from "@/lib/features/org/orgApi";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { User } from '@/lib/features/org/orgApi';
 
 export default function UsersLayout({
   children,
@@ -11,12 +12,12 @@ export default function UsersLayout({
 }) {
   const router = useRouter();
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
   const checkUser = async () => {
     if (user) {
-      if (user.role !== "admin") {
-        router.push("/dashboard");
+      if (user.role !== 'admin') {
+        router.push('/dashboard');
       }
     }
   };

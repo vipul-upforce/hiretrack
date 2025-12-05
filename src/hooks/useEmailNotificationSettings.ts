@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { EmailNotificationType } from "@/components/ui/email-notification-toggle";
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { EmailNotificationType } from '@/components/ui/email-notification-toggle';
 
 export interface EmailNotificationSettings {
   global: Record<EmailNotificationType, { enabled: boolean; source: string }>;
@@ -44,10 +44,10 @@ export interface OrganizationSettingsResponse {
 // ... (rest of hooks unchanged, but add safety to fetchSettings in useUserEmailNotificationSettings)
 export function useUserEmailNotificationSettings(
   userId: string,
-  jobId?: string
+  jobId?: string,
 ) {
   const [settings, setSettings] = useState<EmailNotificationSettings | null>(
-    null
+    null,
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export function useUserEmailNotificationSettings(
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error("Failed to fetch email notification settings");
+        throw new Error('Failed to fetch email notification settings');
       }
 
       const data = await response.json();
@@ -105,12 +105,12 @@ export function useUserEmailNotificationSettings(
 
       setSettings(normalizedSettings);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to load email notification settings",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load email notification settings',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -121,7 +121,9 @@ export function useUserEmailNotificationSettings(
     fetchSettings();
   }, [userId, jobId]);
 
-  return { settings, loading, error, refetch: fetchSettings };
+  return {
+    settings, loading, error, refetch: fetchSettings,
+  };
 }
 
 // ... (other hooks unchanged)
@@ -136,7 +138,7 @@ export function useUpdateUserEmailNotificationSettings() {
     updates: {
       global?: Record<EmailNotificationType, boolean>;
       jobLevel?: Record<string, Record<EmailNotificationType, boolean>>;
-    }
+    },
   ) => {
     setLoading(true);
 
@@ -144,35 +146,35 @@ export function useUpdateUserEmailNotificationSettings() {
       const response = await fetch(
         `/api/settings/email-notifications/${userId}`,
         {
-          method: "PUT",
+          method: 'PUT',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify(updates),
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to update email notification settings"
+          errorData.error || 'Failed to update email notification settings',
         );
       }
 
       const data = await response.json();
 
       toast({
-        title: "Success",
-        description: "Email notification settings updated successfully",
+        title: 'Success',
+        description: 'Email notification settings updated successfully',
       });
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
       throw err;
     } finally {
@@ -204,11 +206,11 @@ export function useJobEmailNotificationSettings(jobId: string) {
 
     try {
       const response = await fetch(
-        `/api/settings/email-notifications/job/${jobId}`
+        `/api/settings/email-notifications/job/${jobId}`,
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch job email notification settings");
+        throw new Error('Failed to fetch job email notification settings');
       }
 
       const data = await response.json();
@@ -217,12 +219,12 @@ export function useJobEmailNotificationSettings(jobId: string) {
         effectiveSettings: data.effectiveSettings,
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(errorMessage);
       toast({
-        title: "Error",
-        description: "Failed to load job email notification settings",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load job email notification settings',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -233,7 +235,9 @@ export function useJobEmailNotificationSettings(jobId: string) {
     fetchSettings();
   }, [jobId]);
 
-  return { settings, loading, error, refetch: fetchSettings };
+  return {
+    settings, loading, error, refetch: fetchSettings,
+  };
 }
 
 // Hook for updating job-specific email notification settings
@@ -243,7 +247,7 @@ export function useUpdateJobEmailNotificationSettings() {
 
   const updateSettings = async (
     jobId: string,
-    settings: Record<EmailNotificationType, boolean>
+    settings: Record<EmailNotificationType, boolean>,
   ) => {
     setLoading(true);
 
@@ -251,35 +255,35 @@ export function useUpdateJobEmailNotificationSettings() {
       const response = await fetch(
         `/api/settings/email-notifications/job/${jobId}`,
         {
-          method: "PUT",
+          method: 'PUT',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({ settings }),
-        }
+        },
       );
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to update job email notification settings"
+          errorData.error || 'Failed to update job email notification settings',
         );
       }
 
       const data = await response.json();
 
       toast({
-        title: "Success",
-        description: "Job email notification settings updated successfully",
+        title: 'Success',
+        description: 'Job email notification settings updated successfully',
       });
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
       throw err;
     } finally {

@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
-import { execSync } from "child_process";
-import fs from "fs";
-import path from "path";
+import { NextResponse } from 'next/server';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Recursively calculates the total size of a directory including all files and subdirectories.
@@ -53,20 +53,20 @@ function calculateFolderSizeRecursive(dirPath: string): number {
  * Formats bytes to human-readable size string
  */
 function formatSize(bytes: number): string {
-  if (bytes === 0) return "0B";
+  if (bytes === 0) return '0B';
 
   const kb = bytes / 1024;
   if (kb < 1024) {
-    return kb.toFixed(2) + " KB";
+    return `${kb.toFixed(2)} KB`;
   }
 
   const mb = kb / 1024;
   if (mb < 1024) {
-    return mb.toFixed(2) + " MB";
+    return `${mb.toFixed(2)} MB`;
   }
 
   const gb = mb / 1024;
-  return gb.toFixed(2) + " GB";
+  return `${gb.toFixed(2)} GB`;
 }
 
 /**
@@ -162,18 +162,18 @@ export async function GET(request: Request) {
     const subPath = searchParams.get("path") || "";
     const getStats = searchParams.get("stats");
 
-    const isWindows = process.platform === "win32";
+    const isWindows = process.platform === 'win32';
 
     const WINDOWS_PATHS: Record<string, string> = {
-      nginx: "/Users/UpforceTech/",
-      pm2: "/Users/Upforce/.pm2/logs",
-      hiretrack: "/Users/UpforceTech/hiretrack",
+      nginx: '/Users/UpforceTech/',
+      pm2: '/Users/Upforce/.pm2/logs',
+      hiretrack: '/Users/UpforceTech/hiretrack',
     };
 
     const LINUX_PATHS: Record<string, string> = {
-      nginx: "/var/log/nginx",
-      pm2: "/root/.pm2/logs",
-      hiretrack: "/root/.hiretrack",
+      nginx: '/var/log/nginx',
+      pm2: '/root/.pm2/logs',
+      hiretrack: '/root/.hiretrack',
     };
 
     const SYSTEM_ROOT = isWindows ? "C:/" : "/";
@@ -191,8 +191,8 @@ export async function GET(request: Request) {
 
       if (!baseRootPath) {
         return NextResponse.json(
-          { error: "Invalid root directory" },
-          { status: 400 }
+          { error: 'Invalid root directory' },
+          { status: 400 },
         );
       }
 
@@ -200,23 +200,23 @@ export async function GET(request: Request) {
 
       if (!fullPath.startsWith(path.resolve(baseRootPath))) {
         return NextResponse.json(
-          { error: "Access denied: Path outside root directory" },
-          { status: 403 }
+          { error: 'Access denied: Path outside root directory' },
+          { status: 403 },
         );
       }
 
       if (!fs.existsSync(fullPath)) {
         return NextResponse.json(
-          { error: "Directory not found", path: fullPath },
-          { status: 404 }
+          { error: 'Directory not found', path: fullPath },
+          { status: 404 },
         );
       }
 
       const dirStat = fs.statSync(fullPath);
       if (!dirStat.isDirectory()) {
         return NextResponse.json(
-          { error: "Path is not a directory", path: fullPath },
-          { status: 400 }
+          { error: 'Path is not a directory', path: fullPath },
+          { status: 400 },
         );
       }
 
@@ -244,7 +244,7 @@ export async function GET(request: Request) {
               relativePath: path.join(subPath, entry.name),
               size,
               rawSize,
-              type: stats.isDirectory() ? "folder" : "file",
+              type: stats.isDirectory() ? 'folder' : 'file',
               childrenCount: stats.isDirectory() ? 0 : undefined,
             };
           } catch {
@@ -278,7 +278,7 @@ export async function GET(request: Request) {
         name: key,
         path: folderPath,
         size,
-        type: "folder",
+        type: 'folder',
       };
     });
 
@@ -292,10 +292,10 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Disk folder read error:", error);
+    console.error('Disk folder read error:', error);
     return NextResponse.json(
-      { error: "Failed to retrieve disk usage" },
-      { status: 500 }
+      { error: 'Failed to retrieve disk usage' },
+      { status: 500 },
     );
   }
 }

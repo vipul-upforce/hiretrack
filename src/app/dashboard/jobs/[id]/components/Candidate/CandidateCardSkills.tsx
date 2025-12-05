@@ -3,8 +3,8 @@
  * Displays candidate skills as badges
  */
 
-import { Badge } from "@/components/ui/badge";
-import { Candidate } from "@/types/candidate";
+import { Badge } from '@/components/ui/badge';
+import { Candidate } from '@/types/candidate';
 
 interface CandidateCardSkillsProps {
   candidate: Candidate;
@@ -39,11 +39,13 @@ export function CandidateCardSkills({ candidate }: CandidateCardSkillsProps) {
             variant="secondary"
             className="text-xs px-2.5 py-1 bg-gray-200 text-gray-700 border border-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 font-medium flex-shrink-0"
           >
-            +{candidate.skills.length - 4} more
+            +
+            {candidate.skills.length - 4}
+            {' '}
+            more
           </Badge>
         )}
       </div>
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IFileShare extends Document {
   organizationId: mongoose.Types.ObjectId;
@@ -27,7 +27,7 @@ export interface IFileShare extends Document {
   };
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Custom methods
   isValid(): boolean;
   recordDownload(userId?: string, ipAddress?: string, userAgent?: string): Promise<void>;
@@ -37,12 +37,12 @@ const FileShareSchema = new Schema<IFileShare>(
   {
     organizationId: {
       type: Schema.Types.ObjectId,
-      ref: "Organization",
+      ref: 'Organization',
       required: true,
     },
     uploadedBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
     },
     originalFileName: {
@@ -64,7 +64,7 @@ const FileShareSchema = new Schema<IFileShare>(
     storageProvider: {
       type: String,
       required: true,
-      enum: ["local", "cloudinary", "s3"],
+      enum: ['local', 'cloudinary', 's3'],
     },
     storagePath: {
       type: String,
@@ -97,7 +97,7 @@ const FileShareSchema = new Schema<IFileShare>(
       },
       downloadedBy: {
         type: Schema.Types.ObjectId,
-        ref: "User",
+        ref: 'User',
       },
       ipAddress: String,
       userAgent: String,
@@ -108,7 +108,7 @@ const FileShareSchema = new Schema<IFileShare>(
       relatedId: Schema.Types.ObjectId,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for cleanup of expired shares
@@ -118,22 +118,22 @@ FileShareSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 FileShareSchema.index({ organizationId: 1, shareId: 1 });
 
 // Method to check if share is still valid
-FileShareSchema.methods.isValid = function(): boolean {
+FileShareSchema.methods.isValid = function (): boolean {
   // Check if expired
   if (this.expiresAt && new Date() > this.expiresAt) {
     return false;
   }
-  
+
   // Check if download limit reached
   if (this.maxDownloads && this.currentDownloads >= this.maxDownloads) {
     return false;
   }
-  
+
   return true;
 };
 
 // Method to record a download
-FileShareSchema.methods.recordDownload = async function(userId?: string, ipAddress?: string, userAgent?: string) {
+FileShareSchema.methods.recordDownload = async function (userId?: string, ipAddress?: string, userAgent?: string) {
   this.currentDownloads += 1;
   this.downloads.push({
     downloadedAt: new Date(),
@@ -144,7 +144,7 @@ FileShareSchema.methods.recordDownload = async function(userId?: string, ipAddre
   await this.save();
 };
 
-const FileShare = mongoose.models.FileShare || mongoose.model<IFileShare>("FileShare", FileShareSchema);
+const FileShare = mongoose.models.FileShare || mongoose.model<IFileShare>('FileShare', FileShareSchema);
 
 export default FileShareSchema;
 export { FileShare };

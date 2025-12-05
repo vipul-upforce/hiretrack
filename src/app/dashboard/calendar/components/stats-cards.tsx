@@ -1,7 +1,9 @@
-"use client";
+'use client';
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, TrendingUp, Users, Clock } from "lucide-react";
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Calendar, TrendingUp, Users, Clock,
+} from 'lucide-react';
 
 interface StatsCardsProps {
   todayCount: number;
@@ -18,36 +20,36 @@ export function StatsCards({
 }: StatsCardsProps) {
   const stats = [
     {
-      title: "Total Interviews",
+      title: 'Total Interviews',
       value: totalInterviews,
       icon: Calendar,
-      iconColor: "text-primary",
-      iconBg: "bg-primary/10",
-      borderColor: "border-l-primary",
+      iconColor: 'text-primary',
+      iconBg: 'bg-primary/10',
+      borderColor: 'border-l-primary',
     },
     {
-      title: "Interviews This Week",
+      title: 'Interviews This Week',
       value: thisWeekCount,
       icon: TrendingUp,
-      iconColor: "text-blue-500",
-      iconBg: "bg-blue-500/10",
-      borderColor: "border-l-blue-500",
+      iconColor: 'text-blue-500',
+      iconBg: 'bg-blue-500/10',
+      borderColor: 'border-l-blue-500',
     },
     {
-      title: "Interviews Today",
+      title: 'Interviews Today',
       value: todayCount,
       icon: Clock,
-      iconColor: "text-green-500",
-      iconBg: "bg-green-500/10",
-      borderColor: "border-l-green-500",
+      iconColor: 'text-green-500',
+      iconBg: 'bg-green-500/10',
+      borderColor: 'border-l-green-500',
     },
     {
-      title: "Upcoming Events",
+      title: 'Upcoming Events',
       value: upcomingCount,
       icon: Users,
-      iconColor: "text-purple-500",
-      iconBg: "bg-purple-500/10",
-      borderColor: "border-l-purple-500",
+      iconColor: 'text-purple-500',
+      iconBg: 'bg-purple-500/10',
+      borderColor: 'border-l-purple-500',
     },
   ];
 

@@ -1,7 +1,7 @@
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { User } from "@/lib/features/users/usersApi";
+import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { User } from '@/lib/features/users/usersApi';
 
 interface ChecklistDialogFooterProps {
   isChecklistMandatory: boolean;
@@ -32,16 +32,15 @@ export function ChecklistDialogFooter({
         onClick={handleCancel}
         disabled={isSubmitting}
       >
-        {isChecklistMandatory ? "Cancel" : "Skip"}
+        {isChecklistMandatory ? 'Cancel' : 'Skip'}
       </Button>
       <Button
         onClick={handleSubmit}
         variant="info"
         disabled={isSubmitting || !user?.id}
       >
-        {isSubmitting ? "Submitting..." : "Submit"}
+        {isSubmitting ? 'Submitting...' : 'Submit'}
       </Button>
     </DialogFooter>
   );
 }
-

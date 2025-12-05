@@ -1,16 +1,16 @@
-import { useState, useMemo } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useMemo } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import {
   useGetBackupsQuery,
   useTakeSnapshotMutation,
   useDeleteBackupMutation,
-} from "@/lib/features/settings/settingsApi";
-import { BackupFile, BackupStats } from "../types";
+} from '@/lib/features/settings/settingsApi';
+import { BackupFile, BackupStats } from '../types';
 
 export function useBackupsLogic() {
   const { toast } = useToast();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [fileToDelete, setFileToDelete] = useState("");
+  const [fileToDelete, setFileToDelete] = useState('');
 
   const {
     data: backupsData,
@@ -29,8 +29,7 @@ export function useBackupsLogic() {
   ] = useDeleteBackupMutation();
 
   const files: BackupFile[] = backupsData?.files || [];
-  const globalLoading =
-    isLoadingBackups || isTakingSnapshot || isDeletingBackup;
+  const globalLoading = isLoadingBackups || isTakingSnapshot || isDeletingBackup;
 
   // Calculate Stats
   const backupStats: BackupStats = useMemo(() => {
@@ -47,8 +46,7 @@ export function useBackupsLogic() {
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     // Sort needed for finding oldest/newest
     const sortedByDate = [...files].sort(
-      (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
     return {
@@ -56,33 +54,31 @@ export function useBackupsLogic() {
       totalCount: files.length,
       oldestBackup: new Date(sortedByDate[0]?.createdAt).toLocaleString(),
       newestBackup: new Date(
-        sortedByDate[sortedByDate.length - 1]?.createdAt
+        sortedByDate[sortedByDate.length - 1]?.createdAt,
       ).toLocaleString(),
       averageSize: totalSize / files.length,
     };
   }, [files]);
 
   // Prepared sorted files for display (Newest First)
-  const sortedFiles = useMemo(() => {
-    return [...files]
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .reverse();
-  }, [files]);
+  const sortedFiles = useMemo(() => [...files]
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .reverse(), [files]);
 
   // Handlers
   const handleTakeSnapshot = async () => {
     try {
       await takeSnapshot().unwrap();
       toast({
-        title: "Backup stored successfully",
-        description: "Database snapshot has been taken and saved successfully.",
+        title: 'Backup stored successfully',
+        description: 'Database snapshot has been taken and saved successfully.',
       });
     } catch (err) {
-      console.error("Failed to create snapshot:", err);
+      console.error('Failed to create snapshot:', err);
       toast({
-        title: "Error",
-        description: "Failed to create database snapshot.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create database snapshot.',
+        variant: 'destructive',
       });
     }
   };
@@ -91,17 +87,17 @@ export function useBackupsLogic() {
     try {
       await deleteBackup(fileToDelete).unwrap();
       toast({
-        title: "Backup deleted",
+        title: 'Backup deleted',
         description: `Backup ${fileToDelete} has been deleted successfully.`,
       });
       setIsDeleteDialogOpen(false);
-      setFileToDelete("");
+      setFileToDelete('');
     } catch (err) {
-      console.error("Failed to delete backup:", err);
+      console.error('Failed to delete backup:', err);
       toast({
-        title: "Error",
-        description: `Failed to delete backup`,
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete backup',
+        variant: 'destructive',
       });
     }
   };

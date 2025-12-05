@@ -11,7 +11,7 @@ export type EmailHistoryRecord = {
   provider?: string;
   updatedAt?: string;
   createdAt: string;
-  status: "sent" | "failed" | "pending" | string;
+  status: 'sent' | 'failed' | 'pending' | string;
   attachments?: {
     fileName: string;
     fileSize: number;

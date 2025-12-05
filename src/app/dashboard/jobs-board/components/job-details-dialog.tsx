@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { EditJobForm } from "./edit-job-form";
-import type { Job } from "@/types/job";
-import { DetailsDialog } from "../../jobs/[id]/components/Dialogs/DetailsDialog";
-import { jobDetailsFields } from "./job-details-fields";
-import { Separator } from "@/components/ui/separator";
+import { useState, useEffect } from 'react';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import type { Job } from '@/types/job';
+import { Separator } from '@/components/ui/separator';
+import { EditJobForm } from './edit-job-form';
+import { DetailsDialog } from '../../jobs/[id]/components/Dialogs/DetailsDialog';
+import { jobDetailsFields } from './job-details-fields';
 
 interface JobDetailsDialogProps {
   job: Job | null;
@@ -28,7 +28,7 @@ export function JobDetailsDialog({
   isEditMode = false,
 }: JobDetailsDialogProps) {
   const [isEditing, setIsEditing] = useState(isEditMode);
-  const canEdit = userRole === "hr" || userRole === "admin";
+  const canEdit = userRole === 'hr' || userRole === 'admin';
 
   // Update isEditing when isEditMode prop changes
   useEffect(() => {
@@ -82,7 +82,7 @@ export function JobDetailsDialog({
           return (
             <div key={index} className="group">
               <Label className="text-sm font-semibold text-foreground uppercase tracking-wide block mb-3">
-                {field.label.split(" |||||(")[0]}
+                {field.label.split(' |||||(')[0]}
               </Label>
               <div className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:border-border/80 transition-colors">
                 {field.render(job)}

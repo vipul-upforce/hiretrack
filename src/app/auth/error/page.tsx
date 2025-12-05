@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 function ErrorContent() {
   const searchParams = useSearchParams();
-  const error = searchParams?.get("error");
+  const error = searchParams?.get('error');
 
   return (
     <div className="flex h-screen items-center justify-center">
@@ -14,7 +14,7 @@ function ErrorContent() {
           Authentication Error
         </h1>
         <p className="text-gray-600">
-          {error || "An error occurred during authentication"}
+          {error || 'An error occurred during authentication'}
         </p>
       </div>
     </div>
@@ -24,7 +24,7 @@ function ErrorContent() {
 export default function AuthErrorPage() {
   return (
     <Suspense
-      fallback={
+      fallback={(
         <div className="flex h-screen items-center justify-center">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-600 mb-4">
@@ -32,7 +32,7 @@ export default function AuthErrorPage() {
             </h1>
           </div>
         </div>
-      }
+      )}
     >
       <ErrorContent />
     </Suspense>

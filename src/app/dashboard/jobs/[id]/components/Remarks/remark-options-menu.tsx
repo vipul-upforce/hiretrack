@@ -1,18 +1,21 @@
-"use client";
-import { MoreVertical, Edit, Eye, EyeOff } from "lucide-react";
+'use client';
+
+import {
+  MoreVertical, Edit, Eye, EyeOff,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import useRoles from "@/hooks/useRoles";
-import { useState } from "react";
+} from '@/components/ui/dropdown-menu';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import useRoles from '@/hooks/useRoles';
+import { useState } from 'react';
 
 interface RemarkOptionsMenuProps {
-  type: "remark" | "note";
+  type: 'remark' | 'note';
   remarkId: string;
   isPrivate?: boolean;
   onTogglePrivacy?: (id: string, isPrivate: boolean) => Promise<void>;
@@ -30,7 +33,7 @@ export function RemarkOptionsMenu({
   isOpen,
   setIsOpen,
 }: RemarkOptionsMenuProps) {
-  const [isLocalPrivate, setIsLocalPrivate] = useState(isPrivate); //state for 
+  const [isLocalPrivate, setIsLocalPrivate] = useState(isPrivate); // state for
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,22 +48,20 @@ export function RemarkOptionsMenu({
       setError(null);
     } catch (err) {
       setIsLoading(false);
-      setError("Failed to update privacy!");
+      setError('Failed to update privacy!');
       setIsLocalPrivate(previousState); // Revert to the previous state on failure
     }
   };
 
   const role = useRoles();
 
-  const handleEdit = () => {
-    return onEdit(remarkId);
-  };
+  const handleEdit = () => onEdit(remarkId);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${
-          isOpen ? "opacity-100" : ""
+          isOpen ? 'opacity-100' : ''
         }`}
       >
         <MoreVertical className="h-4 w-4" />
@@ -68,7 +69,7 @@ export function RemarkOptionsMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
         {/* ✅ Show privacy toggle only for remarks */}
-        {type === "remark" && role !== "interviewer" && (
+        {type === 'remark' && role !== 'interviewer' && (
           <>
             <div className="flex items-center justify-between px-2 py-2">
               <div className="flex items-center space-x-2">
@@ -78,7 +79,7 @@ export function RemarkOptionsMenu({
                   <Eye className="h-4 w-4 text-gray-500" />
                 )}
                 <Label htmlFor="privacy-toggle" className="text-sm">
-                  {isLocalPrivate ? "Private" : "Public"}
+                  {isLocalPrivate ? 'Private' : 'Public'}
                 </Label>
               </div>
               <Switch

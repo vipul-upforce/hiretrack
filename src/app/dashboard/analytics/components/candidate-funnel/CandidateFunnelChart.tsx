@@ -1,22 +1,21 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCcwIcon } from "lucide-react";
-import { useCandidateFunnel } from "../../hooks/useAnalytics";
-import { AnalyticsFilters } from "../../hooks/useAnalytics";
-import CandidateFunnelSkeleton from "./../loading-skeletons/candidate-funnel";
-import { SummaryCards } from "./summary-cards";
-import { FunnelTabs } from "./funnel-tabs";
-import ExportButton from "./export-button";
-import EmptyState from "./../empty-state";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCcwIcon } from 'lucide-react';
+import { useCandidateFunnel, AnalyticsFilters } from '../../hooks/useAnalytics';
+import CandidateFunnelSkeleton from '../loading-skeletons/candidate-funnel';
+import { SummaryCards } from './summary-cards';
+import { FunnelTabs } from './funnel-tabs';
+import ExportButton from './export-button';
+import EmptyState from '../empty-state';
 
 interface CandidateFunnelChartProps {
   filters?: AnalyticsFilters;
@@ -44,9 +43,11 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
   filters,
   organizationId,
 }) => {
-  const { data, loading, error, refetch } = useCandidateFunnel(
+  const {
+    data, loading, error, refetch,
+  } = useCandidateFunnel(
     filters,
-    organizationId
+    organizationId,
   );
   const [funnelData, setFunnelData] = useState<FunnelData[]>([]);
   const [summary, setSummary] = useState<FunnelSummary | null>(null);

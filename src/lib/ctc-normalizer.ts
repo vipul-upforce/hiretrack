@@ -6,7 +6,7 @@
  * @returns The normalized value in LPA format (e.g., 12 for 12 LPA)
  */
 export function normalizeCTCToLPA(value: string | number): number {
-  if (value === null || value === undefined || value === "") {
+  if (value === null || value === undefined || value === '') {
     return 0;
   }
 
@@ -14,10 +14,10 @@ export function normalizeCTCToLPA(value: string | number): number {
   const stringValue = String(value).trim();
 
   // Remove all commas and spaces
-  const cleanValue = stringValue.replace(/[,\s]/g, "");
+  const cleanValue = stringValue.replace(/[,\s]/g, '');
 
   // Convert to number
-  let numericValue = parseFloat(cleanValue);
+  const numericValue = parseFloat(cleanValue);
 
   if (isNaN(numericValue)) {
     return 0;
@@ -33,13 +33,13 @@ export function normalizeCTCToLPA(value: string | number): number {
 
   // Case 2: Annual salary in INR (₹500,000 to ₹50,000,000)
   // Convert to LPA by dividing by 100,000
-  else if (numericValue >= 500000) {
+  if (numericValue >= 500000) {
     return numericValue / 100000;
   }
 
   // Case 3: Monthly salary in INR (₹10,000 to ₹499,999)
   // Convert to annual and then to LPA
-  else if (numericValue >= 100 && numericValue < 500000) {
+  if (numericValue >= 100 && numericValue < 500000) {
     return (numericValue * 12) / 100000;
   }
 
@@ -49,9 +49,8 @@ export function normalizeCTCToLPA(value: string | number): number {
   // - Very low monthly salary
   // - Some other format
   // Most likely it's already in LPA or decimal LPA
-  else {
-    return numericValue;
-  }
+
+  return numericValue;
 }
 
 /**
@@ -62,7 +61,7 @@ export function normalizeCTCToLPA(value: string | number): number {
  */
 export function formatCTCAsLPA(lpaValue: number): string {
   if (isNaN(lpaValue) || lpaValue === null || lpaValue === undefined) {
-    return "0 LPA";
+    return '0 LPA';
   }
 
   // Round to 2 decimal places

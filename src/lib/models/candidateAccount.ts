@@ -1,11 +1,11 @@
-import { Schema } from "mongoose";
-import { OrgInfo } from "./user";
+import { Schema } from 'mongoose';
+import { OrgInfo } from './user';
 
 export interface IUCandidateAccount {
   _id: string;
   organizationId: Schema.Types.ObjectId | string;
   organizationInfo?: OrgInfo;
-  role: "candidate";
+  role: 'candidate';
   name: string;
   email: string;
   password: string;
@@ -34,13 +34,13 @@ export const candidateAccountSchema = new Schema<IUCandidateAccount>(
     },
     organizationId: {
       type: Schema.Types.ObjectId,
-      ref: "Organization",
+      ref: 'Organization',
       required: false,
     },
     role: {
       type: String,
       // enum:["candidate"],
-      default: "candidate",
+      default: 'candidate',
     },
     resetToken: {
       type: String,
@@ -61,7 +61,7 @@ export const candidateAccountSchema = new Schema<IUCandidateAccount>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default candidateAccountSchema;

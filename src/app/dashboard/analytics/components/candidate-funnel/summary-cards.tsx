@@ -1,4 +1,4 @@
-import { TrendingUpIcon, TrendingDownIcon } from "lucide-react";
+import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 
 interface SummaryProps {
   summary: {
@@ -9,22 +9,22 @@ interface SummaryProps {
   };
 }
 
-export const SummaryCards = ({ summary }: SummaryProps) => {
+export function SummaryCards({ summary }: SummaryProps) {
   const cards = [
     {
-      label: "Total Applications",
+      label: 'Total Applications',
       value: summary.totalCandidates,
-      color: "blue",
+      color: 'blue',
     },
     {
-      label: "Accepted",
+      label: 'Accepted',
       value: summary.acceptedCandidates,
-      color: "green",
+      color: 'green',
     },
     {
-      label: "Rejected",
+      label: 'Rejected',
       value: summary.rejectedCandidates,
-      color: "red",
+      color: 'red',
     },
   ];
 
@@ -48,7 +48,8 @@ export const SummaryCards = ({ summary }: SummaryProps) => {
       <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-            {summary.overallConversionRate}%
+            {summary.overallConversionRate}
+            %
           </div>
           {summary.overallConversionRate > 10 ? (
             <TrendingUpIcon className="h-4 w-4 text-green-500" />
@@ -62,4 +63,4 @@ export const SummaryCards = ({ summary }: SummaryProps) => {
       </div>
     </div>
   );
-};
+}

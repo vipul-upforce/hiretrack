@@ -1,10 +1,11 @@
-"use client";
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Eye, EyeOff } from "lucide-react";
-import { ErrorMessage, useFormikContext } from "formik";
-import { Label } from "@/components/ui/label";
+'use client';
+
+import { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Eye, EyeOff } from 'lucide-react';
+import { ErrorMessage, useFormikContext } from 'formik';
+import { Label } from '@/components/ui/label';
 
 interface SecretInputProps {
   name: string;
@@ -22,7 +23,7 @@ export function SecretInput({ name, label }: SecretInputProps) {
         <Input
           id={name}
           name={name}
-          type={show ? "text" : "password"}
+          type={show ? 'text' : 'password'}
           value={values[name]}
           onChange={(e) => setFieldValue(name, e.target.value.trim())}
         />

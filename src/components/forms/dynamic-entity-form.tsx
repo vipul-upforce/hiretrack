@@ -189,7 +189,7 @@
 //   )
 // }
 
-import React from "react";
+import React from 'react';
 
 function DynamicEntityForm() {
   return <div>DynamicEntityForm</div>;

@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useDropzone } from "react-dropzone";
-import { cn } from "@/lib/utils";
-import { Cloud, Pencil, X } from "lucide-react";
-import { FilePreviewDialog } from "./file-preview-dialog";
-import { RenameFileDialog } from "./rename-file-dialog";
-import { v4 as uuidv4 } from "uuid";
+import * as React from 'react';
+import { useDropzone } from 'react-dropzone';
+import { cn } from '@/lib/utils';
+import { Cloud, Pencil, X } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import { FilePreviewDialog } from './file-preview-dialog';
+import { RenameFileDialog } from './rename-file-dialog';
 
 interface FileData {
   base64: string;
@@ -28,13 +28,13 @@ interface FileDropZoneProps {
   }>;
 }
 
-export const FileDropZone = ({
+export function FileDropZone({
   value,
   onFilesChange,
   maxFiles = 30,
   maxSize = 30 * 1024 * 1024,
   existingFiles = [],
-}: FileDropZoneProps) => {
+}: FileDropZoneProps) {
   const [previews, setPreviews] = React.useState<{ [key: string]: string }>({});
   const [previewFile, setPreviewFile] = React.useState<File | null>(null);
   const [files, setFiles] = React.useState<File[]>([]);
@@ -54,11 +54,11 @@ export const FileDropZone = ({
     const initializeFiles = async () => {
       const convertedFiles = await Promise.all(
         (value || []).map(async (item) => {
-          if ("base64" in item) {
+          if ('base64' in item) {
             return await convertToFile(item);
           }
           return item;
-        })
+        }),
       );
       setFiles(convertedFiles);
     };
@@ -72,7 +72,7 @@ export const FileDropZone = ({
           ...acc,
           [file.name]: file.preview,
         }),
-        {}
+        {},
       );
 
       setPreviews((prev) => ({
@@ -98,14 +98,12 @@ export const FileDropZone = ({
     }));
   }, []);
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
+  const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
   React.useEffect(() => {
     if (files.length > 0) {
@@ -114,7 +112,7 @@ export const FileDropZone = ({
 
     return () => {
       Object.values(previews).forEach((preview) => {
-        if (preview.startsWith("blob:")) {
+        if (preview.startsWith('blob:')) {
           URL.revokeObjectURL(preview);
         }
       });
@@ -128,26 +126,24 @@ export const FileDropZone = ({
     setDroppedFiles((prev) => prev.filter((name) => name !== fileNameToRemove));
   };
 
-  const isFileNameDuplicate = (fileName: string): boolean => {
-    return (
-      existingFiles.some((file) => file.name === fileName) ||
-      files.some((file) => file.name === fileName)
-    );
-  };
+  const isFileNameDuplicate = (fileName: string): boolean => (
+    existingFiles.some((file) => file.name === fileName)
+      || files.some((file) => file.name === fileName)
+  );
 
   const generateUniqueFileName = (file: File): string => {
     if (!isFileNameDuplicate(file.name)) {
       return file.name;
     }
 
-    const fileExtension = file.name.split(".").pop() || "";
-    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const fileExtension = file.name.split('.').pop() || '';
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
     return `${baseName}_${uuidv4()}.${fileExtension}`;
   };
 
   const renameFileWithUUID = async (
     file: File,
-    newFileName: string
+    newFileName: string,
   ): Promise<File> => {
     const arrayBuffer = await file.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: file.type });
@@ -171,7 +167,7 @@ export const FileDropZone = ({
             return file;
           }
           return await renameFileWithUUID(file, uniqueFileName);
-        })
+        }),
       );
 
       const newFiles = [...files, ...processedFiles];
@@ -182,7 +178,7 @@ export const FileDropZone = ({
         return Array.from(new Set([...prev, ...newFileNames]));
       });
     },
-    [files, onFilesChange, existingFiles]
+    [files, onFilesChange, existingFiles],
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -190,20 +186,20 @@ export const FileDropZone = ({
     maxFiles: maxFiles - files.length,
     maxSize,
     accept: {
-      "image/*": [".png", ".jpg", ".jpeg", ".gif"],
-      "application/pdf": [".pdf"],
-      "application/zip": [".zip"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
+      'application/pdf': ['.pdf'],
+      'application/zip': ['.zip'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+        '.xlsx',
       ],
-      "application/vnd.ms-powerpoint": [".ppt"],
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-        [".pptx"],
-      "text/plain": [".txt"],
+      'application/vnd.ms-powerpoint': ['.ppt'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        ['.pptx'],
+      'text/plain': ['.txt'],
     },
   });
 
@@ -233,15 +229,13 @@ export const FileDropZone = ({
     if (droppedFiles.includes(renameFile.name)) {
       setDroppedFiles((prev) => {
         const updatedDroppedFiles = prev.filter(
-          (name) => name !== renameFile.name
+          (name) => name !== renameFile.name,
         );
         updatedDroppedFiles.push(newName);
         return updatedDroppedFiles;
       });
     }
-    setDroppedFiles((prev) => {
-      return Array.from(new Set([...prev, newName]));
-    });
+    setDroppedFiles((prev) => Array.from(new Set([...prev, newName])));
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
   };
@@ -251,8 +245,8 @@ export const FileDropZone = ({
       <div
         {...getRootProps()}
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors",
-          isDragActive ? "border-primary bg-primary/10" : "border-muted"
+          'border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors',
+          isDragActive ? 'border-primary bg-primary/10' : 'border-muted',
         )}
       >
         <input {...getInputProps()} />
@@ -266,8 +260,14 @@ export const FileDropZone = ({
                 Drag & drop files here, or click to select files
                 <br />
                 <span className="text-xs">
-                  (Max {maxFiles} files, up to{" "}
-                  {Math.round(maxSize / 1024 / 1024)}MB each)
+                  (Max
+                  {' '}
+                  {maxFiles}
+                  {' '}
+                  files, up to
+                  {' '}
+                  {Math.round(maxSize / 1024 / 1024)}
+                  MB each)
                 </span>
                 <br />
                 <span className="text-xs text-muted-foreground">
@@ -306,8 +306,10 @@ export const FileDropZone = ({
               >
                 <p className="font-medium truncate">{file.name}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {Math.round(file.size / 1024)}KB -{" "}
-                  {file.type || "Unknown type"}
+                  {Math.round(file.size / 1024)}
+                  KB -
+                  {' '}
+                  {file.type || 'Unknown type'}
                 </p>
               </div>
 
@@ -336,9 +338,9 @@ export const FileDropZone = ({
       <RenameFileDialog
         isOpen={!!renameFile}
         onClose={() => setRenameFile(null)}
-        fileName={renameFile?.name || ""}
+        fileName={renameFile?.name || ''}
         onRename={handleRename}
       />
     </div>
   );
-};
+}

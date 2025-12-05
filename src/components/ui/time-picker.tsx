@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Clock } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import * as React from 'react';
+import { Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export default function TimePicker({
   name,
@@ -29,41 +29,41 @@ export default function TimePicker({
   onChange: (timeString: string) => void;
   onBlur?: () => void;
 }) {
-  const [selectedTime, setSelectedTime] = React.useState<string>(value || "");
+  const [selectedTime, setSelectedTime] = React.useState<string>(value || '');
   const [hours, setHours] = React.useState<number>();
   const [minutes, setMinutes] = React.useState<number>();
-  const [meridiem, setMeridiem] = React.useState<"AM" | "PM">();
+  const [meridiem, setMeridiem] = React.useState<'AM' | 'PM'>();
 
   // Sync with external value changes
   React.useEffect(() => {
     if (value) {
-      const [hour, minute] = value.split(":");
+      const [hour, minute] = value.split(':');
       const isPM = parseInt(hour) >= 12;
       const formattedHour = isPM
-        ? hour === "12"
-          ? "12"
+        ? hour === '12'
+          ? '12'
           : `${parseInt(hour) - 12}`
-        : hour === "0"
-          ? "12"
+        : hour === '0'
+          ? '12'
           : hour;
       setHours(parseInt(formattedHour));
       setMinutes(parseInt(minute));
-      setMeridiem(isPM ? "PM" : "AM");
+      setMeridiem(isPM ? 'PM' : 'AM');
       setSelectedTime(value);
     }
     if (value && value !== selectedTime) {
-      const [hour, minute] = value.split(":");
+      const [hour, minute] = value.split(':');
       const isPM = parseInt(hour) >= 12;
       const formattedHour = isPM
-        ? hour === "12"
-          ? "12"
+        ? hour === '12'
+          ? '12'
           : `${parseInt(hour) - 12}`
-        : hour === "0"
-          ? "12"
+        : hour === '0'
+          ? '12'
           : hour;
       setHours(parseInt(formattedHour));
       setMinutes(parseInt(minute));
-      setMeridiem(isPM ? "PM" : "AM");
+      setMeridiem(isPM ? 'PM' : 'AM');
       setSelectedTime(value);
     }
   }, [value, selectedTime]);
@@ -74,15 +74,14 @@ export default function TimePicker({
     setHours(hoursNum);
 
     if (hoursNum && minutes !== undefined && meridiem) {
-      const formattedHours =
-        hoursNum === 12
-          ? meridiem === "AM"
-            ? "0"
-            : "12"
-          : meridiem === "PM"
-            ? hoursNum + 12
-            : hoursNum;
-      const timeString = `${formattedHours}:${minutes.toString().padStart(2, "0")}`;
+      const formattedHours = hoursNum === 12
+        ? meridiem === 'AM'
+          ? '0'
+          : '12'
+        : meridiem === 'PM'
+          ? hoursNum + 12
+          : hoursNum;
+      const timeString = `${formattedHours}:${minutes.toString().padStart(2, '0')}`;
       setSelectedTime(timeString);
       onChange(timeString);
       onBlur?.();
@@ -94,34 +93,32 @@ export default function TimePicker({
     setMinutes(minutesNum);
 
     if (hours !== undefined && minutesNum !== undefined && meridiem) {
-      const formattedHours =
-        hours === 12
-          ? meridiem === "AM"
-            ? "0"
-            : "12"
-          : meridiem === "PM"
-            ? hours + 12
-            : hours;
-      const timeString = `${formattedHours}:${minutesNum.toString().padStart(2, "0")}`;
+      const formattedHours = hours === 12
+        ? meridiem === 'AM'
+          ? '0'
+          : '12'
+        : meridiem === 'PM'
+          ? hours + 12
+          : hours;
+      const timeString = `${formattedHours}:${minutesNum.toString().padStart(2, '0')}`;
       setSelectedTime(timeString);
       onChange(timeString);
       onBlur?.();
     }
   };
 
-  const handleMeridiemChange = (newMeridiem: "AM" | "PM") => {
+  const handleMeridiemChange = (newMeridiem: 'AM' | 'PM') => {
     setMeridiem(newMeridiem);
 
     if (hours !== undefined && minutes !== undefined && newMeridiem) {
-      const formattedHours =
-        hours === 12
-          ? newMeridiem === "AM"
-            ? "0"
-            : "12"
-          : newMeridiem === "PM"
-            ? hours + 12
-            : hours;
-      const timeString = `${formattedHours}:${minutes.toString().padStart(2, "0")}`;
+      const formattedHours = hours === 12
+        ? newMeridiem === 'AM'
+          ? '0'
+          : '12'
+        : newMeridiem === 'PM'
+          ? hours + 12
+          : hours;
+      const timeString = `${formattedHours}:${minutes.toString().padStart(2, '0')}`;
       setSelectedTime(timeString);
       onChange(timeString);
       onBlur?.();
@@ -129,20 +126,20 @@ export default function TimePicker({
   };
 
   return (
-    <Popover modal={true}>
+    <Popover modal>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className={cn(
-            "justify-start text-left font-normal",
-            !selectedTime && "text-muted-foreground"
+            'justify-start text-left font-normal',
+            !selectedTime && 'text-muted-foreground',
           )}
           name={name}
           value={value}
         >
           <Clock className="mr-2 size-4" />
           {selectedTime && hours && minutes && meridiem ? (
-            `${hours?.toString().padStart(2, "0")}:${minutes?.toString().padStart(2, "0")} ${meridiem}`
+            `${hours?.toString().padStart(2, '0')}:${minutes?.toString().padStart(2, '0')} ${meridiem}`
           ) : (
             <span>Pick a time</span>
           )}
@@ -159,7 +156,7 @@ export default function TimePicker({
               <SelectContent>
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((hour) => (
                   <SelectItem key={hour} value={hour.toString()}>
-                    {hour.toString().padStart(2, "0")}
+                    {hour.toString().padStart(2, '0')}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -177,7 +174,7 @@ export default function TimePicker({
               <SelectContent>
                 {Array.from({ length: 60 }, (_, i) => i).map((minute) => (
                   <SelectItem key={minute} value={minute.toString()}>
-                    {minute.toString().padStart(2, "0")}
+                    {minute.toString().padStart(2, '0')}
                   </SelectItem>
                 ))}
               </SelectContent>

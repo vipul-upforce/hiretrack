@@ -1,5 +1,5 @@
-import type React from "react";
-import { Skeleton } from "@/components/ui/skeleton";
+import type React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 
 export const LogsTableSkeleton: React.FC = () => {
   const skeletonRows = Array.from({ length: 5 }).map((_, i) => (

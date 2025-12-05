@@ -1,10 +1,10 @@
-import connectToDatabase, { User } from "@/lib/mongodb";
+import connectToDatabase, { User } from '@/lib/mongodb';
 import {
   extractMentions,
   matchesUserName,
   MentionPattern,
-} from "@/lib/utils/mentionParser";
-import mongoose from "mongoose";
+} from '@/lib/utils/mentionParser';
+import mongoose from 'mongoose';
 
 export interface MentionedUser {
   _id: string;
@@ -34,47 +34,47 @@ export async function findMentionedUsers(
   validMentionUserIds?: string[]
 ): Promise<MentionMatchResult> {
   try {
-    console.log("🔍 FIND MENTIONED USERS DEBUG:");
-    console.log("  - Input text:", text);
-    console.log("  - Organization ID:", organizationId);
+    console.log('🔍 FIND MENTIONED USERS DEBUG:');
+    console.log('  - Input text:', text);
+    console.log('  - Organization ID:', organizationId);
 
     // Validate inputs
     if (
-      !text ||
-      typeof text !== "string" ||
-      !organizationId ||
-      typeof organizationId !== "string"
+      !text
+      || typeof text !== 'string'
+      || !organizationId
+      || typeof organizationId !== 'string'
     ) {
-      console.log("  - Invalid input parameters");
+      console.log('  - Invalid input parameters');
       return { mentionedUsers: [], unrecognizedMentions: [] };
     }
 
     await connectToDatabase();
 
     const mentions = extractMentions(text);
-    console.log("  - Extracted mentions:", JSON.stringify(mentions, null, 2));
+    console.log('  - Extracted mentions:', JSON.stringify(mentions, null, 2));
 
     if (mentions.length === 0) {
-      console.log("  - No mentions found in text");
+      console.log('  - No mentions found in text');
       return { mentionedUsers: [], unrecognizedMentions: [] };
     }
 
     // Get all users in the organization (exclude candidates)
     const orgUsers = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["admin", "hr", "interviewer"] },
+      role: { $in: ['admin', 'hr', 'interviewer'] },
       isDeleted: { $ne: true },
     })
       .select("_id name email role")
       .lean();
 
     console.log(
-      "  - Organization users:",
+      '  - Organization users:',
       JSON.stringify(
         orgUsers.map((u) => ({ _id: u._id, name: u.name, email: u.email })),
         null,
-        2
-      )
+        2,
+      ),
     );
 
     const mentionedUsers: MentionedUser[] = [];
@@ -83,24 +83,23 @@ export async function findMentionedUsers(
     for (const mention of mentions) {
       try {
         console.log(`  - Processing mention: "${mention.cleanMatch}"`);
-        console.log("    - Patterns:", mention.patterns);
+        console.log('    - Patterns:', mention.patterns);
         let foundMatch = false;
 
         // Check each user against the mention patterns
         for (const user of orgUsers) {
           try {
-            if (!user.name || typeof user.name !== "string") {
+            if (!user.name || typeof user.name !== 'string') {
               console.log(`    - Skipping user with invalid name: ${user._id}`);
               continue;
             }
 
             const nameParts = user.name.trim().split(/\s+/);
             const firstName = nameParts[0];
-            const lastName =
-              nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+            const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
             console.log(
-              `    - Checking user: "${user.name}" (${firstName}, ${lastName})`
+              `    - Checking user: "${user.name}" (${firstName}, ${lastName})`,
             );
 
             if (matchesUserName(firstName, lastName, mention.patterns)) {
@@ -143,7 +142,7 @@ export async function findMentionedUsers(
           } catch (userError) {
             console.error(
               `    - Error processing user ${user._id}:`,
-              userError
+              userError,
             );
             continue;
           }
@@ -151,29 +150,29 @@ export async function findMentionedUsers(
 
         if (!foundMatch) {
           console.log(
-            `    - No match found for mention: "${mention.cleanMatch}"`
+            `    - No match found for mention: "${mention.cleanMatch}"`,
           );
           unrecognizedMentions.push(mention.cleanMatch);
         }
       } catch (mentionError) {
         console.error(
           `  - Error processing mention "${mention.cleanMatch}":`,
-          mentionError
+          mentionError,
         );
         unrecognizedMentions.push(mention.cleanMatch);
       }
     }
 
-    console.log("  - Final results:");
+    console.log('  - Final results:');
     console.log(
-      "    - Mentioned users:",
-      JSON.stringify(mentionedUsers, null, 2)
+      '    - Mentioned users:',
+      JSON.stringify(mentionedUsers, null, 2),
     );
-    console.log("    - Unrecognized mentions:", unrecognizedMentions);
+    console.log('    - Unrecognized mentions:', unrecognizedMentions);
 
     return { mentionedUsers, unrecognizedMentions };
   } catch (error) {
-    console.error("❌ Error finding mentioned users:", error);
+    console.error('❌ Error finding mentioned users:', error);
     return { mentionedUsers: [], unrecognizedMentions: [] };
   }
 }
@@ -183,7 +182,7 @@ export async function findMentionedUsers(
  */
 export async function getMentionedUserIds(
   text: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<string[]> {
   const result = await findMentionedUsers(text, organizationId);
   return result.mentionedUsers.map((user) => user._id);
@@ -195,7 +194,7 @@ export async function getMentionedUserIds(
 export async function isUserMentioned(
   text: string,
   userId: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<boolean> {
   const mentionedIds = await getMentionedUserIds(text, organizationId);
   return mentionedIds.includes(userId);
@@ -209,14 +208,14 @@ export function getMentionSummary(result: MentionMatchResult): string {
 
   if (result.mentionedUsers.length > 0) {
     const names = result.mentionedUsers.map((user) => user.name);
-    parts.push(`Found users: ${names.join(", ")}`);
+    parts.push(`Found users: ${names.join(', ')}`);
   }
 
   if (result.unrecognizedMentions.length > 0) {
-    parts.push(`Unrecognized: ${result.unrecognizedMentions.join(", ")}`);
+    parts.push(`Unrecognized: ${result.unrecognizedMentions.join(', ')}`);
   }
 
-  return parts.length > 0 ? parts.join(" | ") : "No mentions found";
+  return parts.length > 0 ? parts.join(' | ') : 'No mentions found';
 }
 
 /**
@@ -225,7 +224,7 @@ export function getMentionSummary(result: MentionMatchResult): string {
  */
 export async function validateAndSuggestMentions(
   text: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<{
   valid: MentionedUser[];
   suggestions: {
@@ -239,10 +238,10 @@ export async function validateAndSuggestMentions(
     const mentions = extractMentions(text);
     const orgUsers = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["admin", "hr", "interviewer"] },
+      role: { $in: ['admin', 'hr', 'interviewer'] },
       isDeleted: { $ne: true },
     })
-      .select("_id name email")
+      .select('_id name email')
       .lean();
 
     const valid: MentionedUser[] = [];
@@ -258,8 +257,7 @@ export async function validateAndSuggestMentions(
       for (const user of orgUsers) {
         const nameParts = user.name.trim().split(/\s+/);
         const firstName = nameParts[0];
-        const lastName =
-          nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
         if (matchesUserName(firstName, lastName, mention.patterns)) {
           exactMatches.push({
@@ -290,7 +288,7 @@ export async function validateAndSuggestMentions(
 
     return { valid, suggestions };
   } catch (error) {
-    console.error("Error validating mentions:", error);
+    console.error('Error validating mentions:', error);
     return { valid: [], suggestions: [] };
   }
 }

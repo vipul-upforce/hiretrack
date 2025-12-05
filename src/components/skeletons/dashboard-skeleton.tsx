@@ -1,7 +1,7 @@
-import { CandidateCardSkeleton } from "./candidate-card-skelton";
-import { InterviewerCardSkeleton } from "./interviewer-card-skelton";
+import { CandidateCardSkeleton } from './candidate-card-skelton';
+import { InterviewerCardSkeleton } from './interviewer-card-skelton';
 
-export const DashboardSkeleton = ({ role }) => {
+export function DashboardSkeleton({ role }) {
   return (
     <div className="h-auto flex flex-col overflow-y-auto w-full animate-pulse">
       {/* HEADER */}
@@ -11,7 +11,7 @@ export const DashboardSkeleton = ({ role }) => {
             <div
               key={i}
               className="h-20 rounded-lg bg-muted/50 border animate-pulse"
-            ></div>
+            />
           ))}
         </div>
       </div>
@@ -19,11 +19,11 @@ export const DashboardSkeleton = ({ role }) => {
       {/* CARDS AREA */}
       <div className="flex-1 px-4 mt-6">
         <div className="flex flex-wrap gap-6">
-          {role === "interviewer"
+          {role === 'interviewer'
             ? [...Array(8)].map((_, i) => <InterviewerCardSkeleton key={i} />)
             : [...Array(10)].map((_, i) => <CandidateCardSkeleton key={i} />)}
         </div>
       </div>
     </div>
   );
-};
+}

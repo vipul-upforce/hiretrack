@@ -37,7 +37,7 @@ const initialState: AuthState = {
 };
 
 export const fetchUserFromToken = createAsyncThunk(
-  "auth/fetchUserFromToken",
+  'auth/fetchUserFromToken',
   async (_, { rejectWithValue }) => {
     try {
       localStorage.removeItem("persist:auth");
@@ -62,32 +62,32 @@ export const fetchUserFromToken = createAsyncThunk(
 
       if (!response.ok) {
         const errorData = await response.json();
-        localStorage.removeItem("persist:auth");
-        localStorage.removeItem("persist:organization");
+        localStorage.removeItem('persist:auth');
+        localStorage.removeItem('persist:organization');
         return rejectWithValue(
-          errorData.message || "Failed to fetch user data"
+          errorData.message || 'Failed to fetch user data',
         );
       }
       const data = await response.json();
       return data.user;
     } catch (error) {
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      return rejectWithValue("Failed to connect to authentication server");
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+      return rejectWithValue('Failed to connect to authentication server');
     }
-  }
+  },
 );
 
 // Simple async thunk to call logout API - no response handling needed
-export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
+export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
   try {
     // Just ping the server to clear cookies - don't care about response
-    await fetch("/api/auth/logout");
-    localStorage.removeItem("persist:auth");
-    localStorage.removeItem("persist:organization");
+    await fetch('/api/auth/logout');
+    localStorage.removeItem('persist:auth');
+    localStorage.removeItem('persist:organization');
   } catch (error) {
     // Ignore errors - we'll clear local state anyway
-    console.log("Logout API call failed, but continuing with local cleanup");
+    console.log('Logout API call failed, but continuing with local cleanup');
   }
 
   // Always return success since we don't care about the API response
@@ -95,15 +95,15 @@ export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
 });
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      localStorage.removeItem("user");
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+      localStorage.removeItem('user');
     },
     updateUser: (state, action: PayloadAction<any>) => {
       if (state.user && (state.user.id || state.user.email)) {
@@ -128,7 +128,7 @@ const authSlice = createSlice({
           state.loading = false;
           state.isAuthenticated = true;
           state.user = action.payload;
-        }
+        },
       )
       .addCase(fetchUserFromToken.rejected, (state, action) => {
         state.loading = false;

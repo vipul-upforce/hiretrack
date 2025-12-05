@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback } from "react";
-import { Formik, Form } from "formik";
-import { SearchFilters } from "@/components/forms/search-filters";
-import { SearchResults } from "@/components/forms/search-results";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { TimerResetIcon as ResetIcon, SearchIcon } from "lucide-react";
-import { useFilterCandidatesQuery } from "@/lib/features/candidate/candidateApi";
-import { useToast } from "@/hooks/use-toast";
-import { Candidate } from "@/types/candidate";
-import withAuthGuard from "../withAuthGuard";
-import { SearchSchema } from "./searchSchema";
-import { useSelector } from "react-redux";
-import { User } from "@/lib/features/org/orgApi";
+import { useEffect, useState, useCallback } from 'react';
+import { Formik, Form } from 'formik';
+import { SearchFilters } from '@/components/forms/search-filters';
+import { SearchResults } from '@/components/forms/search-results';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { TimerResetIcon as ResetIcon, SearchIcon } from 'lucide-react';
+import { useFilterCandidatesQuery } from '@/lib/features/candidate/candidateApi';
+import { useToast } from '@/hooks/use-toast';
+import { Candidate } from '@/types/candidate';
+import { useSelector } from 'react-redux';
+import { User } from '@/lib/features/org/orgApi';
+import withAuthGuard from '../withAuthGuard';
+import { SearchSchema } from './searchSchema';
 
 export interface CandidateField {
   [key: string]: any;
@@ -32,7 +32,7 @@ export interface SearchFilter {
   createdAfter?: string;
   createdBefore?: string;
   organizationId?: string;
-  logicOperator?: "$and" | "$or";
+  logicOperator?: '$and' | '$or';
   page: number;
   limit: number;
   customFields?: CandidateField | null;
@@ -48,34 +48,33 @@ function CandidateSearch() {
   const [totalRecordsCount, setTotalRecordsCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
   const { toast } = useToast();
-  const [OrgID, setOrgID] = useState("");
+  const [OrgID, setOrgID] = useState('');
 
   const initialValues: SearchFilter = {
-    name: "",
+    name: '',
     skills: [],
-    location: "",
+    location: '',
     minExpectedCTC: undefined,
     maxExpectedCTC: undefined,
     minExperience: undefined,
     maxExperience: undefined,
     minCurrentCTC: undefined,
     maxCurrentCTC: undefined,
-    createdAfter: "",
-    createdBefore: "",
-    logicOperator: "$and",
-    organizationId: user ? user.organizationId : "",
+    createdAfter: '',
+    createdBefore: '',
+    logicOperator: '$and',
+    organizationId: user ? user.organizationId : '',
     page: 1,
     limit: 20,
     customFields: null,
   };
 
-  const [currentFilters, setCurrentFilters] =
-    useState<SearchFilter>(initialValues);
+  const [currentFilters, setCurrentFilters] = useState<SearchFilter>(initialValues);
 
   const {
     data: filteredCandidates,
@@ -103,11 +102,7 @@ function CandidateSearch() {
 
   // Optimistic update handler
   const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
-    setSearchResults((prevResults) =>
-      prevResults.map((candidate) =>
-        candidate._id === updatedCandidate._id ? updatedCandidate : candidate
-      )
-    );
+    setSearchResults((prevResults) => prevResults.map((candidate) => (candidate._id === updatedCandidate._id ? updatedCandidate : candidate)));
   }, []);
 
   const refetchResults = useCallback(async () => {
@@ -124,9 +119,9 @@ function CandidateSearch() {
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: `${error instanceof Error ? error.message : ""}`,
-        variant: "destructive",
+        title: 'Error',
+        description: `${error instanceof Error ? error.message : ''}`,
+        variant: 'destructive',
       });
     } finally {
       setIsSearching(false);
@@ -145,7 +140,7 @@ function CandidateSearch() {
 
       setCurrentFilters(updatedFilters);
     },
-    [OrgID]
+    [OrgID],
   );
 
   // FIX 4: Simplify the initial load effect
@@ -164,10 +159,10 @@ function CandidateSearch() {
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
@@ -184,7 +179,7 @@ function CandidateSearch() {
 
       setCurrentFilters(updatedFilters);
     },
-    [user, totalPages, currentFilters]
+    [user, totalPages, currentFilters],
   );
 
   const onLimitChange = useCallback(
@@ -201,41 +196,41 @@ function CandidateSearch() {
 
       setCurrentFilters(updatedFilters);
     },
-    [user, currentFilters]
+    [user, currentFilters],
   );
 
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+      let aValue: any;
+      let bValue: any;
 
-        // Handle custom sorting fields
-        if (sortField === "overallScore") {
-          aValue = a.scores?.overall ?? 0;
-          bValue = b.scores?.overall ?? 0;
-        } else if (sortField === "jobAssignment") {
-          aValue = a.jobId?.title ?? "";
-          bValue = b.jobId?.title ?? "";
-        } else {
-          aValue = a[sortField as keyof Candidate];
-          bValue = b[sortField as keyof Candidate];
-        }
+      // Handle custom sorting fields
+      if (sortField === 'overallScore') {
+        aValue = a.scores?.overall ?? 0;
+        bValue = b.scores?.overall ?? 0;
+      } else if (sortField === 'jobAssignment') {
+        aValue = a.jobId?.title ?? '';
+        bValue = b.jobId?.title ?? '';
+      } else {
+        aValue = a[sortField as keyof Candidate];
+        bValue = b[sortField as keyof Candidate];
+      }
 
-        // Ensure both values are strings for localeCompare
-        if (typeof aValue === "string" && typeof bValue === "string") {
-          return sortDirection === "asc"
-            ? aValue.localeCompare(bValue)
-            : bValue.localeCompare(aValue);
-        }
+      // Ensure both values are strings for localeCompare
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
 
-        // Handle numeric comparison
-        if (typeof aValue === "number" && typeof bValue === "number") {
-          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
-        }
+      // Handle numeric comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
 
-        // Handle cases where one value is a string and the other is a number
-        return typeof aValue === "string" ? 1 : -1;
-      })
+      // Handle cases where one value is a string and the other is a number
+      return typeof aValue === 'string' ? 1 : -1;
+    })
     : searchResults;
 
   return (
@@ -247,11 +242,11 @@ function CandidateSearch() {
           onSubmit={(values) => {
             const trimmedValues = {
               ...values,
-              name: values.name?.trim() || "",
-              location: values.location?.trim() || "",
+              name: values.name?.trim() || '',
+              location: values.location?.trim() || '',
               customFields: values.customFields,
-              createdAfter: values.createdAfter || "",
-              createdBefore: values.createdBefore || "",
+              createdAfter: values.createdAfter || '',
+              createdBefore: values.createdBefore || '',
             };
             handleSearch(trimmedValues);
           }}
@@ -284,7 +279,7 @@ function CandidateSearch() {
                   size="lg"
                 >
                   <SearchIcon className="mr-2 h-4 w-4" />
-                  {isQueryLoading || isFetching ? "Searching..." : "Search"}
+                  {isQueryLoading || isFetching ? 'Searching...' : 'Search'}
                 </Button>
               </div>
             </Form>

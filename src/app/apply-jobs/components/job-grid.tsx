@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { JobCard } from "./jobs-card";
-import { LoadingSkeleton } from "./loading-skeleton";
-import { EmptyState } from "./empty-state";
+import { JobCard } from './jobs-card';
+import { LoadingSkeleton } from './loading-skeleton';
+import { EmptyState } from './empty-state';
 
 interface JobGridProps {
   jobs: any[];
@@ -35,7 +35,7 @@ export function JobGrid({
           description="Try adjusting your search terms or browse all available positions"
           imageUrl="/notfound.jpg"
           onBack={onClearSearch}
-          showBackButton={true}
+          showBackButton
         />
       );
     }

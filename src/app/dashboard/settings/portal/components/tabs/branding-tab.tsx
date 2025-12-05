@@ -1,6 +1,6 @@
-import React from "react";
-import { PortalSettings } from "../../types";
-import { FileUploadCard } from "../../components/file-upload-card";
+import React from 'react';
+import { PortalSettings } from '../../types';
+import { FileUploadCard } from '../file-upload-card';
 
 interface BrandingTabProps {
   settings: PortalSettings;

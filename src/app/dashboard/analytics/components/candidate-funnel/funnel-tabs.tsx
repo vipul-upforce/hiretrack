@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { CustomFunnelChart } from "./funnel-chart";
-import { StageDistributionChart } from "./distribution-pie-chart";
-import { TimeInStageChart } from "./time-in-stage-chart";
-import { FunnelData } from "./CandidateFunnelChart";
+import {
+  Tabs, TabsList, TabsTrigger, TabsContent,
+} from '@/components/ui/tabs';
+import { CustomFunnelChart } from './funnel-chart';
+import { StageDistributionChart } from './distribution-pie-chart';
+import { TimeInStageChart } from './time-in-stage-chart';
+import { FunnelData } from './CandidateFunnelChart';
 
-export const FunnelTabs = ({ funnelData }: { funnelData: FunnelData[] }) => {
+export function FunnelTabs({ funnelData }: { funnelData: FunnelData[] }) {
   return (
     <Tabs defaultValue="funnel" className="w-full">
       <TabsList className="grid w-full grid-cols-3">
@@ -43,4 +45,4 @@ export const FunnelTabs = ({ funnelData }: { funnelData: FunnelData[] }) => {
       </TabsContent>
     </Tabs>
   );
-};
+}

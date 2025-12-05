@@ -43,9 +43,9 @@
 //     );
 //   }
 // }
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Notification } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Notification } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
     const user = await getAuthenticatedUser(request);
     if (!user) {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: 'Unauthorized' },
+        { status: 401 },
       );
     }
 
@@ -64,27 +64,27 @@ export async function GET(request: NextRequest) {
     // Single aggregation query instead of 2 expensive count queries
     const [result] = await Notification.aggregate([
       {
-        $match: { organizationId, recipientId }
+        $match: { organizationId, recipientId },
       },
       {
         $group: {
           _id: null,
           totalCount: { $sum: 1 },
           unreadCount: {
-            $sum: { $cond: ["$isRead", 0, 1] }
-          }
-        }
-      }
+            $sum: { $cond: ['$isRead', 0, 1] },
+          },
+        },
+      },
     ]);
 
     return NextResponse.json({
       unreadCount: result?.unreadCount ?? 0,
-      totalCount: result?.totalCount ?? 0
+      totalCount: result?.totalCount ?? 0,
     });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal Server Error" },
-      { status: 500 }
+      { error: err instanceof Error ? err.message : 'Internal Server Error' },
+      { status: 500 },
     );
   }
 }

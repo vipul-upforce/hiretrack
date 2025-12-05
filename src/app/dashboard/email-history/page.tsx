@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -18,14 +18,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from '@/components/ui/dialog';
 import {
   Mail,
   Search,
@@ -39,10 +39,10 @@ import {
   Eye,
   Filter,
   Download,
-} from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import mongoose from "mongoose";
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import mongoose from 'mongoose';
 
 export interface EmailHistoryRecord {
   _id: string;
@@ -62,7 +62,7 @@ export interface EmailHistoryRecord {
     fileSize: number;
     shareId: string;
   }>;
-  status: "sent" | "failed" | "pending";
+  status: 'sent' | 'failed' | 'pending';
   provider: string;
   error?: string;
   metadata?: {
@@ -78,13 +78,13 @@ export interface EmailHistoryRecord {
 export default function EmailHistoryPage() {
   const [emails, setEmails] = useState<EmailHistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(
-    null
+    null,
   );
   const [statusFilter, setStatusFilter] = useState<
-    "all" | "sent" | "failed" | "pending"
-  >("all");
+    'all' | 'sent' | 'failed' | 'pending'
+  >('all');
 
   useEffect(() => {
     fetchEmailHistory();
@@ -93,49 +93,47 @@ export default function EmailHistoryPage() {
   const fetchEmailHistory = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/email-history");
+      const response = await fetch('/api/email-history');
       if (response.ok) {
         const data = await response.json();
         setEmails(data.emails || []);
       } else {
-        console.error("Failed to fetch email history");
+        console.error('Failed to fetch email history');
       }
     } catch (error) {
-      console.error("Error fetching email history:", error);
+      console.error('Error fetching email history:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredEmails = emails.filter((email) => {
-    const matchesSearch =
-      (email.recipientEmail || "")
+    const matchesSearch = (email.recipientEmail || '')
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+      || (email.subject || '').toLowerCase().includes(searchTerm.toLowerCase())
+      || (email.sentByName || '')
         .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (email.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (email.sentByName || "")
+        .includes(searchTerm.toLowerCase())
+      || (email.sentByEmail || '')
         .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (email.sentByEmail || "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      (email.recipientName || "")
+        .includes(searchTerm.toLowerCase())
+      || (email.recipientName || '')
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || email.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || email.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "sent":
+      case 'sent':
         return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case "failed":
+      case 'failed':
         return <AlertCircle className="h-4 w-4 text-red-600" />;
-      case "pending":
+      case 'pending':
         return <Clock className="h-4 w-4 text-yellow-600" />;
       default:
         return <Mail className="h-4 w-4 text-gray-600" />;
@@ -144,15 +142,15 @@ export default function EmailHistoryPage() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      sent: "bg-green-100 text-green-800 border-green-200",
-      failed: "bg-red-100 text-red-800 border-red-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      sent: 'bg-green-100 text-green-800 border-green-200',
+      failed: 'bg-red-100 text-red-800 border-red-200',
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     };
 
     return (
       <Badge
         variant="outline"
-        className={cn("capitalize", variants[status as keyof typeof variants])}
+        className={cn('capitalize', variants[status as keyof typeof variants])}
       >
         {status}
       </Badge>
@@ -160,9 +158,9 @@ export default function EmailHistoryPage() {
   };
 
   const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -191,10 +189,10 @@ export default function EmailHistoryPage() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  {["all", "sent", "failed", "pending"].map((status) => (
+                  {['all', 'sent', 'failed', 'pending'].map((status) => (
                     <Button
                       key={status}
-                      variant={statusFilter === status ? "default" : "outline"}
+                      variant={statusFilter === status ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setStatusFilter(status as any)}
                       className="capitalize"
@@ -216,7 +214,9 @@ export default function EmailHistoryPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email History ({filteredEmails.length})
+              Email History (
+              {filteredEmails.length}
+              )
             </CardTitle>
             <CardDescription>
               Complete audit trail of all emails sent through the system
@@ -225,16 +225,16 @@ export default function EmailHistoryPage() {
           <CardContent>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : filteredEmails.length === 0 ? (
               <div className="text-center py-8">
                 <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">No emails found</h3>
                 <p className="text-muted-foreground">
-                  {searchTerm || statusFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "No emails have been sent yet"}
+                  {searchTerm || statusFilter !== 'all'
+                    ? 'Try adjusting your filters'
+                    : 'No emails have been sent yet'}
                 </p>
               </div>
             ) : (
@@ -263,45 +263,45 @@ export default function EmailHistoryPage() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {email.recipientName ||
-                                email.recipientEmail ||
-                                "Unknown"}
+                              {email.recipientName
+                                || email.recipientEmail
+                                || 'Unknown'}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {email.recipientEmail || "No email"}
+                              {email.recipientEmail || 'No email'}
                             </span>
-                            {((email.cc && email.cc.length > 0) ||
-                              (email.bcc && email.bcc.length > 0)) && (
+                            {((email.cc && email.cc.length > 0)
+                              || (email.bcc && email.bcc.length > 0)) && (
                               <span className="text-xs text-muted-foreground">
-                                {email.cc &&
-                                  email.cc.length > 0 &&
-                                  `CC: ${email.cc.length}`}
-                                {email.cc &&
-                                  email.cc.length > 0 &&
-                                  email.bcc &&
-                                  email.bcc.length > 0 &&
-                                  ", "}
-                                {email.bcc &&
-                                  email.bcc.length > 0 &&
-                                  `BCC: ${email.bcc.length}`}
+                                {email.cc
+                                  && email.cc.length > 0
+                                  && `CC: ${email.cc.length}`}
+                                {email.cc
+                                  && email.cc.length > 0
+                                  && email.bcc
+                                  && email.bcc.length > 0
+                                  && ', '}
+                                {email.bcc
+                                  && email.bcc.length > 0
+                                  && `BCC: ${email.bcc.length}`}
                               </span>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="max-w-[200px] truncate font-medium">
-                            {email.subject || "No subject"}
+                            {email.subject || 'No subject'}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {email.sentByName ||
-                                email.sentByEmail ||
-                                "Unknown"}
+                              {email.sentByName
+                                || email.sentByEmail
+                                || 'Unknown'}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {email.sentByEmail || "No email"}
+                              {email.sentByEmail || 'No email'}
                             </span>
                           </div>
                         </TableCell>
@@ -311,12 +311,12 @@ export default function EmailHistoryPage() {
                             <span className="text-sm">
                               {format(
                                 new Date(email.createdAt),
-                                "MMM dd, yyyy"
+                                'MMM dd, yyyy',
                               )}
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            {format(new Date(email.createdAt), "HH:mm")}
+                            {format(new Date(email.createdAt), 'HH:mm')}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -384,17 +384,17 @@ export default function EmailHistoryPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">
-                        {selectedEmail.subject || "No subject"}
+                        {selectedEmail.subject || 'No subject'}
                       </h1>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        {selectedEmail.attachments &&
-                          selectedEmail.attachments.length > 0 && (
+                        {selectedEmail.attachments
+                          && selectedEmail.attachments.length > 0 && (
                             <Paperclip className="h-4 w-4" />
-                          )}
+                        )}
                         <span>
                           {format(
                             new Date(selectedEmail.createdAt),
-                            "MMM dd, yyyy, h:mm a"
+                            'MMM dd, yyyy, h:mm a',
                           )}
                         </span>
                       </div>
@@ -404,9 +404,9 @@ export default function EmailHistoryPage() {
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
                       {(
-                        selectedEmail.sentByName ||
-                        selectedEmail.sentByEmail ||
-                        "U"
+                        selectedEmail.sentByName
+                        || selectedEmail.sentByEmail
+                        || 'U'
                       )
                         .charAt(0)
                         .toUpperCase()}
@@ -414,33 +414,41 @@ export default function EmailHistoryPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {selectedEmail.sentByName || "Unknown"}
+                          {selectedEmail.sentByName || 'Unknown'}
                         </span>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
-                          &lt;{selectedEmail.sentByEmail}&gt;
+                          &lt;
+                          {selectedEmail.sentByEmail}
+                          &gt;
                         </span>
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <span>
-                          to{" "}
-                          {selectedEmail.recipientName ||
-                            selectedEmail.recipientEmail}
+                          to
+                          {' '}
+                          {selectedEmail.recipientName
+                            || selectedEmail.recipientEmail}
                         </span>
-                        {((selectedEmail.cc && selectedEmail.cc.length > 0) ||
-                          (selectedEmail.bcc &&
-                            selectedEmail.bcc.length > 0)) && (
-                          <span className="ml-2">
-                            {selectedEmail.cc &&
-                              selectedEmail.cc.length > 0 && (
-                                <span>cc: {selectedEmail.cc.join(", ")}</span>
-                              )}
-                            {selectedEmail.bcc &&
-                              selectedEmail.bcc.length > 0 && (
-                                <span className="ml-2">
-                                  bcc: {selectedEmail.bcc.join(", ")}
+                        {((selectedEmail.cc && selectedEmail.cc.length > 0)
+                          || (selectedEmail.bcc
+                            && selectedEmail.bcc.length > 0)) && (
+                            <span className="ml-2">
+                              {selectedEmail.cc
+                              && selectedEmail.cc.length > 0 && (
+                                <span>
+                                  cc:
+                                  {selectedEmail.cc.join(', ')}
                                 </span>
                               )}
-                          </span>
+                              {selectedEmail.bcc
+                              && selectedEmail.bcc.length > 0 && (
+                                <span className="ml-2">
+                                  bcc:
+                                  {' '}
+                                  {selectedEmail.bcc.join(', ')}
+                                </span>
+                              )}
+                            </span>
                         )}
                       </div>
                     </div>
@@ -453,20 +461,20 @@ export default function EmailHistoryPage() {
                     {/* Render HTML content or plain text */}
                     {selectedEmail.body ? (
                       // Check if content is HTML by looking for HTML tags
-                      selectedEmail.body.includes("<") &&
-                      selectedEmail.body.includes(">") ? (
+                      selectedEmail.body.includes('<')
+                      && selectedEmail.body.includes('>') ? (
                         <div
                           className="leading-relaxed"
                           dangerouslySetInnerHTML={{
                             __html: selectedEmail.body,
                           }}
                         />
-                      ) : (
+                        ) : (
                         // Plain text - preserve line breaks
-                        <div className="whitespace-pre-wrap leading-relaxed">
-                          {selectedEmail.body}
-                        </div>
-                      )
+                          <div className="whitespace-pre-wrap leading-relaxed">
+                            {selectedEmail.body}
+                          </div>
+                        )
                     ) : (
                       <div className="text-gray-500 italic">
                         No message content
@@ -475,12 +483,14 @@ export default function EmailHistoryPage() {
                   </div>
 
                   {/* Attachments in email style */}
-                  {selectedEmail.attachments &&
-                    selectedEmail.attachments.length > 0 && (
+                  {selectedEmail.attachments
+                    && selectedEmail.attachments.length > 0 && (
                       <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                          {selectedEmail.attachments.length} attachment
-                          {selectedEmail.attachments.length > 1 ? "s" : ""}
+                          {selectedEmail.attachments.length}
+                          {' '}
+                          attachment
+                          {selectedEmail.attachments.length > 1 ? 's' : ''}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                           {selectedEmail.attachments.map(
@@ -488,9 +498,7 @@ export default function EmailHistoryPage() {
                               <div
                                 key={index}
                                 className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                                onClick={() =>
-                                  window.open(attachment.shareUrl, "_blank")
-                                }
+                                onClick={() => window.open(attachment.shareUrl, '_blank')}
                               >
                                 <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
                                   <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -505,11 +513,11 @@ export default function EmailHistoryPage() {
                                 </div>
                                 <Download className="h-4 w-4 text-gray-400" />
                               </div>
-                            )
+                            ),
                           )}
                         </div>
                       </div>
-                    )}
+                  )}
                 </div>
               </div>
             )}

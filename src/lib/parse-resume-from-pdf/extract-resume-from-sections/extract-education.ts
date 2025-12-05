@@ -2,21 +2,21 @@ import type {
   TextItem,
   FeatureSet,
   ResumeSectionToLines,
-} from "@/lib/parse-resume-from-pdf/types";
-import type { ResumeEducation } from "@/lib/redux/types";
-import { getSectionLinesByKeywords } from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/get-section-lines";
-import { divideSectionIntoSubsections } from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/subsections";
+} from '@/lib/parse-resume-from-pdf/types';
+import type { ResumeEducation } from '@/lib/redux/types';
+import { getSectionLinesByKeywords } from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/get-section-lines';
+import { divideSectionIntoSubsections } from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/subsections';
 import {
   DATE_FEATURE_SETS,
   hasComma,
   hasLetter,
   hasNumber,
-} from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/common-features";
-import { getTextWithHighestFeatureScore } from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/feature-scoring-system";
+} from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/common-features';
+import { getTextWithHighestFeatureScore } from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/feature-scoring-system';
 import {
   getBulletPointsFromLines,
   getDescriptionsLineIdx,
-} from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/bullet-points";
+} from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/bullet-points';
 
 /**
  *              Unique Attribute
@@ -26,14 +26,12 @@ import {
  */
 
 // prettier-ignore
-const SCHOOLS = ['College', 'University', 'Institute', 'School', 'Academy', 'BASIS', 'Magnet']
-const hasSchool = (item: TextItem) =>
-  SCHOOLS.some((school) => item.text.includes(school));
+const SCHOOLS = ['College', 'University', 'Institute', 'School', 'Academy', 'BASIS', 'Magnet'];
+const hasSchool = (item: TextItem) => SCHOOLS.some((school) => item.text.includes(school));
 // prettier-ignore
-const DEGREES = ["Associate", "Bachelor", "Master", "PhD", "Ph."];
-const hasDegree = (item: TextItem) =>
-  DEGREES.some((degree) => item.text.includes(degree)) ||
-  /[ABM][A-Z\.]/.test(item.text); // Match AA, B.S., MBA, etc.
+const DEGREES = ['Associate', 'Bachelor', 'Master', 'PhD', 'Ph.'];
+const hasDegree = (item: TextItem) => DEGREES.some((degree) => item.text.includes(degree))
+  || /[ABM][A-Z\.]/.test(item.text); // Match AA, B.S., MBA, etc.
 const matchGPA = (item: TextItem) => item.text.match(/[0-4]\.\d{1,2}/);
 const matchGrade = (item: TextItem) => {
   const grade = parseFloat(item.text);
@@ -65,25 +63,25 @@ const GPA_FEATURE_SETS: FeatureSet[] = [
 export const extractEducation = (sections: ResumeSectionToLines) => {
   const educations: ResumeEducation[] = [];
   const educationsScores = [];
-  const lines = getSectionLinesByKeywords(sections, ["education"]);
+  const lines = getSectionLinesByKeywords(sections, ['education']);
   const subsections = divideSectionIntoSubsections(lines);
   for (const subsectionLines of subsections) {
     const textItems = subsectionLines.flat();
     const [school, schoolScores] = getTextWithHighestFeatureScore(
       textItems,
-      SCHOOL_FEATURE_SETS
+      SCHOOL_FEATURE_SETS,
     );
     const [degree, degreeScores] = getTextWithHighestFeatureScore(
       textItems,
-      DEGREE_FEATURE_SETS
+      DEGREE_FEATURE_SETS,
     );
     const [gpa, gpaScores] = getTextWithHighestFeatureScore(
       textItems,
-      GPA_FEATURE_SETS
+      GPA_FEATURE_SETS,
     );
     const [date, dateScores] = getTextWithHighestFeatureScore(
       textItems,
-      DATE_FEATURE_SETS
+      DATE_FEATURE_SETS,
     );
 
     let descriptions: string[] = [];
@@ -93,7 +91,9 @@ export const extractEducation = (sections: ResumeSectionToLines) => {
       descriptions = getBulletPointsFromLines(descriptionsLines);
     }
 
-    educations.push({ school, degree, gpa, date, descriptions });
+    educations.push({
+      school, degree, gpa, date, descriptions,
+    });
     educationsScores.push({
       schoolScores,
       degreeScores,
@@ -103,14 +103,14 @@ export const extractEducation = (sections: ResumeSectionToLines) => {
   }
 
   if (educations.length !== 0) {
-    const coursesLines = getSectionLinesByKeywords(sections, ["course"]);
+    const coursesLines = getSectionLinesByKeywords(sections, ['course']);
     if (coursesLines.length !== 0) {
       educations[0].descriptions.push(
-        "Courses: " +
+        `Courses: ${
           coursesLines
             .flat()
             .map((item) => item.text)
-            .join(" ")
+            .join(' ')}`,
       );
     }
   }

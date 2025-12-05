@@ -1,4 +1,4 @@
-import { FileIcon } from "lucide-react";
+import { FileIcon } from 'lucide-react';
 
 export function BackupSkeleton() {
   return (

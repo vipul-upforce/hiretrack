@@ -1,8 +1,8 @@
-import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
-import { ICandidateHistory } from "@/lib/models/history";
-import { Job } from "./job";
-import { ITag } from "@/lib/models/organization";
-import { Attachment } from "@/app/api/candidates/route";
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
+import { ICandidateHistory } from '@/lib/models/history';
+import { ITag } from '@/lib/models/organization';
+import { Attachment } from '@/app/api/candidates/route';
+import { Job } from './job';
 
 export interface JobDetail {
   title: string;
@@ -129,13 +129,13 @@ export interface Candidate {
 }
 
 export type CandidateStatus =
-  | "applied"
-  | "screening"
-  | "shortlisted"
-  | "processing"
-  | "accepted"
-  | "rejected"
-  | "default";
+  | 'applied'
+  | 'screening'
+  | 'shortlisted'
+  | 'processing'
+  | 'accepted'
+  | 'rejected'
+  | 'default';
 
 export interface CandidateColumn {
   id: CandidateStatus;
@@ -172,7 +172,7 @@ interface Assignment {
     attendeeResponses?: Array<{
       email: string;
       name?: string;
-      responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
+      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
       comment?: string;
       lastUpdated: Date;
       notificationSent?: boolean;

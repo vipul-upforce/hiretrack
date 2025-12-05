@@ -1,9 +1,9 @@
-import { Label } from "@/components/ui/label";
-import { MentionTextarea } from "@/components/ui/mention-textarea";
-import { Rating } from "@mui/material";
-import { Switch } from "@/components/ui/switch";
-import { Eye, EyeOff } from "lucide-react";
-import { ILocalUser } from "@/lib/redux/authSlice";
+import { Label } from '@/components/ui/label';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Rating } from '@mui/material';
+import { Switch } from '@/components/ui/switch';
+import { Eye, EyeOff } from 'lucide-react';
+import { ILocalUser } from '@/lib/redux/authSlice';
 
 interface ChecklistRemarksSectionProps {
   newRemark: string;
@@ -39,15 +39,15 @@ export function ChecklistRemarksSection({
         value={newRemark}
         onChange={setNewRemark}
         onKeyDown={(e) => {
-          if (e.altKey && e.key === "Enter") {
+          if (e.altKey && e.key === 'Enter') {
             e.preventDefault();
             if (!isSubmitting && user?.id) {
               handleSubmit();
             }
           }
         }}
-        organizationId={String(user?.organizationId) || ""}
-        currentUserRole={user?.role || ""}
+        organizationId={String(user?.organizationId) || ''}
+        currentUserRole={user?.role || ''}
         rows={4}
       />
       <div className="flex justify-between items-center relative z-10">
@@ -62,14 +62,14 @@ export function ChecklistRemarksSection({
             value={remarkRating}
             precision={0.5}
             sx={{
-              "& .MuiRating-iconEmpty": {
-                color: "rgba(255, 255, 255, 0.3)",
+              '& .MuiRating-iconEmpty': {
+                color: 'rgba(255, 255, 255, 0.3)',
               },
-              "& .MuiRating-iconFilled": {
-                color: "#fbbf24",
+              '& .MuiRating-iconFilled': {
+                color: '#fbbf24',
               },
-              "& .MuiRating-iconHover": {
-                color: "#f59e0b",
+              '& .MuiRating-iconHover': {
+                color: '#f59e0b',
               },
             }}
           />
@@ -82,7 +82,7 @@ export function ChecklistRemarksSection({
               <Eye className="h-4 w-4 text-gray-500" />
             )}
             <Label htmlFor="privacy-toggle" className="text-sm">
-              {isSubRemarkPrivate ? "Private" : "Public"}
+              {isSubRemarkPrivate ? 'Private' : 'Public'}
             </Label>
           </div>
           <Switch

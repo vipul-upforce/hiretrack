@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { CredentialsFormData } from "../types";
+} from '@/components/ui/card';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { CredentialsFormData } from '../types';
 
 interface CredentialsCardProps {
   formData: CredentialsFormData;
@@ -43,9 +43,7 @@ export function CredentialsCard({
           <Input
             id="clientId"
             value={formData.clientId}
-            onChange={(e) =>
-              setFormData({ ...formData, clientId: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
             placeholder="Enter Google OAuth2 Client ID"
             disabled={isConnected}
           />
@@ -56,11 +54,9 @@ export function CredentialsCard({
           <div className="flex items-center gap-2">
             <Input
               id="clientSecret"
-              type={showClientSecret ? "text" : "password"}
+              type={showClientSecret ? 'text' : 'password'}
               value={formData.clientSecret}
-              onChange={(e) =>
-                setFormData({ ...formData, clientSecret: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, clientSecret: e.target.value })}
               placeholder="Enter Google OAuth2 Client Secret"
               disabled={isConnected}
             />

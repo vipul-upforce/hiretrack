@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-const CandidateFunnelSkeleton = () => {
+function CandidateFunnelSkeleton() {
   return (
     <div className="border rounded-xl p-6 space-y-6">
       <div className="space-y-2">
@@ -21,6 +21,6 @@ const CandidateFunnelSkeleton = () => {
       <div className="h-[500px] w-full bg-muted/40 animate-pulse rounded-xl" />
     </div>
   );
-};
+}
 
 export default CandidateFunnelSkeleton;

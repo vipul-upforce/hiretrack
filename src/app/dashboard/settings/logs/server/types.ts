@@ -1,5 +1,5 @@
-import { Candidate, Remark } from "@/types/candidate";
-import { Job } from "@/types/job";
+import { Candidate, Remark } from '@/types/candidate';
+import { Job } from '@/types/job';
 
 export type LogEntry = {
   candidateId: string;

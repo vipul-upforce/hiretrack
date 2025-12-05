@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from 'next/image';
 
 interface ErrorStateProps {
   imageUrl: string;
@@ -9,7 +9,7 @@ export function ErrorState({ imageUrl, errorMessage }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4">
       <Image
-        src={imageUrl || "/placeholder.svg"}
+        src={imageUrl || '/placeholder.svg'}
         alt="Error"
         width={600}
         height={600}

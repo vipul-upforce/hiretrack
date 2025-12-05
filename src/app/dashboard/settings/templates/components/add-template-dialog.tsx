@@ -1,3 +1,4 @@
+import React from 'react';
 import React, { useState } from "react";
 import {
   Dialog,
@@ -6,17 +7,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   Card,
   CardHeader,
@@ -88,7 +89,7 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                   value=""
                   onValueChange={(value) => {
                     const sampleTemplate = sampleCustomTemplates.find(
-                      (t) => t.name === value
+                      (t) => t.name === value,
                     );
                     if (sampleTemplate) {
                       setNewTemplate({
@@ -132,12 +133,10 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                 <Input
                   id="template-name"
                   value={newTemplate.name}
-                  onChange={(e) =>
-                    setNewTemplate((prev) => ({
-                      ...prev,
-                      name: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setNewTemplate((prev) => ({
+                    ...prev,
+                    name: e.target.value,
+                  }))}
                   placeholder="Enter template name"
                   className="h-10"
                 />
@@ -153,12 +152,10 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                 <Input
                   id="template-subject"
                   value={newTemplate.subject}
-                  onChange={(e) =>
-                    setNewTemplate((prev) => ({
-                      ...prev,
-                      subject: e.target.value,
-                    }))
-                  }
+                  onChange={(e) => setNewTemplate((prev) => ({
+                    ...prev,
+                    subject: e.target.value,
+                  }))}
                   placeholder="Enter email subject"
                   className="h-10"
                 />
@@ -222,7 +219,7 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                       dangerouslySetInnerHTML={{
                         __html: renderPreview(
                           newTemplate.content,
-                          currentTemplateVariables
+                          currentTemplateVariables,
                         ),
                       }}
                     />
@@ -243,21 +240,19 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                     <Editor
                       height="500px"
                       language="html"
-                      theme={theme === "dark" ? "vs-dark" : "vs"}
+                      theme={theme === 'dark' ? 'vs-dark' : 'vs'}
                       value={newTemplate.content}
-                      onChange={(value) =>
-                        setNewTemplate((prev) => ({
-                          ...prev,
-                          content: value || "",
-                        }))
-                      }
+                      onChange={(value) => setNewTemplate((prev) => ({
+                        ...prev,
+                        content: value || '',
+                      }))}
                       onMount={(editor) => setNewTemplateEditor(editor)}
                       options={{
                         fontSize: 14,
                         minimap: { enabled: false },
                         scrollBeyondLastLine: false,
-                        wordWrap: "on",
-                        lineNumbers: "on",
+                        wordWrap: 'on',
+                        lineNumbers: 'on',
                         folding: true,
                         automaticLayout: true,
                       }}
@@ -290,12 +285,12 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                         <div className="flex flex-col">
                           <code className="font-mono text-sm font-medium">{`{{${variable}}}`}</code>
                           <span className="text-xs text-muted-foreground mt-1">
-                            {variable === "SenderName" &&
-                              "Person sending the email"}
-                            {variable === "ReceiverName" &&
-                              "Candidate receiving the email"}
-                            {variable === "PortalName" &&
-                              "Your organization name"}
+                            {variable === 'SenderName'
+                              && 'Person sending the email'}
+                            {variable === 'ReceiverName'
+                              && 'Candidate receiving the email'}
+                            {variable === 'PortalName'
+                              && 'Your organization name'}
                           </span>
                         </div>
                         <Button
@@ -359,7 +354,7 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
             disabled={loading}
             variant="primary"
           >
-            {loading ? "Adding..." : "Add Template"}
+            {loading ? 'Adding...' : 'Add Template'}
           </Button>
         </DialogFooter>
       </DialogContent>
