@@ -66,6 +66,7 @@ if (!cached) {
 
 // Helper function to register/re-register all models
 function registerModels(mongooseInstance: typeof mongoose) {
+  console.log("Registering models///....");
   try {
     // Use existing models if already registered, otherwise create new ones
     Organization = mongooseInstance.models.Organization || mongooseInstance.model<IOrganization>("Organization", organizationSchema);
@@ -94,6 +95,7 @@ export default async function connectToDatabase() {
   if (cached!.conn) {
     // Connection exists, but check if models need re-registration (hot reload scenario)
     if (!Settings || !Organization || !User) {
+      console.log("Re-registering models....");
       registerModels(cached!.conn);
     }
     return cached!.conn;

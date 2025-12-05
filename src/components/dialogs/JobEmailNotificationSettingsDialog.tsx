@@ -137,6 +137,15 @@ export function JobEmailNotificationSettingsDialog({
     }
   };
 
+  // Filter out notification types that should be hidden in job-level settings
+  const HIDDEN_NOTIFICATION_TYPES: EmailNotificationType[] = [
+    "userAdded",
+    "bulkImportCompleted",
+  ];
+  const visibleNotificationTypes = ALL_NOTIFICATION_TYPES.filter(
+    (type) => !HIDDEN_NOTIFICATION_TYPES.includes(type)
+  );
+
   const hasChanges = () => {
     if (!settings) return false;
     const original = settings.currentJobSettings || {};
@@ -144,7 +153,7 @@ export function JobEmailNotificationSettingsDialog({
     const compareSource =
       Object.keys(original).length > 0 ? original : effective;
 
-    return ALL_NOTIFICATION_TYPES.some((key) => {
+    return visibleNotificationTypes.some((key) => {
       const currentValue = localSettings[key];
       const originalValue = compareSource[key]?.enabled ?? true;
       return currentValue !== originalValue;
@@ -153,7 +162,7 @@ export function JobEmailNotificationSettingsDialog({
 
   // Calculate if all notifications are enabled (excluding admin-disabled ones)
   const getAllToggleState = () => {
-    const toggleableTypes = ALL_NOTIFICATION_TYPES.filter(
+    const toggleableTypes = visibleNotificationTypes.filter(
       (type) => !isAdminOverrideDisabled(type, adminOverrides)
     );
     if (toggleableTypes.length === 0) return false;
@@ -162,7 +171,7 @@ export function JobEmailNotificationSettingsDialog({
 
   const handleAllToggle = (enabled: boolean) => {
     const newSettings = { ...localSettings };
-    ALL_NOTIFICATION_TYPES.forEach((type) => {
+    visibleNotificationTypes.forEach((type) => {
       // Only toggle types that aren't disabled by admin override
       if (!isAdminOverrideDisabled(type, adminOverrides)) {
         newSettings[type] = enabled;
@@ -172,7 +181,7 @@ export function JobEmailNotificationSettingsDialog({
   };
 
   const allToggleEnabled = getAllToggleState();
-  const hasAdminDisabled = ALL_NOTIFICATION_TYPES.some((type) =>
+  const hasAdminDisabled = visibleNotificationTypes.some((type) =>
     isAdminOverrideDisabled(type, adminOverrides)
   );
 
@@ -199,45 +208,38 @@ export function JobEmailNotificationSettingsDialog({
           </div>
         ) : (
           <>
-            <div className="flex flex-col h-full">
-              {/* Fixed section below header */}
-              <div className="px-6 py-2 border-b bg-background">
-                {/* All Toggle - Fixed below header */}
-                <div className="flex items-center justify-between space-x-4 py-3 px-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                  <div className="flex-1 space-y-1">
-                    <Label
-                      htmlFor="notification-all"
-                      className="text-sm font-semibold leading-none"
-                    >
-                      All Notifications
-                    </Label>
-                    {hasAdminDisabled && (
-                      <p className="text-xs text-muted-foreground">
-                        Some notifications are disabled by admin
-                      </p>
-                    )}
-                  </div>
-                  <Switch
-                    id="notification-all"
-                    checked={allToggleEnabled}
-                    onCheckedChange={handleAllToggle}
-                    disabled={updating}
-                  />
+            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+              {/* All Toggle */}
+              <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
+                <div className="flex-1 space-y-1">
+                  <Label
+                    htmlFor="notification-all"
+                    className="text-sm font-semibold leading-none"
+                  >
+                    All Notifications
+                  </Label>
+                  {hasAdminDisabled && (
+                    <p className="text-xs text-muted-foreground">
+                      Some notifications are disabled by admin
+                    </p>
+                  )}
                 </div>
+                <Switch
+                  id="notification-all"
+                  checked={allToggleEnabled}
+                  onCheckedChange={handleAllToggle}
+                  disabled={updating}
+                />
               </div>
-
-              {/* Scrollable Notification Toggles */}
-              <div className="flex-1 overflow-y-auto px-6 py-4 max-h-[60vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-                <div className="space-y-0">
-                  {ALL_NOTIFICATION_TYPES.map((type) => {
-                    const isDisabled =
-                      isAdminOverrideDisabled(type, adminOverrides) || updating;
-                    const source = resolveNotificationSource(
-                      type,
-                      adminOverrides,
-                      settings?.effectiveSettings,
-                      "job-level"
-                    );
+              {ALL_NOTIFICATION_TYPES.map((type) => {
+                const isDisabled =
+                  isAdminOverrideDisabled(type, adminOverrides) || updating;
+                const source = resolveNotificationSource(
+                  type,
+                  adminOverrides,
+                  settings?.effectiveSettings,
+                  "job-level"
+                );
 
                     return (
                       <EmailNotificationToggle
@@ -251,8 +253,6 @@ export function JobEmailNotificationSettingsDialog({
                       />
                     );
                   })}
-                </div>
-              </div>
 
               {/* Footer Buttons */}
               <div className="flex justify-between items-center border-t bg-background px-6 py-2 gap-4">

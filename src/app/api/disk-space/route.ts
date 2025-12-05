@@ -30,14 +30,11 @@ function calculateFolderSizeRecursive(dirPath: string): number {
 
       try {
         if (entry.isDirectory()) {
-          // Recursively calculate subdirectory size
           totalSize += calculateFolderSizeRecursive(fullPath);
         } else if (entry.isFile()) {
-          // Add file size
           const fileStats = fs.statSync(fullPath);
           totalSize += fileStats.size;
         }
-        // Note: symlinks and other special files are handled by entry.isFile() check
       } catch {
         // Skip files/folders that can't be accessed (permissions, broken symlinks, etc.)
         // Continue processing other entries
@@ -73,30 +70,88 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * Gets folder size using system command (Linux/Mac) or recursive calculation (Windows/fallback)
+ * Gets folder size using system command or recursive calculation
  */
 function getFolderSize(folderPath: string): string {
   try {
     if (process.platform === "win32") {
-      // On Windows, use recursive calculation
       const sizeBytes = calculateFolderSizeRecursive(folderPath);
       return formatSize(sizeBytes);
     } else {
-      // On Linux/Mac, try using 'du' command first (faster for large directories)
-      // This includes hidden files by default
       const result = execSync(`du -sb "${folderPath}"`, { encoding: "utf-8" });
       const sizeBytes = parseInt(result.split("\t")[0], 10);
       if (!isNaN(sizeBytes)) {
         return formatSize(sizeBytes);
       }
-      // Fallback to recursive calculation if du fails
       const sizeBytesFallback = calculateFolderSizeRecursive(folderPath);
       return formatSize(sizeBytesFallback);
     }
   } catch {
-    // Fallback to recursive calculation on any error
     const sizeBytes = calculateFolderSizeRecursive(folderPath);
     return formatSize(sizeBytes);
+  }
+}
+
+function getDiskStats(checkPath: string) {
+  try {
+    let total = 0;
+    let free = 0;
+    let used = 0;
+
+    if (process.platform === "win32") {
+      const driveLetter = path
+        .parse(path.resolve(checkPath))
+        .root.replace("\\", "");
+
+      // Execute wmic command
+      const output = execSync(
+        `wmic logicaldisk where Caption="${driveLetter}" get FreeSpace,Size /value`,
+        { encoding: "utf-8" }
+      );
+
+      const lines = output.split("\n");
+      lines.forEach((line) => {
+        if (line.includes("Size="))
+          total = parseInt(line.split("=")[1].trim(), 10);
+        if (line.includes("FreeSpace="))
+          free = parseInt(line.split("=")[1].trim(), 10);
+      });
+
+      used = total - free;
+    } else {
+      // Linux/Mac: Use df command
+      // -B1 forces output in bytes
+      const output = execSync(`df -B1 "${checkPath}"`, { encoding: "utf-8" });
+
+      const lines = output.trim().split("\n");
+      if (lines.length >= 2) {
+        const parts = lines[1].split(/\s+/);
+
+        // Index 1 = Total, Index 2 = Used, Index 3 = Available (Free)
+        total = parseInt(parts[1], 10);
+        used = parseInt(parts[2], 10);
+        free = parseInt(parts[3], 10);
+      }
+    }
+
+    const percentUsed = total > 0 ? ((used / total) * 100).toFixed(1) : "0";
+
+    return {
+      total: formatSize(total),
+      free: formatSize(free),
+      used: formatSize(used),
+      raw: { total, free, used },
+      percentUsed: `${percentUsed}%`,
+    };
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error("Error fetching disk stats:", error);
+    return {
+      total: "Unknown",
+      free: "Unknown",
+      used: "Unknown",
+      percentUsed: "0%",
+    };
   }
 }
 
@@ -105,6 +160,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const rootKey = searchParams.get("root");
     const subPath = searchParams.get("path") || "";
+    const getStats = searchParams.get("stats");
 
     const isWindows = process.platform === "win32";
 
@@ -119,6 +175,14 @@ export async function GET(request: Request) {
       pm2: "/root/.pm2/logs",
       hiretrack: "/root/.hiretrack",
     };
+
+    const SYSTEM_ROOT = isWindows ? "C:/" : "/";
+
+    // If query param ?stats=true is passed, return ONLY the disk stats
+    if (getStats === "true") {
+      const diskStats = getDiskStats(SYSTEM_ROOT);
+      return NextResponse.json({ success: true, diskStats });
+    }
 
     if (rootKey) {
       const baseRootPath = isWindows
@@ -200,19 +264,16 @@ export async function GET(request: Request) {
 
     // Handle Root Folder Stats (Initial View)
     const baseFolders = ["nginx", "pm2", "hiretrack"];
-    const result = baseFolders.map((key) => {
-      const folderPath = isWindows ? WINDOWS_PATHS[key] : LINUX_PATHS[key];
 
+    const foldersResult = baseFolders.map((key) => {
+      const folderPath = isWindows ? WINDOWS_PATHS[key] : LINUX_PATHS[key];
       let size = "0B";
       try {
-        // Use the unified getFolderSize function which handles both Windows and Linux
-        // and includes all hidden files/folders
         size = getFolderSize(folderPath);
       } catch {
         // If calculation fails, size remains "0B"
         // Error is silently handled to prevent API failures
       }
-
       return {
         name: key,
         path: folderPath,
@@ -221,9 +282,13 @@ export async function GET(request: Request) {
       };
     });
 
+    // Get System Disk Stats
+    const diskStats = getDiskStats(SYSTEM_ROOT);
+
     return NextResponse.json({
       success: true,
-      folders: result,
+      diskStats: diskStats,
+      folders: foldersResult,
     });
   } catch (error) {
     // eslint-disable-next-line no-console

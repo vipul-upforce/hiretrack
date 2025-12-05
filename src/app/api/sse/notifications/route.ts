@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 interface NotificationSSEClient {
   id: number;
@@ -21,14 +21,10 @@ global.sseNotificationClients =
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const cookie = await auth(req);
-  const user = cookie?.user;
-  if (!user || !user.organizationId || !user.id) {
-    return new NextResponse("Unauthorized or no organization specified", {
-      status: 401,
-    });
+  const user = await getAuthenticatedUser(req);
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
   const orgId = user.organizationId;
   const userId = user.id;
 

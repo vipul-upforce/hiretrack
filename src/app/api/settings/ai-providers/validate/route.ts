@@ -1,25 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { AIProviderFactory } from "@/lib/ai-providers";
 import { decryptText } from "@/lib/encryption";
 
 export async function POST(req: NextRequest) {
   try {
     // Verify user authentication
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(
-      String(token.value),
-      orgId
-    );
-    if (
-      !decryptedResponse.success ||
-      decryptedResponse.user?.role !== "admin"
-    ) {
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -18,9 +18,12 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
     fileContent,
     isAvailable,
     showLn,
-    offset,
     totalLines,
-    isFetchingMore,
+    isLoadingUp,
+    isLoadingDown,
+    handleScrollUp,
+    handleLoadMore,
+    startLineIndex,
     rawSearch,
     isFilesLoading,
     globalLoading,
@@ -59,17 +62,19 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
                 isLoading={globalLoading}
                 hasContent={fileContent.length > 0}
               />
-
               <LogViewer
                 key={`${selectedFile}-${props.logType}`}
                 content={fileContent}
                 searchQuery={props.searchQuery}
                 showLineNumbers={showLn}
                 isLoading={globalLoading}
-                isFetchingMore={isFetchingMore}
                 containerRef={logContainerRef}
-                offset={offset}
                 totalLines={totalLines}
+                isLoadingUp={isLoadingUp}
+                isLoadingDown={isLoadingDown}
+                onScrollUp={handleScrollUp}
+                onLoadMore={handleLoadMore}
+                startLineIndex={startLineIndex}
               />
             </>
           ) : (

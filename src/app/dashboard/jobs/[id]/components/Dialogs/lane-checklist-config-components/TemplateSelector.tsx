@@ -31,8 +31,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             <SelectContent>
               {filteredTemplates.map((template) => (
                 <SelectItem
-                  key={template._id as string}
-                  value={template._id as string}
+                  key={template._id.toString()}
+                  value={template._id.toString()}
                 >
                   {template.name}
                 </SelectItem>

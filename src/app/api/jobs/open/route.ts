@@ -1,33 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import { Job, Candidate, History } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { ICandidateHistory } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NotificationService } from "@/lib/notifications/notificationService";
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
-    const session = await auth(request);
-    const organizationId = session?.user.organizationId;
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     if (!Job) {
       return NextResponse.json(
         { error: "Job or Candidate not found" },
         { status: 404 }
       );
     }
-
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID not found" },
-        { status: 404 }
-      );
-    }
-
     const jobs = await Job.find(
       {
-        organizationId: organizationId,
+        organizationId: user.organizationId,
         status: "open",
         $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       },
@@ -37,7 +33,7 @@ export async function GET(request: NextRequest) {
       }
     ).sort({
       "tracking.createdAt": -1,
-    });
+    }).lean().exec();
     return NextResponse.json(jobs);
   } catch (error: unknown) {
     if (error instanceof Error) {
@@ -48,15 +44,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
-    const session = await auth(req);
-    const organizationId = session?.user.organizationId;
-
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID not found" },
-        { status: 404 }
-      );
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -97,13 +90,12 @@ export async function POST(req: NextRequest) {
     const existingHistory = await History!.findOne({
       candidateId: candidateId,
       jobId: candidate.jobId,
-    });
+    }).lean().exec();
 
-    console.log(session?.user?.organizationInfo);
-    const lane = session?.user?.organizationInfo?.lanes
-      ? session?.user?.organizationInfo?.lanes[0]
-      : session?.user?.organizationInfo?.defaultLanes
-        ? session?.user?.organizationInfo?.defaultLanes[0]
+    const lane = user?.organizationInfo?.lanes
+      ? user?.organizationInfo?.lanes[0]
+      : user?.organizationInfo?.defaultLanes
+        ? user?.organizationInfo?.defaultLanes[0]
         : "applied";
 
     // Update candidate with new job assignment and set status to "applied"
@@ -153,12 +145,12 @@ export async function POST(req: NextRequest) {
         description: `Candidate moved from ${previousJob?.title || "No previous job"} to ${nextJob.title}`,
         date: new Date().toISOString(),
         rating: 0,
-        userId: session?.user.id || null,
+        userId: user.id || null,
       },
       attachments: [],
       currentInterviewer: null,
       previousInterviewer: null,
-      assignmentBy: session?.user.id || null,
+      assignmentBy: user.id || null,
     };
     // Add this entry to history collection
     await History!.findOneAndUpdate(
@@ -168,18 +160,18 @@ export async function POST(req: NextRequest) {
     );
     
     // Send notification about candidate being moved
-    if (previousJob && session?.user) {
+    if (previousJob && user) {
       try {
         await NotificationService.notifyCandidateMoved({
-          organizationId: organizationId,
+          organizationId: user.organizationId,
           candidateId: candidateId,
           candidateName: candidate.name || "Unknown Candidate",
           fromJobId: previousJob._id.toString(),
           fromJobTitle: previousJob.title,
           toJobId: jobId,
           toJobTitle: nextJob.title,
-          triggerUserId: session.user.id,
-          triggerUserName: session.user.name || "Unknown User",
+            triggerUserId: user.id,
+          triggerUserName: user.name,
         });
       } catch (notificationError) {
         console.error(

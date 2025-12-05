@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import dbConnect, { CandidateAccount } from "@/lib/mongodb";
-import { User, Lane } from "@/lib/mongodb";
+import connectToDatabase, { CandidateAccount,User, Lane  } from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { signupRateLimiter } from "@/lib/rateLimiter";
 import { NotificationService } from "@/lib/notifications/notificationService";
@@ -17,7 +16,7 @@ const DEFAULT_LANES = [
 
 async function handleSignup(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     var {
       email,
       password,

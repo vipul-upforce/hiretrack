@@ -1,32 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(request: NextRequest) {
   try {
     // Authenticate user
-    const token = request.cookies.get("auth_token");
-    if (!token) {
+   const [user] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(
-      token.value,
-      orgId
-    );
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-
-    // Connect to database
-    await connectToDatabase();
-
     // Get organization settings
     const settings = await Settings!.findOne({
       organizationId: user.organizationId,
-    });
+    }).select("mailConfig").lean().exec();
     if (!settings) {
       return NextResponse.json({
         fromEmail: "noreply@hiretrack.com",

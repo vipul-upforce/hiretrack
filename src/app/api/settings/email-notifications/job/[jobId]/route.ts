@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { User, Job } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { User, Job } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import mongoose from "mongoose";
 import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
 
@@ -13,25 +13,17 @@ export async function GET(
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    await dbConnect();
-
-    const { jobId } = await params;
-
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [currentUser, { jobId }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!currentUser) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
       );
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
 
     // Validate jobId
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
@@ -53,7 +45,7 @@ export async function GET(
     }
 
     // Get user's current settings for this job
-    const userId = currentUser._id || currentUser.id;
+    const userId = currentUser.id;
     const organizationId = currentUser.organizationId;
 
     if (!userId || !organizationId) {
@@ -106,26 +98,14 @@ export async function PUT(
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    await dbConnect();
-
-    const { jobId } = await params;
-
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const [currentUser, { jobId }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
     // Validate jobId
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
       return NextResponse.json({ error: "Invalid job ID" }, { status: 400 });
@@ -199,7 +179,7 @@ export async function PUT(
     }
 
     // Update job-level settings
-    const userId = currentUser._id || currentUser.id;
+    const userId = currentUser.id;
     const organizationId = currentUser.organizationId;
     
     if (!userId || !organizationId) {
@@ -254,25 +234,14 @@ export async function DELETE(
   { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    await dbConnect();
-
-    const { jobId } = await params;
-
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    const [currentUser, { jobId }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!currentUser) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
 
     // Validate jobId
     if (!mongoose.Types.ObjectId.isValid(jobId)) {
@@ -292,7 +261,7 @@ export async function DELETE(
     }
 
     // Remove job-level settings
-    const userId = currentUser._id || currentUser.id;
+    const userId =  currentUser.id;
     const organizationId = currentUser.organizationId;
     const unsetPath = `emailNotificationSettings.jobLevel.${jobId}`;
     await User.findByIdAndUpdate(userId, {

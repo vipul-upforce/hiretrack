@@ -54,15 +54,24 @@ export function JobDetailsDialog({
   );
 
   const body = isEditing ? (
-    <div className="flex-1 overflow-y-auto px-0  space-y-6 ">
+    <div className="flex-1 overflow-y-auto px-0 space-y-6">
       <EditJobForm
         job={job}
         onSave={(updatedJob) => {
           onJobUpdate?.(updatedJob);
-          setIsEditing(false);
-          onOpenChange(false);
+          if (isEditMode) {
+            handleClose();
+          } else {
+            setIsEditing(false);
+          }
         }}
-        onCancel={() => setIsEditing(false)}
+        onCancel={() => {
+          if (isEditMode) {
+            handleClose();
+          } else {
+            setIsEditing(false);
+          }
+        }}
       />
     </div>
   ) : (

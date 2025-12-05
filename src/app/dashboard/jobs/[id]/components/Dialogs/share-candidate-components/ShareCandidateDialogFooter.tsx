@@ -25,6 +25,7 @@ export function ShareCandidateDialogFooter({
         Cancel
       </Button>
       <Button
+        variant="primary"
         onClick={onGeneratePDF}
         disabled={isGenerating || selectedCount === 0}
         className="gap-2"
@@ -44,6 +45,3 @@ export function ShareCandidateDialogFooter({
     </div>
   );
 }
-
-
-

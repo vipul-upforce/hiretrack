@@ -1,31 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { encryptText, decryptText } from "@/lib/encryption";
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
-    let organizationId = "";
-    const allowRoles = ["admin", "hr", "interviewer"];
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-
-        if (!allowRoles.includes(userData.role)) {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    const userData = await getAuthenticatedUser(req, ["admin", "hr", "interviewer"]);
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId || "";
 
     if (!Settings) {
       return NextResponse.json(
@@ -36,8 +21,7 @@ export async function GET(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: organizationId,
-    });
-    console.log(settings.googleCalendar, "settings in google calendar route");
+    }).select("googleCalendar").lean();
 
     if (!settings) {
       return NextResponse.json(
@@ -47,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Return Google Calendar configuration with decrypted credentials
-    const googleCalendar = settings.googleCalendar || {
+    const googleCalendar = settings?.googleCalendar || {
       isConnected: false,
       clientId: "",
       clientSecret: "",
@@ -61,19 +45,19 @@ export async function GET(req: NextRequest) {
     if (googleCalendar.clientSecret) {
       googleCalendar.clientSecret = decryptText(
         googleCalendar.clientSecret,
-        orgId
+        organizationId  
       );
     }
     if (googleCalendar.accessToken) {
       googleCalendar.accessToken = decryptText(
         googleCalendar.accessToken,
-        orgId
+        organizationId
       );
     }
     if (googleCalendar.refreshToken) {
       googleCalendar.refreshToken = decryptText(
         googleCalendar.refreshToken,
-        orgId
+        organizationId  
       );
     }
 
@@ -91,22 +75,11 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     await connectToDatabase();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId || "";
 
     if (!Settings) {
       return NextResponse.json(
@@ -117,10 +90,6 @@ export async function PUT(req: NextRequest) {
 
     const { clientId, clientSecret } = await req.json();
 
-    // Get existing settings
-    const existingSettings = await Settings.findOne({
-      organizationId: organizationId,
-    });
 
     // Prepare update data
     const updateData: any = {
@@ -131,7 +100,7 @@ export async function PUT(req: NextRequest) {
     if (clientSecret) {
       updateData["googleCalendar.clientSecret"] = encryptText(
         clientSecret,
-        orgId
+        organizationId
       );
     }
 
@@ -144,6 +113,7 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
+        select: "googleCalendar",
       }
     );
     if (!updatedSettings) {
@@ -169,22 +139,11 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     await connectToDatabase();
-    let organizationId = "";
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
+    const userData = await getAuthenticatedUser(req, "admin");
+    if (!userData) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    const organizationId = userData.organizationId ;
 
     if (!Settings) {
       return NextResponse.json(
@@ -210,6 +169,7 @@ export async function DELETE(req: NextRequest) {
       {
         new: true,
         runValidators: true,
+        select: "googleCalendar",
       }
     );
 

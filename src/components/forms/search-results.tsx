@@ -190,7 +190,7 @@ export function SearchResults({
       );
 
       if (shiftKey && lastSelectedIndex !== null && candidateIndex !== -1) {
-        // Shift-click: select range from last selected to current
+        // Shift-click: toggle range selection from last selected to current
         const startIndex = Math.min(lastSelectedIndex, candidateIndex);
         const endIndex = Math.max(lastSelectedIndex, candidateIndex);
         const rangeIds = filteredResults
@@ -198,8 +198,16 @@ export function SearchResults({
           .map((c) => c._id);
 
         setSelectedCandidates((prev) => {
+          // Check if all items in range are selected using current state
+          const allSelected = rangeIds.every((id) => prev.includes(id));
           const newSelection = new Set(prev);
-          rangeIds.forEach((id) => newSelection.add(id));
+          if (allSelected) {
+            // If all selected, unselect the range
+            rangeIds.forEach((id) => newSelection.delete(id));
+          } else {
+            // If not all selected, select the range
+            rangeIds.forEach((id) => newSelection.add(id));
+          }
           return Array.from(newSelection);
         });
         setLastSelectedIndex(candidateIndex);

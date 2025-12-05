@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import { User } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
-import { verifyAndDecryptToken } from "@/lib/utils";
-import { signToken } from "@/app/actions/auth";
+import connectToDatabase,{ User } from "@/lib/mongodb";
+import { getAuthenticatedUser, signToken } from "@/app/actions/auth";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
 
 export async function DELETE(
@@ -11,20 +8,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth(req);
-
-    if (!session || session.user.role !== "admin") {
+    const [userData, { id }] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    await dbConnect();
-
-    const { id } = await params;
-    if (session.user.id === id) {
-      return NextResponse.json(
-        { error: "You cannot delete yourself" },
-        { status: 401 }
-      );
     }
     if (!User) {
       return NextResponse.json(
@@ -32,14 +22,20 @@ export async function DELETE(
         { status: 400 }
       );
     }
+    if (userData.id === id) {
+      return NextResponse.json(
+        { error: "You cannot delete yourself" },
+        { status: 401 }
+      );
+    }
 
-    const isUserExisted = await User.findByIdAndUpdate(id);
+    const isUserExisted = await User.findById(id).select("role organizationId _id").lean().exec();
 
     const isAdmin = isUserExisted?.role === "admin";
     if (isAdmin) {
       const adminCount = await User.countDocuments({
         role: "admin",
-        organizationId: session?.user?.organizationId,
+        organizationId: userData.organizationId,
         $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
       });
       if (adminCount <= 1) {
@@ -70,7 +66,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth(req);
+    const [{ id }, userData, session] = await Promise.all([
+      await params,
+      await req.json(),
+      await getAuthenticatedUser(req, "admin"),
+      await connectToDatabase(),
+    ]);
 
     if (!User) {
       return NextResponse.json(
@@ -79,22 +80,17 @@ export async function PUT(
       );
     }
 
-    if (!session || session.user.role !== "admin") {
+    if (!session || session.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await dbConnect();
-    const { id } = await params;
-    const userData = await req.json();
-
-    console.log("userData", userData);
-    let user = await User.findById(id);
+    const user = await User.findById(id).lean().exec();
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Prevent logged-in user from deactivating themselves
-    if (session.user.id === id && userData.isDeleted) {
+    if (session.id === id && userData.isDeleted) {
       return NextResponse.json(
         { error: "Cannot deactivate yourself" },
         { status: 400 }
@@ -124,7 +120,7 @@ export async function PUT(
           { isDeleted: { $exists: false } },
           { $and: [{ isDeleted: { $exists: true } }, { isDeleted: false }] },
         ],
-        organizationId: session?.user?.organizationId,
+        organizationId: session?.organizationId,
       });
 
       if (adminCount <= 1) {
@@ -144,32 +140,14 @@ export async function PUT(
 
     await User.findByIdAndUpdate(id, userData);
 
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token) {
-      const data = verifyAndDecryptToken(token.value, orgId);
-      if (data.email === userData?.email) {
-        const updatedData = {
-          ...data,
-          name: userData?.name,
-          email: userData?.email,
-        };
-
-        // const newToken = await signToken(updatedData);
-
-        // const response = NextResponse.json({
-        //   message: "User updated successfully",
-        // });
-
-        // response.cookies.set("token", newToken, {
-        //   httpOnly: false,
-        //   sameSite: "strict",
-        //   maxAge: 30 * 24 * 60 * 60, // 30 days
-        // });
-        const response = refreshAndReAssignToken(updatedData, orgId);
-
-        return response;
-      }
+    if (session?.email === userData?.email) {
+      const updatedData = {
+        ...session,
+        name: userData?.name,
+        email: userData?.email,
+      };
+      const newToken = await refreshAndReAssignToken(updatedData, session.organizationId);
+      return newToken;
     }
 
     return NextResponse.json({ message: "User updated successfully" });

@@ -23,7 +23,6 @@ export function setSecureAuthTokens(
   token: string,
   options: SecureTokenOptions = {}
 ) {
-  console.log("UIUIUIUIUIU: ", response);
   const {
     maxAge = 30 * 24 * 60 * 60, // 30 days in seconds
     expires = 30, // 30 days (legacy format)
@@ -60,6 +59,12 @@ export function setSecureAuthTokens(
     domain: domain,
   });
 
+  response.cookies.set("auth_state", "true", {
+    httpOnly: false,
+    secure: secureFlag,
+    sameSite: "lax",
+    maxAge: maxAge,
+  });
   // Set additional security headers
   response.headers.set("X-Content-Type-Options", "nosniff");
   // response.headers.set("X-Frame-Options", "DENY");
@@ -67,7 +72,6 @@ export function setSecureAuthTokens(
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("Referrer-Policy", "no-referrer-when-downgrade");
 
-  console.log("RESPONSE IN SESECUTEAUTHTOKEN: ", response);
   return response;
 }
 
@@ -83,13 +87,20 @@ export function clearAuthTokens(response: NextResponse) {
     expires: new Date(0),
     path: "/",
   };
-
+  const authStateCoonkieOptions = {
+    httpOnly: false,
+    secure: process.env.ENVIRONMENT === "production",
+    sameSite:"lax" as const,
+    maxAge: 0,
+    expires: new Date(0),
+  };
   // Clear both tokens
   // response.cookies.set("token", "", cookieOptions);
   response.cookies.set("auth_token", "", cookieOptions);
-  console.log("GONNA REMOVE THE TOKEN...");
+  response.cookies.set("auth_state", "", authStateCoonkieOptions);
   response.cookies.delete("auth_token");
   response.cookies.delete("org_id");
+  response.cookies.delete("auth_state");
   return response;
 }
 

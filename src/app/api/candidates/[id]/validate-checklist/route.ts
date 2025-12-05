@@ -4,11 +4,11 @@ import connectToDatabase, {
   JobLaneConfig,
   Job,
 } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import {
   filterChecklistByRole,
-  getUserRole,
 } from "@/lib/utils/checklistVisibility";
+import { getAuthenticatedUser } from "@/app/actions/auth";
+import { UserRole } from "@/lib/models/JobLaneConfig";
 
 // POST - Validate if candidate can move to a new lane based on checklist requirements
 export async function POST(
@@ -16,21 +16,18 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const [userData, { id }, body] = await Promise.all([
+      getAuthenticatedUser(req),
+      params,
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
     }
-
-    // Get org ID from cookies
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const decoded = decryptedResponse.user;
-
-    await connectToDatabase();
 
     // Check if models are initialized
     if (!Candidate || !Job || !JobLaneConfig) {
@@ -45,7 +42,7 @@ export async function POST(
       );
     }
 
-    const body = await req.json();
+
 
     const { currentLane, targetLane, movementType } = body;
 
@@ -57,7 +54,7 @@ export async function POST(
     }
 
     // Get candidate
-    const candidate = await Candidate!.findById(params.id);
+    const candidate = await Candidate!.findById(id).select("_id jobId checklistData").lean().exec();
     if (!candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
@@ -112,13 +109,7 @@ export async function POST(
         requiresChecklist: false,
       });
     }
-
-    // Filter checklist fields based on user role for form visibility
-    const userRole = getUserRole(decoded.role);
-    if (!userRole) {
-      return NextResponse.json({ error: "Invalid user role" }, { status: 403 });
-    }
-
+    const userRole = userData?.role as UserRole;
     const filteredChecklist = filterChecklistByRole(
       checklistToValidate,
       userRole,

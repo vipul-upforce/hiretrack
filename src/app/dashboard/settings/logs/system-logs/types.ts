@@ -6,10 +6,13 @@ export interface SystemLogsResponse {
 
 export interface LogFileResponse {
   files: string[];
+  size?: string;
 }
 
 export interface LogContentResponse {
   content: string[];
-  offset: number;
   totalLines: number;
+  start: number;
+  end: number;
+  query?: string;
 }

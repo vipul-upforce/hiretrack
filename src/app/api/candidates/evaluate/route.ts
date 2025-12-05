@@ -7,13 +7,12 @@ import connectToDatabase, {
 } from "@/lib/mongodb";
 import { promises as fs } from "fs";
 import path from "path";
-import { stripHtml } from "@/app/dashboard/jobs-board/schemas/job-schema";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { ICandidate } from "@/lib/models/candidate";
 import { AIEvaluationService } from "@/lib/ai-providers/evaluation-provider";
 import { decryptProviderKeys } from "@/lib/encryption";
 
-const generateBase64 = async (url: any) => {
+const generateBase64 = async (url: string) => {
   // const urlParams = new URLSearchParams(url.split("files?pathName=")[1]);
   // const pathName = urlParams.get("pathName");
   const pathName = url.split("files?pathName=")[1];
@@ -30,12 +29,12 @@ const generateBase64 = async (url: any) => {
 async function calculateComparativeRanking(
   candidateId: any,
   jobId: any,
-  currentScores: any
+  currentScores:any,
 ) {
   try {
     // Get all candidates for this job with scores
     const candidates = await Candidate.find({
-      jobId: typeof jobId === "object" && "_id" in jobId ? jobId._id : jobId,
+      jobId: jobId,
       scores: { $exists: true },
       isDeleted: { $ne: true },
     }).select("_id scores");
@@ -185,23 +184,18 @@ export async function PUT(request: NextRequest) {
     }
 
     const { candidateId } = data;
-    const candidate = await Candidate.findById(candidateId).populate({
+    const candidate = await Candidate.findById(candidateId).select("resume jobId contact scores expectedCTC currentCTC").populate({
       path: "jobId",
-      select: "description organizationId title skills",
+      select: "description organizationId title skills salary experience evaluationWeights",
     });
+    console.log(candidate,"candidate in resume evaluation api");
+
     if (!candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
         { status: 404 }
       );
     }
-    const job = await Job?.findById(
-      candidate.jobId &&
-        typeof candidate.jobId === "object" &&
-        "_id" in candidate.jobId
-        ? String(candidate.jobId._id)
-        : ""
-    );
     const organizationId =
       candidate.jobId &&
       typeof candidate.jobId === "object" &&
@@ -213,14 +207,14 @@ export async function PUT(request: NextRequest) {
 
     const settingsData = await Settings.findOne({
       organizationId: organizationId,
-    });
+    }).select("aiProviders evaluationConfig fileStorage gemini timeZone").lean().exec();
 
     if (!settingsData) {
       return NextResponse.json(
         { error: "Settings not found" },
         { status: 404 }
       );
-    }
+    } 
 
     // Check if AI providers are configured with backward compatibility
     let aiProviders = settingsData.aiProviders;
@@ -299,9 +293,6 @@ export async function PUT(request: NextRequest) {
     }
 
     let base64Resume;
-    // const cookie = (await request.cookies.get("token")?.value) || "{}";
-    // const token = await verifyAndDecryptToken(cookie);
-    // const user = (await token).user;
     const fileStorage = settingsData.fileStorage.storageType || "local";
     if (fileStorage === "local") {
       base64Resume = await generateBase64(resumeUrl);
@@ -367,7 +358,7 @@ export async function PUT(request: NextRequest) {
         : "";
     const jobData = {
       description: jobDescription,
-      salary: job?.salary && job.salary.inText ? job.salary.inText : undefined,
+      salary: candidate.jobId && typeof candidate.jobId === "object" && "salary" in candidate.jobId ? (candidate.jobId.salary as { inText: string }).inText : undefined,
       title:
         typeof candidate.jobId === "object" && "title" in candidate.jobId
           ? String(candidate.jobId.title)
@@ -376,7 +367,7 @@ export async function PUT(request: NextRequest) {
         typeof candidate.jobId === "object" && "skills" in candidate.jobId
           ? (candidate.jobId.skills as string[])
           : [],
-      experience: job?.experience,
+      experience: candidate.jobId && typeof candidate.jobId === "object" && "experience" in candidate.jobId ? (candidate.jobId.experience as number) : undefined,
     };
     // Log what we're passing to the evaluation service
     console.log(
@@ -394,7 +385,7 @@ export async function PUT(request: NextRequest) {
 
     // Create settings object with decrypted aiProviders
     const settingsForEvaluation = {
-      ...settingsData.toObject(),
+      ...settingsData,
       aiProviders: aiProviders, // Override with decrypted version
     };
 
@@ -407,7 +398,7 @@ export async function PUT(request: NextRequest) {
     );
 
     // Calculate weighted score if job has custom weights
-    if (job?.evaluationWeights) {
+    if (candidate.jobId && typeof candidate.jobId === "object" && "evaluationWeights" in candidate.jobId) {
       const weightedScore = AIEvaluationService.calculateWeightedScore(
         {
           overall: scores.overall,
@@ -415,7 +406,7 @@ export async function PUT(request: NextRequest) {
           experience: scores.experience,
           affordability: scores.affordability || 0,
         },
-        job.evaluationWeights
+        candidate.jobId.evaluationWeights as { overall: number; skills: number; experience: number; affordability: number; }
       );
       scores.weightedScore = weightedScore;
     }

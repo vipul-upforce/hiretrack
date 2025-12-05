@@ -1,27 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
 
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-    if (user.role !== "admin") {
+    const user = await getAuthenticatedUser(req, "admin");
+    if (!user) {
       return NextResponse.json(
         { error: "Admin access required" },
         { status: 403 }
@@ -30,7 +16,7 @@ export async function GET(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId: user.organizationId,
-    });
+    }).select("onboardingStatus").lean().exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -58,78 +44,112 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// export async function PUT(req: NextRequest) {
+//   try {
+//     const [user, body] = await Promise.all([
+//       getAuthenticatedUser(req, "admin"),
+//       req.json(),
+//       connectToDatabase(),
+//     ]);
+//     if (!user) {
+//       return NextResponse.json(
+//         { error: "Unauthorized" },
+//         { status: 403 }
+//       );
+//     }
+
+//     const {
+//       completedSteps,
+//       skippedSteps,
+//       doNotShowAgain,
+//       currentStep,
+//       isCompleted,
+//     } = body;
+
+//     // const updateData: any = {
+//     //   "onboardingStatus.lastUpdated": new Date(),
+//     // };
+
+//     const updateData = await Settings.findOne({
+//       organizationId: user.organizationId,
+//     }).select("onboardingStatus");
+
+//     updateData.onboardingStatus.lastUpdated = new Date();
+
+//     if (completedSteps !== undefined) {
+//       updateData.onboardingStatus.completedSteps = completedSteps;
+//     }
+//     if (skippedSteps !== undefined) {
+//       updateData.onboardingStatus.skippedSteps = skippedSteps;
+//     }
+//     if (doNotShowAgain !== undefined) {
+//       updateData.onboardingStatus.doNotShowAgain = doNotShowAgain;
+//     }
+//     if (currentStep !== undefined) {
+//       updateData.onboardingStatus.currentStep = currentStep;
+//     }
+//     if (isCompleted !== undefined) {
+//       updateData.onboardingStatus.isCompleted = isCompleted;
+//     }
+
+//     await updateData.save();
+
+//     return NextResponse.json({
+//       success: true,
+//       onboardingStatus: updateData.onboardingStatus,
+//     });
+//   } catch (error) {
+//     console.error("Error updating onboarding status:", error);
+//     return NextResponse.json(
+//       { error: "Internal server error" },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+
+
+
 export async function PUT(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser(req, "admin");
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     await connectToDatabase();
-
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const user = decryptedResponse.user;
-    if (user.role !== "admin") {
-      return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
-      );
-    }
-
     const body = await req.json();
-    const {
-      completedSteps,
-      skippedSteps,
-      doNotShowAgain,
-      currentStep,
-      isCompleted,
-    } = body;
 
-    // const updateData: any = {
-    //   "onboardingStatus.lastUpdated": new Date(),
-    // };
+    const allowedFields = [
+      "completedSteps",
+      "skippedSteps",
+      "doNotShowAgain",
+      "currentStep",
+      "isCompleted",
+    ];
 
-    const updateData = await Settings.findOne({
-      organizationId: user.organizationId,
-    });
+    const $set: Record<string, any> = {
+      "onboardingStatus.lastUpdated": new Date(),
+    };
 
-    updateData.onboardingStatus.lastUpdated = new Date();
-
-    if (completedSteps !== undefined) {
-      updateData.onboardingStatus.completedSteps = completedSteps;
-    }
-    if (skippedSteps !== undefined) {
-      updateData.onboardingStatus.skippedSteps = skippedSteps;
-    }
-    if (doNotShowAgain !== undefined) {
-      updateData.onboardingStatus.doNotShowAgain = doNotShowAgain;
-    }
-    if (currentStep !== undefined) {
-      updateData.onboardingStatus.currentStep = currentStep;
-    }
-    if (isCompleted !== undefined) {
-      updateData.onboardingStatus.isCompleted = isCompleted;
+    for (const key of allowedFields) {
+      if (key in body) {
+        $set[`onboardingStatus.${key}`] = body[key];
+      }
     }
 
-    await updateData.save();
+    const updated = await Settings.findOneAndUpdate(
+      { organizationId: user.organizationId },
+      { $set },
+      { new: true }
+    ).select("onboardingStatus");
 
     return NextResponse.json({
       success: true,
-      onboardingStatus: updateData.onboardingStatus,
+      onboardingStatus: updated?.onboardingStatus,
     });
   } catch (error) {
     console.error("Error updating onboarding status:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

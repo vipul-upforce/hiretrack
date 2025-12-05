@@ -6,9 +6,8 @@ import { handleSingleFile } from "@/lib/fileUtils";
 import { History } from "@/lib/mongodb";
 import { ICandidate as IExternalCandidate } from "@/lib/models/candidate";
 import mongoose, { ProjectionType } from "mongoose";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { sendMail } from "../../event-mail";
-import { auth } from "@/lib/auth";
 import { Attachment } from "../route";
 import { IinfoUpdateLog } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
@@ -17,7 +16,6 @@ import { ITag } from "@/lib/models/organization";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { sendEventEmailWithHistory } from "@/lib/unifiedEmailService";
-import { Types } from "mongoose";
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -41,9 +39,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  let fileStorage = "local";
-  let organizationId;
-  let userData: any;
+
   const updates: IinfoUpdateLog[] = [];
 
   const fieldsToTrack = [
@@ -64,25 +60,29 @@ export async function PUT(
   ];
 
   try {
-    await connectToDatabase();
-    const data = await request.json();
-    // console.log(data, "🟢🟢🟢 INCOMING DATA: ");
-    const token = request.cookies.get("auth_token");
-    const orgId = request.cookies.get("org_id")?.value;
+    // Connect to database, parse request, and resolve params in parallel
+    const [data, { id }, userData] = await Promise.all([
+      request.json(),
+      params,
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
 
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
+    if(!userData) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
-      userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        fileStorage = userData.fileStorage || "local";
-        organizationId = userData.organizationId || "";
-      }
     }
-
-    const { id } = await params;
+    const fileStorage = userData.fileStorage || "local";
+    const organizationId = userData.organizationId;
+    // Validate candidate ID
+    if (!id || typeof id !== "string") {
+      return NextResponse.json(
+        { error: "Invalid candidate ID" },
+        { status: 400 }
+      );
+    }
 
     const existingCandidate: ICandidate | null = (await Candidate!
       .findById(id)
@@ -515,6 +515,17 @@ export async function PUT(
     //   updateObj.$set.scores = data.scores;
     // }
 
+    if (
+      "remarks" in data &&
+      Array.isArray(data.remarks) &&
+      data.remarks.length > 0
+    ) {
+      const existingRemarks = existingCandidate.remarks || [];
+      if (JSON.stringify(existingRemarks) !== JSON.stringify(data.remarks)) {
+        updateObj.$set.remarks = data.remarks;
+      }
+    }
+
     fieldsToTrack.forEach((key) => {
       if (
         key in data &&
@@ -650,10 +661,11 @@ export async function PUT(
           },
           {
             path: "jobId",
-            select: "_id description title",
+            select: "_id title description",
           },
         ])
-        .lean()) as ICandidate;
+        .lean()
+        .exec()) as ICandidate;
 
       if (!updatedCandidate) {
         return NextResponse.json(
@@ -732,8 +744,8 @@ export async function PUT(
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          console.log(newAssignment, "newAssignmentin assinment notification");
-          console.log(oldAssignment, "oldAssignmentin assinment notification");
+          // console.log(newAssignment, "newAssignmentin assinment notification");
+          // console.log(oldAssignment, "oldAssignmentin assinment notification");
           if (newAssignment) {
             // If assignment is new or interviewer changed
             if (
@@ -745,7 +757,7 @@ export async function PUT(
                 newAssignment.interviewerId
               ).select("_id name email");
               console.log(interviewer, "interviewerin assinment notification");
- 
+
               if (newAssignment && interviewer) {
                 if (
                   !newAssignment.time &&
@@ -771,8 +783,8 @@ export async function PUT(
 
                 if (newAssignment && newAssignment.time) {
                   if (newAssignment.interviewerId !== oldAssignment?.interviewerId?.toString()
-                  && (!oldAssignment || !oldAssignment.time)) {
-                    console.log("notifyMeetingScheduled");
+                    && (!oldAssignment || !oldAssignment.time)) {
+                      console.log("notifyMeetingScheduled");
                     await NotificationService.notifyMeetingScheduled({
                       organizationId: organizationId,
                       candidateId: updatedCandidate._id.toString(),
@@ -789,9 +801,9 @@ export async function PUT(
                       triggerUserName: userData?.name,
                     });
                   } else if (oldAssignment
-                     && newAssignment
-                     && newAssignment.interviewerId === oldAssignment?.interviewerId?.toString()) {
-                    console.log("notifyMeetingUpdated");
+                    && newAssignment
+                    && newAssignment.interviewerId === oldAssignment?.interviewerId?.toString()) {
+                   console.log("notifyMeetingUpdated");
                     await NotificationService.notifyMeetingUpdated({
                       organizationId: organizationId,
                       candidateId: updatedCandidate._id.toString(),
@@ -932,35 +944,45 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectToDatabase();
-    let role = "";
-    const token = _request.cookies.get("auth_token");
-    const orgId = _request.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        role = userData.role;
-      }
-    }
-    const { id } = await params;
-    if (!Candidate) {
+    // Connect to database and authenticate in parallel
+    const [{ id }, userData] = await Promise.all([
+      params,
+      getAuthenticatedUser(_request),
+      connectToDatabase(),
+    ]);
+
+    if (!userData) {
       return NextResponse.json(
-        { error: "Candidate Model Not Found" },
-        { status: 404 }
+        { message: "Unauthorised Access" },
+        { status: 401 }
       );
     }
+
+    if (!Candidate || !History) {
+      return NextResponse.json(
+        { error: "Database models not available" },
+        { status: 500 }
+      );
+    }
+
+    // Validate candidate ID
+    if (!id || typeof id !== "string") {
+      return NextResponse.json(
+        { error: "Invalid candidate ID" },
+        { status: 400 }
+      );
+    }
+
+    // Optimize projection based on role
     const projection: ProjectionType<ICandidate> =
-      role === "interviewer"
+      userData?.role === "interviewer"
         ? {
             currentCTC: 0,
             expectedCTC: 0,
-            // customFields: 0,
           }
         : {};
+
+    // Fetch candidate first to get jobId for history query
     const candidate = await Candidate.findById(id, projection)
       .populate([
         {
@@ -977,44 +999,55 @@ export async function GET(
         },
         {
           path: "jobId",
-          select: "title description ",
+          select: "title description",
         },
       ])
-      .lean();
-    if (!History) return;
-    const history = await History?.findOne({
-      jobId:
-        typeof candidate?.jobId === "object" &&
-        "_id" in candidate?.jobId &&
-        candidate?.jobId?._id,
-      candidateId: candidate?._id.toString(),
-    })
-      .populate("history.currentInterviewer", "_id name email")
-      .populate("history.previousInterviewer", "_id name email")
-      .populate("history.assignmentBy", "_id name email")
-      .populate("history.note.userId", "_id name email")
-      .lean();
+      .lean()
+      .exec();
 
-    const candidateWithHisotry = {
-      ...candidate,
-      history: history?.history || [],
-    };
-
-    // console.log("HISOTYER:L ", history);
-    // console.log("CANDIDET WITH HISTORY:L ", candidateWithHisotry);
-
-    if (!candidateWithHisotry) {
+    if (!candidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(candidateWithHisotry);
+    // Extract jobId for history query
+    const jobId =
+      typeof candidate.jobId === "object" &&
+      candidate.jobId !== null &&
+      "_id" in candidate.jobId
+        ? candidate.jobId._id
+        : candidate.jobId;
+
+    // Fetch history in parallel (if candidate has jobId)
+    const history = jobId
+      ? await History.findOne({
+          jobId,
+          candidateId: candidate._id.toString(),
+        })
+          .populate([
+            { path: "history.currentInterviewer", select: "_id name email" },
+            { path: "history.previousInterviewer", select: "_id name email" },
+            { path: "history.assignmentBy", select: "_id name email" },
+            { path: "history.note.userId", select: "_id name email" },
+          ])
+          .lean()
+          .exec()
+      : null;
+
+    return NextResponse.json({
+      ...candidate,
+      history: history?.history || [],
+    });
   } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -1023,19 +1056,34 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectToDatabase();
-    const { id } = await params;
-    const { dateTime } = await _request.json();
-    const userCookie = await auth(_request);
-    // console.log("$$$⌛⌛ DATE TIME: ", dateTime);
-    if (!Candidate) {
+    // Execute independent operations in parallel
+    const [{ id }, { dateTime }, userData] = await Promise.all([
+      params,
+      _request.json(),
+      getAuthenticatedUser(_request,"admin"),
+      connectToDatabase(),
+    ]);
+
+    // Validate candidate ID
+    if (!id || typeof id !== "string") {
+      return NextResponse.json(
+        { error: "Invalid candidate ID" },
+        { status: 400 }
+      );
+    }
+
+    if (!Candidate || !History) {
       return NextResponse.json(
         { error: "Candidate not found" },
         { status: 404 }
       );
     }
 
-    const candidate = await Candidate.findById(id);
+    // Fetch candidate with minimal fields needed for operation
+    const candidate = await Candidate.findById(id)
+      .select("_id jobId isDeleted")
+      .lean()
+      .exec();
 
     if (!candidate) {
       return NextResponse.json(
@@ -1049,68 +1097,54 @@ export async function DELETE(
       title: candidate.isDeleted ? "Unarchived" : "Archived",
       previousInterviewer: null,
       currentInterviewer: null,
-      assignmentBy: userCookie?.user.id,
-      // note: {
-      //   description: `${candidate.name} was archived.`,
-      // },
+      assignmentBy: userData?.id
     };
-    // const entry_created = await History?.create({
-    //   candidateId: candidate?._id,
-    //   jobId: candidate.jobId,
-    //   history: [
-    //     {
-    //       dateTime: dateTime,
-    //       title: "Archived",
-    //       previousInterviewer: null,
-    //       currentInterviewer: null,
-    //       assignmentBy: null,
-    //       // note: {
-    //       //   description: `${candidate.name} was archived.`,
-    //       // },
-    //     },
-    //   ],
-    // });
-    const updatedHistory = await History?.findOneAndUpdate(
-      { candidateId: candidate._id, jobId: candidate.jobId },
-      {
-        $push: { history: historyEntry },
-      },
-      { new: true }
-    )
-      .populate("history.currentInterviewer", "_id name email")
-      .populate("history.previousInterviewer", "_id name email")
-      .populate("history.assignmentBy", "_id name email")
-      .populate("history.note.userId", "_id name email");
-    // console.log("🎉🎉🎉entry created: ", updatedHistory);
 
-    // const deletedCandidate = await Candidate.findByIdAndUpdate(id, { isDeleted : });
-    const deletedCandidate = await Candidate.findByIdAndUpdate(
-      id,
-      { isDeleted: !candidate.isDeleted },
-      { new: true }
-    ).populate([
-      {
-        path: "assignment.interviewerId",
-        select: "_id name email",
-      },
-      {
-        path: "remarks.userId",
-        select: "name email",
-      },
-      {
-        path: "followUp.userId",
-        select: "name email",
-      },
-      {
-        path: "jobId",
-        select: "title description ",
-      },
+    // Execute history update and candidate update in parallel
+    const [updatedHistory, deletedCandidate] = await Promise.all([
+      History.findOneAndUpdate(
+        { candidateId: candidate._id, jobId: candidate.jobId },
+        {
+          $push: { history: historyEntry },
+        },
+        { new: true }
+      )
+        .populate([
+          { path: "history.currentInterviewer", select: "_id name email" },
+          { path: "history.previousInterviewer", select: "_id name email" },
+          { path: "history.assignmentBy", select: "_id name email" },
+          { path: "history.note.userId", select: "_id name email" },
+        ])
+        .lean()
+        .exec(),
+      Candidate.findByIdAndUpdate(
+        id,
+        { isDeleted: !candidate.isDeleted },
+        { new: true }
+      )
+        .populate([
+          {
+            path: "assignment.interviewerId",
+            select: "_id name email",
+          },
+          {
+            path: "remarks.userId",
+            select: "name email",
+          },
+          {
+            path: "followUp.userId",
+            select: "name email",
+          },
+          {
+            path: "jobId",
+            select: "title description",
+          },
+        ])
+        .lean()
+        .exec(),
     ]);
 
-    const readableJSON = deletedCandidate?.toObject();
-    const readableHistory = updatedHistory?.toObject();
-
-    if (!readableJSON) {
+    if (!deletedCandidate) {
       return NextResponse.json(
         { error: "Candidate not found" },
         { status: 404 }
@@ -1118,14 +1152,18 @@ export async function DELETE(
     }
 
     broadcastCandidateUpdate({
-      ...readableJSON,
-      history: readableHistory?.history,
+      ...deletedCandidate,
+      history: updatedHistory?.history,
     });
 
     return NextResponse.json({ message: "Candidate deleted successfully" });
   } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

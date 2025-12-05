@@ -18,7 +18,7 @@ export async function GET(req: Request) {
         adminId: 0,
         lanes: 0,
       }
-    );
+    ).select("customFields").lean().exec();
 
     if (!orgInfo) {
       return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Organization, Settings } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import path from "path";
 import fs from "fs";
 import https from "https";
@@ -192,23 +192,15 @@ const handleGetPortalData = async (req: NextRequest) => {
     let isAuthenticated = false;
 
     // Try to get organization from auth token
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      try {
-        const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value),
-          orgId
-        );
-        const userData = decryptedResponse.user;
-        if (decryptedResponse.success) {
-          organizationId = userData.organizationId || "";
-          isAuthenticated = true;
-        }
-      } catch (error) {
-        // Token verification failed, continue as anonymous user
-        console.log("Token verification failed, serving as anonymous user");
+    try {
+      const userData = await getAuthenticatedUser(req);
+      if (userData) {
+        organizationId = userData.organizationId || "";
+        isAuthenticated = true;
       }
+    } catch {
+      // Token verification failed, continue as anonymous user
+      console.log("Token verification failed, serving as anonymous user");
     }
 
     let settings = null;
@@ -222,7 +214,9 @@ const handleGetPortalData = async (req: NextRequest) => {
           portalConfigs: 1,
           smtpConfigs: 1,
         }
-      );
+      )
+        .lean()
+        .exec();
     } else {
       // Anonymous user - get default organization settings
       // Try to find a default organization or the first available one
@@ -233,7 +227,9 @@ const handleGetPortalData = async (req: NextRequest) => {
           {
             portalConfigs: 1,
           }
-        );
+        )
+          .lean()
+          .exec();
       }
     }
 
@@ -290,24 +286,15 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    await connectToDatabase();
-
-    const token = req.cookies.get("auth_token")?.value;
-    const orgId = req.cookies.get("org_id")?.value;
-    if (!token) {
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, "admin"),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const decryptedResponse = await verifyAndDecryptToken(token, orgId);
-    if (!decryptedResponse.success) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userData = decryptedResponse.user;
-    if (userData.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    const token = req.cookies.get("auth_token")?.value || "";
     const organizationId = userData.organizationId || "";
     const fileStorage = userData.fileStorage || "local";
 
@@ -320,9 +307,6 @@ export async function PUT(req: NextRequest) {
     }
 
     const data = await req.json();
-    console.log(`[PUT] Request data keys: ${Object.keys(data)}`);
-    console.log(`[PUT] Has portalHeaderHtml: ${!!data.portalHeaderHtml}`);
-    console.log(`[PUT] Has portalFooterHtml: ${!!data.portalFooterHtml}`);
     if (data.portalHeaderHtml) {
       console.log(`[PUT] Header HTML length: ${data.portalHeaderHtml.length}`);
     }
@@ -330,7 +314,11 @@ export async function PUT(req: NextRequest) {
       console.log(`[PUT] Footer HTML length: ${data.portalFooterHtml.length}`);
     }
 
-    const currentSettings = await Settings!.findOne({ organizationId });
+    const currentSettings = await Settings!
+      .findOne({ organizationId })
+      .select("portalConfigs")
+      .lean()
+      .exec();
 
     let uploadedLogo = null;
     let uploadedLogoDark = null;
@@ -641,15 +629,23 @@ export async function PUT(req: NextRequest) {
         currentSettings?.portalConfigs?.secondaryColor ||
         "#8b5cf6",
     };
+    if (
+      data?.portalName &&
+      data?.portalName !== currentSettings?.portalConfigs?.portalName
+    ) {
+      await Organization?.findByIdAndUpdate(organizationId, {
+        name: updatedPortal.portalName,
+      });
+    }
 
-    await Organization?.findByIdAndUpdate(organizationId, {
-      name: updatedPortal.portalName,
-    });
+    // await Organization?.findByIdAndUpdate(organizationId, {
+    //   name: updatedPortal.portalName,
+    // });
 
     const updatedSettings = await Settings?.findOneAndUpdate(
       { organizationId },
       { portalConfigs: updatedPortal },
-      { new: true, runValidators: true, upsert: true }
+      { new: true, runValidators: true, upsert: true, select: "portalConfigs" }
     );
 
     if (!updatedSettings) {

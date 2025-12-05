@@ -1,3 +1,4 @@
+// import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { VersionListResponse } from "@/app/dashboard/settings/components/about/types";
 
@@ -18,7 +19,7 @@ interface TestConnectionRequest {
 
 export interface DiskFolderItem {
   name: string;
-  relativePath: string; // Added this
+  relativePath: string;
   size: string;
   rawSize: number;
   type: "file" | "folder";
@@ -32,8 +33,21 @@ export interface DiskFolder {
   type: "folder";
 }
 
+export interface DiskStats {
+  total: string;
+  free: string;
+  used: string;
+  percentUsed: string;
+  raw: {
+    total: number;
+    free: number;
+    used: number;
+  };
+}
+
 export interface DiskSpaceResponse {
   success: boolean;
+  diskStats?: DiskStats;
   folders: DiskFolder[];
 }
 
@@ -357,15 +371,23 @@ export const settingsApi = createApi({
       keepUnusedDataFor: 300,
     }),
     getPm2LogFileContent: builder.query<
-      { content: string[]; offset: number; totalLines: number },
-      { file: string; offset: number; limit: number; query?: string }
+      { content: string[]; totalLines: number; start: number; end: number },
+      {
+        file: string;
+        mode?: "tail" | "range";
+        start?: number;
+        end?: number;
+        limit?: number;
+        query?: string;
+      }
     >({
-      query: ({ file, offset, limit, query = "" }) => {
-        const params = new URLSearchParams({
-          offset: offset.toString(),
-          limit: limit.toString(),
-          query,
-        });
+      query: ({ file, mode, start, end, limit, query }) => {
+        const params = new URLSearchParams();
+        if (mode) params.append("mode", mode);
+        if (start !== undefined) params.append("start", start.toString());
+        if (end !== undefined) params.append("end", end.toString());
+        if (limit) params.append("limit", limit.toString());
+        if (query) params.append("query", query || "");
         return `/pm2-logs/${file}?${params.toString()}`;
       },
       keepUnusedDataFor: 300,
@@ -385,15 +407,23 @@ export const settingsApi = createApi({
       keepUnusedDataFor: 300,
     }),
     getNginxFileContent: builder.query<
-      { content: string[]; offset: number; totalLines: number },
-      { file: string; offset: number; limit: number; query?: string }
+      { content: string[]; totalLines: number; start: number; end: number },
+      {
+        file: string;
+        mode?: "tail" | "range";
+        start?: number;
+        end?: number;
+        limit?: number;
+        query?: string;
+      }
     >({
-      query: ({ file, offset, limit, query = "" }) => {
-        const params = new URLSearchParams({
-          offset: offset.toString(),
-          limit: limit.toString(),
-          query,
-        });
+      query: ({ file, mode, start, end, limit, query }) => {
+        const params = new URLSearchParams();
+        if (mode) params.append("mode", mode);
+        if (start !== undefined) params.append("start", start.toString());
+        if (end !== undefined) params.append("end", end.toString());
+        if (limit) params.append("limit", limit.toString());
+        if (query) params.append("query", query || "");
         return `/nginx-logs/${file}?${params.toString()}`;
       },
       keepUnusedDataFor: 300,

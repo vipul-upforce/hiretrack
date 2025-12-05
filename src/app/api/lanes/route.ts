@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Lane, Job } from "@/lib/mongodb";
 import connectToDatabase from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
 import { Organization } from "@/lib/mongodb";
 import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 const DEFAULT_LANES = [
   "applied",
@@ -16,12 +16,17 @@ const DEFAULT_LANES = [
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     const userId = searchParams?.get("userId");
     const jobId = searchParams?.get("jobId"); // NEW: Support job-specific lanes
-    const session = await auth(request);
-    const organizationId = session?.user.organizationId;
+    const organizationId = user.organizationId;
 
     if (!userId) {
       return NextResponse.json(
@@ -43,7 +48,10 @@ export async function GET(request: NextRequest) {
       const job = await Job.findOne({
         _id: jobId,
         organizationId: organizationId,
-      }).lean();
+      })
+        .select("useCustomLanes lanes")
+        .lean()
+        .exec();
 
       if (job) {
         if (job.useCustomLanes && job.lanes) {
@@ -52,7 +60,10 @@ export async function GET(request: NextRequest) {
           // Fall back to organization default lanes
           const organization = await Organization.findOne({
             _id: organizationId,
-          }).lean();
+          })
+            .select("defaultLanes lanes")
+            .lean()
+            .exec();
           organizationLaneOrder =
             organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
         }
@@ -92,34 +103,17 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await connectToDatabase();
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request,["admin", "hr"]),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const organizationId = user.organizationId;
     const body = await request.json();
-    console.log("PUT request body:", body); // Log 1: Capture incoming body
     const { lanes: newLanes, jobId } = body;
-    const session = await auth(request);
-    const organizationId = session?.user.organizationId;
 
-    console.log("Session user:", { organizationId, role: session?.user?.role }); // Log 2: Verify session details
-
-    if (!organizationId) {
-      console.log("Error: Missing organizationId"); // Log 3: Catch missing orgId
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 }
-      );
-    }
-
-    // Check permissions
-    if (!["admin", "hr"].includes(session?.user?.role || "")) {
-      console.log(
-        "Error: Insufficient permissions for user:",
-        session?.user?.role
-      ); // Log 4: Permission check failure
-      return NextResponse.json(
-        { error: "Insufficient permissions" },
-        { status: 403 }
-      );
-    }
 
     if (!Lane || !Organization) {
       console.log("Error: Database models not connected", {
@@ -134,22 +128,15 @@ export async function PUT(request: NextRequest) {
 
     // If jobId is provided, update job-specific lanes
     if (jobId && Job) {
-      console.log("Processing job-specific update for jobId:", jobId); // Log 6: Confirm jobId received
       const job = await Job.findOne({
         _id: jobId,
         organizationId: organizationId,
       });
 
       if (!job) {
-        console.log("Error: Job not found for jobId:", jobId); // Log 7: Job lookup failure
         return NextResponse.json({ error: "Job not found" }, { status: 404 });
       }
 
-      console.log("Current job state:", {
-        jobId,
-        useCustomLanes: job.useCustomLanes,
-        lanes: job.lanes,
-      }); // Log 8: Job state before update
 
       // Update job lanes
       const updatedJob = await Job.findByIdAndUpdate(
@@ -163,19 +150,6 @@ export async function PUT(request: NextRequest) {
         { new: true }
       );
 
-      console.log("Updated job state:", {
-        jobId,
-        useCustomLanes: updatedJob.useCustomLanes,
-        lanes: updatedJob.lanes,
-      }); // Log 9: Job state after update
-
-      // Broadcast update for job-specific lanes
-      console.log(
-        "Broadcasting lane update for jobId:",
-        jobId,
-        "with lanes:",
-        newLanes
-      ); // Log 10: Broadcast trigger
       broadcastLaneUpdate(organizationId, newLanes, jobId);
 
       return NextResponse.json({

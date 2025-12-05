@@ -15,9 +15,6 @@ import { generateOrgJwtSecret } from "./jwtSecretGenerator";
 
 export const verifyAndDecryptToken = (token: string, orgId?: string) => {
   try {
-    // const JWT_SECRET =
-    //   process.env.NEXT_PUBLIC_JWT_SECRET || "your_jwt_secret_key";
-    // console.log(JWT_SECRET, "JWT_SECRET-9");
     const JWT_SECRET = generateOrgJwtSecret(orgId);
     // console.log(JWT_SECRET, "JWT_SECRET-9");
     if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
@@ -82,123 +79,57 @@ export const sentAssignmentMail = async (
     }
   }
 };
+/**
+ * Sends status update email notification
+ * @param result - Candidate with optional prev_status
+ * @param sendStatusMail - Status mail mutation function
+ * @param options - Optional remark and rating to include in email
+ */
 export const sentStatusMailHandler = async (
   result: Candidate & { prev_status?: string },
-  sendStatusMail: ReturnType<typeof useSendStatusMailMutation>[0]
+  sendStatusMail: ReturnType<typeof useSendStatusMailMutation>[0],
+  options?: {
+    remark?: string;
+    rating?: number | string;
+  }
 ) => {
-  const latestRemark =
-    result.remarks && result.remarks.length > 0
-      ? result.remarks[result.remarks.length - 1]
-      : null;
-  // console.log("#$$$$$$$$$$$ ", result.prev_status);
-  // console.log(result, "result");
+  const jobName =
+    result.jobId &&
+    typeof result.jobId !== "string" &&
+    (result.jobId as unknown as IJob).title
+      ? (result.jobId as unknown as IJob).title
+      : "Unknown Job";
 
   const reqBody: IScheduledStatusMailRequest = {
     id: result._id,
-    // email:
-    //   typeof result.assignment?.interviewerId === "object"
-    //     ? result.assignment.interviewerId.email
-    //     : "",
-
-    eventTitle: "Status Updated for " + result.name,
+    eventTitle: `Status Updated for ${result.name}`,
     prev_status: result.prev_status || "",
     startTime: new Date().toISOString(),
     endTime: new Date().toISOString(),
     jobId: result.jobId._id,
-    jobName:
-      result.jobId &&
-      typeof result.jobId !== "string" &&
-      (result.jobId as unknown as IJob).title
-        ? (result.jobId as unknown as IJob).title
-        : "Unknown Job",
-    // interviewerName:
-    //   latestRemark && typeof latestRemark.userId === "object"
-    //     ? latestRemark.userId.name
-    //     : "",
-
+    jobName,
     candidateName: result.name,
     status: result.status,
-    remark: latestRemark?.description || "No Remark",
-    rating: latestRemark?.rating?.toString() || "No rating",
+    remark: options?.remark ?? "",
+    rating: options?.rating?.toString() ?? "",
   };
 
-  // console.log("#$$$$$$$$$$$ ", reqBody);
-
-  const { error } = await sendStatusMail(reqBody);
-  if (error) {
-    // toast({
-    //   title: "Error",
-    //   description: "Email not sent.",
-    //   variant: "destructive",
-    // });
-  }
+  await sendStatusMail(reqBody);
 };
-// export const sentRemarkMail = async (
-//   result: Candidate,
-//   sendEmail: ReturnType<typeof useSendMailMutation>[0]
-// ) => {
-//   if (result.remarks && result.remarks.length > 0) {
-//     const latestRemark = result.remarks[result.remarks.length - 1];
-//     const reqBody: IScheduledMailRequest = {
-//       email:
-//         typeof result.assignment?.interviewerId === "object"
-//           ? result.assignment.interviewerId.email
-//           : "",
-//       eventTitle: "New Remark Added",
-//       startTime: new Date().toISOString(),
-//       endTime: new Date().toISOString(),
-//       jobName:
-//         typeof result.jobId !== "string" && result.jobId
-//           ? (result.jobId as IJob).title
-//           : "Unknown Job",
-//       interviewerName:
-//         typeof latestRemark.userId === "object" ? latestRemark.userId.name : "",
-//       candidateName: result.name,
-//       status: result.status,
-//       remark: latestRemark.description,
-//       rating: latestRemark.rating?.toString() || "None",
-//     };
 
-//     const { error } = await sendEmail(reqBody);
-//     if (error) {
-//       // toast({
-//       //   title: "Error",
-//       //   description: "Email not sent.",
-//       //   variant: "destructive",
-//       // });
-//     }
-//   }
-// };
 export const sentUnAssignmentMail = async (
   result: Candidate,
   sendUnassignEmail: (data: { name: string }) => Promise<{ error?: string }>
 ) => {
   //sending mail to assignmee after successfully updating candidate
-  // console.log("UYIUYUYU outrside conditions");
-  // if (result.assignment) {
+
   const reqBody = {
-    // email:
-    //   typeof result.assignment.interviewerId === "object"
-    //     ? result.assignment.interviewerId.email
-    //     : "",
-    // eventTitle:
-    //   result.jobId &&
-    //   typeof result.jobId !== "string" &&
-    //   (result.jobId as unknown as IJob).title
-    //     ? "Interview for " + (result.jobId as unknown as IJob).title
-    //     : "Interview for Unknown Position",
-    // startTime: result.assignment?.time,
-    // endTime: result.assignment?.time,
     jobName:
       result.jobId &&
       typeof result.jobId !== "string" &&
       (result.jobId as unknown as IJob).title
         ? (result.jobId as unknown as IJob).title
         : "Unknown Job",
-    // interviewerName:
-    //   typeof result.assignment.interviewerId === "object"
-    //     ? result.assignment.interviewerId.name
-    //     : "",
     name: result.name,
   };
 
@@ -210,5 +141,4 @@ export const sentUnAssignmentMail = async (
     //   variant: "destructive",
     // });
   }
-  // }
 };

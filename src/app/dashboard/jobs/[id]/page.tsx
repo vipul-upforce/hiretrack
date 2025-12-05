@@ -256,6 +256,28 @@ export default function JobProgressPage() {
   // Use normalized candidates (already merged and normalized)
   const mergedCandidates = normalizedCandidates;
 
+  // useEffect(() => {
+  //   console.log("Loading states:", {
+  //     isJobLoading,
+  //     isCandidatesLoading,
+  //     isLanesLoading,
+  //     jobError,
+  //   });
+  //   console.log("Data:", { job, candidatesFromQuery, lanes });
+  //   console.log("scrollRef.current:", scrollRef.current);
+  // }, [
+  //   isJobLoading,
+  //   isCandidatesLoading,
+  //   isLanesLoading,
+  //   jobError,
+  //   job,
+  //   candidatesFromQuery,
+  //   lanes,
+  //   scrollRef,
+  // ]);
+
+ 
+
   useEffect(() => {
     if (!isDialogOpen) {
       setDroppedFileData(null);
@@ -429,6 +451,8 @@ export default function JobProgressPage() {
       setLaneToEdit(null);
     }
   }, [isLaneEditOpen]);
+
+
 
   useEffect(() => {
     if (!isDialogOpen) {

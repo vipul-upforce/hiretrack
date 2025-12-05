@@ -1,4 +1,4 @@
-import dbConnect, { User, Settings } from "@/lib/mongodb";
+import connectToDatabase, { User, Settings } from "@/lib/mongodb";
 import { EmailNotificationSettings } from "@/lib/models/user";
 import { OrganizationEmailNotifications } from "@/lib/models/settings";
 import mongoose from "mongoose";
@@ -77,7 +77,7 @@ export async function shouldSendNotification(
   context: NotificationDecisionContext
 ): Promise<NotificationDecisionResult> {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     // Skip if no recipient
     if (!context.recipientUserId) {
@@ -428,7 +428,7 @@ export async function getUserEffectiveNotificationSettings(
   };
 }> {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
     const [user, orgSettings] = await Promise.all([
       User.findById(userId).select("emailNotificationSettings  role").lean(),

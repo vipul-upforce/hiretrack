@@ -181,17 +181,7 @@ export function CreateCandidateDialog({
     }
   }, [isOpen]);
 
-  // useEffect(() => {
-  //   (async () => {
-  //     const token = Cookies.get("token");
-  //     if (token) {
-  //       const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-  //       if (decryptedResponse.success && decryptedResponse.user) {
-  //         setuser(decryptedResponse.user);
-  //       }
-  //     }
-  //   })();
-  // }, []);
+
 
   useEffect(() => {
     if (isOpen && isClient) {

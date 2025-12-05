@@ -13,7 +13,7 @@ import { PREDEFINED_COLORS } from "../constants";
 interface ColorPickerPopoverProps {
   value: string;
   onChange: (color: string) => void;
-  label: string;
+  label?: string;
 }
 
 export function ColorPickerPopover({

@@ -341,8 +341,8 @@ const ChecklistRemarksDialog = ({
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    if(!validateChecklist()) return;
-    
+    if (!validateChecklist()) return;
+
     setIsSubmitting(true);
 
     try {
@@ -392,7 +392,11 @@ const ChecklistRemarksDialog = ({
             ...updatedCandidate,
             prev_status: parsedChecklistInfo.currentLane,
           },
-          sendStatusMail
+          sendStatusMail,
+          {
+            remark: newRemark.trim(),
+            rating: remarkRating,
+          }
         );
       } else if (newRemark.trim()) {
         // Only submit remark if no checklist
@@ -448,7 +452,10 @@ const ChecklistRemarksDialog = ({
         }).unwrap();
 
         const updatedCandidate = await updateCandidate(updateData).unwrap();
-        await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+        await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
+          remark: newRemark.trim(),
+          rating: remarkRating,
+        });
       }
 
       onOpenChange(false);
@@ -493,11 +500,10 @@ const ChecklistRemarksDialog = ({
 
     onOpenChange(false);
   };
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent size="2xl" className="p-0  flex flex-col max-h-[90vh]">
-        <DialogHeader className="px-6 py-4 pr-12">
+        <DialogHeader className="px-6 py-4 pr-12 border-b">
           <DialogTitle className="flex items-center gap-2">
             {hasChecklist && <ClipboardCheck className="h-5 w-5" />}
             {hasChecklist
@@ -512,33 +518,32 @@ const ChecklistRemarksDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 px-6 overflow-y-auto">
-          <div className="space-y-6 pb-6">
-            {/* Checklist Section */}
-            {hasChecklist && parsedChecklistInfo?.checklist && (
-              <>
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold">
-                    {parsedChecklistInfo.checklistType === "incoming"
-                      ? "Incoming"
-                      : "Outgoing"}{" "}
-                    Checklist
-                  </h3>
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {hasChecklist && parsedChecklistInfo?.checklist ? (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold">
+                  {parsedChecklistInfo.checklistType === "incoming"
+                    ? "Incoming"
+                    : "Outgoing"}{" "}
+                  Checklist
+                </h3>
 
-                  <ChecklistForm
-                    checklist={parsedChecklistInfo.checklist}
-                    responses={checklistResponses}
-                    onResponseChange={handleChecklistFieldChange}
-                    errors={fieldErrors}
-                    touched={fieldTouched}
-                  />
-                </div>
-
-                <Separator />
-              </>
+                <ChecklistForm
+                  checklist={parsedChecklistInfo.checklist}
+                  responses={checklistResponses}
+                  onResponseChange={handleChecklistFieldChange}
+                  errors={fieldErrors}
+                  touched={fieldTouched}
+                />
+                <Separator className="mt-4" />
+              </div>
+            ) : (
+              <div className="h-2"></div>
             )}
+          </div>
 
-            {/* Remarks Section */}
+          <div className="px-6 py-4 bg-background z-20">
             <ChecklistRemarksSection
               newRemark={newRemark}
               setNewRemark={setNewRemark}

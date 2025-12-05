@@ -1,28 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { Notification } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { broadcastNotificationCount } from "@/lib/broadcast/broadcastNotifications";
 import mongoose from "mongoose";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-    // Check authentication
-    const token = request.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
-    const orgId = request.cookies.get("org_id")?.value;
-    if (!token) {
+    const [user, { id }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      connectToDatabase(),
+    ]);
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
     const notificationId = id; // Use the resolved id
-    const user = decryptedResponse.user;
 
     // Validate notification ID
     if (!mongoose.Types.ObjectId.isValid(notificationId)) {
@@ -32,7 +28,6 @@ export async function PUT(
       );
     }
 
-    await connectToDatabase();
     if (!Notification) {
       return NextResponse.json(
         { error: "Notification Model not found" },
@@ -46,7 +41,7 @@ export async function PUT(
       {
         _id: notificationId,
         organizationId: user.organizationId,
-        recipientId: user._id,
+        recipientId: user.id,
       },
       {
         isRead: true,
@@ -65,10 +60,10 @@ export async function PUT(
     try {
       const unread = await Notification.countDocuments({
         organizationId: user.organizationId,
-        recipientId: user._id,
+        recipientId: user.id,
         isRead: false,
       });
-      broadcastNotificationCount(user.organizationId, user._id, unread);
+      broadcastNotificationCount(user.organizationId, user.id, unread);
     } catch (e) {
       console.log("Error while broadcasting notifactin count : ", e);
     }

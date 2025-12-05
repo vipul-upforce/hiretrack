@@ -20,7 +20,6 @@ import { MentionTextarea } from "@/components/ui/mention-textarea";
 import { Label } from "@/components/ui/label";
 import { Rating } from "@mui/material";
 import { Button } from "@/components/ui/button";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
 import { sentStatusMailHandler } from "@/lib/utils";
 import { useSendStatusMailMutation } from "@/lib/features/org/orgApi";
 import { Switch } from "@/components/ui/switch";
@@ -58,11 +57,7 @@ const AddRemarksDialog = ({
 
   const handleAddRemark = async () => {
     if (isSubmitting) return;
-    // const token = Cookies.get("token");
     if (user) {
-      // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-      // if (decryptedResponse.success && decryptedResponse.user) {
-      // const user = decryptedResponse.user;
       if (!newRemark.trim() || !user?.id) {
         toast({
           title: "Error",
@@ -145,16 +140,19 @@ const AddRemarksDialog = ({
           jobId: candidate.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
-        // debugger;
-        const wasUpdatedRecently =
-          (() => {
-            const updatedAt = getTrackingDate(candidate, "updatedAt");
-            return updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000; // 20 seconds
-          })();
-
         const updatedCandidate = await updateCandidate(updateData).unwrap();
+        
+        // Send status mail if status was recently updated (within 20 seconds)
+        // This handles the case where remark dialog was opened after status update
+        const updatedAt = getTrackingDate(candidate, "updatedAt");
+        const wasUpdatedRecently =
+          updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000;
+
         if (wasUpdatedRecently) {
-          await sentStatusMailHandler(updatedCandidate, sendStatusMail);
+          await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
+            remark: newRemark.trim(),
+            rating: remarkRating,
+          });
         }
         // sentRemarkMail(result, sendEmail);
 

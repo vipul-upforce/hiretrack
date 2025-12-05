@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { User } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import connectToDatabase, { User } from "@/lib/mongodb";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import mongoose from "mongoose";
 import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
 // import { getUserEffectiveEmailSettings } from "@/lib/services/emailDecisionEngine";
@@ -14,30 +14,11 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    await dbConnect();
-
-    const { userId } = await params;
-
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
-    // Users can only view their own settings, admins can view any user's settings
-    if (currentUser._id !== userId && currentUser.role !== "admin") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
+    const [currentUser, { userId }] = await Promise.all([
+      getAuthenticatedUser(request),
+      params,
+      connectToDatabase(),
+    ]);
 
     // Validate userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -47,7 +28,7 @@ export async function GET(
     // Get user basic info
     const user = await User.findById(userId)
       .select("_id name email role organizationId")
-      .lean();
+      .lean().exec();
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -104,29 +85,17 @@ export async function PUT(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    await dbConnect();
+    await connectToDatabase();
 
-    const { userId } = await params;
+    const [currentUser, { userId }] = await Promise.all([
+      getAuthenticatedUser(request, ["admin"]),
+      params,
+      connectToDatabase(),
+    ]);
 
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
 
-    const currentUser = authResult.user;
-
-    // Users can only update their own settings, admins can update any user's settings
-    if (currentUser._id !== userId && currentUser.role !== "admin") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    if(!currentUser) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
     // Validate userId
@@ -293,31 +262,17 @@ export async function DELETE(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    await dbConnect();
 
-    const { userId } = await params;
+    const [{ userId },currentUser] = await Promise.all([
+      params,
+      getAuthenticatedUser(request, ["admin"]),
+      connectToDatabase(),
+    ]);
 
-    // Get current user from token
-    const token = request.cookies.get("auth_token")?.value;
-    if (!token) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+ 
+    if (!currentUser) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
-    const orgId = request.cookies.get("org_id")?.value;
-    const authResult = await verifyAndDecryptToken(token, orgId);
-    if (!authResult.success) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const currentUser = authResult.user;
-
-    // Users can only reset their own settings, admins can reset any user's settings
-    if (currentUser._id !== userId && currentUser.role !== "admin") {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
     // Validate userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });

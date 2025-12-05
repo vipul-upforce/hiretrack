@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase, { ChecklistTemplate } from "@/lib/mongodb";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/app/actions/auth";
 
 // GET - Get a specific checklist template
 export async function GET(
@@ -8,25 +8,22 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req),
+      connectToDatabase(),
+    ]);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    await connectToDatabase();
 
     const template = await ChecklistTemplate!
       .findOne({
         _id: params.id,
-        organizationId: decoded.organizationId,
+        organizationId: user.organizationId,
       })
-      .populate("createdBy", "name email");
+      .populate("createdBy", "name email")
+      .lean()
+      .exec();
 
     if (!template) {
       return NextResponse.json(
@@ -54,28 +51,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [decoded, body] = await Promise.all([
+      getAuthenticatedUser(req, ["admin", "hr"]),
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!decoded) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    // Check if user is admin or HR
-    if (!["admin", "hr"].includes(decoded.role)) {
-      return NextResponse.json(
-        { error: "Only admin and HR can update templates" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
-
-    const body = await req.json();
     const { name, description, fields, isActive } = body;
 
     const template = await ChecklistTemplate!.findOne({
@@ -119,26 +102,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get("auth_token")?.value;
-    if (!token) {
+    const [decoded] = await Promise.all([
+      getAuthenticatedUser(req, ["admin","hr"]),
+      connectToDatabase(),
+    ]);
+    if (!decoded) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orgId = req.cookies.get("org_id")?.value;
-    const decryptedResponse = await verifyAndDecryptJWTToken(token, orgId);
-    if (!decryptedResponse.success || !decryptedResponse.user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-    const decoded = decryptedResponse.user;
-
-    // Check if user is admin
-    if (decoded.role !== "admin") {
-      return NextResponse.json(
-        { error: "Only admin can delete templates" },
-        { status: 403 }
-      );
-    }
-
-    await connectToDatabase();
 
     const result = await ChecklistTemplate!.findOneAndDelete({
       _id: params.id,

@@ -47,8 +47,8 @@ export const ChecklistEmptyState: React.FC<ChecklistEmptyStateProps> = ({
                     <SelectContent>
                       {filteredTemplates.map((template) => (
                         <SelectItem
-                          key={template._id as string}
-                          value={template._id as string}
+                          key={template._id.toString()}
+                          value={template._id.toString()}
                         >
                           <div className="flex items-center space-x-2">
                             <BookOpen className="h-4 w-4" />

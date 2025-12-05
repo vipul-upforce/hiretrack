@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendSmartNotification } from "@/lib/unifiedEmailService"; // Import sendSmartNotificationEmail
-import {
+import connectToDatabase, {
   Candidate,
   Organization,
   Settings,
@@ -11,42 +11,32 @@ import { ICandidate } from "@/lib/models/candidate";
 import mongoose from "mongoose";
 import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
 import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { NotificationService } from "@/lib/notifications/notificationService"; // Import if needed
+import { getAuthenticatedUser } from "@/app/actions/auth";
 import { NotificationType } from "@/lib/services/emailDecisionEngine";
 
 export async function POST(req: NextRequest) {
   try {
+    await connectToDatabase();
     const { candidateId } = await req.json();
 
     // Get user information from token
-    let senderEmail;
-    let senderUserId;
-    let senderName;
-    const token = req.cookies.get("auth_token");
-    const orgId = req.cookies.get("org_id")?.value;
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value),
-        orgId
-      );
-      if (decryptedResponse.success && decryptedResponse.user) {
-        senderEmail = decryptedResponse.user.email;
-        senderUserId = decryptedResponse.user.id;
-        senderName = decryptedResponse.user.name;
-      }
-    }
+
+    const user = await getAuthenticatedUser(req);
+    const senderEmail = user?.email;
+    const senderUserId = user?.id;
+    const senderName = user?.name;
     if (!Candidate || !User) {
       throw new Error("Database not connected");
     }
 
     // Get candidate data
-    const candidateData = await Candidate.findOne({
-      _id: candidateId,
-    }).populate({
-      path: "jobId",
-      select: "title",
-    });
+    const candidateData = await Candidate.findById(candidateId)
+      .select("name email contact organizationId jobId")
+      .populate({
+        path: "jobId",
+        select: "title description",
+      })
+      .lean();
 
     // console.log("############# candidateData: ", candidateData);
 
@@ -66,11 +56,28 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const orgData = await Organization.findById(organizationId);
-    let orgName = "";
-    if (orgData) {
-      orgName = orgData.name;
-    }
+    const candidateObjectId = new mongoose.Types.ObjectId(candidateId);
+    const organizationObjectId = new mongoose.Types.ObjectId(
+      organizationId.toString()
+    );
+
+    const [orgData, hrUsers, settings] = await Promise.all([
+      Organization.findById(organizationObjectId).select("name").lean().exec(),
+      User.find({
+        organizationId: organizationObjectId,
+        role: { $in: ["hr", "admin"] },
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      })
+        .select("_id name email")
+        .lean(),
+      Settings.findOne({
+        organizationId: organizationObjectId,
+      })
+        .select("mailConfig")
+        .lean(),
+    ]);
+
+    const orgName = orgData?.name || "";
 
     // Get job information
     const jobName =
@@ -110,14 +117,6 @@ export async function POST(req: NextRequest) {
     // });
 
     // Find all HR users in the organization
-    const hrUsers = await User.find({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["hr", "admin"] },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-    })
-      .select("_id name email")
-      .lean();
-
     const hrEmails: string[] = hrUsers.map((user) => user.email);
     const hrUserIds: string[] = hrUsers.map((user) => user._id.toString());
 
@@ -128,9 +127,6 @@ export async function POST(req: NextRequest) {
       organizationId
     )) as string;
 
-    console.log("⛔⛔⛔ EMAILS: ", email);
-
-    // Prepare candidate confirmation email
     const {
       emailContent: candidateEmailContent,
       emailSubject: candidateEmailSubject,
@@ -150,9 +146,6 @@ export async function POST(req: NextRequest) {
       organizationId
     );
 
-    const settings = await Settings.findOne({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).lean();
     if (!settings || !settings.mailConfig) {
       return NextResponse.json(
         { error: "Mail configuration not found" },
@@ -181,12 +174,12 @@ export async function POST(req: NextRequest) {
 
     // Create history record for candidate
     const candidateHistory = await EmailHistory.create({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
+      organizationId: organizationObjectId,
       sentBy: systemUser._id,
       sentByEmail: systemUser.email,
       sentByName: systemUser.name,
       recipientType: "Candidate",
-      recipientId: new mongoose.Types.ObjectId(candidateId),
+      recipientId: candidateObjectId,
       recipientEmail: email,
       recipientName: candidateName,
       subject: candidateEmailSubject,
@@ -198,51 +191,53 @@ export async function POST(req: NextRequest) {
       status: "pending",
       provider: settings.mailConfig.mailProvider || "unknown",
       metadata: {
-        candidateId: new mongoose.Types.ObjectId(candidateId),
+        candidateId: candidateObjectId,
         templateUsed: "job-application-hr",
         eventType: "job_application",
       },
     });
 
-    // Create history records for BCC recipients (HR/Admins)
-    const hrHistoryPromises = hrEmails.map(async (hrEmail, index) => {
-      try {
-        const hrUser = hrUsers.find((user) => user.email === hrEmail);
-        return await EmailHistory.create({
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-          sentBy: systemUser._id,
-          sentByEmail: systemUser.email,
-          sentByName: systemUser.name,
-          recipientType: "user",
-          recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
-          recipientEmail: hrEmail,
-          recipientName: hrUser?.name || hrEmail,
-          subject: candidateEmailSubject,
-          body: candidateEmailContent,
-          cc: [],
-          bcc: [],
-          replyTo: systemUser.email,
-          attachments: [],
-          status: "pending",
-          provider: settings.mailConfig.mailProvider || "unknown",
-          metadata: {
-            candidateId: new mongoose.Types.ObjectId(candidateId),
-            templateUsed: "job-application-hr",
-            eventType: "job_application",
-          },
-        });
-      } catch (error) {
-        console.error(`Failed to create history for ${hrEmail}:`, error);
-        return null;
-      }
+    const hrHistoryPayload = hrEmails.map((hrEmail) => {
+      const hrUser = hrUsers.find((user) => user.email === hrEmail);
+      return {
+        organizationId: organizationObjectId,
+        sentBy: systemUser._id,
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
+        recipientType: "user",
+        recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
+        recipientEmail: hrEmail,
+        recipientName: hrUser?.name || hrEmail,
+        subject: candidateEmailSubject,
+        body: candidateEmailContent,
+        cc: [],
+        bcc: [],
+        replyTo: systemUser.email,
+        attachments: [],
+        status: "pending",
+        provider: settings.mailConfig.mailProvider || "unknown",
+        metadata: {
+          candidateId: candidateObjectId,
+          templateUsed: "job-application-hr",
+          eventType: "job_application",
+        },
+      };
     });
 
-    const hrHistoryRecords = await Promise.all(hrHistoryPromises);
-    const validHrHistory = hrHistoryRecords.filter((record) => record !== null);
+    const hrHistoryRecords = hrHistoryPayload.length
+      ? await EmailHistory.insertMany(hrHistoryPayload, { ordered: false })
+      : [];
     // console.log(candidateData.jobId._id.toString(), "candidateData==77b");
 
-    // Send email using sendSmartNotificationEmail
-    let emailStatus;
+    type EmailDispatchResult = {
+      status: number;
+      message?: string;
+    };
+
+    let emailStatus: EmailDispatchResult = {
+      status: 202,
+      message: "Pending notification dispatch",
+    };
     // try {
     //   emailStatus = await sendSmartNotificationEmail(
     //     organizationId,
@@ -304,7 +299,6 @@ export async function POST(req: NextRequest) {
         },
         [...hrUserIds, candidateId]
       );
-      console.log("✅ Email notification sent successfully");
     } catch (emailError) {
       console.error("❌ Failed to send email notification:", emailError);
       emailStatus = {
@@ -315,32 +309,21 @@ export async function POST(req: NextRequest) {
             : "Failed to send email",
       };
     }
-    const updatePromises = [];
+    const historyUpdatePayload = {
+      status: emailStatus.status === 200 ? "sent" : "failed",
+      sentAt: emailStatus.status === 200 ? new Date() : undefined,
+      error: emailStatus.status !== 200 ? emailStatus.message : undefined,
+    };
 
-    // Update candidate history
-    updatePromises.push(
-      EmailHistory.findByIdAndUpdate(candidateHistory._id, {
-        status: emailStatus.status === 200 ? "sent" : "failed",
-        sentAt: emailStatus.status === 200 ? new Date() : undefined,
-        error: emailStatus.status !== 200 ? emailStatus.message : undefined,
-      })
-    );
-
-    // Update HR history records
-    updatePromises.push(
-      ...validHrHistory.map(async (historyRecord) => {
-        if (historyRecord) {
-          return EmailHistory.findByIdAndUpdate(historyRecord._id, {
-            status: emailStatus.status === 200 ? "sent" : "failed",
-            sentAt: emailStatus.status === 200 ? new Date() : undefined,
-            error: emailStatus.status !== 200 ? emailStatus.message : undefined,
-          });
-        }
-      })
-    );
-
-    await Promise.all(updatePromises);
-    console.log("Email Status:", emailStatus);
+    await Promise.all([
+      EmailHistory.findByIdAndUpdate(candidateHistory._id, historyUpdatePayload),
+      hrHistoryRecords.length
+        ? EmailHistory.updateMany(
+            { _id: { $in: hrHistoryRecords.map((record) => record._id) } },
+            historyUpdatePayload
+          )
+        : Promise.resolve(),
+    ]);
 
     // Prepare response
     if (emailStatus.status === 200) {
