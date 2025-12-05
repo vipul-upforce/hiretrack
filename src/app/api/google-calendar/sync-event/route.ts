@@ -197,10 +197,10 @@ export async function POST(req: NextRequest) {
             organizationId,
             candidateId,
             candidateName: candidate.name,
-            jobId: jobId,
-            jobTitle: jobTitle,
+            jobId,
+            jobTitle,
             userEmail: userData.email,
-            attendeeEmail: attendeeEmail,
+            attendeeEmail,
             attendeeName: attendeeName as string,
             interviewerId:
               candidate.assignment?.interviewerId?._id?.toString()

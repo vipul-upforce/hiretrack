@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import { Job, Candidate, History } from "@/lib/mongodb";
+import connectToDatabase, { Job, Candidate, History } from "@/lib/mongodb";
 import { ICandidateHistory } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
 import { getAuthenticatedUser } from "@/app/actions/auth";
@@ -164,7 +163,7 @@ export async function POST(req: NextRequest) {
       try {
         await NotificationService.notifyCandidateMoved({
           organizationId: user.organizationId,
-          candidateId: candidateId,
+          candidateId,
           candidateName: candidate.name || "Unknown Candidate",
           fromJobId: previousJob._id.toString(),
           fromJobTitle: previousJob.title,

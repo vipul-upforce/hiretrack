@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import { Job, Candidate, History } from "@/lib/mongodb";
+import connectToDatabase, { Job, Candidate, History } from "@/lib/mongodb";
 import { auth } from "@/lib/auth";
 import { ICandidateHistory } from "@/lib/models/history";
 import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
@@ -63,7 +62,7 @@ export async function POST(req: NextRequest) {
 
       // Update candidate
       await Candidate.findByIdAndUpdate(candidateId, {
-        jobId: jobId,
+        jobId,
         status: lane,
         $set: {
           "tracking.assignedToJobDate": new Date().toISOString(),
@@ -73,14 +72,14 @@ export async function POST(req: NextRequest) {
       // Update history if exists
       if (previousJobId) {
         const existingHistory = await History.findOne({
-          candidateId: candidateId,
+          candidateId,
           jobId: previousJobId,
         });
 
         if (existingHistory) {
           await History.findOneAndUpdate(
-            { candidateId: candidateId, jobId: previousJobId },
-            { $set: { jobId: jobId } }
+            { candidateId, jobId: previousJobId },
+            { $set: { jobId } }
           );
         }
       }
@@ -115,7 +114,7 @@ export async function POST(req: NextRequest) {
     if (session?.user && movedCandidateIds.length > 0) {
       try {
         await NotificationService.notifyBulkCandidateMoved({
-          organizationId: organizationId,
+          organizationId,
           candidateIds: movedCandidateIds,
           toJobId: jobId,
           toJobTitle: targetJob.title,

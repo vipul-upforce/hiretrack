@@ -21,13 +21,13 @@ import {
   useUpdateJobEmailNotificationSettings,
 } from "@/hooks/useEmailNotificationSettings";
 import { useSelector } from "react-redux";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 import {
   ALL_NOTIFICATION_TYPES,
   createDefaultNotificationSettings,
   isAdminOverrideDisabled,
   resolveNotificationSource,
 } from "@/lib/utils/notificationSettings";
+import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 
 interface JobEmailNotificationSettingsDialogProps {
   isOpen: boolean;
@@ -70,7 +70,7 @@ export function JobEmailNotificationSettingsDialog({
           organizationSettings.users.find((user) => user._id === currentUser.id)
             ?.currentOverride || {}
         );
-        return;
+        
       }
     } catch (err) {
       console.error("Error fetching admin overrides:", err);
@@ -209,8 +209,7 @@ export function JobEmailNotificationSettingsDialog({
             </span>
           </div>
         ) : (
-          <>
-            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+          <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               {/* All Toggle */}
               <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
                 <div className="flex-1 space-y-1">
@@ -250,7 +249,7 @@ export function JobEmailNotificationSettingsDialog({
                         enabled={localSettings[type]}
                         source={source}
                         onToggle={handleToggle}
-                        showSource={true}
+                        showSource
                         disabled={isDisabled}
                       />
                     );
@@ -286,7 +285,6 @@ export function JobEmailNotificationSettingsDialog({
                 </div>
               </div>
             </div>
-          </>
         )}
       </DialogContent>
     </Dialog>

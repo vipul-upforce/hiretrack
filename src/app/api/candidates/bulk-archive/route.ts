@@ -92,7 +92,7 @@ export async function POST(req: NextRequest): Promise<NextResponse<BulkArchiveRe
     const updatePromises = candidatesToUpdate.map(async (candidate) => {
       try {
         const historyEntry = {
-          dateTime: dateTime,
+          dateTime,
           title: targetIsDeleted ? "Archived" : "Unarchived",
           previousInterviewer: null,
           currentInterviewer: null,

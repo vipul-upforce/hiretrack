@@ -180,6 +180,7 @@ export class NotificationService {
       return [];
     }
   }
+
   static async getUsersEmailByRole(
     organizationId: string,
     roles: string[]
@@ -196,15 +197,14 @@ export class NotificationService {
         role: { $in: roles },
         isDeleted: { $ne: true },
       }).select("_id role name email");
-      const userEmails = users.map((user) => {
-        return { id: user._id.toString(), email: user.email };
-      });
+      const userEmails = users.map((user) => ({ id: user._id.toString(), email: user.email }));
       return userEmails as { id: string; email: string }[];
     } catch (error) {
       console.error("❌ Error getting users by role:", error);
       return [];
     }
   }
+
   static async getUsersEmailByRole(
     organizationId: string,
     roles: string[]
@@ -221,9 +221,7 @@ export class NotificationService {
         role: { $in: roles },
         isDeleted: { $ne: true },
       }).select("_id role name email");
-      const userEmails = users.map((user) => {
-        return { id: user._id.toString(), email: user.email };
-      });
+      const userEmails = users.map((user) => ({ id: user._id.toString(), email: user.email }));
       return userEmails as { id: string; email: string }[];
     } catch (error) {
       console.error("❌ Error getting users by role:", error);
@@ -501,6 +499,7 @@ export class NotificationService {
       );
     }
   }
+
    /** Notify when candidate is rejected by HR/Admin */
    static async notifyCandidateRejected(params: {
     organizationId: string;

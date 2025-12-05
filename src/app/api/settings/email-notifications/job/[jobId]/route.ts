@@ -179,7 +179,7 @@ export async function PUT(
 
     // Update job-level settings
     const userId = currentUser.id;
-    const organizationId = currentUser.organizationId;
+    const {organizationId} = currentUser;
     
     if (!userId || !organizationId) {
       return NextResponse.json(

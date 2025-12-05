@@ -5,6 +5,7 @@ import {
   OrgInfo,
 } from "@/lib/models/user";
 import Cookies from "js-cookie";
+
 export interface ILocalUser {
   id: string;
   organizationId: Organization | string;

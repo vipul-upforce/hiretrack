@@ -195,7 +195,7 @@ export async function DELETE(request: NextRequest) {
 
     // Reset global settings to defaults
     const userId = currentUser.id;
-    const organizationId = currentUser.organizationId;
+    const {organizationId} = currentUser;
 
     await User.findByIdAndUpdate(userId, {
       $set: { "emailNotificationSettings.global": DEFAULT_NOTIFICATION_SETTINGS },

@@ -1,5 +1,4 @@
-import React from 'react';
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -27,9 +26,9 @@ import {
 } from "@/components/ui/card";
 import { Code, Eye, FileText, Mail, Plus, Edit2 } from "lucide-react";
 import { Editor } from "@monaco-editor/react";
-import { sampleCustomTemplates, templateVariables } from "../constants";
 import { useTheme } from "@/components/theme-provider";
 import { TemplateVisualEditor } from "@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor";
+import { sampleCustomTemplates, templateVariables } from "../constants";
 
 interface AddTemplateDialogProps {
   open: boolean;

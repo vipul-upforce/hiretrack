@@ -380,7 +380,7 @@ export async function PUT(request: NextRequest) {
         data.newEntry.remark.selectedMentionUserIds || [];
 
       await NotificationService.notifyRemarkAdded({
-        organizationId: organizationId,
+        organizationId,
         candidateId: data.candidateId,
         candidateName: candidateData.name,
         jobId:
@@ -397,9 +397,9 @@ export async function PUT(request: NextRequest) {
 
       // ⭐ INSERTED EMAIL NOTIFICATION BLOCK HERE ⭐
       try {
-        const organizationId = userData.organizationId;
+        const {organizationId} = userData;
         const users = await User.find({
-          organizationId: organizationId,
+          organizationId,
           role: { $in: ["hr", "admin"] },
           $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
         }).select("email");

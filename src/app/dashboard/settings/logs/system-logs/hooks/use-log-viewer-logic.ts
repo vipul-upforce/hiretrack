@@ -122,7 +122,7 @@ export function useLogViewerLogic({
         let fileToSelect = activeData.files[0];
 
         if (logType === "pm2") {
-          const version = packageJson.version;
+          const {version} = packageJson;
           const targetFileName = `hiretrack-v${version}-error.log`;
 
           const foundFile = activeData.files.find((f) => f === targetFileName);

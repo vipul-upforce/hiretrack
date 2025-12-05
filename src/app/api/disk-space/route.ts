@@ -77,7 +77,7 @@ function getFolderSize(folderPath: string): string {
     if (process.platform === "win32") {
       const sizeBytes = calculateFolderSizeRecursive(folderPath);
       return formatSize(sizeBytes);
-    } else {
+    } 
       const result = execSync(`du -sb "${folderPath}"`, { encoding: "utf-8" });
       const sizeBytes = parseInt(result.split("\t")[0], 10);
       if (!isNaN(sizeBytes)) {
@@ -85,7 +85,7 @@ function getFolderSize(folderPath: string): string {
       }
       const sizeBytesFallback = calculateFolderSizeRecursive(folderPath);
       return formatSize(sizeBytesFallback);
-    }
+    
   } catch {
     const sizeBytes = calculateFolderSizeRecursive(folderPath);
     return formatSize(sizeBytes);
@@ -287,7 +287,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      diskStats: diskStats,
+      diskStats,
       folders: foldersResult,
     });
   } catch (error) {

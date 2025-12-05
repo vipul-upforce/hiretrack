@@ -20,7 +20,6 @@ import {
   useUpdateGlobalEmailNotificationSettings,
 } from "@/hooks/useGlobalEmailNotificationSettings";
 import { useSelector } from "react-redux";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 import { useOrganizationEmailNotificationSettings } from "@/hooks/useEmailNotificationSettings";
 import {
   ALL_NOTIFICATION_TYPES,
@@ -28,6 +27,7 @@ import {
   resolveNotificationSource,
   isAdminOverrideDisabled,
 } from "@/lib/utils/notificationSettings";
+import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 
 export function GlobalEmailNotificationSettingsDialog({
   isOpen,
@@ -64,7 +64,7 @@ export function GlobalEmailNotificationSettingsDialog({
     try {
       if (organizationSettings) {
         setAdminOverrides(organizationSettings.users.find((user) => user._id === currentUser.id)?.currentOverride || {});
-        return;
+        
       }
     } catch (err) {
       console.error("Error fetching admin overrides:", err);
@@ -167,8 +167,7 @@ export function GlobalEmailNotificationSettingsDialog({
             </span>
           </div>
         ) : (
-          <>
-            <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full">
               {/* Fixed section below header */}
               <div className="px-6 py-2 border-b bg-background">
                 {/* All Toggle - Fixed below header */}
@@ -209,7 +208,7 @@ export function GlobalEmailNotificationSettingsDialog({
                         enabled={localSettings[type]}
                         source={source}
                         onToggle={handleToggle}
-                        showSource={true}
+                        showSource
                         disabled={isDisabled}
                       />
                     );
@@ -247,7 +246,6 @@ export function GlobalEmailNotificationSettingsDialog({
                 </div>
               </div>
             </div>
-          </>
         )}
       </DialogContent>
     </Dialog>

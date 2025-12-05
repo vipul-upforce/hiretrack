@@ -194,7 +194,7 @@ async function resolveNotificationSetting(
   orgSettings: any,
   context: NotificationDecisionContext,
 ): Promise<NotificationDecisionResult> {
-  const notificationType = context.notificationType;
+  const {notificationType} = context;
   
   // Use common EmailNotificationSettings for both email and in-app notifications
   const settingsKey = "emailNotificationSettings";

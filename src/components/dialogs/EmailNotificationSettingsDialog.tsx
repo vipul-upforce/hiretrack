@@ -23,8 +23,8 @@ import {
   useUpdateOrganizationEmailNotificationSettings,
 } from "@/hooks/useEmailNotificationSettings";
 
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 import { useToast } from "@/hooks/use-toast";
+import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
 
 // All email types (enabled by default)
 const createDefaultNotificationSettings = (): Record<
@@ -192,8 +192,7 @@ export function EmailNotificationSettingsDialog({
             Failed to load settings: {error}
           </div>
         ) : (
-          <>
-            <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full">
               {/* Fixed section below header */}
               <div className="px-6 py-2 border-b bg-background">
                 {/* Header Badge */}
@@ -227,7 +226,7 @@ export function EmailNotificationSettingsDialog({
                       disabled={updating}
                       onToggle={handleToggle}
                       source="admin-override"
-                      showSource={true}
+                      showSource
                     />
                   ))}
                 </div>
@@ -264,7 +263,6 @@ export function EmailNotificationSettingsDialog({
                 </div>
               </div>
             </div>
-          </>
         )}
       </DialogContent>
     </Dialog>

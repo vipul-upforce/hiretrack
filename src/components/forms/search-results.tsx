@@ -10,12 +10,12 @@ import { EditCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialog
 import { AssignCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-dialog";
 import { AssignJobDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog";
 import AddRemarksDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog";
-import ConfirmationDialog from "../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
 import { toast } from "@/hooks/use-toast";
 import {
   useDeleteCandidateMutation,
   useBulkArchiveCandidatesMutation,
 } from "@/lib/features/candidate/candidateApi";
+import ConfirmationDialog from "../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
 import { SearchResultsSkeletonLoader } from "./search-results/skeleton-loader";
 import { ResultsHeader } from "./search-results/results-header";
 import { ResultsInfo } from "./search-results/results-info";
@@ -209,9 +209,9 @@ export function SearchResults({
         setSelectedCandidates((prev) => {
           if (prev.includes(candidateId)) {
             return prev.filter((id) => id !== candidateId);
-          } else {
+          } 
             return [...prev, candidateId];
-          }
+          
         });
         setLastSelectedIndex(candidateIndex !== -1 ? candidateIndex : null);
       }
