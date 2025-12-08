@@ -11,7 +11,8 @@ export async function PUT(
     const body = await request.json();
     const { id } = await params;
     const updatedField = await FormField.findByIdAndUpdate(id, body, {
-      new: true, lean: true,
+      new: true,
+      lean: true,
     });
 
     if (!updatedField) {
@@ -23,13 +24,12 @@ export async function PUT(
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
     const { id } = await params;
@@ -43,5 +43,7 @@ export async function DELETE(
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }

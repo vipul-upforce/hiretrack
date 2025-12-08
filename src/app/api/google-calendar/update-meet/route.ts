@@ -5,6 +5,7 @@ import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
 import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 interface UpdateMeetRequest {
   candidateId?: string;
@@ -24,17 +25,13 @@ export async function PUT(req: NextRequest) {
     ]);
 
     if (!userData) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { organizationId } = userData;
     const orgId = userData.organizationId;
-    const {
-      candidateId, eventId, scheduledTime, duration, guests,
-    } = body as UpdateMeetRequest;
+    const { candidateId, eventId, scheduledTime, duration, guests } =
+      body as UpdateMeetRequest;
 
     if (!Settings) {
       return NextResponse.json(
@@ -119,7 +116,8 @@ export async function PUT(req: NextRequest) {
         'GMT-08:00': 'America/Los_Angeles',
       };
 
-      organizationTimezone = timezoneMap[organizationTimezone] || organizationTimezone;
+      organizationTimezone =
+        timezoneMap[organizationTimezone] || organizationTimezone;
 
       updateData.start = {
         dateTime: startDateTime.toISOString(),
@@ -147,24 +145,28 @@ export async function PUT(req: NextRequest) {
 
     const updatedEvent = response.data;
     const summary = updatedEvent.summary || existingEvent.data.summary;
-    const description = updatedEvent.description || existingEvent.data.description;
-    const attendees = updatedEvent.attendees?.map((att) => ({
-      email: att.email,
-      name: att.displayName || att.email?.split('@')[0] || att.email,
-      responseStatus: att.responseStatus || 'needsAction',
-      lastUpdated: new Date(),
-      notificationSent: false,
-    })) || [];
+    const description =
+      updatedEvent.description || existingEvent.data.description;
+    const attendees =
+      updatedEvent.attendees?.map((att) => ({
+        email: att.email,
+        name: att.displayName || att.email?.split('@')[0] || att.email,
+        responseStatus: att.responseStatus || 'needsAction',
+        lastUpdated: new Date(),
+        notificationSent: false,
+      })) || [];
 
     // Update candidate record if candidateId is provided
     if (candidateId && Candidate) {
       try {
         const updateFields: Record<string, unknown> = {};
         if (updatedEvent.hangoutLink) {
-          updateFields['assignment.googleMeet.meetingLink'] = updatedEvent.hangoutLink;
+          updateFields['assignment.googleMeet.meetingLink'] =
+            updatedEvent.hangoutLink;
         }
         if (updatedEvent.htmlLink) {
-          updateFields['assignment.googleMeet.htmlLink'] = updatedEvent.htmlLink;
+          updateFields['assignment.googleMeet.htmlLink'] =
+            updatedEvent.htmlLink;
         }
         // Update summary, description, and attendeeResponses if changed
         updateFields['assignment.googleMeet.summary'] = summary;
@@ -178,7 +180,10 @@ export async function PUT(req: NextRequest) {
           });
         }
       } catch (error) {
-        console.error('Failed to update candidate record:', error);
+        logger.error(
+          { error, url: req.url },
+          'Failed to update candidate record with new meeting details',
+        );
       }
     }
 
@@ -261,7 +266,10 @@ export async function DELETE(req: NextRequest) {
       settings.googleCalendar.clientSecret,
       organizationId,
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
+    const accessToken = decryptText(
+      settings.googleCalendar.accessToken,
+      organizationId,
+    );
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
       organizationId,
@@ -287,47 +295,51 @@ export async function DELETE(req: NextRequest) {
     // Optimize: Cancel event and clear candidate data in parallel where possible
     const cancelEventPromise = cancelNotes.trim()
       ? (async () => {
-        try {
-          const existingEvent = await calendar.events.get({
-            calendarId: 'primary',
-            eventId,
-          });
+          try {
+            const existingEvent = await calendar.events.get({
+              calendarId: 'primary',
+              eventId,
+            });
 
-          const updatedDescription = `${existingEvent.data.description || ''}\n\n--- MEETING CANCELLED ---\nReason: ${cancelNotes}\nCancelled on: ${new Date().toISOString()}`;
+            const updatedDescription = `${existingEvent.data.description || ''}\n\n--- MEETING CANCELLED ---\nReason: ${cancelNotes}\nCancelled on: ${new Date().toISOString()}`;
 
-          await calendar.events.patch({
-            calendarId: 'primary',
-            eventId,
-            requestBody: {
-              description: updatedDescription,
-              status: 'cancelled',
-            },
-            sendUpdates: 'all',
-          });
-        } catch (error) {
-          console.error('Failed to cancel event:', error);
-        }
-      })()
+            await calendar.events.patch({
+              calendarId: 'primary',
+              eventId,
+              requestBody: {
+                description: updatedDescription,
+                status: 'cancelled',
+              },
+              sendUpdates: 'all',
+            });
+          } catch (error) {
+            logger.error({ error, url: req.url }, 'Failed to cancel event');
+          }
+        })()
       : calendar.events.patch({
-        calendarId: 'primary',
-        eventId,
-        requestBody: {
-          status: 'cancelled',
-        },
-        sendUpdates: 'all',
-      });
+          calendarId: 'primary',
+          eventId,
+          requestBody: {
+            status: 'cancelled',
+          },
+          sendUpdates: 'all',
+        });
 
     // Clear Google Meet data from candidate record (can run in parallel with event cancellation)
-    const clearCandidatePromise = candidateId && Candidate
-      ? Candidate.findByIdAndUpdate(candidateId, {
-        $unset: { 'assignment.googleMeet': '' },
-      })
-        .lean()
-        .exec()
-        .catch((error) => {
-          console.error('Failed to clear candidate record:', error);
-        })
-      : Promise.resolve(null);
+    const clearCandidatePromise =
+      candidateId && Candidate
+        ? Candidate.findByIdAndUpdate(candidateId, {
+            $unset: { 'assignment.googleMeet': '' },
+          })
+            .lean()
+            .exec()
+            .catch((error) => {
+              logger.error(
+                { error, url: req.url },
+                'Failed to clear candidate record',
+              );
+            })
+        : Promise.resolve(null);
 
     // Wait for both operations
     await Promise.all([cancelEventPromise, clearCandidatePromise]);
@@ -335,7 +347,7 @@ export async function DELETE(req: NextRequest) {
     // Fetch candidate for notification (only if needed)
     if (candidateId) {
       // Optimize: Fetch only needed fields with optimized populate
-      const candidate = await Candidate.findById(candidateId)
+      const candidate = await Candidate?.findById(candidateId)
         .select('_id name jobId assignment.interviewerId')
         .populate({
           path: 'jobId',
@@ -348,19 +360,21 @@ export async function DELETE(req: NextRequest) {
         .lean();
 
       if (candidate) {
-        const jobId = candidate.jobId
-          && typeof candidate.jobId !== 'string'
-          && '_id' in candidate.jobId
-          ? candidate.jobId._id.toString()
-          : candidate.jobId
-            ? candidate.jobId.toString()
-            : '';
+        const jobId =
+          candidate.jobId &&
+          typeof candidate.jobId !== 'string' &&
+          '_id' in candidate.jobId
+            ? candidate.jobId._id.toString()
+            : candidate.jobId
+              ? candidate.jobId.toString()
+              : '';
 
-        const jobTitle = candidate.jobId
-          && typeof candidate.jobId !== 'string'
-          && 'title' in candidate.jobId
-          ? candidate.jobId.title
-          : 'Unknown Job';
+        const jobTitle =
+          candidate.jobId &&
+          typeof candidate.jobId !== 'string' &&
+          'title' in candidate.jobId
+            ? candidate.jobId.title
+            : 'Unknown Job';
 
         if (History) {
           try {
@@ -368,8 +382,8 @@ export async function DELETE(req: NextRequest) {
               dateTime: new Date().toISOString(),
               title: 'Google Meet Cancelled',
               assignmentBy: userData?.id,
-              previousInterviewer: candidate.assignment.interviewerId,
-              currentInterviewer: candidate.assignment.interviewerId,
+              previousInterviewer: candidate?.assignment?.interviewerId,
+              currentInterviewer: candidate?.assignment?.interviewerId,
               note: {
                 userId: userData?.id,
                 description: cancelNotes
@@ -389,7 +403,10 @@ export async function DELETE(req: NextRequest) {
               { upsert: true, new: true },
             );
           } catch (historyError) {
-            console.error('Failed to save cancellation history:', historyError);
+            logger.error(
+              { error: historyError, url: req.url },
+              'Failed to save cancellation history',
+            );
           }
         }
 
@@ -400,14 +417,14 @@ export async function DELETE(req: NextRequest) {
           jobId,
           jobTitle,
           interviewerId:
-            candidate.assignment?.interviewerId
-            && typeof candidate.assignment.interviewerId !== 'string'
-              ? candidate.assignment.interviewerId._id.toString()
+            candidate.assignment?.interviewerId &&
+            typeof candidate.assignment.interviewerId !== 'string'
+              ? candidate.assignment.interviewerId._id?.toString()!
               : '',
           interviewerName:
-            candidate.assignment?.interviewerId
-            && typeof candidate.assignment.interviewerId !== 'string'
-              ? candidate.assignment.interviewerId.name
+            candidate.assignment?.interviewerId &&
+            typeof candidate.assignment.interviewerId !== 'string'
+              ? candidate.assignment.interviewerId.name!
               : 'Interviewer',
           triggerUserId: userData?.id || '',
           triggerUserName: userData?.name || 'System',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/logger/logger.server';
 
 // Path to config.json in the parent of the current project root
 const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
   config.autoUpdate = config.autoUpdate != true;
   const success = writeConfig(config);
   if (!success) {
+    logger.error({ url: req.url }, 'Failed to write config file');
     return NextResponse.json(
       { error: 'Failed to write config file' },
       { status: 500 },

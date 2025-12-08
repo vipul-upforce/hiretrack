@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { User } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { getUserEffectiveNotificationSettings } from "@/lib/services/emailDecisionEngine";
-import { DEFAULT_NOTIFICATION_SETTINGS } from "@/lib/constants/notificationDefaults";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { User } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
+import { DEFAULT_NOTIFICATION_SETTINGS } from '@/lib/constants/notificationDefaults';
+import { logger } from '@/lib/logger/logger.server';
 
 interface GlobalEmailNotificationSettings {
   newApplications: boolean;
@@ -57,11 +58,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = await User.findById(userId)
+    const user = await User?.findById(userId)
       .select('emailNotificationSettings.global')
       .lean();
 
-    const globalSettings = user?.emailNotificationSettings?.global || DEFAULT_NOTIFICATION_SETTINGS;
+    const globalSettings =
+      user?.emailNotificationSettings?.global || DEFAULT_NOTIFICATION_SETTINGS;
 
     // Get effective settings (global level, no jobId)
     const effectiveSettings = await getUserEffectiveNotificationSettings(
@@ -75,7 +77,10 @@ export async function GET(request: NextRequest) {
       effectiveSettings,
     });
   } catch (error) {
-    console.error('Get global email notification settings error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Get global email notification settings error',
+    );
     return NextResponse.json(
       { error: 'Failed to get global email notification settings' },
       { status: 500 },
@@ -108,28 +113,28 @@ export async function PUT(request: NextRequest) {
     }
 
     const validKeys = [
-      "newApplications",
-      "interviewAssignments",
-      "statusUpdates",
-      "newRemarks",
-      "stepCompleted",
-      "mentions",
-      "detailsUpdated",
-      "meetingScheduled",
-      "meetingUpdated",
-      "meetingCancelled",
-      "meetingInviteAccepted",
-      "meetingInviteDeclined",
-      "meetingInviteTentative",
-      "followupAdded",
-      "followupUpdated",
-      "followupRemoved",
-      "jobCreated",
-      "jobUpdated",
-      "userAdded",
-      "bulkImportCompleted",
-      "candidateRejected",
-      "interviewCompleted",
+      'newApplications',
+      'interviewAssignments',
+      'statusUpdates',
+      'newRemarks',
+      'stepCompleted',
+      'mentions',
+      'detailsUpdated',
+      'meetingScheduled',
+      'meetingUpdated',
+      'meetingCancelled',
+      'meetingInviteAccepted',
+      'meetingInviteDeclined',
+      'meetingInviteTentative',
+      'followupAdded',
+      'followupUpdated',
+      'followupRemoved',
+      'jobCreated',
+      'jobUpdated',
+      'userAdded',
+      'bulkImportCompleted',
+      'candidateRejected',
+      'interviewCompleted',
     ];
 
     for (const key of validKeys) {
@@ -145,7 +150,7 @@ export async function PUT(request: NextRequest) {
     const userId = currentUser.id;
     const { organizationId } = currentUser;
 
-    const result = await User.findByIdAndUpdate(
+    const result = await User?.findByIdAndUpdate(
       userId,
       { $set: { 'emailNotificationSettings.global': settings } },
       { new: true, upsert: false },
@@ -160,7 +165,7 @@ export async function PUT(request: NextRequest) {
 
     // Get updated effective settings
     const effectiveSettings = await getUserEffectiveNotificationSettings(
-      userId.toString(),
+      userId!.toString(),
       organizationId.toString(),
     );
 
@@ -171,7 +176,10 @@ export async function PUT(request: NextRequest) {
       effectiveSettings,
     });
   } catch (error) {
-    console.error('Update global email notification settings error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Update global email notification settings error',
+    );
     return NextResponse.json(
       { error: 'Failed to update global email notification settings' },
       { status: 500 },
@@ -195,26 +203,31 @@ export async function DELETE(request: NextRequest) {
 
     // Reset global settings to defaults
     const userId = currentUser.id;
-    const {organizationId} = currentUser;
+    const { organizationId } = currentUser;
 
-    await User.findByIdAndUpdate(userId, {
-      $set: { "emailNotificationSettings.global": DEFAULT_NOTIFICATION_SETTINGS },
+    await User?.findByIdAndUpdate(userId, {
+      $set: {
+        'emailNotificationSettings.global': DEFAULT_NOTIFICATION_SETTINGS,
+      },
     });
 
     // Get updated effective settings
     const effectiveSettings = await getUserEffectiveNotificationSettings(
-      userId.toString(),
+      userId!.toString(),
       organizationId.toString(),
     );
 
     return NextResponse.json({
       success: true,
-      message: "Global email notification settings reset to defaults",
+      message: 'Global email notification settings reset to defaults',
       globalSettings: DEFAULT_NOTIFICATION_SETTINGS,
       effectiveSettings,
     });
   } catch (error) {
-    console.error('Reset global email notification settings error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Reset global email notification settings error',
+    );
     return NextResponse.json(
       { error: 'Failed to reset global email notification settings' },
       { status: 500 },

@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Job, Candidate } from '@/lib/mongodb';
-import { NotificationService } from '@/lib/notifications/notificationService';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // Check authentication
-
     const [userData, { id }, { status }] = await Promise.all([
       getAuthenticatedUser(request),
       params,
@@ -38,9 +36,6 @@ export async function PATCH(
         { status: 404 },
       );
     }
-    // console.log(currentCandidate, "curenett --00 -         --999d");
-
-    const oldStatus = currentCandidate.status;
 
     const updatedCandidate = await Candidate.findByIdAndUpdate(
       id,
@@ -57,11 +52,20 @@ export async function PATCH(
         { status: 404 },
       );
     }
-    
+
     return NextResponse.json(updatedCandidate);
   } catch (error: unknown) {
+    logger.error(
+      { error, url: request.url },
+      'Error updating candidate status',
+    );
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(
+      { error: 'Unknown error occurred' },
+      { status: 500 },
+    );
   }
 }

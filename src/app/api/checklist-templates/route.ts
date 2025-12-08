@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { ChecklistTemplate } from '@/lib/mongodb';
-import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 // GET - Get all checklist templates for the organization
 export async function GET(req: NextRequest) {
@@ -33,7 +33,8 @@ export async function GET(req: NextRequest) {
 
     const templates = await ChecklistTemplate.find(query)
       .populate('createdBy', 'name email')
-      .sort({ createdAt: -1 }).lean()
+      .sort({ createdAt: -1 })
+      .lean()
       .exec();
 
     return NextResponse.json({
@@ -41,7 +42,10 @@ export async function GET(req: NextRequest) {
       data: templates,
     });
   } catch (error) {
-    console.error('Error fetching checklist templates:', error);
+    logger.error(
+      { error, url: req.url },
+      'Error fetching checklist templates.',
+    );
     return NextResponse.json(
       { error: 'Failed to fetch templates' },
       { status: 500 },
@@ -63,16 +67,13 @@ export async function POST(req: NextRequest) {
 
     // Check if model is initialized
     if (!ChecklistTemplate) {
-      console.error('ChecklistTemplate model not initialized');
       return NextResponse.json(
         { error: 'Database models not initialized' },
         { status: 500 },
       );
     }
 
-    let {
-      name, description, type, fields,
-    } = body;
+    let { name, description, type, fields } = body;
 
     // Validate required fields
     if (!name || !type || !Array.isArray(fields)) {
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
       data: template,
     });
   } catch (error) {
-    console.error('Error creating checklist template:', error);
+    logger.error({ error, url: req.url }, 'Error creating checklist template');
     return NextResponse.json(
       { error: 'Failed to create template' },
       { status: 500 },

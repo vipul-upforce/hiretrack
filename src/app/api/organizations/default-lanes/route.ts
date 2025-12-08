@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 const DEFAULT_LANES = [
   'applied',
@@ -17,7 +18,7 @@ const DEFAULT_RESTRICTIONS = {
 };
 
 async function getOrganizationLanes(orgId: string) {
-  const org = await Organization.findById(orgId, {
+  const org = await Organization?.findById(orgId, {
     defaultLanes: 1,
     laneRestrictions: 1,
   }).lean();
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       laneRestrictions: organization.laneRestrictions || DEFAULT_RESTRICTIONS,
     });
   } catch (error) {
-    console.error('Get default lanes error:', error);
+    logger.error({ error, url: request.url }, 'Get default lanes error');
     return NextResponse.json(
       { error: 'Failed to fetch default lanes' },
       { status: 500 },
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update organization
-    const updatedOrganization = await Organization.findByIdAndUpdate(
+    const updatedOrganization = await Organization?.findByIdAndUpdate(
       user.organizationId,
       {
         $set: {
@@ -144,7 +145,7 @@ export async function PUT(request: NextRequest) {
       laneRestrictions: updatedOrganization.laneRestrictions,
     });
   } catch (error) {
-    console.error('Update default lanes error:', error);
+    logger.error({ error, url: request.url }, 'Update default lanes error');
     return NextResponse.json(
       { error: 'Failed to update default lanes' },
       { status: 500 },
@@ -205,9 +206,9 @@ export async function POST(request: NextRequest) {
     // Add lane at specified position or at the end
     const newLanes = [...currentLanes];
     if (
-      typeof position === 'number'
-      && position >= 0
-      && position <= newLanes.length
+      typeof position === 'number' &&
+      position >= 0 &&
+      position <= newLanes.length
     ) {
       newLanes.splice(position, 0, laneName);
     } else {
@@ -215,7 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update organization
-    const updatedOrganization = await Organization.findByIdAndUpdate(
+    const updatedOrganization = await Organization?.findByIdAndUpdate(
       user.organizationId,
       { $set: { defaultLanes: newLanes } },
       { new: true },
@@ -226,10 +227,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Default lane added successfully',
-      defaultLanes: updatedOrganization.defaultLanes,
+      defaultLanes: updatedOrganization?.defaultLanes,
     });
   } catch (error) {
-    console.error('Add default lane error:', error);
+    logger.error({ error, url: request.url }, 'Add default lane error');
     return NextResponse.json(
       { error: 'Failed to add default lane' },
       { status: 500 },
@@ -286,7 +287,7 @@ export async function DELETE(request: NextRequest) {
     const newLanes = currentLanes.filter((lane) => lane !== laneName);
 
     // Update organization
-    const updatedOrganization = await Organization.findByIdAndUpdate(
+    const updatedOrganization = await Organization?.findByIdAndUpdate(
       user.organizationId,
       { $set: { defaultLanes: newLanes } },
       {
@@ -298,10 +299,10 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({
       message: 'Default lane deleted successfully',
-      defaultLanes: updatedOrganization.defaultLanes,
+      defaultLanes: updatedOrganization?.defaultLanes,
     });
   } catch (error) {
-    console.error('Delete default lane error:', error);
+    logger.error({ error, url: request.url }, 'Delete default lane error');
     return NextResponse.json(
       { error: 'Failed to delete default lane' },
       { status: 500 },

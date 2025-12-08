@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { logger } from '@/lib/logger/logger.server';
 
 function getFolderSizeWin(folderPath: string): number {
   let total = 0;
@@ -20,7 +21,7 @@ function getFolderSizeWin(folderPath: string): number {
   return total;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const isLinux = process.platform === 'linux';
   const logDir = isLinux ? '/var/log/nginx' : 'C:/Users/UpforceTech/hiretrack';
 
@@ -38,7 +39,7 @@ export async function GET() {
         const output = execSync(`du -sb "${logDir}"`).toString();
         sizeBytes = parseInt(output.split('\t')[0], 10) || 0;
       } catch (err) {
-        console.error('Failed to run du:', err);
+        logger.error({ err, url: request.url }, 'Failed to run du:');
       }
     } else {
       sizeBytes = getFolderSizeWin(logDir);
@@ -53,7 +54,7 @@ export async function GET() {
       size: sizeMB,
     });
   } catch (error) {
-    console.log(error);
+    logger.error({ error, url: request.url });
     return NextResponse.json(
       { error: 'Failed to read nginx log directory' },
       { status: 500 },

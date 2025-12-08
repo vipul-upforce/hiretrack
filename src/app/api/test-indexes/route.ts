@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
+import { logger } from '@/lib/logger/logger.server';
 import { withAnalyticsAuth } from '../analytics/middleware';
 
 export async function POST(request: NextRequest) {
-  return withAnalyticsAuth(request, async (user, req) => {
+  return withAnalyticsAuth(request, async (_user, _req) => {
     try {
       await connectToDatabase();
 
@@ -28,7 +29,10 @@ export async function POST(request: NextRequest) {
         {
           collection: 'candidates',
           index: {
-            organizationId: 1, status: 1, jobId: 1, isDeleted: 1,
+            organizationId: 1,
+            status: 1,
+            jobId: 1,
+            isDeleted: 1,
           },
           name: 'analytics_candidates_org_status_job_deleted',
         },
@@ -45,7 +49,10 @@ export async function POST(request: NextRequest) {
         {
           collection: 'jobs',
           index: {
-            organizationId: 1, status: 1, isPublished: 1, isDeleted: 1,
+            organizationId: 1,
+            status: 1,
+            isPublished: 1,
+            isDeleted: 1,
           },
           name: 'analytics_jobs_org_status_published_deleted',
         },
@@ -62,7 +69,9 @@ export async function POST(request: NextRequest) {
 
           // Check if index exists
           const existingIndexes = await collection.indexes();
-          const indexExists = existingIndexes.some((idx: any) => idx.name === indexDef.name);
+          const indexExists = existingIndexes.some(
+            (idx: any) => idx.name === indexDef.name,
+          );
 
           if (indexExists) {
             results.push({
@@ -109,18 +118,21 @@ export async function POST(request: NextRequest) {
         results,
       });
     } catch (error: unknown) {
-      console.error('Index creation error:', error);
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to create indexes',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      }, { status: 500 });
+      logger.error({ error, url: request.url }, 'Index creation error.');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create indexes',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 },
+      );
     }
   });
 }
 
 export async function GET(request: NextRequest) {
-  return withAnalyticsAuth(request, async (user, req) => {
+  return withAnalyticsAuth(request, async (_user, _req) => {
     try {
       await connectToDatabase();
 
@@ -142,7 +154,9 @@ export async function GET(request: NextRequest) {
         try {
           const collection = db.collection(collectionName);
           const indexes = await collection.indexes();
-          const analyticsIndexes = indexes.filter((idx: any) => idx.name && idx.name.startsWith('analytics_'));
+          const analyticsIndexes = indexes.filter(
+            (idx: any) => idx.name && idx.name.startsWith('analytics_'),
+          );
 
           indexInfo.push({
             collection: collectionName,
@@ -165,10 +179,13 @@ export async function GET(request: NextRequest) {
         indexInfo,
       });
     } catch (error: unknown) {
-      return NextResponse.json({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 },
+      );
     }
   });
 }

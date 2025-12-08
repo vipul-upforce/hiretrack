@@ -5,6 +5,7 @@ import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
 import { uploadFile, uploadFileToS3, saveFileLocally } from '@/lib/fileUtils';
+import { logger } from '@/lib/logger/logger.server';
 
 interface ScheduleMeetRequest {
   candidateId: string;
@@ -37,7 +38,6 @@ export async function POST(req: NextRequest) {
     ]);
 
     if (!Settings) {
-      console.error('❌ Settings model not found');
       return NextResponse.json(
         { error: 'Database not connected' },
         { status: 500 },
@@ -65,15 +65,12 @@ export async function POST(req: NextRequest) {
     } = body;
 
     // Get Google Calendar settings
-    const settings = await Settings.findOne({ organizationId }).select('googleCalendar timeZone fileStorage').lean().exec();
-    console.log('⚙️ Settings found:', !!settings);
-    console.log(
-      '🔗 Google Calendar connected:',
-      settings?.googleCalendar?.isConnected,
-    );
+    const settings = await Settings.findOne({ organizationId })
+      .select('googleCalendar timeZone fileStorage')
+      .lean()
+      .exec();
 
     if (!settings?.googleCalendar?.isConnected) {
-      console.error('❌ Google Calendar not connected');
       return NextResponse.json(
         { error: 'Google Calendar is not connected' },
         { status: 400 },
@@ -85,7 +82,10 @@ export async function POST(req: NextRequest) {
       settings.googleCalendar.clientSecret,
       organizationId,
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
+    const accessToken = decryptText(
+      settings.googleCalendar.accessToken,
+      organizationId,
+    );
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
       organizationId,
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     const oauth2Client = createOAuth2Client({
       clientId: settings.googleCalendar.clientId,
       clientSecret,
-      redirectUri: '', // Not needed for API calls
+      redirectUri: '',
     });
 
     // Set credentials
@@ -124,23 +124,12 @@ export async function POST(req: NextRequest) {
     };
 
     // Use mapped timezone if available, otherwise use the original
-    organizationTimezone = timezoneMap[organizationTimezone] || organizationTimezone;
-
-    console.log('🌍 Organization timezone:', {
-      original: settings.timeZone?.name,
-      mapped: organizationTimezone,
-      offset: settings.timeZone?.offset,
-    });
+    organizationTimezone =
+      timezoneMap[organizationTimezone] || organizationTimezone;
 
     // Calculate end time
     const startDateTime = new Date(scheduledTime);
     const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
-
-    console.log('⏰ Meeting time:', {
-      start: startDateTime.toISOString(),
-      end: endDateTime.toISOString(),
-      timezone: organizationTimezone,
-    });
 
     // Build description with notes and attachments
     let description = `Interview scheduled for ${candidateName} for the position of ${jobTitle} at ${organizationName}.
@@ -153,7 +142,8 @@ Candidate: ${candidateName}`;
     }
 
     // Upload meeting attachments and add to description
-    const validAttachments = meetingAttachments?.filter((att) => att && att.name && att.url) || [];
+    const validAttachments =
+      meetingAttachments?.filter((att) => att && att.name && att.url) || [];
     if (validAttachments.length > 0) {
       description += '\n\nAttachments:';
 
@@ -162,7 +152,8 @@ Candidate: ${candidateName}`;
         try {
           let uploadedUrl = '';
           const timestamp = new Date().getTime();
-          const uploadName = attachment.name || `meeting_attachment_${timestamp}`;
+          const uploadName =
+            attachment.name || `meeting_attachment_${timestamp}`;
 
           // Convert attachment data to base64 if needed
           const base64Data = attachment.url.startsWith('data:')
@@ -196,7 +187,11 @@ Candidate: ${candidateName}`;
 
           return { name: attachment.name, url: uploadedUrl };
         } catch (error) {
-          console.error('Failed to upload attachment:', error);
+          logger.error(
+            { error, url: req.url },
+            'Failed to upload attachment:',
+            error,
+          );
           return { name: attachment.name, url: 'Upload failed' };
         }
       });
@@ -249,18 +244,12 @@ Candidate: ${candidateName}`;
       },
     };
 
-    // Create the event with conference
-    console.log('📅 Creating Google Calendar event...');
     const response = await calendar.events.insert({
       calendarId: 'primary',
       requestBody: event,
       conferenceDataVersion: 1,
       sendUpdates: 'all',
     });
-
-    console.log('✅ Google Calendar event created:', response.data.id);
-    console.log('🔗 Meeting link:', response.data.hangoutLink);
-
     // Extract meeting details
     const meetingLink = response.data.hangoutLink || '';
     const eventId = response.data.id || '';
@@ -283,7 +272,7 @@ Candidate: ${candidateName}`;
 
     // Update candidate record with Google Meet info and initial attendee responses
     if (candidateId) {
-      await Candidate.findByIdAndUpdate(candidateId, {
+      await Candidate?.findByIdAndUpdate(candidateId, {
         'assignment.googleMeet': {
           eventId,
           meetingLink,
@@ -294,9 +283,6 @@ Candidate: ${candidateName}`;
           lastSyncedAt: new Date(),
         },
       });
-      console.log(
-        '✅ Updated candidate with meeting details and attendee list',
-      );
     }
 
     // Try to set up webhook for this event (non-blocking)
@@ -317,8 +303,8 @@ Candidate: ${candidateName}`;
             type: 'web_hook',
             address: webhookUrl,
             token:
-              process.env.GOOGLE_CALENDAR_WEBHOOK_TOKEN
-              || 'hiretrack-webhook-secret',
+              process.env.GOOGLE_CALENDAR_WEBHOOK_TOKEN ||
+              'hiretrack-webhook-secret',
             expiration: expirationTime.toString(),
           },
         });
@@ -326,7 +312,7 @@ Candidate: ${candidateName}`;
         // Store webhook subscription
         if (watchResponse.data.resourceId) {
           const { WebhookSubscription } = await import('@/lib/mongodb');
-          await WebhookSubscription.create({
+          await WebhookSubscription?.create({
             organizationId,
             resourceId: watchResponse.data.resourceId,
             channelId,
@@ -336,16 +322,12 @@ Candidate: ${candidateName}`;
             expirationTime: new Date(expirationTime),
             active: true,
           });
-          console.log('✅ Webhook subscription created for event:', eventId);
         }
-      } else {
-        console.log(
-          'ℹ️ Webhook not configured (development environment or missing BASE_URL)',
-        );
       }
     } catch (webhookError) {
-      console.error(
-        '⚠️ Failed to set up webhook (non-critical):',
+      logger.error(
+        { error: webhookError, url: req.url },
+        'Failed to set up Google Calendar webhook:',
         webhookError,
       );
       // Continue without webhook - manual sync will be available
@@ -362,8 +344,7 @@ Candidate: ${candidateName}`;
       message: 'Google Meet scheduled successfully',
     });
   } catch (error) {
-    console.error('Google Meet scheduling error:', error);
-
+    logger.error({ error, url: req.url }, 'Error scheduling Google Meet');
     // Handle token expiry
     if (error instanceof Error && error.message.includes('invalid_grant')) {
       return NextResponse.json(

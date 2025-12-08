@@ -7,6 +7,7 @@ import connectToDatabase, {
 } from '@/lib/mongodb';
 import { sendMail } from '@/lib/emailUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +45,8 @@ export async function POST(request: NextRequest) {
 
     // Validate email addresses
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const validateEmails = (emails: string[]) => emails.every((email) => emailRegex.test(email));
+    const validateEmails = (emails: string[]) =>
+      emails.every((email) => emailRegex.test(email));
 
     if (cc.length > 0 && !validateEmails(cc)) {
       return NextResponse.json(
@@ -68,13 +70,19 @@ export async function POST(request: NextRequest) {
     }
 
     const [candidate, settings] = await Promise.all([
-      Candidate!.findOne({
-        _id: candidateId,
-        organizationId: user.organizationId,
-      }).select('email name jobId').lean().exec(),
-      Settings!.findOne({
-        organizationId: user.organizationId,
-      }).select('mailConfig'),
+      Candidate!
+        .findOne({
+          _id: candidateId,
+          organizationId: user.organizationId,
+        })
+        .select('email name jobId')
+        .lean()
+        .exec(),
+      Settings!
+        .findOne({
+          organizationId: user.organizationId,
+        })
+        .select('mailConfig'),
     ]);
 
     if (!candidate) {
@@ -125,14 +133,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare email data
-    const candidateEmail = typeof candidate.email === 'string'
-      ? candidate.email
-      : (candidate.email as any)?.email || 'unknown@email.com';
+    const candidateEmail =
+      typeof candidate.email === 'string'
+        ? candidate.email
+        : (candidate.email as any)?.email || 'unknown@email.com';
 
-    const fromEmail = settings.mailConfig.smtp_from
-      || settings.mailConfig.resend_from
-      || settings.mailConfig.brevo_from
-      || 'noreply@hiretrack.com';
+    const fromEmail =
+      settings.mailConfig.smtp_from ||
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      'noreply@hiretrack.com';
 
     const emailData = {
       to: candidateEmail,
@@ -144,7 +154,6 @@ export async function POST(request: NextRequest) {
       replyTo: replyTo || user.email,
       from: fromEmail, // Use just the email address instead of formatted string
     };
-    console.log('CREATING HISTORY ENTRY...');
 
     // Determine email provider for history logging
     let provider = 'unknown';
@@ -200,14 +209,14 @@ export async function POST(request: NextRequest) {
           emailData.replyTo,
           emailData.from,
           {
-            emailHistoryId: String(emailHistory._id),
+            emailHistoryId: String(emailHistory?._id),
           },
           user.email,
         ),
 
         // Update email history with success status
         await EmailHistory!.updateOne(
-          { _id: emailHistory._id },
+          { _id: emailHistory?._id },
           {
             status: 'sent',
             sentAt: new Date(),
@@ -250,27 +259,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Email sent successfully',
-        emailHistoryId: emailHistory._id,
+        emailHistoryId: emailHistory?._id,
       });
     } catch (emailError: unknown) {
       // Update email history with failure
       await EmailHistory!.updateOne(
-        { _id: emailHistory._id },
+        { _id: emailHistory?._id },
         {
           status: 'failed',
-          error: emailError instanceof Error ? emailError.message : 'Failed to send email',
+          error:
+            emailError instanceof Error
+              ? emailError.message
+              : 'Failed to send email',
         },
       );
 
       return NextResponse.json(
-        { error: 'Failed to send email', details: emailError instanceof Error ? emailError.message : 'Failed to send email' },
+        {
+          error: 'Failed to send email',
+          details:
+            emailError instanceof Error
+              ? emailError.message
+              : 'Failed to send email',
+        },
         { status: 500 },
       );
     }
   } catch (error: unknown) {
-    console.error('Error in send email to candidate:', error);
+    logger.error(
+      { error, url: request.url },
+      'Error in send email to candidate',
+    );
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to process email request' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to process email request',
+      },
       { status: 500 },
     );
   }

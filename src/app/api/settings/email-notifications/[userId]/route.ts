@@ -3,7 +3,6 @@ import connectToDatabase, { User } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
 import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
-// import { getUserEffectiveEmailSettings } from "@/lib/services/emailDecisionEngine";
 
 /**
  * GET /api/settings/email-notifications/[userId]
@@ -26,7 +25,7 @@ export async function GET(
     }
 
     // Get user basic info
-    const user = await User.findById(userId)
+    const user = await User?.findById(userId)
       .select('_id name email role organizationId')
       .lean().exec();
 
@@ -35,7 +34,7 @@ export async function GET(
     }
 
     // Ensure user is from the same organization
-    if (user.organizationId.toString() !== currentUser.organizationId) {
+    if (user.organizationId.toString() !== currentUser?.organizationId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -193,7 +192,7 @@ export async function PUT(
     }
 
     // Get current user to verify organization
-    const targetUser = await User.findById(userId)
+    const targetUser = await User?.findById(userId)
       .select('organizationId')
       .lean();
     if (!targetUser) {
@@ -226,7 +225,7 @@ export async function PUT(
     }
 
     // Update user settings
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedUser = await User?.findByIdAndUpdate(
       userId,
       { $set: updateData },
       { new: true },
@@ -276,7 +275,7 @@ export async function DELETE(
     }
 
     // Get current user to verify organization
-    const targetUser = await User.findById(userId)
+    const targetUser = await User?.findById(userId)
       .select('organizationId')
       .lean();
     if (!targetUser) {
@@ -289,7 +288,7 @@ export async function DELETE(
     }
 
     // Reset email notification settings to defaults
-    await User.findByIdAndUpdate(userId, {
+    await User?.findByIdAndUpdate(userId, {
       $unset: { emailNotificationSettings: 1 },
     });
 

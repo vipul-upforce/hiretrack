@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import { decryptProviderKeys, encryptProviderKeys } from '@/lib/encryption';
+import { encryptProviderKeys } from '@/lib/encryption';
 import {
   MAX_LENGTHS,
   validateQueryParams,
   VALIDATION_PATTERNS,
 } from '@/lib/inputValidation';
 import { apiRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 const handleGetCaptcha = async (req: NextRequest) => {
   try {
-    // // SECURITY FIX: Validate query parameters
     const validation = validateQueryParams(req.nextUrl.searchParams, {
       org: {
         type: 'string',
@@ -41,15 +41,11 @@ const handleGetCaptcha = async (req: NextRequest) => {
     }
 
     if (!Settings || !Organization) {
-      console.log('Database models not initialized');
-
       return NextResponse.json(
         { error: 'Database models not initialized' },
         { status: 500 },
       );
     }
-    console.log(Settings, 'Settings');
-    console.log(Organization, 'Organization');
 
     let organizationId = '';
     let isAuthenticated = false;
@@ -62,35 +58,27 @@ const handleGetCaptcha = async (req: NextRequest) => {
         isAuthenticated = true;
       }
     } catch {
-      // Token verification failed, continue as anonymous user
-      console.log('Token verification failed, serving as anonymous user');
+      logger.warn('Failed to authenticate user from request');
     }
-    console.log(isAuthenticated, 'isAuthenticated');
-    console.log(organizationId, 'organizationId');
-
     let settings = null;
 
     if (organizationId) {
       // Authenticated user - get specific organization settings
-      settings = await Settings.findOne(
-        { organizationId },
-        { captcha: 1 },
-      ).lean().exec();
-      console.log(settings, 'settings');
+      settings = await Settings.findOne({ organizationId }, { captcha: 1 })
+        .lean()
+        .exec();
     } else {
-      // Anonymous user - try orgId from query or default organization
-      '';
       // Fallback to default organization
       const defaultOrg = await Organization.findOne({}).sort({
         createdAt: 1,
       });
-      console.log(defaultOrg, 'defaultOrg');
-
       if (defaultOrg) {
         settings = await Settings.findOne(
           { organizationId: defaultOrg._id.toString() },
           { captcha: 1 },
-        ).lean().exec();
+        )
+          .lean()
+          .exec();
       }
     }
 
@@ -108,7 +96,6 @@ const handleGetCaptcha = async (req: NextRequest) => {
     return NextResponse.json({ captcha: settings.captcha });
     // return NextResponse.json({ captcha: decryptedSettings.captcha });
   } catch (error) {
-    console.error('CAPTCHA API error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',
@@ -165,7 +152,7 @@ export async function PUT(req: NextRequest) {
       orgId,
     ).captcha;
 
-    const updatedSettings = await Settings.findOneAndUpdate(
+    const updatedSettings = await Settings?.findOneAndUpdate(
       { organizationId: orgId },
       { captcha: encryptedCaptcha },
       { new: true, runValidators: true, upsert: true },
@@ -182,7 +169,7 @@ export async function PUT(req: NextRequest) {
       message: 'CAPTCHA settings updated successfully',
     });
   } catch (error) {
-    console.error('CAPTCHA API error:', error);
+    logger.error({ error, url: req.url }, 'CAPTCHA API error');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',

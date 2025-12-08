@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Job, Candidate, History } from "@/lib/mongodb";
-import { ICandidateHistory } from "@/lib/models/history";
-import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { NotificationService } from "@/lib/notifications/notificationService";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Job, Candidate, History } from '@/lib/mongodb';
+import { ICandidateHistory } from '@/lib/models/history';
+import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,14 +31,22 @@ export async function GET(request: NextRequest) {
         _id: 1,
         title: 1,
       },
-    ).sort({
-      'tracking.createdAt': -1,
-    }).lean().exec();
+    )
+      .sort({
+        'tracking.createdAt': -1,
+      })
+      .lean()
+      .exec();
     return NextResponse.json(jobs);
   } catch (error: unknown) {
+    logger.error({ error, url: request.url });
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 }
 
@@ -86,25 +95,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingHistory = await History!.findOne({
-      candidateId,
-      jobId: candidate.jobId,
-    }).lean().exec();
-
-    const lane = user?.organizationInfo?.lanes
-      ? user?.organizationInfo?.lanes[0]
-      : user?.organizationInfo?.defaultLanes
-        ? user?.organizationInfo?.defaultLanes[0]
-        : 'applied';
-
-    // Update candidate with new job assignment and set status to "applied"
-    const latestCandidate = await Candidate!.findByIdAndUpdate(candidateId, {
-      jobId,
-      status: lane,
-      $set: {
-        'tracking.assignedToJobDate': new Date().toISOString(),
-      },
-    });
+    const existingHistory = await History!
+      .findOne({
+        candidateId,
+        jobId: candidate.jobId,
+      })
+      .lean()
+      .exec();
 
     // If there's existing history, update it with the new jobId
     if (existingHistory) {
@@ -157,30 +154,30 @@ export async function POST(req: NextRequest) {
       { $push: { history: historyEntry } },
       { upsert: true },
     );
-    
+
     // Send notification about candidate being moved
     if (previousJob && user) {
       try {
         await NotificationService.notifyCandidateMoved({
           organizationId: user.organizationId,
           candidateId,
-          candidateName: candidate.name || "Unknown Candidate",
+          candidateName: candidate.name || 'Unknown Candidate',
           fromJobId: previousJob._id.toString(),
           fromJobTitle: previousJob.title,
           toJobId: jobId,
           toJobTitle: nextJob.title,
-            triggerUserId: user.id,
-          triggerUserName: user.name,
+          triggerUserId: user.id!,
+          triggerUserName: user.name!,
         });
       } catch (notificationError) {
-        console.error(
-          "Failed to send candidate moved notification:",
-          notificationError
+        logger.error(
+          { notificationError, url: req.url },
+          'Failed to send candidate moved notification',
         );
         // Don't fail the API call if notification fails
       }
     }
-    
+
     const updatedHistory = await History!
       .findOne({
         jobId,
@@ -230,9 +227,10 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error(error);
+    logger.error({ error, url: req.url });
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }

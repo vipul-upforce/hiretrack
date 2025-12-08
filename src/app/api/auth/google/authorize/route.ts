@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     if (token?.value) {
       const decryptedResponse = await verifyAndDecryptToken(
         String(token?.value),
-        orgId,
+        orgId!,
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
@@ -120,16 +120,11 @@ export async function GET(req: NextRequest) {
     // Decrypt client secret
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId,
+      orgId!,
     );
 
     // Create OAuth2 client
     const redirectUri = getRedirectUri(req);
-    // console.log('Google OAuth Config:', {
-    //   clientId: settings.googleCalendar.clientId,
-    //   redirectUri: redirectUri,
-    //   organizationId: organizationId
-    // });
 
     const oauth2Client = createOAuth2Client({
       clientId: settings.googleCalendar.clientId,
@@ -146,7 +141,6 @@ export async function GET(req: NextRequest) {
     ).toString('base64');
 
     const authUrl = `${getAuthUrl(oauth2Client)}&state=${state}`;
-    // console.log("Generated auth URL:", authUrl);
 
     // Redirect to Google OAuth consent screen
     return NextResponse.redirect(authUrl);

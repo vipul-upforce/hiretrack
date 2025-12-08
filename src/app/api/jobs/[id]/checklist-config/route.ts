@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { JobLaneConfig, Job } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 // GET - Get job lane configuration with checklists
 export async function GET(
@@ -36,7 +37,7 @@ export async function GET(
       data: config || { jobId: id, laneConfigs: [] },
     });
   } catch (error) {
-    console.error('Error fetching job lane config:', error);
+    logger.error({ error, url: req.url }, 'Error fetching job lane config');
     return NextResponse.json(
       { error: 'Failed to fetch configuration' },
       { status: 500 },
@@ -109,7 +110,7 @@ export async function POST(
       data: config,
     });
   } catch (error) {
-    console.error('Error updating job lane config:', error);
+    logger.error({ error, url: req.url }, 'Error updating job lane config');
     return NextResponse.json(
       { error: 'Failed to update configuration' },
       { status: 500 },
@@ -194,12 +195,7 @@ export async function PATCH(
       data: config,
     });
   } catch (error) {
-    console.error('Error updating lane config:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      error,
-    });
+    logger.error({ error, url: req.url }, 'Error updating lane config');
     return NextResponse.json(
       {
         error: 'Failed to update lane configuration',
@@ -279,7 +275,7 @@ export async function DELETE(
       message: `${checklistType} checklist removed successfully`,
     });
   } catch (error) {
-    console.error('Error deleting checklist:', error);
+    logger.error({ error, url: req.url }, 'Error deleting checklist');
     return NextResponse.json(
       { error: 'Failed to delete checklist' },
       { status: 500 },

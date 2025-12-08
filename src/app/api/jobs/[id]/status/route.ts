@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization, Job } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function PATCH(
   request: NextRequest,
@@ -31,7 +32,7 @@ export async function PATCH(
         },
         { new: true },
       ),
-      Organization.findByIdAndUpdate(organizationId, {
+      Organization?.findByIdAndUpdate(organizationId, {
         $set: {
           openJobCards: openJobCardsOrder,
         },
@@ -44,8 +45,11 @@ export async function PATCH(
 
     return NextResponse.json(updatedJob);
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error updating job status');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }

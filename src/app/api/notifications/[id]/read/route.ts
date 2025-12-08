@@ -3,6 +3,7 @@ import connectToDatabase, { Notification } from '@/lib/mongodb';
 import { broadcastNotificationCount } from '@/lib/broadcast/broadcastNotifications';
 import mongoose from 'mongoose';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function PUT(
   request: NextRequest,
@@ -63,9 +64,12 @@ export async function PUT(
         recipientId: user.id,
         isRead: false,
       });
-      broadcastNotificationCount(user.organizationId, user.id, unread);
+      broadcastNotificationCount(user.organizationId, user.id!, unread);
     } catch (e) {
-      console.log('Error while broadcasting notifactin count : ', e);
+      logger.error(
+        { e, url: request.url },
+        'Error while broadcasting notifactin count',
+      );
     }
 
     return NextResponse.json({
@@ -73,6 +77,10 @@ export async function PUT(
       notification,
     });
   } catch (error: unknown) {
+    logger.error(
+      { error, url: request.url },
+      'Error in marking notification as read',
+    );
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -161,7 +161,6 @@ const refreshAndReAssignToken = async (data: unknown, orgId: string) => {
 
   const response = NextResponse.json({ message: 'User updated successfully' });
 
-  // SECURITY FIX: Use secure token system with improved security
   setSecureAuthTokens(response, newToken, {
     expires: 30, // 30 days
     maxAge: 30 * 24 * 60 * 60, // 30 days in seconds

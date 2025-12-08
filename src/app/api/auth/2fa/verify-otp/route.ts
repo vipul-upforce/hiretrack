@@ -3,6 +3,7 @@ import connectToDatabase, { User } from '@/lib/mongodb';
 import { signToken } from '@/app/actions/auth';
 import { setSecureAuthTokens } from '@/lib/secureTokens';
 import { loginRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleVerifyOtp(req: NextRequest) {
   try {
@@ -92,7 +93,7 @@ async function handleVerifyOtp(req: NextRequest) {
       { status: 400 },
     );
   } catch (error) {
-    console.error('Error verifying OTP:', error);
+    logger.error({ error }, ' Error verifying OTP');
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 },

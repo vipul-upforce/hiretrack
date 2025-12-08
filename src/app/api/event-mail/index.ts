@@ -1,6 +1,6 @@
+import { logger } from '@/lib/logger/logger.server';
 import { ISettings } from '@/lib/models/settings';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
-// import { NextResponse } from "next/server";
 import { createTransport, TransportOptions } from 'nodemailer';
 import { Resend } from 'resend';
 
@@ -59,7 +59,6 @@ export const sendMail = async (
     if (!Settings) {
       return { status: 404, message: 'Database not connected' };
     }
-    // const validEmails = email;
 
     const settingInfo = (await Settings?.find({
       organizationId: orgID,
@@ -82,7 +81,6 @@ export const sendMail = async (
         message: 'SMTP configuration is missing or invalid',
       };
     }
-    console.log('⌛ About to send mail to : ', email);
     let mailTo = email;
     if (email[0]) {
       mailTo = [email[0]];
@@ -103,31 +101,6 @@ export const sendMail = async (
         bcc = bcc.filter((mailId) => !!mailId);
       }
     }
-    // mailTo = mailTo.filter((mailId) => (mailId ? true : false));
-    console.log(
-      '⌛ filtered mails (excluding triggerer): ',
-      mailTo,
-      'bcc:',
-      bcc,
-    );
-
-    // const allEmails = [...(email || []), ...(bcc || [])];
-    console.log('BCC: ', bcc);
-    // const users = await User.find(
-    //   { email: { $in: allEmails } },
-    //   { email: 1, isDeleted: 1 }
-    // ).lean();
-
-    // const deletedEmails = new Set(
-    //   users.filter((user) => user.isDeleted).map((user) => user.email)
-    // );
-    // console.log("ISDELETED EMAIL: ", deletedEmails);
-    // const validEmails = allEmails.filter((e) => !deletedEmails.has(e));
-    // console.log("VALID EMAIL: ", validEmails);
-
-    // if (validEmails.length === 0) {
-    //   return { status: 400, message: "No valid recipients found" };
-    // }
 
     if (mailConfig.mailProvider === 'smtp') {
       const result = await sendSmtpMail({
@@ -137,9 +110,9 @@ export const sendMail = async (
         htmlContent,
         eventTitle,
       });
-      // console.log("✉️ SMTP Mail sent: ", result);
       return result || { status: 500, message: 'Failed to send email' };
-    } if (mailConfig.mailProvider === 'resend') {
+    }
+    if (mailConfig.mailProvider === 'resend') {
       const result = await sendReSendMail({
         settings: mailConfig,
         mailTo,
@@ -147,9 +120,9 @@ export const sendMail = async (
         htmlContent,
         eventTitle,
       });
-      // console.log("✉️ ReSend Mail sent: ", result);
       return result || { status: 500, message: 'Failed to resend email' };
-    } if (mailConfig.mailProvider === 'brevo') {
+    }
+    if (mailConfig.mailProvider === 'brevo') {
       const result = await sendBrevoMail({
         settings: mailConfig,
         mailTo,
@@ -157,7 +130,6 @@ export const sendMail = async (
         htmlContent,
         eventTitle,
       });
-      // console.log("✉️ ReSend Mail sent: ", result);
       return result || { status: 500, message: 'Failed to resend email' };
     }
 
@@ -187,7 +159,7 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
     // Send email
     const mailOptions = {
       from: smtpObJ.settings.smtp_from,
-      to: smtpObJ.mailTo, // Use mailTo instead of email
+      to: smtpObJ.mailTo,
       bcc: smtpObJ.bcc,
       subject: `${smtpObJ.eventTitle}`,
       html: smtpObJ.htmlContent,
@@ -198,8 +170,7 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
       .then(() => ({ status: 200, message: 'Email Sent Successfully' }))
       .catch((err) => ({
         status: 500,
-        message:
-            err instanceof Error ? err.message : 'Unknown error occurred',
+        message: err instanceof Error ? err.message : 'Unknown error occurred',
       }));
     return result;
   } catch (error: unknown) {
@@ -214,11 +185,6 @@ const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
 const sendReSendMail = async (mailObj: IResendObj) => {
   try {
     const resend = new Resend(mailObj.settings.resend_api_key);
-    console.log(
-      '➡️FINAL MAILOBJ just before sending: ',
-      mailObj.mailTo,
-      mailObj.bcc,
-    );
     const result = await resend.emails
       .send({
         from: mailObj.settings.resend_from,
@@ -231,11 +197,11 @@ const sendReSendMail = async (mailObj: IResendObj) => {
       .then(() => ({ status: 200, message: 'Email Sent Successfully' }))
       .catch((err) => ({
         status: 500,
-        message:
-            err instanceof Error ? err.message : 'Unknown error occurred',
+        message: err instanceof Error ? err.message : 'Unknown error occurred',
       }));
     return result;
   } catch (error) {
+    logger.error({ error }, 'Resend email failed');
     return {
       status: 500,
       message:
@@ -258,20 +224,19 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
     // Validate emails
     const emailRegex = /^[\w\.\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$/;
     if (
-      !mailObj.settings.brevo_from
-      || !emailRegex.test(mailObj.settings.brevo_from.trim())
+      !mailObj.settings.brevo_from ||
+      !emailRegex.test(mailObj.settings.brevo_from.trim())
     ) {
       throw new Error('Invalid brevo_from email address');
     }
     if (
-      !mailObj.settings.brevo_reply_to
-      || !emailRegex.test(mailObj.settings.brevo_reply_to.trim())
+      !mailObj.settings.brevo_reply_to ||
+      !emailRegex.test(mailObj.settings.brevo_reply_to.trim())
     ) {
       throw new Error(
         `Invalid reply_to email address: "${mailObj.settings.brevo_reply_to}". Ensure it's a valid email (e.g., user@domain.com).`,
       );
     }
-    console.log('MailObj: ', mailObj);
     const mailToObjArr: { email: string }[] = [];
     const bccObjArr: { email: string }[] = [];
     mailObj.mailTo.forEach((email) => {
@@ -302,9 +267,6 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
       };
     }
 
-    // Log email configuration
-    console.log('Email config:', emailData);
-
     // Send email using direct HTTP request
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
@@ -316,26 +278,17 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
       body: JSON.stringify(emailData),
     });
 
-    // Parse response
     const responseData = await response.json();
-
-    console.log('Brevo API Response:', responseData);
-    console.log('Response Status:', response.status);
-
     // Check if email was sent successfully
     if (response.ok && responseData.messageId) {
-      // return NextResponse.json({
-      //   success: true,
-      //   message: "Brevo will send the mail!",
-      //   messageId: responseData.messageId,
-      // });
       return { status: 200, message: 'Brevo Email Sent Successfully' };
     }
     // Handle API errors
-    const errorMessage = responseData.message || responseData.error || 'Unknown API error';
+    const errorMessage =
+      responseData.message || responseData.error || 'Unknown API error';
     throw new Error(`Brevo API error (${response.status}): ${errorMessage}`);
   } catch (error: unknown) {
-    console.error('Brevo failed:', error);
+    logger.error({ error }, 'Brevo failed to send email');
 
     let errorMessage = 'Unknown error occurred';
     let statusCode = 400;
@@ -344,7 +297,11 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    if (error instanceof Error && error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (
+      error instanceof Error &&
+      error.name === 'TypeError' &&
+      error.message.includes('fetch')
+    ) {
       errorMessage = 'Network error: Unable to connect to Brevo API';
       statusCode = 503;
     }

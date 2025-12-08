@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,21 +22,13 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // const totalOrgs = await Organization.countDocuments({});
-    // if (totalOrgs > 1) {
-    //   return NextResponse.json(
-    //     {
-    //       orgCount: totalOrgs,
-    //       error: "There already exists multiple Organizations",
-    //     },
-    //     { status: 403 }
-    //   );
-    // }
-
     const settings = await Settings.findOne({
       // organizationId: userData.organizationId,
       organizationId,
-    }).select('twoFA').lean().exec();
+    })
+      .select('twoFA')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -43,8 +36,6 @@ export async function GET(req: NextRequest) {
         { status: 404 },
       );
     }
-
-    // console.log(settings)
 
     return NextResponse.json({ twoFA: settings.twoFA });
   } catch (error) {
@@ -78,12 +69,15 @@ export async function PUT(req: NextRequest) {
     }
 
     // Check email configuration before enabling 2FA
-    const settings = await Settings.findOne({ organizationId }).select('mailConfig').lean().exec();
+    const settings = await Settings.findOne({ organizationId })
+      .select('mailConfig')
+      .lean()
+      .exec();
 
     if (
-      enable2FA
-      && (!settings?.mailConfig?.mailProvider
-        || settings.mailConfig.mailProvider === '')
+      enable2FA &&
+      (!settings?.mailConfig?.mailProvider ||
+        settings.mailConfig.mailProvider === '')
     ) {
       return NextResponse.json(
         {
@@ -119,6 +113,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ message: 'Settings updated successfully' });
   } catch (error) {
+    logger.error({ error, url: req.url }, 'Error updating 2FA settings');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',

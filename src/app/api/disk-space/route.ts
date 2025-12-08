@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '@/lib/logger/logger.server';
 
 /**
  * Recursively calculates the total size of a directory including all files and subdirectories.
@@ -74,18 +75,17 @@ function formatSize(bytes: number): string {
  */
 function getFolderSize(folderPath: string): string {
   try {
-    if (process.platform === "win32") {
+    if (process.platform === 'win32') {
       const sizeBytes = calculateFolderSizeRecursive(folderPath);
       return formatSize(sizeBytes);
-    } 
-      const result = execSync(`du -sb "${folderPath}"`, { encoding: "utf-8" });
-      const sizeBytes = parseInt(result.split("\t")[0], 10);
-      if (!isNaN(sizeBytes)) {
-        return formatSize(sizeBytes);
-      }
-      const sizeBytesFallback = calculateFolderSizeRecursive(folderPath);
-      return formatSize(sizeBytesFallback);
-    
+    }
+    const result = execSync(`du -sb "${folderPath}"`, { encoding: 'utf-8' });
+    const sizeBytes = parseInt(result.split('\t')[0], 10);
+    if (!isNaN(sizeBytes)) {
+      return formatSize(sizeBytes);
+    }
+    const sizeBytesFallback = calculateFolderSizeRecursive(folderPath);
+    return formatSize(sizeBytesFallback);
   } catch {
     const sizeBytes = calculateFolderSizeRecursive(folderPath);
     return formatSize(sizeBytes);
@@ -98,32 +98,32 @@ function getDiskStats(checkPath: string) {
     let free = 0;
     let used = 0;
 
-    if (process.platform === "win32") {
+    if (process.platform === 'win32') {
       const driveLetter = path
         .parse(path.resolve(checkPath))
-        .root.replace("\\", "");
+        .root.replace('\\', '');
 
       // Execute wmic command
       const output = execSync(
         `wmic logicaldisk where Caption="${driveLetter}" get FreeSpace,Size /value`,
-        { encoding: "utf-8" }
+        { encoding: 'utf-8' },
       );
 
-      const lines = output.split("\n");
+      const lines = output.split('\n');
       lines.forEach((line) => {
-        if (line.includes("Size="))
-          total = parseInt(line.split("=")[1].trim(), 10);
-        if (line.includes("FreeSpace="))
-          free = parseInt(line.split("=")[1].trim(), 10);
+        if (line.includes('Size='))
+          total = parseInt(line.split('=')[1].trim(), 10);
+        if (line.includes('FreeSpace='))
+          free = parseInt(line.split('=')[1].trim(), 10);
       });
 
       used = total - free;
     } else {
       // Linux/Mac: Use df command
       // -B1 forces output in bytes
-      const output = execSync(`df -B1 "${checkPath}"`, { encoding: "utf-8" });
+      const output = execSync(`df -B1 "${checkPath}"`, { encoding: 'utf-8' });
 
-      const lines = output.trim().split("\n");
+      const lines = output.trim().split('\n');
       if (lines.length >= 2) {
         const parts = lines[1].split(/\s+/);
 
@@ -134,7 +134,7 @@ function getDiskStats(checkPath: string) {
       }
     }
 
-    const percentUsed = total > 0 ? ((used / total) * 100).toFixed(1) : "0";
+    const percentUsed = total > 0 ? ((used / total) * 100).toFixed(1) : '0';
 
     return {
       total: formatSize(total),
@@ -144,13 +144,12 @@ function getDiskStats(checkPath: string) {
       percentUsed: `${percentUsed}%`,
     };
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error("Error fetching disk stats:", error);
+    logger.error({ error }, 'Error fetching disk stats.');
     return {
-      total: "Unknown",
-      free: "Unknown",
-      used: "Unknown",
-      percentUsed: "0%",
+      total: 'Unknown',
+      free: 'Unknown',
+      used: 'Unknown',
+      percentUsed: '0%',
     };
   }
 }
@@ -158,9 +157,9 @@ function getDiskStats(checkPath: string) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const rootKey = searchParams.get("root");
-    const subPath = searchParams.get("path") || "";
-    const getStats = searchParams.get("stats");
+    const rootKey = searchParams.get('root');
+    const subPath = searchParams.get('path') || '';
+    const getStats = searchParams.get('stats');
 
     const isWindows = process.platform === 'win32';
 
@@ -176,10 +175,10 @@ export async function GET(request: Request) {
       hiretrack: '/root/.hiretrack',
     };
 
-    const SYSTEM_ROOT = isWindows ? "C:/" : "/";
+    const SYSTEM_ROOT = isWindows ? 'C:/' : '/';
 
     // If query param ?stats=true is passed, return ONLY the disk stats
-    if (getStats === "true") {
+    if (getStats === 'true') {
       const diskStats = getDiskStats(SYSTEM_ROOT);
       return NextResponse.json({ success: true, diskStats });
     }
@@ -263,11 +262,11 @@ export async function GET(request: Request) {
     }
 
     // Handle Root Folder Stats (Initial View)
-    const baseFolders = ["nginx", "pm2", "hiretrack"];
+    const baseFolders = ['nginx', 'pm2', 'hiretrack'];
 
     const foldersResult = baseFolders.map((key) => {
       const folderPath = isWindows ? WINDOWS_PATHS[key] : LINUX_PATHS[key];
-      let size = "0B";
+      let size = '0B';
       try {
         size = getFolderSize(folderPath);
       } catch {
@@ -291,8 +290,7 @@ export async function GET(request: Request) {
       folders: foldersResult,
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Disk folder read error:', error);
+    logger.error({ error, url: request.url }, 'Disk folder read error.');
     return NextResponse.json(
       { error: 'Failed to retrieve disk usage' },
       { status: 500 },

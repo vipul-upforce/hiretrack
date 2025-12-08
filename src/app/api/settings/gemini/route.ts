@@ -64,7 +64,6 @@ export async function PUT(req: NextRequest) {
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        // organizationId: userData.organizationId,
         organizationId,
       },
       { gemini: geminiSetting },

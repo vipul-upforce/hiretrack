@@ -4,6 +4,7 @@ import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getFileShare, validateAndRecordDownload } from '@/lib/fileShareUtils';
 import { getFileFromProvider } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(
   request: NextRequest,
@@ -27,13 +28,8 @@ export async function GET(
     ]);
 
     if (!fileShare) {
-      console.log(`File share not found for shareId: ${shareId}`);
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
-
-    console.log(
-      `Found file share: ${fileShare.originalFileName}, storage: ${fileShare.storageProvider}, path: ${fileShare.storagePath}`,
-    );
 
     // Temporary fix: Allow public access to all shared files for now
     // TODO: Debug why isPublic is not being set correctly
@@ -50,16 +46,21 @@ export async function GET(
 
     // Get client IP and user agent for tracking
     const headersList = await headers();
-    const ipAddress = headersList.get('x-forwarded-for')
-      || headersList.get('x-real-ip')
-      || 'unknown';
+    const ipAddress =
+      headersList.get('x-forwarded-for') ||
+      headersList.get('x-real-ip') ||
+      'unknown';
     const userAgent = headersList.get('user-agent') || 'unknown';
 
     const [downloadValidation, settings] = await Promise.all([
       validateAndRecordDownload(shareId, userId, ipAddress, userAgent),
-      Settings!.findOne({
-        organizationId: fileShare.organizationId,
-      }).select('fileStorage').lean().exec(),
+      Settings!
+        .findOne({
+          organizationId: fileShare.organizationId,
+        })
+        .select('fileStorage')
+        .lean()
+        .exec(),
     ]);
 
     if (!downloadValidation.valid) {
@@ -101,9 +102,12 @@ export async function GET(
 
     return response;
   } catch (error: unknown) {
-    console.error('Error downloading file:', error);
+    logger.error({ error }, 'Error downloading file');
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to download file' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Failed to download file',
+      },
       { status: 500 },
     );
   }

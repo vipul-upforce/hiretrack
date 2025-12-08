@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { logger } from '@/lib/logger/logger.server';
 
 function getFolderSizeWin(folderPath: string): number {
   let total = 0;
@@ -31,8 +32,9 @@ export async function GET() {
     const files = fs.readdirSync(logDir);
 
     const filteredFiles = files.filter(
-      (file) => (file.endsWith('.log') || file.endsWith('.txt'))
-        && !file.endsWith('.gz'),
+      (file) =>
+        (file.endsWith('.log') || file.endsWith('.txt')) &&
+        !file.endsWith('.gz'),
     );
 
     let sizeBytes = 0;
@@ -42,7 +44,7 @@ export async function GET() {
         const result = execSync(`du -sb "${logDir}"`).toString();
         sizeBytes = parseInt(result.split('\t')[0], 10) || 0;
       } catch (err) {
-        console.error('du command failed:', err);
+        logger.error({ err }, 'du command failed for PM2 Logs');
       }
     } else {
       sizeBytes = getFolderSizeWin(logDir);
@@ -57,7 +59,7 @@ export async function GET() {
       size: sizeMB,
     });
   } catch (error) {
-    console.error('PM2 log read error:', error);
+    logger.error({ error }, 'Failed to read PM2 log directory');
     return NextResponse.json(
       { error: 'Failed to read PM2 log directory' },
       { status: 500 },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
 import { validateQueryParams, MAX_LENGTHS } from '@/lib/inputValidation';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -35,7 +36,10 @@ export async function GET(req: NextRequest) {
     }
 
     // Get all organizations
-    const organizations = await Organization.find({}, { _id: 1, name: 1 }).lean();
+    const organizations = await Organization.find(
+      {},
+      { _id: 1, name: 1 },
+    ).lean();
 
     if (!organizations || organizations.length === 0) {
       return NextResponse.json({
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
     // Get portal configurations for each organization
     const portalList = await Promise.all(
       organizations.map(async (org) => {
-        const settings = await Settings.findOne(
+        const settings = await Settings?.findOne(
           { organizationId: org._id.toString() },
           { 'portalConfigs.portalName': 1 },
         );
@@ -63,7 +67,7 @@ export async function GET(req: NextRequest) {
       portals: portalList,
     });
   } catch (error) {
-    console.error('Orgs API error:', error);
+    logger.error({ error, url: req.url }, 'Orgs API error');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

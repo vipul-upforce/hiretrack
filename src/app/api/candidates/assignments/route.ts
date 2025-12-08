@@ -1,112 +1,16 @@
 import { NextResponse, NextRequest } from 'next/server';
 import connectToDatabase, {
-  Settings, Organization, Candidate, User, Job,
+  Settings,
+  Organization,
+  Candidate,
+  User,
+  Job,
 } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { Types } from 'mongoose';
 import { parseGMTOffset, getTimeZoneDates } from '@/lib/utils/dateHelpers';
 import type { PipelineStage } from 'mongoose';
-
-// export async function GET(req: NextRequest) {
-//   try {
-//     await connectToDatabase();
-
-//     if (token?.value) {
-//       const decryptedResponse = await verifyAndDecryptToken(
-//         String(token?.value)
-//       );
-//       const userData = decryptedResponse.user;
-//       if (decryptedResponse.success) {
-//         const openJobs = await Job!.find({ status: "open" }).lean();
-//         const jobIds = openJobs.map((job) => job._id.toString());
-//         const query = {
-//           "assignment.interviewerId":
-//             userData?.role === "interviewer" ? userData?.id : { $exists: true },
-//           $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-//           jobId: { $in: jobIds },
-//         };
-//         if (!Candidate || !User || !Job) {
-//           return NextResponse.json(
-//             { error: "Candidate, User, or Job not found" },
-//             { status: 400 }
-//           );
-//         }
-//         const projection =
-//           userData?.role === "interviewer"
-//             ? {
-//                 currentCTC: 0,
-//                 expectedCTC: 0,
-//                 customFields: 0,
-//               }
-//             : {};
-//         const candidates = await Candidate.find(query, projection).populate([
-//           {
-//             path: "assignment.interviewerId",
-//             model: User,
-//             select: "_id name email",
-//           },
-//           {
-//             path: "remarks.userId",
-//             model: User,
-//             select: "_id name email",
-//           },
-//           {
-//             path: "jobId",
-//             model: Job,
-//             select: "_id title skills description organizationId",
-//           },
-//         ]);
-//         const filteredCandidates = candidates.filter(
-//           (candidate) =>
-//             candidate.jobId?.organizationId?.toString() ===
-//               userData.organizationId && candidate.status !== "rejected"
-//         );
-
-//         if (!History) return;
-
-//         const candidatesWithHistory = await Promise.all(
-//           filteredCandidates.map(async (candidate) => {
-//             const history = await History?.findOne({
-//               jobId: candidate.jobId._id,
-//               candidateId: candidate._id.toString(),
-//             })
-//               .populate("history.currentInterviewer", "_id name email")
-//               .populate("history.previousInterviewer", "_id name email")
-//               .populate("history.assignmentBy", "_id name email")
-//               .populate("history.note.userId", "_id name email")
-//               .lean();
-
-//             return {
-//               ...candidate._doc,
-//               history: history
-//                 ? history.history.filter((entry) =>
-//                     userData?.role === "admin" || userData?.role === "hr"
-//                       ? true
-//                       : !entry.remark?.isPrivate
-//                   )
-//                 : [],
-//             };
-//           })
-//         );
-//         return NextResponse.json(candidatesWithHistory);
-//       } else {
-//         return NextResponse.json(
-//           { message: "Unauthorised Access" },
-//           { status: 401 }
-//         );
-//       }
-//     } else {
-//       return NextResponse.json(
-//         { message: "Unauthorised Access" },
-//         { status: 401 }
-//       );
-//     }
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       return NextResponse.json({ error: error.message }, { status: 500 });
-//     }
-//   }
-// }
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -165,29 +69,6 @@ export async function GET(req: NextRequest) {
         $match: {},
       };
     }
-
-    // const today = new Date();
-    // const startOfToday = new Date(
-    //   Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
-    // );
-    // const endOfToday = new Date(
-    //   Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1)
-    // );
-    // const startOfWeek = new Date(
-    //   Date.UTC(
-    //     today.getFullYear(),
-    //     today.getMonth(),
-    //     today.getDate() - today.getDay() + 1
-    //   )
-    // );
-    // const endOfWeek = new Date(
-    //   Date.UTC(
-    //     today.getFullYear(),
-    //     today.getMonth(),
-    //     today.getDate() - today.getDay() + 8
-    //   )
-    // );
-
     // Fetch settings and organization data in parallel (CRITICAL: Don't block aggregation)
     const [settings, orgData] = await Promise.all([
       Settings.findOne({
@@ -204,9 +85,8 @@ export async function GET(req: NextRequest) {
     ]);
 
     const userTimeZoneOffset = parseGMTOffset(settings?.timeZone?.offset);
-    const {
-      startOfTodayUTC, endOfTodayUTC, startOfWeekUTC, endOfWeekUTC,
-    } = getTimeZoneDates(userTimeZoneOffset);
+    const { startOfTodayUTC, endOfTodayUTC, startOfWeekUTC, endOfWeekUTC } =
+      getTimeZoneDates(userTimeZoneOffset);
 
     // Build main aggregation pipeline with optimized structure
     const candidateMatchPipeline: PipelineStage[] = [
@@ -316,7 +196,7 @@ export async function GET(req: NextRequest) {
                 tracking: '$candidates.tracking',
                 _id: '$candidates._id',
                 'assignment.interviewerId._id':
-                      '$candidates.assignment.interviewerId',
+                  '$candidates.assignment.interviewerId',
                 'assignment.interviewerId.name': '$users.name',
                 'assignment.interviewerId.email': '$users.email',
                 'assignment.time': '$candidates.assignment.time',
@@ -402,12 +282,12 @@ export async function GET(req: NextRequest) {
             // Add pagination if enabled
             ...(isPagination
               ? [
-                {
-                  $addFields: {
-                    data: { $slice: ['$data', skip, limit] },
+                  {
+                    $addFields: {
+                      data: { $slice: ['$data', skip, limit] },
+                    },
                   },
-                },
-              ]
+                ]
               : []),
           ],
           // Today's interviews count
@@ -426,13 +306,13 @@ export async function GET(req: NextRequest) {
                           { $lt: ['$assignment.time', endOfTodayUTC] },
                           ...(isInterviewer
                             ? [
-                              {
-                                $eq: [
-                                  '$assignment.interviewerId',
-                                  new Types.ObjectId(userData.id),
-                                ],
-                              },
-                            ]
+                                {
+                                  $eq: [
+                                    '$assignment.interviewerId',
+                                    new Types.ObjectId(userData.id),
+                                  ],
+                                },
+                              ]
                             : []),
                         ],
                       },
@@ -468,13 +348,13 @@ export async function GET(req: NextRequest) {
                           { $lt: ['$assignment.time', endOfWeekUTC] },
                           ...(isInterviewer
                             ? [
-                              {
-                                $eq: [
-                                  '$assignment.interviewerId',
-                                  new Types.ObjectId(userData.id),
-                                ],
-                              },
-                            ]
+                                {
+                                  $eq: [
+                                    '$assignment.interviewerId',
+                                    new Types.ObjectId(userData.id),
+                                  ],
+                                },
+                              ]
                             : []),
                         ],
                       },
@@ -567,17 +447,13 @@ export async function GET(req: NextRequest) {
     // Execute single optimized pipeline
     const [result] = await Job.aggregate(optimizedPipeline as PipelineStage[]);
 
-    const candidates = result?.mainCandidates || { data: [], totalInterviews: 0 };
+    const candidates = result?.mainCandidates || {
+      data: [],
+      totalInterviews: 0,
+    };
     const todaysInterviews = result?.todaysInterviews?.count || 0;
     const thisweeksInterviews = result?.thisweeksInterviews?.count || 0;
     const assignmentCount = result?.assignmentCounts || [];
-    // console.log("befire filter: ", candidates.data.length);
-    // const filteredCandidates = candidates.data?.filter(
-    //   (candidate) =>
-    //     candidate.jobId?.organizationId?.toString() ===
-    //       userData.organizationId && candidate.status !== "rejected"
-    // );
-    // console.log("after filter: ", filteredCandidates.length);
 
     // OPTIMIZED: Filter private custom fields without additional DB calls
     // Use pre-fetched orgData to avoid blocking database query
@@ -634,10 +510,10 @@ export async function GET(req: NextRequest) {
       },
     ]);
   } catch (error) {
+    logger.error({ error, url: req.url }, 'Error fetching assigned candidates');
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
       { status: 500 },
     );

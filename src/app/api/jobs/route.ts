@@ -3,6 +3,7 @@ import connectToDatabase, { Organization, Job, Candidate } from '@/lib/mongodb';
 import { handleCustomFieldFiles, handleFileAttachments } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,11 +17,11 @@ export async function GET(request: NextRequest) {
     const { organizationId } = userData;
 
     const [jobs, organization] = await Promise.all([
-      Job.find({ organizationId }).lean().exec(),
-      Organization.findById(organizationId).lean().exec(),
+      Job?.find({ organizationId }).lean().exec(),
+      Organization?.findById(organizationId).lean().exec(),
     ]);
 
-    if (!jobs.length) {
+    if (!jobs?.length) {
       return NextResponse.json([]);
     }
     if (!organization) {
@@ -39,12 +40,12 @@ export async function GET(request: NextRequest) {
       .filter((job): job is NonNullable<typeof job> => !!job);
     const otherJobs = jobs.filter((job) => !openJobIds.has(job._id.toString()));
 
-    const candidateCounts = await Candidate.aggregate([
+    const candidateCounts = await Candidate?.aggregate([
       { $match: { jobId: { $in: jobs.map((job) => job._id) } } },
       { $group: { _id: '$jobId', count: { $sum: 1 } } },
     ]);
     const candidateCountMap = new Map(
-      candidateCounts.map((item) => [item._id.toString(), item.count]),
+      candidateCounts?.map((item) => [item._id.toString(), item.count]),
     );
 
     const jobsWithCount = [...sortedJobs, ...otherJobs].map((job) => ({
@@ -54,8 +55,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(jobsWithCount);
   } catch (error: unknown) {
-    console.error('Error fetching jobs:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    logger.error({ error, url: request.url }, 'Error fetching jobs');
+    const errorMessage =
+      error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -110,13 +112,13 @@ export async function POST(request: NextRequest) {
           organizationId,
           jobId: newJob._id.toString(),
           jobTitle: newJob.title,
-          triggerUserId: userData?.id,
-          triggerUserName: userData?.name,
+          triggerUserId: userData?.id!,
+          triggerUserName: userData?.name!,
         });
       } catch (notificationError) {
-        console.error(
-          'Failed to send job creation notification:',
-          notificationError,
+        logger.error(
+          { error: notificationError, url: request.url },
+          'Failed to send job creation notification',
         );
         // Don't fail the API call if notification fails
       }

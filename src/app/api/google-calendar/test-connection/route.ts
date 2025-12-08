@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
+import { logger } from '@/lib/logger/logger.server';
 
 // Safe getter for Settings model
 async function getSettingsModel() {
@@ -12,19 +13,14 @@ async function getSettingsModel() {
     if (Settings) {
       return Settings;
     }
-
-    console.log('⚠️ Settings model is null, attempting re-import...');
-
     // If Settings is still null, try to re-import
     const { Settings: ReimportedSettings } = await import('@/lib/mongodb');
     if (ReimportedSettings) {
-      console.log('✅ Successfully re-imported Settings model');
       return ReimportedSettings;
     }
 
     throw new Error('Settings model is not available after re-import');
   } catch (error) {
-    console.error('❌ Failed to get Settings model:', error);
     throw new Error(
       `Database model initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
@@ -39,16 +35,14 @@ export async function POST(req: NextRequest) {
       getSettingsModel(),
     ]);
     if (!userData) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 },
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const { organizationId } = userData;
 
-    const settings = await SettingModel.findOne({ organizationId }).lean().exec();
+    const settings = await SettingModel.findOne({ organizationId })
+      .lean()
+      .exec();
     if (!settings) {
-      console.log('❌ No settings found for organization:', organizationId);
       return NextResponse.json(
         {
           success: false,
@@ -59,7 +53,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!settings.googleCalendar) {
-      console.log('❌ No Google Calendar configuration found');
       return NextResponse.json(
         {
           success: false,
@@ -70,7 +63,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!settings.googleCalendar.isConnected) {
-      console.log('❌ Google Calendar not connected');
       return NextResponse.json(
         {
           success: false,
@@ -80,21 +72,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(
-      '✅ Google Calendar settings found, connected:',
-      settings.googleCalendar.isConnected,
-    );
-
     try {
-      // Step 4: Decrypt credentials
-      console.log('🔓 Decrypting credentials...');
-
       if (
-        !settings.googleCalendar.clientSecret
-        || !settings.googleCalendar.accessToken
-        || !settings.googleCalendar.refreshToken
+        !settings.googleCalendar.clientSecret ||
+        !settings.googleCalendar.accessToken ||
+        !settings.googleCalendar.refreshToken
       ) {
-        console.log('❌ Missing required credentials');
         return NextResponse.json(
           {
             success: false,
@@ -118,13 +101,8 @@ export async function POST(req: NextRequest) {
         settings.googleCalendar.refreshToken,
         organizationId,
       );
-
-      console.log('✅ Credentials decrypted successfully');
-
       // Check if we have a valid refresh token
       if (!refreshToken || refreshToken.trim() === '') {
-        console.log('❌ No refresh token available - marking as disconnected');
-
         // Update the connection status in database since it's not actually working
         try {
           const SettingsUpdateModel = await getSettingsModel();
@@ -137,7 +115,8 @@ export async function POST(req: NextRequest) {
             },
           );
         } catch (updateError) {
-          console.error(
+          logger.error(
+            { error: updateError, url: req.url },
             'Failed to get Settings model for update:',
             updateError,
           );
@@ -154,18 +133,16 @@ export async function POST(req: NextRequest) {
             debugInfo:
               process.env.ENVIRONMENT === 'development'
                 ? {
-                  hasAccessToken: !!accessToken,
-                  hasRefreshToken: !!refreshToken,
-                  refreshTokenEmpty: refreshToken === '',
-                }
+                    hasAccessToken: !!accessToken,
+                    hasRefreshToken: !!refreshToken,
+                    refreshTokenEmpty: refreshToken === '',
+                  }
                 : undefined,
           },
           { status: 400 },
         );
       }
 
-      // Step 5: Create OAuth2 client
-      console.log('🔗 Creating OAuth2 client...');
       let oauth2Client;
       try {
         oauth2Client = createOAuth2Client({
@@ -173,9 +150,7 @@ export async function POST(req: NextRequest) {
           clientSecret,
           redirectUri: '',
         });
-        console.log('✅ OAuth2 client created');
       } catch (oauthError) {
-        console.error('❌ OAuth2 client creation failed:', oauthError);
         return NextResponse.json(
           {
             success: false,
@@ -189,17 +164,13 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Step 6: Set credentials
-      console.log('🔑 Setting OAuth2 credentials...');
       try {
         oauth2Client.setCredentials({
           access_token: accessToken,
           refresh_token: refreshToken,
           expiry_date: settings.googleCalendar.expiryDate,
         });
-        console.log('✅ OAuth2 credentials set');
       } catch (credError) {
-        console.error('❌ Setting OAuth2 credentials failed:', credError);
         return NextResponse.json(
           {
             success: false,
@@ -213,14 +184,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Step 7: Create calendar instance
-      console.log('📅 Creating Google Calendar API client...');
       let calendar;
       try {
         calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-        console.log('✅ Calendar API client created');
       } catch (apiError) {
-        console.error('❌ Calendar API client creation failed:', apiError);
         return NextResponse.json(
           {
             success: false,
@@ -234,33 +201,16 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Test 1: Get calendar list (basic test)
-      console.log('📅 Testing calendar list access...');
       const calendarListResponse = await calendar.calendarList.list({
         maxResults: 1,
       });
 
-      // Test 2: Get primary calendar info
-      console.log('📋 Testing primary calendar access...');
       const primaryCalendarResponse = await calendar.calendars.get({
         calendarId: 'primary',
       });
 
-      // Test 3: Try to list recent events (read permission test)
-      console.log('📊 Testing events access...');
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-      const eventsResponse = await calendar.events.list({
-        calendarId: 'primary',
-        timeMin: oneDayAgo.toISOString(),
-        timeMax: now.toISOString(),
-        maxResults: 1,
-        singleEvents: true,
-        orderBy: 'startTime',
-      });
-
-      console.log('✅ Google Calendar connection test successful');
 
       // Gather connection details
       const connectionInfo = {
@@ -281,7 +231,10 @@ export async function POST(req: NextRequest) {
         data: connectionInfo,
       });
     } catch (apiError: any) {
-      console.error('❌ Google Calendar API test failed:', apiError);
+      logger.error(
+        { apiError, url: req.url },
+        'Google Calendar API test failed:',
+      );
 
       // Handle specific error types
       let errorMessage = 'Connection test failed';
@@ -303,41 +256,44 @@ export async function POST(req: NextRequest) {
 
       if (apiError.message?.includes('invalid_grant')) {
         errorMessage = 'Authentication expired';
-        errorDetails = 'Your Google Calendar token has expired. Connection marked as disconnected. Please reconnect to restore access.';
+        errorDetails =
+          'Your Google Calendar token has expired. Connection marked as disconnected. Please reconnect to restore access.';
         shouldMarkDisconnected = true;
       } else if (apiError.message?.includes('insufficient_scope')) {
         errorMessage = 'Insufficient permissions';
-        errorDetails = 'Missing required Calendar API scopes. Connection marked as disconnected. Please reconnect with proper permissions.';
+        errorDetails =
+          'Missing required Calendar API scopes. Connection marked as disconnected. Please reconnect with proper permissions.';
         shouldMarkDisconnected = true;
       } else if (apiError.response?.status === 401) {
         errorMessage = 'Unauthorized access';
         errorDetails = `Invalid or expired credentials (HTTP 401). Connection marked as disconnected. ${
-          apiError.response.data?.error?.message
-          || 'Please reconnect your Google Calendar.'
+          apiError.response.data?.error?.message ||
+          'Please reconnect your Google Calendar.'
         }`;
         shouldMarkDisconnected = true;
       } else if (apiError.response?.status === 403) {
         errorMessage = 'Access denied';
         errorDetails = `Google Calendar API access denied (HTTP 403). ${
-          apiError.response.data?.error?.message
-          || 'Check that Calendar API is enabled in Google Cloud Console and your credentials have proper permissions.'
+          apiError.response.data?.error?.message ||
+          'Check that Calendar API is enabled in Google Cloud Console and your credentials have proper permissions.'
         }`;
         // Don't mark as disconnected for 403 - could be API not enabled
       } else if (apiError.message?.includes('quotaExceeded')) {
         errorMessage = 'API quota exceeded';
-        errorDetails = 'Google Calendar API quota exceeded. Please try again later or check your quota limits.';
+        errorDetails =
+          'Google Calendar API quota exceeded. Please try again later or check your quota limits.';
         // Don't mark as disconnected for quota issues
       } else if (apiError.response?.status === 400) {
         errorMessage = 'Bad request';
         errorDetails = `Invalid request to Google Calendar API (HTTP 400). ${
-          apiError.response.data?.error?.message
-          || apiError.message
-          || 'Check your request parameters.'
+          apiError.response.data?.error?.message ||
+          apiError.message ||
+          'Check your request parameters.'
         }`;
         // Don't mark as disconnected for bad requests
       } else if (
-        apiError.code === 'ENOTFOUND'
-        || apiError.code === 'ECONNREFUSED'
+        apiError.code === 'ENOTFOUND' ||
+        apiError.code === 'ECONNREFUSED'
       ) {
         errorMessage = 'Network connection failed';
         errorDetails = `Unable to reach Google Calendar API. ${
@@ -359,9 +315,6 @@ export async function POST(req: NextRequest) {
 
       // Update connection status if this is an auth/credentials issue
       if (shouldMarkDisconnected) {
-        console.log(
-          '❌ Marking Google Calendar as disconnected due to auth failure',
-        );
         try {
           const SettingsUpdateModel = await getSettingsModel();
           await SettingsUpdateModel.findOneAndUpdate(
@@ -387,32 +340,26 @@ export async function POST(req: NextRequest) {
           debugInfo:
             process.env.ENVIRONMENT === 'development'
               ? {
-                originalError: apiError.message,
-                stack: apiError.stack?.split('\n').slice(0, 5), // First 5 lines of stack trace
-                code: apiError.code,
-                shouldMarkDisconnected,
-                ...debugInfo,
-              }
+                  originalError: apiError.message,
+                  stack: apiError.stack?.split('\n').slice(0, 5), // First 5 lines of stack trace
+                  code: apiError.code,
+                  shouldMarkDisconnected,
+                  ...debugInfo,
+                }
               : undefined,
         },
         { status: 400 },
       );
     }
   } catch (error) {
-    console.error('❌ Connection test error (main catch):', error);
-    console.error('Error type:', typeof error);
-    console.error('Error constructor:', error?.constructor?.name);
-
     // Provide detailed error information for debugging
     const errorMessage = 'Failed to test connection';
-    let errorDetails = 'An unexpected error occurred during the connection test';
+    let errorDetails =
+      'An unexpected error occurred during the connection test';
 
     if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
       errorDetails = `${error.message}${error.stack ? `\n\nStack trace:\n${error.stack.split('\n').slice(0, 10).join('\n')}` : ''}`;
     } else {
-      console.error('Non-Error object:', String(error));
       errorDetails = `Unexpected error type: ${String(error)}`;
     }
 
@@ -427,17 +374,21 @@ export async function POST(req: NextRequest) {
           debugInfo:
             process.env.ENVIRONMENT === 'development'
               ? {
-                errorType: error?.constructor?.name || typeof error,
-                originalError: String(error),
-                timestamp: new Date().toISOString(),
-              }
+                  errorType: error?.constructor?.name || typeof error,
+                  originalError: String(error),
+                  timestamp: new Date().toISOString(),
+                }
               : undefined,
         },
         { status: 500 },
       );
     } catch (jsonError) {
-      console.error('❌ Failed to create JSON response:', jsonError);
-      // Last resort - return a basic response
+      logger.error(
+        { error: jsonError, url: req.url },
+        'Failed to create JSON response:',
+        jsonError,
+      );
+
       return new NextResponse('Internal Server Error', { status: 500 });
     }
   }

@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import CryptoJS from 'crypto-js';
-import connectToDatabase, { User } from '@/lib/mongodb';
 import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
+import { logger } from '@/lib/logger/logger.server';
 
-// Simple in-memory rate limiting (use Redis in production)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 export interface AuthenticatedUser {
@@ -16,9 +15,9 @@ export interface AuthenticatedUser {
   name: string;
 }
 
-export interface AnalyticsApiResponse<T = any> {
+export interface AnalyticsApiResponse {
   success: boolean;
-  data?: T;
+  data?: any;
   error?: string;
   metadata?: {
     totalRecords?: number;
@@ -36,9 +35,7 @@ export async function authenticateAnalyticsRequest(
 ): Promise<AuthenticatedUser | null> {
   try {
     const cookieStore = await cookies();
-    // Check both httpOnly and regular tokens for backward compatibility
     const httpOnlyToken = cookieStore.get('auth_token');
-    // const regularToken = cookieStore.get("token");
     const token = httpOnlyToken?.value;
 
     if (!token) {
@@ -46,10 +43,7 @@ export async function authenticateAnalyticsRequest(
     }
 
     const orgId = request.cookies.get('org_id')?.value;
-    const JWT_SECRET = generateOrgJwtSecret(orgId);
-    // Use the same JWT verification as main middleware
-    // const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
-    // console.log(JWT_SECRET, "JWT_SECRET-3");
+    const JWT_SECRET = generateOrgJwtSecret(orgId!);
     if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 
     const secretKey = new TextEncoder().encode(JWT_SECRET);
@@ -74,7 +68,10 @@ export async function authenticateAnalyticsRequest(
       name: decryptedData.name,
     };
   } catch (error) {
-    console.error('Analytics authentication error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Analytics authentication failed',
+    );
     return null;
   }
 }
@@ -82,8 +79,8 @@ export async function authenticateAnalyticsRequest(
 export function createAnalyticsResponse<T>(
   data: T,
   organizationId: string,
-  metadata?: Partial<AnalyticsApiResponse<T>['metadata']>,
-): AnalyticsApiResponse<T> {
+  metadata?: Partial<AnalyticsApiResponse['metadata']>,
+): AnalyticsApiResponse {
   return {
     success: true,
     data,
@@ -164,18 +161,19 @@ function checkRateLimit(identifier: string): {
   };
 }
 
-export async function withAnalyticsAuth<T>(
+export async function withAnalyticsAuth(
   request: NextRequest,
   handler: (
     user: AuthenticatedUser,
-    request: NextRequest
+    request: NextRequest,
   ) => Promise<NextResponse>,
 ): Promise<NextResponse> {
   try {
     // Rate limiting check
-    const clientIp = request.headers.get('x-forwarded-for')
-      || request.headers.get('x-real-ip')
-      || 'unknown';
+    const clientIp =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
 
     const rateLimitResult = checkRateLimit(clientIp);
     if (!rateLimitResult.allowed) {
@@ -197,7 +195,8 @@ export async function withAnalyticsAuth<T>(
 
     // Get requested organization ID from query params
     const url = new URL(request.url);
-    const requestedOrgId = url.searchParams.get('organizationId') || user.organizationId;
+    const requestedOrgId =
+      url.searchParams.get('organizationId') || user.organizationId;
 
     // Validate permissions
     if (!validateAnalyticsPermissions(user, requestedOrgId)) {
@@ -219,12 +218,12 @@ export async function withAnalyticsAuth<T>(
 
     return response;
   } catch (error: unknown) {
-    console.error('Analytics middleware error:', error);
+    logger.error({ error, url: request.url }, 'Analytics middleware error.');
 
     // Handle specific error types
     if (
-      error instanceof Error && error.message?.includes('timeout')
-      || error instanceof Error && error.message?.includes('maxTimeMS')
+      (error instanceof Error && error.message?.includes('timeout')) ||
+      (error instanceof Error && error.message?.includes('maxTimeMS'))
     ) {
       return createAnalyticsErrorResponse(
         'Query timeout - please try a smaller date range or add more filters',
@@ -233,8 +232,8 @@ export async function withAnalyticsAuth<T>(
     }
 
     if (
-      error instanceof Error && error.message?.includes('memory')
-      || error instanceof Error && error.message?.includes('allowDiskUse')
+      (error instanceof Error && error.message?.includes('memory')) ||
+      (error instanceof Error && error.message?.includes('allowDiskUse'))
     ) {
       return createAnalyticsErrorResponse(
         'Query too large - please add more filters to reduce data size',

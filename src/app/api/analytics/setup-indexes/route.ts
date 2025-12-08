@@ -1,38 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, {
-  Candidate, Job, User, History,
+  Candidate,
+  Job,
+  User,
+  History,
 } from '@/lib/mongodb';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
-
-    // Performance optimization indexes as specified in the implementation document
-    console.log('Creating analytics performance indexes...');
 
     // Candidate collection indexes
     if (Candidate) {
       await Candidate.collection.createIndex({ organizationId: 1, status: 1 });
       await Candidate.collection.createIndex({ 'tracking.createdAt': -1 });
       await Candidate.collection.createIndex({ 'assignment.interviewerId': 1 });
-      await Candidate.collection.createIndex({ organizationId: 1, 'tracking.createdAt': -1 });
+      await Candidate.collection.createIndex({
+        organizationId: 1,
+        'tracking.createdAt': -1,
+      });
       await Candidate.collection.createIndex({ 'scores.overall': 1 });
       await Candidate.collection.createIndex({ location: 1 });
-      console.log('✓ Candidate indexes created');
+      logger.info('✓ Candidate indexes created');
     }
 
     // Job collection indexes
     if (Job) {
       await Job.collection.createIndex({ organizationId: 1, status: 1 });
       await Job.collection.createIndex({ organizationId: 1, createdAt: -1 });
-      console.log('✓ Job indexes created');
+      logger.info('✓ Job indexes created');
     }
 
     // User collection indexes
     if (User) {
       await User.collection.createIndex({ organizationId: 1, role: 1 });
       await User.collection.createIndex({ organizationId: 1, updatedAt: -1 });
-      console.log('✓ User indexes created');
+      logger.info('✓ User indexes created');
     }
 
     // History collection indexes
@@ -41,10 +45,10 @@ export async function POST(request: NextRequest) {
         candidateId: 1,
         'history.dateTime': -1,
       });
-      console.log('✓ History indexes created');
+      logger.info('✓ History indexes created');
     }
 
-    console.log('All analytics indexes created successfully!');
+    logger.info('All analytics indexes created successfully!');
 
     return NextResponse.json({
       success: true,
@@ -52,7 +56,11 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error creating analytics indexes:', error);
+    logger.error(
+      { error, url: request.url },
+      'Error creating analytics indexes:',
+      error,
+    );
     return NextResponse.json(
       {
         success: false,

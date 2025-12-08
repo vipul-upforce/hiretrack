@@ -6,6 +6,7 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import path from 'path';
 import fs from 'fs/promises';
 import { apiRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 const ORG_BASE_DIR = path.join(process.cwd(), 'organizations');
 // Handle POST request
@@ -40,8 +41,8 @@ export async function POST(req: NextRequest) {
       const settings = await Settings.findOne({
         organizationId,
       });
-      settings.portalConfigs.portalName = name;
-      await settings.save();
+      settings!.portalConfigs!.portalName = name;
+      await settings?.save();
       if (settings?.multipleOrg === false) {
         return NextResponse.json(
           {
@@ -57,8 +58,8 @@ export async function POST(req: NextRequest) {
         const settings = await Settings.findOne({
           organizationId: String(totalOrgs[0]._id),
         });
-        settings.portalConfigs.portalName = name;
-        await settings.save();
+        settings!.portalConfigs!.portalName = name;
+        await settings?.save();
         if (!settings?.multipleOrg) {
           return NextResponse.json(
             {
@@ -87,8 +88,9 @@ export async function POST(req: NextRequest) {
       try {
         await fs.mkdir(orgFolder, { recursive: true });
       } catch (error) {
-        console.error(
-          `Failed to create folder for organization ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        logger.error(
+          { error, url: req.url },
+          `Failed to create folder for organization ${name}`,
         );
         // Optionally rollback organization creation
         await Organization.deleteOne({ _id: createdOrg[0]._id });
@@ -152,15 +154,16 @@ export async function POST(req: NextRequest) {
         try {
           await fs.rm(orgFolder, { recursive: true, force: true });
         } catch (cleanupError) {
-          console.warn(
-            `Failed to clean up folder ${orgFolder}: ${cleanupError instanceof Error ? cleanupError.message : 'Unknown error'}`,
+          logger.warn(
+            { cleanupError, url: req.url },
+            `Failed to clean up folder ${orgFolder}:`,
           );
         }
       }
       throw adminError; // Re-throw to be caught by outer catch block
     }
   } catch (error: unknown) {
-    console.log(error);
+    logger.error({ error, url: req.url });
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
@@ -228,7 +231,10 @@ const handleChekOrg = async (req: NextRequest) => {
     // Validate pagination parameters
     if (page < 1 || limit < 1 || limit > 100) {
       return NextResponse.json(
-        { error: 'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.' },
+        {
+          error:
+            'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.',
+        },
         { status: 400 },
       );
     }
@@ -282,10 +288,7 @@ const handleChekOrg = async (req: NextRequest) => {
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Internal server error',
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
       { status: 500 },
     );

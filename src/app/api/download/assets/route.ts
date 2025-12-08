@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 const execAsync = promisify(exec);
 
@@ -24,7 +25,7 @@ async function saveLastArchiveTimestamp(organizationId: string) {
     }
     await fs.writeFile(lastArchiveFile, JSON.stringify(metadata, null, 2));
   } catch (error) {
-    console.error('Error saving last archive timestamp:', error);
+    logger.error({ error }, 'Error saving last archive timestamp.');
   }
 }
 
@@ -39,7 +40,7 @@ async function readLastArchiveTimestamp(
       return metadata[organizationId] || null;
     }
   } catch (error) {
-    console.error('Error reading last archive timestamp:', error);
+    logger.error({ error }, 'Error reading last archive timestamp.');
   }
   return null;
 }
@@ -101,7 +102,7 @@ export async function GET(req: NextRequest) {
     try {
       await execAsync(tarCommand);
     } catch (tarError) {
-      console.error('Compression failed:', tarError);
+      logger.error({ tarError, url: req.url }, 'Compression failed:');
       await fs.rm(tempDir, { recursive: true, force: true });
       return NextResponse.json(
         { message: 'Failed to compress assets', error: String(tarError) },
@@ -128,7 +129,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error during assets archiving process:', error);
+    logger.error(
+      { error, url: req.url },
+      'Error during assets archiving process',
+    );
     return NextResponse.json(
       {
         message: 'Internal server error',
@@ -173,7 +177,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error retrieving assets metadata:', error);
+    logger.error({ error, url: req.url }, 'Error retrieving assets metadata.');
     return NextResponse.json(
       {
         message: 'Internal server error',

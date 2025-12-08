@@ -4,11 +4,10 @@ import connectToDatabase, {
   JobLaneConfig,
   Job,
 } from '@/lib/mongodb';
-import {
-  filterChecklistByRole,
-} from '@/lib/utils/checklistVisibility';
+import { filterChecklistByRole } from '@/lib/utils/checklistVisibility';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { UserRole } from '@/lib/models/JobLaneConfig';
+import { logger } from '@/lib/logger/logger.server';
 
 // POST - Validate if candidate can move to a new lane based on checklist requirements
 export async function POST(
@@ -31,11 +30,7 @@ export async function POST(
 
     // Check if models are initialized
     if (!Candidate || !Job || !JobLaneConfig) {
-      console.error('Models not initialized:', {
-        Candidate: !!Candidate,
-        Job: !!Job,
-        JobLaneConfig: !!JobLaneConfig,
-      });
+      logger.error({ url: req.url }, 'Database models not initialized');
       return NextResponse.json(
         { error: 'Database models not initialized' },
         { status: 500 },
@@ -52,7 +47,11 @@ export async function POST(
     }
 
     // Get candidate
-    const candidate = await Candidate!.findById(id).select('_id jobId checklistData').lean().exec();
+    const candidate = await Candidate!
+      .findById(id)
+      .select('_id jobId checklistData')
+      .lean()
+      .exec();
     if (!candidate) {
       return NextResponse.json(
         { error: 'Candidate not found' },
@@ -137,13 +136,15 @@ export async function POST(
     }
 
     // For mandatory checklist, check if already completed
-    const candidateChecklistData = (candidate.checklistData
-        && candidate.checklistData[laneToCheck.laneId])
-      || {};
+    const candidateChecklistData =
+      (candidate.checklistData &&
+        candidate.checklistData[laneToCheck!.laneId]) ||
+      {};
     // const candidateChecklistData = candidate.checklistData?.get?.(laneToCheck.laneId);
-    const checklistData = movementType === 'outgoing'
-      ? candidateChecklistData?.outgoing
-      : candidateChecklistData?.incoming;
+    const checklistData =
+      movementType === 'outgoing'
+        ? candidateChecklistData?.outgoing
+        : candidateChecklistData?.incoming;
 
     if (checklistData && checklistData.checklistId === checklistToValidate.id) {
       // Checklist already completed
@@ -165,13 +166,7 @@ export async function POST(
       message: 'This checklist must be completed before moving the candidate',
     });
   } catch (error) {
-    console.error('Error validating checklist:', error);
-    console.error('Validation error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      candidateId: params.id,
-      error,
-    });
+    logger.error({ error }, 'Error validating checklist');
     return NextResponse.json(
       {
         error: 'Failed to validate checklist',

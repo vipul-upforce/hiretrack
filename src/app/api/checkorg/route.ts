@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger/logger.server';
 import { Organization } from '@/lib/mongodb';
 import { apiRateLimiter } from '@/lib/rateLimiter';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,7 +17,7 @@ const handleGetChekOrg = async (req: NextRequest) => {
 
     return NextResponse.json({ exists }, { status: 200 });
   } catch (err) {
-    console.error('Error checking organization:', err);
+    logger.error({err, url: req.url},'Error checking organization:');
     return NextResponse.json({ exists: false }, { status: 500 });
   }
 };

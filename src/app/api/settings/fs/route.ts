@@ -19,9 +19,11 @@ export async function GET(req: NextRequest) {
       );
     }
     const settings = await Settings.findOne({
-      // organizationId: userData.organizationId,
       organizationId,
-    }).select('fileStorage').lean().exec();
+    })
+      .select('fileStorage')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -29,8 +31,6 @@ export async function GET(req: NextRequest) {
         { status: 404 },
       );
     }
-
-    // console.log(settings)
 
     return NextResponse.json({ fileStorage: settings.fileStorage });
   } catch (error) {
@@ -63,7 +63,6 @@ export async function PUT(req: NextRequest) {
     }
 
     let storageObj;
-    // console.log("**** ", fileStorage)
     if (fileStorage.storageType === 's3') {
       storageObj = {
         awsRegion: fileStorage.awsRegion,
@@ -85,7 +84,6 @@ export async function PUT(req: NextRequest) {
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        // organizationId: userData.organizationId,
         organizationId,
       },
       { fileStorage: storageObj },

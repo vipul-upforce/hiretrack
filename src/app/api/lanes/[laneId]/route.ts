@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase, { Candidate, History, Organization } from '@/lib/mongodb';
+import connectToDatabase, {
+  Candidate,
+  History,
+  Organization,
+} from '@/lib/mongodb';
 import {
   broadcastLaneUpdate,
   broadcastMultipleCandidateUpdate,
 } from '@/lib/broadcast/broadCastCandidate';
 import { IHistory } from '@/lib/models/history';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function DELETE(
   request: Request,
@@ -59,7 +64,7 @@ export async function DELETE(
         },
       },
     );
-    broadcastLaneUpdate(organizationId, org.lanes);
+    broadcastLaneUpdate(organizationId, org.lanes!);
     if (!Candidate) {
       throw new Error('Database not connected');
     }
@@ -104,12 +109,6 @@ export async function DELETE(
         history: history[0]?.history || [],
       };
     });
-    // .populate([
-    //   { path: "history.assignmentBy", select: "_id name email" },
-    //   { path: "history.currentInterviewer", select: "_id name email" },
-    //   { path: "history.previousInterviewer", select: "_id name email" },
-    //   { path: "history.note.userId", select: "_id name email" },
-    // ]);
     broadcastMultipleCandidateUpdate(candidatesWithHistory);
     return NextResponse.json({ data: updated });
   } catch (err) {
@@ -212,7 +211,7 @@ export async function PATCH(
       { organizationId, status: laneId },
       { $set: { status: newLaneId } },
     );
-    broadcastLaneUpdate(organizationId, org.lanes);
+    broadcastLaneUpdate(organizationId, org.lanes!);
 
     const updatedCandidates = await Candidate.find({
       organizationId,
@@ -255,12 +254,6 @@ export async function PATCH(
         history: history[0]?.history || [],
       };
     });
-    // .populate([
-    //   { path: "history.assignmentBy", select: "_id name email" },
-    //   { path: "history.currentInterviewer", select: "_id name email" },
-    //   { path: "history.previousInterviewer", select: "_id name email" },
-    //   { path: "history.note.userId", select: "_id name email" },
-    // ]);
     broadcastMultipleCandidateUpdate(candidatesWithHistory);
 
     return NextResponse.json({
@@ -269,7 +262,7 @@ export async function PATCH(
       updatedCandidates,
     });
   } catch (err) {
-    console.error('Error updating lane:', err);
+    logger.error({ err, url: request.url }, 'Error updating lane.');
     const error = err as Error;
     return NextResponse.json(
       { error: error.message || 'An unknown error occurred' },

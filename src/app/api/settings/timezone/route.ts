@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,7 +21,6 @@ export async function GET(req: NextRequest) {
       );
     }
     const settings = await Settings.findOne({
-      // organizationId: userData.organizationId,
       organizationId: userData?.organizationId,
     })
       .select('timeZone')
@@ -33,8 +33,6 @@ export async function GET(req: NextRequest) {
         { status: 404 },
       );
     }
-
-    // console.log(settings)
 
     return NextResponse.json({ timezone: settings.timeZone });
   } catch (error) {
@@ -66,11 +64,9 @@ export async function PUT(req: NextRequest) {
     }
 
     const timeZoneSetting = await req.json();
-    console.log('🟢🟢 TZ settings: ', timeZoneSetting);
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        // organizationId: userData.organizationId,
         organizationId: userData?.organizationId || '',
       },
       { timeZone: timeZoneSetting },
@@ -90,6 +86,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ message: 'Settings updated successfully' });
   } catch (error) {
+    logger.error({ error, url: req.url }, 'Error updating timezone setting');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',

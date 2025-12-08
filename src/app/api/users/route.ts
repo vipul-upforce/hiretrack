@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import { User } from '@/models/User';
-import connectToDatabase, { User } from '@/lib/mongodb';
+import connectToDatabase, { User , Organization } from '@/lib/mongodb';
 import mongoose from 'mongoose';
-import { Organization } from '@/lib/mongodb';
+
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
     const [session] = await Promise.all([
-      getAuthenticatedUser(req, ["admin", "hr"]),
+      getAuthenticatedUser(req, ['admin', 'hr']),
       connectToDatabase(),
     ]);
 
@@ -30,23 +30,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // const nonSystemUsers = await User.find(
-    //   {
-    //     role: { $ne: "system" },
-    //     organizationId: session.organizationId
-    //   },
-    //   { password: 0 }
-    // ).sort({ createdAt: -1 });
-
-    // // Fetch only the latest system user
-    // const latestSystemUser = await User.findOne(
-    //   {
-    //     role: "system",
-    //     organizationId: session.organizationId
-    //   },
-    //   { password: 0 }
-    // ).sort({ createdAt: -1 });
-
     if (!mongoose.Types.ObjectId.isValid(session.organizationId)) {
       return NextResponse.json(
         { error: 'Invalid organization identifier' },
@@ -63,10 +46,7 @@ export async function GET(req: NextRequest) {
       {
         $facet: {
           nonSystem: [{ $match: { role: { $ne: 'system' } } }],
-          latestSystem: [
-            { $match: { role: 'system' } },
-            { $limit: 1 },
-          ],
+          latestSystem: [{ $match: { role: 'system' } }, { $limit: 1 }],
         },
       },
       {
@@ -78,11 +58,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(aggregated?.result ?? []);
   } catch (error: unknown) {
+    logger.error({ error, url: req.url }, 'Error fetching users');
     return NextResponse.json(
       {
-        error:
-          `Internal server error${
-            error instanceof Error ? error.message : 'Unknown error'}`,
+        error: `Internal server error${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       },
       { status: 500 },
     );
@@ -162,11 +143,12 @@ export async function PUT(req: Request) {
       { status: 200 },
     );
   } catch (error: unknown) {
+    logger.error({ error }, 'Error updating admin');
     return NextResponse.json(
       {
-        error:
-          `Failed to update admin${
-            error instanceof Error ? error.message : 'Unknown error'}`,
+        error: `Failed to update admin${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       },
       { status: 400 },
     );

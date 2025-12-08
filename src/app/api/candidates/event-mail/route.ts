@@ -13,6 +13,7 @@ import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +21,6 @@ export async function POST(req: NextRequest) {
     const { candidateId } = await req.json();
 
     // Get user information from token
-
     const user = await getAuthenticatedUser(req);
     const senderEmail = user?.email;
     const senderUserId = user?.id;
@@ -37,8 +37,6 @@ export async function POST(req: NextRequest) {
         select: 'title description',
       })
       .lean();
-
-    // console.log("############# candidateData: ", candidateData);
 
     if (!candidateData || !Organization) {
       return NextResponse.json(
@@ -70,7 +68,7 @@ export async function POST(req: NextRequest) {
       })
         .select('_id name email')
         .lean(),
-      Settings.findOne({
+      Settings?.findOne({
         organizationId: organizationObjectId,
       })
         .select('mailConfig')
@@ -80,10 +78,11 @@ export async function POST(req: NextRequest) {
     const orgName = orgData?.name || '';
 
     // Get job information
-    const jobName = (typeof candidateData.jobId === 'object'
-        && 'title' in candidateData.jobId
-        && (candidateData.jobId?.title as string))
-      || 'Not specified';
+    const jobName =
+      (typeof candidateData.jobId === 'object' &&
+        'title' in candidateData.jobId &&
+        (candidateData.jobId?.title as string)) ||
+      'Not specified';
     const candidateName = name;
     const status = 'Applied';
 
@@ -105,15 +104,6 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-
-    // const candidateHtmlContent = loadTemplate("job-application-(candidate)", {
-    //   orgName,
-    //   eventTitle,
-    //   name,
-    //   jobName,
-    //   candidateName,
-    //   status,
-    // });
 
     // Find all HR users in the organization
     const hrEmails: string[] = hrUsers.map((user) => user.email);
@@ -152,10 +142,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const fromEmail = settings.mailConfig.resend_from
-      || settings.mailConfig.brevo_from
-      || settings.mailConfig.smtp_from
-      || 'system@hiretrack.com';
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      'system@hiretrack.com';
 
     const systemUser = await User.findOneAndUpdate(
       { email: fromEmail, organizationId },
@@ -171,7 +162,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Create history record for candidate
-    const candidateHistory = await EmailHistory.create({
+    const candidateHistory = await EmailHistory?.create({
       organizationId: organizationObjectId,
       sentBy: systemUser._id,
       sentByEmail: systemUser.email,
@@ -223,9 +214,8 @@ export async function POST(req: NextRequest) {
     });
 
     const hrHistoryRecords = hrHistoryPayload.length
-      ? await EmailHistory.insertMany(hrHistoryPayload, { ordered: false })
+      ? await EmailHistory?.insertMany(hrHistoryPayload, { ordered: false })
       : [];
-    // console.log(candidateData.jobId._id.toString(), "candidateData==77b");
 
     type EmailDispatchResult = {
       status: number;
@@ -236,48 +226,17 @@ export async function POST(req: NextRequest) {
       status: 202,
       message: 'Pending notification dispatch',
     };
-    // try {
-    //   emailStatus = await sendSmartNotificationEmail(
-    //     organizationId,
-    //     "newApplications",
-    //     {
-    //       triggererUserId: senderUserId,
-    //       triggererEmail: senderEmail,
-    //       triggererName: senderName,
-    //       jobId: candidateData.jobId._id.toString() || "",
-    //       candidateId: candidateId,
-    //       eventType: "job_application",
-    //       templateUsed: "job-application-hr",
-    //     },
-    //     {
-    //       subject: candidateEmailSubject,
-    //       html: candidateEmailContent,
-    //     },
-    //     [...hrUserIds, candidateId] // Include candidate and HR/admin user IDs
-    //   );
-    //   console.log("✅ Email notification sent successfully");
-    // } catch (emailError) {
-    //   console.error("❌ Failed to send email notification:", emailError);
-    //   emailStatus = {
-    //     status: 500,
-    //     message:
-    //       emailError instanceof Error
-    //         ? emailError.message
-    //         : "Failed to send email",
-    //   };
-    // }
-
-    // Update all history records based on the result
 
     // Inside the try block where sendSmartNotificationEmail is called
     try {
-      const jobId = (
+      const jobId =
+        (
           candidateData.jobId as {
             _id: string;
             title: string;
             description: string;
           }
-      )._id.toString() || '';
+        )._id.toString() || '';
       emailStatus = await sendSmartNotification(
         organizationId,
         NotificationType.NEW_APPLICATIONS,
@@ -297,7 +256,10 @@ export async function POST(req: NextRequest) {
         [...hrUserIds, candidateId],
       );
     } catch (emailError) {
-      console.error('❌ Failed to send email notification:', emailError);
+      logger.error(
+        { emailError, url: req.url },
+        'Failed to send email notification',
+      );
       emailStatus = {
         status: 500,
         message:
@@ -313,12 +275,15 @@ export async function POST(req: NextRequest) {
     };
 
     await Promise.all([
-      EmailHistory.findByIdAndUpdate(candidateHistory._id, historyUpdatePayload),
-      hrHistoryRecords.length
-        ? EmailHistory.updateMany(
-          { _id: { $in: hrHistoryRecords.map((record) => record._id) } },
-          historyUpdatePayload,
-        )
+      EmailHistory?.findByIdAndUpdate(
+        candidateHistory?._id,
+        historyUpdatePayload,
+      ),
+      hrHistoryRecords?.length
+        ? EmailHistory?.updateMany(
+            { _id: { $in: hrHistoryRecords.map((record) => record._id) } },
+            historyUpdatePayload,
+          )
         : Promise.resolve(),
     ]);
 
@@ -333,6 +298,7 @@ export async function POST(req: NextRequest) {
       { status: emailStatus.status },
     );
   } catch (error: unknown) {
+    logger.error({ error, url: req.url }, 'Error in even-mail route.');
     return NextResponse.json(
       {
         error:

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Job, Organization, Candidate } from '@/lib/mongodb';
 import { isValidObjectId } from 'mongoose';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 const DEFAULT_LANES = [
   'applied',
@@ -12,7 +13,6 @@ const DEFAULT_LANES = [
   'rejected',
 ];
 
-// GET /api/jobs/[id]/lanes - Get lanes for a specific job
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -42,7 +42,10 @@ export async function GET(
     const job = await Job.findOne({
       _id: jobId,
       organizationId: user.organizationId,
-    }).select('lanes useCustomLanes organizationId title _id').lean().exec();
+    })
+      .select('lanes useCustomLanes organizationId title _id')
+      .lean()
+      .exec();
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -55,10 +58,12 @@ export async function GET(
       lanes = job.lanes;
     } else {
       // Get organization default lanes
-      const organization = await Organization.findById(
-        user.organizationId,
-      ).select('lanes defaultLanes').lean().exec();
-      lanes = organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
+      const organization = await Organization.findById(user.organizationId)
+        .select('lanes defaultLanes')
+        .lean()
+        .exec();
+      lanes =
+        organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
     }
 
     return NextResponse.json({
@@ -72,7 +77,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Get job lanes error:', error);
+    logger.error({ error, url: request.url }, 'Get job lanes error');
     return NextResponse.json(
       { error: 'Failed to fetch job lanes' },
       { status: 500 },
@@ -80,7 +85,6 @@ export async function GET(
   }
 }
 
-// PUT /api/jobs/[id]/lanes - Update lanes for a specific job
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -163,7 +167,10 @@ export async function PUT(
       const candidates = await Candidate.find({
         jobId,
         organizationId: user.organizationId,
-      }).select('status').lean().exec();
+      })
+        .select('status')
+        .lean()
+        .exec();
 
       const invalidCandidates = candidates.filter(
         (candidate) => candidate.status && !lanes.includes(candidate.status),
@@ -206,23 +213,25 @@ export async function PUT(
 
     // Get effective lanes for response
     let effectiveLanes;
-    if (updatedJob.useCustomLanes && updatedJob.lanes) {
+    if (updatedJob?.useCustomLanes && updatedJob.lanes) {
       effectiveLanes = updatedJob.lanes;
     } else {
-      const organization = await Organization.findById(
-        user.organizationId,
-      ).select('lanes defaultLanes _id').lean().exec();
-      effectiveLanes = organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
+      const organization = await Organization?.findById(user.organizationId)
+        .select('lanes defaultLanes _id')
+        .lean()
+        .exec();
+      effectiveLanes =
+        organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
     }
 
     return NextResponse.json({
       message: 'Job lanes updated successfully',
-      jobId: updatedJob._id,
+      jobId: updatedJob?._id,
       lanes: effectiveLanes,
-      useCustomLanes: updatedJob.useCustomLanes,
+      useCustomLanes: updatedJob?.useCustomLanes,
     });
   } catch (error) {
-    console.error('Update job lanes error:', error);
+    logger.error({ error, url: request.url }, 'Update job lanes error');
     return NextResponse.json(
       { error: 'Failed to update job lanes' },
       { status: 500 },
@@ -230,7 +239,6 @@ export async function PUT(
   }
 }
 
-// POST /api/jobs/[id]/lanes - Add a new lane to a specific job
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } },
@@ -287,9 +295,10 @@ export async function POST(
     if (job.useCustomLanes && job.lanes) {
       currentLanes = [...job.lanes];
     } else {
-      const organization = await Organization.findById(
-        user.organizationId,
-      ).select('lanes defaultLanes').lean().exec();
+      const organization = await Organization.findById(user.organizationId)
+        .select('lanes defaultLanes')
+        .lean()
+        .exec();
       currentLanes = [
         ...(organization?.lanes || organization?.defaultLanes || DEFAULT_LANES),
       ];
@@ -306,9 +315,9 @@ export async function POST(
     // Add lane at specified position
     const newLanes = [...currentLanes];
     if (
-      typeof position === 'number'
-      && position >= 0
-      && position <= newLanes.length
+      typeof position === 'number' &&
+      position >= 0 &&
+      position <= newLanes.length
     ) {
       newLanes.splice(position, 0, laneName);
     } else {
@@ -329,12 +338,12 @@ export async function POST(
 
     return NextResponse.json({
       message: 'Lane added successfully',
-      jobId: updatedJob._id,
-      lanes: updatedJob.lanes,
-      useCustomLanes: updatedJob.useCustomLanes,
+      jobId: updatedJob?._id,
+      lanes: updatedJob?.lanes,
+      useCustomLanes: updatedJob?.useCustomLanes,
     });
   } catch (error) {
-    console.error('Add job lane error:', error);
+    logger.error({ error, url: request.url }, 'Add job lane error');
     return NextResponse.json(
       { error: 'Failed to add job lane' },
       { status: 500 },

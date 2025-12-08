@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Job, Organization, Candidate } from '@/lib/mongodb';
 import { broadcastLaneUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 const DEFAULT_LANES = [
   'applied',
@@ -14,7 +15,6 @@ const DEFAULT_LANES = [
 
 const RESTRICTED_LANES = ['applied', 'accepted', 'rejected'];
 
-// DELETE /api/jobs/[id]/lanes/[laneName] - Remove a lane from a specific job
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string; laneName: string } },
@@ -83,12 +83,6 @@ export async function DELETE(
     }
 
     const { organizationId } = user;
-    // Check if any candidates are currently in this lane
-    // const candidatesInLane = await Candidate.find({
-    //   jobId: jobId,
-    //   organizationId,
-    //   status: laneName,
-    // });
     const countCandidatesInLane = await Candidate.countDocuments({
       jobId,
       organizationId,
@@ -131,8 +125,8 @@ export async function DELETE(
     broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
       message: 'Lane deleted successfully',
-      jobId: updatedJob._id,
-      lanes: updatedJob.lanes,
+      jobId: updatedJob?._id,
+      lanes: updatedJob?.lanes,
       deletedLane: laneName,
     });
   } catch (error) {
@@ -144,7 +138,6 @@ export async function DELETE(
   }
 }
 
-// PATCH /api/jobs/[id]/lanes/[laneName] - Rename a lane for a specific job
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string; laneName: string } },
@@ -199,7 +192,10 @@ export async function PATCH(
     const job = await Job.findOne({
       _id: jobId,
       organizationId: user.organizationId,
-    }).select('lanes useCustomLanes organizationId _id').lean().exec();
+    })
+      .select('lanes useCustomLanes organizationId _id')
+      .lean()
+      .exec();
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -231,7 +227,9 @@ export async function PATCH(
     }
 
     // Update lane name in the array
-    const newLanes = currentLanes.map((lane) => (lane === laneName ? newLaneName : lane));
+    const newLanes = currentLanes.map((lane) =>
+      lane === laneName ? newLaneName : lane,
+    );
     const { organizationId } = user;
 
     const [updatedJob] = await Promise.all([
@@ -260,13 +258,13 @@ export async function PATCH(
     broadcastLaneUpdate(organizationId, newLanes, jobId);
     return NextResponse.json({
       message: 'Lane renamed successfully',
-      jobId: updatedJob._id,
-      lanes: updatedJob.lanes,
+      jobId: updatedJob?._id,
+      lanes: updatedJob?.lanes,
       oldLaneName: laneName,
       newLaneName,
     });
   } catch (error) {
-    console.error('Rename job lane error:', error);
+    logger.error({ error, url: request.url }, 'Rename job lane error');
     return NextResponse.json(
       { error: 'Failed to rename job lane' },
       { status: 500 },

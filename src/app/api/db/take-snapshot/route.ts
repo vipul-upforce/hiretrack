@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 const execAsync = promisify(exec);
 
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
     try {
       await execAsync(dumpCommand);
     } catch (dumpError) {
-      console.error('Backup failed during mongodump:', dumpError);
+      logger.error({ dumpError }, 'Error creating MongoDB dump:');
       await fs.rm(tempDumpDir, { recursive: true, force: true });
       return NextResponse.json(
         { message: 'Failed to create MongoDB dump', error: String(dumpError) },
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     try {
       await execAsync(tarCommand);
     } catch (tarError) {
-      console.error('Compression failed:', tarError);
+      logger.error({ tarError }, 'Error compressing backup:');
       await fs.rm(tempDumpDir, { recursive: true, force: true });
       return NextResponse.json(
         { message: 'Failed to compress backup', error: String(tarError) },
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error during backup process:', error);
+    logger.error({ error, url: req.url }, 'Error during backup creation:');
     return NextResponse.json(
       {
         message: 'Internal server error',
@@ -85,7 +86,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Not Authorized' }, { status: 401 });
     }
     const { fileName } = await req.json();
-    // console.log("FILENAME: ", fileName);
     if (!fileName || typeof fileName !== 'string') {
       return NextResponse.json(
         { message: 'Invalid or missing fileName in request body' },
@@ -95,7 +95,6 @@ export async function POST(req: NextRequest) {
 
     const backupsRoot = path.join(process.cwd(), '..', 'backups');
     const filePath = path.join(backupsRoot, fileName);
-    // console.log("FILENAME: ", filePath);
 
     if (!existsSync(filePath)) {
       return NextResponse.json({ message: 'File not found' }, { status: 404 });
@@ -108,7 +107,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error during backup deletion:', error);
+    logger.error({ error, url: req.url }, 'Error during backup deletion');
     return NextResponse.json(
       {
         message: 'Internal server error',

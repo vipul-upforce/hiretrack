@@ -4,6 +4,7 @@ import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import connectToDatabase, { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { otpRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleSendOtp(req: NextRequest) {
   try {
@@ -17,9 +18,12 @@ async function handleSendOtp(req: NextRequest) {
       );
     }
 
-    const settings = await Settings.findOne({
+    const settings = await Settings?.findOne({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).select('mailConfig').lean().exec();
+    })
+      .select('mailConfig')
+      .lean()
+      .exec();
     if (!settings || !settings.mailConfig) {
       return NextResponse.json(
         { message: 'Mail configuration not found' },
@@ -27,24 +31,25 @@ async function handleSendOtp(req: NextRequest) {
       );
     }
 
-    const fromEmail = settings.mailConfig.resend_from
-      || settings.mailConfig.brevo_from
-      || settings.mailConfig.smtp_from
-      || 'system@hiretrack.com';
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      'system@hiretrack.com';
 
     // Check if user has an existing OTP and its generation time
     const user = await User?.findOne({ email, organizationId }).populate({
       path: 'organizationId',
       select: 'name', // populate only organization name
     });
-    console.log(user, 'otp........');
 
     if (user && user.otp && user.otpExpires) {
       const currentTime = new Date();
       const otpGenerationTime = new Date(
         user.otpExpires.getTime() - 10 * 60 * 1000,
       );
-      const timeSinceOtpGenerated = (currentTime.getTime() - otpGenerationTime.getTime()) / 1000 / 60;
+      const timeSinceOtpGenerated =
+        (currentTime.getTime() - otpGenerationTime.getTime()) / 1000 / 60;
 
       if (timeSinceOtpGenerated < 1) {
         // Less than 1 minute has passed since OTP was generated
@@ -65,7 +70,8 @@ async function handleSendOtp(req: NextRequest) {
       { $set: { otp, otpExpires } },
       { upsert: true }, // Create user if not found
     );
-    const organizationName = typeof user?.organizationId === 'object' ? user.organizationId.name : '';
+    const organizationName =
+      typeof user?.organizationId === 'object' ? user.organizationId.name : '';
     // Send email with the OTP
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
       'send-otp',
@@ -78,7 +84,7 @@ async function handleSendOtp(req: NextRequest) {
       organizationId,
     );
 
-    const systemUser = await User.findOneAndUpdate(
+    const systemUser = await User?.findOneAndUpdate(
       { email: fromEmail, organizationId },
       {
         $setOnInsert: {
@@ -97,16 +103,15 @@ async function handleSendOtp(req: NextRequest) {
       emailSubject,
       emailContent,
       {
-        sentBy: systemUser._id.toString(),
-        sentByEmail: systemUser.email,
-        sentByName: systemUser.name,
+        sentBy: systemUser!._id.toString(),
+        sentByEmail: systemUser!.email,
+        sentByName: systemUser!.name,
         metadata: {
           templateUsed: '2fa-otp',
           eventType: '2fa_authentication',
         },
       },
     );
-    console.log(mailResult, 'mailResulet+++++-=dd-d0');
 
     if (mailResult.status === 200) {
       return NextResponse.json({ message: 'OTP sent successfully' });
@@ -114,7 +119,7 @@ async function handleSendOtp(req: NextRequest) {
     // If email service is down, 2FA is not possible.
     // We should also invalidate the current OTP attempt.
 
-    await Settings.findOneAndUpdate(
+    await Settings?.findOneAndUpdate(
       { organizationId },
       { $set: { 'twoFA.enable2FA': false } },
       { new: true },
@@ -126,7 +131,7 @@ async function handleSendOtp(req: NextRequest) {
       { status: 503 }, // Service Unavailable
     );
   } catch (error) {
-    console.error('Error sending OTP:', error);
+    logger.error({ error }, ' Error sending OTP.');
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 },

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clearAuthTokens } from '@/lib/secureTokens';
+import { logger } from '@/lib/logger/logger.server';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const response = NextResponse.json({
       message: 'Logged out successfully',
@@ -12,10 +13,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Logout error:', error);
-    return NextResponse.json(
-      { error: 'Logout failed' },
-      { status: 500 },
-    );
+    logger.error({ error }, 'Logout error');
+    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
   }
 }

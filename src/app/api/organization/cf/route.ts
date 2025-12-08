@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger/logger.server';
 import connectToDatabase, { Organization } from '@/lib/mongodb';
 import { NextResponse } from 'next/server';
 
@@ -17,7 +18,10 @@ export async function GET(req: Request) {
         adminId: 0,
         lanes: 0,
       },
-    ).select('customFields').lean().exec();
+    )
+      .select('customFields')
+      .lean()
+      .exec();
 
     if (!orgInfo) {
       return NextResponse.json(
@@ -32,7 +36,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(customFields || {}, { status: 200 });
   } catch (error: unknown) {
-    console.error('Error in GET organization:', error);
+    logger.error({ error, url: req.url }, 'Error in GET organization');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

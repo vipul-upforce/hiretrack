@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger/logger.server';
 import connectToDatabase, { Organization } from '@/lib/mongodb';
 import { NextResponse } from 'next/server';
 
@@ -22,9 +23,13 @@ export async function GET(
         { status: 400 },
       );
     }
-    const orgInfo = await Organization.findById(org).select('customFields').lean().exec();
+    const orgInfo = await Organization.findById(org)
+      .select('customFields')
+      .lean()
+      .exec();
     return NextResponse.json(orgInfo?.customFields, { status: 200 });
   } catch (error: unknown) {
+    logger.error({ error, url: req.url }, 'Error in GET organization');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

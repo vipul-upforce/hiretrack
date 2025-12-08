@@ -1,11 +1,16 @@
 import { NextResponse, NextRequest } from 'next/server';
 import crypto from 'crypto';
-import connectToDatabase, { CandidateAccount, Settings, User } from '@/lib/mongodb';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+} from '@/lib/mongodb';
 import { sendEventEmailWithHistory } from '@/lib/unifiedEmailService';
 import { ObjectId, Types } from 'mongoose';
 import { Organization } from '@/lib/models/user';
 import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import { passwordResetRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 type NodemailerError = {
   errno?: number;
@@ -38,8 +43,8 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
       return 'The email service is temporarily unavailable. Please try again later.';
     default:
       return (
-        error.message
-        || "We couldn't send the email. Please check the email details and try again."
+        error.message ||
+        "We couldn't send the email. Please check the email details and try again."
       );
   }
 };
@@ -50,7 +55,8 @@ async function handleForgotPassword(req: NextRequest) {
     await connectToDatabase();
     const { email, selectedOrgId } = await req.json();
 
-    if (!User || !Settings || !CandidateAccount) throw new Error('Database not connected');
+    if (!User || !Settings || !CandidateAccount)
+      throw new Error('Database not connected');
 
     // If selectedOrgId is provided, handle password reset for specific organization
     if (selectedOrgId) {
@@ -71,15 +77,15 @@ async function handleForgotPassword(req: NextRequest) {
     const userAccounts: OrgUserData[] = regularUsers.map((user) => ({
       id: user._id.toString(),
       organizationId:
-        user.organizationId
-          && typeof user.organizationId === 'object'
-          && '_id' in user.organizationId
+        user.organizationId &&
+        typeof user.organizationId === 'object' &&
+        '_id' in user.organizationId
           ? (user.organizationId as Organization)._id.toString()
           : '',
       organizationName:
-        user.organizationId
-          && typeof user.organizationId === 'object'
-          && 'name' in user.organizationId
+        user.organizationId &&
+        typeof user.organizationId === 'object' &&
+        'name' in user.organizationId
           ? user.organizationId.name
           : '',
       email: user.email,
@@ -89,15 +95,15 @@ async function handleForgotPassword(req: NextRequest) {
     const candidateAccounts: OrgUserData[] = candidateUsers.map((user) => ({
       id: user._id.toString(),
       organizationId: user.organizationId
-        ? typeof user.organizationId === 'object'
-          && '_id' in user.organizationId
+        ? typeof user.organizationId === 'object' &&
+          '_id' in user.organizationId
           ? (user.organizationId as Organization)._id.toString()
           : user.organizationId.toString()
         : '',
       organizationName:
-        user.organizationId
-          && typeof user.organizationId === 'object'
-          && 'name' in user.organizationId
+        user.organizationId &&
+        typeof user.organizationId === 'object' &&
+        'name' in user.organizationId
           ? String(user.organizationId.name) // Explicitly cast to string
           : '',
       email: user.email,
@@ -118,8 +124,8 @@ async function handleForgotPassword(req: NextRequest) {
       const account = allAccounts[0];
       return await handlePasswordReset(
         email,
-        typeof account.organizationId === 'object'
-          && '_id' in account.organizationId
+        typeof account.organizationId === 'object' &&
+          '_id' in account.organizationId
           ? account.organizationId._id.toString()
           : account.organizationId,
         req,
@@ -149,12 +155,18 @@ async function handlePasswordReset(
   isCandidate?: boolean,
 ) {
   try {
-    const settings = await Settings.findOne({ organizationId: new Types.ObjectId(organizationId) }).lean();
+    const settings = await Settings?.findOne({
+      organizationId: new Types.ObjectId(organizationId),
+    }).lean();
     if (!settings || !settings.mailConfig) {
       throw new Error('Mail configuration not found');
     }
 
-    const fromEmail = settings.mailConfig.resend_from || settings.mailConfig.brevo_from || settings.mailConfig.smtp_from || 'system@hiretrack.com';
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      'system@hiretrack.com';
 
     // Find the correct user with both email and organizationId
     let user;
@@ -167,16 +179,12 @@ async function handlePasswordReset(
         user = await CandidateAccount.findOne({
           email,
           organizationId,
-        }).populate(
-          'organizationId',
-        );
+        }).populate('organizationId');
       } else {
         user = await User.findOne({
           email,
           organizationId,
-        }).populate(
-          'organizationId',
-        );
+        }).populate('organizationId');
       }
     } else {
       // Try regular user first, then candidate
@@ -185,27 +193,19 @@ async function handlePasswordReset(
       );
 
       if (!user) {
-        user = await CandidateAccount.findOne({ email, organizationId }).populate(
-          'organizationId',
-        );
+        user = await CandidateAccount.findOne({
+          email,
+          organizationId,
+        }).populate('organizationId');
         isCandidate = true;
       }
     }
-    console.log(user, 'User For Reset_link --___ TT ');
 
     if (!user) {
       throw new Error(
         'No account found with this email in the selected organization',
       );
     }
-    // const organization = await CandidateAccount.findById(organizationId);
-    // if (!organization) {
-    //   throw new Error("Organization not found");
-    // }
-    // const candidateUsers = await CandidateAccount.find({ email });
-    // console.log("Organization Name:", candidateUsers);
-    // console.log(user, "reset passwordd.....");
-
     // Generate password reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenHash = crypto
@@ -277,6 +277,7 @@ async function handlePasswordReset(
       { status: emailStatus.status },
     );
   } catch (error: unknown) {
+    logger.error({ error }, 'Error handling password reset.');
     let errorMessage = 'An unknown error occurred';
     if (typeof error === 'object' && error !== null) {
       errorMessage = getNodemailerErrorMessage(error as NodemailerError);

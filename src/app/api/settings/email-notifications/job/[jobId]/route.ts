@@ -3,6 +3,7 @@ import connectToDatabase, { User, Job } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
 import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
+import { logger } from '@/lib/logger/logger.server';
 
 /**
  * GET /api/settings/email-notifications/job/[jobId]
@@ -31,7 +32,7 @@ export async function GET(
     }
 
     // Verify job exists and user has access
-    const job = await Job.findById(jobId)
+    const job = await Job?.findById(jobId)
       .select('_id title organizationId')
       .lean();
 
@@ -55,11 +56,12 @@ export async function GET(
       );
     }
 
-    const user = await User.findById(userId)
+    const user = await User?.findById(userId)
       .select('emailNotificationSettings')
       .lean();
 
-    const jobLevelSettings = user?.emailNotificationSettings?.jobLevel?.[jobId] || null;
+    const jobLevelSettings =
+      user?.emailNotificationSettings?.jobLevel?.[jobId] || null;
 
     // Get effective settings (resolved through priority chain)
 
@@ -80,7 +82,10 @@ export async function GET(
       hasJobLevelOverrides: !!jobLevelSettings,
     });
   } catch (error) {
-    console.error('Get job-level email notification settings error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Get job-level email notification settings error',
+    );
     return NextResponse.json(
       { error: 'Failed to get job-level email notification settings' },
       { status: 500 },
@@ -111,7 +116,7 @@ export async function PUT(
     }
 
     // Verify job exists and user has access
-    const job = await Job.findById(jobId)
+    const job = await Job?.findById(jobId)
       .select('_id title organizationId')
       .lean();
 
@@ -135,38 +140,30 @@ export async function PUT(
       );
     }
 
-    // const validKeys = [
-    //   "newApplications",
-    //   "interviewAssignments",
-    //   "statusUpdates",
-    //   "newRemarks",
-    //   "stepCompleted",
-    //   "mentions",
-    // ];
     const validKeys = [
-      "mentions",
-      "newApplications",
-      "statusUpdates",
-      "detailsUpdated",
-      "interviewAssignments",
-      "stepCompleted",
-      "newRemarks",
-      "meetingScheduled",
-      "meetingUpdated",
-      "meetingCancelled",
-      "meetingInviteAccepted",
-      "meetingInviteDeclined",
-      "meetingInviteTentative",
-      "followupAdded",
-      "followupUpdated",
-      "followupRemoved",
-      "jobCreated",
-      "jobUpdated",
-      "userAdded",
-      "bulkImportCompleted",
-      "candidateRejected",
-      "interviewCompleted",
-      "candidateMoved",
+      'mentions',
+      'newApplications',
+      'statusUpdates',
+      'detailsUpdated',
+      'interviewAssignments',
+      'stepCompleted',
+      'newRemarks',
+      'meetingScheduled',
+      'meetingUpdated',
+      'meetingCancelled',
+      'meetingInviteAccepted',
+      'meetingInviteDeclined',
+      'meetingInviteTentative',
+      'followupAdded',
+      'followupUpdated',
+      'followupRemoved',
+      'jobCreated',
+      'jobUpdated',
+      'userAdded',
+      'bulkImportCompleted',
+      'candidateRejected',
+      'interviewCompleted',
+      'candidateMoved',
     ];
     for (const key of validKeys) {
       if (settings[key] !== undefined && typeof settings[key] !== 'boolean') {
@@ -179,17 +176,17 @@ export async function PUT(
 
     // Update job-level settings
     const userId = currentUser.id;
-    const {organizationId} = currentUser;
-    
+    const { organizationId } = currentUser;
+
     if (!userId || !organizationId) {
       return NextResponse.json(
-        { error: "Invalid user data in token" },
-        { status: 401 }
+        { error: 'Invalid user data in token' },
+        { status: 401 },
       );
     }
-    
+
     const updatePath = `emailNotificationSettings.jobLevel.${jobId}`;
-    const result = await User.findByIdAndUpdate(
+    const result = await User?.findByIdAndUpdate(
       userId,
       { $set: { [updatePath]: settings } },
       { new: true, upsert: false },
@@ -206,7 +203,7 @@ export async function PUT(
     const effectiveSettings = await getUserEffectiveNotificationSettings(
       userId.toString(),
       organizationId.toString(),
-      jobId
+      jobId,
     );
 
     return NextResponse.json({
@@ -216,7 +213,10 @@ export async function PUT(
       effectiveSettings,
     });
   } catch (error) {
-    console.error('Update job-level email notification settings error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Update job-level email notification settings error',
+    );
     return NextResponse.json(
       { error: 'Failed to update job-level email notification settings' },
       { status: 500 },
@@ -248,7 +248,7 @@ export async function DELETE(
     }
 
     // Verify job exists and user has access
-    const job = await Job.findById(jobId).select('_id organizationId').lean();
+    const job = await Job?.findById(jobId).select('_id organizationId').lean();
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -263,13 +263,13 @@ export async function DELETE(
     const userId = currentUser.id;
     const { organizationId } = currentUser;
     const unsetPath = `emailNotificationSettings.jobLevel.${jobId}`;
-    await User.findByIdAndUpdate(userId, {
+    await User?.findByIdAndUpdate(userId, {
       $unset: { [unsetPath]: 1 },
     });
 
     // Get updated effective settings
     const effectiveSettings = await getUserEffectiveNotificationSettings(
-      userId.toString(),
+      userId!.toString(),
       organizationId.toString(),
       jobId,
     );
@@ -280,7 +280,10 @@ export async function DELETE(
       effectiveSettings,
     });
   } catch (error) {
-    console.error('Remove job-level email notification settings error:', error);
+    logger.error(
+      { error, url: request.url },
+      'Remove job-level email notification settings error',
+    );
     return NextResponse.json(
       { error: 'Failed to remove job-level email notification settings' },
       { status: 500 },

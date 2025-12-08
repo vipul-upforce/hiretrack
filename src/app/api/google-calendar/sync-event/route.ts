@@ -4,7 +4,6 @@ import connectToDatabase, {
   Candidate,
   History,
   User,
-  WebhookSubscription,
 } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
@@ -36,7 +35,7 @@ export async function POST(req: NextRequest) {
     const { candidateId } = body;
 
     // Get candidate details
-    const candidate = await Candidate.findById(candidateId)
+    const candidate = await Candidate?.findById(candidateId)
       .populate("jobId")
       .populate("assignment.interviewerId")
       .lean();
@@ -68,7 +67,7 @@ export async function POST(req: NextRequest) {
       : 'Position';
 
     // Get Google Calendar settings
-    const settings = await Settings.findOne({ organizationId });
+    const settings = await Settings?.findOne({ organizationId });
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
         { error: 'Google Calendar is not connected' },
@@ -105,14 +104,12 @@ export async function POST(req: NextRequest) {
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     // Fetch event details from Google Calendar
-    console.log('📅 Fetching event details from Google Calendar');
     const eventResponse = await calendar.events.get({
       calendarId: 'primary',
       eventId,
     });
 
     const event = eventResponse.data;
-    console.log('✅ Event fetched successfully');
 
     // Process attendee responses
     const attendees = event.attendees || [];
@@ -122,7 +119,7 @@ export async function POST(req: NextRequest) {
     const notificationPromises = [];
     for (const attendee of attendees) {
       const attendeeEmail = attendee.email || "";
-      const user = await User.findOne({ email: attendeeEmail }).select("name");
+      const user = await User?.findOne({ email: attendeeEmail }).select("name");
       const attendeeName = attendee.displayName || user?.name || "";
       const responseStatus = attendee.responseStatus || "needsAction";
 
@@ -157,10 +154,6 @@ export async function POST(req: NextRequest) {
           || !previousResponse.notificationSent;
 
         if (shouldNotify) {
-          console.log(
-            `📬 Response change detected for ${attendeeEmail}: ${previousResponse?.responseStatus || 'none'} -> ${responseStatus}`,
-          );
-
           // Mark notification as sent
           updatedResponse.notificationSent = true;
 
@@ -240,19 +233,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Update candidate with new attendee responses
-    await Candidate.findByIdAndUpdate(candidateId, {
+    await Candidate?.findByIdAndUpdate(candidateId, {
       'assignment.googleMeet.attendeeResponses': updatedResponses,
       'assignment.googleMeet.lastSyncedAt': new Date(),
     });
 
     // Add history entries if any changes detected
     if (historyEntries.length > 0) {
-      const existingHistory = await History.findOne({ candidateId, jobId });
+      const existingHistory = await History?.findOne({ candidateId, jobId });
       if (existingHistory) {
         existingHistory.history.push(...historyEntries);
         await existingHistory.save();
       } else {
-        await History.create({
+        await History?.create({
           candidateId,
           jobId,
           history: historyEntries,
@@ -263,7 +256,6 @@ export async function POST(req: NextRequest) {
     // Send notifications
     if (notificationPromises.length > 0) {
       await Promise.all(notificationPromises);
-      console.log(`📨 Sent ${notificationPromises.length} notifications`);
     }
 
     // Return sync results
@@ -279,8 +271,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Event sync error:', error);
-
     // Handle token expiry
     if (error instanceof Error && error.message.includes('invalid_grant')) {
       return NextResponse.json(

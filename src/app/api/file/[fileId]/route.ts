@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { FileUrlMapping } from '@/lib/mongodb';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(
   request: NextRequest,
@@ -32,7 +33,8 @@ export async function GET(
     }
 
     const fileBuffer = await response.arrayBuffer();
-    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    const contentType =
+      response.headers.get('content-type') || 'application/octet-stream';
 
     const headers = new Headers();
     headers.set('Content-Type', contentType);
@@ -42,7 +44,7 @@ export async function GET(
 
     return new NextResponse(fileBuffer, { headers });
   } catch (error) {
-    console.error('File proxy error:', error);
+    logger.error({ error, url: request.url }, 'File proxy error.');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

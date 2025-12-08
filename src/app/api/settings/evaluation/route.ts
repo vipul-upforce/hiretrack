@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,7 +23,10 @@ export async function GET(req: NextRequest) {
 
     const settings = await Settings.findOne({
       organizationId,
-    }).select('evaluationConfig').lean().exec();
+    })
+      .select('evaluationConfig')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -68,13 +72,10 @@ export async function PUT(req: NextRequest) {
         { status: 404 },
       );
     }
-
-    console.log('🟢🟢 Evaluation config update: ', evaluationConfig);
-
     // Validate temperature range
     if (
-      evaluationConfig.temperature !== undefined
-      && (evaluationConfig.temperature < 0 || evaluationConfig.temperature > 1)
+      evaluationConfig.temperature !== undefined &&
+      (evaluationConfig.temperature < 0 || evaluationConfig.temperature > 1)
     ) {
       return NextResponse.json(
         { error: 'Temperature must be between 0 and 1' },
@@ -84,8 +85,8 @@ export async function PUT(req: NextRequest) {
 
     // Validate maxPdfPages
     if (
-      evaluationConfig.maxPdfPages !== undefined
-      && evaluationConfig.maxPdfPages < 0
+      evaluationConfig.maxPdfPages !== undefined &&
+      evaluationConfig.maxPdfPages < 0
     ) {
       return NextResponse.json(
         { error: 'Max PDF pages must be 0 or greater (0 = no limit)' },
@@ -118,6 +119,7 @@ export async function PUT(req: NextRequest) {
       evaluationConfig: updatedSettings.evaluationConfig,
     });
   } catch (error) {
+    logger.error({ error, url: req.url }, 'Error updating evaluation settings');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',

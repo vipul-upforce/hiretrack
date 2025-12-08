@@ -1,5 +1,6 @@
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
+import { logger } from '@/lib/logger/logger.server';
 import connectToDatabase, { CandidateAccount, History } from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -60,9 +61,15 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
+    logger.error({ error, url: request.url }, 'Error in applying for job');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(
+      { error: 'Unknown error occurred' },
+      { status: 500 },
+    );
   }
 }
 
@@ -103,8 +110,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ appliedApplications }, { status: 200 });
   } catch (error) {
+    logger.error(
+      { error, url: request.url },
+      'Error in fetching applied applications',
+    );
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error', status: 500 });
   }
 }

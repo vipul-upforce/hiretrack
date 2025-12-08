@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,7 +21,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const settings = await Settings.findOne({ organizationId }).select('emailTemplates').lean().exec();
+    const settings = await Settings.findOne({ organizationId })
+      .select('emailTemplates')
+      .lean()
+      .exec();
 
     if (!settings || !settings.emailTemplates) {
       return NextResponse.json({
@@ -29,13 +33,14 @@ export async function GET(req: NextRequest) {
     }
 
     // Convert Map to Object if using Map in schema
-    const emailTemplates = settings.emailTemplates instanceof Map
-      ? Object.fromEntries(settings.emailTemplates)
-      : settings.emailTemplates;
+    const emailTemplates =
+      settings.emailTemplates instanceof Map
+        ? Object.fromEntries(settings.emailTemplates)
+        : settings.emailTemplates;
 
     return NextResponse.json({ templates: emailTemplates });
   } catch (error) {
-    console.error('Error fetching email templates:', error);
+    logger.error({ error, url: req.url }, 'Error fetching email templates');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -60,9 +65,6 @@ export async function PUT(req: NextRequest) {
         { status: 404 },
       );
     }
-
-    // console.log("Request body:", JSON.stringify(body, null, 2));
-
     if (!templates || typeof templates !== 'object') {
       return NextResponse.json(
         { error: 'Invalid templates data structure' },
@@ -73,10 +75,10 @@ export async function PUT(req: NextRequest) {
     for (const [templateId, template] of Object.entries(templates)) {
       const temp = template as any;
       if (
-        !temp.templateId
-        || !temp.templateName
-        || !temp.subject
-        || !temp.html
+        !temp.templateId ||
+        !temp.templateName ||
+        !temp.subject ||
+        !temp.html
       ) {
         return NextResponse.json(
           { error: `Invalid template structure for ${templateId}` },
@@ -90,8 +92,6 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // console.log("Templates to save:", JSON.stringify(templates, null, 2));
-
     const updatedSettings = await Settings.findOneAndUpdate(
       { organizationId: userData.organizationId },
       {
@@ -103,7 +103,7 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
-        strict: false, // Allow fields not in schema temporarily
+        strict: false,
         select: 'emailTemplates',
       },
     );
@@ -115,17 +115,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    console.log(
-      'Updated settings email templates:',
-      updatedSettings.emailTemplates,
-    );
-
     return NextResponse.json({
       message: 'Email templates updated successfully',
       templates: updatedSettings.emailTemplates,
     });
   } catch (error) {
-    console.error('Error updating email templates:', error);
+    logger.error({ error, url: req.url }, 'Error updating email templates');
     return NextResponse.json(
       { error: 'Internal server error', details: error },
       { status: 500 },

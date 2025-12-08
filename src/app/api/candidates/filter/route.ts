@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Candidate } from '@/lib/mongodb';
 import dayjs from 'dayjs';
 import { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { logger } from '@/lib/logger/logger.server';
 import {
   buildDateRangeCondition,
   buildTimeRangeCondition,
@@ -123,9 +124,9 @@ export async function POST(request: NextRequest) {
         const fieldType = matchedType?.type;
 
         if (
-          fieldType
-          && (fieldType === 'date' || fieldType === 'datetime')
-          && Array.isArray(value)
+          fieldType &&
+          (fieldType === 'date' || fieldType === 'datetime') &&
+          Array.isArray(value)
         ) {
           const dateCondition = buildDateRangeCondition(
             fieldPath,
@@ -148,9 +149,9 @@ export async function POST(request: NextRequest) {
         }
 
         if (
-          !fieldType
-          && Array.isArray(value)
-          && value.some((entry) => dayjs(entry).isValid())
+          !fieldType &&
+          Array.isArray(value) &&
+          value.some((entry) => dayjs(entry).isValid())
         ) {
           const fallbackCondition = buildDateRangeCondition(
             fieldPath,
@@ -398,6 +399,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error in candidate filtering.');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

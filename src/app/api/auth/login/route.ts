@@ -1,7 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
 import connectToDatabase, {
-  CandidateAccount, Settings, User, Organization,
+  CandidateAccount,
+  Settings,
+  User,
+  Organization,
 } from '@/lib/mongodb';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { IUser } from '@/lib/models/user';
@@ -10,6 +13,7 @@ import { setSecureAuthTokens, setSecureOrgId } from '@/lib/secureTokens';
 import { emailLoginRateLimiter } from '@/lib/rateLimiter';
 import { signToken } from '@/app/actions/auth';
 import { UserWithoutCF } from '@/types/login';
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -31,8 +35,6 @@ async function handleLogin(req: NextRequest) {
       },
     });
     const candidates = await CandidateAccount.find({ email }).lean();
-    console.log(users, 'users');
-    console.log(candidates, 'candidates');
 
     // Check if email exists in either collection
     if (users.length === 0 && candidates.length === 0) {
@@ -55,7 +57,7 @@ async function handleLogin(req: NextRequest) {
 
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   } catch (error) {
-    // console.log(error, "Err Of Login ");
+    logger.error({ error }, 'Error during login');
 
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

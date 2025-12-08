@@ -3,18 +3,13 @@ import type { NextRequest } from 'next/server';
 import CryptoJS from 'crypto-js';
 import { jwtVerify } from 'jose';
 import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
-// import { log } from "@/lib/logger";
+import { apiExemptPaths, redirectPaths, unauthorizedCandidateAPIRoutes, unauthorizedInterviewerAPIRoutes, unauthorizedInterviewerPages } from '@/lib/constants';
 
 interface JWTPayload {
   user: string;
 }
 
 export async function verifyAndDecryptTokenMiddleware(token: string, orgId: string) {
-  // const JWT_SECRET =
-  //   process.env.JWT_SECRET ||
-  //   process.env.NEXT_PUBLIC_JWT_SECRET ||
-  //   "your_jwt_secret_key";
-
   if (!orgId) {
     return {
       success: false,
@@ -23,7 +18,6 @@ export async function verifyAndDecryptTokenMiddleware(token: string, orgId: stri
   }
 
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  // console.log(JWT_SECRET, "JWT_SECRET-10");
 
   try {
     if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
@@ -58,7 +52,6 @@ function createLoginRedirectUrl(request: NextRequest, targetPath: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  // log(`${request.method} ${request.url}`);
   const { pathname } = request.nextUrl;
   const allowedOrigins = (
     process.env.ALLOWED_ORIGINS || 'https://hire.upforce.tech'
@@ -112,6 +105,7 @@ export async function middleware(request: NextRequest) {
   if (isOrgPath) {
     const subPath = `/${pathParts[1]}`;
     if (subPath === '/apply-jobs') {
+      
     }
   } else if (
     !userData
@@ -142,7 +136,6 @@ export async function middleware(request: NextRequest) {
       if (
         pathname?.includes('/auth/signup')
         || pathname?.includes('/dashboard/settings')
-        // pathname?.includes("/dashboard/analytics")
       ) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
@@ -151,10 +144,6 @@ export async function middleware(request: NextRequest) {
     // Candidate role - redirect to apply-jobs if trying to access dashboard
     if (userRole === 'candidate') {
       if (
-      // pathname?.includes("/dashboard") ||
-      // pathname?.includes("/api/candidates/assignments") ||
-      // pathname?.includes("/dashboard/:path*")
-
         unauthorizedCandidateAPIRoutes.some((path) => pathname?.includes(path))
       ) {
         const redirectUrl = isOrgPath
@@ -190,89 +179,4 @@ export async function middleware(request: NextRequest) {
   }
 
   return NextResponse.next();
-  // const res = NextResponse.next();
-
-  // res.headers.set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,PATCH,");
-  // res.headers.set("Access-Control-Allow-Headers", "Content-Type");
-  // res.headers.set("Access-Control-Allow-Credentials", "true");
-
-  // // Handle preflight request
-  // if (req.method === "OPTIONS") {
-  //   return new Response(null, {
-  //     headers: res.headers,
-  //     status: 204,
-  //   });
-  // }
-
-  // return res;
 }
-
-export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/auth/signup',
-    '/api/:path*',
-    '/:orgName/:path*',
-    '/backups',
-    '/take-snapshot',
-  ],
-};
-
-const unauthorizedInterviewerPages = [
-  '/jobs-board',
-  '/jobs',
-  '/auth/signup',
-  '/dashboard/settings',
-  '/dashboard/search',
-  '/dashboard/cv-upload',
-  '/dashboard/analytics',
-  '/api/organization/tags',
-];
-
-const unauthorizedInterviewerAPIRoutes = ['/api/candidates/filter'];
-const unauthorizedCandidateAPIRoutes = [
-  '/api/candidates/assignments',
-  '/dashboard',
-  '/api/candidates/assignments',
-  '/dashboard/:path*',
-  '/api/nginx-logs',
-  '/api/download/assets',
-];
-const apiExemptPaths = [
-  '/api/jobs/open-jobs',
-  '/api/auth/login',
-  '/api/auth/me',
-  '/api/auth/signup',
-  '/api/organization',
-  '/api/orgs',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/event-mail',
-  '/api/candidates/signup',
-  '/api/candidates/evaluate',
-  '/api/candidates/event-mail',
-  '/api/files',
-  '/api/file-proxy',
-  '/api/file',
-  '/api/candidates/guest-apply',
-  '/api/candidates/apply-application',
-  '/apply-jobs',
-  '/api/organization/cs/',
-  '/api/auth/2fa/send-otp',
-  '/api/auth/2fa/verify-otp',
-  '/api/settings/twofa',
-  '/api/settings/portal',
-  '/api/shared-files',
-  '/api/organization/tags',
-  '/api/auth/google/callback',
-  '/api/auth/google/authorize',
-  '/api/settings/captcha',
-  '/api/license-validate',
-];
-
-const redirectPaths = [
-  '/dashboard',
-  '/jobs',
-  '/auth/signup',
-  '/:orgName/apply-jobs',
-];

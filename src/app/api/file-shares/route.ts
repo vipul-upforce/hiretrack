@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { createFileShare, validateAttachments } from '@/lib/fileShareUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse request body
     const [user, data] = await Promise.all([
       getAuthenticatedUser(request, ['admin', 'hr', 'interviewer']),
       request.json(),
@@ -26,13 +26,14 @@ export async function POST(request: NextRequest) {
     if (!validation.valid) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
-
-    // Connect to database
-
     // Get organization settings for file storage
-    const settings = await Settings!.findOne({
-      organizationId: user.organizationId,
-    }).select('fileStorage').lean().exec();
+    const settings = await Settings!
+      .findOne({
+        organizationId: user.organizationId,
+      })
+      .select('fileStorage')
+      .lean()
+      .exec();
     if (!settings) {
       return NextResponse.json(
         { error: 'Organization settings not found' },
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       const result = await createFileShare({
         organizationId: user.organizationId,
-        userId: user.id,
+        userId: user.id as string,
         file: {
           base64: file.base64,
           fileName: file.fileName,
@@ -70,9 +71,12 @@ export async function POST(request: NextRequest) {
       files: results,
     });
   } catch (error: unknown) {
-    console.error('Error uploading files:', error);
+    logger.error({ error, url: request.url }, 'Error uploading files.');
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to upload files' },
+      {
+        error:
+          error instanceof Error ? error.message : 'Failed to upload files',
+      },
       { status: 500 },
     );
   }

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, {
-  EmailHistory,
-  User,
-  Candidate,
-} from '@/lib/mongodb';
+import connectToDatabase, { EmailHistory } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -84,9 +81,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Error fetching email history:', error);
+    logger.error({ error, url: request.url }, 'Error fetching email history.');
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch email history' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch email history',
+      },
       { status: 500 },
     );
   }

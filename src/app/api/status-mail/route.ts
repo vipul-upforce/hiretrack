@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { sendSmartNotification } from "@/lib/unifiedEmailService";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import connectToDatabase, { Settings, User, EmailHistory } from "@/lib/mongodb";
-import mongoose from "mongoose";
-import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { Organization } from "@/lib/models/user";
-import { NotificationType } from "@/lib/services/emailDecisionEngine";
-import { NotificationService } from "@/lib/notifications/notificationService";
+import { NextRequest, NextResponse } from 'next/server';
+import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import connectToDatabase, { Settings, User, EmailHistory } from '@/lib/mongodb';
+import mongoose from 'mongoose';
+import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { Organization } from '@/lib/models/user';
+import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 // Email queue to track pending emails
 const emailQueue = new Map<
@@ -41,9 +42,12 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     hrContactInfo,
   } = data;
 
-  const settings = await Settings.findOne({
+  const settings = await Settings?.findOne({
     organizationId: new mongoose.Types.ObjectId(organizationId),
-  }).select('mailConfig').lean().exec();
+  })
+    .select('mailConfig')
+    .lean()
+    .exec();
 
   const provider = settings?.mailConfig?.mailProvider || 'unknown';
   const historyIds: string[] = [];
@@ -73,14 +77,14 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
     // Create history records for all recipients (HR/Admins) - PENDING
     const historyPromises = emailList.map(async (recipientEmail: string) => {
       try {
-        const recipient = await User.findOne({
+        const recipient = await User?.findOne({
           email: recipientEmail,
           organizationId: new mongoose.Types.ObjectId(organizationId),
         })
           .select('_id name')
           .lean();
 
-        const history = await EmailHistory.create({
+        const history = await EmailHistory?.create({
           organizationId: new mongoose.Types.ObjectId(organizationId),
           sentBy: new mongoose.Types.ObjectId(sentBy),
           sentByEmail,
@@ -110,11 +114,11 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
           },
         });
 
-        return history._id.toString();
+        return history?._id.toString();
       } catch (error) {
-        console.error(
+        logger.error(
+          { error },
           `Failed to create pending history for ${recipientEmail}:`,
-          error,
         );
         return null;
       }
@@ -125,7 +129,7 @@ async function createPendingEmailHistory(data: any, organizationId: string) {
 
     return historyIds;
   } catch (error) {
-    console.error('Failed to create pending email history:', error);
+    logger.error({ error }, 'Failed to create pending email history');
     return [];
   }
 }
@@ -150,16 +154,12 @@ async function updateEmailHistoryStatus(
       updateData.body = updatedContent.body;
     }
 
-    await EmailHistory.updateMany(
+    await EmailHistory?.updateMany(
       { _id: { $in: historyIds.map((id) => new mongoose.Types.ObjectId(id)) } },
       { $set: updateData },
     );
-
-    console.log(
-      `Updated ${historyIds.length} status update email history entries to ${status}`,
-    );
   } catch (error) {
-    console.error('Failed to update email history status:', error);
+    logger.error({ error }, 'Failed to update email history status');
   }
 }
 
@@ -211,7 +211,7 @@ function scheduleEmail(
 // Sends the actual email based on queue data
 async function sendQueuedEmail(
   data: any,
-  senderEmail?: string,
+  _senderEmail?: string,
   historyIds?: string[],
 ) {
   const {
@@ -235,17 +235,21 @@ async function sendQueuedEmail(
     hrContactInfo,
   } = data;
 
-  const settings = await Settings.findOne({
+  const settings = await Settings?.findOne({
     organizationId: new mongoose.Types.ObjectId(organizationId),
-  }).select('mailConfig').lean().exec();
+  })
+    .select('mailConfig')
+    .lean()
+    .exec();
   if (!settings || !settings.mailConfig) {
     throw new Error('Mail configuration not found');
   }
 
-  const fromEmail = settings.mailConfig.resend_from
-    || settings.mailConfig.brevo_from
-    || settings.mailConfig.smtp_from
-    || 'system@hiretrack.com';
+  const fromEmail =
+    settings.mailConfig.resend_from ||
+    settings.mailConfig.brevo_from ||
+    settings.mailConfig.smtp_from ||
+    'system@hiretrack.com';
 
   const organization = await User?.findOne({
     organizationId,
@@ -256,24 +260,25 @@ async function sendQueuedEmail(
     })
     .lean();
 
-  const isOrganization = (obj: any): obj is Organization => (
-    obj
-      && typeof obj === 'object'
-      && 'defaultLanes' in obj
-      && Array.isArray(obj.defaultLanes)
-  );
+  const isOrganization = (obj: any): obj is Organization =>
+    obj &&
+    typeof obj === 'object' &&
+    'defaultLanes' in obj &&
+    Array.isArray(obj.defaultLanes);
 
-  const nextSteps = organization
-    && organization.organizationId
-    && isOrganization(organization.organizationId)
-    ? organization.organizationId.defaultLanes[
-      organization.organizationId.defaultLanes.indexOf(status) + 1
-    ] || 'N/A'
-    : 'N/A';
+  const nextSteps =
+    organization &&
+    organization.organizationId &&
+    isOrganization(organization.organizationId)
+      ? organization!.organizationId!.defaultLanes![
+          organization!.organizationId!.defaultLanes!.indexOf(status) + 1
+        ] || 'N/A'
+      : 'N/A';
   console.log(nextSteps, 'nextSteps');
-  const organizationName = typeof organization?.organizationId === 'object'
-    ? organization.organizationId.name
-    : '';
+  const organizationName =
+    typeof organization?.organizationId === 'object'
+      ? organization.organizationId.name
+      : '';
 
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     'status-update',
@@ -295,7 +300,7 @@ async function sendQueuedEmail(
     organizationId,
   );
 
-  const systemUser = await User.findOneAndUpdate(
+  const systemUser = await User?.findOneAndUpdate(
     { email: fromEmail, organizationId },
     {
       $setOnInsert: {
@@ -314,9 +319,9 @@ async function sendQueuedEmail(
     NotificationType.STATUS_UPDATES,
 
     {
-      triggererUserId: sentBy || systemUser._id.toString(),
-      triggererEmail: sentByEmail || systemUser.email,
-      triggererName: sentByName || systemUser.name,
+      triggererUserId: sentBy || systemUser?._id.toString(),
+      triggererEmail: sentByEmail || systemUser?.email,
+      triggererName: sentByName || systemUser?.name,
       jobId,
       candidateId,
       eventType: 'status_change',
@@ -337,15 +342,9 @@ async function sendQueuedEmail(
       emailStatus.status !== 200 ? emailStatus.message : undefined,
       { subject: emailSubject, body: emailContent },
     );
-  } else {
-    console.warn(
-      "No existing history IDs found for status update email, relying on smart notification to create history"
-    );
   }
-  // 📣 IN-APP NOTIFICATIONS INTEGRATED HERE
-  
   try {
-    if (status === "rejected") {
+    if (status === 'rejected') {
       await NotificationService.notifyCandidateRejected({
         organizationId,
         candidateId,
@@ -369,7 +368,7 @@ async function sendQueuedEmail(
       });
     }
   } catch (notifyErr) {
-    console.error("Failed to send in-app notification:", notifyErr);
+    logger.error({ notifyErr }, 'Failed to send in-app notification');
   }
 
   return emailStatus;
@@ -433,21 +432,19 @@ export async function POST(req: NextRequest) {
       hrContactInfo = `${userData?.email} ${userData?.name}`;
     } else {
       const hrUser = users.find((user) => user.role === 'hr');
-      console.log('HR USER: ', hrUser);
       hrContactInfo = hrUser ? `${hrUser.email} ${hrUser.name}` : '';
     }
-    console.log('HR CONTACT INFO: ', hrContactInfo);
-
     const actionBy = userData?.name;
     const emailList = users.map((user) => user.email);
-    const eventSubTitle = prev_status || prev_status !== ''
-      ? `Status updated from <strong>${prev_status}</strong> to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`
-      : `Status updated to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`;
+    const eventSubTitle =
+      prev_status || prev_status !== ''
+        ? `Status updated from <strong>${prev_status}</strong> to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`
+        : `Status updated to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`;
 
     const emailKey = id;
 
-    const candidateDetails = `${req.headers.get("Origin")}/candidate/${id}`;
-    
+    const candidateDetails = `${req.headers.get('Origin')}/candidate/${id}`;
+
     // Queue data for the email
     const queueData = {
       organizationId,
@@ -501,11 +498,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message:
-          'Email scheduled successfully. It will be sent in 2 minutes with the most updated information.',
+        'Email scheduled successfully. It will be sent in 2 minutes with the most updated information.',
       pendingHistoryRecords: historyIds.length,
     });
   } catch (error: unknown) {
-    console.error('ERROR IN POST: ', error);
+    logger.error({ error, url: req.url }, 'ERROR in status-mail POST: ');
     return NextResponse.json(
       {
         error:
@@ -516,7 +513,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ⛔⛔⛔ for debug only
 export async function GET(req: NextRequest) {
   try {
     const userData = await getAuthenticatedUser(req, 'admin');
@@ -533,8 +529,7 @@ export async function GET(req: NextRequest) {
         remark: value.data.remark,
         rating: value.data.rating,
         scheduledAt: new Date(value.timestamp).toISOString(),
-        timeRemaining:
-          `${Math.round((value.timestamp - Date.now()) / 1000)} seconds`,
+        timeRemaining: `${Math.round((value.timestamp - Date.now()) / 1000)} seconds`,
         pendingHistoryRecords: value.historyIds.length,
       }),
     );

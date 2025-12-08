@@ -3,7 +3,8 @@ import { v2 as cloudinary } from 'cloudinary';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
-// import Brevo from "@getbrevo/brevo";
+import { logger } from '@/lib/logger/logger.server';
+
 interface CustomError {
   error: {
     message: string;
@@ -15,13 +16,17 @@ export async function POST(request: Request) {
 
   if (storageType === 'cloudinary') {
     return await testCloudinary(credentials);
-  } if (storageType === 's3') {
+  }
+  if (storageType === 's3') {
     return await testAWSConnection(credentials);
-  } if (storageType === 'smtp') {
+  }
+  if (storageType === 'smtp') {
     return await testSMTPConnection(credentials);
-  } if (storageType === 'resend') {
+  }
+  if (storageType === 'resend') {
     return await testResendConnection(credentials);
-  } if (storageType === 'brevo') {
+  }
+  if (storageType === 'brevo') {
     return await testBrevoConnection(credentials);
   }
   return NextResponse.json(
@@ -168,27 +173,17 @@ const testBrevoConnection = async (credentials: {
       );
     }
 
-    console.log(
-      'API Key (partial):',
-      `${credentials.brevo_api_key.substring(0, 10)}...`,
-    );
-
-    // // Log reply_to for debugging
-    // console.log("reply_to (raw):", JSON.stringify(credentials.reply_to));
-    // console.log("reply_to length:", credentials.reply_to?.length);
-    // console.log("reply_to type:", typeof credentials.reply_to);
-
     // Validate emails
     const emailRegex = /^[\w\.\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$/;
     if (
-      !credentials.brevo_from
-      || !emailRegex.test(credentials.brevo_from.trim())
+      !credentials.brevo_from ||
+      !emailRegex.test(credentials.brevo_from.trim())
     ) {
       throw new Error('Invalid brevo_from email address');
     }
     if (
-      !credentials.reply_to
-      || !emailRegex.test(credentials.reply_to.trim())
+      !credentials.reply_to ||
+      !emailRegex.test(credentials.reply_to.trim())
     ) {
       throw new Error(
         `Invalid reply_to email address: "${credentials.reply_to}". Ensure it's a valid email (e.g., user@domain.com).`,
@@ -204,8 +199,6 @@ const testBrevoConnection = async (credentials: {
         '<p>This is a test email to verify the Brevo connection.</p>',
     };
 
-    // console.log("Email config:", emailData);
-
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -219,9 +212,6 @@ const testBrevoConnection = async (credentials: {
     // Parse response
     const responseData = await response.json();
 
-    console.log('Brevo API Response:', responseData);
-    console.log('Response Status:', response.status);
-
     if (response.ok && responseData.messageId) {
       return NextResponse.json({
         success: true,
@@ -229,11 +219,11 @@ const testBrevoConnection = async (credentials: {
         messageId: responseData.messageId,
       });
     }
-    const errorMessage = responseData.message || responseData.error || 'Unknown API error';
+    const errorMessage =
+      responseData.message || responseData.error || 'Unknown API error';
     throw new Error(`Brevo API error (${response.status}): ${errorMessage}`);
   } catch (error: unknown) {
-    console.error('Brevo connection test failed:', error);
-
+    logger.error({ error }, 'Brevo connection test failed');
     let errorMessage = 'Unknown error occurred';
     let statusCode = 400;
 
@@ -241,7 +231,11 @@ const testBrevoConnection = async (credentials: {
       errorMessage = error instanceof Error ? error.message : 'Unknown error';
     }
 
-    if (error instanceof Error && error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (
+      error instanceof Error &&
+      error.name === 'TypeError' &&
+      error.message.includes('fetch')
+    ) {
       errorMessage = 'Network error: Unable to connect to Brevo API';
       statusCode = 503;
     }
@@ -255,7 +249,11 @@ const testBrevoConnection = async (credentials: {
         success: false,
         message: errorMessage,
         error:
-          process.env.ENVIRONMENT === 'development' ? error instanceof Error ? error.message : 'Unknown error' : undefined,
+          process.env.ENVIRONMENT === 'development'
+            ? error instanceof Error
+              ? error.message
+              : 'Unknown error'
+            : undefined,
       },
       { status: statusCode },
     );

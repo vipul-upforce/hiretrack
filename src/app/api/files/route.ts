@@ -2,21 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import mime from 'mime-types';
-import {
-  validateQueryParams,
-  VALIDATION_PATTERNS,
-  MAX_LENGTHS,
-} from '@/lib/inputValidation';
+import { validateQueryParams } from '@/lib/inputValidation';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
-    // SECURITY FIX: Validate query parameters for file access
     const validation = validateQueryParams(request.nextUrl.searchParams, {
       pathName: {
         required: true,
         type: 'string',
-        // maxLength: MAX_LENGTHS.filename * 5, // Allow for directory paths
-        // pattern: /^[a-zA-Z0-9\-_.\/\\s%]+$/, // Allow safe path characters including spaces and URL encoding
       },
     });
 
@@ -65,9 +59,13 @@ export async function GET(request: NextRequest) {
 
     // Security check 2: Prevent path traversal attacks
     const resolvedPath = path.resolve(projectRoot, sanitizedPath);
-    const allowedBasePaths = allowedDirectories.map((dir) => path.resolve(projectRoot, dir));
+    const allowedBasePaths = allowedDirectories.map((dir) =>
+      path.resolve(projectRoot, dir),
+    );
 
-    const isWithinAllowedBase = allowedBasePaths.some((basePath) => resolvedPath.startsWith(basePath));
+    const isWithinAllowedBase = allowedBasePaths.some((basePath) =>
+      resolvedPath.startsWith(basePath),
+    );
 
     if (!isWithinAllowedBase) {
       return NextResponse.json(
@@ -82,9 +80,9 @@ export async function GET(request: NextRequest) {
     try {
       await fs.access(filePath);
     } catch (error: unknown) {
-      // SECURITY FIX: Don't expose internal error details
+      logger.error({ error, url: request.url }, 'File not found error.');
       return NextResponse.json(
-        { error: `File not found${error.toString()} ${filePath}` },
+        { error: `File not found${error?.toString()} ${filePath}` },
         { status: 404 },
       );
     }
@@ -109,8 +107,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    // SECURITY FIX: Don't expose internal error details
-    console.error('File serving error:', error);
+    logger.error({ error, url: request.url }, 'File serving error.');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

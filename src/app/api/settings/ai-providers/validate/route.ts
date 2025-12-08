@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { AIProviderFactory } from '@/lib/ai-providers';
-import { decryptText } from '@/lib/encryption';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,7 +48,10 @@ export async function POST(req: NextRequest) {
         model,
       });
     } catch (validationError) {
-      console.error(`Validation error for ${provider}:`, validationError);
+      logger.error(
+        { validationError, url: req.url },
+        `Validation error for ${provider}:`,
+      );
       return NextResponse.json({
         isValid: false,
         error:
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('API key validation error:', error);
+    logger.error({ error, url: req.url }, 'API key validation error:');
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',

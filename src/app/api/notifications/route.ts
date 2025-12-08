@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Notification } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -70,6 +71,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
+    logger.error(
+      { error, url: request.url },
+      'Error in fetching notifications',
+    );
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

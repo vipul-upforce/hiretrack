@@ -7,6 +7,7 @@ import {
   sanitizeString,
 } from '@/lib/inputValidation';
 import { apiRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 interface CustomField {
   label: string;
@@ -15,8 +16,6 @@ interface CustomField {
 
 const handleGetOpenJobs = async (request: NextRequest) => {
   try {
-    // SECURITY FIX: Validate query parameters for public endpoint
-    console.log('REQ INCOMING!!!! ');
     const validation = validateQueryParams(request.nextUrl.searchParams, {
       o: {
         type: 'string',
@@ -107,18 +106,17 @@ const handleGetOpenJobs = async (request: NextRequest) => {
           status: 0,
         },
       )
-      // .sort({
-      //   "tracking.createdAt": -1,
-      // })
       .lean();
     const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
-    const sortedJobs = openJobCardsOrder
-      ?.map((id) => jobsMap.get(id.toString()))
-      .filter(Boolean) || [];
+    const sortedJobs =
+      openJobCardsOrder
+        ?.map((id) => jobsMap.get(id.toString()))
+        .filter(Boolean) || [];
 
-    const jobPositionFields = Object.values(customFields?.customFields || {}).find(
-      (field) => field.formName === 'Job Position',
-    )?.fields || [];
+    const jobPositionFields =
+      Object.values(customFields?.customFields || {}).find(
+        (field) => field.formName === 'Job Position',
+      )?.fields || [];
 
     const publicFieldLabels = jobPositionFields
       ?.filter((field: CustomField) => !field.private)
@@ -130,21 +128,26 @@ const handleGetOpenJobs = async (request: NextRequest) => {
       customFields: Object.fromEntries(
         job?.customFields
           ? Object.entries(job.customFields as Record<string, unknown>).filter(
-            ([key, value]) => publicFieldLabels.includes(key)
-                && value !== null
-                && value !== ''
-                && !(Array.isArray(value) && value.length === 0),
-            //  !Object.keys(value).length === 0
-          )
+              ([key, value]) =>
+                publicFieldLabels.includes(key) &&
+                value !== null &&
+                value !== '' &&
+                !(Array.isArray(value) && value.length === 0),
+            )
           : [],
       ),
     }));
 
     return NextResponse.json(filteredJobs);
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error fetching open jobs');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 };
 

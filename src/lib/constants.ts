@@ -7,6 +7,7 @@ export interface EmailTemplate {
   content: string;
   variables: string[];
 }
+
 export const jobD = `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
         <h2 style="color: #2c3e50; margin-top: 0;">New Job Application Received</h2>
@@ -446,118 +447,9 @@ export const defaultTemplatesFE: { [key: string]: IEmailTemplate } = {
 };
 
 export const wierdFileNamePattern = /[^a-zA-Z0-9(). ]/g;
-// export const wierdFileNamePattern = /^(?!.*[()]{2,})[a-zA-Z0-9()]+$/g;
-
-// export const scoreColors: Record<number, { bg: string; text: string; border: string }> = {
-//   1: {
-//     bg: "bg-red-50 dark:bg-red-900/20",
-//     text: "text-red-800 dark:text-red-300",
-//     border: "border-red-800 dark:border-red-300",
-//   },
-//   2: {
-//     bg: "bg-red-50 dark:bg-red-900/20",
-//     text: "text-red-700 dark:text-red-300",
-//     border: "border-red-700 dark:border-red-300",
-//   },
-//   3: {
-//     bg: "bg-orange-50 dark:bg-red-900/20",
-//     text: "text-orange-700 dark:text-red-400",
-//     border: "border-orange-700 dark:border-red-400",
-//   },
-//   4: {
-//     bg: "bg-orange-50 dark:bg-orange-900/20",
-//     text: "text-orange-700 dark:text-orange-300",
-//     border: "border-orange-700 dark:border-orange-300",
-//   },
-//   5: {
-//     bg: "bg-amber-50 dark:bg-amber-900/20",
-//     text: "text-amber-700 dark:text-amber-300",
-//     border: "border-amber-700 dark:border-amber-300",
-//   },
-//   6: {
-//     bg: "bg-yellow-50 dark:bg-lime-900/20",
-//     text: "text-yellow-700 dark:text-lime-300",
-//     border: "border-yellow-700 dark:border-lime-300",
-//   },
-//   7: {
-//     bg: "bg-lime-50 dark:bg-teal-900/20",
-//     text: "text-lime-700 dark:text-teal-400",
-//     border: "border-lime-700 dark:border-teal-400",
-//   },
-//   8: {
-//     bg: "bg-emerald-50 dark:bg-teal-900/20",
-//     text: "text-emerald-700 dark:text-teal-300",
-//     border: "border-emerald-700 dark:border-teal-300",
-//   },
-//   9: {
-//     bg: "bg-green-50 dark:bg-emerald-900/20",
-//     text: "text-green-700 dark:text-emerald-300",
-//     border: "border-green-700 dark:border-emerald-300",
-//   },
-//   10: {
-//     bg: "bg-green-50 dark:bg-green-900/20",
-//     text: "text-green-700 dark:text-green-300",
-//     border: "border-green-700 dark:border-green-300",
-//   },
-// };
-
-// export const scoreColors: Record<
-//   number,
-//   { bg: string; text: string; border: string }
-// > = {
-//   1: {
-//     bg: "bg-red-200 dark:bg-red-900/20",
-//     text: "text-red-900 dark:text-red-300",
-//     border: "border-red-300 dark:border-red-700",
-//   },
-//   2: {
-//     bg: "bg-red-100 dark:bg-red-900/10",
-//     text: "text-red-700 dark:text-red-400",
-//     border: "border-red-200 dark:border-red-800",
-//   },
-//   3: {
-//     bg: "bg-red-100 dark:bg-red-900/10",
-//     text: "text-red-500 dark:text-red-400",
-//     border: "border-red-200 dark:border-red-800",
-//   },
-//   4: {
-//     bg: "bg-orange-100 dark:bg-orange-900/10",
-//     text: "text-orange-700 dark:text-orange-400",
-//     border: "border-orange-200 dark:border-orange-800",
-//   },
-//   5: {
-//     bg: "bg-amber-50 dark:bg-amber-900/10",
-//     text: "text-amber-500 dark:text-amber-400",
-//     border: "border-amber-200 dark:border-amber-800",
-//   },
-//   6: {
-//     bg: "bg-lime-500 dark:bg-lime-900/10",
-//     text: "text-lime-700 dark:text-lime-400",
-//     border: "border-lime-200 dark:border-lime-800",
-//   },
-//   7: {
-//     bg: "bg-indigo-100	dark:bg-teal-900/10",
-//     text: "text-teal-500 dark:text-teal-400",
-//     border: "border-teal-200 dark:border-teal-800",
-//   },
-//   8: {
-//     bg: "bg-teal-100 dark:bg-teal-900/10",
-//     text: "text-teal-700 dark:text-teal-400",
-//     border: "border-teal-200 dark:border-teal-800",
-//   },
-//   9: {
-//     bg: "bg-emerald-100 dark:bg-emerald-900/10",
-//     text: "text-emerald-700 dark:text-emerald-400",
-//     border: "border-emerald-200 dark:border-emerald-800",
-//   },
-//   10: {
-//     bg: "bg-green-100 dark:bg-green-900/10",
-//     text: "text-green-700 dark:text-green-400",
-//     border: "border-green-200 dark:border-green-800",
-//   },
-// };
 
 export const followUpSepretorPatternRegex = /\|\|\|\|\|\n/g;
+
 export const scoreColors: Record<
   number,
   {
@@ -672,3 +564,75 @@ export const scoreColors: Record<
     },
   },
 };
+
+
+export const config = {
+  matcher: [
+    '/dashboard/:path*',
+    '/auth/signup',
+    '/api/:path*',
+    '/:orgName/:path*',
+    '/backups',
+    '/take-snapshot',
+  ],
+};
+
+export const unauthorizedInterviewerPages = [
+  '/jobs-board',
+  '/jobs',
+  '/auth/signup',
+  '/dashboard/settings',
+  '/dashboard/search',
+  '/dashboard/cv-upload',
+  '/dashboard/analytics',
+  '/api/organization/tags',
+];
+
+export const unauthorizedInterviewerAPIRoutes = ['/api/candidates/filter'];
+
+export const unauthorizedCandidateAPIRoutes = [
+  '/api/candidates/assignments',
+  '/dashboard',
+  '/api/candidates/assignments',
+  '/dashboard/:path*',
+  '/api/nginx-logs',
+  '/api/download/assets',
+];
+export const apiExemptPaths = [
+  '/api/jobs/open-jobs',
+  '/api/auth/login',
+  '/api/auth/me',
+  '/api/auth/signup',
+  '/api/organization',
+  '/api/orgs',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/event-mail',
+  '/api/candidates/signup',
+  '/api/candidates/evaluate',
+  '/api/candidates/event-mail',
+  '/api/files',
+  '/api/file-proxy',
+  '/api/file',
+  '/api/candidates/guest-apply',
+  '/api/candidates/apply-application',
+  '/apply-jobs',
+  '/api/organization/cs/',
+  '/api/auth/2fa/send-otp',
+  '/api/auth/2fa/verify-otp',
+  '/api/settings/twofa',
+  '/api/settings/portal',
+  '/api/shared-files',
+  '/api/organization/tags',
+  '/api/auth/google/callback',
+  '/api/auth/google/authorize',
+  '/api/settings/captcha',
+  '/api/license-validate',
+];
+
+export const redirectPaths = [
+  '/dashboard',
+  '/jobs',
+  '/auth/signup',
+  '/:orgName/apply-jobs',
+];

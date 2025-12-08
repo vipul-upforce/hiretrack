@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(
   req: Request,
@@ -10,15 +11,16 @@ export async function GET(
   const { file } = await params;
   const { searchParams } = new URL(req.url);
 
-  const mode = searchParams.get("mode") || "tail";
-  const startParam = parseInt(searchParams.get("start") || "0", 10);
-  const endParam = parseInt(searchParams.get("end") || "0", 10);
-  const limit = parseInt(searchParams.get("limit") || "100", 10);
-  const query = searchParams.get("query")?.toLowerCase() || "";
+  const mode = searchParams.get('mode') || 'tail';
+  const startParam = parseInt(searchParams.get('start') || '0', 10);
+  const endParam = parseInt(searchParams.get('end') || '0', 10);
+  const limit = parseInt(searchParams.get('limit') || '100', 10);
+  const query = searchParams.get('query')?.toLowerCase() || '';
 
-  const logDir = process.platform === 'linux'
-    ? path.join(process.env.HOME || '/root', '.pm2', 'logs')
-    : '/Users/Upforce/.pm2/logs';
+  const logDir =
+    process.platform === 'linux'
+      ? path.join(process.env.HOME || '/root', '.pm2', 'logs')
+      : '/Users/Upforce/.pm2/logs';
 
   const filePath = path.join(logDir, ...file);
 
@@ -48,7 +50,7 @@ export async function GET(
     let nextStart = 0;
     let nextEnd = 0;
 
-    if (mode === "tail") {
+    if (mode === 'tail') {
       const startIndex = Math.max(0, totalLines - limit);
       slicedLines = allLines.slice(startIndex, totalLines);
 
@@ -71,7 +73,7 @@ export async function GET(
       query,
     });
   } catch (error) {
-    console.error('PM2 log read error:', error);
+    logger.error({ error, url: req.url }, 'PM2 log read error');
     return NextResponse.json(
       { error: 'Failed to read PM2 log file' },
       { status: 500 },

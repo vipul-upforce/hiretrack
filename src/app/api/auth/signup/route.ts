@@ -4,15 +4,7 @@ import connectToDatabase, { CandidateAccount, User, Lane } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { signupRateLimiter } from '@/lib/rateLimiter';
 import { NotificationService } from '@/lib/notifications/notificationService';
-
-const DEFAULT_LANES = [
-  'applied',
-  'screening',
-  'shortlisted',
-  'processing',
-  'accepted',
-  'rejected',
-];
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleSignup(req: NextRequest) {
   try {
@@ -37,10 +29,9 @@ async function handleSignup(req: NextRequest) {
       );
     }
     // Check if user already exists in the same organization
-    // console.log("EXISTING USER: ",organizationId)
-    const existingUser = (await User.findOne({ email, organizationId }))
-      || (await CandidateAccount?.findOne({ email, organizationId }));
-    // console.log("EXISTING USER: ",existingUser)
+    const existingUser =
+      (await User.findOne({ email, organizationId })) ||
+      (await CandidateAccount?.findOne({ email, organizationId }));
 
     if (existingUser) {
       if (existingUser.isDeleted) {
@@ -66,11 +57,6 @@ async function handleSignup(req: NextRequest) {
       role,
       organizationId,
     });
-    // Create default lanes for the user
-    // await Lane.create({
-    //   userId: user._id,
-    //   lanes: DEFAULT_LANES,
-    // });
 
     // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
     if (triggerUserId && triggerUserName && role !== 'candidate') {
@@ -85,20 +71,12 @@ async function handleSignup(req: NextRequest) {
           triggerUserName,
         });
       } catch (notificationError) {
-        console.error(
-          'Failed to send user creation notification:',
-          notificationError,
+        logger.error(
+          { notificationError },
+          'Failed to send user creation notification',
         );
-        // Don't fail the API call if notification fails
       }
     }
-
-    // // Generate token
-    // const token = signToken({
-    //   id: user._id,
-    //   email: user.email,
-    //   role: user.role,
-    // });
 
     const response = NextResponse.json(
       {
@@ -113,16 +91,9 @@ async function handleSignup(req: NextRequest) {
       { status: 201 },
     );
 
-    // // Set cookie
-    // response.cookies.set('token', token, {
-    //   httpOnly: false,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'strict',
-    //   maxAge: 86400, // 1 day
-    // });
-
     return response;
   } catch (error: unknown) {
+    logger.error({ error }, 'Error during user signup');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

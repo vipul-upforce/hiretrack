@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Job, Candidate } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { logger } from '@/lib/logger/logger.server';
 import {
   withAnalyticsAuth,
   createAnalyticsResponse,
   createAnalyticsErrorResponse,
 } from '../middleware';
-import { parseAnalyticsRequest, calculateDaysFromDate } from '../utils';
+import { parseAnalyticsRequest } from '../utils';
 import { JobPerformanceData } from '../types';
 
 export async function GET(request: NextRequest) {
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest) {
         return createAnalyticsErrorResponse('Database connection failed', 500);
       }
 
-      const { organizationId, dateRange, filters } = parseAnalyticsRequest(req);
+      const { dateRange, filters } = parseAnalyticsRequest(req);
 
       // Handle both string and ObjectId organizationId formats for jobs collection
       // Jobs use ObjectId, so we need to convert string organizationId to ObjectId
@@ -36,12 +37,6 @@ export async function GET(request: NextRequest) {
       };
 
       const jobCount = await Job.countDocuments(orgIdQuery);
-
-      // Minimal logging for production
-      if (process.env.ENVIRONMENT === 'development') {
-        console.log('Job Performance - Job count for org:', jobCount);
-        console.log('Job Performance - User org ID:', user.organizationId);
-      }
 
       if (jobCount === 0) {
         // Return empty data if no jobs
@@ -236,14 +231,6 @@ export async function GET(request: NextRequest) {
         })
         .toArray();
 
-      // Development logging only
-      if (process.env.ENVIRONMENT === 'development') {
-        console.log(
-          'Job Performance - Aggregation results count:',
-          results.length,
-        );
-      }
-
       // Process results to create job performance data
       const jobPerformanceData: JobPerformanceData[] = results.map((job) => ({
         jobId: job._id.toString(),
@@ -260,10 +247,10 @@ export async function GET(request: NextRequest) {
         jobDuration: Math.round(job.jobDurationDays),
         salaryRange: job.salary
           ? {
-            min: job.salary.min,
-            max: job.salary.max,
-            inText: job.salary.inText,
-          }
+              min: job.salary.min,
+              max: job.salary.max,
+              inText: job.salary.inText,
+            }
           : null,
         requiredExperience: job.experience,
         skillsRequired: job.skills?.length || 0,
@@ -284,17 +271,20 @@ export async function GET(request: NextRequest) {
         0,
       );
 
-      const avgApplicationsPerJob = totalJobs > 0 ? Math.round(totalApplications / totalJobs) : 0;
-      const overallSuccessRate = totalApplications > 0
-        ? Math.round((totalAccepted / totalApplications) * 100 * 100) / 100
-        : 0;
+      const avgApplicationsPerJob =
+        totalJobs > 0 ? Math.round(totalApplications / totalJobs) : 0;
+      const overallSuccessRate =
+        totalApplications > 0
+          ? Math.round((totalAccepted / totalApplications) * 100 * 100) / 100
+          : 0;
 
-      const avgTimeToFill = jobPerformanceData.length > 0
-        ? Math.round(
-          jobPerformanceData.reduce((sum, job) => sum + job.timeToFill, 0)
-                / jobPerformanceData.length,
-        )
-        : 0;
+      const avgTimeToFill =
+        jobPerformanceData.length > 0
+          ? Math.round(
+              jobPerformanceData.reduce((sum, job) => sum + job.timeToFill, 0) /
+                jobPerformanceData.length,
+            )
+          : 0;
 
       // Calculate job status breakdown
       const openJobs = jobPerformanceData.filter(
@@ -332,7 +322,8 @@ export async function GET(request: NextRequest) {
       const underperformingJobs = [...jobPerformanceData]
         .filter((job) => job.jobDuration >= 7) // Jobs open for at least a week
         .sort(
-          (a, b) => a.applications / a.jobDuration - b.applications / b.jobDuration,
+          (a, b) =>
+            a.applications / a.jobDuration - b.applications / b.jobDuration,
         )
         .slice(0, 5);
 
@@ -363,11 +354,11 @@ export async function GET(request: NextRequest) {
             avgJobDuration:
               jobPerformanceData.length > 0
                 ? Math.round(
-                  jobPerformanceData.reduce(
-                    (sum, job) => sum + job.jobDuration,
-                    0,
-                  ) / jobPerformanceData.length,
-                )
+                    jobPerformanceData.reduce(
+                      (sum, job) => sum + job.jobDuration,
+                      0,
+                    ) / jobPerformanceData.length,
+                  )
                 : 0,
           },
         },
@@ -380,12 +371,16 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(response);
     } catch (error: unknown) {
-      console.error('Job performance analytics error:', error);
+      logger.error(
+        { error, url: request.url },
+        ' Job performance analytics error.',
+        error,
+      );
 
       // Handle specific error types with better messages
       if (
-        error instanceof Error && error.message?.includes('timeout')
-        || error instanceof Error && error.message?.includes('maxTimeMS')
+        (error instanceof Error && error.message?.includes('timeout')) ||
+        (error instanceof Error && error.message?.includes('maxTimeMS'))
       ) {
         return createAnalyticsErrorResponse(
           'Query timeout - please try a smaller date range or reduce filters',

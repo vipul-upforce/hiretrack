@@ -1,20 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, {
-  Candidate,
-  History,
-  Job,
-  Settings,
-} from '@/lib/mongodb';
+import connectToDatabase, { Candidate, History, Settings } from '@/lib/mongodb';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
 import { decryptProviderKeys } from '@/lib/encryption';
+import { logger } from '@/lib/logger/logger.server';
 
 const generateBase64 = async (url: string) => {
-  // const urlParams = new URLSearchParams(url.split("files?pathName=")[1]);
-  // const pathName = urlParams.get("pathName");
   const pathName = url.split('files?pathName=')[1];
   if (!pathName) {
     return '';
@@ -29,11 +23,11 @@ const generateBase64 = async (url: string) => {
 async function calculateComparativeRanking(
   candidateId: any,
   jobId: any,
-  currentScores:any,
+  currentScores: any,
 ) {
   try {
     // Get all candidates for this job with scores
-    const candidates = await Candidate.find({
+    const candidates = await Candidate?.find({
       jobId,
       scores: { $exists: true },
       isDeleted: { $ne: true },
@@ -57,8 +51,12 @@ async function calculateComparativeRanking(
 
     // Determine which score to use for ranking (weighted score if available, otherwise overall)
     const useWeightedScore = currentScores.weightedScore != null;
-    const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore ? 'weighted' : 'overall';
-    const currentRankingScore = useWeightedScore ? currentScores.weightedScore : currentScores.overall;
+    const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore
+      ? 'weighted'
+      : 'overall';
+    const currentRankingScore = useWeightedScore
+      ? currentScores.weightedScore
+      : currentScores.overall;
 
     // Calculate percentiles for each dimension (including ties)
     const calculatePercentile = (value: number, allValues: number[]) => {
@@ -93,19 +91,26 @@ async function calculateComparativeRanking(
         return c.scores?.overall != null;
       })
       .sort((a, b) => {
-        const scoreA = useWeightedScore ? (a.scores?.weightedScore || 0) : (a.scores?.overall || 0);
-        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);
+        const scoreA = useWeightedScore
+          ? a.scores?.weightedScore || 0
+          : a.scores?.overall || 0;
+        const scoreB = useWeightedScore
+          ? b.scores?.weightedScore || 0
+          : b.scores?.overall || 0;
         return scoreB - scoreA; // Highest first
       });
     const index = sortedCandidates.findIndex(
       (c) => c._id.toString() === candidateId.toString(),
     );
 
-    const currentCandidateRank = index === -1 ? sortedCandidates.length : index + 1;
+    const currentCandidateRank =
+      index === -1 ? sortedCandidates.length : index + 1;
 
     // Check for ties at the same ranking score
     const candidatesWithSameScore = sortedCandidates.filter((c) => {
-      const score = useWeightedScore ? c.scores?.weightedScore : c.scores?.overall;
+      const score = useWeightedScore
+        ? c.scores?.weightedScore
+        : c.scores?.overall;
       return score === currentRankingScore;
     });
     const hasTie = candidatesWithSameScore.length > 1;
@@ -114,7 +119,9 @@ async function calculateComparativeRanking(
       tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
     }
     // Get all ranking scores for percentile calculation
-    const allRankingScores = sortedCandidates.map((c) => (useWeightedScore ? (c.scores?.weightedScore || 0) : (c.scores?.overall || 0)));
+    const allRankingScores = sortedCandidates.map((c) =>
+      useWeightedScore ? c.scores?.weightedScore || 0 : c.scores?.overall || 0,
+    );
 
     return {
       overallRank: currentCandidateRank || 1,
@@ -137,7 +144,7 @@ async function calculateComparativeRanking(
       rankingBasedOn,
     };
   } catch (error) {
-    console.error('Error calculating comparative ranking:', error);
+    logger.error({ error }, 'Error calculating comparative ranking');
     return {
       overallRank: 1,
       totalCandidates: 1,
@@ -181,11 +188,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const { candidateId } = data;
-    const candidate = await Candidate.findById(candidateId).select("resume jobId contact scores expectedCTC currentCTC").populate({
-      path: "jobId",
-      select: "description organizationId title skills salary experience evaluationWeights",
-    });
-    console.log(candidate,"candidate in resume evaluation api");
+    const candidate = await Candidate.findById(candidateId)
+      .select('resume jobId contact scores expectedCTC currentCTC')
+      .populate({
+        path: 'jobId',
+        select:
+          'description organizationId title skills salary experience evaluationWeights',
+      });
 
     if (!candidate) {
       return NextResponse.json(
@@ -193,17 +202,19 @@ export async function PUT(request: NextRequest) {
         { status: 404 },
       );
     }
-    const organizationId = candidate.jobId
-      && typeof candidate.jobId === 'object'
-      && 'organizationId' in candidate.jobId
-      ? String(candidate.jobId.organizationId)
-      : '';
-
-    console.log('Looking for settings with organizationId:', organizationId);
+    const organizationId =
+      candidate.jobId &&
+      typeof candidate.jobId === 'object' &&
+      'organizationId' in candidate.jobId
+        ? String(candidate.jobId.organizationId)
+        : '';
 
     const settingsData = await Settings.findOne({
       organizationId,
-    }).select('aiProviders evaluationConfig fileStorage gemini timeZone').lean().exec();
+    })
+      .select('aiProviders evaluationConfig fileStorage gemini timeZone')
+      .lean()
+      .exec();
 
     if (!settingsData) {
       return NextResponse.json(
@@ -243,8 +254,6 @@ export async function PUT(request: NextRequest) {
           customModel: '',
         },
       };
-
-      console.log('Using backward compatibility for legacy Gemini settings');
     }
 
     // Decrypt API keys from database
@@ -252,23 +261,6 @@ export async function PUT(request: NextRequest) {
 
     const { activeProvider } = aiProviders;
     const apiKey = aiProviders[activeProvider]?.api_key;
-
-    // Debug logging
-    console.log(
-      'AI Providers from settings:',
-      JSON.stringify(
-        {
-          activeProvider: aiProviders.activeProvider,
-          hasGeminiKey: !!aiProviders.gemini?.api_key,
-          hasOpenAIKey: !!aiProviders.openai?.api_key,
-          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
-          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
-          anthropicObject: aiProviders.anthropic,
-        },
-        null,
-        2,
-      ),
-    );
 
     if (!apiKey) {
       return NextResponse.json(
@@ -280,7 +272,6 @@ export async function PUT(request: NextRequest) {
     if (!resumeUrl.startsWith('http')) {
       resumeUrl = `${request.headers.get('origin')}${resumeUrl}`.trim();
     }
-    console.log('📌📌RESUME URL : ', resumeUrl);
     if (!resumeUrl) {
       return NextResponse.json(
         { error: 'Resume URL not found' },
@@ -294,13 +285,10 @@ export async function PUT(request: NextRequest) {
       base64Resume = await generateBase64(resumeUrl);
     } else {
       if (!resumeUrl.startsWith('http')) {
-        console.log('reqHeader: ', request.headers.get('origin'));
         resumeUrl = request.headers.get('origin') + resumeUrl;
       }
       const response = await fetch(resumeUrl.trim());
-      // console.log("🔥🔥🔥 Response: ", await response.json());
       if (!response.ok) {
-        // console.log("Resumne FETCH",response);
         return NextResponse.json(
           { error: 'Failed to fetch resume file' },
           { status: 500 },
@@ -331,8 +319,8 @@ export async function PUT(request: NextRequest) {
         const pageCount = pdf.numPages;
 
         if (
-          evaluationConfig.maxPdfPages > 0
-        && pageCount > evaluationConfig.maxPdfPages
+          evaluationConfig.maxPdfPages > 0 &&
+          pageCount > evaluationConfig.maxPdfPages
         ) {
           return NextResponse.json(
             {
@@ -342,18 +330,27 @@ export async function PUT(request: NextRequest) {
           );
         }
       } catch (pdfError) {
-        console.warn('PDF page count check failed:', pdfError);
+        logger.error(
+          { error: pdfError, url: request.url },
+          'PDF page count check failed',
+        );
       }
     }
 
-    const jobDescription = candidate.jobId
-      && typeof candidate.jobId === 'object'
-      && 'description' in candidate.jobId
-      ? String(candidate.jobId.description)
-      : '';
+    const jobDescription =
+      candidate.jobId &&
+      typeof candidate.jobId === 'object' &&
+      'description' in candidate.jobId
+        ? String(candidate.jobId.description)
+        : '';
     const jobData = {
       description: jobDescription,
-      salary: candidate.jobId && typeof candidate.jobId === 'object' && 'salary' in candidate.jobId ? (candidate.jobId.salary as { inText: string }).inText : undefined,
+      salary:
+        candidate.jobId &&
+        typeof candidate.jobId === 'object' &&
+        'salary' in candidate.jobId
+          ? (candidate.jobId.salary as { inText: string }).inText
+          : undefined,
       title:
         typeof candidate.jobId === 'object' && 'title' in candidate.jobId
           ? String(candidate.jobId.title)
@@ -362,21 +359,13 @@ export async function PUT(request: NextRequest) {
         typeof candidate.jobId === 'object' && 'skills' in candidate.jobId
           ? (candidate.jobId.skills as string[])
           : [],
-      experience: candidate.jobId && typeof candidate.jobId === 'object' && 'experience' in candidate.jobId ? (candidate.jobId.experience as number) : undefined,
+      experience:
+        candidate.jobId &&
+        typeof candidate.jobId === 'object' &&
+        'experience' in candidate.jobId
+          ? (candidate.jobId.experience as number)
+          : undefined,
     };
-    // Log what we're passing to the evaluation service
-    console.log(
-      'Passing to AIEvaluationService:',
-      JSON.stringify(
-        {
-          hasAiProviders: !!aiProviders,
-          activeProvider: aiProviders.activeProvider,
-          geminiKeyLength: aiProviders.gemini?.api_key?.length,
-        },
-        null,
-        2,
-      ),
-    );
 
     // Create settings object with decrypted aiProviders
     const settingsForEvaluation = {
@@ -393,7 +382,11 @@ export async function PUT(request: NextRequest) {
     );
 
     // Calculate weighted score if job has custom weights
-    if (candidate.jobId && typeof candidate.jobId === 'object' && 'evaluationWeights' in candidate.jobId) {
+    if (
+      candidate.jobId &&
+      typeof candidate.jobId === 'object' &&
+      'evaluationWeights' in candidate.jobId
+    ) {
       const weightedScore = AIEvaluationService.calculateWeightedScore(
         {
           overall: scores.overall,
@@ -401,7 +394,12 @@ export async function PUT(request: NextRequest) {
           experience: scores.experience,
           affordability: scores.affordability || 0,
         },
-        candidate.jobId.evaluationWeights as { overall: number; skills: number; experience: number; affordability: number; },
+        candidate.jobId.evaluationWeights as {
+          overall: number;
+          skills: number;
+          experience: number;
+          affordability: number;
+        },
       );
       scores.weightedScore = weightedScore;
     }
@@ -440,9 +438,9 @@ export async function PUT(request: NextRequest) {
     const candidateHistory = await History?.findOne({
       candidateId: candidate._id,
       jobId:
-        typeof fullCandidate.jobId === 'object'
-        && '_id' in fullCandidate.jobId
-        && fullCandidate.jobId?._id,
+        typeof fullCandidate.jobId === 'object' &&
+        '_id' in fullCandidate.jobId &&
+        fullCandidate.jobId?._id,
     });
     const candidateHistoryPopulated = await candidateHistory?.populate([
       { path: 'history.assignmentBy', select: '_id name email' },
@@ -466,11 +464,10 @@ export async function PUT(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.log('Upper: ', error);
+    logger.error({ error, url: request.url }, 'Error evaluating candidate.');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    console.log(error);
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 },

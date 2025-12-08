@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
     const { searchParams } = new URL(request.url);
     const userId = searchParams?.get('userId');
-    const jobId = searchParams?.get('jobId'); // NEW: Support job-specific lanes
+    const jobId = searchParams?.get('jobId');
     const { organizationId } = user;
 
     if (!userId) {
@@ -62,7 +62,8 @@ export async function GET(request: NextRequest) {
             .select('defaultLanes lanes')
             .lean()
             .exec();
-          organizationLaneOrder = organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
+          organizationLaneOrder =
+            organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
         }
       } else {
         return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -85,13 +86,15 @@ export async function GET(request: NextRequest) {
       }
 
       // Use defaultLanes if available, fallback to old lanes field, then DEFAULT_LANES
-      organizationLaneOrder = organization.defaultLanes || organization.lanes || DEFAULT_LANES;
+      organizationLaneOrder =
+        organization.defaultLanes || organization.lanes || DEFAULT_LANES;
     }
 
     return NextResponse.json({ lanes: organizationLaneOrder });
   } catch (err: unknown) {
     const error = err as Error;
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -110,10 +113,6 @@ export async function PUT(request: NextRequest) {
     const { lanes: newLanes, jobId } = body;
 
     if (!Lane || !Organization) {
-      console.log('Error: Database models not connected', {
-        Lane: !!Lane,
-        Organization: !!Organization,
-      }); // Log 5: Model availability
       return NextResponse.json(
         { error: 'Database not connected' },
         { status: 400 },
@@ -147,15 +146,11 @@ export async function PUT(request: NextRequest) {
 
       return NextResponse.json({
         message: 'Job lanes updated successfully',
-        jobId: updatedJob._id,
-        lanes: updatedJob.lanes,
-        useCustomLanes: updatedJob.useCustomLanes,
+        jobId: updatedJob?._id,
+        lanes: updatedJob?.lanes,
+        useCustomLanes: updatedJob?.useCustomLanes,
       });
     }
-    console.log(
-      'Processing organization-wide lane update for organizationId:',
-      organizationId,
-    ); // Log 11: Org-level update
     // Update organization default lanes
     const updatedOrganization = await Organization.findByIdAndUpdate(
       organizationId,
@@ -164,24 +159,12 @@ export async function PUT(request: NextRequest) {
     );
 
     if (!updatedOrganization) {
-      console.log(
-        'Error: Organization not found for organizationId:',
-        organizationId,
-      ); // Log 12: Org lookup failure
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 },
       );
     }
-
-    console.log(
-      'Updated organization lanes:',
-      updatedOrganization.defaultLanes,
-    ); // Log 13: Org state after update
-    broadcastLaneUpdate(
-      organizationId,
-      updatedOrganization.defaultLanes || [],
-    );
+    broadcastLaneUpdate(organizationId, updatedOrganization.defaultLanes || []);
 
     return NextResponse.json({
       message: 'Organization lanes updated successfully',
@@ -189,8 +172,8 @@ export async function PUT(request: NextRequest) {
     });
   } catch (err: unknown) {
     const error = err as Error;
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error('PUT error:', { errorMessage, stack: error.stack }); // Log 14: Catch block error
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
@@ -217,7 +200,8 @@ export async function POST(request: Request) {
     return NextResponse.json(lane);
   } catch (err: unknown) {
     const error = err as Error;
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

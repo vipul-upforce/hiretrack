@@ -3,9 +3,10 @@ import connectToDatabase, { Job, Candidate } from '@/lib/mongodb';
 import { handleFileAttachments, handleCustomFieldFiles } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -22,9 +23,12 @@ export async function GET(
 
     return NextResponse.json(job);
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error fetching job by ID');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
 
@@ -78,39 +82,38 @@ export async function PUT(
       );
       data.customFields = cs;
     }
-    // console.log(triggerUserId, "Idddd -== ");
-    // console.log(triggerUserName, "name -== ");
 
     const updatedJob = await Job.findByIdAndUpdate(id, data, { new: true });
 
     if (
-      triggerUserId
-      && triggerUserName
-      && userData?.role !== 'candidate'
-      && organizationId
+      triggerUserId &&
+      triggerUserName &&
+      userData?.role !== 'candidate' &&
+      organizationId
     ) {
       try {
         await NotificationService.notifyJobUpdated({
           organizationId: organizationId.toString(),
           jobId: id,
-          jobTitle: updatedJob.title || 'Untitled Job',
+          jobTitle: updatedJob?.title || 'Untitled Job',
           triggerUserId,
           triggerUserName,
         });
-        console.log('Notfyy nob Update === =- ');
       } catch (notificationError) {
-        console.error(
-          'Failed to send job update notification:',
-          notificationError,
+        logger.error(
+          { notificationError, url: request.url },
+          'Failed to send job update notification',
         );
         // Don't fail the API call if notification fails
       }
     }
     return NextResponse.json(updatedJob);
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error updating job by ID');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
 
@@ -146,8 +149,10 @@ export async function DELETE(
       { status: 200 },
     );
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error deleting job by ID');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }

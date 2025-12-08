@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Candidate, Job, Organization } from '@/lib/mongodb';
 import { Types } from 'mongoose';
+import { logger } from '@/lib/logger/logger.server';
 import {
   withAnalyticsAuth,
   createAnalyticsResponse,
@@ -32,12 +33,12 @@ export async function GET(request: NextRequest) {
 
       let defaultLanes: defaultLanesResponse;
       if (filters?.jobIds && filters?.jobIds?.length > 0) {
-        defaultLanes = await Job.findOne({
+        defaultLanes = await Job?.findOne({
           _id: filters.jobIds[0],
           organizationId,
         }).select('lanes');
       } else {
-        defaultLanes = await Organization.findById(organizationId).select('defaultLanes');
+        defaultLanes = await Organization?.findById(organizationId).select('defaultLanes');
       }
 
       const defaultLanesFinal = defaultLanes.defaultLanes || defaultLanes.lanes || [];
@@ -195,7 +196,7 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(response);
     } catch (error: unknown) {
-      console.error('Candidate funnel analytics error:', error);
+      logger.error({error, url: request.url}, ' Candidate funnel analytics error.');
 
       // Handle specific error types with better messages
       if (

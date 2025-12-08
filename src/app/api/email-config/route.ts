@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,9 +15,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     // Get organization settings
-    const settings = await Settings!.findOne({
-      organizationId: user.organizationId,
-    }).select('mailConfig').lean().exec();
+    const settings = await Settings!
+      .findOne({
+        organizationId: user.organizationId,
+      })
+      .select('mailConfig')
+      .lean()
+      .exec();
     if (!settings) {
       return NextResponse.json({
         fromEmail: 'noreply@hiretrack.com',
@@ -50,7 +55,7 @@ export async function GET(request: NextRequest) {
       provider,
     });
   } catch (error: unknown) {
-    console.error('Error fetching email config:', error);
+    logger.error({ error, url: request.url }, 'Error fetching email config.');
     return NextResponse.json(
       {
         fromEmail: 'noreply@hiretrack.com',

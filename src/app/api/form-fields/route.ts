@@ -13,6 +13,10 @@ export async function POST(request: Request) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'Unknown error occured' },
+      { status: 500 },
+    );
   }
 }
 
@@ -33,5 +37,9 @@ export async function GET(request: Request) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'Unknown error occured' },
+      { status: 500 },
+    );
   }
 }

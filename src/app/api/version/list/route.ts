@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger/logger.server';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -25,9 +26,6 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      console.error(
-        `Failed to fetch version list: ${response.status} ${response.statusText}`,
-      );
       return NextResponse.json(
         { error: 'Failed to fetch version list from server' },
         { status: response.status },
@@ -38,18 +36,28 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(versionData);
   } catch (error: unknown) {
-    console.error('Error fetching version list:', error);
+    logger.error({ error, url: request.url }, 'Error fetching version list');
 
     // Handle timeout errors
     if (error instanceof Error && error.name === 'AbortError') {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Request timeout - server may be unavailable' },
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Request timeout - server may be unavailable',
+        },
         { status: 408 },
       );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error while fetching version list' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Internal server error while fetching version list',
+      },
       { status: 500 },
     );
   }

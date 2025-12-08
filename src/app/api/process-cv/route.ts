@@ -12,6 +12,7 @@ import { decryptProviderKeys } from '@/lib/encryption';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { Types } from 'mongoose';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -39,10 +40,6 @@ async function processResume(
 
     const { activeProvider } = aiProviders;
     const apiKey = aiProviders[activeProvider]?.api_key;
-
-    console.log('processResume - Active Provider:', activeProvider);
-    console.log('processResume - Has API Key:', !!apiKey);
-
     if (!apiKey) {
       throw new Error(
         `API key not found for active provider: ${activeProvider}`,
@@ -53,8 +50,9 @@ async function processResume(
     const provider = AIProviderFactory.getProvider(activeProvider);
 
     // Get the selected model for this provider
-    const selectedModel = aiProviders[activeProvider]?.customModel
-      || aiProviders[activeProvider]?.model;
+    const selectedModel =
+      aiProviders[activeProvider]?.customModel ||
+      aiProviders[activeProvider]?.model;
 
     // Process the resume using the selected provider and model
     const parsedData = await provider.processResume(
@@ -112,9 +110,9 @@ function processZipEntries(zip: AdmZip): File[] {
   for (const entry of entries) {
     // Skip macOS system files and hidden files
     if (
-      entry.entryName.startsWith('__MACOSX/')
-      || entry.entryName.includes('/._')
-      || entry.entryName.startsWith('._')
+      entry.entryName.startsWith('__MACOSX/') ||
+      entry.entryName.includes('/._') ||
+      entry.entryName.startsWith('._')
     ) {
       continue;
     }
@@ -170,7 +168,10 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const settings = await Settings.findOne({ organizationId }).select('aiProviders gemini fileStorage').lean().exec();
+    const settings = await Settings.findOne({ organizationId })
+      .select('aiProviders gemini fileStorage')
+      .lean()
+      .exec();
     if (!settings) {
       return NextResponse.json(
         { error: 'Settings not found' },
@@ -209,8 +210,6 @@ export async function POST(request: NextRequest) {
           customModel: '',
         },
       };
-
-      console.log('Using backward compatibility for legacy Gemini settings');
     }
 
     // Decrypt API keys from database - MOVED UP
@@ -270,11 +269,6 @@ export async function POST(request: NextRequest) {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString('base64');
-
-        // Log the base64 data length for debugging
-        console.log(
-          `Processing file: ${file.name}, Base64 length: ${base64Data.length}`,
-        );
 
         // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
@@ -398,7 +392,7 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id.toString(),
       successCount: cvBatchInfo.successCount,
       failureCount: cvBatchInfo.failureCount,
-      triggerUserId: user?.id,
+      triggerUserId: user?.id!,
       triggerUserName: user?.name || 'Unknown User',
     });
 
@@ -409,6 +403,7 @@ export async function POST(request: NextRequest) {
       errors,
     });
   } catch (error) {
+    logger.error({ error, url: request.url }, 'Error processing CV batch');
     // If there's an error in the main process, update the batch if it exists
     if (cvBatchInfo) {
       cvBatchInfo.status = 'failed';
@@ -464,6 +459,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(batches, { status: 200 });
   } catch (error) {
+    logger.error({ error, url: request.url }, 'Error fetching CV batches');
     return NextResponse.json(
       {
         error:

@@ -6,6 +6,7 @@ import {
 } from '@/lib/google-calendar/config';
 import { encryptText, decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -103,14 +104,13 @@ export async function GET(req: NextRequest) {
         },
       );
     }
-    // const orgId = req.cookies.get("org_id")?.value;
     // Get settings
     const settings = await Settings.findOne({
       organizationId,
     });
     if (
-      !settings?.googleCalendar?.clientId
-      || !settings?.googleCalendar?.clientSecret
+      !settings?.googleCalendar?.clientId ||
+      !settings?.googleCalendar?.clientSecret
     ) {
       return new NextResponse(
         `
@@ -129,12 +129,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Decrypt client secret
-    // console.log(orgId, "orgId in google calendar callback route");
-    console.log(
-      organizationId,
-      'organizationId in google calendar callback route',
-    );
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
       organizationId,
@@ -148,21 +142,10 @@ export async function GET(req: NextRequest) {
       redirectUri,
     });
 
-    // Exchange code for tokens
-    console.log('Exchanging code for tokens...');
     const { tokens } = await oauth2Client.getToken(code);
-    // console.log('Received tokens:', {
-    //   access_token: tokens.access_token ? 'present' : 'missing',
-    //   refresh_token: tokens.refresh_token ? 'present' : 'missing',
-    //   scope: tokens.scope,
-    //   expiry_date: tokens.expiry_date
-    // });
 
     // Check if we have a refresh token
     if (!tokens.refresh_token) {
-      console.error(
-        'No refresh token received! This usually means the user was already connected.',
-      );
       return new NextResponse(
         `
         <html>
@@ -192,8 +175,6 @@ export async function GET(req: NextRequest) {
       'https://www.googleapis.com/auth/userinfo.email',
     ];
     const grantedScopes = tokens.scope?.split(' ') || [];
-    // console.log("Required scopes:", requiredScopes);
-    // console.log("Granted scopes:", grantedScopes);
 
     const hasCalendarScope = requiredScopes
       .slice(0, 2)
@@ -203,7 +184,6 @@ export async function GET(req: NextRequest) {
     );
 
     if (!hasCalendarScope) {
-      console.error('Missing calendar scopes!');
       return new NextResponse(
         `
         <html>
@@ -222,7 +202,6 @@ export async function GET(req: NextRequest) {
     }
 
     if (!hasEmailScope) {
-      console.error('Missing email scope!');
       return new NextResponse(
         `
         <html>
@@ -240,15 +219,12 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get user email
-    console.log('Getting user info...');
     const oauth2 = google.oauth2({
       auth: oauth2Client,
       version: 'v2',
     });
     const userInfo = await oauth2.userinfo.get();
     const userEmail = userInfo.data.email || '';
-    // console.log("User email:", userEmail);
 
     // Encrypt and save tokens
     const encryptedAccessToken = encryptText(
@@ -328,8 +304,9 @@ export async function GET(req: NextRequest) {
       },
     );
   } catch (error) {
-    console.error('Google Calendar callback error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Connection failed';
+    logger.error({ error }, 'Google Calendar callback error');
+    const errorMessage =
+      error instanceof Error ? error.message : 'Connection failed';
     return new NextResponse(
       `
       <html>

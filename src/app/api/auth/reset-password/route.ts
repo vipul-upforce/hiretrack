@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import connectToDatabase, { CandidateAccount, User } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { passwordResetRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleResetPassword(req: NextRequest) {
   try {
@@ -32,7 +33,6 @@ async function handleResetPassword(req: NextRequest) {
         resetToken: resetTokenHash,
         resetTokenExpiry: { $gt: new Date() },
       });
-      // console.log("Checking user collection:", user ? "Found" : "Not found");
     } catch (e) {
       user = null;
       console.log('ERROR FINDING USER:', e);
@@ -49,7 +49,7 @@ async function handleResetPassword(req: NextRequest) {
           isCandidate = true;
         }
       } catch (e) {
-        console.log('ERROR FINDING CANDIDATE:', e);
+        logger.error({ error: e, url: req.url }, 'ERROR FINDING CANDIDATE');
         user = null;
       }
     }
@@ -81,7 +81,7 @@ async function handleResetPassword(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error({ error, url: req.url }, 'Reset password error');
     return NextResponse.json(
       { error: 'Failed to reset password' },
       { status: 500 },
@@ -149,7 +149,7 @@ export async function PUT(req: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Reset password error:', error);
+    logger.error({ error, url: req.url }, 'Reset password error');
     return NextResponse.json(
       { error: 'Failed to reset password' },
       { status: 500 },

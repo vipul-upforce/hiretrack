@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { History } from '@/lib/mongodb';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,20 +15,20 @@ export async function GET(request: NextRequest) {
     // Build search filter
     const searchFilter = query
       ? {
-        $or: [
-          { 'history.title': { $regex: query, $options: 'i' } },
-          { 'candidateData.name': { $regex: query, $options: 'i' } },
-          { 'candidateData.email': { $regex: query, $options: 'i' } },
-          { 'candidateData.skills': { $regex: query, $options: 'i' } },
-          {
-            'candidateData.remarks.description': {
-              $regex: query,
-              $options: 'i',
+          $or: [
+            { 'history.title': { $regex: query, $options: 'i' } },
+            { 'candidateData.name': { $regex: query, $options: 'i' } },
+            { 'candidateData.email': { $regex: query, $options: 'i' } },
+            { 'candidateData.skills': { $regex: query, $options: 'i' } },
+            {
+              'candidateData.remarks.description': {
+                $regex: query,
+                $options: 'i',
+              },
             },
-          },
-          { 'jobData.title': { $regex: query, $options: 'i' } },
-        ],
-      }
+            { 'jobData.title': { $regex: query, $options: 'i' } },
+          ],
+        }
       : {};
 
     const historyLogs = await History?.aggregate([
@@ -385,18 +386,6 @@ export async function GET(request: NextRequest) {
         // Remove temporary fields used for conversion
         $unset: ['candidateObjectId', 'jobObjectId', 'history.parsedDateTime'],
       },
-      // {
-      //   // Add field to limit attachment sizes
-      //   $addFields: {
-      //     "history.attachments": {
-      //       $cond: {
-      //         if: { $isArray: "$history.attachments" },
-      //         then: { $slice: ["$history.attachments", 5] },
-      //         else: "$history.attachments",
-      //       },
-      //     },
-      //   },
-      // },
       {
         // Use facet for pagination and counting
         $facet: {
@@ -468,8 +457,8 @@ export async function GET(request: NextRequest) {
       },
     ]);
 
-    const logs = historyLogs[0].logs || [];
-    const totalCount = historyLogs[0].totalCount[0]?.count || 0;
+    const logs = historyLogs?.[0]?.logs ?? [];
+    const totalCount = historyLogs?.[0]?.totalCount?.[0]?.count ?? 0;
 
     return NextResponse.json({
       logs,
@@ -477,7 +466,7 @@ export async function GET(request: NextRequest) {
       totalLines: totalCount,
     });
   } catch (error) {
-    console.error('Error fetching history logs:', error);
+    logger.error({ error, url: request.url }, 'Error fetching history logs');
     return NextResponse.json(
       { error: 'Failed to fetch history logs.' },
       { status: 500 },

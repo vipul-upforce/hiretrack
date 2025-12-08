@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { ChecklistTemplate } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 // GET - Get a specific checklist template
 export async function GET(
@@ -37,7 +38,7 @@ export async function GET(
       data: template,
     });
   } catch (error) {
-    console.error('Error fetching checklist template:', error);
+    logger.error({ error, url: req.url }, 'Error fetching checklist template');
     return NextResponse.json(
       { error: 'Failed to fetch template' },
       { status: 500 },
@@ -59,9 +60,7 @@ export async function PUT(
     if (!decoded) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const {
-      name, description, fields, isActive,
-    } = body;
+    const { name, description, fields, isActive } = body;
 
     const template = await ChecklistTemplate!.findOne({
       _id: params.id,
@@ -90,7 +89,7 @@ export async function PUT(
       data: template,
     });
   } catch (error) {
-    console.error('Error updating checklist template:', error);
+    logger.error({ error, url: req.url }, 'Error updating checklist template');
     return NextResponse.json(
       { error: 'Failed to update template' },
       { status: 500 },
@@ -129,7 +128,7 @@ export async function DELETE(
       message: 'Template deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting checklist template:', error);
+    logger.error({ error, url: req.url }, 'Error deleting checklist template.');
     return NextResponse.json(
       { error: 'Failed to delete template' },
       { status: 500 },
