@@ -4,7 +4,7 @@ import connectToDatabase, {
   History,
   JobLaneConfig,
   User,
-} from "@/lib/mongodb";
+} from '@/lib/mongodb';
 import {
   Attachments,
   FileAttachment,
@@ -16,13 +16,12 @@ import mongoose, { Types } from 'mongoose';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
-import {
-  filterChecklistResponses,
-} from "@/lib/utils/checklistVisibility";
-import { NotificationService } from "@/lib/notifications/notificationService";
-import { UserRole } from "@/lib/models/JobLaneConfig";
-import { sendRemarkNotificationWithMentions } from "@/lib/unifiedEmailService";
-import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { filterChecklistResponses } from '@/lib/utils/checklistVisibility';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { UserRole } from '@/lib/models/JobLaneConfig';
+import { sendRemarkNotificationWithMentions } from '@/lib/unifiedEmailService';
+import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(request: NextRequest) {
   // Getting the history data
@@ -85,9 +84,10 @@ export async function POST(request: NextRequest) {
           (lc: any) => lc.laneId === entry.checklistForm.laneId,
         );
         if (targetLane) {
-          const checklist = entry.checklistForm.checklistType === 'incoming'
-            ? targetLane.incomingChecklist
-            : targetLane.outgoingChecklist;
+          const checklist =
+            entry.checklistForm.checklistType === 'incoming'
+              ? targetLane.incomingChecklist
+              : targetLane.outgoingChecklist;
 
           if (checklist && checklist.fields) {
             checklistFields = checklist.fields;
@@ -129,9 +129,7 @@ export async function PATCH(request: NextRequest) {
     if (!userData) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const {
-      id, description, isPrivate, rating,
-    } = data;
+    const { id, description, isPrivate, rating } = data;
     const user = userData;
 
     if (!History) {
@@ -180,10 +178,6 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    console.log(updateFields, 'updateFields');
-
-    console.log(filter, 'filter');
-
     // 🔹 Update doc
     const updatedHistory = await History.findOneAndUpdate(
       filter,
@@ -197,7 +191,6 @@ export async function PATCH(request: NextRequest) {
         { status: 404 },
       );
     }
-    console.log(updatedHistory, 'updatedHistory');
 
     // 🔹 Populate refs
     const populatedHistory = await updatedHistory.populate([
@@ -206,13 +199,13 @@ export async function PATCH(request: NextRequest) {
       { path: 'history.previousInterviewer', select: '_id name email' },
       { path: 'history.note.userId', select: '_id name email' },
     ]);
-    console.log(populatedHistory, 'populatedHistory');
 
     // 🔹 Extract updated item
-    const updatedItem = populatedHistory.history.find((item) => (isRemark
-      ? item.remark && item.remark.id === id
-      : item.note && item?._id.toString() === id));
-    console.log(updatedItem, 'updatedItem');
+    const updatedItem = populatedHistory.history.find((item) =>
+      isRemark
+        ? item.remark && item.remark.id === id
+        : item.note && item?._id.toString() === id,
+    );
 
     if (!updatedItem) {
       return NextResponse.json(
@@ -252,7 +245,7 @@ export async function PATCH(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    console.error('Error updating remark/note:', error);
+    logger.error({ error, url: request.url }, 'Error updating remark/note:');
     return NextResponse.json(
       { error: 'Failed to update remark/note' },
       { status: 500 },
@@ -277,22 +270,18 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // data = { ...data, id: uuidv4() };
     if (data?.newEntry?.remark?.description) {
-      // console.log("⏹️⏹️⏹️⏹️ ", data);
       data = {
         ...data,
         newEntry: {
           ...data.newEntry,
           dateTime: new Date().toISOString(),
-          // dateTime: data.dateTime,
           remark: {
             ...data.newEntry.remark,
             id: uuidv4(),
           },
         },
       };
-      // console.log("⏭️⏭️⏭️⏭️ ", data);
     }
 
     const fileStorage = userData.fileStorage || 'local';
@@ -310,7 +299,9 @@ export async function PUT(request: NextRequest) {
         files: data.newEntry.attachments.filter(
           (attachment: FileAttachment) => !attachment.type.startsWith('image/'),
         ) as FileAttachment[],
-        images: data.newEntry.attachments.filter((attachment: FileAttachment) => attachment.type.startsWith('image/')) as FileAttachment[],
+        images: data.newEntry.attachments.filter((attachment: FileAttachment) =>
+          attachment.type.startsWith('image/'),
+        ) as FileAttachment[],
       };
       const updatedFiles = await handleFileAttachments(
         newAttachments,
@@ -384,37 +375,37 @@ export async function PUT(request: NextRequest) {
         candidateId: data.candidateId,
         candidateName: candidateData.name,
         jobId:
-          typeof data.jobId === "string" && data.jobId !== ""
+          typeof data.jobId === 'string' && data.jobId !== ''
             ? data.jobId
             : data.jobId._id || null,
-        jobTitle: data.jobId?.title || "Unknown Job",
+        jobTitle: data.jobId?.title || 'Unknown Job',
         remarkText: data.newEntry.remark.description,
         triggerUserId: userData.id,
-        triggerUserName: userData.name || "Unknown User",
-        roles: ["admin", "hr"],
+        triggerUserName: userData.name || 'Unknown User',
+        roles: ['admin', 'hr'],
         validMentionUserIds: selectedMentionUserIds,
       });
 
       // ⭐ INSERTED EMAIL NOTIFICATION BLOCK HERE ⭐
       try {
-        const {organizationId} = userData;
+        const { organizationId } = userData;
         const users = await User.find({
           organizationId,
-          role: { $in: ["hr", "admin"] },
+          role: { $in: ['hr', 'admin'] },
           $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-        }).select("email");
+        }).select('email');
         const remarkDate = (await getFormattedDate(
           request,
           data.newEntry.remark.date,
           false,
-          userData.organizationId
+          userData.organizationId,
         )) as string;
-        const remark = data.newEntry.remark.description || "";
-        const remark_for = candidateData?.name || "";
+        const remark = data.newEntry.remark.description || '';
+        const remark_for = candidateData?.name || '';
         const remark_adder = userData.name;
         const rating = data.newEntry?.remark?.rating || null;
         const candidateProfileLink = `${process.env.NEXT_PUBLIC_APP_URL}/candidate/${data.candidateId}`;
-        const organizationName = userData.organizationInfo?.name || "HireTrack";
+        const organizationName = userData.organizationInfo?.name || 'HireTrack';
         const emailList = users.map((user) => user.email);
         await sendRemarkNotificationWithMentions(
           organizationId,
@@ -426,18 +417,21 @@ export async function PUT(request: NextRequest) {
             jobId: data?.jobId?._id?.toString?.() || data?.jobId?.toString(),
             candidateId: data.candidateId.toString(),
             candidateName: remark_for,
-            jobTitle: data?.jobId?.title || "Unknown Position",
+            jobTitle: data?.jobId?.title || 'Unknown Position',
             reviewerName: remark_adder,
             remarkDate,
             rating,
             candidateProfileLink,
             organizationName,
-            recipientName: emailList[0] || "",
+            recipientName: emailList[0] || '',
           },
-          emailList as string[]
+          emailList as string[],
         );
       } catch (err) {
-        console.error("Email remark notification failed:", err);
+        logger.error(
+          { err, url: request.url },
+          'Email remark notification failed',
+        );
       }
     }
 
@@ -464,12 +458,15 @@ export async function PUT(request: NextRequest) {
     } as ICandidate & { history?: ICandidateHistory[] });
 
     return NextResponse.json(transformedHistory);
-    // return NextResponse.json({});
   } catch (error) {
-    console.error(error);
+    logger.error({ error, url: request.url }, 'Error adding history entry:');
     if (error instanceof Error) {
-      console.error(error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 }

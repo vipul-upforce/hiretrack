@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, {
-  Settings, User, Candidate, History,
+   User, Candidate, History,
 } from '@/lib/mongodb';
 import { handleCustomFieldFiles, handleFileAttachments, handleSingleFile } from '@/lib/fileUtils';
 import { ICandidate as IExternalCandidate } from '@/lib/models/candidate';
@@ -8,13 +8,9 @@ import mongoose, { ProjectionType } from 'mongoose';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { IinfoUpdateLog } from '@/lib/models/history';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
-import { sendEventEmailWithHistory } from '@/lib/unifiedEmailService';
 import { Attachment } from '../route';
-import { sendMail } from '../../event-mail';
 
 interface UpdateObject {
   $set: Record<string, unknown>;
@@ -163,42 +159,6 @@ export async function PUT(
       }
     }
 
-    // if (data.customFields) {
-    //   const cs = await handleCustomFieldFiles(
-    //     data.customFields,
-    //     fileStorage,
-    //     organizationId
-    //   );
-    //   data.customFields = cs;
-    //   if (
-    //     JSON.stringify(existingCandidate.customFields) !==
-    //     JSON.stringify(data.customFields)
-    //   ) {
-    //     const allKeys = Object.keys({
-    //       ...existingCandidate.customFields,
-    //       ...data.customFields,
-    //     });
-
-    //     allKeys.forEach((key) => {
-    //       const prev = existingCandidate.customFields[key];
-    //       const curr = data.customFields[key];
-    //       const csAttachments =
-    //         Array(data.customFields) &&
-    //         data.customFields.length > 0 &&
-    //         "base64" in data.customFields[0]
-    //           ? data.customFields[key]
-    //           : null;
-    //       if (prev !== curr) {
-    //         updates.push({
-    //           title: `Updated ${key}`,
-    //           previousValue: prev || "~",
-    //           currentValue: curr || "~",
-    //           attachments: csAttachments,
-    //         });
-    //       }
-    //     });
-    //   }
-    // }
     if (data.customFields) {
       // Process uploaded custom field files
       const cs = await handleCustomFieldFiles(
@@ -278,21 +238,6 @@ export async function PUT(
           userId: userData?.id,
         };
       } else {
-        // // const tzFormattedTime = await getFormattedDate(
-        // //   request,
-        // //   new Date(data.assignment.time)
-        // // );
-        // // const tzFormattedAssignedAt = await getFormattedDate(
-        // //   request,
-        // //   new Date(data.assignment.assignedAt)
-        // // ); 
-
-        // // console.log("~~~~~~~~~ ", tzFormattedAssignedAt, tzFormattedTime);
-        // const updateAssignment = {
-        //   ...data.assignment,
-        //   // "assignment.time": tzFormattedTime,
-        //   // "assignment.assignedAt": tzFormattedAssignedAt,
-        // };
         updateObj.$set.assignment = data.assignment;
       }
     }
@@ -335,17 +280,12 @@ export async function PUT(
       updateObj.$set.tags = data.tags;
     }
     if ('followUp' in data) {
-      console.log(
-        '☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ FOllow Up in here',
-        data.followUp,
-      );
       updateObj.$set.followUp = data.followUp;
 
       // Follow-up notifications
       const oldFollowUp = existingCandidate.followUp;
       const newFollowUp = data?.followUp;
-      console.log(oldFollowUp, "oldFollowUp");
-      console.log(newFollowUp, "newFollowUp");
+     
       try {
         const jobInfo = existingCandidate.jobId as any;
 
@@ -413,7 +353,6 @@ export async function PUT(
               triggerUserName: userData?.name,
             });
           }
-        // }
       } catch (notificationError) {
         console.error(
           "Failed to send follow-up notifications:",
@@ -427,7 +366,6 @@ export async function PUT(
     if (assignmentCompletedFollowUp) {
       const completionNote = `${userData?.name || "Unknown User"} has completed the last step.`;
       const oldAssignment = existingCandidate.assignment;
-      const newAssignment = data.assignment;
       if ("followUp" in data && data.followUp && data.followUp.note) {
         // Split on ||||| and trim each note
         const noteArr = data.followUp.note
@@ -435,17 +373,14 @@ export async function PUT(
           .map((n) => n.trim())
           .filter(Boolean);
 
-        console.log(noteArr, 'split notes');
 
         // 🛠 Look for an existing completion note (from ANY user)
         const completionIndex = noteArr.findIndex((n) => n.endsWith('has completed the last step.'));
-        console.log(completionIndex, 'completionIndex');
 
         if (completionIndex !== -1) {
           // 🗑 Remove existing completion note
           noteArr.splice(completionIndex, 1);
         }
-        console.log(noteArr, 'noteArr after remove acisting');
 
         // ➕ Always add new completion note at the end
         noteArr.push(completionNote);
@@ -458,7 +393,6 @@ export async function PUT(
 
         updateObj.$set.followUp = data.followUp;
 
-        console.log(data.followUp.note, 'updated follow-up note');
       } else {
         if (oldAssignment && oldAssignment !== null) {
         // No existing followUp → set new, wrapped properly
@@ -471,41 +405,6 @@ export async function PUT(
       }
       
     }
-    // const whatWasUpdated: string[] = [];
-    // if ("attachments" in data) {
-    //   if (data.attachment === null) {
-    //     updateObj.$unset = { attachments: 1 };
-    //   } else {
-    //     if (
-    //       JSON.stringify(existingCandidate.attachments) !==
-    //       JSON.stringify(data.attachments)
-    //     ) {
-    //       whatWasUpdated.push("attachments");
-    //     }
-    //     updateObj.$set.attachments = data.attachments;
-    //   }
-    // }
-    // if ("resume" in data) {
-    //   if (data.resume === null) {
-    //     updateObj.$unset = { resume: 1 };
-    //   } else {
-    //     updateObj.$set.resume = data.resume;
-    //   }
-    // }
-    // if ("customFields" in data) {
-    //   if (data.customFields === null) {
-    //     updateObj.$unset = { customFields: 1 };
-    //   } else {
-    //     updateObj.$set.customFields = data.customFields;
-    //   }
-    // }
-
-    // if ("skills" in data) {
-    //   updateObj.$set.skills = data.skills;
-    // }
-    // if ("scores" in data) {
-    //   updateObj.$set.scores = data.scores;
-    // }
 
     if (
       'remarks' in data
@@ -612,59 +511,6 @@ export async function PUT(
       }
     });
 
-    // fieldsToTrack.forEach((key) => {
-    //   if (
-    //     key in data &&
-    //     key == "resume" &&
-    //     JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
-    //   ) {
-    //     whatWasUpdated.push(key);
-    //   }
-    //   if (
-    //     key in data &&
-    //     key == "customFields" &&
-    //     JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
-    //   ) {
-    //     // console.log("######### CUSTOM FIELDS: ", data.customFields);
-    //     // const customKeys = Object.keys(data.customFields);
-    //     // whatWasUpdated.push(...customKeys);
-    //     const customKeys = Object.keys(data.customFields);
-
-    //     customKeys.forEach((key) => {
-    //       const oldValue = existingCandidate.customFields?.[key];
-    //       const newValue = data.customFields[key];
-    //       if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-    //         whatWasUpdated.push(key);
-    //       }
-    //     });
-    //   }
-    //   if (
-    //     key in data &&
-    //     key !== "resume" &&
-    //     key !== "customFields" &&
-    //     key !== "tags"
-    //   ) {
-    //     if (
-    //       (key === "currentCTC" || key === "expectedCTC") &&
-    //       userData.role &&
-    //       userData.role === "interviewer"
-    //     ) {
-    //       return;
-    //     }
-    //     if (
-    //       JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
-    //     ) {
-    //       whatWasUpdated.push(key);
-    //       updateObj.$set[key] = data[key];
-    //       updates.push({
-    //         title: `Updated ${key.charAt(0).toUpperCase() + key.slice(1)}`,
-    //         previousValue: existingCandidate[key],
-    //         currentValue: data[key],
-    //       });
-    //     }
-    //   }
-    // });
-
     if (!Candidate || !History) {
       return NextResponse.json(
         { error: 'Database not connected' },
@@ -672,15 +518,12 @@ export async function PUT(
       );
     }
 
-    // console.log("$$$$$$$ UPDATED OBJ: ", updateObj);
-
     if (Object.keys(updateObj.$set).length > 0 || updateObj.$unset) {
       const updatedCandidate = (await Candidate.findByIdAndUpdate(
         id,
         updateObj,
         {
           new: true,
-          // runValidators: true,
         },
       )
         .populate([
@@ -711,30 +554,9 @@ export async function PUT(
         );
       }
 
-      // let candidateHistory = null;
 
       if (updates.length > 0) {
-        // let combined_Description = updates
-        //   .map((item) => {
-        //     if (item.attachments) return;
-        //     const label = item.title?.startsWith("Updated ")
-        //       ? item.title.slice("Updated ".length)
-        //       : item.title;
-
-        //     return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
-        //   })
-        //   .join("\n");
-        // let combined_Description = updates
-        //   .map((item) => {
-        //     if (item.attachments) return;
-        //     const label = item.title?.startsWith("Updated ")
-        //       ? item.title.slice("Updated ".length)
-        //       : item.title;
-
-        //     return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
-        //   })
-        //   .join("\n");
-
+       
         const historyEntry = {
           dateTime: data.dateTime || new Date(),
           title: `Updated ${whatWasUpdated.join(' & ')}`,
@@ -748,8 +570,6 @@ export async function PUT(
             .filter((item) => item.attachments)
             .flatMap((item) => item.attachments!),
         };
-
-        // console.log("USERDATA>ID:", userData.id);
 
         await History?.findOneAndUpdate(
           {
@@ -781,8 +601,6 @@ export async function PUT(
         if ("assignment" in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          // console.log(newAssignment, "newAssignmentin assinment notification");
-          // console.log(oldAssignment, "oldAssignmentin assinment notification");
           if (newAssignment) {
             // If assignment is new or interviewer changed
             if (
@@ -793,17 +611,13 @@ export async function PUT(
               const interviewer = await User?.findById(
                 newAssignment.interviewerId
               ).select("_id name email");
-              console.log(interviewer, "interviewerin assinment notification");
-                newAssignment.interviewerId,
-              ).select('_id name email');
-
+       
               if (newAssignment && interviewer) {
                 if (
                   !newAssignment.time &&
                   (!oldAssignment || !oldAssignment.time) &&
                   oldAssignment?.interviewerId?.toString() !== newAssignment.interviewerId
                 ) { 
-                  console.log("notifyCandidateAssigned");
                   await NotificationService.notifyCandidateAssigned({
                     organizationId,
                     candidateId: updatedCandidate._id.toString(),
@@ -823,7 +637,6 @@ export async function PUT(
                 if (newAssignment && newAssignment.time) {
                   if (newAssignment.interviewerId !== oldAssignment?.interviewerId?.toString()
                     && (!oldAssignment || !oldAssignment.time)) {
-                      console.log("notifyMeetingScheduled");
                     await NotificationService.notifyMeetingScheduled({
                       organizationId,
                       candidateId: updatedCandidate._id.toString(),
@@ -842,7 +655,6 @@ export async function PUT(
                   } else if (oldAssignment
                     && newAssignment
                     && newAssignment.interviewerId === oldAssignment?.interviewerId?.toString()) {
-                   console.log("notifyMeetingUpdated");
                     await NotificationService.notifyMeetingUpdated({
                       organizationId,
                       candidateId: updatedCandidate._id.toString(),
@@ -884,7 +696,6 @@ export async function PUT(
             const interviewer = await User?.findById(
               oldAssignment?.interviewerId,
             ).select('_id name email role');
-            console.log(interviewer, "interviewer");
             if (newAssignment === null && interviewer) {
               if (userData?.id !== interviewer._id.toString()) {
                 await NotificationService.notifyCandidateUnassigned({
@@ -921,7 +732,6 @@ export async function PUT(
           }
         }
 
-        // Add follow-up notification logic before the Candidate.findByIdAndUpdate
               await NotificationService.notifyCandidateUnassigned({
                 organizationId,
                 candidateId: updatedCandidate._id.toString(),
@@ -954,135 +764,10 @@ export async function PUT(
           }
         }
 
-        // Remarks notification
-        // if (
-        //   "remarks" in data &&
-        //   Array.isArray(data.remarks) &&
-        //   data.remarks.length > 0
-        // ) {
-        //   const existingRemarks = existingCandidate.remarks || [];
-        //   if (data.remarks.length > existingRemarks.length) {
-        //     const latestRemark = data.remarks[data.remarks.length - 1];
-        //     if (latestRemark?.description) {
-        //       await NotificationService.notifyRemarkAdded({
-        //         organizationId: organizationId,
-        //         candidateId: updatedCandidate._id.toString(),
-        //         candidateName: updatedCandidate.name,
-        //         jobId:
-        //           jobInfo?._id?.toString() ||
-        //           updatedCandidate.jobId?.toString() ||
-        //           "",
-        //         jobTitle: jobInfo?.title || "Unknown Job",
-        //         remarkText: latestRemark.description,
-        //         triggerUserId: userData._id,
-        //         triggerUserName: userData.name,
-        //       });
-        //     }
-        //   }
-        // }
-
-        // // Follow-up notification
-        // if ("followUp" in data && data.followUp) {
-        //   const oldFollowUp = existingCandidate.followUp;
-        //   if (
-        //     !oldFollowUp ||
-        //     JSON.stringify(oldFollowUp) !== JSON.stringify(data.followUp)
-        //   ) {
-        //     await NotificationService.notifyFollowUpAdded({
-        //       organizationId: organizationId,
-        //       candidateId: updatedCandidate._id.toString(),
-        //       candidateName: updatedCandidate.name,
-        //       jobId:
-        //         jobInfo?._id?.toString() ||
-        //         updatedCandidate.jobId?.toString() ||
-        //         "",
-        //       jobTitle: jobInfo?.title || "Unknown Job",
-        //       followupNote: data.followUp.note || "",
-        //       followupDate: data.followUp.date
-        //         ? new Date(data.followUp.date)
-        //         : undefined,
-        //       triggerUserId: userData._id,
-        //       triggerUserName: userData.name,
-        //     });
-        //   }
-        // }
-        // if ("followUp" in data && data.followUp) {
-        //   const oldFollowUp = existingCandidate.followUp;
-        //   console.log("DEBUG: followUp in data", { dataFollowUp: data.followUp, oldFollowUp });
-
-        //   // Check if followUp is being removed (null or "empty" object)
-        //   const isFollowUpEmpty =
-        //     data.followUp === null ||
-        //     (data.followUp &&
-        //       data.followUp.note === null);
-
-        //   if (isFollowUpEmpty && oldFollowUp) {
-        //     // Follow-up removed
-        //     console.log("DEBUG: Triggering notifyFollowupRemoved");
-        //     await NotificationService.notifyFollowupRemoved({
-        //       organizationId: organizationId,
-        //       candidateId: updatedCandidate._id.toString(),
-        //       candidateName: updatedCandidate.name,
-        //       jobId:
-        //         jobInfo?._id?.toString() ||
-        //         updatedCandidate.jobId?.toString() ||
-        //         "",
-        //       jobTitle: jobInfo?.title || "Unknown Job",
-        //       triggerUserId: userData._id,
-        //       triggerUserName: userData.name,
-        //     });
-        //   } else if (
-        //     data.followUp &&
-        //     data.followUp !== null &&
-        //     (data.followUp.note !== null) &&
-        //     JSON.stringify(oldFollowUp) !== JSON.stringify(data.followUp) &&
-        //     !("assignment" in data && data.assignment === null)
-        //   ) {
-        //     // Follow-up updated or added (but not when unassigning)
-        //     console.log("DEBUG: Triggering notifyFollowupUpdated");
-        //     await NotificationService.notifyFollowupUpdated({
-        //       organizationId: organizationId,
-        //       candidateId: updatedCandidate._id.toString(),
-        //       candidateName: updatedCandidate.name,
-        //       jobId:
-        //         jobInfo?._id?.toString() ||
-        //         updatedCandidate.jobId?.toString() ||
-        //         "",
-        //       jobTitle: jobInfo?.title || "Unknown Job",
-        //       triggerUserId: userData._id,
-        //       triggerUserName: userData.name,
-        //     });
-
-        //     if (!oldFollowUp) {
-        //       // New follow-up added
-        //       console.log("DEBUG: Triggering notifyFollowUpAdded");
-        //       await NotificationService.notifyFollowUpAdded({
-        //         organizationId: organizationId,
-        //         candidateId: updatedCandidate._id.toString(),
-        //         candidateName: updatedCandidate.name,
-        //         jobId:
-        //           jobInfo?._id?.toString() ||
-        //           updatedCandidate.jobId?.toString() ||
-        //           "",
-        //         jobTitle: jobInfo?.title || "Unknown Job",
-        //         followupNote: data.followUp.note || "",
-        //         followupDate: data.followUp.date
-        //           ? new Date(data.followUp.date)
-        //           : undefined,
-        //         triggerUserId: userData._id,
-        //         triggerUserName: userData.name,
-        //       });
-        //     }
-        //   }
-        // }
-
-        // Add follow-up notification logic before the Candidate.findByIdAndUpdate
-
+      
         const oldFollowUp = existingCandidate.followUp;
         const newFollowUp = data?.followUp;
-        console.log(oldFollowUp, 'oldFollowUp');
-        console.log(newFollowUp, 'newFollowUp');
-
+      
         try {
           const jobInfo = existingCandidate.jobId as any;
 
@@ -1157,20 +842,7 @@ export async function PUT(
           );
           // Continue execution even if notification fails
         }
-        // General candidate details update notification
-        // if (updates.length > 0) {
-        //   // Only send if there are significant updates (not just tracking fields)
-        //   const significantUpdates = updates.filter(
-        //     (update) =>
-        //       !update.title.includes("Updated tracking") &&
-        //       !update.title.includes("Updated _id")
-        //   );
-
-        //   if (significantUpdates.length > 0) {
-        //     // This could be enhanced to send a general "candidate details updated" notification
-        //     // For now, we'll rely on the specific update types above
-        //   }
-        // }
+       
         if (updates.length > 0) {
           // Only send if there are significant updates (not just tracking fields)
           const significantUpdates = updates.filter(
@@ -1202,11 +874,6 @@ export async function PUT(
         // Don't fail the API call if notification fails
       }
 
-      // console.log("UPDATED SCRE: ", updatedCandidate.scores);
-      // console.log(
-      //   "🔥🔥🔥🔥 In CandidateUpdate: ",
-      //   updatedCandidate.remarks.length
-      // );
       broadcastCandidateUpdate({
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,

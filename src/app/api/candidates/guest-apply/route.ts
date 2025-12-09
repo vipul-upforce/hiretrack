@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { History, Organization, Candidate } from '@/lib/mongodb';
-import { handleCustomFieldFiles, handleSingleFile, handleFileAttachments } from '@/lib/fileUtils';
+import connectToDatabase, {
+  History,
+  Organization,
+  Job,
+  Candidate,
+} from '@/lib/mongodb';
+import {
+  handleCustomFieldFiles,
+  handleSingleFile,
+  handleFileAttachments,
+} from '@/lib/fileUtils';
 import mongoose from 'mongoose';
-import { Job } from '@/lib/mongodb'; // Add import for Job model
 import {
   validateInput,
   VALIDATION_PATTERNS,
@@ -14,6 +22,7 @@ import { NotificationService } from '@/lib/notifications/notificationService';
 import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { logger } from '@/lib/logger/logger.server';
 import { Attachment } from '../route';
 
 export async function POST(request: NextRequest) {
@@ -26,11 +35,10 @@ export async function POST(request: NextRequest) {
       jobId: {
         required: true,
         type: 'object',
-        customValidator: (value) => (
-          value
-            && typeof value._id === 'string'
-            && /^[0-9a-fA-F]{24}$/.test(value._id)
-        ),
+        customValidator: (value) =>
+          value &&
+          typeof value._id === 'string' &&
+          /^[0-9a-fA-F]{24}$/.test(value._id),
       },
       name: {
         required: true,
@@ -89,9 +97,11 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.log(data, 'data,application');
 
-    const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id)).select('title organizationId').lean().exec();
+    const job = await Job.findById(new mongoose.Types.ObjectId(jobId._id))
+      .select('title organizationId')
+      .lean()
+      .exec();
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
@@ -99,9 +109,10 @@ export async function POST(request: NextRequest) {
 
     const { organizationId } = job;
 
-    // console.log("ORGID: ", organizationId);
-
-    const organizationInfo = await Organization?.findById(organizationId).select('defaultLanes').lean().exec();
+    const organizationInfo = await Organization?.findById(organizationId)
+      .select('defaultLanes')
+      .lean()
+      .exec();
 
     if (!organizationInfo) {
       return NextResponse.json(
@@ -118,7 +129,9 @@ export async function POST(request: NextRequest) {
       : (organizationInfo.defaultLanes || ['applied'])[0];
 
     if (data.attachments) {
-      const images = data.attachments.filter((attachment: Attachment) => attachment.type.startsWith('image'));
+      const images = data.attachments.filter((attachment: Attachment) =>
+        attachment.type.startsWith('image'),
+      );
       const files = data.attachments.filter(
         (attachment: Attachment) => !attachment.type.startsWith('image'),
       );
@@ -168,25 +181,25 @@ export async function POST(request: NextRequest) {
       },
       ...(data.assignment && data.assignment.interviewerId !== '-1'
         ? {
-          assignment: {
-            interviewerId: data.assignment.interviewerId,
-            assignedAt: new Date(),
-            ...(data.assignment.time && {
-              time: new Date(data.assignment.time),
-            }),
-          },
-        }
+            assignment: {
+              interviewerId: data.assignment.interviewerId,
+              assignedAt: new Date(),
+              ...(data.assignment.time && {
+                time: new Date(data.assignment.time),
+              }),
+            },
+          }
         : null),
       ...(data.resume
         ? {
-          resume: {
-            id: data.resume.id,
-            name: data.resume.name,
-            url: data.resume.url,
-            type: data.resume.type,
-            size: data.resume.size,
-          },
-        }
+            resume: {
+              id: data.resume.id,
+              name: data.resume.name,
+              url: data.resume.url,
+              type: data.resume.type,
+              size: data.resume.size,
+            },
+          }
         : null),
       attachments: (data.attachments || []).map((attachment: Attachment) => ({
         id: attachment.id,
@@ -214,9 +227,6 @@ export async function POST(request: NextRequest) {
       await candidate.populate('assignment.interviewerId', 'name email');
     }
 
-    // console.log("✅✅✅ DATETIME: ", dateTime);
-    // const dateTime = await getFormattedDate(request, new Date());
-
     // const historyCreated =
     await History?.create({
       candidateId: candidate?._id,
@@ -234,13 +244,6 @@ export async function POST(request: NextRequest) {
 
     // Trigger notification for candidate application (guest apply)
     try {
-      console.log('🔔 Triggering guest candidate applied notification:', {
-        organizationId: organizationId.toString(),
-        candidateId: candidate._id.toString(),
-        candidateName: candidateData.name,
-        jobTitle: job.title,
-      });
-
       await NotificationService.notifyCandidateApplied({
         organizationId: organizationId.toString(),
         candidateId: candidate._id.toString(),
@@ -289,25 +292,19 @@ export async function POST(request: NextRequest) {
             },
             adminHrIds,
           );
-          console.log('✅ Guest email notification sent successfully');
         }
       } catch (emailError) {
-        console.error(
-          '❌ Failed to send guest email notification:',
-          emailError,
+        logger.error(
+          { emailError },
+          'Failed to send guest email notification:',
         );
-        // Don't fail the API call if email notification fails
       }
-
-      console.log('✅ Guest notification sent successfully');
     } catch (notificationError) {
-      console.error('❌ Failed to send guest notification:', notificationError);
-      // Don't fail the API call if notification fails
+      logger.error({ notificationError }, 'Failed to send guest notification');
     }
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error: unknown) {
-    console.error('Error in guest apply API:', error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

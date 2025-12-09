@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import fs from 'fs';
 import path from 'path';
 import { JSDOM } from 'jsdom';
+import { logger } from '@/lib/logger/logger.server';
 
 // Helper function to convert hex to RGB
 function hexToRgb(hex: string): [number, number, number] {
@@ -54,7 +55,8 @@ function parseHTMLContent(html: string) {
     } else if (node.nodeName === 'UL' || node.nodeName === 'OL') {
       const items: string[] = [];
       node.childNodes.forEach((li) => {
-        if (li.textContent) items.push(removeUnsupportedEmojis(li.textContent.trim()));
+        if (li.textContent)
+          items.push(removeUnsupportedEmojis(li.textContent.trim()));
       });
       result.push({
         type: 'list',
@@ -72,12 +74,11 @@ async function loadImageAsBase64(
   baseUrl: string,
 ): Promise<string | null> {
   try {
-    console.log('Loading logo image from:', imageUrl);
-
     // Check if it's an API route or remote URL that needs to be fetched
-    const needsFetch = imageUrl.startsWith('http')
-      || imageUrl.startsWith('/api/')
-      || imageUrl.includes('?pathName=');
+    const needsFetch =
+      imageUrl.startsWith('http') ||
+      imageUrl.startsWith('/api/') ||
+      imageUrl.includes('?pathName=');
 
     if (needsFetch) {
       // Handle remote URL or API route
@@ -88,10 +89,8 @@ async function loadImageAsBase64(
         fetchUrl = `${baseUrl}${imageUrl}`;
       }
 
-      console.log('Fetching logo from:', fetchUrl);
       const response = await fetch(fetchUrl);
       if (!response.ok) {
-        console.error('Failed to fetch logo:', response.status);
         return null;
       }
 
@@ -118,7 +117,6 @@ async function loadImageAsBase64(
     }
 
     if (!fs.existsSync(absolutePath)) {
-      console.error('Logo file not found at:', absolutePath);
       return null;
     }
 
@@ -135,7 +133,6 @@ async function loadImageAsBase64(
 
     return `data:${mimeType};base64,${base64}`;
   } catch (error) {
-    console.error('Error loading logo image:', error);
     return null;
   }
 }
@@ -157,7 +154,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch candidate data
-    const candidate = await Candidate.findById(candidateId)
+    const candidate = await Candidate?.findById(candidateId)
       .populate('jobId', 'title description skills')
       .populate('assignment.interviewerId', 'name email')
       .populate('tags', 'name color')
@@ -171,12 +168,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch organization settings for brand colors and logo
-    const settings = await Settings.findOne({
+    const settings = await Settings?.findOne({
       organizationId: candidate.organizationId,
     }).lean();
 
     const primaryColorHex = settings?.portalConfigs?.primaryColor || '#6366f1';
-    const secondaryColorHex = settings?.portalConfigs?.secondaryColor || '#8b5cf6';
+    const secondaryColorHex =
+      settings?.portalConfigs?.secondaryColor || '#8b5cf6';
     const logoUrl = settings?.portalConfigs?.portalLogo?.url || null;
 
     // Generate PDF with modern design
@@ -187,18 +185,9 @@ export async function POST(req: NextRequest) {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const maxLineWidth = pageWidth - leftMargin - rightMargin;
-    const contentWidth = pageWidth - leftMargin - rightMargin;
 
     // Modern color palette
     const primaryColor: [number, number, number] = hexToRgb(primaryColorHex);
-    const secondaryColor: [number, number, number] = hexToRgb(secondaryColorHex);
-
-    // Lighter version of primary color for accents (increase RGB values by 85%)
-    const accentColor: [number, number, number] = [
-      Math.min(255, primaryColor[0] + (255 - primaryColor[0]) * 0.85),
-      Math.min(255, primaryColor[1] + (255 - primaryColor[1]) * 0.85),
-      Math.min(255, primaryColor[2] + (255 - primaryColor[2]) * 0.85),
-    ];
 
     // Very light background for sections (95% lighter)
     const lightBgColor: [number, number, number] = [
@@ -358,7 +347,7 @@ export async function POST(req: NextRequest) {
 
         doc.addImage(logoBase64, 'PNG', logoX, logoY, logoWidth, logoHeight);
       } catch (error) {
-        console.error('Failed to add logo to PDF header:', error);
+        logger.error({ error, url: req.url }, 'ERROR ADDING LOGO TO PDF');
         // Continue without logo if there's an error
       }
     }
@@ -386,29 +375,31 @@ export async function POST(req: NextRequest) {
 
     // Basic Information
     if (
-      selection.name
-      || selection.email
-      || selection.phone
-      || selection.location
+      selection.name ||
+      selection.email ||
+      selection.phone ||
+      selection.location
     ) {
       addSectionHeader('CONTACT INFORMATION');
       if (selection.email) addKeyValue('Email', candidate.email);
       if (selection.phone) addKeyValue('Phone', candidate.contact || 'N/A');
-      if (selection.location) addKeyValue('Location', candidate.location || 'N/A');
+      if (selection.location)
+        addKeyValue('Location', candidate.location || 'N/A');
       yPosition += 3;
     }
 
     // Professional Information
     if (
-      selection.experience
-      || selection.relevantExperience
-      || selection.skills
-      || selection.currentCTC
-      || selection.expectedCTC
-      || selection.noticePeriod
+      selection.experience ||
+      selection.relevantExperience ||
+      selection.skills ||
+      selection.currentCTC ||
+      selection.expectedCTC ||
+      selection.noticePeriod
     ) {
       addSectionHeader('PROFESSIONAL SUMMARY');
-      if (selection.experience) addKeyValue('Total Experience', `${candidate.experience} years`);
+      if (selection.experience)
+        addKeyValue('Total Experience', `${candidate.experience} years`);
       if (selection.relevantExperience) {
         addKeyValue(
           'Relevant Experience',
@@ -427,7 +418,8 @@ export async function POST(req: NextRequest) {
           `${candidate.expectedCTC.toLocaleString()} LPA`,
         );
       }
-      if (selection.noticePeriod) addKeyValue('Notice Period', `${candidate.noticePeriod} days`);
+      if (selection.noticePeriod)
+        addKeyValue('Notice Period', `${candidate.noticePeriod} days`);
 
       if (selection.skills && candidate.skills?.length > 0) {
         yPosition += 3;
@@ -469,7 +461,8 @@ export async function POST(req: NextRequest) {
           doc.setFontSize(8);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-          const skillText = skill.length > 18 ? `${skill.substring(0, 16)}...` : skill;
+          const skillText =
+            skill.length > 18 ? `${skill.substring(0, 16)}...` : skill;
           doc.text(skillText, currentX + 2, yPosition);
 
           currentX += skillWidth;
@@ -483,34 +476,36 @@ export async function POST(req: NextRequest) {
 
     // AI Evaluation
     if (
-      candidate.scores
-      && (selection.overallScore
-        || selection.experienceScore
-        || selection.skillsScore
-        || selection.affordability
-        || selection.strengths
-        || selection.areasForImprovement
-        || selection.recommendation
-        || selection.notes)
+      candidate.scores &&
+      (selection.overallScore ||
+        selection.experienceScore ||
+        selection.skillsScore ||
+        selection.affordability ||
+        selection.strengths ||
+        selection.areasForImprovement ||
+        selection.recommendation ||
+        selection.notes)
     ) {
       addSectionHeader('AI EVALUATION');
 
       // Scores in a table
       if (
-        selection.overallScore
-        || selection.experienceScore
-        || selection.skillsScore
-        || selection.affordability
+        selection.overallScore ||
+        selection.experienceScore ||
+        selection.skillsScore ||
+        selection.affordability
       ) {
         const scoreData: any[] = [];
-        if (selection.overallScore) scoreData.push(['Overall Match', `${candidate.scores.overall}/10`]);
+        if (selection.overallScore)
+          scoreData.push(['Overall Match', `${candidate.scores.overall}/10`]);
         if (selection.experienceScore && candidate.scores.experience) {
           scoreData.push([
             'Experience Match',
             `${candidate.scores.experience}/10`,
           ]);
         }
-        if (selection.skillsScore && candidate.scores.skills) scoreData.push(['Skills Match', `${candidate.scores.skills}/10`]);
+        if (selection.skillsScore && candidate.scores.skills)
+          scoreData.push(['Skills Match', `${candidate.scores.skills}/10`]);
         if (selection.affordability && candidate.scores.affordability) {
           scoreData.push([
             'affordability Match',
@@ -566,8 +561,8 @@ export async function POST(req: NextRequest) {
       }
 
       if (
-        selection.areasForImprovement
-        && candidate.scores.areas_for_improvement?.length > 0
+        selection.areasForImprovement &&
+        candidate.scores.areas_for_improvement?.length > 0
       ) {
         checkNewPage(15);
         // Modern subsection label
@@ -612,7 +607,6 @@ export async function POST(req: NextRequest) {
           const parsedSections = parseHTMLContent(
             (candidate.jobId as any).description,
           );
-          console.log(parsedSections, 'Parsed Job Description >>>>>>>>>');
 
           parsedSections.forEach((section) => {
             switch (section.type) {
@@ -663,10 +657,11 @@ export async function POST(req: NextRequest) {
 
     // Assignment - only show if there's actual interview data
     if (selection.assignment && candidate.assignment) {
-      const hasInterviewData = (typeof candidate.assignment.interviewerId === 'object'
-          && candidate.assignment.interviewerId)
-        || candidate.assignment.time
-        || candidate.assignment.googleMeet?.meetingLink;
+      const hasInterviewData =
+        (typeof candidate.assignment.interviewerId === 'object' &&
+          candidate.assignment.interviewerId) ||
+        candidate.assignment.time ||
+        candidate.assignment.googleMeet?.meetingLink;
 
       if (hasInterviewData) {
         addSectionHeader('INTERVIEW DETAILS');
@@ -705,11 +700,12 @@ export async function POST(req: NextRequest) {
 
     // Follow-up - only show if there's actual data
     if (selection.followUp && candidate.followUp) {
-      const hasFollowUpData = candidate.followUp.note
-        || candidate.followUp.date
-        || (candidate.followUp.userId
-          && typeof candidate.followUp.userId === 'object'
-          && (candidate.followUp.userId as any).name);
+      const hasFollowUpData =
+        candidate.followUp.note ||
+        candidate.followUp.date ||
+        (candidate.followUp.userId &&
+          typeof candidate.followUp.userId === 'object' &&
+          (candidate.followUp.userId as any).name);
 
       if (hasFollowUpData) {
         addSectionHeader('FOLLOW-UP');
@@ -727,9 +723,9 @@ export async function POST(req: NextRequest) {
         }
 
         if (
-          candidate.followUp.userId
-          && typeof candidate.followUp.userId === 'object'
-          && (candidate.followUp.userId as any).name
+          candidate.followUp.userId &&
+          typeof candidate.followUp.userId === 'object' &&
+          (candidate.followUp.userId as any).name
         ) {
           addKeyValue('Added By', (candidate.followUp.userId as any).name);
         }
@@ -781,15 +777,16 @@ export async function POST(req: NextRequest) {
       }
       yPosition += 3;
     }
-    console.log(candidate.customFields, 'candidate date >>>>>>>>>');
 
     // Custom Fields - only show if there are valid fields with values
     if (selection.customFields && candidate.customFields) {
       const validFields = Object.entries(candidate.customFields).filter(
         ([key, value]) => {
-          if (value === null || value === undefined || value === '') return false;
+          if (value === null || value === undefined || value === '')
+            return false;
           if (Array.isArray(value) && value.length === 0) return false;
-          if (typeof value === 'object' && Object.keys(value).length === 0) return false;
+          if (typeof value === 'object' && Object.keys(value).length === 0)
+            return false;
           return true;
         },
       );
@@ -803,9 +800,9 @@ export async function POST(req: NextRequest) {
 
           // ✅ 1. Custom Attachments (modern pill style)
           if (
-            Array.isArray(value)
-            && typeof value[0] === 'object'
-            && value[0].base64
+            Array.isArray(value) &&
+            typeof value[0] === 'object' &&
+            value[0].base64
           ) {
             addKeyValue(key, ''); // draws the key label with the muted dot
             yPosition -= 4;
@@ -851,7 +848,6 @@ export async function POST(req: NextRequest) {
             yPosition += boxHeight + 4;
           }
 
-          // ✅ 2. Multi-select / Checkbox style (modern rounded “button” look)
           // ✅ 2. Multi-select / Checkbox style (modern rounded “button” look)
           else if (Array.isArray(value)) {
             addKeyValue(key, ''); // draws the key label
@@ -952,14 +948,13 @@ export async function POST(req: NextRequest) {
 
     if (selection.resume && candidate.resume?.url) {
       try {
-        console.log('Attempting to merge CV from:', candidate.resume.url);
-
         let cvArrayBuffer: ArrayBuffer;
 
         // Check if it's an API route or remote URL that needs to be fetched
-        const needsFetch = candidate.resume.url.startsWith('http')
-          || candidate.resume.url.startsWith('/api/')
-          || candidate.resume.url.includes('?pathName=');
+        const needsFetch =
+          candidate.resume.url.startsWith('http') ||
+          candidate.resume.url.startsWith('/api/') ||
+          candidate.resume.url.includes('?pathName=');
 
         if (needsFetch) {
           // Handle remote URL or API route
@@ -970,29 +965,13 @@ export async function POST(req: NextRequest) {
             fetchUrl = `${baseUrl}${candidate.resume.url}`;
           }
 
-          console.log(
-            'CV is a remote URL or API route, fetching from:',
-            fetchUrl,
-          );
           const cvResponse = await fetch(fetchUrl);
           if (!cvResponse.ok) {
-            console.error(
-              'Failed to fetch CV:',
-              cvResponse.status,
-              cvResponse.statusText,
-            );
             throw new Error(`Failed to fetch CV: ${cvResponse.status}`);
           }
 
           cvArrayBuffer = await cvResponse.arrayBuffer();
-          console.log(
-            'CV fetched successfully, size:',
-            cvArrayBuffer.byteLength,
-          );
         } else {
-          // Handle local file from filesystem
-          console.log('CV is a local file, reading from filesystem');
-
           // Convert relative path to absolute path
           let filePath = candidate.resume.url;
           if (filePath.startsWith('/')) {
@@ -1016,12 +995,7 @@ export async function POST(req: NextRequest) {
             );
           }
 
-          console.log('Reading CV from:', absolutePath);
-
           if (!fs.existsSync(absolutePath)) {
-            console.error('CV file not found. Tried paths:');
-            console.error('  -', path.join(process.cwd(), 'public', filePath));
-            console.error('  -', path.join(process.cwd(), filePath));
             throw new Error('CV file not found at any expected location');
           }
 
@@ -1031,26 +1005,15 @@ export async function POST(req: NextRequest) {
             fileBuffer.byteOffset,
             fileBuffer.byteOffset + fileBuffer.byteLength,
           );
-          console.log(
-            'CV read from filesystem, size:',
-            cvArrayBuffer.byteLength,
-          );
         }
 
         // Convert jsPDF to bytes
         const profilePdfBytes = doc.output('arraybuffer');
-        console.log('Profile PDF size:', profilePdfBytes.byteLength);
-
+       
         // Merge PDFs using pdf-lib
-        console.log('Loading PDFs for merging...');
         const profilePdf = await PDFDocument.load(profilePdfBytes);
         const cvPdf = await PDFDocument.load(cvArrayBuffer);
 
-        console.log('Profile pages:', profilePdf.getPageCount());
-        console.log('CV pages:', cvPdf.getPageCount());
-
-        // Create new PDF and copy pages
-        console.log('Creating merged PDF...');
         const mergedPdf = await PDFDocument.create();
 
         // Copy profile pages
@@ -1059,38 +1022,18 @@ export async function POST(req: NextRequest) {
           profilePdf.getPageIndices(),
         );
         profilePages.forEach((page) => mergedPdf.addPage(page));
-        console.log('Profile pages copied');
-
         // Copy CV pages
         const cvPages = await mergedPdf.copyPages(
           cvPdf,
           cvPdf.getPageIndices(),
         );
         cvPages.forEach((page) => mergedPdf.addPage(page));
-        console.log('CV pages copied');
-
-        console.log('Total merged PDF pages:', mergedPdf.getPageCount());
-
         // Get final PDF bytes
         finalPdfBytes = await mergedPdf.save();
-        console.log(
-          '✅ CV successfully merged! Final PDF size:',
-          finalPdfBytes.length,
-        );
       } catch (error) {
-        console.error('❌ Error merging CV:', error);
-        console.error(
-          'Error details:',
-          error instanceof Error ? error.message : String(error),
-        );
-        console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
-
-        // If merging fails, return profile PDF only
-        console.log('Falling back to profile PDF only');
         finalPdfBytes = new Uint8Array(doc.output('arraybuffer'));
       }
     } else {
-      console.log('No CV selected or CV URL not available');
       finalPdfBytes = new Uint8Array(doc.output('arraybuffer'));
     }
 
@@ -1105,7 +1048,8 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    logger.error({error, url: req.url }, 'ERROR Generating PDF');
+
     return NextResponse.json(
       {
         error: 'Failed to generate PDF',

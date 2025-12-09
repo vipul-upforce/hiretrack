@@ -360,7 +360,6 @@ export async function PUT(req: NextRequest) {
     // Handle HTML content for footer
     if (data?.portalFooterHtml) {
       try {
-        console.log(`[PUT] Processing footer HTML for org: ${organizationId}`);
         const footerPath = path.join(
           process.cwd(),
           '..',

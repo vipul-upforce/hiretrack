@@ -274,7 +274,6 @@ async function sendQueuedEmail(
           organization!.organizationId!.defaultLanes!.indexOf(status) + 1
         ] || 'N/A'
       : 'N/A';
-  console.log(nextSteps, 'nextSteps');
   const organizationName =
     typeof organization?.organizationId === 'object'
       ? organization.organizationId.name

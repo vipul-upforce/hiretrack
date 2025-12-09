@@ -35,7 +35,6 @@ async function handleResetPassword(req: NextRequest) {
       });
     } catch (e) {
       user = null;
-      console.log('ERROR FINDING USER:', e);
     }
 
     if (!user) {

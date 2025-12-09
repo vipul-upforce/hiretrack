@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, {
-  History, Job, Organization, Candidate,
+  History,
+  Job,
+  Organization,
+  Candidate,
 } from '@/lib/mongodb';
-import { handleCustomFieldFiles, handleSingleFile, handleFileAttachments } from '@/lib/fileUtils';
+import {
+  handleCustomFieldFiles,
+  handleSingleFile,
+  handleFileAttachments,
+} from '@/lib/fileUtils';
 import mongoose from 'mongoose';
 import { AuthenticatedUser, getAuthenticatedUser } from '@/app/actions/auth';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
@@ -10,7 +17,7 @@ import { NotificationService } from '@/lib/notifications/notificationService';
 import { sendSmartNotification } from '@/lib/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
-// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { logger } from '@/lib/logger/logger.server';
 
 export interface Attachment {
   id: string;
@@ -41,19 +48,28 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter by organization and jobId if provided
-    const query: { organizationId: string; jobId?: string } = { organizationId: user?.organizationId || '' };
+    const query: { organizationId: string; jobId?: string } = {
+      organizationId: user?.organizationId || '',
+    };
     if (jobId) {
       query.jobId = jobId;
     }
 
-    const candidates = await Candidate.find(query).sort({
-      'tracking.createdAt': -1,
-    }).lean().exec();
+    const candidates = await Candidate.find(query)
+      .sort({
+        'tracking.createdAt': -1,
+      })
+      .lean()
+      .exec();
     return NextResponse.json(candidates);
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An Unknwon error occured.' },
+      { status: 500 },
+    );
   }
 }
 
@@ -78,16 +94,18 @@ export async function POST(request: NextRequest) {
       ).includes('applied')
         ? 'applied'
         : (organizationInfo.defaultLanes || ['applied'])[0];
-        // resume
+      // resume
       if (data.attachments) {
-        const images = data.attachments.filter((attachment: Attachment) => attachment.type.startsWith('image'));
+        const images = data.attachments.filter((attachment: Attachment) =>
+          attachment.type.startsWith('image'),
+        );
         const files = data.attachments.filter(
           (attachment: Attachment) => !attachment.type.startsWith('image'),
         );
         data.attachments = { images, files };
         const { files: f, images: i } = await handleFileAttachments(
           data.attachments,
-          fileStorage,
+          fileStorage!,
           organizationId,
         );
         data.attachments = [...f, ...i];
@@ -96,7 +114,7 @@ export async function POST(request: NextRequest) {
       if (data.resume) {
         data.resume = await handleSingleFile(
           data.resume,
-          fileStorage,
+          fileStorage!,
           organizationId,
         );
       }
@@ -104,17 +122,14 @@ export async function POST(request: NextRequest) {
       if (data.customFields) {
         const cs = await handleCustomFieldFiles(
           data.customFields,
-          fileStorage,
+          fileStorage!,
           organizationId,
         );
         data.customFields = cs;
       }
       const isJobExisted = await Job?.exists({ _id: data.jobId });
       if (!isJobExisted) {
-        return NextResponse.json(
-          { error: 'JobId not found' },
-          { status: 404 },
-        );
+        return NextResponse.json({ error: 'JobId not found' }, { status: 404 });
       }
       const candidateData = {
         jobId: data.jobId,
@@ -129,7 +144,6 @@ export async function POST(request: NextRequest) {
         expectedCTC: data.expectedCTC,
         currentCTC: data.currentCTC,
         noticePeriod: data.noticePeriod,
-        // currentLocation: data.currentLocation,
         status: candidateStatus,
         remarks: data.remarks || [],
         tracking: {
@@ -139,27 +153,27 @@ export async function POST(request: NextRequest) {
         // Handle assignment data
         ...(data.assignment && data.assignment.interviewerId !== '-1'
           ? {
-            assignment: {
-              interviewerId: data.assignment.interviewerId,
-              googleMeet: null,
-              assignedAt: new Date(),
-              ...(data.assignment.time && {
-                time: new Date(data.assignment.time),
-              }),
-            },
-          }
+              assignment: {
+                interviewerId: data.assignment.interviewerId,
+                googleMeet: null,
+                assignedAt: new Date(),
+                ...(data.assignment.time && {
+                  time: new Date(data.assignment.time),
+                }),
+              },
+            }
           : null),
         // Handle file data
         ...(data.resume
           ? {
-            resume: {
-              id: data.resume.id,
-              name: data.resume.name,
-              url: data.resume.url,
-              type: data.resume.type,
-              size: data.resume.size,
-            },
-          }
+              resume: {
+                id: data.resume.id,
+                name: data.resume.name,
+                url: data.resume.url,
+                type: data.resume.type,
+                size: data.resume.size,
+              },
+            }
           : null),
         // Handle attachments array
         attachments: data.attachments.map((attachment: Attachment) => ({
@@ -188,8 +202,6 @@ export async function POST(request: NextRequest) {
 
       const sanitizedCandidate = candidateCreated.toObject();
 
-      // const dateTime = await getFormattedDate(request, new Date());
-      // const historyExisting =
       let candidateHistory = null;
       if (userData.role === 'candidate' || userData.role === '') {
         candidateHistory = await History?.create({
@@ -198,9 +210,6 @@ export async function POST(request: NextRequest) {
           history: [
             {
               dateTime: data.dateTime,
-              // dateTime: dayjs(new Date().toISOString()).format(
-              //   "DD MMM YYYY [at] hh:mm a"
-              // ),
               title: 'Self Applied',
               previousInterviewer: null,
               currentInterviewer: null,
@@ -219,9 +228,6 @@ export async function POST(request: NextRequest) {
           history: [
             {
               dateTime: data.dateTime,
-              // dateTime: dayjs(new Date().toISOString()).format(
-              //   "DD MMM YYYY [at] hh:mm a"
-              // ),
               title: 'Candidate Added',
               previousInterviewer: null,
               currentInterviewer: null,
@@ -235,29 +241,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Get job information for notification
       const job = await Job?.findById(data.jobId);
 
       // Trigger notification for candidate application
       if (job) {
         try {
-          console.log('🔔 Triggering candidate applied notification:', {
-            organizationId,
-            candidateId: candidate._id.toString(),
-            candidateName: candidateData.name,
-            jobTitle: job.title,
-            triggerUserId: userData.id,
-            triggerUserName: userData.name,
-          });
           await NotificationService.notifyCandidateApplied({
             organizationId,
             candidateId: candidate._id.toString(),
             candidateName: candidateData.name,
             candidateEmail: candidateData.email,
             jobId:
-                typeof data.jobId === 'string' && data.jobId !== ''
-                  ? data.jobId
-                  : data.jobId._id.toString() || null,
+              typeof data.jobId === 'string' && data.jobId !== ''
+                ? data.jobId
+                : data.jobId._id.toString() || null,
             jobTitle: job.title || 'Unknown Job',
             triggerUserId: userData.id,
             triggerUserName: userData.name,
@@ -290,16 +287,15 @@ export async function POST(request: NextRequest) {
             if (filteredAdminHrIds.length > 0) {
               await sendSmartNotification(
                 organizationId,
-                // "newApplications",
                 NotificationType.NEW_APPLICATIONS,
                 {
                   triggererUserId: userData.id,
                   triggererEmail: userData.email,
                   triggererName: userData.name,
                   jobId:
-                      typeof data.jobId === 'string'
-                        ? data.jobId
-                        : data.jobId._id.toString(),
+                    typeof data.jobId === 'string'
+                      ? data.jobId
+                      : data.jobId._id.toString(),
                   candidateId: candidate._id.toString(),
                   eventType: 'job_application',
                   templateUsed: 'job-application-hr',
@@ -310,26 +306,18 @@ export async function POST(request: NextRequest) {
                 },
                 filteredAdminHrIds,
               );
-              console.log('✅ Email notification sent successfully');
             }
           } catch (emailError) {
-            console.error(
-              '❌ Failed to send email notification:',
-              emailError,
-            );
-            // Don't fail the API call if email notification fails
+            logger.error({ emailError }, 'Failed to send email notification:');
           }
-
-          console.log('✅ Notification sent successfully');
         } catch (notificationError) {
-          console.error('❌ Failed to send notification:', notificationError);
-          // Don't fail the API call if notification fails
+          logger.error(
+            { notificationError },
+            'Failed to send email notification:',
+          );
         }
-      } else {
-        console.log('⚠️ No job found for notification, jobId:', data.jobId);
       }
 
-      // console.log("⛔⛔ CANDIDATE CERATED", sanitizedCandidate);
       broadcastCandidateUpdate({
         ...sanitizedCandidate,
         history: candidateHistory?.history,
@@ -344,5 +332,10 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(
+      { error: 'An Unknwon error occured.' },
+      { status: 500 },
+    );
   }
 }

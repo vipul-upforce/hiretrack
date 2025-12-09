@@ -48,14 +48,12 @@ const handleGetCaptcha = async (req: NextRequest) => {
     }
 
     let organizationId = '';
-    let isAuthenticated = false;
 
     // Try to get organization from auth token
     try {
       const userData = await getAuthenticatedUser(req);
       if (userData) {
         organizationId = userData.organizationId || '';
-        isAuthenticated = true;
       }
     } catch {
       logger.warn('Failed to authenticate user from request');
@@ -89,12 +87,7 @@ const handleGetCaptcha = async (req: NextRequest) => {
       );
     }
 
-    // Decrypt the CAPTCHA keys before returning
-    // const decryptedSettings = decryptProviderKeys(settings.toObject());
-    // console.log(decryptedSettings, "decryptedSettings");
-
     return NextResponse.json({ captcha: settings.captcha });
-    // return NextResponse.json({ captcha: decryptedSettings.captcha });
   } catch (error) {
     return NextResponse.json(
       {

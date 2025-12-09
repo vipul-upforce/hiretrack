@@ -12,7 +12,6 @@ export function loadTemplate(
     `${templateName}.html`,
   );
 
-  // console.log("########## PATH: ", templatePath);
   let content = fs.readFileSync(templatePath, 'utf-8');
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
