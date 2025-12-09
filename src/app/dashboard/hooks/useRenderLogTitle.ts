@@ -68,7 +68,7 @@ export function useRenderLogTitle() {
       // CASE 3: Candidate Added
       if (log.title === "Candidate Added" && log.assignmentBy) {
         return `${log.candidateData?.name || "Candidate"} was added by ${
-          log.assignmentBy?.name || "someone"
+          log.assignmentBy?.name || log?.assignmentBy?.length > 0 ? log?.assignmentBy[0]?.name : "someone"
         }`;
       }
 

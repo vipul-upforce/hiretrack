@@ -15,16 +15,9 @@ import {
   useUpdateMailTemplatesMutation,
 } from "@/lib/features/settings/settingsApi";
 import {
-  assE,
   Data,
   editorOptions,
-  jobD,
-  MAD,
-  OTP,
-  RemA,
-  ResetP,
-  StatusU,
-} from "@/lib/constants";
+} from "@/app/dashboard/settings/templates/constants";
 import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -34,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { defaultTemplatesFE as defaultTemplates } from "@/lib/constants";
+
+import { defaultTemplatesAsObject as defaultTemplates } from "@/app/dashboard/settings/templates/constants";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -44,7 +38,7 @@ export default function EmailTemplateEditor({
   const { toast } = useToast();
   const { theme } = useTheme();
   const [selectedTemplate, setSelectedTemplate] = useState(
-    "job-application-(hr)"
+    "job-application-hr"
   );
   const [previewData] = useState(Data);
   const [activeEditor, setActiveEditor] = useState<"subject" | "html" | null>(
