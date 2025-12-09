@@ -43,7 +43,7 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
       {/* Auto Evaluate Toggle */}
       <div className="flex items-center justify-between space-x-2 border-t pt-4">
         <div className="space-y-0.5">
-          <Label htmlFor="autoEval">Auto-evaluate all candidates</Label>
+          <Label htmlFor="autoEval">Evaluate All PDF Resumes Pages</Label>
           <p className="text-sm text-muted-foreground">
             Ignore page limits and evaluate all PDF resumes automatically
           </p>

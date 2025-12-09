@@ -220,7 +220,13 @@ export default function ResumeEvaluationDetails({
         )}
 
       {/* Skills Verification Matrix */}
-      {showEvalDetails && localCandidate.scores.skillsMatrix && (
+      {showEvalDetails && localCandidate.scores.skillsMatrix && 
+      localCandidate.scores.skillsMatrix.requiredAndPresent &&
+      localCandidate.scores.skillsMatrix.requiredAndPresent.length > 0 &&
+      localCandidate.scores.skillsMatrix.requiredButMissing &&
+      localCandidate.scores.skillsMatrix.requiredButMissing.length > 0 &&
+      localCandidate.scores.skillsMatrix.presentButNotRequired &&
+      localCandidate.scores.skillsMatrix.presentButNotRequired.length > 0 && (
         <Collapsible
           open={showSkillsMatrix}
           onOpenChange={setShowSkillsMatrix}
