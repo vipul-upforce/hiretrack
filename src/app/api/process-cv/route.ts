@@ -8,10 +8,12 @@ import connectToDatabase, {
 } from "@/lib/mongodb";
 import { handleSingleFile } from "@/lib/fileUtils";
 import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
+import { AIProviders } from "@/lib/ai-providers/types";
 import { decryptProviderKeys } from "@/lib/encryption";
 import { NotificationService } from "@/lib/notifications/notificationService";
 import { Types } from "mongoose";
 import { getAuthenticatedUser } from "@/app/actions/auth";
+import { ISettings, IAIProviders } from "@/lib/models/settings";
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -28,9 +30,29 @@ interface ExtendedProcessedResumeData extends ProcessedResumeData {
   isDeleted: boolean;
 }
 
+interface ProcessResult {
+  filename: string;
+  candidateId?: Types.ObjectId;
+  status: "success" | "failed";
+  error?: string;
+}
+
+interface ProcessError {
+  filename: string;
+  error: string;
+}
+
+interface FileObject {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+}
+
 async function processResume(
   base64Resume: string,
-  decryptedAiProviders: any, // Changed: Accept already decrypted AI providers
+  decryptedAiProviders: AIProviders,
   organizationId: string
 ): Promise<ExtendedProcessedResumeData> {
   try {
@@ -63,6 +85,7 @@ async function processResume(
       apiKey,
       selectedModel
     );
+    console.log('parsedData in process-cv ---------------------------->', parsedData);
 
     // Check if the response indicates an invalid CV
     if (parsedData.error) {
@@ -171,7 +194,11 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const settings = await Settings.findOne({ organizationId: organizationId }).select("aiProviders gemini fileStorage").lean().exec();
+    const settings = await Settings.findOne({ organizationId: organizationId })
+      .select("aiProviders gemini fileStorage")
+      .lean()
+      .exec() as Pick<ISettings, "aiProviders" | "gemini" | "fileStorage"> | null;
+    
     if (!settings) {
       return NextResponse.json(
         { error: "Settings not found" },
@@ -180,7 +207,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if AI providers are configured with backward compatibility
-    let aiProviders = settings.aiProviders;
+    let aiProviders: IAIProviders | AIProviders = settings.aiProviders as IAIProviders | undefined;
 
     // Handle backward compatibility for legacy Gemini-only installations
     if (!aiProviders) {
@@ -209,16 +236,17 @@ export async function POST(request: NextRequest) {
           model: "sonar-pro",
           customModel: "",
         },
-      };
+      } as IAIProviders;
 
       console.log("Using backward compatibility for legacy Gemini settings");
     }
 
     // Decrypt API keys from database - MOVED UP
-    aiProviders = decryptProviderKeys(aiProviders, organizationId);
+    // Note: decryptProviderKeys returns the same structure but with decrypted keys
+    const decryptedAiProviders = decryptProviderKeys(aiProviders, organizationId) as AIProviders;
 
-    const activeProvider = aiProviders.activeProvider;
-    const apiKey = aiProviders[activeProvider]?.api_key;
+    const activeProvider = decryptedAiProviders.activeProvider;
+    const apiKey = decryptedAiProviders[activeProvider]?.api_key;
 
     // Add debug logging similar to evaluate API
    
@@ -264,8 +292,8 @@ export async function POST(request: NextRequest) {
     cvBatchInfo.totalFiles = files.length;
     await cvBatchInfo.save();
 
-    const results = [];
-    const errors = [];
+    const results: ProcessResult[] = [];
+    const errors: ProcessError[] = [];
 
     for (const file of files) {
       try {
@@ -280,10 +308,10 @@ export async function POST(request: NextRequest) {
         // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
           base64Data,
-          aiProviders, // Pass the already decrypted aiProviders
+          decryptedAiProviders, // Pass the already decrypted aiProviders
           organizationId as string
         );
-
+        console.log('candidateData in process-cv ---------------------------->', candidateData);
         // Check if the CV was invalid
         if (candidateData.error) {
           // Add error item to batch
@@ -303,7 +331,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create proper file object for handleSingleFile with the actual file data
-        const fileObject = {
+        const fileObject: FileObject = {
           id: new Types.ObjectId().toHexString(),
           name: file.name,
           type: file.type,
@@ -329,7 +357,7 @@ export async function POST(request: NextRequest) {
         });
 
         // Validate required fields
-        const requiredFields = ["name"];
+        const requiredFields: Array<keyof ExtendedProcessedResumeData> = ["name"];
         const missingFields = requiredFields.filter(
           (field) => !candidateData[field]
         );
