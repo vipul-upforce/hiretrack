@@ -13,6 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '@/lib/redux/authSlice';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import logger from '@/lib/logger';
 import { useIsIframe } from './IframeDetector';
 import JobModal from './JobModal';
 import { HeaderSection } from './components/header-section';
@@ -57,8 +58,8 @@ export default function ApplyJobsContent({
 
   const { data: portalResponse, isLoading: isPortalLoading } = useGetPortalConfigsQuery(undefined);
 
-  const hideHeaderParam = searchParams.get('hideHeader');
-  const hideFooterParam = searchParams.get('hideFooter');
+  const hideHeaderParam = searchParams?.get('hideHeader');
+  const hideFooterParam = searchParams?.get('hideFooter');
   const hideHeader = hideHeaderParam === 'true';
   const hideFooter = hideFooterParam === 'true';
 
@@ -78,7 +79,6 @@ export default function ApplyJobsContent({
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [queryTitle, setQueryTitle] = useState<string>('');
-  const [invalidPage, setInvalidPage] = useState<boolean>(false);
   const [layoutState, setLayoutState] = useState<{
     headerHTML: string;
     footerHTML: string;
@@ -118,8 +118,6 @@ export default function ApplyJobsContent({
       const portalData = portalResponse || null;
 
       if (urlOrgName) {
-        setInvalidPage(false);
-
         const config = allowance?.data?.find(
           (org: any) => org?.portalConfigs?.portalName === urlOrgName,
         )?.portalConfigs;
@@ -153,16 +151,12 @@ export default function ApplyJobsContent({
             ]);
             setLayoutState({ headerHTML, footerHTML });
           } catch (err) {
-            console.error('Failed to fetch header/footer:', err);
+            logger.error('Failed to fetch header/footer:', err);
             setLayoutState({ headerHTML: '', footerHTML: '' });
           }
         }
 
         return;
-      }
-
-      if (allowance.allow) {
-        // setInvalidPage(true);
       }
 
       const config = allowance?.data?.[0]?.portalConfigs;
@@ -195,8 +189,8 @@ export default function ApplyJobsContent({
         ]);
         setLayoutState({ headerHTML, footerHTML });
       }
-    } catch (error) {
-      console.error('Error processing portal settings:', error);
+    } catch (e) {
+      logger.error('Error processing portal settings:', e);
     }
   }
 

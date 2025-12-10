@@ -24,23 +24,23 @@ export enum NotificationType {
   // CANDIDATE_ASSIGNED = "interviewAssignmentsd",
   // CANDIDATE_UNASSIGNED = "stepCompleted",
   // REMARK_ADDED = "newRemarks",
-  CANDIDATE_DETAILS_UPDATED = "detailsUpdated",
-  MEETING_SCHEDULED = "meetingScheduled",
-  MEETING_UPDATED = "meetingUpdated",
-  MEETING_CANCELLED = "meetingCancelled",
-  MEETING_INVITE_ACCEPTED = "meetingInviteAccepted",
-  MEETING_INVITE_DECLINED = "meetingInviteDeclined",
-  MEETING_INVITE_TENTATIVE = "meetingInviteTentative",
-  FOLLOWUP_ADDED = "followupAdded",
-  FOLLOWUP_UPDATED = "followupUpdated",
-  FOLLOWUP_REMOVED = "followupRemoved",
-  JOB_CREATED = "jobCreated",
-  JOB_UPDATED = "jobUpdated",
-  USER_ADDED = "userAdded",
-  BULK_IMPORT_COMPLETED = "bulkImportCompleted",
-  CANDIDATE_REJECTED = "candidateRejected",
-  INTERVIEW_COMPLETED = "interviewCompleted",
-  CANDIDATE_MOVED = "candidateMoved",
+  CANDIDATE_DETAILS_UPDATED = 'detailsUpdated',
+  MEETING_SCHEDULED = 'meetingScheduled',
+  MEETING_UPDATED = 'meetingUpdated',
+  MEETING_CANCELLED = 'meetingCancelled',
+  MEETING_INVITE_ACCEPTED = 'meetingInviteAccepted',
+  MEETING_INVITE_DECLINED = 'meetingInviteDeclined',
+  MEETING_INVITE_TENTATIVE = 'meetingInviteTentative',
+  FOLLOWUP_ADDED = 'followupAdded',
+  FOLLOWUP_UPDATED = 'followupUpdated',
+  FOLLOWUP_REMOVED = 'followupRemoved',
+  JOB_CREATED = 'jobCreated',
+  JOB_UPDATED = 'jobUpdated',
+  USER_ADDED = 'userAdded',
+  BULK_IMPORT_COMPLETED = 'bulkImportCompleted',
+  CANDIDATE_REJECTED = 'candidateRejected',
+  INTERVIEW_COMPLETED = 'interviewCompleted',
+  CANDIDATE_MOVED = 'candidateMoved',
 }
 export interface NotificationDecisionContext {
   organizationId: string;
@@ -65,7 +65,7 @@ export interface NotificationDecisionResult {
 /**
  * Determine if a notification (email or in-app) should be sent to a user
  * Uses common EmailNotificationSettings for both email and in-app notifications
- * 
+ *
  * Implements the NEW priority chain:
  * 1. Admin Override = OFF for notification type → Everything OFF (no override possible)
  * 2. Admin Override = ON (or undefined) → Check:
@@ -94,8 +94,8 @@ export async function shouldSendNotification(
 
     // Skip if triggerer is the same as recipient
     if (
-      context.triggererUserId
-      && context.triggererUserId === context.recipientUserId
+      context.triggererUserId &&
+      context.triggererUserId === context.recipientUserId
     ) {
       return {
         shouldSend: false,
@@ -164,7 +164,7 @@ export async function shouldSendNotification(
 
     return settingDecision;
   } catch (error) {
-    console.error('Error in notification decision engine:', error);
+    logger.error('Error in notification decision engine:', error);
     return {
       shouldSend: false,
       reason: `Error determining notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -179,14 +179,14 @@ export async function shouldSendNotification(
 
 /**
  * Resolve notification setting based on priority chain
- * 
+ *
  * NEW PRIORITY LOGIC:
  * 1. Admin Override = OFF for notification type → Everything OFF (no override possible)
  * 2. Admin Override = ON (or undefined) → Check:
  *    a) Job-Level User Settings (highest)
  *    b) Global User Settings
  *    c) Organization Default Settings (fallback)
- * 
+ *
  * Uses common EmailNotificationSettings for both email and in-app notifications
  */
 async function resolveNotificationSetting(
@@ -194,18 +194,18 @@ async function resolveNotificationSetting(
   orgSettings: any,
   context: NotificationDecisionContext,
 ): Promise<NotificationDecisionResult> {
-  const {notificationType} = context;
-  
+  const { notificationType } = context;
+
   // Use common EmailNotificationSettings for both email and in-app notifications
-  const settingsKey = "emailNotificationSettings";
-  const orgSettingsKey = "organizationEmailNotifications";
+  const settingsKey = 'emailNotificationSettings';
+  const orgSettingsKey = 'organizationEmailNotifications';
 
   // STEP 1: Check Admin Override FIRST (per notification type)
   // If Admin Override = OFF for this notification type → Everything OFF
   if (orgSettings?.[orgSettingsKey]?.adminOverrides) {
     const adminOverride =
       orgSettings[orgSettingsKey].adminOverrides.get?.(
-        context.recipientUserId
+        context.recipientUserId,
       ) || orgSettings[orgSettingsKey].adminOverrides[context.recipientUserId];
 
     if (adminOverride && adminOverride[notificationType] !== undefined) {
@@ -215,7 +215,7 @@ async function resolveNotificationSetting(
           shouldSend: false,
           reason: `Admin override is OFF for ${notificationType} - all notifications disabled`,
           effectiveSettings: {
-            source: "admin-override",
+            source: 'admin-override',
             enabled: false,
             category: context.notificationCategory,
           },
@@ -226,11 +226,12 @@ async function resolveNotificationSetting(
   }
 
   // STEP 2: Admin Override = ON (or undefined) → Check priority chain
-  
+
   // 2a. Job-Level User Settings (highest priority when Admin Override = ON)
   if (context.jobId && user[settingsKey]?.jobLevel) {
-    const jobSettings = user[settingsKey].jobLevel.get?.(context.jobId)
-      || user[settingsKey].jobLevel[context.jobId];
+    const jobSettings =
+      user[settingsKey].jobLevel.get?.(context.jobId) ||
+      user[settingsKey].jobLevel[context.jobId];
 
     if (jobSettings && jobSettings[notificationType] !== undefined) {
       return {
@@ -363,8 +364,8 @@ export async function batchCheckNotifications(
 
       // Skip if triggerer is the same as recipient
       if (
-        context.triggererUserId
-        && context.triggererUserId === context.recipientUserId
+        context.triggererUserId &&
+        context.triggererUserId === context.recipientUserId
       ) {
         results.push({
           shouldSend: false,
@@ -449,12 +450,7 @@ export async function getUserEffectiveNotificationSettings(
       NotificationType.NEW_REMARKS,
       NotificationType.STEP_COMPLETED,
       NotificationType.MENTIONS,
-      // NotificationType.CANDIDATE_APPLIED,
-      // NotificationType.CANDIDATE_STATUS_UPDATED,
       NotificationType.CANDIDATE_DETAILS_UPDATED,
-      // NotificationType.CANDIDATE_ASSIGNED,
-      // NotificationType.CANDIDATE_UNASSIGNED,
-      // NotificationType.REMARK_ADDED,
       NotificationType.MEETING_SCHEDULED,
       NotificationType.MEETING_UPDATED,
       NotificationType.MEETING_CANCELLED,
@@ -513,7 +509,7 @@ export async function getUserEffectiveNotificationSettings(
         organizationId,
         recipientUserId: userId,
         notificationType: type,
-        notificationCategory: "inApp",
+        notificationCategory: 'inApp',
       };
       const inAppDecision = await resolveNotificationSetting(
         user,
@@ -549,7 +545,7 @@ export async function getUserEffectiveNotificationSettings(
           recipientUserId: userId,
           notificationType: type,
           jobId,
-          notificationCategory: "inApp",
+          notificationCategory: 'inApp',
         };
         const jobInAppDecision = await resolveNotificationSetting(
           user,
@@ -565,7 +561,7 @@ export async function getUserEffectiveNotificationSettings(
 
     return jobId ? { email, inApp, jobLevel } : { email, inApp };
   } catch (error) {
-    console.error('Error getting user effective notification settings:', error);
+    logger.error('Error getting user effective notification settings:', error);
     throw error;
   }
 }

@@ -1,6 +1,5 @@
 'use client';
 
-// import { useEffect } from "react";
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -71,7 +70,6 @@ const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reje
 });
 
 const sanitizeFiles = (files: any[]): any[] => files.map((file) => {
-  // debugger;
   // Handle standard File objects
   if (file instanceof File) {
     const sanitizedBaseName = file.name
@@ -109,13 +107,6 @@ export function RenderField({
   fieldHook,
   isEditMode = false,
 }: RenderFieldProps) {
-  // useEffect(() => {
-  //   if (isEditMode) {
-  //     setFieldTouched("customFields." + label, true);
-  //   }
-  // }, []);
-
-  // console.log("🙇🙇🙇 ", values.customFields[label], fieldHook);
 
   const commonProps = {
     id: `customFields.${label}`,
@@ -328,7 +319,6 @@ export function RenderField({
           onChange={(e) => {
             if (e) {
               const formatted = e.format('MM/DD/YYYY hh:mm A');
-              // console.log("Selected datetime:", formatted); // Debug
               setFieldValue(`customFields.${label}`, formatted);
             } else {
               setFieldValue(`customFields.${label}`, '');
@@ -420,22 +410,11 @@ export function RenderField({
                 // Handle error
               }
             }}
-            // existingFiles={
-            //   Array.isArray(values.customFields[label])
-            //     ? (() => {})() &&
-            //       (values.customFields[label] as FileData[]).map((file) => ({
-            //         name: file.name,
-            //         type: file.type,
-            //         size: file.size,
-            //         preview: file.base64,
-            //       }))
-            //     : []
-            // }
+           
             existingFiles={
               Array.isArray(values.customFields[label])
                 ? sanitizeFiles(
                   (values.customFields[label] as FileData[]).map((file) => ({
-                    // id: file.id || crypto.randomUUID(), // Add unique ID
                     name: file.name,
                     type: file.type,
                     size: file.size,

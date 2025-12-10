@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import logger from '@/lib/logger';
 import { Candidate } from '@/types/candidate';
 import { useToast } from '@/hooks/use-toast';
 import { ShareCandidateFieldSelector } from './share-candidate-components/ShareCandidateFieldSelector';
@@ -238,7 +239,7 @@ export function ShareCandidateDialog({
 
       onOpenChange(false);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      logger.error('Error generating PDF:', error);
       toast({
         title: 'Error',
         description: 'Failed to generate PDF. Please try again.',

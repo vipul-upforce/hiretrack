@@ -30,19 +30,18 @@ import {
   Mail,
   Search,
   Calendar,
-  User,
   FileText,
   Paperclip,
   CheckCircle,
   AlertCircle,
   Clock,
   Eye,
-  Filter,
   Download,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import mongoose from 'mongoose';
+import logger from '@/lib/logger';
 
 export interface EmailHistoryRecord {
   _id: string;
@@ -85,11 +84,6 @@ export default function EmailHistoryPage() {
   const [statusFilter, setStatusFilter] = useState<
     'all' | 'sent' | 'failed' | 'pending'
   >('all');
-
-  useEffect(() => {
-    fetchEmailHistory();
-  }, []);
-
   const fetchEmailHistory = async () => {
     try {
       setLoading(true);
@@ -98,31 +92,36 @@ export default function EmailHistoryPage() {
         const data = await response.json();
         setEmails(data.emails || []);
       } else {
-        console.error('Failed to fetch email history');
+        logger.error('Failed to fetch email history');
       }
     } catch (error) {
-      console.error('Error fetching email history:', error);
+      logger.error('Error fetching email history:', error);
     } finally {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchEmailHistory();
+  }, []);
 
   const filteredEmails = emails.filter((email) => {
-    const matchesSearch = (email.recipientEmail || '')
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-      || (email.subject || '').toLowerCase().includes(searchTerm.toLowerCase())
-      || (email.sentByName || '')
+    const matchesSearch =
+      (email.recipientEmail || '')
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-      || (email.sentByEmail || '')
+        .includes(searchTerm.toLowerCase()) ||
+      (email.subject || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (email.sentByName || '')
         .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-      || (email.recipientName || '')
+        .includes(searchTerm.toLowerCase()) ||
+      (email.sentByEmail || '')
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (email.recipientName || '')
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || email.status === statusFilter;
+    const matchesStatus =
+      statusFilter === 'all' || email.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
@@ -164,28 +163,28 @@ export default function EmailHistoryPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section with improved design */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Title */}
             <div>
-              <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
                 Email History
               </CardTitle>
             </div>
 
             {/* Right Section - Search and Filter */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
-              <div className="flex gap-2 items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by recipient, subject, or sender..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 max-w-lg w-96"
+                    className="w-96 max-w-lg pl-10"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -208,15 +207,13 @@ export default function EmailHistoryPage() {
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-auto px-4 pb-4 mt-4">
+      <div className="mt-4 flex-1 overflow-auto px-4 pb-4">
         {/* Email List */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Email History (
-              {filteredEmails.length}
-              )
+              Email History ({filteredEmails.length})
             </CardTitle>
             <CardDescription>
               Complete audit trail of all emails sent through the system
@@ -228,8 +225,8 @@ export default function EmailHistoryPage() {
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               </div>
             ) : filteredEmails.length === 0 ? (
-              <div className="text-center py-8">
-                <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <div className="py-8 text-center">
+                <Mail className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
                 <h3 className="text-lg font-semibold">No emails found</h3>
                 <p className="text-muted-foreground">
                   {searchTerm || statusFilter !== 'all'
@@ -263,27 +260,27 @@ export default function EmailHistoryPage() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {email.recipientName
-                                || email.recipientEmail
-                                || 'Unknown'}
+                              {email.recipientName ||
+                                email.recipientEmail ||
+                                'Unknown'}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {email.recipientEmail || 'No email'}
                             </span>
-                            {((email.cc && email.cc.length > 0)
-                              || (email.bcc && email.bcc.length > 0)) && (
+                            {((email.cc && email.cc.length > 0) ||
+                              (email.bcc && email.bcc.length > 0)) && (
                               <span className="text-xs text-muted-foreground">
-                                {email.cc
-                                  && email.cc.length > 0
-                                  && `CC: ${email.cc.length}`}
-                                {email.cc
-                                  && email.cc.length > 0
-                                  && email.bcc
-                                  && email.bcc.length > 0
-                                  && ', '}
-                                {email.bcc
-                                  && email.bcc.length > 0
-                                  && `BCC: ${email.bcc.length}`}
+                                {email.cc &&
+                                  email.cc.length > 0 &&
+                                  `CC: ${email.cc.length}`}
+                                {email.cc &&
+                                  email.cc.length > 0 &&
+                                  email.bcc &&
+                                  email.bcc.length > 0 &&
+                                  ', '}
+                                {email.bcc &&
+                                  email.bcc.length > 0 &&
+                                  `BCC: ${email.bcc.length}`}
                               </span>
                             )}
                           </div>
@@ -296,9 +293,9 @@ export default function EmailHistoryPage() {
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {email.sentByName
-                                || email.sentByEmail
-                                || 'Unknown'}
+                              {email.sentByName ||
+                                email.sentByEmail ||
+                                'Unknown'}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {email.sentByEmail || 'No email'}
@@ -357,8 +354,8 @@ export default function EmailHistoryPage() {
         open={!!selectedEmail}
         onOpenChange={() => setSelectedEmail(null)}
       >
-        <DialogContent className="!max-w-none !w-full !h-full !left-0 !top-0 !translate-x-0 !translate-y-0 min-w-0 lg:!max-w-[70vw] lg:!min-w-[800px] lg:!h-[85vh] lg:!left-[50%] lg:!top-[50%] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[60vw] overflow-hidden flex flex-col">
-          <DialogHeader className="px-6 pt-6 pr-12 border-b border-gray-200 dark:border-gray-700 pb-4">
+        <DialogContent className="!left-0 !top-0 flex !h-full !w-full min-w-0 !max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden lg:!left-[50%] lg:!top-[50%] lg:!h-[85vh] lg:!min-w-[800px] lg:!max-w-[70vw] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[60vw]">
+          <DialogHeader className="border-b border-gray-200 px-6 pb-4 pr-12 pt-6 dark:border-gray-700">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2 text-xl font-semibold">
                 <Mail className="h-6 w-6" />
@@ -380,17 +377,17 @@ export default function EmailHistoryPage() {
             {selectedEmail && (
               <div className="bg-white dark:bg-black">
                 {/* Email Header - Like Gmail */}
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-start justify-between mb-4">
+                <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                  <div className="mb-4 flex items-start justify-between">
                     <div className="flex-1">
-                      <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      <h1 className="mb-2 text-xl font-medium text-gray-900 dark:text-gray-100">
                         {selectedEmail.subject || 'No subject'}
                       </h1>
                       <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        {selectedEmail.attachments
-                          && selectedEmail.attachments.length > 0 && (
+                        {selectedEmail.attachments &&
+                          selectedEmail.attachments.length > 0 && (
                             <Paperclip className="h-4 w-4" />
-                        )}
+                          )}
                         <span>
                           {format(
                             new Date(selectedEmail.createdAt),
@@ -402,17 +399,17 @@ export default function EmailHistoryPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 font-medium text-white">
                       {(
-                        selectedEmail.sentByName
-                        || selectedEmail.sentByEmail
-                        || 'U'
+                        selectedEmail.sentByName ||
+                        selectedEmail.sentByEmail ||
+                        'U'
                       )
                         .charAt(0)
                         .toUpperCase()}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex items-center gap-2">
                         <span className="font-medium text-gray-900 dark:text-gray-100">
                           {selectedEmail.sentByName || 'Unknown'}
                         </span>
@@ -424,31 +421,28 @@ export default function EmailHistoryPage() {
                       </div>
                       <div className="text-sm text-gray-600 dark:text-gray-400">
                         <span>
-                          to
-                          {' '}
-                          {selectedEmail.recipientName
-                            || selectedEmail.recipientEmail}
+                          to{' '}
+                          {selectedEmail.recipientName ||
+                            selectedEmail.recipientEmail}
                         </span>
-                        {((selectedEmail.cc && selectedEmail.cc.length > 0)
-                          || (selectedEmail.bcc
-                            && selectedEmail.bcc.length > 0)) && (
-                            <span className="ml-2">
-                              {selectedEmail.cc
-                              && selectedEmail.cc.length > 0 && (
+                        {((selectedEmail.cc && selectedEmail.cc.length > 0) ||
+                          (selectedEmail.bcc &&
+                            selectedEmail.bcc.length > 0)) && (
+                          <span className="ml-2">
+                            {selectedEmail.cc &&
+                              selectedEmail.cc.length > 0 && (
                                 <span>
                                   cc:
                                   {selectedEmail.cc.join(', ')}
                                 </span>
                               )}
-                              {selectedEmail.bcc
-                              && selectedEmail.bcc.length > 0 && (
+                            {selectedEmail.bcc &&
+                              selectedEmail.bcc.length > 0 && (
                                 <span className="ml-2">
-                                  bcc:
-                                  {' '}
-                                  {selectedEmail.bcc.join(', ')}
+                                  bcc: {selectedEmail.bcc.join(', ')}
                                 </span>
                               )}
-                            </span>
+                          </span>
                         )}
                       </div>
                     </div>
@@ -461,50 +455,50 @@ export default function EmailHistoryPage() {
                     {/* Render HTML content or plain text */}
                     {selectedEmail.body ? (
                       // Check if content is HTML by looking for HTML tags
-                      selectedEmail.body.includes('<')
-                      && selectedEmail.body.includes('>') ? (
+                      selectedEmail.body.includes('<') &&
+                      selectedEmail.body.includes('>') ? (
                         <div
                           className="leading-relaxed"
                           dangerouslySetInnerHTML={{
                             __html: selectedEmail.body,
                           }}
                         />
-                        ) : (
+                      ) : (
                         // Plain text - preserve line breaks
-                          <div className="whitespace-pre-wrap leading-relaxed">
-                            {selectedEmail.body}
-                          </div>
-                        )
+                        <div className="whitespace-pre-wrap leading-relaxed">
+                          {selectedEmail.body}
+                        </div>
+                      )
                     ) : (
-                      <div className="text-gray-500 italic">
+                      <div className="italic text-gray-500">
                         No message content
                       </div>
                     )}
                   </div>
 
                   {/* Attachments in email style */}
-                  {selectedEmail.attachments
-                    && selectedEmail.attachments.length > 0 && (
-                      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                          {selectedEmail.attachments.length}
-                          {' '}
-                          attachment
+                  {selectedEmail.attachments &&
+                    selectedEmail.attachments.length > 0 && (
+                      <div className="mt-6 border-t border-gray-200 pt-4 dark:border-gray-700">
+                        <div className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+                          {selectedEmail.attachments.length} attachment
                           {selectedEmail.attachments.length > 1 ? 's' : ''}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           {selectedEmail.attachments.map(
                             (attachment, index) => (
                               <div
                                 key={index}
-                                className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors"
-                                onClick={() => window.open(attachment.shareUrl, '_blank')}
+                                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+                                onClick={() =>
+                                  window.open(attachment.shareUrl, '_blank')
+                                }
                               >
-                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded flex items-center justify-center">
+                                <div className="flex h-8 w-8 items-center justify-center rounded bg-blue-100 dark:bg-blue-900">
                                   <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                <div className="min-w-0 flex-1">
+                                  <div className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
                                     {attachment.fileName}
                                   </div>
                                   <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -517,14 +511,14 @@ export default function EmailHistoryPage() {
                           )}
                         </div>
                       </div>
-                  )}
+                    )}
                 </div>
               </div>
             )}
           </div>
 
           {/* Dialog Footer */}
-          <div className="flex justify-end gap-3 bg-background px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-end gap-3 border-t border-gray-200 bg-background px-6 py-4 dark:border-gray-700">
             <Button variant="outline" onClick={() => setSelectedEmail(null)}>
               Close
             </Button>

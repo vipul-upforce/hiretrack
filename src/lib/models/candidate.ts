@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import { CustomFieldFile } from '../fileUtils';
 import { ITag } from './organization';
+import logger from '../logger';
 
 export interface FollowUp {
   note: string;
@@ -292,7 +293,7 @@ export const candidateSchema = new Schema(
             ];
             return defaultLanes.includes(status);
           } catch (error) {
-            console.warn('Lane validation error:', error);
+            logger.warn('Lane validation error:', error);
             return true; // Allow if validation fails to prevent blocking operations
           }
         },
@@ -365,10 +366,16 @@ export const candidateSchema = new Schema(
       affordability: { type: Number, min: 0, max: 10 },
       education: { type: Number, min: 0, max: 10 },
       projects: {
-        type: Number, min: 0, max: 10, default: 0,
+        type: Number,
+        min: 0,
+        max: 10,
+        default: 0,
       },
       certifications: {
-        type: Number, min: 0, max: 10, default: 0,
+        type: Number,
+        min: 0,
+        max: 10,
+        default: 0,
       },
       strengths: [String],
       areas_for_improvement: [String],
@@ -527,7 +534,11 @@ candidateSchema.index(
 
 // Index for interviewer assignment queries
 candidateSchema.index(
-  { 'assignment.interviewerId': 1, organizationId: 1, 'assignment.assignedAt': -1 },
+  {
+    'assignment.interviewerId': 1,
+    organizationId: 1,
+    'assignment.assignedAt': -1,
+  },
   { name: 'idx_assignment_interviewer_org', background: true, sparse: true },
 );
 
@@ -543,7 +554,10 @@ candidateSchema.index({ email: 1 }, { name: 'idx_email', background: true });
 // Index for organization-wide candidate queries with jobId
 candidateSchema.index(
   {
-    organizationId: 1, jobId: 1, status: 1, isDeleted: 1,
+    organizationId: 1,
+    jobId: 1,
+    status: 1,
+    isDeleted: 1,
   },
   { name: 'idx_orgId_jobId_status_deleted', background: true },
 );
@@ -557,7 +571,11 @@ candidateSchema.index(
     organizationId: 1,
     isDeleted: 1,
   },
-  { name: 'idx_assignment_interviewer_time_org', background: true, sparse: true },
+  {
+    name: 'idx_assignment_interviewer_time_org',
+    background: true,
+    sparse: true,
+  },
 );
 
 // 2. Candidates - Job + Status + Date range (analytics)

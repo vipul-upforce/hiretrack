@@ -1,14 +1,26 @@
 import { v4 as uuidv4 } from 'uuid';
-import mongoose from 'mongoose';
 import connectToDatabase, { FileShare } from './mongodb';
 import { uploadFileToProvider } from './fileUtils';
 import { IFileShare } from './models/fileshare';
+import logger from './logger';
 
 // Allowed file extensions for attachments
 const ALLOWED_EXTENSIONS = [
-  '.pdf', '.zip', '.doc', '.docx', '.xls', '.xlsx',
-  '.ppt', '.pptx', '.txt', '.csv', '.png', '.jpg',
-  '.jpeg', '.gif', '.bmp',
+  '.pdf',
+  '.zip',
+  '.doc',
+  '.docx',
+  '.xls',
+  '.xlsx',
+  '.ppt',
+  '.pptx',
+  '.txt',
+  '.csv',
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.bmp',
 ];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
@@ -42,7 +54,10 @@ interface FileShareResult {
   error?: string;
 }
 
-export function validateFileForUpload(fileName: string, fileSize: number): { valid: boolean; error?: string } {
+export function validateFileForUpload(
+  fileName: string,
+  fileSize: number,
+): { valid: boolean; error?: string } {
   // Check file extension
   const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
@@ -63,7 +78,10 @@ export function validateFileForUpload(fileName: string, fileSize: number): { val
   return { valid: true };
 }
 
-export function validateAttachments(files: any[]): { valid: boolean; error?: string } {
+export function validateAttachments(files: any[]): {
+  valid: boolean;
+  error?: string;
+} {
   if (files.length > MAX_ATTACHMENTS) {
     return {
       valid: false,
@@ -81,13 +99,13 @@ export function validateAttachments(files: any[]): { valid: boolean; error?: str
   return { valid: true };
 }
 
-export async function createFileShare(options: FileShareOptions): Promise<FileShareResult> {
+export async function createFileShare(
+  options: FileShareOptions,
+): Promise<FileShareResult> {
   try {
     await connectToDatabase();
 
-    const {
-      file, organizationId, userId, isPublic = false, expiresInHours, maxDownloads, metadata, storageConfig,
-    } = options;
+    const { file, organizationId, userId, storageConfig } = options;
 
     // Validate required fields
     if (!organizationId) {
@@ -114,11 +132,6 @@ export async function createFileShare(options: FileShareOptions): Promise<FileSh
     // Generate unique share ID
     const shareId = uuidv4();
 
-    // Calculate expiration date if provided
-    const expiresAt = expiresInHours
-      ? new Date(Date.now() + expiresInHours * 60 * 60 * 1000)
-      : undefined;
-
     // Upload file to storage provider
     const uploadResult = await uploadFileToProvider(
       file.base64, // Pass original base64 with prefix for provider functions
@@ -130,27 +143,6 @@ export async function createFileShare(options: FileShareOptions): Promise<FileSh
     if (!uploadResult.success) {
       return { success: false, error: uploadResult.error };
     }
-
-    // Create file share record with proper ObjectId conversion
-    const fileShareData = {
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      uploadedBy: new mongoose.Types.ObjectId(userId),
-      originalFileName: file.fileName,
-      storedFileName: uploadResult.fileName,
-      fileSize,
-      mimeType: file.mimeType,
-      storageProvider: storageConfig.storageType,
-      storagePath: uploadResult.url,
-      shareId,
-      isPublic,
-      expiresAt,
-      maxDownloads,
-      currentDownloads: 0,
-      downloads: [],
-      metadata,
-    };
-
-    const fileShare = await FileShare!.create(fileShareData);
 
     // Generate share URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -164,18 +156,28 @@ export async function createFileShare(options: FileShareOptions): Promise<FileSh
       fileSize,
     };
   } catch (error: unknown) {
-    console.error('Error creating file share:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to create file share' };
+    logger.error('Error creating file share:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : 'Failed to create file share',
+    };
   }
 }
 
 export async function getFileShare(shareId: string) {
   try {
     await connectToDatabase();
-    const fileShare = await FileShare!.findOne({ shareId }).select('originalFileName organizationId storagePath storageProvider isPublic  mimeType').lean().exec();
+    const fileShare = await FileShare!
+      .findOne({ shareId })
+      .select(
+        'originalFileName organizationId storagePath storageProvider isPublic  mimeType',
+      )
+      .lean()
+      .exec();
     return fileShare || null;
   } catch (error) {
-    console.error('Error getting file share:', error);
+    logger.error('Error getting file share:', error);
     return null;
   }
 }
@@ -196,7 +198,10 @@ export async function validateAndRecordDownload(
 
     // Check if share is still valid
     if (!fileShare.isValid()) {
-      return { valid: false, error: 'File share has expired or reached download limit' };
+      return {
+        valid: false,
+        error: 'File share has expired or reached download limit',
+      };
     }
 
     // Record the download
@@ -204,7 +209,7 @@ export async function validateAndRecordDownload(
 
     return { valid: true, fileShare };
   } catch (error) {
-    console.error('Error validating download:', error);
+    logger.error('Error validating download:', error);
     return { valid: false, error: 'Failed to validate download' };
   }
 }
@@ -227,7 +232,7 @@ export async function cleanupExpiredShares(): Promise<void> {
       await share.deleteOne();
     }
   } catch (error) {
-    console.error('Error cleaning up expired shares:', error);
+    logger.error('Error cleaning up expired shares:', error);
   }
 }
 

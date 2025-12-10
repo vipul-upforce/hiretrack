@@ -7,7 +7,6 @@ import {
   Calendar, Clock, Check, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import './wren-datepicker.css';
 
 // Common plugin for Today, Now, Done buttons (flex row)
@@ -118,7 +117,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   onClose,
   portalContainer,
 }) => {
-  // console.log(value, "value");
 
   const pickerRef = useRef<any>(null);
   const [internalOpen, setInternalOpen] = useState(false);

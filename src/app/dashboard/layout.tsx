@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +40,7 @@ import SidebarContent from '@/components/layouts/SidebarContent';
 import { useGetOrganizationAllowanceQuery, useCheckOrgQuery } from '@/lib/features/org/orgApi';
 import { useNotificationSSE } from '@/hooks/useNotificationSSE';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
+import logger from '@/lib/logger';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 
 interface SidebarItem {
@@ -111,8 +112,6 @@ export default function DashboardLayout({
   const { setUserLoggedIn } = useCustomFields();
   const {
     data: allowanceData,
-    isLoading: allowanceLoading,
-    error: allowanceError,
   } = useGetOrganizationAllowanceQuery();
 
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
@@ -165,7 +164,7 @@ export default function DashboardLayout({
           return;
         }
       } catch (error) {
-        console.error('Failed to fetch candidate:', error);
+        logger.error('Failed to fetch candidate:', error);
         toast({
           title: 'Error',
           description: 'Failed to load candidate details',
@@ -423,7 +422,7 @@ export default function DashboardLayout({
       try {
         await markAsRead(id).unwrap();
       } catch (error) {
-        console.error('Failed to mark notification as read:', error);
+        logger.error('Failed to mark notification as read:', error);
       }
     },
     [markAsRead],
@@ -437,7 +436,7 @@ export default function DashboardLayout({
         description: 'All notifications marked as read',
       });
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+      logger.error('Failed to mark all notifications as read:', error);
       toast({
         title: 'Error',
         description: 'Failed to mark all notifications as read',

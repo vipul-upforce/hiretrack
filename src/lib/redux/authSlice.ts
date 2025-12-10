@@ -5,6 +5,7 @@ import {
   OrgInfo,
 } from "@/lib/models/user";
 import Cookies from "js-cookie";
+import logger from "../logger";
 
 export interface ILocalUser {
   id: string;
@@ -71,7 +72,8 @@ export const fetchUserFromToken = createAsyncThunk(
       }
       const data = await response.json();
       return data.user;
-    } catch (error) {
+    } catch (e) {
+      logger.error('Error fetching user from token:', e);
       localStorage.removeItem('persist:auth');
       localStorage.removeItem('persist:organization');
       return rejectWithValue('Failed to connect to authentication server');
@@ -87,8 +89,7 @@ export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
     localStorage.removeItem('persist:auth');
     localStorage.removeItem('persist:organization');
   } catch (error) {
-    // Ignore errors - we'll clear local state anyway
-    console.log('Logout API call failed, but continuing with local cleanup');
+    logger.error('Error during logout API call:', error);
   }
 
   // Always return success since we don't care about the API response
@@ -114,7 +115,6 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
       }
-      console.log(state.user.name);
     },
   },
   extraReducers: (builder) => {

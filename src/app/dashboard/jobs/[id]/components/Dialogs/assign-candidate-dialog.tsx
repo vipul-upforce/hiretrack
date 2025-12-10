@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import logger from '@/lib/logger';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 import {
   validationSchema,
@@ -215,7 +216,7 @@ export function AssignCandidateDialog({
         const result = await response.json();
 
         if (!response.ok) {
-          console.error('❌ API Error:', result.error);
+          logger.error('❌ API Error:', result.error);
           throw new Error(result.error || 'Failed to schedule Google Meet');
         }
 

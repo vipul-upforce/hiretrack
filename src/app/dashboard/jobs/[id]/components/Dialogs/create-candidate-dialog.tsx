@@ -3,13 +3,10 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Maximize, Minimize } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Plus } from 'lucide-react';
 import { Formik, Form } from 'formik';
 import { useState, useEffect } from 'react';
 import useCustomForm, {
@@ -91,31 +88,6 @@ const handleFileParse = async (
 
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
-// Add this function before handleSubmit
-const checkPdfPageCount = async (file: File): Promise<number> =>
-  // console.log("%%%%%%% ", file);
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const arrayBuffer = reader.result as ArrayBuffer;
-      try {
-        // Dynamically import pdfjs only on client side
-        const pdfjs = await import('pdfjs-dist');
-
-        // Configure worker if not already set
-        if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-          pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
-        }
-
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        resolve(pdf.numPages);
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = (error) => reject(error);
-    reader.readAsArrayBuffer(file);
-  });
 export function CreateCandidateDialog({
   jobId,
   isOpen,
@@ -124,7 +96,6 @@ export function CreateCandidateDialog({
   jobTitle,
   primaryColor,
   secondaryColor,
-  // isCreating,
 }: CreateCandidateDialogProps) {
   const { formikRef, handleApply } = useApplyHandler<any>();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
@@ -136,7 +107,6 @@ export function CreateCandidateDialog({
     false, // Don't use fetchGlobal, as we want job-specific fields too
   );
   const [resetForm, setResetForm] = useState(false);
-  // const [user, setuser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {},
   );
@@ -287,7 +257,6 @@ export function CreateCandidateDialog({
           {({
             isSubmitting,
             errors,
-            touched,
             setTouched,
             values,
             setFieldValue,
@@ -301,7 +270,7 @@ export function CreateCandidateDialog({
                     setFieldValue('resume', file);
                     await handleFileParse(file, setParsedResume);
                     Object?.entries(values?.customFields).forEach(
-                      ([key, value]) => {
+                      ([key]) => {
                         setTouched({ [key]: true });
                       },
                     );

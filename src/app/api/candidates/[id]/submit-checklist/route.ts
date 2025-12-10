@@ -27,11 +27,6 @@ export async function POST(
 
     // Check if models are initialized
     if (!Candidate || !History || !User) {
-      console.error('Models not initialized:', {
-        Candidate: !!Candidate,
-        History: !!History,
-        User: !!User,
-      });
       return NextResponse.json(
         { error: 'Database models not initialized' },
         { status: 500 },
@@ -45,7 +40,6 @@ export async function POST(
       checklistType,
       laneId,
       laneName,
-      // visibleInHistory,
       responses,
       remark,
       currentTime,

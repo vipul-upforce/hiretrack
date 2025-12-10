@@ -1,5 +1,5 @@
 import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
-
+/* eslint-disable max-lines */
 export interface EmailTemplate {
   id: string;
   name: string;

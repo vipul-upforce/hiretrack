@@ -8,7 +8,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { CustomFieldsProvider } from '@/Custom_Fields/Context/CustomFieldsContext';
 import { ThemeProvider } from '@/components/theme-provider';
 import { PersistGate } from 'redux-persist/integration/react';
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import LoadingScreen from './loading-screen';
 
 export function Providers({ children }: { children: React.ReactNode }) {

@@ -1,7 +1,8 @@
-import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 import { Settings } from '@/lib/mongodb';
 import { NextRequest } from 'next/server';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import logger from '@/lib/logger';
 
 interface TimeZone {
   name: string;
@@ -21,7 +22,6 @@ export async function getFormattedDate(
 ): Promise<string | Date> {
   try {
     // Get user data from auth (server-side, using cookies)
-    // const cookieStore = cookies();
     const user = await getAuthenticatedUser(req);
     if (!user) {
       throw new Error('User not authenticated');
@@ -46,27 +46,19 @@ export async function getFormattedDate(
 
     // Convert date to Date object
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) {
+    if (Number.isNaN(dateObj.getTime())) {
       throw new Error('Invalid date');
     }
 
-    // Convert to user's timezone
-    const zonedDate = fromZonedTime(dateObj, timeZone);
-    console.log('TZ: ZONED TIME ISO TO BE FORMATTED: ', zonedDate);
-    // if (iso) {
-    //   return zonedDate;
-    // }
     if (iso) {
       const isoLikeString = formatInTimeZone(
         dateObj,
         timeZone,
         "yyyy-MM-dd'T'HH:mm:ssXXX",
       );
-      console.log('TZ: ZONED TIME ISO TO BE RETURNED: ', isoLikeString);
       return new Date(isoLikeString);
     }
 
-    // console.log("BEFORE FORMATINGL: ", zonedDate);
     // Format date using Intl.DateTimeFormat
     const formatter = new Intl.DateTimeFormat('en-IN', {
       year: 'numeric',
@@ -79,10 +71,9 @@ export async function getFormattedDate(
     });
 
     const dateTime = formatter.format(dateObj);
-    console.log('TZ: LocalStringLike formatted date:  ', dateTime);
     return dateTime;
   } catch (err) {
-    console.error('Error formatting date:', err);
+    logger.error('Error formatting date:', err);
     return 'Invalid Date';
   }
 }

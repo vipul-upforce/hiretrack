@@ -8,9 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Tabs, TabsContent, TabsList, TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
@@ -31,6 +29,7 @@ import {
   useApplicationTrends,
 } from '@/app/dashboard/analytics/hooks/useAnalytics';
 import { Job } from '@/types/job';
+import logger from '@/lib/logger';
 
 interface JobAnalyticsModalProps {
   isOpen: boolean;
@@ -39,12 +38,12 @@ interface JobAnalyticsModalProps {
   organizationId: string;
 }
 
-export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
+export function JobAnalyticsModal({
   isOpen,
   onClose,
   job,
   organizationId,
-}) => {
+}: JobAnalyticsModalProps) {
   // Helper function to safely convert date values to Date objects
   const toDate = (dateValue: any): Date | null => {
     if (!dateValue) return null;
@@ -114,7 +113,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
     try {
       await Promise.all([refetchFunnel(), refetchInterview(), refetchTrends()]);
     } catch (error) {
-      console.error('Error refreshing analytics data:', error);
+      logger.error('Error refreshing analytics data:', error);
     } finally {
       setIsRefreshing(false);
     }
@@ -172,8 +171,8 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
 
       const interviewInfo = interviewData || null;
       if (
-        interviewInfo?.assignmentData
-        && interviewInfo.assignmentData.length > 0
+        interviewInfo?.assignmentData &&
+        interviewInfo.assignmentData.length > 0
       ) {
         exportData.push({ 'Report Type': '=== INTERVIEW ASSIGNMENTS ===' });
         interviewInfo.assignmentData.forEach((interviewer) => {
@@ -208,18 +207,13 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
         );
       }
     } catch (error) {
-      console.error('Error exporting job analytics:', error);
+      logger.error('Error exporting job analytics:', error);
     }
   };
 
-  // Get the max selectable date (job creation date)
-  const maxSelectableDate = job.tracking?.createdAt
-    ? new Date(job.tracking.createdAt)
-    : new Date();
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="2xl" className="overflow-hidden flex flex-col">
+      <DialogContent size="2xl" className="flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>
             Analytics for
@@ -232,12 +226,12 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
 
         <div className="flex-1 overflow-y-auto">
           {/* Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 border-b">
-            <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-col items-start justify-between gap-4 border-b p-4 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap items-center gap-2">
               {showDatePicker ? (
                 <div className="relative">
                   {/* FIXED: Prevent auto-close by fully controlling the popover */}
-                  <div className="p-3 border rounded-md bg-white shadow-md flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 rounded-md border bg-white p-3 shadow-md">
                     <DatePicker
                       value={tempRange}
                       onChange={(newRange) => {
@@ -295,8 +289,8 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
                   <span>
                     {dateRange && dateRange.length === 2
                       ? `${toDate(dateRange[0])?.toLocaleDateString()} - ${toDate(
-                        dateRange[1],
-                      )?.toLocaleDateString()}`
+                          dateRange[1],
+                        )?.toLocaleDateString()}`
                       : 'Select date range'}
                   </span>
                 </Button>
@@ -311,7 +305,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
                 disabled={isRefreshing}
               >
                 <RefreshCcwIcon
-                  className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
+                  className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
                 />
                 Refresh
               </Button>
@@ -321,7 +315,7 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
                 onClick={handleExport}
                 disabled={funnelLoading || interviewLoading || trendsLoading}
               >
-                <DownloadIcon className="h-4 w-4 mr-2" />
+                <DownloadIcon className="mr-2 h-4 w-4" />
                 Export
               </Button>
             </div>
@@ -378,4 +372,4 @@ export const JobAnalyticsModal: React.FC<JobAnalyticsModalProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

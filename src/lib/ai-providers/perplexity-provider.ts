@@ -18,7 +18,6 @@ Resume Text:
 ${resumeText}`;
       const selectedModel = modelName || getDefaultModel('perplexity');
 
-      console.log('DEBUG DATA: ', selectedModel);
       const response = await fetch(
         'https://api.perplexity.ai/chat/completions',
         {
@@ -41,8 +40,6 @@ ${resumeText}`;
         },
       );
 
-      console.log('~~~~~~~~ ', response);
-
       if (!response.ok) {
         throw new Error(
           `Perplexity API error: ${response.status} ${response.statusText}`,
@@ -50,19 +47,15 @@ ${resumeText}`;
       }
 
       const data = await response.json();
-      console.log('______________ ', data);
       const content = data.choices?.[0]?.message?.content;
 
-      console.log('data.choices?.[0]?.message: ', data.choices?.[0]?.message);
       if (!content) {
         throw new Error('No valid response from Perplexity');
       }
 
       const jsonString = this.cleanJsonResponse(String(content));
-      console.log('JSONSTIRNG: ', jsonString);
       return this.parseJsonResponse(jsonString);
     } catch (error) {
-      console.error(error);
       throw new Error(
         error instanceof Error
           ? error.message
@@ -86,27 +79,24 @@ ${resumeText}`;
 Resume Text:
 ${resumeText}`;
 
-    const response = await fetch(
-      'https://api.perplexity.ai/chat/completions',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [
-            {
-              role: 'user',
-              content: finalPrompt,
-            },
-          ],
-          max_tokens: 2000,
-          temperature: temperature !== undefined ? temperature : 0.1,
-        }),
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        model: selectedModel,
+        messages: [
+          {
+            role: 'user',
+            content: finalPrompt,
+          },
+        ],
+        max_tokens: 2000,
+        temperature: temperature !== undefined ? temperature : 0.1,
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -167,8 +157,8 @@ ${resumeText}`;
       try {
         const errorData = JSON.parse(errorText);
         if (
-          errorData.error?.type === 'invalid_model'
-          && response.status === 400
+          errorData.error?.type === 'invalid_model' &&
+          response.status === 400
         ) {
           // API key is valid but model name is wrong
           return {
@@ -179,13 +169,14 @@ ${resumeText}`;
         if (errorData.error?.message) {
           return { isValid: false, error: errorData.error.message };
         }
-      } catch (parseError) {
+      } catch {
         // If we can't parse the error, return the raw response
       }
 
       return { isValid: false, error: `HTTP ${response.status}: ${errorText}` };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       return { isValid: false, error: errorMessage };
     }
   }

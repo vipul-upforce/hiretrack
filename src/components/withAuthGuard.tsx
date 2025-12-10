@@ -1,13 +1,12 @@
 'use client';
 
-import React, {
-  useEffect, useState, useCallback, useRef,
-} from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { NextPage } from 'next';
 import { useSelector } from 'react-redux';
 import { User } from '@/lib/features/org/orgApi';
-import AuthGuardLoading from './ui/authGuardLoader';
+import logger from '@/lib/logger';
+import { AuthGuardLoading } from './ui/authGuardLoader';
 
 let allowanceCache: {
   value: boolean | null;
@@ -39,13 +38,25 @@ const withAuthGuard = <P extends object>(
     allowAuthenticated = true,
   } = options;
 
-  const displayName = WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  const displayName =
+    WrappedComponent.displayName || WrappedComponent.name || 'Component';
 
-  const AuthGuardComponent: NextPage<P> = (props) => {
-    const { user, isAuthenticated }: { user: User; isAuthenticated: boolean } = useSelector((state: any) => state.auth || {});
+  function AuthGuardComponent(props: NextPage<P>) {
+    const { user, isAuthenticated }: { user: User; isAuthenticated: boolean } =
+      useSelector((state: any) => state.auth || {});
 
     const router = useRouter();
     const pathname = usePathname();
+
+    const isAllowanceCacheValid = useCallback(() => {
+      const currentUserId = user?.id || null;
+      return (
+        allowanceCache.value !== null &&
+        allowanceCache.timestamp !== null &&
+        allowanceCache.userId === currentUserId &&
+        Date.now() - allowanceCache.timestamp < CACHE_DURATION
+      );
+    }, [user?.id]);
 
     const getInitialAuthState = () => {
       if (isAuthenticated === undefined) {
@@ -69,9 +80,9 @@ const withAuthGuard = <P extends object>(
       }
 
       if (
-        isAuthenticated
-        && requiredRoles.length > 0
-        && (!user?.role || !requiredRoles.includes(user.role))
+        isAuthenticated &&
+        requiredRoles.length > 0 &&
+        (!user?.role || !requiredRoles.includes(user.role))
       ) {
         return 'unauthorized';
       }
@@ -83,16 +94,6 @@ const withAuthGuard = <P extends object>(
     >(getInitialAuthState);
     const isCheckingAllowance = useRef(false);
     const hasInitialized = useRef(false);
-
-    const isAllowanceCacheValid = useCallback(() => {
-      const currentUserId = user?.id || null;
-      return (
-        allowanceCache.value !== null
-        && allowanceCache.timestamp !== null
-        && allowanceCache.userId === currentUserId
-        && Date.now() - allowanceCache.timestamp < CACHE_DURATION
-      );
-    }, [user?.id]);
 
     const fetchAllowance = useCallback(async (): Promise<boolean> => {
       const currentUserId = user?.id || null;
@@ -125,7 +126,7 @@ const withAuthGuard = <P extends object>(
 
         return allowanceData.allow;
       } catch (error) {
-        console.error('Allowance check failed:', error);
+        logger.error('Allowance check failed:', error);
         return false;
       } finally {
         isCheckingAllowance.current = false;
@@ -169,9 +170,9 @@ const withAuthGuard = <P extends object>(
         }
 
         if (
-          isAuthenticated
-          && requiredRoles.length > 0
-          && (!user?.role || !requiredRoles.includes(user.role))
+          isAuthenticated &&
+          requiredRoles.length > 0 &&
+          (!user?.role || !requiredRoles.includes(user.role))
         ) {
           router.replace(fallbackPath);
           setAuthState('unauthorized');
@@ -180,7 +181,7 @@ const withAuthGuard = <P extends object>(
 
         setAuthState('authorized');
       } catch (error) {
-        console.error('Auth check failed:', error);
+        logger.error('Auth check failed:', error);
         setAuthState('unauthorized');
       }
     }, [
@@ -228,7 +229,7 @@ const withAuthGuard = <P extends object>(
     return authState === 'authorized' ? (
       <WrappedComponent {...props} user={{ role: user?.role || null }} />
     ) : null;
-  };
+  }
 
   AuthGuardComponent.displayName = `withAuthGuard(${displayName})`;
 

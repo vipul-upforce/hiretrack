@@ -1,7 +1,7 @@
 import { signToken } from '@/app/actions/auth';
 import { ICandidate } from '../models/candidate';
 import { ICandidateHistory } from '../models/history';
-// import { auth } from "../auth";
+import logger from '../logger';
 
 interface NotificationSSEClient {
   id: number;
@@ -26,7 +26,6 @@ export function broadcastCandidateUpdate(
   orgClients?.forEach(async (client: any) => {
     try {
       const encodedSSE = await signToken(candidate, orgId);
-      // console.log(encodedSSE, " .......encodedSSE");
       const data = `data: ${JSON.stringify({ type: 'candidateUpdate', candidate: encodedSSE })}\n\n`;
       const clientsCount = orgClients.size;
       client.controller.enqueue(encoder.encode(data));
@@ -36,7 +35,7 @@ export function broadcastCandidateUpdate(
         ),
       );
     } catch (error) {
-      console.error(`Failed to send message to client ${client.id}:`, error);
+      logger.error(`Failed to send message to client ${client.id}:`, error);
     }
   });
 }
@@ -54,7 +53,7 @@ export function broadcastMultipleCandidateUpdate(
       const data = `data: ${JSON.stringify({ type: 'multipleCandidateUpdate', candidates: encodedSSE })}\n\n`;
       client.controller.enqueue(encoder.encode(data));
     } catch (error) {
-      console.error(`Failed to send message to client ${client.id}:`, error);
+      logger.error(`Failed to send message to client ${client.id}:`, error);
     }
   });
 }
@@ -79,7 +78,7 @@ export function broadcastLaneUpdate(
         ),
       );
     } catch (error) {
-      console.error(`Failed to send message to client ${client.id}:`, error);
+      logger.error(`Failed to send message to client ${client.id}:`, error);
     }
   });
 }

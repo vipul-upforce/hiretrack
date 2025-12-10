@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useFetchAssignedCandidatesQuery } from '@/lib/features/candidate/candidateApi';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -159,9 +157,10 @@ export default function CalendarPage() {
       if (sseUpdate) {
         // For interviewers, verify they're still assigned
         if (role === 'interviewer') {
-          const interviewerId = typeof sseUpdate.assignment?.interviewerId === 'object'
-            ? sseUpdate.assignment?.interviewerId?._id
-            : sseUpdate.assignment?.interviewerId;
+          const interviewerId =
+            typeof sseUpdate.assignment?.interviewerId === 'object'
+              ? sseUpdate.assignment?.interviewerId?._id
+              : sseUpdate.assignment?.interviewerId;
 
           // Only use SSE update if interviewer is still assigned
           if (interviewerId === user.id) {
@@ -187,9 +186,10 @@ export default function CalendarPage() {
     if (!existsInDb) {
       // For interviewers, only add if assigned to them
       if (role === 'interviewer') {
-        const interviewerId = typeof sseCandidate.assignment?.interviewerId === 'object'
-          ? sseCandidate.assignment?.interviewerId?._id
-          : sseCandidate.assignment?.interviewerId;
+        const interviewerId =
+          typeof sseCandidate.assignment?.interviewerId === 'object'
+            ? sseCandidate.assignment?.interviewerId?._id
+            : sseCandidate.assignment?.interviewerId;
 
         if (interviewerId === user.id) {
           mergedAssignments.push(sseCandidate);
@@ -205,14 +205,14 @@ export default function CalendarPage() {
       // If the current role is interviewer, only include assignments assigned to the current interviewer
       if (role === 'interviewer') {
         // debugger;
-        const interviewerId = typeof assignment?.assignment?.interviewerId === 'object'
-          ? assignment?.assignment?.interviewerId?._id
-          : assignment?.assignment?.interviewerId;
-        console.log('interviewerId: ', interviewerId);
+        const interviewerId =
+          typeof assignment?.assignment?.interviewerId === 'object'
+            ? assignment?.assignment?.interviewerId?._id
+            : assignment?.assignment?.interviewerId;
         if (
-          !assignment?.assignment
-          || interviewerId !== user.id
-          || !interviewerId
+          !assignment?.assignment ||
+          interviewerId !== user.id ||
+          !interviewerId
         ) {
           return false;
         }
@@ -221,12 +221,14 @@ export default function CalendarPage() {
       if (!filterText) return true;
       const searchRegex = new RegExp(filterText, 'i');
 
-      const jobSkills = (typeof assignment.jobId === 'object' && assignment.jobId?.skills)
-        || [];
+      const jobSkills =
+        (typeof assignment.jobId === 'object' && assignment.jobId?.skills) ||
+        [];
       const assignmentSkills = assignment.skills || [];
-      const assignmentJobSkills = (typeof assignment.assignment?.jobId !== 'string'
-          && assignment.assignment?.jobId?.skills)
-        || [];
+      const assignmentJobSkills =
+        (typeof assignment.assignment?.jobId !== 'string' &&
+          assignment.assignment?.jobId?.skills) ||
+        [];
       const allSkills = [
         ...jobSkills,
         ...assignmentSkills,
@@ -234,19 +236,19 @@ export default function CalendarPage() {
       ];
 
       return (
-        searchRegex.test(assignment.name || '')
-        || searchRegex.test(
+        searchRegex.test(assignment.name || '') ||
+        searchRegex.test(
           assignment.jobId && typeof assignment.jobId === 'object'
             ? assignment.jobId.title
             : '',
-        )
-        || searchRegex.test(
-          (typeof assignment?.assignment?.interviewerId === 'object'
-            && assignment?.assignment?.interviewerId?.name)
-            || '',
-        )
-        || (allSkills.length > 0
-          && allSkills.some((skill) => searchRegex.test(skill || '')))
+        ) ||
+        searchRegex.test(
+          (typeof assignment?.assignment?.interviewerId === 'object' &&
+            assignment?.assignment?.interviewerId?.name) ||
+            '',
+        ) ||
+        (allSkills.length > 0 &&
+          allSkills.some((skill) => searchRegex.test(skill || '')))
       );
     },
   );
@@ -261,75 +263,75 @@ export default function CalendarPage() {
     { bg: '#ec4899', border: '#db2777' }, // pink
   ];
 
-  const events: CustomCalendarEvent[] = filteredAssignments?.map((candidate: CandidateAssignment, index: number) => {
-    // Start time
-    const startTime = candidate?.assignment?.time
-      ? new Date(candidate.assignment.time)
-      : null;
-    // End time = start + 1 sec
-    const endTime = startTime
-      ? new Date(startTime.getTime() + 1000)
-      : null;
+  const events: CustomCalendarEvent[] =
+    filteredAssignments?.map(
+      (candidate: CandidateAssignment, index: number) => {
+        // Start time
+        const startTime = candidate?.assignment?.time
+          ? new Date(candidate.assignment.time)
+          : null;
+        // End time = start + 1 sec
+        const endTime = startTime ? new Date(startTime.getTime() + 1000) : null;
 
-    const hasGoogleMeet = candidate?.assignment?.googleMeet;
+        const hasGoogleMeet = candidate?.assignment?.googleMeet;
 
-    const baseTitle = candidate?.jobId && typeof candidate.jobId === 'object'
-      ? candidate.jobId.title
-      : 'Unknown';
+        const baseTitle =
+          candidate?.jobId && typeof candidate.jobId === 'object'
+            ? candidate.jobId.title
+            : 'Unknown';
 
-    const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+        const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
 
-    // Colors
-    const colorIndex = index % eventColors.length;
-    const color = hasGoogleMeet
-      ? { bg: '#3b82f6', border: '#1d4ed8' }
-      : eventColors[colorIndex];
+        // Colors
+        const colorIndex = index % eventColors.length;
+        const color = hasGoogleMeet
+          ? { bg: '#3b82f6', border: '#1d4ed8' }
+          : eventColors[colorIndex];
 
-    return {
-      id: candidate._id,
-      title,
-      start: startTime,
-      startStr: startTime?.toISOString() || '',
-      end: calendarView === 'dayGridMonth' ? endTime : startTime,
-      endStr:
-        calendarView === 'dayGridMonth'
-          ? endTime?.toISOString() || ''
-          : '',
-      allDay: false,
-      display: 'auto',
-      backgroundColor: color.bg,
-      borderColor: color.border,
-      url: '',
-      extendedProps: {
-        candidate: {
-          ...candidate,
-          jobId:
-            typeof candidate?.jobId === 'string'
-              ? candidate?.jobId
-              : (candidate?.jobId as Job)?._id,
-          jobDetails:
-            typeof candidate?.jobId === 'string'
-              ? undefined
-              : {
-                title: (candidate?.jobId as Job)?.title,
-                description: (candidate?.jobId as Job)?.description,
-              },
-        },
-        interviewer:
-          typeof candidate?.assignment?.interviewerId === 'string'
-            ? {
-              _id: candidate?.assignment?.interviewerId,
-              name: 'Unknown',
-              email: 'Unknown',
-            }
-            : candidate?.assignment?.interviewerId || {
-              _id: '',
-              name: 'Unknown',
-              email: 'Unknown',
+        return {
+          id: candidate._id,
+          title,
+          start: startTime,
+          startStr: startTime?.toISOString() || '',
+          end: calendarView === 'dayGridMonth' ? endTime : startTime,
+          endStr:
+            calendarView === 'dayGridMonth' ? endTime?.toISOString() || '' : '',
+          allDay: false,
+          display: 'auto',
+          backgroundColor: color.bg,
+          borderColor: color.border,
+          url: '',
+          extendedProps: {
+            candidate: {
+              ...candidate,
+              jobId:
+                typeof candidate?.jobId === 'string'
+                  ? candidate?.jobId
+                  : (candidate?.jobId as Job)?._id,
+              jobDetails:
+                typeof candidate?.jobId === 'string'
+                  ? undefined
+                  : {
+                      title: (candidate?.jobId as Job)?.title,
+                      description: (candidate?.jobId as Job)?.description,
+                    },
             },
+            interviewer:
+              typeof candidate?.assignment?.interviewerId === 'string'
+                ? {
+                    _id: candidate?.assignment?.interviewerId,
+                    name: 'Unknown',
+                    email: 'Unknown',
+                  }
+                : candidate?.assignment?.interviewerId || {
+                    _id: '',
+                    name: 'Unknown',
+                    email: 'Unknown',
+                  },
+          },
+        };
       },
-    };
-  }) || [];
+    ) || [];
 
   const handleEventClick = (arg: EventClickArg) => {
     const { event } = arg;
@@ -434,29 +436,29 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="flex h-screen flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-4 sm:px-6 py-4 border-b border-border/50">
-        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+      <div className="flex-shrink-0 border-b border-border/50 px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           {/* Left */}
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
+            <div className="bg-primary/10 rounded-lg p-2">
               <CalendarIcon className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
                 Interview Calendar
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground sm:text-sm">
                 Manage interviews, screenings, assignments, and follow-ups
               </p>
             </div>
           </div>
 
           {/* Search + View Switch */}
-          <div className="flex flex-col sm:flex-row sm:items-center lg:justify-between  gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-between">
             {/* Search */}
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex w-full gap-2 sm:w-auto">
               <Input
                 placeholder="Search by name, job, or skills..."
                 value={searchText}
@@ -490,7 +492,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Views */}
-            <div className="flex gap-1 border rounded-lg p-1 overflow-hidden">
+            <div className="flex gap-1 overflow-hidden rounded-lg border p-1">
               <Button
                 variant={calendarView === 'dayGridMonth' ? 'primary' : 'ghost'}
                 size="sm"
@@ -525,9 +527,9 @@ export default function CalendarPage() {
       </div>
 
       {/* BODY scrollable */}
-      <div className="flex-1 min-h-0 overflow-y-auto ">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Stats */}
-        <div className="px-4 sm:px-6 pt-4 pb-6">
+        <div className="px-4 pb-6 pt-4 sm:px-6">
           <StatsCards
             todayCount={todayCount}
             thisWeekCount={thisWeekCount}
@@ -537,8 +539,8 @@ export default function CalendarPage() {
         </div>
 
         {/* Main Content */}
-        <div className="px-4 sm:px-6 pb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] gap-4 md:gap-6">
+        <div className="px-4 pb-6 sm:px-6">
+          <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]">
             {/* Sidebar */}
             <div className="min-h-0">
               <CalendarSidebar
@@ -550,8 +552,8 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar */}
-            <Card className="flex flex-col h-full min-h-[500px] border border-border/50">
-              <CardContent className="p-3 sm:p-6 flex-1 min-h-0 overflow-auto">
+            <Card className="flex h-full min-h-[500px] flex-col border border-border/50">
+              <CardContent className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
                 <FullCalendar
                   ref={calendarRef}
                   plugins={[
@@ -594,66 +596,67 @@ export default function CalendarPage() {
 
                     const { candidate } = arg.event._def.extendedProps;
                     const { interviewer } = arg.event._def.extendedProps;
-                    const jobTitle = typeof candidate.jobId !== 'string'
-                      && candidate.jobId?.title
-                      ? candidate.jobId.title
-                      : candidate.jobDetails?.title || '';
+                    const jobTitle =
+                      typeof candidate.jobId !== 'string' &&
+                      candidate.jobId?.title
+                        ? candidate.jobId.title
+                        : candidate.jobDetails?.title || '';
 
                     if (
-                      calendarView === 'timeGridWeek'
-                      || calendarView === 'timeGridDay'
+                      calendarView === 'timeGridWeek' ||
+                      calendarView === 'timeGridDay'
                     ) {
                       // Time grid view
                       return (
-                        <div className="w-full h-full overflow-hidden px-2 py-1 break-words">
+                        <div className="h-full w-full overflow-hidden break-words px-2 py-1">
                           {/* <div className="font-semibold text-xs truncate overflow-hidden max-w-full">
                                             {candidate.name}
                                           </div> */}
-                          <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
-                            <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
+                          <div className="mb-0.5 flex max-w-full items-center gap-1 overflow-hidden">
+                            <div className="min-w-0 flex-1 overflow-hidden truncate text-[11px] font-medium">
                               {candidate.name}
                             </div>
                             {arg.event.start && (
-                              <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
+                              <span className="shrink-0 whitespace-nowrap text-[10px] opacity-80">
                                 {formatTime(arg.event.start)}
                               </span>
                             )}
                           </div>
                           {jobTitle && (
-                            <div className="text-[10px] opacity-80 truncate capitalize overflow-hidden max-w-full">
+                            <div className="max-w-full overflow-hidden truncate text-[10px] capitalize opacity-80">
                               {jobTitle}
                             </div>
                           )}
-                          {interviewer.name
-                            && interviewer.name !== 'Unknown' && (
-                              <div className="text-[10px] opacity-75 truncate capitalize overflow-hidden max-w-full">
+                          {interviewer.name &&
+                            interviewer.name !== 'Unknown' && (
+                              <div className="max-w-full overflow-hidden truncate text-[10px] capitalize opacity-75">
                                 {interviewer.name}
                               </div>
-                          )}
+                            )}
                         </div>
                       );
                     }
 
                     // Month view
                     return (
-                      <div className="w-full h-full overflow-hidden px-1.5 py-0.5 break-words">
-                        <div className="flex items-center gap-1 mb-0.5 overflow-hidden max-w-full">
-                          <div className="font-medium text-[11px] truncate flex-1 overflow-hidden min-w-0">
+                      <div className="h-full w-full overflow-hidden break-words px-1.5 py-0.5">
+                        <div className="mb-0.5 flex max-w-full items-center gap-1 overflow-hidden">
+                          <div className="min-w-0 flex-1 overflow-hidden truncate text-[11px] font-medium">
                             {candidate.name}
                           </div>
                           {arg.event.start && (
-                            <span className="text-[10px] opacity-80 shrink-0 whitespace-nowrap">
+                            <span className="shrink-0 whitespace-nowrap text-[10px] opacity-80">
                               {formatTime(arg.event.start)}
                             </span>
                           )}
                         </div>
                         {jobTitle && (
-                          <div className="text-[9px] opacity-75 truncate capitalize overflow-hidden max-w-full">
+                          <div className="max-w-full overflow-hidden truncate text-[9px] capitalize opacity-75">
                             {jobTitle}
                           </div>
                         )}
                         {interviewer.name && interviewer.name !== 'Unknown' && (
-                          <div className="text-[9px] opacity-70 truncate capitalize overflow-hidden max-w-full">
+                          <div className="max-w-full overflow-hidden truncate text-[9px] capitalize opacity-70">
                             {interviewer.name}
                           </div>
                         )}
@@ -680,8 +683,8 @@ export default function CalendarPage() {
               title:
                 selectedEvent.extendedProps.candidate.jobDetails?.title || '',
               description:
-                selectedEvent.extendedProps.candidate.jobDetails?.description
-                || '',
+                selectedEvent.extendedProps.candidate.jobDetails?.description ||
+                '',
             },
             status: selectedEvent.extendedProps.candidate.status || 'applied',
             assignment: {
@@ -692,8 +695,8 @@ export default function CalendarPage() {
                 selectedEvent.start?.toISOString() || new Date().toISOString(),
               assignedAt: new Date().toISOString(),
               googleMeet:
-                selectedEvent.extendedProps.candidate.assignment?.googleMeet
-                || null,
+                selectedEvent.extendedProps.candidate.assignment?.googleMeet ||
+                null,
               assignment: {
                 status:
                   selectedEvent.extendedProps.candidate.assignment?.assignment

@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSignupMutation } from '@/lib/features/auth/authApi';
 import { useToast } from '@/hooks/use-toast';
-import Cookies from 'js-cookie';
 import {
   Select,
   SelectContent,
@@ -57,11 +56,7 @@ export default function Signup() {
   ) => {
     try {
       if (userData) {
-        // debugger;
-        // const decryptedResponse = userData
-        // if (decryptedResponse.success && decryptedResponse.user) {
-        // console.log(userData, "user data--");
-
+      
         try {
           const orgID_cookie = userData.organizationId || '';
           const signupData = {
@@ -94,7 +89,6 @@ export default function Signup() {
             throw new Error('Failed to parse user data from cookie');
           }
         }
-        // }
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

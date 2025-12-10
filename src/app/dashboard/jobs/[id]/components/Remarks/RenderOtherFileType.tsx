@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import logger from '@/lib/logger';
 import { Download } from 'lucide-react';
 
 export function RenderOtherFileType({
@@ -8,7 +9,7 @@ export function RenderOtherFileType({
 }) {
   const downloadFile = async (url: string, filename: string) => {
     if (!url || !filename) {
-      console.error('Invalid URL or filename provided');
+      logger.error('Invalid URL or filename provided');
       return;
     }
 
@@ -37,7 +38,7 @@ export function RenderOtherFileType({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
     }
   };
 

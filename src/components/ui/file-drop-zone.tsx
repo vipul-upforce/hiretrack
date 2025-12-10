@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import { cn } from '@/lib/utils';
 import { Cloud, Pencil, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import logger from '@/lib/logger';
 import { FilePreviewDialog } from './file-preview-dialog';
 import { RenameFileDialog } from './rename-file-dialog';
 
@@ -89,7 +90,9 @@ export function FileDropZone({
       try {
         const base64 = await fileToBase64(file);
         newPreviews[file.name] = base64;
-      } catch (error) { console.log(error); }
+      } catch (error) {
+        logger.log(error);
+      }
     }
 
     setPreviews((prev) => ({
@@ -98,12 +101,13 @@ export function FileDropZone({
     }));
   }, []);
 
-  const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
 
   React.useEffect(() => {
     if (files.length > 0) {
@@ -126,10 +130,9 @@ export function FileDropZone({
     setDroppedFiles((prev) => prev.filter((name) => name !== fileNameToRemove));
   };
 
-  const isFileNameDuplicate = (fileName: string): boolean => (
-    existingFiles.some((file) => file.name === fileName)
-      || files.some((file) => file.name === fileName)
-  );
+  const isFileNameDuplicate = (fileName: string): boolean =>
+    existingFiles.some((file) => file.name === fileName) ||
+    files.some((file) => file.name === fileName);
 
   const generateUniqueFileName = (file: File): string => {
     if (!isFileNameDuplicate(file.name)) {
@@ -245,8 +248,8 @@ export function FileDropZone({
       <div
         {...getRootProps()}
         className={cn(
-          'border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors',
-          isDragActive ? 'border-primary bg-primary/10' : 'border-muted',
+          'cursor-pointer rounded-lg border-2 border-dashed p-6 transition-colors',
+          isDragActive ? 'bg-primary/10 border-primary' : 'border-muted',
         )}
       >
         <input {...getInputProps()} />
@@ -260,12 +263,7 @@ export function FileDropZone({
                 Drag & drop files here, or click to select files
                 <br />
                 <span className="text-xs">
-                  (Max
-                  {' '}
-                  {maxFiles}
-                  {' '}
-                  files, up to
-                  {' '}
+                  (Max {maxFiles} files, up to{' '}
                   {Math.round(maxSize / 1024 / 1024)}
                   MB each)
                 </span>
@@ -292,44 +290,38 @@ export function FileDropZone({
           {files.map((file, i) => (
             <div
               key={i}
-              className="flex items-center w-full mb-2 gap-2 rounded-md border p-2 hover:bg-muted/50 transition-colors group"
+              className="group mb-2 flex w-full items-center gap-2 rounded-md border p-2 transition-colors hover:bg-muted/50"
             >
               <div
                 className="cursor-pointer transition-transform group-hover:scale-105"
                 onClick={() => openPreview(file)}
-              >
-                {/* <PreviewComponent file={file} /> */}
-              </div>
+              />
               <div
-                className="flex-1 min-w-0 text-sm cursor-pointer"
+                className="min-w-0 flex-1 cursor-pointer text-sm"
                 onClick={() => openPreview(file)}
               >
-                <p className="font-medium truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="truncate font-medium">{file.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
                   {Math.round(file.size / 1024)}
-                  KB -
-                  {' '}
-                  {file.type || 'Unknown type'}
+                  KB - {file.type || 'Unknown type'}
                 </p>
               </div>
 
               <button
                 type="button"
-                className="p-2 hover:bg-muted rounded-md"
+                className="rounded-md p-2 hover:bg-muted"
                 onClick={() => setRenameFile(file)}
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
-              {/* {droppedFiles.includes(file.name) && ( */}
               <button
                 type="button"
-                className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                className="rounded-md p-2 hover:bg-muted hover:text-red-500"
                 onClick={() => handleRemoveFile(file.name)}
                 aria-label="Remove file"
               >
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
-              {/* )} */}
             </div>
           ))}
         </div>

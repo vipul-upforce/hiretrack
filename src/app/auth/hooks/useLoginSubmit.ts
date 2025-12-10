@@ -5,13 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useLoginMutation } from '@/lib/features/auth/authApi';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 
-import { LoginFormValues, UserWithoutCF } from '@/types/login';
+import { LoginFormValues } from '@/types/login';
 import { useCallback } from 'react';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
-import { signToken } from '@/lib/jwt';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserFromToken } from '@/lib/redux/authSlice';
 import { AppDispatch } from '@/lib/redux/store';
+import logger from '@/lib/logger';
+import { RootState } from '@reduxjs/toolkit/query';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -39,7 +40,8 @@ export const useHandleLoginSubmit = ({
   // debugger
 
   const getRedirectUrl = () => {
-    const redirectTo = searchParams?.get('redirect') || searchParams?.get('returnUrl');
+    const redirectTo =
+      searchParams?.get('redirect') || searchParams?.get('returnUrl');
 
     if (redirectTo) {
       try {
@@ -48,7 +50,7 @@ export const useHandleLoginSubmit = ({
           return decodedUrl;
         }
       } catch (error) {
-        console.warn('Invalid redirect URL:', redirectTo);
+        logger.warn('Invalid redirect URL:', redirectTo, error);
       }
     }
 
@@ -56,10 +58,11 @@ export const useHandleLoginSubmit = ({
       return isMultiple
         ? `/apply-jobs?o=${user.organizationInfo?.name}`
         : '/apply-jobs';
-    } if (
-      user?.role === 'admin'
-      || user?.role === 'interviewer'
-      || user?.role === 'hr'
+    }
+    if (
+      user?.role === 'admin' ||
+      user?.role === 'interviewer' ||
+      user?.role === 'hr'
     ) {
       return '/dashboard';
     }
@@ -106,39 +109,17 @@ export const useHandleLoginSubmit = ({
           email: values.email.toLowerCase().trim(),
           orgId: selectedOrg,
         }).unwrap();
-        console.log(response, 'login response');
 
         if (
-          response.organizations
-          && response.organizations.length > 1
-          && !selectedOrg
+          response.organizations &&
+          response.organizations.length > 1 &&
+          !selectedOrg
         ) {
           setOrganizations(response.organizations);
           setOrganizationDialogOpen(true);
           return;
         }
         const is2FAEnabled = response.twofa;
-
-        // try {
-        //   const check2FA = await fetch(
-        //     `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
-        //   );
-        //   const data = await check2FA.json();
-        //   is2FAEnabled = data.twoFA.enable2FA;
-        //   if (!check2FA.ok) {
-        //     throw new Error("Failed to fetch 2FA info");
-        //   }
-        // } catch (error) {
-        //   console.error(error);
-        //   setStatus("Failed to fetch 2FA info");
-        //   toast({
-        //     title: "Error",
-        //     description: "Failed to fetch 2FA info",
-        //     variant: "destructive",
-        //   });
-        // }
-        // const { is2FAEnabled } = await check2FA(String(response.user));
-
         if (is2FAEnabled) {
           const { organizationId } = response;
           try {
@@ -150,7 +131,6 @@ export const useHandleLoginSubmit = ({
                 organizationId,
               }),
             });
-            // const data = await otpResponse.json();
             if (!otpResponse.ok) {
               const errorData = await otpResponse.json();
               throw new Error(errorData.message || 'Failed to send OTP');
@@ -165,10 +145,11 @@ export const useHandleLoginSubmit = ({
               `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`,
             );
           } catch (error) {
-            console.error(error);
-            const errorMessage = error instanceof Error
-              ? error.message
-              : 'An unknown error occurred';
+            logger.error(error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : 'An unknown error occurred';
             setStatus(errorMessage);
             toast({
               title: 'Error',
@@ -179,25 +160,8 @@ export const useHandleLoginSubmit = ({
           return;
         }
 
-        // const userWithoutCustomFields: UserWithoutCF = {
-        //   ...decryptedResponse.user,
-        // };
-        // if (userWithoutCustomFields.organizationInfo) {
-        //   userWithoutCustomFields.organizationInfo = {
-        //     ...userWithoutCustomFields.organizationInfo,
-        //   };
-        //   delete userWithoutCustomFields.organizationInfo.customFields;
-        // }
-        // const token = await signToken(userWithoutCustomFields);
-        // Cookies.set("token", String(token), { expires: 30 });
-
         const redirectUrl = getRedirectUrl();
-        // new Promise(()=>{})
-        // setTimeout(()=>{
-        // },4000)
         if (isAuthenticated) {
-          // router.refresh();
-          // router.push(redirectUrl);
           if (redirectUrl !== '/') {
             window.location.href = redirectUrl;
           }
@@ -213,13 +177,14 @@ export const useHandleLoginSubmit = ({
 
         dispatch(fetchUserFromToken());
       } catch (err: unknown) {
-        console.log(err);
-        const errorMessage = err
-          && typeof err === 'object'
-          && 'data' in err
-          && (err.data as { error: string }).error
-          ? (err.data as { error: string }).error
-          : 'An unknown error occurred';
+        logger.error(err);
+        const errorMessage =
+          err &&
+          typeof err === 'object' &&
+          'data' in err &&
+          (err.data as { error: string }).error
+            ? (err.data as { error: string }).error
+            : 'An unknown error occurred';
         setStatus(errorMessage);
         toast({
           title: 'Error',
@@ -238,7 +203,6 @@ export const useHandleLoginSubmit = ({
       router,
       toast,
       searchParams,
-      // check2FA,
     ],
   );
 

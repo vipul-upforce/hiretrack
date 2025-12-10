@@ -34,15 +34,11 @@ export function getAuthUrl(oauth2Client: OAuth2Client): string {
     access_type: 'offline',
     scope: GOOGLE_CALENDAR_SCOPES,
     prompt: 'consent', // This forces re-consent and ensures refresh token
-    // approval_prompt: "force", // Legacy parameter for older Google OAuth
   });
 }
 
 export function getRedirectUri(req: Request): string {
   const url = new URL(req.url);
-  console.log('GENERATING THE REDIRECTION URL: ', url, url.host, url.protocol);
-  console.log('process.env.BASE_URL: ', process.env.BASE_URL);
-  console.log('process.env.ENVIRONMENT: ', process.env.ENVIRONMENT);
   if (process.env.ENVIRONMENT === 'production' && process.env.BASE_URL) {
     const baseUrl = process.env.BASE_URL || `${url.protocol}//${url.host}`;
     return `${baseUrl}/api/auth/google/callback`;

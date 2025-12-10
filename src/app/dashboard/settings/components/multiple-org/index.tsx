@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import {
   useGetMultipleOrgConfigsQuery,
   useUpdateMultipleOrgMutation,
@@ -22,10 +23,10 @@ export default function MultipleOrgsConfigs({
   const { toast } = useToast();
   const dispatch = useDispatch();
 
-  const {
-    data, isLoading, refetch, error,
-  } = useGetMultipleOrgConfigsQuery(undefined);
-  const [updateMultipleOrgConfigs, { isLoading: isUpdating }] = useUpdateMultipleOrgMutation();
+  const { data, isLoading, refetch, error } =
+    useGetMultipleOrgConfigsQuery(undefined);
+  const [updateMultipleOrgConfigs, { isLoading: isUpdating }] =
+    useUpdateMultipleOrgMutation();
 
   const isPermissionDenied = error && 'status' in error && error.status === 403;
 
@@ -55,7 +56,7 @@ export default function MultipleOrgsConfigs({
       refetch();
       onClose();
     } catch (err) {
-      console.error('Failed to update org configs:', err);
+      logger.error('Failed to update org configs:', err);
       toast({
         title: 'Error',
         description: 'Failed to update settings. Please try again.',

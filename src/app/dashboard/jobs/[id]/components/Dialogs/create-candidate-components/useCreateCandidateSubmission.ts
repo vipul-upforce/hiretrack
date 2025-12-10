@@ -1,7 +1,6 @@
 /**
  * Custom hook for handling candidate creation submission logic
  */
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -15,6 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
 import { Resume } from '@/lib/redux/types';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
+import logger from '@/lib/logger';
 
 interface CandidateFormValues {
   name: string;
@@ -47,12 +47,13 @@ interface UseCreateCandidateSubmissionProps {
 }
 
 // Helper function to convert file to base64
-const convertFileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result as string);
-  reader.onerror = (error) => reject(error);
-});
+const convertFileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
 // Helper function to evaluate candidate
 async function evaluateCandidate(
@@ -89,16 +90,19 @@ export function useCreateCandidateSubmission({
   onSuccess,
 }: UseCreateCandidateSubmissionProps) {
   const { toast } = useToast();
-  const [createCandidate, { isLoading: isAdding }] = useCreateCandidateMutation();
-  const [evaluateCandidateMutation, { isLoading: isEvaluating }] = useEvaluateCandidateMutation();
-  const [applicationEventMailMutation, { isLoading: isSendingEmail }] = useApplicationEventMailMutation();
+  const [createCandidate, { isLoading: isAdding }] =
+    useCreateCandidateMutation();
+  const [evaluateCandidateMutation, { isLoading: isEvaluating }] =
+    useEvaluateCandidateMutation();
+  const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
+    useApplicationEventMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [updateAppliedApplication, { isLoading }] = useUpdateAppliedApplicationMutation();
+  const [updateAppliedApplication, { isLoading }] =
+    useUpdateAppliedApplicationMutation();
   const [isCreating, setIsCreating] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   const submitCandidate = async (values: CandidateFormValues) => {
-    console.log('submitCandidate', isFormSubmitting, isCreating);
     // Prevent duplicate submissions
     if (isFormSubmitting || isCreating) {
       return;
@@ -163,18 +167,18 @@ export function useCreateCandidateSubmission({
         email: values.email || parsedResumeData?.profile?.email,
         ...(values.assignee && values.time
           ? {
-            assignee: values.assignee === '-1' ? '' : values.assignee,
-            time: values.time,
-          }
+              assignee: values.assignee === '-1' ? '' : values.assignee,
+              time: values.time,
+            }
           : {}),
         resume: resumeBase64
           ? {
-            id: uuidv4(),
-            name: values.resume?.name || '',
-            url: resumeBase64,
-            type: 'pdf',
-            size: values.resume?.size || 0,
-          }
+              id: uuidv4(),
+              name: values.resume?.name || '',
+              url: resumeBase64,
+              type: 'pdf',
+              size: values.resume?.size || 0,
+            }
           : undefined,
         attachments: attachmentsBase64.map((base64, index) => ({
           id: uuidv4(),
@@ -196,7 +200,7 @@ export function useCreateCandidateSubmission({
         try {
           evaluateCandidate(candidateId, evaluateCandidateMutation);
         } catch (evalError) {
-          console.warn(
+          logger.warn(
             'AI evaluation failed or was skipped by server:',
             evalError,
           );
@@ -221,13 +225,13 @@ export function useCreateCandidateSubmission({
         const newHistoryEntry: ICandidateHistory = {
           dateTime: new Date().toISOString() || '',
           title:
-            typeof createdCandidate?.assignment?.interviewerId === 'object'
-            && createdCandidate?.assignment?.interviewerId?.name
+            typeof createdCandidate?.assignment?.interviewerId === 'object' &&
+            createdCandidate?.assignment?.interviewerId?.name
               ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
               : '',
           currentInterviewer:
-            typeof createdCandidate?.assignment?.interviewerId === 'object'
-            && createdCandidate?.assignment?.interviewerId
+            typeof createdCandidate?.assignment?.interviewerId === 'object' &&
+            createdCandidate?.assignment?.interviewerId
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
@@ -259,9 +263,10 @@ export function useCreateCandidateSubmission({
         sendAppliedEventMail(candidateId, applicationEventMailMutation);
       }
     } catch (error) {
-      console.error('Create candidate error:', error);
+      logger.error('Create candidate error:', error);
 
-      let errorMessage = 'Failed to create candidate due to an unexpected error.';
+      let errorMessage =
+        'Failed to create candidate due to an unexpected error.';
 
       if (typeof error === 'object' && error !== null) {
         if ('data' in error) {
@@ -274,8 +279,8 @@ export function useCreateCandidateSubmission({
             errorMessage = errorData;
           }
         } else if (
-          'message' in error
-          && typeof (error as any).message === 'string'
+          'message' in error &&
+          typeof (error as any).message === 'string'
         ) {
           errorMessage = (error as any).message;
         }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(userData);
   } catch (error) {
-    console.error('Error fetching user data:', error);
+    logger.error({ error, url: request.url }, 'Error fetching user data');
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 },

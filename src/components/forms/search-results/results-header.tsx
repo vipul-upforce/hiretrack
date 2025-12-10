@@ -15,39 +15,39 @@ interface ResultsHeaderProps {
   onBulkUnarchive: () => void;
 }
 
-export const ResultsHeader = memo(({
-  activeFilters,
-  onFilterToggle,
-  onClearAllFilters,
-  visibleColumns,
-  onColumnToggle,
-  selectedCandidatesCount,
-  onBulkAssignJob,
-  onBulkArchive,
-  onBulkUnarchive,
-}: ResultsHeaderProps) {
-  return (
-    <div className="flex justify-between items-center p-4 border-b">
-      <QuickFilters
-        activeFilters={activeFilters}
-        onFilterToggle={onFilterToggle}
-        onClearAll={onClearAllFilters}
-      />
+export const ResultsHeader = memo(
+  ({
+    activeFilters,
+    onFilterToggle,
+    onClearAllFilters,
+    visibleColumns,
+    onColumnToggle,
+    selectedCandidatesCount,
+    onBulkAssignJob,
+    onBulkArchive,
+    onBulkUnarchive,
+  }: ResultsHeaderProps) => (
+      <div className="flex items-center justify-between border-b p-4">
+        <QuickFilters
+          activeFilters={activeFilters}
+          onFilterToggle={onFilterToggle}
+          onClearAll={onClearAllFilters}
+        />
 
-      <div className="flex items-center gap-2">
-        <BulkActions
-          selectedCount={selectedCandidatesCount}
-          onAssignJob={onBulkAssignJob}
-          onArchive={onBulkArchive}
-          onUnarchive={onBulkUnarchive}
-        />
-        <ColumnToggle
-          visibleColumns={visibleColumns}
-          onColumnToggle={onColumnToggle}
-        />
+        <div className="flex items-center gap-2">
+          <BulkActions
+            selectedCount={selectedCandidatesCount}
+            onAssignJob={onBulkAssignJob}
+            onArchive={onBulkArchive}
+            onUnarchive={onBulkUnarchive}
+          />
+          <ColumnToggle
+            visibleColumns={visibleColumns}
+            onColumnToggle={onColumnToggle}
+          />
+        </div>
       </div>
-    </div>
-  );
-});
+    ),
+);
 
 ResultsHeader.displayName = 'ResultsHeader';

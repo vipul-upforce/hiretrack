@@ -97,10 +97,8 @@ export class EnhancedAnalyticsMiddleware {
       // const JWT_SECRET = process.env.JWT_SECRET;
       const orgId = cookieStore.get('org_id')?.value;
       const JWT_SECRET = generateOrgJwtSecret(orgId);
-      // console.log(JWT_SECRET, "JWT_SECRET-11");
 
       if (!JWT_SECRET) {
-        console.error('JWT_SECRET not configured');
         return { user: null, error: 'Server configuration error' };
       }
 
@@ -138,7 +136,6 @@ export class EnhancedAnalyticsMiddleware {
         error: null,
       };
     } catch (error) {
-      console.error('Enhanced analytics authentication error:', error);
       return { user: null, error: 'Token verification failed' };
     }
   }
@@ -307,8 +304,6 @@ export class EnhancedAnalyticsMiddleware {
       details,
     };
 
-    // In production, send to monitoring service (e.g., Datadog, Sentry)
-    console.log('SECURITY_EVENT:', JSON.stringify(logEntry));
   }
 
   /**
@@ -416,7 +411,6 @@ export class EnhancedAnalyticsMiddleware {
 
       return response;
     } catch (error: unknown) {
-      console.error('Enhanced analytics middleware error:', error);
       this.logSecurityEvent('MIDDLEWARE_ERROR', null, request, {
         error: error instanceof Error ? error.message : 'Unknown error',
       });

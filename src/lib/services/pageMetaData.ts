@@ -1,3 +1,5 @@
+import logger from '../logger';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -14,18 +16,11 @@ export const pageMetaData = async () => {
     if (!res.ok) throw new Error('Failed to fetch organization data');
 
     const data = await res.json();
-    // data.data.forEach((org: any) => {
-    //   console.log("org", org.portalConfigs.portalName);
-    // });
-    // Get the organization data - this will be cached by Next.js
-    // We'll use client-side updates to ensure metadata is fresh when switching orgs
     const org = Array.isArray(data) ? data[0] : data?.data?.[0];
 
     const title = org?.portalConfigs?.portalName || 'HireTrack';
 
     const faviconUrl = org?.portalConfigs?.portalFavicon?.url || '/favicon.png';
-    console.log('$$$$###title>>>>>>>>>>>> ', title);
-    console.log('$$$$$$#faviconUrl>>>>>>>>>>>> ', faviconUrl);
     return {
       title,
       icons: {
@@ -33,8 +28,7 @@ export const pageMetaData = async () => {
       },
     };
   } catch (error) {
-    // console.log("Error fetching metadata:", error);
-
+    logger.error('Error fetching organization data for metadata:', error);
     return {
       title: 'HireTrack',
       icons: {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DownloadIcon } from 'lucide-react';
+import logger from '@/lib/logger';
 import { exportToCSV } from '../../utils/export';
 import type { FunnelData, FunnelSummary } from './CandidateFunnelChart';
 
@@ -12,14 +13,14 @@ interface ExportButtonProps {
   filename?: string;
 }
 
-export const ExportButton: React.FC<ExportButtonProps> = ({
+function ExportButton({
   funnelData,
   summary,
   filename = 'candidate_funnel_analysis',
-}) => {
+}: ExportButtonProps) {
   const handleExport = () => {
     if (!funnelData || funnelData.length === 0) {
-      console.warn('No funnel data to export');
+      logger.warn('No funnel data to export');
       return;
     }
 
@@ -90,10 +91,10 @@ export const ExportButton: React.FC<ExportButtonProps> = ({
 
   return (
     <Button variant="outline" size="sm" onClick={handleExport}>
-      <DownloadIcon className="h-4 w-4 mr-2" />
+      <DownloadIcon className="mr-2 h-4 w-4" />
       Export
     </Button>
   );
-};
+}
 
 export default ExportButton;

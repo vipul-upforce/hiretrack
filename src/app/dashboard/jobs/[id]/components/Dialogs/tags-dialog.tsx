@@ -3,13 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import { useUpdateCandidateMutation } from '@/lib/features/candidate/candidateApi';
 import { useFetchOrgTagsQuery } from '@/lib/features/org/orgApi';
 import { User } from '@/lib/features/users/usersApi';
 import { ITag } from '@/lib/models/organization';
 import { Candidate } from '@/types/candidate';
 import { Settings } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ManageTagsDialog from './manage-tags-dialog';
 
 interface TagsDialogProps {
@@ -71,8 +72,8 @@ function TagsDialog({
         title: 'Success',
         description: 'Candidate tags updated successfully.',
       });
-    } catch (error) {
-      console.error('Failed to update candidate tags:', error);
+    } catch (er) {
+      logger.error('Failed to update candidate tags:', er);
       toast({
         title: 'Error',
         description: 'Failed to update candidate tags. Please try again.',

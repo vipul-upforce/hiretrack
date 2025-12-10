@@ -13,7 +13,6 @@ import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import Image from 'next/image';
-import Cookies from 'js-cookie';
 import OrganizationDialog, { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import { LoginFormValues } from '@/types/login';
@@ -28,6 +27,7 @@ import { getDecodedCaptcha } from '@/hooks/useSSE';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import LoadingScreen from '@/app/loading-screen';
 import packageJson from '@/../package.json';
+import logger from '@/lib/logger';
 
 // Animated Grid Pattern Component
 interface AnimatedGridPatternProps {
@@ -418,13 +418,10 @@ export default function LoginFormContent({
   } = useFetchOrgQuery(undefined);
 
   useEffect(() => {
-    // debugger;
     if (user && user.id && user.role) {
       router.push('/dashboard');
     }
   }, [user]);
-  // console.log(data, "data og captcha ");
-  // console.log(captchaConfig, "config captcha");
 
   // Decrypt siteKey when captchaConfig is available
   useEffect(() => {
@@ -433,7 +430,6 @@ export default function LoginFormContent({
         // Use the organizationId from the first element of the orgResponse.data array
         const organizationId = orgResponse?.data?.[0]?.organizationId;
         if (!organizationId) {
-          console.log('No organizationId found in orgResponse.data[0]');
           return;
         }
 
@@ -461,11 +457,6 @@ export default function LoginFormContent({
       } as unknown as React.FormEvent);
     }
   }, [selectedOrg]);
-
-  // Set initial loading title
-  // useEffect(() => {
-  //   document.title = "Loading...";
-  // }, []);
 
   // Fetch portal settings for logo and name
   useEffect(() => {
@@ -497,7 +488,7 @@ export default function LoginFormContent({
         document.title = 'HireTrack';
       }
     } catch (error) {
-      console.error('Error applying portal settings:', error);
+      logger.error('Error applying portal settings:', error);
       setPortalError(true);
       document.title = 'HireTrack';
     }
@@ -821,19 +812,6 @@ export default function LoginFormContent({
                 </div>
               </div>
 
-              {/* Custom styled reCAPTCHA */}
-              {/* <div className="flex justify-center">
-                <div className="recaptcha-container">
-                  <ReCAPTCHA
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                    onChange={(token) => {
-                      if (token) setCaptcha(token);
-                    }}
-                    theme={theme as "light" | "dark"}
-                  />
-                </div>
-              </div> */}
-
               {/* Conditionally render CAPTCHA if enabled and siteKey is available */}
               {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
                 <div className="flex justify-center">
@@ -846,12 +824,6 @@ export default function LoginFormContent({
                   </div>
                 </div>
               )}
-              {/* Optional: Show error message if CAPTCHA config fails */}
-              {/* {captchaError && (
-                <div className="text-red-500 text-sm text-center">
-                  Failed to load CAPTCHA configuration. Please try again later.
-                </div>
-              )} */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input type="checkbox" className="rounded border-border" />
@@ -871,7 +843,6 @@ export default function LoginFormContent({
 
               <motion.button
                 type="submit"
-                // disabled={isLoading || !captcha}
                 disabled={
                   isLoading
                   || isSubmitting

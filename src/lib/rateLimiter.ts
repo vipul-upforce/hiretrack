@@ -16,7 +16,6 @@ interface RateLimitStore {
 // In-memory store for rate limiting
 // In production, you might want to use Redis for distributed systems
 const rateLimitStore = new Map<string, RateLimitStore>();
-console.log('💬💬 rateLimitStore: ', rateLimitStore);
 // Clean up expired entries periodically
 setInterval(() => {
   const now = Date.now();
@@ -26,6 +25,35 @@ setInterval(() => {
     }
   }
 }, 60000); // Clean every minute
+
+/**
+ * Default key generator using IP address and endpoint
+ */
+function defaultKeyGenerator(req: NextRequest): string {
+  // Get IP address from various headers (works with proxies/load balancers)
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
+
+  // Include pathname to have separate limits per endpoint
+  const { pathname } = req.nextUrl;
+
+  return `${ip}:${pathname}`;
+}
+
+/**
+ * Helper function to extract email from request body
+ */
+async function extractEmailFromRequest(
+  request: NextRequest,
+): Promise<string | null> {
+  try {
+    const body = await request.clone().json();
+    return body.email || null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Production-ready rate limiter for authentication endpoints
@@ -82,7 +110,7 @@ export function createRateLimiter(config: RateLimitConfig) {
 
     // Increment counter based on configuration
     if (!skipSuccessfulRequests || response.status >= 400) {
-      rateLimit.requests++;
+      rateLimit.requests += 1;
     }
 
     // Add rate limit headers to response
@@ -99,21 +127,6 @@ export function createRateLimiter(config: RateLimitConfig) {
 }
 
 /**
- * Default key generator using IP address and endpoint
- */
-function defaultKeyGenerator(req: NextRequest): string {
-  // Get IP address from various headers (works with proxies/load balancers)
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  const realIp = req.headers.get('x-real-ip');
-  const ip = forwardedFor?.split(',')[0] || realIp || 'unknown';
-
-  // Include pathname to have separate limits per endpoint
-  const { pathname } = req.nextUrl;
-
-  return `${ip}:${pathname}`;
-}
-
-/**
  * Enhanced key generator that includes user identification
  * Useful for authenticated endpoints
  */
@@ -127,15 +140,6 @@ export function createUserBasedKeyGenerator(
     }
     return defaultKeyGenerator(req);
   };
-}
-
-/**
- * Pre-configured rate limiters for different use cases
- */
-
-// Email-based key generator for password reset
-function emailKeyGenerator(email: string): string {
-  return `email:${email}`;
 }
 
 // Email-based password reset rate limiter
@@ -189,7 +193,7 @@ export function createEmailPasswordResetLimiter() {
     const response = await handler(request);
 
     // Always increment for password reset requests
-    emailRateLimit.requests++;
+    emailRateLimit.requests += 1;
 
     return response;
   };
@@ -245,7 +249,7 @@ export function createEmailOTPLimiter() {
     const response = await handler(request);
 
     // Always increment for OTP requests
-    emailRateLimit.requests++;
+    emailRateLimit.requests += 1;
 
     return response;
   };
@@ -309,7 +313,7 @@ export function createEmailSignupLimiter() {
 
     // Only increment on failed attempts
     if (response.status >= 400) {
-      emailRateLimit.requests++;
+      emailRateLimit.requests += 1;
     }
 
     return response;
@@ -329,20 +333,6 @@ export function withRateLimit(
 }
 
 /**
- * Helper function to extract email from request body
- */
-async function extractEmailFromRequest(
-  request: NextRequest,
-): Promise<string | null> {
-  try {
-    const body = await request.clone().json();
-    return body.email || null;
-  } catch (e) {
-    return null;
-  }
-}
-
-/**
  * Email-based rate limiter for login attempts
  */
 export function createEmailLoginRateLimiter() {
@@ -356,13 +346,13 @@ export function createEmailLoginRateLimiter() {
     const windowMs = 15 * 60 * 1000; // 15 minutes
     const maxRequests = 5; // 5 attempts per email
 
-    let emailRateLimit = rateLimitStore.get(emailKey);
+    let emailRateLimit = rateLimitStore.get(emailKey as string);
     if (!emailRateLimit || emailRateLimit.resetTime < now) {
       emailRateLimit = {
         requests: 0,
         resetTime: now + windowMs,
       };
-      rateLimitStore.set(emailKey, emailRateLimit);
+      rateLimitStore.set(emailKey as string, emailRateLimit);
     }
 
     if (emailRateLimit.requests >= maxRequests) {
@@ -391,7 +381,7 @@ export function createEmailLoginRateLimiter() {
 
     // Only increment counter on failed attempts
     if (response.status >= 400) {
-      emailRateLimit.requests++;
+      emailRateLimit.requests += 1;
     }
 
     // Add rate limit headers to response

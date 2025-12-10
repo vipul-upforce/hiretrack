@@ -130,7 +130,7 @@ export async function DELETE(
       deletedLane: laneName,
     });
   } catch (error) {
-    console.error('Delete job lane error:', error);
+    logger.error({ error, url: request.url }, 'Delete job lane error');
     return NextResponse.json(
       { error: 'Failed to delete job lane' },
       { status: 500 },

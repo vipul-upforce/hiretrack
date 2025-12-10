@@ -1,17 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
-import { Separator } from '@/components/ui/separator';
 import { NotificationItem } from '@/components/ui/notifications/NotificationItem';
 import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
 import {
-  Bell,
   BellOff,
   Check,
   Filter,
@@ -32,16 +28,15 @@ import {
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
 } from '@/lib/features/notifications/notificationsApi';
-import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationType } from '@/lib/models/notification';
 import { User } from '@/lib/features/users/usersApi';
 import { Candidate } from '@/types/candidate';
 import { useSelector } from 'react-redux';
+import logger from '@/lib/logger';
 import { CandidateDetailsDialog } from '../jobs/[id]/components/Dialogs/candidate-details-dialog';
 
 export default function NotificationsPage() {
-  const router = useRouter();
   const { toast } = useToast();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -93,12 +88,11 @@ export default function NotificationsPage() {
 
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
-      // user?.role === "interviewer" &&
-      (notification.relatedEntity === 'candidate'
-        || notification.relatedEntity === 'meeting'
-        || notification.relatedEntity === 'checklist'
-        || notification.relatedEntity === 'followup')
-      && notification.relatedId
+      (notification.relatedEntity === 'candidate' ||
+        notification.relatedEntity === 'meeting' ||
+        notification.relatedEntity === 'checklist' ||
+        notification.relatedEntity === 'followup') &&
+      notification.relatedId
     ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
@@ -107,7 +101,7 @@ export default function NotificationsPage() {
           setIsCandidateDialogOpen(true);
         }
       } catch (error) {
-        console.error('Failed to fetch candidate:', error);
+        logger.error('Failed to fetch candidate:', error);
         toast({
           title: 'Error',
           description: 'Failed to load candidate details',
@@ -115,18 +109,13 @@ export default function NotificationsPage() {
         });
       }
     }
-
-    // For admin/hr or non-candidate notifications, navigate to the page
-    // if (notification.actionUrl) {
-    //   router.push(notification.actionUrl);
-    // }
   };
 
   const handleMarkAsRead = async (id: string) => {
     try {
       await markAsRead(id).unwrap();
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      logger.error('Failed to mark notification as read:', error);
     }
   };
 
@@ -138,7 +127,7 @@ export default function NotificationsPage() {
         description: 'All notifications marked as read',
       });
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+      logger.error('Failed to mark all notifications as read:', error);
       toast({
         title: 'Error',
         description: 'Failed to mark all notifications as read',
@@ -154,7 +143,6 @@ export default function NotificationsPage() {
   const notifications = notificationsData?.notifications || [];
   const pagination = notificationsData?.pagination;
   const unreadCount = notificationCountData?.unreadCount || 0;
-  const totalCount = notificationCountData?.totalCount || 0;
 
   // Get available notification types for filter based on user role
   const getNotificationTypesForRole = (
@@ -186,28 +174,21 @@ export default function NotificationsPage() {
           type === NotificationType.JOB_CREATED ||
           type === NotificationType.JOB_UPDATED ||
           type === NotificationType.CANDIDATE_MOVED ||
-          // type === NotificationType.USER_ADDED ||
-          || type === NotificationType.BULK_IMPORT_COMPLETED
-          || type === NotificationType.INTERVIEW_COMPLETED,
-        // type === NotificationType.EMAIL_FAILED
+          type === NotificationType.BULK_IMPORT_COMPLETED ||
+          type === NotificationType.INTERVIEW_COMPLETED,
       );
     }
 
     if (userRole === 'interviewer') {
       // Interviewers see only candidate and meeting related notifications
       return allTypes.filter(
-        (type) => type === NotificationType.INTERVIEW_ASSIGNMENTS
-          || type === NotificationType.STEP_COMPLETED
-          || type === NotificationType.MEETING_SCHEDULED
-          || type === NotificationType.MEETING_UPDATED
-          || type === NotificationType.MEETING_CANCELLED
-          || type === NotificationType.NEW_REMARKS,
-        // type === NotificationType.FOLLOWUP_ADDED ||
-        // type === NotificationType.FOLLOWUP_UPDATED ||
-        // type === NotificationType.FOLLOWUP_REMOVED ||
-        // type === NotificationType.CHECKLIST_COMPLETED ||
-        // type === NotificationType.CANDIDATE_STATUS_UPDATED ||
-        // type === NotificationType.CANDIDATE_DETAILS_UPDATED
+        (type) =>
+          type === NotificationType.INTERVIEW_ASSIGNMENTS ||
+          type === NotificationType.STEP_COMPLETED ||
+          type === NotificationType.MEETING_SCHEDULED ||
+          type === NotificationType.MEETING_UPDATED ||
+          type === NotificationType.MEETING_CANCELLED ||
+          type === NotificationType.NEW_REMARKS,
       );
     }
 
@@ -217,28 +198,26 @@ export default function NotificationsPage() {
   const notificationTypes = getNotificationTypesForRole(user?.role);
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+            <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
               Notifications
             </CardTitle>
 
             {/* Right Section - Actions and Badge */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
-              <div className="flex gap-2 items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              <div className="flex items-center gap-2">
                 {unreadCount > 0 && (
                   <Badge variant="secondary" className="font-medium">
-                    {unreadCount}
-                    {' '}
-                    unread
+                    {unreadCount} unread
                   </Badge>
                 )}
                 <Button variant="outline" size="sm" onClick={handleRefresh}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                  <RefreshCw className="mr-2 h-4 w-4" />
                   Refresh
                 </Button>
                 {unreadCount > 0 && (
@@ -247,7 +226,7 @@ export default function NotificationsPage() {
                     onClick={handleMarkAllAsRead}
                     variant="primary"
                   >
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="mr-2 h-4 w-4" />
                     Mark all read
                   </Button>
                 )}
@@ -258,9 +237,9 @@ export default function NotificationsPage() {
       </div>
 
       {/* Filters section */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+        <div className="flex flex-col items-end gap-4 sm:flex-row">
+          <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Type</label>
               <Select value={filterType} onValueChange={setFilterType}>
@@ -310,9 +289,9 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          {(filterType !== 'all'
-            || filterRead !== 'all'
-            || filterPriority !== 'all') && (
+          {(filterType !== 'all' ||
+            filterRead !== 'all' ||
+            filterPriority !== 'all') && (
             <Button
               variant="outline"
               size="sm"
@@ -324,7 +303,7 @@ export default function NotificationsPage() {
               }}
               className="h-9"
             >
-              <Filter className="h-4 w-4 mr-2" />
+              <Filter className="mr-2 h-4 w-4" />
               Clear filters
             </Button>
           )}
@@ -333,9 +312,9 @@ export default function NotificationsPage() {
 
       {/* Main content area */}
       <div className="flex-1 overflow-hidden px-4">
-        <div className="h-full flex flex-col">
+        <div className="flex h-full flex-col">
           {/* Notifications header */}
-          <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between border-b border-gray-200 py-3 dark:border-gray-700">
             <h2 className="text-lg font-semibold">
               {pagination
                 ? `${pagination.totalCount} Notifications`
@@ -343,18 +322,12 @@ export default function NotificationsPage() {
             </h2>
             {pagination && pagination.totalCount > 0 && (
               <div className="text-sm text-muted-foreground">
-                Showing
-                {' '}
-                {(pagination.currentPage - 1) * limit + 1}
-                -
+                Showing {(pagination.currentPage - 1) * limit + 1}-
                 {Math.min(
                   pagination.currentPage * limit,
                   pagination.totalCount,
-                )}
-                {' '}
-                of
-                {' '}
-                {pagination.totalCount}
+                )}{' '}
+                of {pagination.totalCount}
               </div>
             )}
           </div>
@@ -362,22 +335,22 @@ export default function NotificationsPage() {
           {/* Notifications content */}
           <div className="flex-1 overflow-hidden">
             {notificationsLoading ? (
-              <div className="flex items-center justify-center h-full">
+              <div className="flex h-full items-center justify-center">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   Loading notifications...
                 </div>
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <BellOff className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
+              <div className="flex h-full flex-col items-center justify-center text-center">
+                <BellOff className="mb-4 h-12 w-12 text-muted-foreground" />
+                <h3 className="mb-2 text-lg font-semibold">
                   No notifications found
                 </h3>
-                <p className="text-muted-foreground max-w-md">
-                  {filterType !== 'all'
-                  || filterRead !== 'all'
-                  || filterPriority !== 'all'
+                <p className="max-w-md text-muted-foreground">
+                  {filterType !== 'all' ||
+                  filterRead !== 'all' ||
+                  filterPriority !== 'all'
                     ? 'No notifications match your current filters. Try adjusting your filters to see more notifications.'
                     : "You're all caught up! New notifications will appear here when there's activity."}
                 </p>
@@ -391,7 +364,7 @@ export default function NotificationsPage() {
                       notification={notification}
                       onMarkAsRead={handleMarkAsRead}
                       onClick={handleNotificationClick}
-                      className="hover:bg-muted/50 transition-colors"
+                      className="transition-colors hover:bg-muted/50"
                     />
                   ))}
                 </div>
@@ -401,15 +374,9 @@ export default function NotificationsPage() {
 
           {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between py-3 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between border-t border-gray-200 py-3 dark:border-gray-700">
               <div className="text-sm text-muted-foreground">
-                Page
-                {' '}
-                {pagination.currentPage}
-                {' '}
-                of
-                {' '}
-                {pagination.totalPages}
+                Page {pagination.currentPage} of {pagination.totalPages}
               </div>
 
               <div className="flex items-center gap-2">
@@ -422,7 +389,7 @@ export default function NotificationsPage() {
                     setCurrentPage(pagination.currentPage - 1);
                   }}
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  <ChevronLeft className="mr-1 h-4 w-4" />
                   Previous
                 </Button>
 
@@ -436,7 +403,7 @@ export default function NotificationsPage() {
                   }}
                 >
                   Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
+                  <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </div>
             </div>

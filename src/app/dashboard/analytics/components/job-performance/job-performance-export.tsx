@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import logger from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { DownloadIcon } from 'lucide-react';
 import { exportToCSV } from '../../utils/export';
@@ -11,10 +12,10 @@ interface Props {
   summary: any;
 }
 
-const JobPerformanceExport: React.FC<Props> = ({ jobData, summary }) => {
+function JobPerformanceExport({ jobData, summary }: Props) {
   const handleExport = useCallback(() => {
     if (!jobData || jobData.length === 0) {
-      console.warn('No job performance data to export');
+      logger.warn('No job performance data to export');
       return;
     }
 
@@ -192,10 +193,10 @@ const JobPerformanceExport: React.FC<Props> = ({ jobData, summary }) => {
 
   return (
     <Button variant="outline" size="sm" onClick={handleExport}>
-      <DownloadIcon className="h-4 w-4 mr-2" />
+      <DownloadIcon className="mr-2 h-4 w-4" />
       Export
     </Button>
   );
-};
+}
 
 export default JobPerformanceExport;

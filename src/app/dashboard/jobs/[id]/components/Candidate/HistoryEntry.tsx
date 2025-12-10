@@ -5,15 +5,12 @@ import {
   ClipboardCheck,
   ChevronDown,
   ChevronRight,
-  EyeClosedIcon,
   EyeOffIcon,
 } from 'lucide-react';
 import { ICandidateHistory } from '@/lib/models/history';
 import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
 import useRoles from '@/hooks/useRoles';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Tooltip,
   TooltipContent,
@@ -25,7 +22,6 @@ import FollowupDisplay from '../Remarks/followup-popover';
 import { IEditRemark } from '../../schemas/EditRemarkDialog';
 import AttachmentsPopover from '../Remarks/attachments-popover';
 import { RemarkOptionsMenu } from '../Remarks/remark-options-menu';
-// import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 
 // Component to display checklist responses
 function ChecklistResponseViewer({
@@ -36,15 +32,6 @@ function ChecklistResponseViewer({
   const [isExpanded, setIsExpanded] = useState(false);
   const role = useRoles();
   if (!checklistForm) return null;
-
-  // Debug: Log the structure to understand the data format
-  // console.log("ChecklistForm structure:", checklistForm);
-  // console.log("Responses type:", typeof checklistForm.responses);
-  // console.log(
-  //   "Responses instanceof Map:",
-  //   checklistForm.responses instanceof Map
-  // );
-  // console.log("Responses data:", checklistForm.responses);
 
   // Handle both Map and plain object formats
   const responsesArray = checklistForm.responses instanceof Map
@@ -175,9 +162,6 @@ function ChecklistResponseViewer({
               const fieldType = (responseData as { fieldType: string })?.fieldType || 'text';
               const value = (responseData as { value: string })?.value;
 
-              // if (value.trim() === "" || !value){
-              //   return;
-              // }
               return (
                 <div
                   key={fieldId}
@@ -248,18 +232,11 @@ function RenderHistoryEntry({
   ) {
     return null;
   }
-  // console.log(interview, "interview Historuy");
-
-  // Convert timeDate string to Date object for formatTZDate
-  // const dateObj = new Date(timeDate);
-
-  // Format the date using the user's timezone
-  // const formattedDate = formatTZDate(dateObj);
 
   const { renderEntryTitle } = useRenderEntryTitle(interview, localCandidate);
 
   if (isLogTableEntry) {
-    return;
+    return null;
   }
 
   return (
@@ -278,10 +255,6 @@ function RenderHistoryEntry({
       >
         <div className="flex flex-row items-center gap-2">
           <time className="mb-1 text-sm font-normal leading-none text-gray-400 dark:text-gray-500 flex flex-row items-center group">
-            {/* {typeof formattedDate === "string"
-            ? formattedDate
-            : formattedDate.toString()}{" "}
-          <Dot /> {timeTime} */}
             {timeDate}
             {' '}
             <Dot />
@@ -302,54 +275,7 @@ function RenderHistoryEntry({
             </TooltipProvider>
           )}
         </div>
-        {/* <div className="relative">
-          {interview.remark?.description &&
-            interview.remark?.id === isRemarkOpsOpenFor &&
-            interview.assignmentBy &&
-            typeof interview.assignmentBy === "object" &&
-            "_id" in interview.assignmentBy &&
-            (role !== "interviewer" ||
-              interview.assignmentBy?._id === user?.id) &&
-            (role !== "hr" ||
-              interview.assignmentBy?._id === user?.id) &&
-            user?.role !== "candidate" && (
-              // (user?.role === "hr" || user?.role === "admin") && (
-              <RemarkOptionsMenu
-                isOpen={
-                  isRemarkOptionsOpen &&
-                  interview.remark?.id === isRemarkOpsOpenFor
-                }
-                setIsOpen={(open) => {
-                  setIsRemarkOptionsOpen(open);
-                  setIsRemarkOpsOpenFor(open ? interview.remark?.id || "" : "");
-                }}
-                remarkId={interview.remark?.id || ""}
-                isPrivate={interview.remark?.isPrivate || false}
-                onTogglePrivacy={async (id, isPrivate) => {
-                  try {
-                    await handleRemarkUpdate(
-                      id,
-                      interview.remark?.description || "",
-                      isPrivate
-                    );
-                  } catch (error) {
-                    console.error("Failed to toggle privacy:", error);
-                  }
-                }}
-                onEdit={(id) => {
-                  if (interview.remark) {
-                    setEditingRemark({
-                      id: interview.remark.id,
-                      description: interview.remark.description,
-                      isPrivate: interview.remark.isPrivate || false,
-                      rating: interview.remark.rating,
-                    });
-                    setIsEditRemarkDialogOpen(true);
-                  }
-                }}
-              />
-            )}
-        </div> */}
+     
         <div className="relative">
           {/* ✅ Remark options */}
           {interview.remark?.description
@@ -398,7 +324,6 @@ function RenderHistoryEntry({
           {(interview.title?.includes('Followup')
             ? interview.note
             : interview.note?.description)
-            // interview.note?.description &&
             && interview.assignmentBy
             && typeof interview.assignmentBy === 'object'
             && '_id' in interview.assignmentBy
@@ -444,29 +369,6 @@ function RenderHistoryEntry({
           className="max-w-[90%] text-sm whitespace-pre-wrap pb-0"
           style={{ wordWrap: 'break-word' }}
         >
-          {/* {interview.note &&
-            !interview.currentInterviewer &&
-            interview.note.description &&
-            (() => {
-              const description = interview.note.description || "";
-              const index = description.indexOf(":");
-
-              const title =
-                index !== -1 ? description.slice(0, index).trim() : "";
-              const rest =
-                index !== -1
-                  ? description.slice(index + 1).trim()
-                  : description;
-
-              return (
-                <>
-                  <span className="text-black text-lg">
-                    {title.charAt(0).toUpperCase() + title.slice(1)}
-                  </span>
-                  <span>{rest}</span>
-                </>
-              );
-            })()} */}
 
           {interview.note
             && typeof interview.note.description === 'string'
@@ -476,7 +378,6 @@ function RenderHistoryEntry({
 
         {interview?.note
         && Object.keys(interview.note).length > 0
-        // interview?.note?.rating &&
         && interview?.note?.rating !== 0
         && interview?.note?.rating ? (
           <div className="flex flex-row items-center">

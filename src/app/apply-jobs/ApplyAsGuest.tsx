@@ -26,6 +26,7 @@ import * as pdfjs from 'pdfjs-dist';
 import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
 import { User } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
+import logger from '@/lib/logger';
 import { useApplyHandler } from './useApplyHandler';
 import { candidateSchema } from '../dashboard/jobs/[id]/schemas/candidate-schema';
 import FormUpdater from '../dashboard/jobs/[id]/components/Utils/FormUpdater';
@@ -58,7 +59,7 @@ const storeGuestApplication = (jobId: string, candidateId: string) => {
 
     return true;
   } catch (error) {
-    console.error('Failed to store guest application status:', error);
+    logger.error('Failed to store guest application status:', error);
     return false;
   }
 };
@@ -84,11 +85,10 @@ export async function evaluateCandidate(
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
     return result;
   } catch (e) {
-    console.log('_______', e);
-    return typeof e === 'object'
-      && 'data' in e
-      && typeof e.data === 'object'
-      && 'error' in e.data
+    return typeof e === 'object' &&
+      'data' in e &&
+      typeof e.data === 'object' &&
+      'error' in e.data
       ? e.data.error
       : 'failed to re-evaluate candidate';
   }
@@ -164,21 +164,6 @@ const handleFileParse = async (
 
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
 
-// Add this function before handleSubmit
-const checkPdfPageCount = async (file: File): Promise<number> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = async () => {
-    const arrayBuffer = reader.result as ArrayBuffer;
-    try {
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      resolve(pdf.numPages);
-    } catch (error) {
-      reject(error);
-    }
-  };
-  reader.onerror = (error) => reject(error);
-  reader.readAsArrayBuffer(file);
-});
 
 export function ApplyAsGuestDialog({
   jobId,
@@ -188,12 +173,12 @@ export function ApplyAsGuestDialog({
   closeParent,
   jobTitle,
   primaryColor = '#6366f1',
-  secondaryColor = '#8b5cf6',
 }: CreateCandidateDialogProps) {
   const { toast } = useToast();
   const [createGuestCandidate] = useCreateGuestCandidateMutation();
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
-  const [applicationEventMailMutation, { isLoading: isSendingEmail }] = useApplicationEventMailMutation();
+  const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
+    useApplicationEventMailMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = 'Candidate';
   const { validationSchema, initialValues: inits } = useCustomForm(
@@ -251,8 +236,6 @@ export function ApplyAsGuestDialog({
   };
 
   const actualSubmit = async (values: CandidateFormValues) => {
-    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    // First check if already applied
     setIsSubmittingApplication(true);
     if (hasAppliedAsGuest(jobId)) {
       toast({
@@ -324,18 +307,18 @@ export function ApplyAsGuestDialog({
         contact: values.contact,
         ...(values.assignee && values.time
           ? {
-            assignee: values.assignee === '-1' ? '' : values.assignee,
-            time: values.time,
-          }
+              assignee: values.assignee === '-1' ? '' : values.assignee,
+              time: values.time,
+            }
           : {}),
         resume: resumeBase64
           ? {
-            id: uuidv4(),
-            name: values.resume?.name || '',
-            url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
-            type: 'pdf',
-            size: values.resume?.size || 0,
-          }
+              id: uuidv4(),
+              name: values.resume?.name || '',
+              url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
+              type: 'pdf',
+              size: values.resume?.size || 0,
+            }
           : undefined,
         attachments: attachmentsBase64.map((base64, index) => ({
           id: uuidv4(),
@@ -348,7 +331,8 @@ export function ApplyAsGuestDialog({
       };
 
       // Step 1: Create the candidate
-      const createdCandidate = await createGuestCandidate(candidateData).unwrap();
+      const createdCandidate =
+        await createGuestCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
 
       // Store application status in localStorage
@@ -359,7 +343,7 @@ export function ApplyAsGuestDialog({
         try {
           evaluateCandidate(candidateId, evaluateCandidateMutation);
         } catch (evalError) {
-          console.warn(
+          logger.warn(
             'AI evaluation failed or was skipped by server:',
             evalError,
           );
@@ -379,9 +363,10 @@ export function ApplyAsGuestDialog({
       setIsOpen(false);
       closeParent();
     } catch (error) {
-      console.error('Guest application error:', error);
+      logger.error('Guest application error:', error);
 
-      let errorMessage = 'Failed to create candidate due to an unexpected error.';
+      let errorMessage =
+        'Failed to create candidate due to an unexpected error.';
 
       // Handle RTK Query error format
       if (typeof error === 'object' && error !== null) {
@@ -395,8 +380,8 @@ export function ApplyAsGuestDialog({
             errorMessage = errorData;
           }
         } else if (
-          'message' in error
-          && typeof (error as any).message === 'string'
+          'message' in error &&
+          typeof (error as any).message === 'string'
         ) {
           errorMessage = (error as any).message;
         }
@@ -412,12 +397,13 @@ export function ApplyAsGuestDialog({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -425,19 +411,19 @@ export function ApplyAsGuestDialog({
         <button
           type="button"
           disabled={isSendingEmail || hasAlreadyApplied}
-          className="w-full md:w-fit inline-flex items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex w-full items-center justify-center rounded-lg px-6 py-3 text-sm font-semibold shadow-sm transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:w-fit"
           style={
             hasAlreadyApplied
               ? {
-                backgroundColor: '#f3f4f6',
-                color: '#6b7280',
-                border: '1px solid #d1d5db',
-              }
+                  backgroundColor: '#f3f4f6',
+                  color: '#6b7280',
+                  border: '1px solid #d1d5db',
+                }
               : {
-                backgroundColor: `${primaryColor}15`,
-                color: primaryColor,
-                border: `2px solid ${primaryColor}`,
-              }
+                  backgroundColor: `${primaryColor}15`,
+                  color: primaryColor,
+                  border: `2px solid ${primaryColor}`,
+                }
           }
           onMouseEnter={(e) => {
             if (!hasAlreadyApplied && !isSendingEmail) {
@@ -457,7 +443,7 @@ export function ApplyAsGuestDialog({
           {isSendingEmail && !hasAlreadyApplied ? (
             <>
               <div
-                className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2"
+                className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2"
                 style={{ borderColor: primaryColor }}
               />
               Processing...
@@ -465,7 +451,7 @@ export function ApplyAsGuestDialog({
           ) : hasAlreadyApplied ? (
             <>
               <svg
-                className="w-4 h-4 mr-2"
+                className="mr-2 h-4 w-4"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -479,54 +465,52 @@ export function ApplyAsGuestDialog({
             </>
           ) : (
             <>
-              <User className="w-4 h-4 mr-2" />
+              <User className="mr-2 h-4 w-4" />
               Apply As Guest
             </>
           )}
         </button>
       </DialogTrigger>
       <DialogContent
-        className={`${isSmallScreen ? 'fixed inset-0 w-screen max-w-none max-h-none m-0 p-0 rounded-none border-0' : 'lg:w-[85vw] lg:h-[85dvh] lg:max-w-[85vw] lg:max-h-[85dvh] lg:border lg:rounded-lg xl:w-[80vw] xl:h-[80dvh] xl:max-w-[80vw] xl:max-h-[80dvh]'} overflow-hidden flex flex-col justify-center`}
+        className={`${isSmallScreen ? 'fixed inset-0 m-0 max-h-none w-screen max-w-none rounded-none border-0 p-0' : 'lg:h-[85dvh] lg:max-h-[85dvh] lg:w-[85vw] lg:max-w-[85vw] lg:rounded-lg lg:border xl:h-[80dvh] xl:max-h-[80dvh] xl:w-[80vw] xl:max-w-[80vw]'} flex flex-col justify-center overflow-hidden`}
         style={
           isSmallScreen
             ? ({
-              position: 'fixed',
-              inset: '0',
-              transform: 'none',
-              left: '0',
-              top: '0',
-              width: '100vw',
-              height: '100dvh',
-              maxWidth: 'none',
-              maxHeight: 'none',
-              margin: '0',
-              borderRadius: '0',
-              border: 'none',
-              zIndex: 9999,
-            } as React.CSSProperties)
+                position: 'fixed',
+                inset: '0',
+                transform: 'none',
+                left: '0',
+                top: '0',
+                width: '100vw',
+                height: '100dvh',
+                maxWidth: 'none',
+                maxHeight: 'none',
+                margin: '0',
+                borderRadius: '0',
+                border: 'none',
+                zIndex: 9999,
+              } as React.CSSProperties)
             : undefined
         }
       >
         <DialogHeader
-          className={`px-6 py-4 flex-shrink-0 text-left ${hasAlreadyApplied && 'hidden'}`}
+          className={`flex-shrink-0 px-6 py-4 text-left ${hasAlreadyApplied && 'hidden'}`}
         >
-          <DialogTitle className="text-left text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+          <DialogTitle className="text-left text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
             Apply
           </DialogTitle>
           {jobTitle && (
-            <p className="text-left text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Applying for:
-              {' '}
-              {jobTitle}
+            <p className="mt-1 text-left text-sm text-gray-600 dark:text-gray-400">
+              Applying for: {jobTitle}
             </p>
           )}
         </DialogHeader>
         {hasAlreadyApplied ? (
-          <div className="p-4 sm:p-6 text-center flex flex-col justify-center items-center h-full">
+          <div className="flex h-full flex-col items-center justify-center p-4 text-center sm:p-6">
             <div className="w-full max-w-md space-y-4">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-green-100 sm:h-40 sm:w-40">
                 <svg
-                  className="w-16 h-16 sm:w-20 sm:h-20 text-green-600"
+                  className="h-16 w-16 text-green-600 sm:h-20 sm:w-20"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -539,10 +523,10 @@ export function ApplyAsGuestDialog({
                   />
                 </svg>
               </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">
+              <h3 className="mb-2 text-lg font-semibold sm:text-xl">
                 Application Already Submitted
               </h3>
-              <p className="text-sm sm:text-base text-muted-foreground mb-4">
+              <p className="mb-4 text-sm text-muted-foreground sm:text-base">
                 We've received your application for this job. No further action
                 is needed at this time.
               </p>
@@ -566,12 +550,10 @@ export function ApplyAsGuestDialog({
             onSubmit={handleSubmit}
             enableReinitialize={false}
           >
-            {({
-              isSubmitting, errors, touched, setFieldValue,
-            }) => (
-              <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
+            {({ isSubmitting, errors, touched, setFieldValue }) => (
+              <Form className="sticky top-0 flex min-h-0 flex-1 flex-col overflow-y-clip">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <div className="flex-1 overflow-hidden px-6 py-4 border-t">
+                <div className="flex-1 overflow-hidden border-t px-6 py-4">
                   <CandidateForm
                     jobId={jobId}
                     onFileUpload={async (file: File) => {
@@ -580,12 +562,12 @@ export function ApplyAsGuestDialog({
                     }}
                   />
                 </div>
-                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 safe-area-inset-bottom">
+                <div className="safe-area-inset-bottom sticky bottom-0 z-10 flex flex-shrink-0 justify-end space-x-2 border-t bg-background px-6 py-4">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setIsOpen(false)}
-                    className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md"
+                    className="flex-1 transition-all duration-200 hover:shadow-md sm:flex-none"
                     style={{
                       borderColor: '#d1d5db',
                       color: '#6b7280',
@@ -608,7 +590,7 @@ export function ApplyAsGuestDialog({
                     onClick={handleApply}
                     variant="primary"
                     disabled={isSubmitting || isSubmittingApplication}
-                    className="flex-1 sm:flex-none transition-all duration-200 hover:shadow-md text-white"
+                    className="flex-1 text-white transition-all duration-200 hover:shadow-md sm:flex-none"
                   >
                     {isSubmitting || isSubmittingApplication ? (
                       <>

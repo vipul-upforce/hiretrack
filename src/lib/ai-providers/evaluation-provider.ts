@@ -2,6 +2,7 @@ import { AIProviderFactory } from './factory';
 import { AIProviderType } from './types';
 import { ICandidate } from '../models/candidate';
 import { decryptProviderKeys } from '../encryption';
+import logger from '../logger';
 
 interface JobForEvaluate {
   description: string;
@@ -111,46 +112,13 @@ export class AIEvaluationService {
             customModel: '',
           },
         };
-
-        // console.log(
-        //   "AIEvaluationService: Using backward compatibility for legacy Gemini settings"
-        // );
       }
 
-      // // Log the received AI providers
-      // console.log(
-      //   "AIEvaluationService received aiProviders:",
-      //   JSON.stringify(
-      //     {
-      //       hasAiProviders: !!aiProviders,
-      //       activeProvider: aiProviders?.activeProvider,
-      //       hasGeminiKey: !!aiProviders?.gemini?.api_key,
-      //       geminiKeyLength: aiProviders?.gemini?.api_key?.length,
-      //       hasOpenAIKey: !!aiProviders?.openai?.api_key,
-      //       hasAnthropicKey: !!aiProviders?.anthropic?.api_key,
-      //       hasPerplexityKey: !!aiProviders?.perplexity?.api_key,
-      //     },
-      //     null,
-      //     2
-      //   )
-      // );
-
       const activeProvider = aiProviders.activeProvider as AIProviderType;
-
-      console.log('Looking for API key:', {
-        activeProvider,
-        providerData: aiProviders[activeProvider],
-        hasProviderObject: !!aiProviders[activeProvider],
-        hasApiKey: !!aiProviders[activeProvider]?.api_key,
-      });
 
       const apiKey = aiProviders[activeProvider]?.api_key;
 
       if (!apiKey) {
-        console.error(
-          'API key not found. Full aiProviders structure:',
-          JSON.stringify(aiProviders, null, 2),
-        );
         throw new Error(
           `API key not found for active provider: ${activeProvider}`,
         );
@@ -167,18 +135,19 @@ export class AIEvaluationService {
       // Use custom prompt if available, otherwise use default
       const prompt = evaluationConfig.customPrompt
         ? this.buildPromptWithCustomTemplate(
-          evaluationConfig.customPrompt,
-          jobData,
-          candidate,
-        )
+            evaluationConfig.customPrompt,
+            jobData,
+            candidate,
+          )
         : this.getEvaluationPrompt(jobData, candidate);
 
       // Get the appropriate AI provider
       const provider = AIProviderFactory.getProvider(activeProvider);
 
       // Get the selected model for this provider
-      const selectedModel = aiProviders[activeProvider]?.customModel
-        || aiProviders[activeProvider]?.model;
+      const selectedModel =
+        aiProviders[activeProvider]?.customModel ||
+        aiProviders[activeProvider]?.model;
 
       const response = await provider.evaluateResume(
         resumeBase64,
@@ -202,9 +171,10 @@ export class AIEvaluationService {
         settings,
       );
       // Ensure notes is a string before concatenation
-      const currentNotes = typeof evaluationResult.notes === 'string'
-        ? evaluationResult.notes
-        : '';
+      const currentNotes =
+        typeof evaluationResult.notes === 'string'
+          ? evaluationResult.notes
+          : '';
       evaluationResult.notes = currentNotes + evaluationMetadata;
 
       return evaluationResult;
@@ -217,8 +187,6 @@ export class AIEvaluationService {
 
   private static parseEvaluationResponse(response: string): EvaluationResult {
     try {
-      // console.log("Raw evaluation response:", response);
-
       // Clean the response - handle multiple formats
       let jsonString = response
         .replace(/```json\n?/g, '')
@@ -231,21 +199,14 @@ export class AIEvaluationService {
         jsonString = jsonMatch[0];
       }
 
-      // console.log("Cleaned JSON string:", jsonString);
-
       let parsedObject;
       try {
         // Try to parse the JSON directly first
         parsedObject = JSON.parse(jsonString);
       } catch (parseError) {
-        console.error('JSON Parse Error:', parseError);
-        console.error(
-          'Failed JSON string (first 1000 chars):',
-          jsonString.substring(0, 1000),
-        );
-        console.error(
-          'Failed JSON string (last 500 chars):',
-          jsonString.substring(Math.max(0, jsonString.length - 500)),
+        logger.error(
+          'Initial JSON parse failed, attempting to fix common issues.',
+          parseError,
         );
       }
 
@@ -281,11 +242,6 @@ export class AIEvaluationService {
 
       return result;
     } catch (error) {
-      console.error('Failed to parse evaluation response:', error);
-      console.error('Original response:', response);
-
-      // Create a minimal valid response as fallback
-      console.warn('Creating fallback evaluation response');
       return {
         overall: 5,
         experience: 5,
@@ -297,9 +253,9 @@ export class AIEvaluationService {
         strengths: ['Could not parse AI response'],
         areas_for_improvement: ['Could not parse complete AI response'],
         recommendation: 'AI evaluation failed - manual review required',
-        notes:
-          `The AI evaluation response could not be fully parsed. Please review the candidate manually. Error: ${
-            error instanceof Error ? error.message : 'Unknown error'}`,
+        notes: `The AI evaluation response could not be fully parsed. Please review the candidate manually. Error: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
       };
     }
   }
@@ -579,19 +535,20 @@ export class AIEvaluationService {
     },
   ): number {
     // Normalize weights to sum to 100
-    const totalWeight = weights.overall
-      + weights.skills
-      + weights.experience
-      + weights.affordability;
+    const totalWeight =
+      weights.overall +
+      weights.skills +
+      weights.experience +
+      weights.affordability;
 
     if (totalWeight === 0) {
       // If no weights set, return simple average
       return (
-        (scores.overall
-          + scores.skills
-          + scores.experience
-          + (scores.affordability || 0))
-        / 4
+        (scores.overall +
+          scores.skills +
+          scores.experience +
+          (scores.affordability || 0)) /
+        4
       );
     }
 
@@ -603,10 +560,11 @@ export class AIEvaluationService {
     };
 
     // Calculate weighted score
-    const weightedScore = scores.overall * normalizedWeights.overall
-      + scores.skills * normalizedWeights.skills
-      + scores.experience * normalizedWeights.experience
-      + (scores.affordability || 0) * normalizedWeights.affordability;
+    const weightedScore =
+      scores.overall * normalizedWeights.overall +
+      scores.skills * normalizedWeights.skills +
+      scores.experience * normalizedWeights.experience +
+      (scores.affordability || 0) * normalizedWeights.affordability;
 
     return Math.round(weightedScore * 100) / 100; // Round to 2 decimal places
   }

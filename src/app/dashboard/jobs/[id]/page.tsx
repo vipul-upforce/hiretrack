@@ -5,15 +5,12 @@ import {
   Droppable,
   DroppableProvided,
 } from '@hello-pangea/dnd';
-import {
-  useState, useEffect, useMemo, useCallback,
-} from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import {
   useFetchJobByIdQuery,
   useUpdateJobMutation,
 } from '@/lib/features/job/jobApi';
-import { useFetchCandidatesQuery } from '@/lib/features/candidate/candidateApi';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
 import {
   useGetLanesQuery,
@@ -24,17 +21,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import NoDataFound from '@/app/not-found';
 import { useSSE } from '@/hooks/useSSE';
 import { mergeRefs } from 'react-merge-refs';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import {
-  Settings2,
-  BarChart3,
-  MoreHorizontal,
-  Plus,
-  Edit,
-  Mail,
-  Trash,
-} from 'lucide-react';
+import { Settings2, BarChart3, MoreHorizontal, Mail } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -42,10 +30,11 @@ import {
 } from '@/components/ui/popover';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
 import { useSelector } from 'react-redux';
-import { CreateCandidateDialog } from "./components/Dialogs/create-candidate-dialog";
-import { CreateLaneDialog } from "./components/Dialogs/create-lane-dialog";
-import { CandidateDetailsDialog } from "./components/Dialogs/candidate-details-dialog";
-import { initialCandidateColumns } from "./data/initial-data";
+import logger from '@/lib/logger';
+import { CreateCandidateDialog } from './components/Dialogs/create-candidate-dialog';
+import { CreateLaneDialog } from './components/Dialogs/create-lane-dialog';
+import { CandidateDetailsDialog } from './components/Dialogs/candidate-details-dialog';
+import { initialCandidateColumns } from './data/initial-data';
 import LoaderSkeleton from './components/Lanes/loader-skeleton';
 import { Breadcrumb } from './components/Utils/breadcrumb';
 import { KanbanColumn } from './components/Lanes/KanbanColumn';
@@ -56,13 +45,11 @@ import ConfirmationDialog from './components/Dialogs/ConfirmationDialog';
 import EditLaneDialog from './components/Lanes/edit-lane-dialog';
 import { useNormalizedCandidates } from './hooks/useNormalizedCandidates';
 import { useCandidateState } from './hooks/useCandidateState';
-import { getInterviewerName } from './utils/candidateAccessors';
 import { QuickSelectAndFilter } from './components/QuickSelectAndFilter';
 import { JobAnalyticsModal } from '../../jobs-board/components/JobAnalyticsModal';
 import ChecklistRemarksDialog from './components/Dialogs/checklist-remarks-dialog';
 import { LaneChecklistConfigDialog } from './components/Dialogs/lane-checklist-config-dialog';
 import { MigrationDialog } from './components/Dialogs/MigrationDialog';
-import JobSpecificCustomFieldFormWrapper from './components/customFields/JobSpecificCustomFIeldFormWrapper';
 import CandidateCustomFieldsDialog from './components/customFields/candidateCustomFieldsDialog';
 import { GlobalRemarksDialog } from './components/Dialogs/global-remarks-dialog';
 
@@ -134,7 +121,8 @@ export default function JobProgressPage() {
   } = useFetchJobByIdQuery(id as string);
 
   // Temporary state for SSE integration (will be replaced by useCandidateState)
-  const [tempSelectedCandidate, setTempSelectedCandidate] = useState<Candidate | null>(null);
+  const [tempSelectedCandidate, setTempSelectedCandidate] =
+    useState<Candidate | null>(null);
 
   // Use normalized candidates hook (replaces manual merging)
   const {
@@ -163,7 +151,10 @@ export default function JobProgressPage() {
 
   // Sync temp selected candidate with state hook
   useEffect(() => {
-    if (tempSelectedCandidate && tempSelectedCandidate._id !== selectedCandidate?._id) {
+    if (
+      tempSelectedCandidate &&
+      tempSelectedCandidate._id !== selectedCandidate?._id
+    ) {
       setSelectedCandidate(tempSelectedCandidate);
     }
   }, [tempSelectedCandidate, selectedCandidate, setSelectedCandidate]);
@@ -252,32 +243,10 @@ export default function JobProgressPage() {
     candidateToDelete,
     jobLaneConfig,
     job,
-    // promptForStatusChangeReason,
   });
 
   // Use normalized candidates (already merged and normalized)
   const mergedCandidates = normalizedCandidates;
-
-  // useEffect(() => {
-  //   console.log("Loading states:", {
-  //     isJobLoading,
-  //     isCandidatesLoading,
-  //     isLanesLoading,
-  //     jobError,
-  //   });
-  //   console.log("Data:", { job, candidatesFromQuery, lanes });
-  //   console.log("scrollRef.current:", scrollRef.current);
-  // }, [
-  //   isJobLoading,
-  //   isCandidatesLoading,
-  //   isLanesLoading,
-  //   jobError,
-  //   job,
-  //   candidatesFromQuery,
-  //   lanes,
-  //   scrollRef,
-  // ]);
-
   useEffect(() => {
     if (!isDialogOpen) {
       setDroppedFileData(null);
@@ -295,13 +264,16 @@ export default function JobProgressPage() {
           // Apply text search
           if (filterConditions.search) {
             const searchLower = filterConditions.search.toLowerCase();
-            const matchesSearch = candidate.name.toLowerCase().includes(searchLower)
-              || candidate.skills.some((skill) => skill.toLowerCase().includes(searchLower))
-              || candidate.experience.toString().includes(searchLower)
-              || (candidate.assignment?.interviewerId as any)?.name
+            const matchesSearch =
+              candidate.name.toLowerCase().includes(searchLower) ||
+              candidate.skills.some((skill) =>
+                skill.toLowerCase().includes(searchLower),
+              ) ||
+              candidate.experience.toString().includes(searchLower) ||
+              (candidate.assignment?.interviewerId as any)?.name
                 ?.toLowerCase()
-                .includes(searchLower)
-              || candidate.location.toLowerCase().includes(searchLower);
+                .includes(searchLower) ||
+              candidate.location.toLowerCase().includes(searchLower);
             if (!matchesSearch) return false;
           }
 
@@ -309,7 +281,8 @@ export default function JobProgressPage() {
           const activeFilters = [
             {
               key: 'topCandidates',
-              filter: (candidate: Candidate) => candidate.scores?.overall && candidate.scores.overall >= 7,
+              filter: (candidate: Candidate) =>
+                candidate.scores?.overall && candidate.scores.overall >= 7,
             },
             {
               key: 'appliedThisWeek',
@@ -329,8 +302,8 @@ export default function JobProgressPage() {
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 return (
-                  new Date(candidate.tracking.createdAt) >= today
-                  && new Date(candidate.tracking.createdAt) < tomorrow
+                  new Date(candidate.tracking.createdAt) >= today &&
+                  new Date(candidate.tracking.createdAt) < tomorrow
                 );
               },
             },
@@ -345,7 +318,8 @@ export default function JobProgressPage() {
             },
             {
               key: 'toFollowUp',
-              filter: (candidate: Candidate) => candidate.followUp && candidate.followUp.note,
+              filter: (candidate: Candidate) =>
+                candidate.followUp && candidate.followUp.note,
             },
             {
               key: 'assigned',
@@ -357,14 +331,17 @@ export default function JobProgressPage() {
             },
             {
               key: 'withRemarks',
-              filter: (candidate: Candidate) => candidate.remarks && candidate.remarks.length > 0,
+              filter: (candidate: Candidate) =>
+                candidate.remarks && candidate.remarks.length > 0,
             },
             {
               key: 'withoutRemarks',
-              filter: (candidate: Candidate) => !candidate.remarks || candidate.remarks.length === 0,
+              filter: (candidate: Candidate) =>
+                !candidate.remarks || candidate.remarks.length === 0,
             },
           ].filter(
-            (filter) => filterConditions[filter.key as keyof FilterState] === true,
+            (filter) =>
+              filterConditions[filter.key as keyof FilterState] === true,
           );
 
           if (activeFilters.length > 0) {
@@ -414,8 +391,9 @@ export default function JobProgressPage() {
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
         const candidates = currentCandidates.filter(
-          (candidate) => candidate.status === lane
-            && (showArchived ? candidate.isDeleted : !candidate.isDeleted),
+          (candidate) =>
+            candidate.status === lane &&
+            (showArchived ? candidate.isDeleted : !candidate.isDeleted),
         );
 
         return {
@@ -459,10 +437,10 @@ export default function JobProgressPage() {
 
   return (
     <div
-      className="h-screen flex flex-col overflow-hidden"
+      className="flex h-screen flex-col overflow-hidden"
       style={{ width: '100%' }}
     >
-      <div className="flex-shrink-0 px-4 pt-4 pb-2">
+      <div className="flex-shrink-0 px-4 pb-2 pt-4">
         <div className="flex items-center justify-between">
           <Breadcrumb
             jobTitle={job?.title}
@@ -476,10 +454,10 @@ export default function JobProgressPage() {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[270px] mt-2" align="end">
-                <div className="space-y-2 pt-4 pb-2 px-1">
+              <PopoverContent className="mt-2 w-[270px]" align="end">
+                <div className="space-y-2 px-1 pb-2 pt-4">
                   {user?.role === 'admin' && (
-                    <div className="flex items-center  mx-4 gap-2 mb-2 mt-1">
+                    <div className="mx-4 mb-2 mt-1 flex items-center gap-2">
                       <Checkbox
                         id="promptForStatusChangeReason"
                         checked={job.promptForStatusChangeReason}
@@ -567,42 +545,43 @@ export default function JobProgressPage() {
               <div
                 {...provided.droppableProps}
                 ref={mergeRefs([provided.innerRef, scrollRef])}
-                className="h-full flex gap-1 overflow-x-auto"
+                className="flex h-full gap-1 overflow-x-auto"
               >
                 {useMemo(
-                  () => columns.map((column, index) => {
-                    // Find the lane configuration for this column
-                    const laneConfig = jobLaneConfig?.laneConfigs?.find(
-                      (config) => config.laneId === column.id,
-                    );
+                  () =>
+                    columns.map((column, index) => {
+                      // Find the lane configuration for this column
+                      const laneConfig = jobLaneConfig?.laneConfigs?.find(
+                        (config) => config.laneId === column.id,
+                      );
 
-                    return (
-                      <KanbanColumn
-                        key={column.id}
-                        column={column}
-                        index={index}
-                        isDragging={isDragging}
-                        isFileOver={isFileOver}
-                        setIsFileOver={setIsFileOver}
-                        handleFileDrop={handleFileDrop}
-                        handleDeleteLane={handleDeleteLane}
-                        handleEditLane={handleEditLaneClick}
-                        setLaneToDelete={setLaneToDelete}
-                        setLaneToEdit={setLaneToEdit}
-                        refetch={refetch}
-                        selectedCandidate={selectedCandidate}
-                        setSelectedCandidate={setSelectedCandidate}
-                        isDetailsOpen={isDetailsOpen}
-                        setIsDetailsOpen={setIsDetailsOpen}
-                        openRemarksFor={openRemarksFor}
-                        setOpenRemarksFor={setOpenRemarksFor}
-                        handleDeleteClick={handleDeleteClick}
-                        onConfigureChecklist={handleConfigureChecklist}
-                        pendingMoves={pendingMoves}
-                        laneConfig={laneConfig}
-                      />
-                    );
-                  }),
+                      return (
+                        <KanbanColumn
+                          key={column.id}
+                          column={column}
+                          index={index}
+                          isDragging={isDragging}
+                          isFileOver={isFileOver}
+                          setIsFileOver={setIsFileOver}
+                          handleFileDrop={handleFileDrop}
+                          handleDeleteLane={handleDeleteLane}
+                          handleEditLane={handleEditLaneClick}
+                          setLaneToDelete={setLaneToDelete}
+                          setLaneToEdit={setLaneToEdit}
+                          refetch={refetch}
+                          selectedCandidate={selectedCandidate}
+                          setSelectedCandidate={setSelectedCandidate}
+                          isDetailsOpen={isDetailsOpen}
+                          setIsDetailsOpen={setIsDetailsOpen}
+                          openRemarksFor={openRemarksFor}
+                          setOpenRemarksFor={setOpenRemarksFor}
+                          handleDeleteClick={handleDeleteClick}
+                          onConfigureChecklist={handleConfigureChecklist}
+                          pendingMoves={pendingMoves}
+                          laneConfig={laneConfig}
+                        />
+                      );
+                    }),
                   [
                     columns,
                     jobLaneConfig,
@@ -692,7 +671,7 @@ export default function JobProgressPage() {
               promptForStatusChangeReason: pendingPromptValue,
             });
           } catch (error) {
-            console.error('Failed to update job:', error);
+            logger.error('Failed to update job:', error);
           }
           setIsPromptConfirmOpen(false);
         }}
@@ -728,8 +707,8 @@ export default function JobProgressPage() {
       )}
 
       {/* Checklist and Remarks Dialog */}
-      {openRemarksFor
-        && (() => {
+      {openRemarksFor &&
+        (() => {
           const candidate = columns
             .flatMap((col) => col.candidates)
             .find((c) => {
@@ -739,7 +718,7 @@ export default function JobProgressPage() {
                   const parsed = JSON.parse(openRemarksFor);
                   return parsed.candidateId === c._id;
                 } catch (e) {
-                  console.error(
+                  logger.error(
                     'Failed to parse openRemarksFor JSON:',
                     openRemarksFor,
                     e,
@@ -751,7 +730,7 @@ export default function JobProgressPage() {
             });
 
           if (!candidate) {
-            console.error(
+            logger.error(
               'Candidate not found for openRemarksFor:',
               openRemarksFor,
             );

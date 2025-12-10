@@ -6,6 +6,7 @@ import {
   useSubmitCandidateChecklistMutation,
   useGetJobLaneConfigQuery,
 } from '@/lib/features/checklist/checklistApi';
+import logger from '@/lib/logger';
 import { Candidate, CandidateStatus } from '@/types/candidate';
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -94,7 +95,7 @@ function ChecklistRemarksDialog({
     try {
       return JSON.parse(checklistInfo);
     } catch (e) {
-      console.error(
+      logger.error(
         'ChecklistRemarksDialog: Failed to parse checklistInfo:',
         checklistInfo,
         e,

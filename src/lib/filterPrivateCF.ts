@@ -48,12 +48,7 @@ const getFilterPrivateCF = async (candidates: ICandidate[], req: NextRequest): P
 
 // Function to filter private customFields for a single candidate
 const getFilterPrivateCFSingle = async (candidate: ICandidate, role: string, organizationId:string): Promise<any> => {
-  console.log('🦊🦊🦊🦊🦊🦊 candidte-role-orgId: ', candidate, role, organizationId);
   if (!Organization) return undefined;
-
-  //   const user = await auth(req);
-  //   const userData = user?.user;
-  //   if (!userData) return undefined;
 
   const orgData = await Organization.findById(organizationId);
   if (!orgData) return candidate;

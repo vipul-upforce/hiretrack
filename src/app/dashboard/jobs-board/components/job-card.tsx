@@ -8,7 +8,6 @@ import {
   Info,
   Trash2,
   ArchiveRestore,
-  MinusCircleIcon,
   Copy,
   Layout,
   MoreHorizontal,
@@ -33,10 +32,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { formatDistanceToNow } from 'date-fns';
+import logger from '@/lib/logger';
 import { useSelector } from 'react-redux';
 import { User } from '@/lib/features/org/orgApi';
 import ConfirmationDialog from '../../jobs/[id]/components/Dialogs/ConfirmationDialog';
-import CustomFieldBadge from '../../jobs/[id]/components/Candidate/CustomFieldBadge';
 import { JobAnalyticsModal } from './JobAnalyticsModal';
 import AttachmentsPopover from '../../jobs/[id]/components/Remarks/attachments-popover';
 
@@ -78,7 +77,7 @@ function JobCard({
           setOrganizationId(user.organizationId);
         }
       } catch (error) {
-        console.error('Error getting user organization:', error);
+        logger.error('Error getting user organization:', error);
       }
     };
 
@@ -93,7 +92,7 @@ function JobCard({
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 p-5 rounded-xl shadow-sm cursor-pointer hover:shadow-lg transition-shadow duration-200 relative w-full max-w-full min-w-0"
+            className="relative w-full min-w-0 max-w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-lg dark:border-gray-700 dark:bg-black"
             onClick={(e) => {
               // Only trigger on actual click, not on drag
               if (e.detail === 0) return; // Ignore programmatic clicks
@@ -101,9 +100,9 @@ function JobCard({
               // Check if click target is a button or inside a dropdown
               const target = e.target as HTMLElement;
               if (
-                target.closest('button')
-                || target.closest('[role="menuitem"]')
-                || target.closest('[data-radix-collection-item]')
+                target.closest('button') ||
+                target.closest('[role="menuitem"]') ||
+                target.closest('[data-radix-collection-item]')
               ) {
                 return; // Don't navigate if clicking on buttons or menu items
               }
@@ -113,8 +112,8 @@ function JobCard({
             }}
           >
             {/* Header Section - Job Title and Actions */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="font-bold text-xl text-gray-900 dark:text-gray-100 leading-tight truncate pr-3">
+            <div className="mb-4 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-800">
+              <h3 className="truncate pr-3 text-xl font-bold leading-tight text-gray-900 dark:text-gray-100">
                 {job.title}
               </h3>
               <div className="flex items-center gap-1">
@@ -123,11 +122,11 @@ function JobCard({
                   <TooltipProvider>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
-                        <div className="flex items-center justify-center h-8 w-8 text-amber-500 hover:text-amber-600 cursor-pointer">
+                        <div className="flex h-8 w-8 cursor-pointer items-center justify-center text-amber-500 hover:text-amber-600">
                           <AlertTriangle className="h-4 w-4" />
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-popover border border-border text-popover-foreground">
+                      <TooltipContent className="border border-border bg-popover text-popover-foreground">
                         <p>
                           Candidates cannot apply until this job is published.
                         </p>
@@ -144,7 +143,7 @@ function JobCard({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                          className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
                           onClick={(e) => {
                             e.stopPropagation();
                             setIsAnalyticsOpen(true);
@@ -153,7 +152,7 @@ function JobCard({
                           <BarChart3 className="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent className="bg-popover border border-border text-popover-foreground">
+                      <TooltipContent className="border border-border bg-popover text-popover-foreground">
                         <p>View Analytics</p>
                       </TooltipContent>
                     </Tooltip>
@@ -164,7 +163,7 @@ function JobCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                  className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/dashboard/jobs/${job._id}`);
@@ -179,7 +178,7 @@ function JobCard({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+                      className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoreHorizontal className="h-4 w-4" />
@@ -195,7 +194,7 @@ function JobCard({
                         router.push(`/dashboard/jobs/${job._id}`);
                       }}
                     >
-                      <Layout className="h-4 w-4 mr-2" />
+                      <Layout className="mr-2 h-4 w-4" />
                       Open Board
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -204,7 +203,7 @@ function JobCard({
                         setIsAnalyticsOpen(true);
                       }}
                     >
-                      <BarChart3 className="h-4 w-4 mr-2" />
+                      <BarChart3 className="mr-2 h-4 w-4" />
                       View Analytics
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -215,7 +214,7 @@ function JobCard({
                         setIsDetailsOpen(true);
                       }}
                     >
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="mr-2 h-4 w-4" />
                       Edit Job
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -225,7 +224,7 @@ function JobCard({
                         setIsDetailsOpen(true);
                       }}
                     >
-                      <Info className="h-4 w-4 mr-2" />
+                      <Info className="mr-2 h-4 w-4" />
                       View Details
                     </DropdownMenuItem>
                     {onEmailSettingsClick && (
@@ -235,7 +234,7 @@ function JobCard({
                           onEmailSettingsClick(job);
                         }}
                       >
-                        <Mail className="h-4 w-4 mr-2" />
+                        <Mail className="mr-2 h-4 w-4" />
                         Email Settings
                       </DropdownMenuItem>
                     )}
@@ -245,7 +244,7 @@ function JobCard({
                         setIsDuplicateDialogOpen(true);
                       }}
                     >
-                      <Copy className="h-4 w-4 mr-2" />
+                      <Copy className="mr-2 h-4 w-4" />
                       Duplicate Job
                     </DropdownMenuItem>
                     {!job.isDeleted ? (
@@ -256,7 +255,7 @@ function JobCard({
                         }}
                         className="text-red-600 focus:text-red-600"
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
+                        <Trash2 className="mr-2 h-4 w-4" />
                         Archive Job
                       </DropdownMenuItem>
                     ) : (
@@ -268,7 +267,7 @@ function JobCard({
                         }}
                         className="text-blue-600 focus:text-blue-600"
                       >
-                        <ArchiveRestore className="h-4 w-4 mr-2" />
+                        <ArchiveRestore className="mr-2 h-4 w-4" />
                         Unarchive Job
                       </DropdownMenuItem>
                     )}
@@ -281,17 +280,15 @@ function JobCard({
             <div className="mb-5 space-y-4">
               {/* Candidates Count */}
               <div className="flex items-center gap-2.5 text-sm">
-                <div className="h-4 w-4 flex items-center justify-center">
-                  <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full" />
+                <div className="flex h-4 w-4 items-center justify-center">
+                  <div className="dark:bg-white0 h-2 w-2 rounded-full bg-gray-400" />
                 </div>
-                <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500">
                     Candidates
                   </span>
-                  <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-                    {job.candidateCount}
-                    {' '}
-                    applicants
+                  <span className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                    {job.candidateCount} applicants
                   </span>
                 </div>
               </div>
@@ -299,17 +296,15 @@ function JobCard({
               {/* Experience */}
               {(job.experience || job.experience === 0) && (
                 <div className="flex items-center gap-2.5 text-sm">
-                  <div className="h-4 w-4 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full" />
+                  <div className="flex h-4 w-4 items-center justify-center">
+                    <div className="dark:bg-white0 h-2 w-2 rounded-full bg-gray-400" />
                   </div>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide truncate">
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-xs uppercase tracking-wide text-gray-500 dark:text-gray-500">
                       Experience Required
                     </span>
-                    <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-                      {job.experience}
-                      {' '}
-                      years
+                    <span className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                      {job.experience} years
                     </span>
                   </div>
                 </div>
@@ -319,19 +314,19 @@ function JobCard({
               {job.skills && job.skills.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="h-4 w-4 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-gray-400 dark:bg-white0 rounded-full" />
+                    <div className="flex h-4 w-4 items-center justify-center">
+                      <div className="dark:bg-white0 h-2 w-2 rounded-full bg-gray-400" />
                     </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">
+                    <span className="truncate text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-500">
                       Skills Required
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-2 ml-6">
+                  <div className="ml-6 flex flex-wrap gap-2">
                     {job.skills.slice(0, 4).map((skill, index) => (
                       <Badge
                         key={`${job._id}-skill-${index}-${skill}`}
                         variant="secondary"
-                        className="text-xs px-2.5 py-1 bg-gray-100 text-gray-700 border border-gray-200 dark:bg-black dark:text-gray-300 dark:border-gray-700 font-medium truncate max-w-full"
+                        className="max-w-full truncate border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-black dark:text-gray-300"
                         title={skill}
                       >
                         {skill}
@@ -340,12 +335,9 @@ function JobCard({
                     {job.skills.length > 4 && (
                       <Badge
                         variant="secondary"
-                        className="text-xs px-2.5 py-1 bg-gray-200 text-gray-700 border border-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 font-medium flex-shrink-0"
+                        className="flex-shrink-0 border border-gray-300 bg-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-500 dark:bg-gray-600 dark:text-gray-200"
                       >
-                        +
-                        {job.skills.length - 4}
-                        {' '}
-                        more
+                        +{job.skills.length - 4} more
                       </Badge>
                     )}
                   </div>
@@ -354,8 +346,8 @@ function JobCard({
             </div>
 
             {/* Custom Fields */}
-            {job.customFields
-              && Object.entries(job.customFields).filter(([key, value]) => {
+            {job.customFields &&
+              Object.entries(job.customFields).filter(([key, value]) => {
                 const field = formNameObject?.fields.find(
                   (f) => f.label === key,
                 );
@@ -363,10 +355,10 @@ function JobCard({
                   return false;
                 }
                 return (
-                  field?.showOnCard
-                  && value != null
-                  && value !== ''
-                  && (!Array.isArray(value) || value.length > 0)
+                  field?.showOnCard &&
+                  value != null &&
+                  value !== '' &&
+                  (!Array.isArray(value) || value.length > 0)
                 );
                 // return field?.showOnCard;
               }).length > 0 && (
@@ -381,22 +373,19 @@ function JobCard({
                       }
                       // return field?.showOnCard;
                       return (
-                        field?.showOnCard
-                        && value != null
-                        && value !== ''
-                        && (!Array.isArray(value) || value.length > 0)
+                        field?.showOnCard &&
+                        value != null &&
+                        value !== '' &&
+                        (!Array.isArray(value) || value.length > 0)
                       );
                     })
                     .map(([key, value], i) => (
                       <div key={i} className="text-sm">
-                        <span className="text-gray-600 dark:text-gray-400 truncate mr-1">
+                        <span className="mr-1 truncate text-gray-600 dark:text-gray-400">
                           {key.split(' |||||(')[0]}
                         </span>
-                        {/* <span className="font-semibold text-orange-700 dark:text-orange-400">
-                          {String(value)}
-                        </span> */}
                         {typeof value === 'string' ? (
-                          <span className="font-semibold text-orange-700 dark:text-orange-400 capitalize">
+                          <span className="font-semibold capitalize text-orange-700 dark:text-orange-400">
                             {value}
                           </span>
                         ) : Array.isArray(value) && value.length > 0 ? (
@@ -427,18 +416,17 @@ function JobCard({
                       </div>
                     ))}
                 </div>
-            )}
+              )}
 
             {/* Footer - Created Date */}
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <div className="mt-4 border-t border-gray-100 pt-3 dark:border-gray-800">
               <div className="flex items-center justify-end">
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                  Created
-                  {' '}
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  Created{' '}
                   {job.tracking?.createdAt
                     ? formatDistanceToNow(new Date(job.tracking.createdAt), {
-                      addSuffix: true,
-                    })
+                        addSuffix: true,
+                      })
                     : 'recently'}
                 </span>
               </div>

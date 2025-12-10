@@ -83,8 +83,6 @@ export function JobForm(props: JobFormProps) {
       setFieldValue('links', updatedLinks);
       setNewLink('');
       setIsLinkDialogOpen(false);
-      console.log('Link added:', newLink);
-      console.log('Updated links:', updatedLinks);
     } catch {
       toast({
         title: 'Invalid URL',

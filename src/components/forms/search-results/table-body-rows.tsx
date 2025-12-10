@@ -20,12 +20,12 @@ import {
   Briefcase,
   Archive,
   Plus,
-} from "lucide-react";
-import { format } from "date-fns";
-import { CompactCircularScores } from "@/app/dashboard/jobs/[id]/components/Utils/circular-score";
-import { memo, useCallback, useRef, useState, useEffect } from "react";
-import type { Candidate } from "@/types/candidate";
-import { cn } from "@/lib/utils";
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { CompactCircularScores } from '@/app/dashboard/jobs/[id]/components/Utils/circular-score';
+import { memo, useCallback, useRef, useState, useEffect } from 'react';
+import type { Candidate } from '@/types/candidate';
+import { cn } from '@/lib/utils';
 
 interface TableBodyRowsProps {
   candidates: Candidate[];
@@ -51,15 +51,16 @@ function formatCurrency(amount: number) {
 
 function getJobAssignmentInfo(candidate: Candidate) {
   if (
-    candidate.jobId
-    && typeof candidate.jobId === 'object'
-    && candidate.jobId.title
+    candidate.jobId &&
+    typeof candidate.jobId === 'object' &&
+    candidate.jobId.title
   ) {
-    const hasValidInterviewer = candidate.assignment
-      && candidate.assignment.interviewerId
-      && typeof candidate.assignment.interviewerId === 'object'
-      && candidate.assignment.interviewerId._id
-      && candidate.assignment.interviewerId.name;
+    const hasValidInterviewer =
+      candidate.assignment &&
+      candidate.assignment.interviewerId &&
+      typeof candidate.assignment.interviewerId === 'object' &&
+      candidate.assignment.interviewerId._id &&
+      candidate.assignment.interviewerId.name;
 
     return {
       isAssigned: true,
@@ -74,341 +75,341 @@ function getJobAssignmentInfo(candidate: Candidate) {
   };
 }
 
-export const TableBodyRows = memo(({
-  candidates,
-  visibleColumns,
-  selectedCandidates,
-  onSelectCandidate,
-  onViewDetails,
-  onEdit,
-  onAssignInterviewer,
-  onAssignJob,
-  onDelete,
-  onAddRemark,
-  onJobClick,
-}: TableBodyRowsProps) {
-  // Track the last mouse event to capture shift key for checkbox clicks
-  const lastMouseEventRef = useRef<MouseEvent | null>(null);
-  // Track if Shift key is currently pressed for visual feedback
-  const [isShiftPressed, setIsShiftPressed] = useState(false);
+export const TableBodyRows = memo(
+  ({
+    candidates,
+    visibleColumns,
+    selectedCandidates,
+    onSelectCandidate,
+    onViewDetails,
+    onEdit,
+    onAssignInterviewer,
+    onAssignJob,
+    onDelete,
+    onAddRemark,
+    onJobClick,
+  }: TableBodyRowsProps) => {
+    // Track the last mouse event to capture shift key for checkbox clicks
+    const lastMouseEventRef = useRef<MouseEvent | null>(null);
+    // Track if Shift key is currently pressed for vixsual feedback
+    const [isShiftPressed, setIsShiftPressed] = useState(false);
 
-  // Track Shift key state for visual feedback
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
-        setIsShiftPressed(true);
-      }
-    };
+    // Track Shift key state for visual feedback
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Shift') {
+          setIsShiftPressed(true);
+        }
+      };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
-        setIsShiftPressed(false);
-      }
-    };
+      const handleKeyUp = (e: KeyboardEvent) => {
+        if (e.key === 'Shift') {
+          setIsShiftPressed(false);
+        }
+      };
 
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, []);
-  const handleViewDetails = useCallback(
-    (candidate: Candidate, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onViewDetails(candidate);
-    },
-    [onViewDetails],
-  );
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+      };
+    }, []);
+    const handleViewDetails = useCallback(
+      (candidate: Candidate, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onViewDetails(candidate);
+      },
+      [onViewDetails],
+    );
 
-  const handleEdit = useCallback(
-    (candidate: Candidate, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onEdit(candidate);
-    },
-    [onEdit],
-  );
+    const handleEdit = useCallback(
+      (candidate: Candidate, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onEdit(candidate);
+      },
+      [onEdit],
+    );
 
-  const handleAssignInterviewer = useCallback(
-    (candidate: Candidate, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onAssignInterviewer(candidate);
-    },
-    [onAssignInterviewer],
-  );
+    const handleAssignInterviewer = useCallback(
+      (candidate: Candidate, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onAssignInterviewer(candidate);
+      },
+      [onAssignInterviewer],
+    );
 
-  const handleAssignJob = useCallback(
-    (candidate: Candidate, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onAssignJob(candidate);
-    },
-    [onAssignJob],
-  );
+    const handleAssignJob = useCallback(
+      (candidate: Candidate, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onAssignJob(candidate);
+      },
+      [onAssignJob],
+    );
 
-  const handleDelete = useCallback(
-    (candidate: Candidate, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onDelete(candidate);
-    },
-    [onDelete],
-  );
+    const handleDelete = useCallback(
+      (candidate: Candidate, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onDelete(candidate);
+      },
+      [onDelete],
+    );
 
-  const handleAddRemark = useCallback(
-    (candidate: Candidate, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onAddRemark(candidate);
-    },
-    [onAddRemark],
-  );
+    const handleAddRemark = useCallback(
+      (candidate: Candidate, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onAddRemark(candidate);
+      },
+      [onAddRemark],
+    );
 
-  const handleJobClick = useCallback(
-    (job: any, e: React.MouseEvent) => {
-      e.stopPropagation();
-      onJobClick(job);
-    },
-    [onJobClick],
-  );
+    const handleJobClick = useCallback(
+      (job: any, e: React.MouseEvent) => {
+        e.stopPropagation();
+        onJobClick(job);
+      },
+      [onJobClick],
+    );
 
-  return (
-    <>
-      {candidates.map((candidate) => {
-        const jobInfo = getJobAssignmentInfo(candidate);
-        const isSelected = selectedCandidates.includes(candidate._id);
+    return (
+      <>
+        {candidates.map((candidate) => {
+          const jobInfo = getJobAssignmentInfo(candidate);
+          const isSelected = selectedCandidates.includes(candidate._id);
 
-        return (
-          <TableRow
-            key={candidate._id}
-            className="hover:bg-muted/50 cursor-pointer"
-            onMouseDown={(e) => {
-              // Store the mouse event to capture shift key for checkbox clicks
-              lastMouseEventRef.current = e.nativeEvent;
-            }}
-            onClick={(e) => {
-              // Only handle row click if clicking on the row itself, not on interactive elements
-              const target = e.target as HTMLElement;
-              if (
-                !target.closest("button") &&
-                !target.closest("a") &&
-                !target.closest("[role='menuitem']") &&
-                !target.closest("input[type='checkbox']")
-              ) {
-                onSelectCandidate(candidate._id, e.shiftKey);
-              }
-            }}
-          >
-            {visibleColumns.select && (
-              <TableCell
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => {
-                  // Capture shift key early for checkbox clicks
-                  lastMouseEventRef.current = e.nativeEvent;
-                }}
-                className="relative"
-              >
-                <div
-                  className={cn(
-                    "inline-flex items-center justify-center rounded-md p-1 transition-all duration-150",
-                    "hover:ring-2 hover:ring-primary/30 hover:ring-offset-1",
-                    isShiftPressed &&
-                      "ring-2 ring-primary/50 ring-offset-1 bg-primary/5"
-                  )}
+          return (
+            <TableRow
+              key={candidate._id}
+              className="cursor-pointer hover:bg-muted/50"
+              onMouseDown={(e) => {
+                // Store the mouse event to capture shift key for checkbox clicks
+                lastMouseEventRef.current = e.nativeEvent;
+              }}
+              onClick={(e) => {
+                // Only handle row click if clicking on the row itself, not on interactive elements
+                const target = e.target as HTMLElement;
+                if (
+                  !target.closest('button') &&
+                  !target.closest('a') &&
+                  !target.closest("[role='menuitem']") &&
+                  !target.closest("input[type='checkbox']")
+                ) {
+                  onSelectCandidate(candidate._id, e.shiftKey);
+                }
+              }}
+            >
+              {visibleColumns.select && (
+                <TableCell
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => {
+                    // Capture shift key early for checkbox clicks
+                    lastMouseEventRef.current = e.nativeEvent;
+                  }}
+                  className="relative"
                 >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => {
-                      // Use the stored mouse event to check for shift key
-                      const shiftKey = lastMouseEventRef.current?.shiftKey || false;
-                      onSelectCandidate(candidate._id, shiftKey);
-                      // Clear the ref after use
-                      lastMouseEventRef.current = null;
-                    }}
-                    onClick={(e) => {
-                      // Prevent row click when clicking checkbox
-                      e.stopPropagation();
-                    }}
-                    aria-label={`Select ${candidate.name}`}
-                  />
-                </div>
-              </TableCell>
-            )}
-            {visibleColumns.name && (
-              <TableCell className="font-medium">
-                <span
-                  className="font-bold text-primary cursor-pointer hover:text-primary/80 hover:underline transition-colors"
-                  onClick={(e) => handleViewDetails(candidate, e)}
-                >
-                  {candidate.name}
-                </span>
-              </TableCell>
-            )}
-            {visibleColumns.skills && (
-              <TableCell>
-                <div className="flex flex-wrap gap-1">
-                  {candidate.skills.slice(0, 5).map((skill: string) => (
-                    <Badge key={skill} variant="outline" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                  {candidate.skills.length > 5 && (
-                    <Badge
-                      variant="secondary"
-                      className="text-xs text-muted-foreground"
-                    >
-                      +
-                      {candidate.skills.length - 5}
-                      {' '}
-                      more
-                    </Badge>
-                  )}
-                </div>
-              </TableCell>
-            )}
-            {visibleColumns.location && (
-              <TableCell>{candidate.location}</TableCell>
-            )}
-            {visibleColumns.jobAssignment && (
-              <TableCell>
-                {jobInfo.isAssigned ? (
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="outline"
-                      className="text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                      onClick={(e) => handleJobClick(candidate.jobId, e)}
-                    >
-                      {jobInfo.jobTitle}
-                    </Badge>
-                    {jobInfo.hasInterview && (
+                  <div
+                    className={cn(
+                      'inline-flex items-center justify-center rounded-md p-1 transition-all duration-150',
+                      'hover:ring-primary/30 hover:ring-2 hover:ring-offset-1',
+                      isShiftPressed &&
+                        'ring-primary/50 bg-primary/5 ring-2 ring-offset-1',
+                    )}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => {
+                        // Use the stored mouse event to check for shift key
+                        const shiftKey =
+                          lastMouseEventRef.current?.shiftKey || false;
+                        onSelectCandidate(candidate._id, shiftKey);
+                        // Clear the ref after use
+                        lastMouseEventRef.current = null;
+                      }}
+                      onClick={(e) => {
+                        // Prevent row click when clicking checkbox
+                        e.stopPropagation();
+                      }}
+                      aria-label={`Select ${candidate.name}`}
+                    />
+                  </div>
+                </TableCell>
+              )}
+              {visibleColumns.name && (
+                <TableCell className="font-medium">
+                  <span
+                    className="hover:text-primary/80 cursor-pointer font-bold text-primary transition-colors hover:underline"
+                    onClick={(e) => handleViewDetails(candidate, e)}
+                  >
+                    {candidate.name}
+                  </span>
+                </TableCell>
+              )}
+              {visibleColumns.skills && (
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {candidate.skills.slice(0, 5).map((skill: string) => (
+                      <Badge key={skill} variant="outline" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                    {candidate.skills.length > 5 && (
                       <Badge
-                        variant="outline"
-                        className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800"
+                        variant="secondary"
+                        className="text-xs text-muted-foreground"
                       >
-                        Interview Scheduled
+                        +{candidate.skills.length - 5} more
                       </Badge>
                     )}
                   </div>
-                ) : (
-                  <Badge
-                    variant="outline"
-                    className="text-xs text-muted-foreground border-muted-foreground/30 bg-muted/30"
-                  >
-                    Not Assigned
-                  </Badge>
-                )}
-              </TableCell>
-            )}
-            {visibleColumns.overallScore && (
-              <TableCell>
-                <CompactCircularScores scores={candidate.scores || {}} />
-              </TableCell>
-            )}
-            {visibleColumns.expectedCTC && (
-              <TableCell>
-                {formatCurrency(candidate?.expectedCTC ?? 0)}
-              </TableCell>
-            )}
-            {visibleColumns.currentCTC && (
-              <TableCell>
-                {formatCurrency(candidate?.currentCTC ?? 0)}
-              </TableCell>
-            )}
-            {visibleColumns.experience && (
-              <TableCell>
-                {candidate.experience}
-                {' '}
-                years
-              </TableCell>
-            )}
-            {visibleColumns.createdAt && (
-              <TableCell>
-                {format(
-                  new Date(candidate.tracking?.createdAt || Date.now()),
-                  'MMM d, yyyy',
-                )}
-              </TableCell>
-            )}
-            {visibleColumns.archived && (
-              <TableCell>
-                {candidate.isDeleted && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"
-                  >
-                    archived
-                  </Badge>
-                )}
-              </TableCell>
-            )}
-            {visibleColumns.actions && (
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => handleViewDetails(candidate, e as any)}
-                    >
-                      <Info className="mr-2 h-4 w-4" />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => handleEdit(candidate, e as any)}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    {candidate.jobId
-                      && typeof candidate.jobId === 'object'
-                      && candidate.jobId.title && (
-                        <DropdownMenuItem
-                          onClick={(e) => handleAssignInterviewer(candidate, e as any)}
+                </TableCell>
+              )}
+              {visibleColumns.location && (
+                <TableCell>{candidate.location}</TableCell>
+              )}
+              {visibleColumns.jobAssignment && (
+                <TableCell>
+                  {jobInfo.isAssigned ? (
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="cursor-pointer border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40"
+                        onClick={(e) => handleJobClick(candidate.jobId, e)}
+                      >
+                        {jobInfo.jobTitle}
+                      </Badge>
+                      {jobInfo.hasInterview && (
+                        <Badge
+                          variant="outline"
+                          className="border-green-200 bg-green-50 text-xs text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400"
                         >
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Assign Interviewer
-                        </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={(e) => handleAssignJob(candidate, e as any)}
+                          Interview Scheduled
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="border-muted-foreground/30 bg-muted/30 text-xs text-muted-foreground"
                     >
-                      <Briefcase className="mr-2 h-4 w-4" />
-                      Assign Job
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => handleDelete(candidate, e as any)}
+                      Not Assigned
+                    </Badge>
+                  )}
+                </TableCell>
+              )}
+              {visibleColumns.overallScore && (
+                <TableCell>
+                  <CompactCircularScores scores={candidate.scores || {}} />
+                </TableCell>
+              )}
+              {visibleColumns.expectedCTC && (
+                <TableCell>
+                  {formatCurrency(candidate?.expectedCTC ?? 0)}
+                </TableCell>
+              )}
+              {visibleColumns.currentCTC && (
+                <TableCell>
+                  {formatCurrency(candidate?.currentCTC ?? 0)}
+                </TableCell>
+              )}
+              {visibleColumns.experience && (
+                <TableCell>{candidate.experience} years</TableCell>
+              )}
+              {visibleColumns.createdAt && (
+                <TableCell>
+                  {format(
+                    new Date(candidate.tracking?.createdAt || Date.now()),
+                    'MMM d, yyyy',
+                  )}
+                </TableCell>
+              )}
+              {visibleColumns.archived && (
+                <TableCell>
+                  {candidate.isDeleted && (
+                    <Badge
+                      variant="outline"
+                      className="border-red-200 bg-red-50 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400"
                     >
-                      <Archive className="mr-2 h-4 w-4" />
-                      {candidate.isDeleted ? 'Unarchived' : 'Archive'}
-                    </DropdownMenuItem>
-                    {candidate.jobId
-                      && typeof candidate.jobId === 'object'
-                      && candidate.jobId.title && (
-                        <>
-                          <DropdownMenuSeparator />
+                      archived
+                    </Badge>
+                  )}
+                </TableCell>
+              )}
+              {visibleColumns.actions && (
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => handleViewDetails(candidate, e as any)}
+                      >
+                        <Info className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => handleEdit(candidate, e as any)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      {candidate.jobId &&
+                        typeof candidate.jobId === 'object' &&
+                        candidate.jobId.title && (
                           <DropdownMenuItem
-                            onClick={(e) => handleAddRemark(candidate, e as any)}
+                            onClick={(e) =>
+                              handleAssignInterviewer(candidate, e as any)
+                            }
                           >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Remark
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Assign Interviewer
                           </DropdownMenuItem>
-                        </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            )}
-          </TableRow>
-        );
-      })}
-    </>
-  );
-});
+                        )}
+                      <DropdownMenuItem
+                        onClick={(e) => handleAssignJob(candidate, e as any)}
+                      >
+                        <Briefcase className="mr-2 h-4 w-4" />
+                        Assign Job
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => handleDelete(candidate, e as any)}
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        {candidate.isDeleted ? 'Unarchived' : 'Archive'}
+                      </DropdownMenuItem>
+                      {candidate.jobId &&
+                        typeof candidate.jobId === 'object' &&
+                        candidate.jobId.title && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) =>
+                                handleAddRemark(candidate, e as any)
+                              }
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Remark
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              )}
+            </TableRow>
+          );
+        })}
+      </>
+    );
+  },
+);
 
 TableBodyRows.displayName = 'TableBodyRows';

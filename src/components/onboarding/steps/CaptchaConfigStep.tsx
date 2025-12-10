@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Shield, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
-const CaptchConfigStep: React.FC = () => {
+function CaptchConfigStep(): React.ReactElement {
   const [isConfigured, setIsConfigured] = useState(false);
   const { validateStep } = useOnboarding();
-  console.log(isConfigured, 'isConfigured');
 
   useEffect(() => {
     validateStep('captcha').then(setIsConfigured);
@@ -55,6 +54,6 @@ const CaptchConfigStep: React.FC = () => {
       </Card>
     </div>
   );
-};
+}
 
 export default CaptchConfigStep;

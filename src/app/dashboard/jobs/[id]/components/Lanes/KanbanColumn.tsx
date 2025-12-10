@@ -425,23 +425,18 @@ const KanbanColumn = memo(({
                                 onDeleteClick={(id: string) => handleDeleteClickMemo(id, candidate)}
                                 onEditClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log('Edit candidate:', candidate);
                                 }}
                                 onAssignClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log('Assign candidate:', candidate);
                                 }}
                                 onMarkAsDoneClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log('Mark as done:', candidate);
                                 }}
                                 onFollowUpClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log('Follow up:', candidate);
                                 }}
                                 onAddRemarkClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log('Add remark:', candidate);
                                 }}
                                 isPending={isPending}
                               />

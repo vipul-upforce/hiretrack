@@ -21,12 +21,12 @@ import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candida
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DashboardSkeleton } from '@/components/skeletons/dashboard-skeleton';
+import logger from '@/lib/logger';
 import DashboardCards from './components/DashboardCards';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
 import { RenderInterviewerAssignments } from './components/RenderInterviewerAssignments';
 import { RenderTodaysInterviews } from './components/RenderTodaysInterviews';
-import DashboardLoader from './components/dashboard-loader';
 
 export interface Assignment {
   id: string;
@@ -224,7 +224,7 @@ export default function DashboardPage() {
           setHasMoreData(true);
         }
       } catch (error) {
-        console.error('Error fetching assignments:', error);
+        logger.error('Error fetching assignments:', error);
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -401,7 +401,7 @@ export default function DashboardPage() {
               !sseCandidate.assignment
                 || !sseCandidate.assignment.interviewerId
             ) {
-              console.log('No SSE assignment found');
+              logger.log('No SSE assignment found');
               // Remove if assignment is null/undefined
               const candidateId = sseCandidate._id;
               const existingIndex = updatedAssignments.findIndex(
@@ -471,7 +471,7 @@ export default function DashboardPage() {
           return;
         }
       } catch (error) {
-        console.error('Failed to fetch candidate:', error);
+        logger.error('Failed to fetch candidate:', error);
         toast({
           title: 'Error',
           description: 'Failed to load candidate details',

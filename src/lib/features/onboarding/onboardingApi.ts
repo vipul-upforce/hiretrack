@@ -1,3 +1,5 @@
+import logger from '@/lib/logger';
+
 export interface OnboardingStatus {
   isCompleted: boolean;
   completedSteps: string[];
@@ -39,13 +41,15 @@ export const onboardingApi = {
       const data: StatusResponse = await response.json();
       return data.onboardingStatus;
     } catch (error) {
-      console.error('Error fetching onboarding status:', error);
+      logger.error('Error fetching onboarding status:', error);
       return null;
     }
   },
 
   // Update onboarding status
-  async updateStatus(updates: Partial<OnboardingStatus>): Promise<OnboardingStatus | null> {
+  async updateStatus(
+    updates: Partial<OnboardingStatus>,
+  ): Promise<OnboardingStatus | null> {
     try {
       const response = await fetch('/api/onboarding/status', {
         method: 'PUT',
@@ -57,7 +61,7 @@ export const onboardingApi = {
       const data: StatusResponse = await response.json();
       return data.onboardingStatus;
     } catch (error) {
-      console.error('Error updating onboarding status:', error);
+      logger.error('Error updating onboarding status:', error);
       return null;
     }
   },
@@ -72,7 +76,7 @@ export const onboardingApi = {
       const data: ValidateResponse = await response.json();
       return data;
     } catch (error) {
-      console.error('Error validating onboarding:', error);
+      logger.error('Error validating onboarding:', error);
       return null;
     }
   },
@@ -90,7 +94,7 @@ export const onboardingApi = {
       const data: { isValid: boolean } = await response.json();
       return data.isValid;
     } catch (error) {
-      console.error('Error validating step:', error);
+      logger.error('Error validating step:', error);
       return false;
     }
   },
@@ -105,7 +109,7 @@ export const onboardingApi = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error fetching current user:', error);
+      logger.error('Error fetching current user:', error);
       return null;
     }
   },

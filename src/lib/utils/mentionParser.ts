@@ -20,46 +20,32 @@ export interface MentionPattern {
  */
 export function extractMentions(text: string): MentionPattern[] {
   try {
-    console.log('🔍 EXTRACT MENTIONS DEBUG:');
-    console.log('  - Input text:', text);
-    console.log('  - Text type:', typeof text);
-    console.log('  - Text length:', text?.length);
-
     if (!text || typeof text !== 'string') {
-      console.log('  - Invalid text input, returning empty array');
       return [];
     }
 
     // Regex to match @mentions with flexible name patterns
     // Matches: @word, @word word, @wordword, @word-word, etc.
-    const mentionRegex = /@([a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[a-zA-Z][a-zA-Z0-9\-_]*)*)/gi;
-    console.log('  - Using regex:', mentionRegex);
+    const mentionRegex =
+      /@([a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[a-zA-Z][a-zA-Z0-9\-_]*)*)/gi;
 
     const mentions: MentionPattern[] = [];
     let match;
     let matchCount = 0;
 
     while ((match = mentionRegex.exec(text)) !== null) {
-      matchCount++;
-      console.log(`  - Match ${matchCount}:`, match);
+      matchCount += 1;
 
       const fullMatch = match[0]; // e.g., "@Aneri Shah"
       const cleanMatch = match[1]; // e.g., "Aneri Shah"
 
-      console.log(`    - Full match: "${fullMatch}"`);
-      console.log(`    - Clean match: "${cleanMatch}"`);
-
       const nameParts = cleanMatch.trim().split(/\s+/);
       const firstName = nameParts[0];
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
-
-      console.log('    - Name parts:', nameParts);
-      console.log(`    - First name: "${firstName}"`);
-      console.log(`    - Last name: "${lastName}"`);
+      const lastName =
+        nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
       // Generate search patterns
       const patterns = generateSearchPatterns(firstName, lastName);
-      console.log('    - Generated patterns:', patterns);
 
       const mention = {
         fullMatch,
@@ -70,31 +56,20 @@ export function extractMentions(text: string): MentionPattern[] {
       };
 
       mentions.push(mention);
-      console.log('    - Added mention:', mention);
     }
-
-    console.log(`  - Total matches found: ${matchCount}`);
-    console.log('  - Mentions before deduplication:', mentions.length);
 
     // Remove duplicates based on cleanMatch (case-insensitive)
     const deduplicatedMentions = mentions.filter(
-      (mention, index, array) => array.findIndex(
-        (m) => m.cleanMatch.toLowerCase() === mention.cleanMatch.toLowerCase(),
-      ) === index,
-    );
-
-    console.log(
-      '  - Mentions after deduplication:',
-      deduplicatedMentions.length,
-    );
-    console.log(
-      '  - Final mentions:',
-      JSON.stringify(deduplicatedMentions, null, 2),
+      (mention, index, array) =>
+        array.findIndex(
+          (m) =>
+            m.cleanMatch.toLowerCase() === mention.cleanMatch.toLowerCase(),
+        ) === index,
     );
 
     return deduplicatedMentions;
   } catch (error) {
-    console.error('❌ Error extracting mentions:', error);
+    logger.error('❌ Error extracting mentions:', error);
     return [];
   }
 }
@@ -135,19 +110,13 @@ export function matchesUserName(
   mentionPatterns: string[],
 ): boolean {
   try {
-    console.log('🔍 MATCHES USER NAME DEBUG:');
-    console.log('  - User first name:', userFirstName);
-    console.log('  - User last name:', userLastName);
-    console.log('  - Mention patterns:', mentionPatterns);
-
     if (
-      !userFirstName
-      || typeof userFirstName !== 'string'
-      || !mentionPatterns
-      || !Array.isArray(mentionPatterns)
-      || mentionPatterns.length === 0
+      !userFirstName ||
+      typeof userFirstName !== 'string' ||
+      !mentionPatterns ||
+      !Array.isArray(mentionPatterns) ||
+      mentionPatterns.length === 0
     ) {
-      console.log('  - Invalid input, returning false');
       return false;
     }
 
@@ -160,15 +129,8 @@ export function matchesUserName(
       ? `${userFirstNameLower}${userLastNameLower}`
       : userFirstNameLower;
 
-    console.log('  - User name variations:');
-    console.log('    - First name lower:', userFirstNameLower);
-    console.log('    - Last name lower:', userLastNameLower);
-    console.log('    - Full name lower:', userFullNameLower);
-    console.log('    - Concatenated name lower:', userConcatenatedNameLower);
-
     for (const pattern of mentionPatterns) {
       const patternLower = pattern.toLowerCase().trim();
-      console.log(`  - Checking pattern: "${patternLower}"`);
 
       // Check various matching scenarios
       const firstMatch = patternLower === userFirstNameLower;
@@ -176,22 +138,13 @@ export function matchesUserName(
       const concatMatch = patternLower === userConcatenatedNameLower;
       const lastMatch = userLastNameLower && patternLower === userLastNameLower;
 
-      console.log('    - First name match:', firstMatch);
-      console.log('    - Full name match:', fullMatch);
-      console.log('    - Concatenated match:', concatMatch);
-      console.log('    - Last name match:', lastMatch);
-
       if (firstMatch || fullMatch || concatMatch || lastMatch) {
-        console.log('    - ✅ MATCH FOUND!');
         return true;
       }
-      console.log('    - ❌ No match');
     }
 
-    console.log('  - No patterns matched, returning false');
     return false;
-  } catch (error) {
-    console.error('❌ Error matching user name:', error);
+  } catch {
     return false;
   }
 }
@@ -207,9 +160,13 @@ export function highlightMentions(
     return text;
   }
 
-  const mentionRegex = /@([a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[a-zA-Z][a-zA-Z0-9\-_]*)*)/gi;
+  const mentionRegex =
+    /@([a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[a-zA-Z][a-zA-Z0-9\-_]*)*)/gi;
 
-  return text.replace(mentionRegex, (match) => `<span class="${cssClass}">${match}</span>`);
+  return text.replace(
+    mentionRegex,
+    (match) => `<span class="${cssClass}">${match}</span>`,
+  );
 }
 
 /**

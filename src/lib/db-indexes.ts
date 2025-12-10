@@ -4,6 +4,7 @@
  */
 
 import mongoose from 'mongoose';
+import logger from './logger';
 
 interface IndexDefinition {
   collection: string;
@@ -121,7 +122,6 @@ export const ANALYTICS_INDEXES: IndexDefinition[] = [
  * Should be run during application startup or as a migration
  */
 export async function createAnalyticsIndexes(connection: mongoose.Connection): Promise<void> {
-  console.log('🔄 Creating analytics indexes...');
 
   const results = [];
 
@@ -134,7 +134,6 @@ export async function createAnalyticsIndexes(connection: mongoose.Connection): P
       const indexExists = existingIndexes.some((idx) => idx.name === indexDef.options?.name);
 
       if (indexExists) {
-        console.log(`✅ Index ${indexDef.options?.name} already exists on ${indexDef.collection}`);
         continue;
       }
 
@@ -146,37 +145,30 @@ export async function createAnalyticsIndexes(connection: mongoose.Connection): P
         result,
       });
 
-      console.log(`✅ Created index ${indexDef.options?.name} on ${indexDef.collection}`);
     } catch (error) {
-      console.error(`❌ Failed to create index on ${indexDef.collection}:`, error);
+      logger.error(`Error creating index on collection ${indexDef.collection}:`, error);
       throw error;
     }
   }
 
-  console.log(`🎉 Successfully created ${results.length} analytics indexes`);
 }
 
 /**
  * Drops all analytics indexes (for cleanup/testing)
  */
 export async function dropAnalyticsIndexes(connection: mongoose.Connection): Promise<void> {
-  console.log('🔄 Dropping analytics indexes...');
-
   for (const indexDef of ANALYTICS_INDEXES) {
     try {
       const collection = connection.collection(indexDef.collection);
 
       if (indexDef.options?.name) {
         await collection.dropIndex(indexDef.options.name);
-        console.log(`✅ Dropped index ${indexDef.options.name} from ${indexDef.collection}`);
       }
-    } catch (error:any) {
-      // Index might not exist, which is fine
-      console.log(`⚠️ Could not drop index from ${indexDef.collection}: ${error.message}`);
+    } catch (error) {
+      logger.warn(`Could not drop index ${indexDef.options?.name} on collection ${indexDef.collection}: ${error.message}`);
     }
   }
 
-  console.log('🎉 Finished dropping analytics indexes');
 }
 
 /**

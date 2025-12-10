@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  useState, useCallback, useRef, useEffect,
-} from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   usePostBatchMutation,
@@ -12,6 +10,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import { useSelector } from 'react-redux';
+import logger from '@/lib/logger';
 import { CompletedBatches } from './completed-batches';
 import { FileList } from './file-list';
 import { FileUploader } from './file-uploader';
@@ -122,9 +121,9 @@ export function CVBatchProcessor() {
 
       setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
       setFiles([]);
-    } catch (error) {
-      console.log(
-        error instanceof Error ? error.message : 'Failed to process batch',
+    } catch (e) {
+      logger.error(
+        e instanceof Error ? e.message : 'Failed to process batch',
       );
     } finally {
       processingRef.current = false;

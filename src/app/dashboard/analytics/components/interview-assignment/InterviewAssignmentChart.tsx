@@ -10,7 +10,11 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCcwIcon, DownloadIcon } from 'lucide-react';
-import { useInterviewAssignments, AnalyticsFilters } from '../../hooks/useAnalytics';
+import logger from '@/lib/logger';
+import {
+  useInterviewAssignments,
+  AnalyticsFilters,
+} from '../../hooks/useAnalytics';
 import { exportToCSV } from '../../utils/export';
 import InterviewAssignmentSkeleton from '../loading-skeletons/interview-assignment';
 import { WorkloadDistributionChart } from './workload-assignment-chart';
@@ -54,18 +58,17 @@ interface AssignmentData {
   workloadDistribution: Date[];
 }
 
-export const InterviewAssignmentChart: React.FC<
-  InterviewAssignmentChartProps
-> = ({ filters, organizationId }) => {
-  const {
-    data, loading, error, refetch,
-  } = useInterviewAssignments(
+export function InterviewAssignmentChart({
+  filters,
+  organizationId,
+}: InterviewAssignmentChartProps) {
+  const { data, loading, error, refetch } = useInterviewAssignments(
     filters,
     organizationId,
   );
   const [assignmentData, setAssignmentData] = useState<AssignmentData[]>([]);
-  const [summary, setSummary] = useState<any>(null);
-  const [insights, setInsights] = useState<any>(null);
+  const [summary, setSummary] = useState<Record<string, any> | null>(null);
+  const [insights, setInsights] = useState<Record<string, any> | null>(null);
 
   useEffect(() => {
     if (data) {
@@ -81,7 +84,7 @@ export const InterviewAssignmentChart: React.FC<
 
   const handleExport = () => {
     if (!assignmentData || assignmentData.length === 0) {
-      console.warn('No interview assignment data to export');
+      logger.warn('No interview assignment data to export');
       return;
     }
 
@@ -221,16 +224,16 @@ export const InterviewAssignmentChart: React.FC<
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-red-500">
+          <div className="flex h-64 items-center justify-center text-red-500">
             <div className="text-center">
               <p>Error loading interview assignment data</p>
-              <p className="text-sm text-muted-foreground mt-2">{error}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{error}</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={handleRefresh}
               >
-                <RefreshCcwIcon className="h-4 w-4 mr-2" />
+                <RefreshCcwIcon className="mr-2 h-4 w-4" />
                 Retry
               </Button>
             </div>
@@ -262,11 +265,11 @@ export const InterviewAssignmentChart: React.FC<
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCcwIcon className="h-4 w-4 mr-2" />
+              <RefreshCcwIcon className="mr-2 h-4 w-4" />
               Refresh
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <DownloadIcon className="h-4 w-4 mr-2" />
+              <DownloadIcon className="mr-2 h-4 w-4" />
               Export
             </Button>
           </div>
@@ -280,7 +283,7 @@ export const InterviewAssignmentChart: React.FC<
         {insights && <InsightsCards insights={insights} />}
 
         <div className="h-[550px]">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="mb-4 text-lg font-semibold">
             Interviewer Workload Distribution
           </h3>
           <WorkloadDistributionChart data={assignmentData} />
@@ -288,4 +291,4 @@ export const InterviewAssignmentChart: React.FC<
       </CardContent>
     </Card>
   );
-};
+}

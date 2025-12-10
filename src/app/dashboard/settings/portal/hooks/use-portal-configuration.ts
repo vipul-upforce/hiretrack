@@ -10,6 +10,7 @@ import {
 import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
 import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
 import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import logger from '@/lib/logger';
 import { PortalSettings, FileUpload } from '../types';
 
 export function usePortalConfiguration() {
@@ -26,7 +27,8 @@ export function usePortalConfiguration() {
   } = useGetPortalConfigsQuery(undefined);
   const { data: allowanceData } = useGetOrganizationAllowanceQuery();
 
-  const [updatePortalConfigs, { isLoading: saving }] = useUpdatePortalConfigsMutation();
+  const [updatePortalConfigs, { isLoading: saving }] =
+    useUpdatePortalConfigsMutation();
 
   const [settings, setSettings] = useState<PortalSettings>({
     portalName: '',
@@ -42,18 +44,6 @@ export function usePortalConfiguration() {
   const [headerHtml, setHeaderHtml] = useState<string>('');
   const [footerHtml, setFooterHtml] = useState<string>('');
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (portalData) {
-      loadPortalData(portalData);
-    }
-  }, [portalData]);
-
-  useEffect(() => {
-    if (allowanceData) {
-      setHasMultipleOrgs(allowanceData.allow);
-    }
-  }, [allowanceData]);
 
   // Helpers
   const loadPortalData = (data: any) => {
@@ -72,15 +62,27 @@ export function usePortalConfiguration() {
       fetch(data.portalHeader.url)
         .then((res) => res.text())
         .then((html) => setHeaderHtml(html))
-        .catch((err) => console.error('Failed to load header HTML:', err));
+        .catch((err) => logger.error('Failed to load header HTML:', err));
     }
     if (data.portalFooter?.url) {
       fetch(data.portalFooter.url)
         .then((res) => res.text())
         .then((html) => setFooterHtml(html))
-        .catch((err) => console.error('Failed to load footer HTML:', err));
+        .catch((err) => logger.error('Failed to load footer HTML:', err));
     }
   };
+
+  useEffect(() => {
+    if (portalData) {
+      loadPortalData(portalData);
+    }
+  }, [portalData]);
+
+  useEffect(() => {
+    if (allowanceData) {
+      setHasMultipleOrgs(allowanceData.allow);
+    }
+  }, [allowanceData]);
 
   const handleFileUpload = async (file: File, type: keyof PortalSettings) => {
     if (type === 'portalFavicon' && file.size > 50000) {
@@ -108,7 +110,7 @@ export function usePortalConfiguration() {
 
   const handleSave = async () => {
     try {
-      const { portalHeader, portalFooter, ...settingsWithoutHtmlFiles } = settings;
+      const { ...settingsWithoutHtmlFiles } = settings;
       const payload = {
         ...settingsWithoutHtmlFiles,
         portalHeaderHtml: headerHtml,
@@ -129,7 +131,7 @@ export function usePortalConfiguration() {
       }
 
       toast.success('Portal settings saved successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to save portal settings');
     }
   };
@@ -144,9 +146,10 @@ export function usePortalConfiguration() {
       url = `${origin}/apply-jobs?${allParams.join('&')}`;
     } else {
       const allParams = additionalParams.filter(Boolean);
-      url = allParams.length > 0
-        ? `${origin}/apply-jobs?${allParams.join('&')}`
-        : `${origin}/apply-jobs`;
+      url =
+        allParams.length > 0
+          ? `${origin}/apply-jobs?${allParams.join('&')}`
+          : `${origin}/apply-jobs`;
     }
 
     return url;

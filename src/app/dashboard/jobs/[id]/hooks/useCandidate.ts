@@ -9,9 +9,9 @@ import {
 } from '@/lib/features/candidate/candidateApi';
 import { useUpdateLanesMutation } from '@/lib/features/lane/laneApi';
 import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
-import { useValidateCandidateChecklistMutation } from '@/lib/features/checklist/checklistApi';
 import { sentStatusMailHandler } from '@/lib/utils';
 import { Job } from '@/types/job';
+import logger from '@/lib/logger';
 import { useClientSideChecklistValidation } from './useClientSideChecklistValidation';
 
 interface UseCandidateProps {
@@ -29,15 +29,6 @@ interface UseCandidateProps {
   candidateToDelete: string | null;
   jobLaneConfig?: any;
   job?: Job;
-  // promptForStatusChangeReason: boolean;
-}
-
-interface ChecklistValidationResult {
-  candidateId: string;
-  currentLane: string;
-  targetLane: string;
-  checklist?: any;
-  isMandatory?: boolean;
 }
 
 interface PendingMove {
@@ -143,11 +134,13 @@ export const useCandidate = ({
           prev_status: pendingMove.sourceLaneId,
         },
         sendStatusMail,
-        { remark: "" }
+        { remark: '' },
       );
 
       // Remove from pending moves
-      setPendingMoves((prev) => prev.filter((pm) => pm.candidateId !== candidateId));
+      setPendingMoves((prev) =>
+        prev.filter((pm) => pm.candidateId !== candidateId),
+      );
 
       // Refetch to ensure consistency
       await refetch();
@@ -169,7 +162,9 @@ export const useCandidate = ({
     if (!pendingMove) return;
 
     // For mandatory checklists, the card was never moved, so just remove from pending
-    setPendingMoves((prev) => prev.filter((pm) => pm.candidateId !== candidateId));
+    setPendingMoves((prev) =>
+      prev.filter((pm) => pm.candidateId !== candidateId),
+    );
   };
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
@@ -191,9 +186,7 @@ export const useCandidate = ({
   };
 
   const onDragEnd = async (result: DropResult) => {
-    const {
-      destination, source, type, draggableId,
-    } = result;
+    const { destination, source, type, draggableId } = result;
 
     if (!destination) {
       return;
@@ -234,16 +227,16 @@ export const useCandidate = ({
     }
 
     const newSourceCandidates = [...sourceColumn.candidates];
-    const newDestCandidates = source.droppableId === destination.droppableId
-      ? newSourceCandidates
-      : [...destColumn.candidates];
+    const newDestCandidates =
+      source.droppableId === destination.droppableId
+        ? newSourceCandidates
+        : [...destColumn.candidates];
 
     // Find the candidate by ID instead of using the index
     const sourceIndex = newSourceCandidates.findIndex(
       (c) => c._id === draggableId,
     );
     if (sourceIndex === -1) {
-      console.error('Could not find candidate with ID:', draggableId);
       return;
     }
 
@@ -281,7 +274,7 @@ export const useCandidate = ({
           (c) => c._id === draggableId,
         );
         if (!candidate) {
-          console.error('Candidate not found for drag operation');
+          logger.error('Candidate not found for drag operation');
           document.body.classList.remove('dnd-updating');
           return;
         }
@@ -292,9 +285,6 @@ export const useCandidate = ({
           source.droppableId,
           destination.droppableId,
         );
-
-        // Track if a dialog will be opened (so we don't send email immediately)
-        let dialogWillBeOpened = false;
 
         // Handle movement based on checklist requirements
         if (validationResult.validation.requiresChecklist) {
@@ -338,14 +328,12 @@ export const useCandidate = ({
           // Show dialog with checklist for optional checklists
           // if (promptForStatusChangeReason) {
           setOpenRemarksFor(JSON.stringify(validationInfo));
-          dialogWillBeOpened = true;
           // }
         } else {
           // No checklist required, proceed with optimistic update and normal remarks dialog
           setColumns(newColumns);
           if (job?.promptForStatusChangeReason) {
             setOpenRemarksFor(draggableId);
-            dialogWillBeOpened = true;
           }
         }
 
@@ -363,9 +351,9 @@ export const useCandidate = ({
             prev_status: source.droppableId,
           },
           sendStatusMail,
-          { remark: "" }
+          { remark: '' },
         );
-      } catch (error) {
+      } catch {
         // Revert on error
         setColumns([...columns]);
         toast({
@@ -387,7 +375,9 @@ export const useCandidate = ({
   const handleCandidateUpdate = (updatedCandidate: Candidate) => {
     const newColumns = columns.map((column) => ({
       ...column,
-      candidates: column.candidates.map((candidate) => (candidate._id === updatedCandidate._id ? updatedCandidate : candidate)),
+      candidates: column.candidates.map((candidate) =>
+        candidate._id === updatedCandidate._id ? updatedCandidate : candidate,
+      ),
     }));
     setColumns(newColumns);
   };

@@ -14,7 +14,8 @@ async function ensureBaseDir() {
   try {
     await fs.mkdir(ORG_BASE_DIR, { recursive: true });
   } catch (error) {
-    console.error(
+    logger.error(
+      { error },
       `Failed to create base directory ${ORG_BASE_DIR}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
     throw new Error('Failed to initialize organization directory');

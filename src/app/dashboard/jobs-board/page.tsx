@@ -1,17 +1,13 @@
 'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { DragDropContext } from '@hello-pangea/dnd';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  useState, useEffect, useContext, useCallback, useMemo,
-} from 'react';
+import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { Job } from '@/types/job';
 import {
   useCreateJobMutation,
   useFetchJobsQuery,
   useUpdateJobStatusMutation,
-  useDeleteJobMutation,
 } from '@/lib/features/job/jobApi';
 import { toast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -31,7 +27,6 @@ import { CustomFieldsContext } from '@/Custom_Fields/Context';
 import CustomFieldDialog from '@/Custom_Fields/Components/Common/CustomFieldDialog';
 import Stepper from '@/Custom_Fields/Components/Stepper';
 import { useSelector } from 'react-redux';
-import { useGetUsersQuery } from '@/lib/features/users/usersApi';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
 import { GlobalEmailNotificationSettingsDialog } from '@/components/dialogs/GlobalEmailNotificationSettingsDialog';
 import {
@@ -47,7 +42,6 @@ import {
   JobsFilters,
   StatusFilterValue,
   DateFilterValue,
-  SortOption,
 } from './components/jobs-filters';
 import DefaultLanesButton from './components/DefaultLanesButton';
 import KanbanColumn from './components/kanban-column';
@@ -81,34 +75,22 @@ function JobCustomFieldsDialog({
   // Auto-select job position form when dialog opens
   useEffect(() => {
     if (
-      isOpen
-      && !hasAutoSelected
-      && customFields
-      && Object.keys(customFields).length > 0
+      isOpen &&
+      !hasAutoSelected &&
+      customFields &&
+      Object.keys(customFields).length > 0
     ) {
-      console.log('Attempting to auto-select job position form...');
-
       // Find the "job position" form ID
       const jobPositionFormEntry = Object.entries(customFields).find(
-        ([_, form]) => {
-          console.log(
-            'Checking form:',
-            form.formName,
-            'normalized:',
-            form.formName.toLowerCase(),
-          );
-          return form.formName.toLowerCase() === 'job position';
-        },
+        ([_, form]) => form.formName.toLowerCase() === 'job position',
       );
 
       if (jobPositionFormEntry) {
         const [formId] = jobPositionFormEntry;
-        console.log('Found job position form, selecting:', formId);
         selecteFormIdTarget(formId);
         setStepName('formCustomFieldList');
         setHasAutoSelected(true);
       } else {
-        console.log('No job position form found, staying on FormList');
         setStepName('FormList');
         setHasAutoSelected(true);
       }
@@ -116,7 +98,6 @@ function JobCustomFieldsDialog({
   }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
 
   const handleClose = useCallback(() => {
-    console.log('JobCustomFieldsDialog closing, resetting to FormList');
     setStepName('FormList');
     setHasAutoSelected(false);
     onClose();
@@ -159,18 +140,17 @@ function KanbanPage() {
   } = useFetchJobsQuery(undefined, {
     skip: !user,
   });
-  const { data: users } = useGetUsersQuery();
-  // const router = useRouter();
   const [updateJobStatus] = useUpdateJobStatusMutation();
-  const [deleteJob] = useDeleteJobMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
   const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
-  const [isGlobalEmailSettingsOpen, setIsGlobalEmailSettingsOpen] = useState(false); // New state for global settings dialog
-  const [selectedJobForEmailSettings, setSelectedJobForEmailSettings] = useState<Job | null>(null);
+  const [isGlobalEmailSettingsOpen, setIsGlobalEmailSettingsOpen] =
+    useState(false); // New state for global settings dialog
+  const [selectedJobForEmailSettings, setSelectedJobForEmailSettings] =
+    useState<Job | null>(null);
 
   // View mode and filters state with localStorage persistence
   const [viewMode, setViewMode] = useState<'board' | 'table'>(() => {
@@ -207,7 +187,6 @@ function KanbanPage() {
     return [];
   });
 
-  const [sortBy, setSortBy] = useState<SortOption>('date-desc');
   const [sortField, setSortField] = useState<string | null>(
     'tracking.createdAt',
   );
@@ -231,8 +210,9 @@ function KanbanPage() {
       const initialColumnsWithJobs = initialColumns.map((column) => ({
         ...column,
         jobs: jobs.filter(
-          (job) => job.status === column.id
-            && (showArchived ? job.isDeleted : !job.isDeleted),
+          (job) =>
+            job.status === column.id &&
+            (showArchived ? job.isDeleted : !job.isDeleted),
         ),
       }));
       setColumns(initialColumnsWithJobs);
@@ -317,21 +297,26 @@ function KanbanPage() {
   const filteredAndSortedJobs = useMemo(() => {
     if (!jobs || viewMode === 'board') return [];
 
-    let filtered = jobs.filter((job) => (showArchived ? job.isDeleted : !job.isDeleted));
+    let filtered = jobs.filter((job) =>
+      showArchived ? job.isDeleted : !job.isDeleted,
+    );
 
     // Apply search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (job) => job.title.toLowerCase().includes(query)
-          || job.description?.toLowerCase().includes(query)
-          || job.skills?.some((skill) => skill.toLowerCase().includes(query)),
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.description?.toLowerCase().includes(query) ||
+          job.skills?.some((skill) => skill.toLowerCase().includes(query)),
       );
     }
 
     // Apply status filters (OR logic - show if matches any selected status)
     if (statusFilters.length > 0) {
-      filtered = filtered.filter((job) => statusFilters.includes(job.status as StatusFilterValue));
+      filtered = filtered.filter((job) =>
+        statusFilters.includes(job.status as StatusFilterValue),
+      );
     }
 
     // Apply date filters (OR logic - show if matches any selected date range)
@@ -347,18 +332,18 @@ function KanbanPage() {
               return isSameDay(createdDate, now);
             case 'week':
               return (
-                isAfter(createdDate, startOfWeek(now))
-                || isSameDay(createdDate, startOfWeek(now))
+                isAfter(createdDate, startOfWeek(now)) ||
+                isSameDay(createdDate, startOfWeek(now))
               );
             case 'month':
               return (
-                isAfter(createdDate, startOfMonth(now))
-                || isSameDay(createdDate, startOfMonth(now))
+                isAfter(createdDate, startOfMonth(now)) ||
+                isSameDay(createdDate, startOfMonth(now))
               );
             case 'quarter':
               return (
-                isAfter(createdDate, startOfQuarter(now))
-                || isSameDay(createdDate, startOfQuarter(now))
+                isAfter(createdDate, startOfQuarter(now)) ||
+                isSameDay(createdDate, startOfQuarter(now))
               );
             default:
               return false;
@@ -421,9 +406,9 @@ function KanbanPage() {
     const { destination, source, draggableId } = result;
 
     if (
-      !destination
-      || (destination.droppableId === source.droppableId
-        && destination.index === source.index)
+      !destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)
     ) {
       return;
     }
@@ -439,9 +424,10 @@ function KanbanPage() {
     const newColumns = [...columns];
     const sourceJobs = [...sourceColumn.jobs];
 
-    const destJobs = source.droppableId === destination.droppableId
-      ? sourceJobs
-      : [...destColumn.jobs];
+    const destJobs =
+      source.droppableId === destination.droppableId
+        ? sourceJobs
+        : [...destColumn.jobs];
 
     const [removed] = sourceJobs.splice(source.index, 1);
     const updatedJob = {
@@ -491,9 +477,11 @@ function KanbanPage() {
   const handleJobUpdate = (updatedJob: Job) => {
     const newColumns = columns.map((column) => ({
       ...column,
-      jobs: column.jobs.map((job) => (job._id === updatedJob._id
-        ? { ...updatedJob, candidateCount: updatedJob.candidateCount || 0 }
-        : job)),
+      jobs: column.jobs.map((job) =>
+        job._id === updatedJob._id
+          ? { ...updatedJob, candidateCount: updatedJob.candidateCount || 0 }
+          : job,
+      ),
     }));
 
     setColumns(newColumns);
@@ -540,24 +528,26 @@ function KanbanPage() {
   if (error) return <div>Error loading jobs</div>;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section - stays the same always */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+            <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
               Job Positions
             </CardTitle>
 
             {/* Right Section - Controls and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
               {/* Show Archived */}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="showArchived"
                   checked={showArchived}
-                  onCheckedChange={(checked) => setShowArchived(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setShowArchived(checked as boolean)
+                  }
                 />
                 <label
                   htmlFor="showArchived"
@@ -568,7 +558,7 @@ function KanbanPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   variant="outline"
                   onClick={() => setIsGlobalEmailSettingsOpen(true)}
@@ -597,14 +587,14 @@ function KanbanPage() {
       </div>
 
       {/* Filters and View Toggle Section - below header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-center gap-3 border-b border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-black">
+        <div className="flex flex-1 items-center gap-3">
           {/* Search Input - Only show in table view */}
           {viewMode === 'table' && (
-            <div className="flex-1 max-w-md">
+            <div className="max-w-md flex-1">
               <div className="relative">
                 <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -621,7 +611,7 @@ function KanbanPage() {
                   placeholder="Search jobs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-black dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -643,11 +633,11 @@ function KanbanPage() {
       </div>
 
       {/* Content Area - Board or Table View */}
-      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
+      <div className="mt-4 flex-1 overflow-hidden px-4 pb-4">
         {viewMode === 'board' ? (
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
-              <div className="h-full flex gap-1 min-w-full">
+            <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 h-full overflow-x-auto overflow-y-hidden">
+              <div className="flex h-full min-w-full gap-1">
                 {columns.map((column) => (
                   <KanbanColumn
                     key={column.id}
@@ -714,7 +704,7 @@ function KanbanPage() {
               className={
                 !selectedJob?.isDeleted
                   ? 'bg-destructive hover:bg-destructive/90'
-                  : 'text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90'
+                  : 'bg-blue hover:bg-blue text-blue-500 hover:text-blue-500/90'
               }
             >
               {selectedJob?.isDeleted ? 'Unarchive' : 'Archive'}
@@ -749,10 +739,3 @@ function KanbanPage() {
 }
 
 export default KanbanPage;
-
-// export default withAuthGuard(KanbanPage, {
-//   requiredRoles: ["admin", "hr"],
-//   fallbackPath: "/dashboard",
-//   checkAllowance: false,
-//   allowAuthenticated: true,
-// });

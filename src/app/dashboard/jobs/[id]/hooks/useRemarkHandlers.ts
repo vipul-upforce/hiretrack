@@ -9,7 +9,7 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { User } from '@/lib/features/users/usersApi';
 import { usePathname } from 'next/navigation';
 import dayjs, { Dayjs } from 'dayjs';
-import { followUpSepretorPatternRegex } from '@/lib/constants';
+import logger from '@/lib/logger';
 
 export const useRemarkHandlers = (
   localCandidate: Candidate | null,
@@ -30,8 +30,8 @@ export const useRemarkHandlers = (
       : '',
   );
   const [newFollowUpDate, setNewFollowUpDate] = useState<Dayjs | null>(
-    localCandidate?.followUp?.date
-      && (localCandidate?.followUp?.date as string).length > 1
+    localCandidate?.followUp?.date &&
+      (localCandidate?.followUp?.date as string).length > 1
       ? dayjs(localCandidate?.followUp?.date)
       : null,
   );
@@ -52,8 +52,8 @@ export const useRemarkHandlers = (
   // Update follow-up state when candidate data changes
   useEffect(() => {
     if (
-      localCandidate?.followUp?.note
-      && localCandidate?.followUp?.note.length > 1
+      localCandidate?.followUp?.note &&
+      localCandidate?.followUp?.note.length > 1
     ) {
       setNewFollowUp(localCandidate.followUp.note);
     } else {
@@ -62,8 +62,8 @@ export const useRemarkHandlers = (
     }
 
     if (
-      localCandidate?.followUp?.date
-      && (localCandidate?.followUp?.date as string).length > 1
+      localCandidate?.followUp?.date &&
+      (localCandidate?.followUp?.date as string).length > 1
     ) {
       setNewFollowUpDate(dayjs(localCandidate.followUp.date));
     } else {
@@ -71,7 +71,6 @@ export const useRemarkHandlers = (
     }
   }, [localCandidate?.followUp?.note, localCandidate?.followUp?.date]);
 
-  // alert(`${user?.role!} + ${isSubRemarkPrivate}`);
   const handleRemarkUpdate = async (
     id: string,
     description: string,
@@ -102,9 +101,9 @@ export const useRemarkHandlers = (
         refetchAssignment?.();
       }
       if (
-        pathname !== '/dashboard'
-        && pathname !== '/dashboard/calendar'
-        && !pathname?.startsWith('/candidate')
+        pathname !== '/dashboard' &&
+        pathname !== '/dashboard/calendar' &&
+        !pathname?.startsWith('/candidate')
       ) {
         await refetch();
       }
@@ -118,7 +117,7 @@ export const useRemarkHandlers = (
         description: 'Remark status updated successfully',
       });
     } catch (e) {
-      console.error('Failed to update remark:', e);
+      logger.error('Failed to update remark:', e);
       toast({
         title: 'Error',
         description: 'Failed to update remark. Please try again.',
@@ -128,7 +127,6 @@ export const useRemarkHandlers = (
   };
 
   const handleAddRemark = async (selectedMentionUserIds?: string[]) => {
-    // debugger;
     if (!newRemark.trim() || !user?.id) {
       toast({
         title: 'Error',
@@ -137,7 +135,6 @@ export const useRemarkHandlers = (
       });
       return;
     }
-    // console.log(user, "remark-user");
 
     setIsRemarkSubmitting(true);
     try {
@@ -185,8 +182,8 @@ export const useRemarkHandlers = (
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
 
-      localCandidate
-        && (await updateCandidateHistory({
+      localCandidate &&
+        (await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
@@ -202,14 +199,13 @@ export const useRemarkHandlers = (
       }
 
       if (pathname === '/dashboard/search') {
-        // debugger;
         await refetchCandidates?.();
         await refetch();
       }
       if (
-        pathname !== '/dashboard'
-        && !pathname?.endsWith('calendar')
-        && !pathname?.startsWith('/candidate')
+        pathname !== '/dashboard' &&
+        !pathname?.endsWith('calendar') &&
+        !pathname?.startsWith('/candidate')
       ) {
         await refetch();
       }
@@ -241,26 +237,14 @@ export const useRemarkHandlers = (
     try {
       const newFollowUpObj = {
         note: null,
-        // date: newFollowUpDate?.toISOString() || "",
         date: null,
-        // rating: remarkRating ? Number(remarkRating) : undefined,
         userId: {
           _id: user?.id,
           name: user?.name,
           email: user?.email,
         },
       };
-      // const newFollowUpHistoryObj = {
-      //   // isPrivate: isSubRemarkPrivate,
-      //   note: String(newFollowUp).trim(),
-      //   date: new Date().toISOString(),
-      //   // rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
-      //   userId: {
-      //     _id: user.id,
-      //     name: user.name,
-      //     email: user.email,
-      //   },
-      // };
+ 
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
@@ -281,16 +265,6 @@ export const useRemarkHandlers = (
         followUp: newFollowUpObj,
       };
 
-      // if (
-      //   pathname !== "/dashboard" &&
-      //   !pathname?.endsWith("calendar") &&
-      //   !pathname?.startsWith("/candidate")
-      // ) {
-      //   await refetch();
-      // }
-      // if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
-      //   await refetchAssignment?.();
-      // }
       const result = await updateCandidate(updateData).unwrap();
       if (onUpdate && result && pathname !== '/dashboard/calendar') {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -299,8 +273,8 @@ export const useRemarkHandlers = (
       if (onUpdate && localCandidate) {
         await onUpdate(localCandidate);
       }
-      localCandidate
-        && (await updateCandidateHistory({
+      localCandidate &&
+        (await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
@@ -311,9 +285,9 @@ export const useRemarkHandlers = (
         await refetch();
       }
       if (
-        pathname !== '/dashboard'
-        && !pathname?.endsWith('calendar')
-        && !pathname?.startsWith('/candidate')
+        pathname !== '/dashboard' &&
+        !pathname?.endsWith('calendar') &&
+        !pathname?.startsWith('/candidate')
       ) {
         await refetch();
       }
@@ -323,7 +297,6 @@ export const useRemarkHandlers = (
       }
       setNewFollowUp('');
       setNewFollowUpDate(null);
-      // setRemarkRatingHistory(null);
 
       toast({
         title: 'Success',
@@ -352,8 +325,6 @@ export const useRemarkHandlers = (
     }
     // debugger;
     if (!user?.id) {
-      console.log('newFollowUp', newFollowUp);
-      console.log('user', user);
 
       toast({
         title: 'Error',
@@ -382,17 +353,7 @@ export const useRemarkHandlers = (
         },
       };
       setMADFollowup(null);
-      // const newFollowUpHistoryObj = {
-      //   // isPrivate: isSubRemarkPrivate,
-      //   note: String(newFollowUp).trim(),
-      //   date: new Date().toISOString(),
-      //   // rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
-      //   userId: {
-      //     _id: user.id,
-      //     name: user.name,
-      //     email: user.email,
-      //   },
-      // };
+  
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
@@ -413,16 +374,6 @@ export const useRemarkHandlers = (
         followUp: newFollowUpObj,
       };
 
-      // if (
-      //   pathname !== "/dashboard" &&
-      //   !pathname?.endsWith("calendar") &&
-      //   !pathname?.startsWith("/candidate")
-      // ) {
-      //   await refetch();
-      // }
-      // if (pathname === "/dashboard" && !pathname?.startsWith("/candidate")) {
-      //   await refetchAssignment?.();
-      // }
       const result = await updateCandidate(updateData).unwrap();
       if (onUpdate && result && pathname !== '/dashboard/calendar') {
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -431,8 +382,8 @@ export const useRemarkHandlers = (
       if (onUpdate && localCandidate) {
         await onUpdate(localCandidate);
       }
-      localCandidate
-        && (await updateCandidateHistory({
+      localCandidate &&
+        (await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
@@ -443,9 +394,9 @@ export const useRemarkHandlers = (
         await refetch();
       }
       if (
-        pathname !== '/dashboard'
-        && !pathname?.endsWith('calendar')
-        && !pathname?.startsWith('/candidate')
+        pathname !== '/dashboard' &&
+        !pathname?.endsWith('calendar') &&
+        !pathname?.startsWith('/candidate')
       ) {
         await refetch();
       }
@@ -455,7 +406,6 @@ export const useRemarkHandlers = (
       }
       setNewFollowUp('');
       setNewFollowUpDate(null);
-      // setRemarkRatingHistory(null);
 
       toast({
         title: 'Success',
@@ -473,27 +423,6 @@ export const useRemarkHandlers = (
       setIsFollowUpSubmitting(false);
     }
   };
-
-  // const handleFollowUp = async()=>{
-  //   try{
-
-  //     const updatedCandidate = {
-  //       ...localCandidate,
-  //       followUp: null,
-  //     };
-
-  //     const result = await updateCandidate(updatedCandidate).unwrap();
-
-  //   }catch(error){
-  //     toast({
-  //       title:
-  //         "Error: " +
-  //         (error instanceof Error ? error.message : "Unknown error"),
-  //       description: "Failed to unassign interviewer",
-  //       variant: "destructive",
-  //     });
-  //   }
-  // }
 
   return {
     newRemark,

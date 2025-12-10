@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 import mongoose from 'mongoose';
 
 import path from 'path';
@@ -12,6 +10,7 @@ import {
 } from 'cloudinary';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Settings, FileUrlMapping } from './mongodb';
+import logger from './logger';
 // import { NextRequest } from "next/server";
 
 export const uploadFile = async (
@@ -21,12 +20,10 @@ export const uploadFile = async (
   fileName?: string,
 ) => {
   if (!Settings) {
-    console.error('Settings Model not found');
     return '';
   }
   const settings = await Settings.findOne({ organizationId });
   if (!settings) {
-    console.error('Settings not found');
     return '';
   }
   const fileStorageSettings = settings.fileStorage;
@@ -59,7 +56,7 @@ export const uploadFile = async (
     );
     return uploadResult?.secure_url;
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    logger.error('Cloudinary upload error:', error);
     if (typeof error === 'object' && error !== null && 'message' in error) {
       throw new Error(
         `File upload to Cloudinary failed: ${(error as { message: string }).message}`,
@@ -77,13 +74,11 @@ export const uploadFileToS3 = async (
   fileName?: string,
 ) => {
   if (!Settings) {
-    console.error('Settings Model not found');
     return '';
   }
 
   const settings = await Settings.findOne({ organizationId });
   if (!settings) {
-    console.error('Settings not found');
     return '';
   }
 
@@ -96,11 +91,10 @@ export const uploadFileToS3 = async (
   };
 
   if (
-    !s3Settings.awsRegion
-    || !s3Settings.awsAccessKeyId
-    || !s3Settings.awsSecretAccessKey
+    !s3Settings.awsRegion ||
+    !s3Settings.awsAccessKeyId ||
+    !s3Settings.awsSecretAccessKey
   ) {
-    console.error('Missing S3 credentials');
     return '';
   }
 
@@ -131,23 +125,27 @@ export const uploadFileToS3 = async (
 
     await s3Client.send(command);
 
-    // Construct the S3 URL
     return `https://${s3Settings.awsBucketName}.s3.${s3Settings.awsRegion}.amazonaws.com/${type}/${finalFileName}`;
   } catch (error) {
-    console.error('S3 upload error:', error);
-
     let userFriendlyMessage = 'File upload failed. Please try again later.';
 
     if (typeof error === 'object' && error !== null) {
       // If it's a standard error with a message
       if ('message' in error) {
-        userFriendlyMessage = 'File upload failed. Please check your AWS API Storage configuration and try again';
+        userFriendlyMessage =
+          'File upload failed. Please check your AWS API Storage configuration and try again';
       }
     }
 
     throw new Error(`S3 upload failed: ${userFriendlyMessage}`);
   }
 };
+
+async function ensureDirectoryExists(dirPath: string) {
+  if (!existsSync(dirPath)) {
+    await promises.mkdir(dirPath, { recursive: true });
+  }
+}
 
 export async function saveFileLocally(
   base64: string,
@@ -170,7 +168,7 @@ export async function saveFileLocally(
   while (fs.existsSync(uniqueFilePath)) {
     uniqueFileName = `${base}_${counter}${ext}`;
     uniqueFilePath = path.join('..', 'assets', folder, uniqueFileName);
-    counter++;
+    counter += 1;
   }
   filePath = uniqueFilePath;
 
@@ -219,12 +217,6 @@ export interface SingleFileField {
   name: string;
   type: string;
   size: number;
-}
-
-async function ensureDirectoryExists(dirPath: string) {
-  if (!existsSync(dirPath)) {
-    await promises.mkdir(dirPath, { recursive: true });
-  }
 }
 
 export async function handleFileAttachments(
@@ -308,13 +300,13 @@ export async function handleCustomFieldFiles(
   for (const fieldKey in customFields) {
     const field = customFields[fieldKey];
     if (
-      Array.isArray(field)
-      && field.length > 0
-      && typeof field[0] === 'object'
-      && field[0] !== null
-      && 'base64' in field[0]
-      && 'type' in field[0]
-      && 'name' in field[0]
+      Array.isArray(field) &&
+      field.length > 0 &&
+      typeof field[0] === 'object' &&
+      field[0] !== null &&
+      'base64' in field[0] &&
+      'type' in field[0] &&
+      'name' in field[0]
     ) {
       const files = field as CustomFieldFile[];
       const processedFiles = [];
@@ -353,7 +345,8 @@ export async function handleCustomFieldFiles(
           }
 
           if (realUrl && FileUrlMapping) {
-            const fileId = file.id || new mongoose.Types.ObjectId().toHexString();
+            const fileId =
+              file.id || new mongoose.Types.ObjectId().toHexString();
             await FileUrlMapping.create({ fileId, realUrl });
             const proxiedUrl = `/api/file/${fileId}`;
             processedFiles.push({ ...file, base64: proxiedUrl, id: fileId });
@@ -453,8 +446,10 @@ export async function uploadFileToProvider(
 
     return { success: true, url, fileName };
   } catch (error: unknown) {
-    console.error('Error uploading file to provider:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Upload failed',
+    };
   }
 }
 
@@ -505,7 +500,10 @@ export async function getFileFromProvider(
         return { success: false, error: 'Unknown storage provider' };
     }
   } catch (error: unknown) {
-    console.error('Error getting file from provider:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Failed to get file' };
+    logger.error('Error getting file from provider:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get file',
+    };
   }
 }

@@ -1,6 +1,6 @@
 import CryptoJS from 'crypto-js';
-import Cookies from 'js-cookie';
 import { generateOrgJwtSecret } from './jwtSecretGenerator';
+import logger from './logger';
 /**
  * Encrypts a string using AES encryption
  * @param text - The text to encrypt
@@ -8,14 +8,12 @@ import { generateOrgJwtSecret } from './jwtSecretGenerator';
  */
 export function encryptText(text: string, orgId: string): string {
   if (!text) return '';
-  console.log(orgId, 'orgId in encryptText');
   const ENCRYPTION_KEY = generateOrgJwtSecret(orgId);
-  console.log(ENCRYPTION_KEY, 'ENCRYPTION_KEY in encryptText');
   try {
     const encrypted = CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
     return encrypted;
   } catch (error) {
-    console.error('Encryption error:', error);
+    logger.error('Encryption error:', error);
     throw new Error('Failed to encrypt text');
   }
 }
@@ -33,7 +31,7 @@ export function decryptText(encryptedText: string, orgId: string): string {
     const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     return decrypted;
   } catch (error) {
-    console.error('Decryption error:', error);
+    logger.error('Decryption error:', error);
     // If decryption fails, assume it's already plaintext (for backward compatibility)
     return encryptedText;
   }

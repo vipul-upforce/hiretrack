@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import logger from '@/lib/logger';
 import { useSelector } from 'react-redux';
 import type { User } from '@/lib/features/org/orgApi';
 import { HeaderControls } from './components/header-controls';
@@ -80,7 +81,7 @@ export default function AnalyticsPage() {
           setOrganizationId(user.organizationId);
         }
       } catch (error) {
-        console.error('Error getting user organization:', error);
+        logger.error('Error getting user organization:', error);
       } finally {
         setIsLoadingOrg(false);
       }
@@ -94,7 +95,7 @@ export default function AnalyticsPage() {
     try {
       await Promise.all([refetchFunnel(), refetchJob(), refetchInterview(), refetchTrends()]);
     } catch (error) {
-      console.error('Error refreshing analytics data:', error);
+      logger.error('Error refreshing analytics data:', error);
     } finally {
       setIsRefreshing(false);
     }
@@ -326,13 +327,13 @@ export default function AnalyticsPage() {
       if (exportData.length > 2) {
         exportToCSV(exportData, 'comprehensive_analytics_report');
       } else {
-        console.warn('No analytics data available to export');
+        logger.warn('No analytics data available to export');
         if (exportData.length > 0) {
           exportToCSV(exportData, 'analytics_report_empty');
         }
       }
     } catch (error) {
-      console.error('Error exporting analytics data:', error);
+      logger.error('Error exporting analytics data:', error);
     }
   };
 

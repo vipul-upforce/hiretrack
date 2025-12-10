@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Cookies from 'js-cookie';
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import {
   useGetCaptchaConfigsQuery,
   useUpdateCaptchaMutation,
@@ -12,10 +13,10 @@ export const useCaptchaSettings = (onClose: () => void) => {
   const { toast } = useToast();
   const orgId = Cookies.get('org_id');
 
-  const {
-    data, isLoading, refetch, error,
-  } = useGetCaptchaConfigsQuery(undefined);
-  const [updateCaptchaConfigs, { isLoading: isUpdating }] = useUpdateCaptchaMutation();
+  const { data, isLoading, refetch, error } =
+    useGetCaptchaConfigsQuery(undefined);
+  const [updateCaptchaConfigs, { isLoading: isUpdating }] =
+    useUpdateCaptchaMutation();
 
   const [decryptedValues, setDecryptedValues] = useState<{
     siteKey: string;
@@ -37,7 +38,7 @@ export const useCaptchaSettings = (onClose: () => void) => {
             secretKey: decryptedSecretKey || '',
           });
         } catch (e) {
-          console.error('Failed to decrypt captcha keys', e);
+          logger.error('Failed to decrypt captcha keys', e);
         }
       }
     };

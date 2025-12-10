@@ -4,6 +4,7 @@ import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dia
 import { Assignment } from '@/app/dashboard/page';
 import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
 import { toast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 
 function ActionItems({
   assignment,
@@ -53,7 +54,7 @@ function ActionItems({
         description: 'Candidate data refreshed successfully',
       });
     } catch (error) {
-      console.error('Failed to refetch candidate:', error);
+      logger.error('Failed to refetch candidate:', error);
       toast({
         title: 'Error',
         description: 'Failed to refresh candidate data. Please try again.',
@@ -123,25 +124,20 @@ function ActionItems({
         openRemarks={openRemarksFor === candidate._id}
         setOpenRemarksFor={setOpenRemarksFor}
         onDashboard
-        onEditClick={(candidate) => {
+        onEditClick={() => {
           // Handle edit - could open edit dialog
-          console.log('Edit candidate:', candidate);
         }}
-        onAssignClick={(candidate) => {
+        onAssignClick={() => {
           // Handle assign - could open assign dialog
-          console.log('Assign candidate:', candidate);
         }}
-        onMarkAsDoneClick={(candidate) => {
+        onMarkAsDoneClick={() => {
           // Handle mark as done
-          console.log('Mark as done:', candidate);
         }}
-        onFollowUpClick={(candidate) => {
+        onFollowUpClick={() => {
           // Handle follow up
-          console.log('Follow up:', candidate);
         }}
-        onAddRemarkClick={(candidate) => {
+        onAddRemarkClick={() => {
           // Handle add remark
-          console.log('Add remark:', candidate);
         }}
       />
       <CandidateDetailsDialog

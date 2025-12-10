@@ -7,6 +7,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useCandidateSignupMutation } from '@/lib/features/candidate/candidateApi';
 import { useGetCaptchaConfigsQuery } from '@/lib/features/settings/settingsApi';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
+import logger from '@/lib/logger';
 import { SignupFormValues, PortalSettings } from '../types';
 
 export const useSignupLogic = () => {
@@ -45,7 +46,7 @@ export const useSignupLogic = () => {
           router.push('/signup');
         }
       } catch (e) {
-        console.error('Org check failed', e);
+        logger.error('Org check failed', e);
       }
     }
     checkAllowance();
@@ -67,7 +68,7 @@ export const useSignupLogic = () => {
       if (captchaConfig?.captcha?.siteKey) {
         const decrypted = await getDecodedCaptcha(
           captchaConfig.captcha.siteKey,
-          organizationId,
+          organizationId!,
         );
         if (decrypted) setDecryptedSiteKey(decrypted);
       }
@@ -120,7 +121,7 @@ export const useSignupLogic = () => {
           }));
         }
       } catch (error) {
-        console.error('Failed to fetch portal settings:', error);
+        logger.error('Failed to fetch portal settings:', error);
         setPortalSettings((prev) => ({
           ...prev,
           isLoading: false,
@@ -148,14 +149,15 @@ export const useSignupLogic = () => {
   // Helper: Get Logo URL
   const getLogoUrl = () => {
     if (
-      portalSettings.hasError
-      || (!portalSettings.isLoading
-        && !portalSettings.portalLogo
-        && !portalSettings.portalLogoDark)
+      portalSettings.hasError ||
+      (!portalSettings.isLoading &&
+        !portalSettings.portalLogo &&
+        !portalSettings.portalLogoDark)
     ) {
       return theme === 'dark' ? '/logo_dark.png' : '/logo.png';
     }
-    if (theme === 'dark' && portalSettings.portalLogoDark) return portalSettings.portalLogoDark;
+    if (theme === 'dark' && portalSettings.portalLogoDark)
+      return portalSettings.portalLogoDark;
     if (portalSettings.portalLogo) return portalSettings.portalLogo;
     return '';
   };
@@ -188,8 +190,9 @@ export const useSignupLogic = () => {
     } catch (error: unknown) {
       let errorMessage = 'Failed to create account';
       if (error && typeof error === 'object' && 'data' in error) {
-        errorMessage = (error.data as { error: string }).error
-          || 'Failed to parse user data';
+        errorMessage =
+          (error.data as { error: string }).error ||
+          'Failed to parse user data';
       }
       setStatus(errorMessage);
       toast({

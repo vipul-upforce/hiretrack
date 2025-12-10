@@ -9,6 +9,56 @@ export interface JobDetail {
   description: string;
 }
 
+export type CandidateStatus =
+  | 'applied'
+  | 'screening'
+  | 'shortlisted'
+  | 'processing'
+  | 'accepted'
+  | 'rejected'
+  | 'default';
+
+export interface Remark {
+  description: string;
+  date: string;
+  rating?: number;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+}
+
+interface Assignment {
+  interviewerId:
+    | string
+    | { _id: string; name: string; email: string; duration: string };
+  time: string;
+  duration?: string;
+  assignedAt: string;
+  googleMeet?: {
+    eventId: string;
+    meetingLink: string;
+    htmlLink: string;
+    summary: string;
+    description: string;
+    meetingAttachments?: Attachment[];
+    meetingNotes?: string;
+    attendeeResponses?: Array<{
+      email: string;
+      name?: string;
+      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
+      comment?: string;
+      lastUpdated: Date;
+      notificationSent?: boolean;
+    }>;
+    lastSyncedAt?: Date;
+  };
+  status?: string;
+  assignment?: { status: string };
+  jobId?: Job;
+}
+
 export interface Candidate {
   [x: string]: any;
   _id: string;
@@ -128,58 +178,8 @@ export interface Candidate {
   };
 }
 
-export type CandidateStatus =
-  | 'applied'
-  | 'screening'
-  | 'shortlisted'
-  | 'processing'
-  | 'accepted'
-  | 'rejected'
-  | 'default';
-
 export interface CandidateColumn {
   id: CandidateStatus;
   title: string;
   candidates: Candidate[];
-}
-
-export interface Remark {
-  description: string;
-  date: string;
-  rating?: number;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-}
-
-interface Assignment {
-  interviewerId:
-    | string
-    | { _id: string; name: string; email: string; duration: string };
-  time: string;
-  duration?: string;
-  assignedAt: string;
-  googleMeet?: {
-    eventId: string;
-    meetingLink: string;
-    htmlLink: string;
-    summary: string;
-    description: string;
-    meetingAttachments?: Attachment[];
-    meetingNotes?: string;
-    attendeeResponses?: Array<{
-      email: string;
-      name?: string;
-      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
-      comment?: string;
-      lastUpdated: Date;
-      notificationSent?: boolean;
-    }>;
-    lastSyncedAt?: Date;
-  };
-  status?: string;
-  assignment?: { status: string };
-  jobId?: Job;
 }

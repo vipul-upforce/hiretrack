@@ -14,6 +14,7 @@ import { useTheme } from '@/components/theme-provider';
 import { useSelector } from 'react-redux';
 
 // Import sub-components
+import logger from '@/lib/logger';
 import { EmailTemplateSelector } from './email-candidate-components/EmailTemplateSelector';
 import { EmailEditor } from './email-candidate-components/EmailEditor';
 import { EmailRecipients } from './email-candidate-components/EmailRecipients';
@@ -111,7 +112,7 @@ export function EmailCandidateDialog({
           }
         }
       } catch (error) {
-        console.error('Failed to load templates:', error);
+        logger.error('Failed to load templates:', error);
       } finally {
         setTemplateLoading(false);
       }

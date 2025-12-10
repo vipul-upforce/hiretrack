@@ -1,10 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import { EvaluationConfig, EvaluationConfigKey } from '../types';
-import {
-  DEFAULT_TEMPERATURE,
-  DEFAULT_MAX_PAGES,
-} from '../constants';
+import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PAGES } from '../constants';
 
 export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
   const { toast } = useToast();
@@ -52,7 +50,7 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
         });
       }
     } catch (error) {
-      console.error('Failed to fetch evaluation settings:', error);
+      logger.error('Failed to fetch evaluation settings:', error);
       toast({
         title: 'Error',
         description: 'Failed to load settings. Please try again.',
@@ -101,7 +99,7 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to update settings',

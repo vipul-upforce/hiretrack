@@ -5,6 +5,7 @@ import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
 
 import { useSelector } from 'react-redux';
 import { usePathname } from 'next/navigation';
+import logger from '@/lib/logger';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useSelector((state: any) => state.auth || {});
@@ -35,14 +36,17 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isHydrated) return;
 
-    const title = portalSettings?.portalName
-      || uriOrgName
-      || user?.organizationInfo?.name
-      || 'HireTrack';
+    const title =
+      portalSettings?.portalName ||
+      uriOrgName ||
+      user?.organizationInfo?.name ||
+      'HireTrack';
     document.title = title;
 
     const faviconUrl = portalSettings?.portalFavicon?.url || '/favicon.png';
-    const favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    const favicon = document.querySelector(
+      'link[rel="icon"]',
+    ) as HTMLLinkElement;
 
     if (favicon) {
       favicon.href = faviconUrl;
@@ -100,7 +104,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   // if there is an error then fallback to default info.
   if (isError) {
-    console.log('Failed to fetch portal settings : ', error);
+    logger.error('Failed to fetch portal settings : ', error);
 
     document.title = uriOrgName || user?.organizationInfo?.name || 'HireTrack';
     const favicon = document.querySelector(

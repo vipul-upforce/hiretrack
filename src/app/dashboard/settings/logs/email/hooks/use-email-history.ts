@@ -7,7 +7,6 @@ export function useEmailHistory() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
   const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(
     null,
   );
@@ -20,11 +19,9 @@ export function useEmailHistory() {
     setPage(1); // Reset page on search change
   }, [debouncedSearchQuery]);
 
-  const {
-    data, error, isLoading, isFetching, refetch,
-  } = useGetEmailHistoryQuery({
+  const { data, isLoading, isFetching, refetch } = useGetEmailHistoryQuery({
     page,
-    limit: pageSize,
+    limit: 20,
     search,
     status: statusFilter,
   });

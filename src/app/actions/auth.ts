@@ -11,8 +11,6 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
   try {
     const JWT_SECRET = generateOrgJwtSecret(orgId);
 
-    // console.log(JWT_SECRET, "JWT_SECRET-2");
-
     if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -64,37 +62,6 @@ export interface AuthenticatedUser {
   fileStorage?: string;
 }
 
-// export interface AuthenticatedUserResponse {
-//   success: boolean;
-//   user: AuthenticatedUser;
-// }
-
-// export async function getAuthenticatedUser(
-//   request: NextRequest,
-//   requiredRole?: string | string[]
-// ): Promise<AuthenticatedUser | null | NextResponse> {
-//   const token = request.cookies.get("auth_token")?.value;
-//   const orgId = request.cookies.get("org_id")?.value;
-
-//   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-//   const { success, user } = await verifyAndDecryptToken(token, orgId);
-//   if (!success || !user) {
-//     return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-//   }
-//   // If a role is specified, validate it
-//   if (requiredRole) {
-//     const rolesToCheck = Array.isArray(requiredRole)
-//       ? requiredRole
-//       : [requiredRole];
-
-//     if (!rolesToCheck.includes(user.role)) {
-//       return NextResponse.json({ error: "Unauthorized or role not matching" }, { status: 401 });
-//     }
-//   }
-//   return user as AuthenticatedUser;
-// }
-
 export async function getAuthenticatedUser(
   request: NextRequest,
   requiredRole?: string | string[],
@@ -135,10 +102,7 @@ export async function getAuthenticatedUser(
 }
 
 export const signToken = async (payload: unknown, orgId: string) => {
-  // console.log(payload, "payload-1 =-d--d-d");
-  // console.log(orgId, "orgId-1 =-d--d-d");
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  // console.log(JWT_SECRET, "JWT_SECRET-3 secrate keyt");
 
   if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 

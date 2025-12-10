@@ -36,13 +36,14 @@ export const scrollToError = (
     const cfKey = Object.keys(customFieldErrors)[0];
     if (cfKey) {
       // Try multiple selector strategies for custom fields
-      element = (document.querySelector(
-        `[id="customFields.${cfKey}"]`,
-      ) as HTMLElement)
-        || (document.querySelector(
+      element =
+        (document.querySelector(
+          `[id="customFields.${cfKey}"]`,
+        ) as HTMLElement) ||
+        (document.querySelector(
           `[id="${firstErrorKey}.${cfKey}"]`,
-        ) as HTMLElement)
-        || (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
+        ) as HTMLElement) ||
+        (document.querySelector(`[data-field-name="${cfKey}"]`) as HTMLElement);
     }
   } else {
     // Handle top-level fields
@@ -60,7 +61,5 @@ export const scrollToError = (
   if (element) {
     element.scrollIntoView({ behavior: 'smooth', block: scrollBlock });
     element.focus({ preventScroll: preventScrollOnFocus });
-  } else {
-    console.warn(`No element found for error key: ${firstErrorKey}`);
   }
 };

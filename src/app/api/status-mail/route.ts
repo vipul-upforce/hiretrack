@@ -183,8 +183,6 @@ function scheduleEmail(
       try {
         await sendQueuedEmail(queueItem.data, undefined, queueItem.historyIds);
       } catch (error) {
-        console.error(`Failed to send email for ${key}:`, error);
-        // Update history to failed status
         if (queueItem.historyIds.length > 0) {
           await updateEmailHistoryStatus(
             queueItem.historyIds,

@@ -4,6 +4,7 @@ import {
   useUpdateMailTemplatesMutation,
 } from '@/lib/features/settings/settingsApi';
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import { EmailTemplate, MailTemplatePayload } from '../types';
 import { defaultTemplates, templateVariables } from '../constants';
 
@@ -13,7 +14,8 @@ export const useEmailTemplates = () => {
   const [templates, setTemplates] = useState<EmailTemplate[]>([
     ...defaultTemplates,
   ]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('job-application-hr');
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<string>('job-application-hr');
   const [previewMode, setPreviewMode] = useState(false);
 
   const {
@@ -70,13 +72,13 @@ export const useEmailTemplates = () => {
           title: 'Email templates saved successfully',
           variant: 'default',
         });
-      } catch (error) {
+      } catch {
         toast({
           title: 'Failed to save email templates',
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'An error occurred while saving',
         variant: 'destructive',
@@ -91,7 +93,11 @@ export const useEmailTemplates = () => {
     field: keyof EmailTemplate,
     value: string,
   ) => {
-    setTemplates((prev) => prev.map((template) => (template.id === id ? { ...template, [field]: value } : template)));
+    setTemplates((prev) =>
+      prev.map((template) =>
+        template.id === id ? { ...template, [field]: value } : template,
+      ),
+    );
   };
 
   const resetToDefault = (id: string) => {
@@ -99,7 +105,9 @@ export const useEmailTemplates = () => {
     if (defaultTemplate) {
       // Create a deep copy of the default template
       const resetTemplate = JSON.parse(JSON.stringify(defaultTemplate));
-      setTemplates((prev) => prev.map((template) => (template.id === id ? resetTemplate : template)));
+      setTemplates((prev) =>
+        prev.map((template) => (template.id === id ? resetTemplate : template)),
+      );
       toast({ title: 'Template reset to default', variant: 'default' });
     } else {
       toast({ title: 'Default template not found', variant: 'destructive' });
@@ -207,7 +215,7 @@ export const useEmailTemplates = () => {
         variant: 'default',
         title: 'Custom template added and saved successfully',
       });
-    } catch (error) {
+    } catch {
       toast({
         variant: 'destructive',
         title: 'Failed to save custom template',
@@ -281,9 +289,9 @@ export const useEmailTemplates = () => {
 
   useEffect(() => {
     if (
-      templateData
-      && templateData.templates
-      && Object.keys(templateData.templates).length > 0
+      templateData &&
+      templateData.templates &&
+      Object.keys(templateData.templates).length > 0
     ) {
       const loadedTemplates = Object.values(templateData.templates).map(
         (template: any) => ({
@@ -292,10 +300,10 @@ export const useEmailTemplates = () => {
           subject: template.subject,
           content: template.html,
           variables:
-            template.variables
-            || defaultTemplates.find((t) => t.id === template.templateId)
-              ?.variables
-            || templateVariables,
+            template.variables ||
+            defaultTemplates.find((t) => t.id === template.templateId)
+              ?.variables ||
+            templateVariables,
           isCustom: !defaultTemplates.find((t) => t.id === template.templateId),
           isDefault: !!defaultTemplates.find(
             (t) => t.id === template.templateId,
@@ -321,7 +329,7 @@ export const useEmailTemplates = () => {
     }
 
     if (error) {
-      console.error('Failed to load email templates:', error);
+      logger.error('Failed to load email templates:', error);
       toast({
         variant: 'destructive',
         title: 'Failed to load email templates',

@@ -21,6 +21,7 @@ import {
   Palette,
   ShieldCheck,
 } from 'lucide-react';
+import logger from '@/lib/logger';
 
 export interface OnboardingStep {
   id: string;
@@ -92,7 +93,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
-  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [onboardingStatus, setOnboardingStatus] =
+    useState<OnboardingStatus | null>(null);
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -109,10 +111,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
   useEffect(() => {
     if (!isLoading && onboardingStatus && user?.role === 'admin') {
-      const shouldShow = !onboardingStatus.isCompleted
-        && !onboardingStatus.doNotShowAgain
-        && (progress?.percentage || 0) < 50
-        && onboardingStatus.currentStep === 0;
+      const shouldShow =
+        !onboardingStatus.isCompleted &&
+        !onboardingStatus.doNotShowAgain &&
+        (progress?.percentage || 0) < 50 &&
+        onboardingStatus.currentStep === 0;
 
       if (shouldShow) {
         setTimeout(() => setIsOpen(true), 1000);
@@ -134,7 +137,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         await refreshProgress(status);
       }
     } catch (error) {
-      console.error('Error loading onboarding:', error);
+      logger.error('Error loading onboarding:', error);
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +149,6 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       if (!data) return;
 
       setProgress(data.progress);
-      console.log(data.progress, 'data.progress');
 
       // SAFELY MAP STEPS
       const updatedSteps = getDefaultSteps().map((step) => ({
@@ -157,13 +159,11 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
 
       setSteps(updatedSteps);
     } catch (error) {
-      console.error('Error refreshing progress:', error);
+      logger.error('Error refreshing progress:', error);
     }
   };
 
-  const updateOnboardingStatus = async (
-    updates: Partial<OnboardingStatus>,
-  ) => {
+  const updateOnboardingStatus = async (updates: Partial<OnboardingStatus>) => {
     try {
       const updatedStatus = await onboardingApi.updateStatus(updates);
       if (!updatedStatus) return;
@@ -173,7 +173,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // REFRESH WITH NEWEST STATUS
       await refreshProgress(updatedStatus);
     } catch (error) {
-      console.error('Error updating status:', error);
+      logger.error('Error updating status:', error);
     }
   };
 
@@ -207,7 +207,8 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     await updateOnboardingStatus(updated);
   };
 
-  const validateStep = async (stepId: string): Promise<boolean> => await onboardingApi.validateStep(stepId);
+  const validateStep = async (stepId: string): Promise<boolean> =>
+    await onboardingApi.validateStep(stepId);
 
   const doNotShowAgain = async () => {
     await updateOnboardingStatus({ doNotShowAgain: true });

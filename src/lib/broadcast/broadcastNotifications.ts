@@ -1,5 +1,6 @@
 import { signToken } from '@/app/actions/auth';
 import { INotification } from '@/lib/models/notification';
+import logger from '../logger';
 
 export async function broadcastNotification(
   orgId: string,
@@ -18,7 +19,7 @@ export async function broadcastNotification(
       const data = `data: ${JSON.stringify({ type: 'notification', notification: encoded })}\n\n`;
       client.controller.enqueue(encoder.encode(data));
     } catch (error) {
-      console.error(
+      logger.error(
         `Failed to send notification to client ${client.id}:`,
         error,
       );
@@ -50,7 +51,7 @@ export async function broadcastNotifications(
         const data = `data: ${JSON.stringify({ type: 'notifications', notifications: encoded })}\n\n`;
         client.controller.enqueue(encoder.encode(data));
       } catch (error) {
-        console.error(
+        logger.error(
           `Failed to send notifications to client ${client.id}:`,
           error,
         );
@@ -74,7 +75,7 @@ export function broadcastNotificationCount(
     try {
       client.controller.enqueue(encoder.encode(payload));
     } catch (error) {
-      console.error(`Failed to send count to client ${client.id}:`, error);
+      logger.error(`Failed to send count to client ${client.id}:`, error);
     }
   });
 }

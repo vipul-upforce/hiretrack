@@ -15,9 +15,7 @@ export class OpenAIProvider extends BaseAIProvider {
       const openai = new OpenAI({ apiKey });
 
       const resumeText = await this.extractTextFromPdf(base64Resume);
-      // console.log("Extracted resume text:", resumeText);
       const prompt = `${this.getStandardPrompt()}Resume Text: ${resumeText}`;
-      // console.log("⬇️⬇️⬇️⬇️ :", prompt);
 
       const selectedModel = modelName || getDefaultModel('openai');
       const response = await openai.chat.completions.create({
@@ -43,7 +41,6 @@ export class OpenAIProvider extends BaseAIProvider {
         throw new Error('No valid response from OpenAI');
       }
 
-      console.log('OpenAI resume processing response:', content);
       return this.parseJsonResponse(content);
     } catch (error) {
       throw new Error(
@@ -66,12 +63,10 @@ export class OpenAIProvider extends BaseAIProvider {
     const selectedModel = modelName || getDefaultModel('openai');
 
     const resumeText = await this.extractTextFromPdf(resumeBase64);
-    console.log('RESUME TECT: ', resumeText);
     const finalPrompt = `${prompt}
 
 Resume Text:
 ${resumeText}`;
-    console.log('FINAL PROMPT EVALUATION: ', finalPrompt);
     const response = await openai.chat.completions.create({
       model: selectedModel,
       messages: [
@@ -123,18 +118,19 @@ ${resumeText}`;
 
       return { isValid: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
 
       // Check for common error patterns
       if (
-        errorMessage.includes('Incorrect API key')
-        || errorMessage.includes('invalid_api_key')
+        errorMessage.includes('Incorrect API key') ||
+        errorMessage.includes('invalid_api_key')
       ) {
         return { isValid: false, error: 'Invalid API key' };
       }
       if (
-        errorMessage.includes('model')
-        && errorMessage.includes('does not exist')
+        errorMessage.includes('model') &&
+        errorMessage.includes('does not exist')
       ) {
         return { isValid: false, error: `Model '${selectedModel}' not found` };
       }

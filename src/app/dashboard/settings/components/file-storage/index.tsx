@@ -7,6 +7,7 @@ import {
   useGetFSConfigsQuery,
   useUpdateFSConfigsMutation,
 } from '@/lib/features/settings/settingsApi';
+import logger from '@/lib/logger';
 import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
 import { useTestConnection } from '@/hooks/use-test-connection';
 import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
@@ -37,10 +38,12 @@ export default function FileStorageOptions({
   );
 
   const { data, isLoading, refetch } = useGetFSConfigsQuery(undefined);
-  const [updateStorageConfigs, { isLoading: isUpdating }] = useUpdateFSConfigsMutation();
+  const [updateStorageConfigs, { isLoading: isUpdating }] =
+    useUpdateFSConfigsMutation();
 
   // Connection Testing
-  const { testConnection, isConnectionSuccessful, isTesting } = useTestConnection();
+  const { testConnection, isConnectionSuccessful, isTesting } =
+    useTestConnection();
 
   const signToken = async (payload: unknown, orgId: string) => {
     const JWT_SECRET = generateOrgJwtSecret(orgId);
@@ -61,7 +64,8 @@ export default function FileStorageOptions({
 
       return jwt;
     } catch (error) {
-      console.error('Token signing failed', error);
+      logger.error('Token signing failed', error);
+      return null;
     }
   };
 

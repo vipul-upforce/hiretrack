@@ -1,5 +1,6 @@
 'use client';
 
+import logger from '@/lib/logger';
 import { useEffect, useState } from 'react';
 
 interface MetadataOptions {
@@ -34,7 +35,6 @@ export const useDocumentMetadata = ({
     // Batch title updates with other DOM changes for smoothness
     const timeoutId = setTimeout(() => {
       document.title = title;
-      console.log('title>>>>>>>>>>>> ', title);
     }, 10);
 
     return () => clearTimeout(timeoutId);
@@ -82,7 +82,7 @@ export const useDocumentMetadata = ({
       const img = new Image();
       img.onload = () => updateFavicon(favicon);
       img.onerror = () => {
-        console.error('Failed to load favicon:', favicon);
+        logger.error('Failed to load favicon:', favicon);
         // You could set a default favicon here
       };
       img.src = favicon;

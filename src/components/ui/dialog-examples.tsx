@@ -64,7 +64,6 @@ export function DialogExamples() {
         isOpen={showExample === 'confirm'}
         onClose={() => setShowExample(null)}
         onConfirm={() => {
-          console.log('Confirmed!');
           setShowExample(null);
         }}
         title="Confirm Action"
@@ -84,7 +83,6 @@ export function DialogExamples() {
           setFormValue('');
         }}
         onSubmit={() => {
-          console.log('Submitted:', formValue);
           setShowExample(null);
           setFormValue('');
         }}
@@ -110,7 +108,6 @@ export function DialogExamples() {
         isOpen={showExample === 'delete'}
         onClose={() => setShowExample(null)}
         onConfirm={() => {
-          console.log('Deleted!');
           setShowExample(null);
         }}
         itemName="Important File"
@@ -151,7 +148,6 @@ export function DialogExamples() {
           setFormValue('');
         }}
         onSubmit={() => {
-          console.log('Quick created:', formValue);
           setShowExample(null);
           setFormValue('');
         }}

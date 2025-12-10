@@ -1,8 +1,9 @@
+// eslint-disable-next-line camelcase
 import { Geist, Geist_Mono } from 'next/font/google';
 import type { Metadata } from 'next';
 import './globals.css';
 import AuthInitializer from '@/components/AuthInitializer';
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import { getPortalMetadata } from '@/lib/getPortalMetadata';
 import { Providers } from './providers';
 import { ClientLayout } from './client-layout';
@@ -90,6 +91,7 @@ export default function RootLayout({
         <head>
           <link rel="icon" href="/favicon.png" />
           <script
+            // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{
               __html: `
               (function() {

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import {
   useGetBackupsQuery,
   useTakeSnapshotMutation,
@@ -18,18 +19,15 @@ export function useBackupsLogic() {
     isError: isErrorBackups,
   } = useGetBackupsQuery();
 
-  const [
-    takeSnapshot,
-    { isLoading: isTakingSnapshot, isError: _isErrorTakingSnapshot },
-  ] = useTakeSnapshotMutation();
+  const [takeSnapshot, { isLoading: isTakingSnapshot }] =
+    useTakeSnapshotMutation();
 
-  const [
-    deleteBackup,
-    { isLoading: isDeletingBackup, isError: _isErrorDeletingBackup },
-  ] = useDeleteBackupMutation();
+  const [deleteBackup, { isLoading: isDeletingBackup }] =
+    useDeleteBackupMutation();
 
   const files: BackupFile[] = backupsData?.files || [];
-  const globalLoading = isLoadingBackups || isTakingSnapshot || isDeletingBackup;
+  const globalLoading =
+    isLoadingBackups || isTakingSnapshot || isDeletingBackup;
 
   // Calculate Stats
   const backupStats: BackupStats = useMemo(() => {
@@ -46,7 +44,8 @@ export function useBackupsLogic() {
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     // Sort needed for finding oldest/newest
     const sortedByDate = [...files].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
     return {
@@ -61,9 +60,13 @@ export function useBackupsLogic() {
   }, [files]);
 
   // Prepared sorted files for display (Newest First)
-  const sortedFiles = useMemo(() => [...files]
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    .reverse(), [files]);
+  const sortedFiles = useMemo(
+    () =>
+      [...files]
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        .reverse(),
+    [files],
+  );
 
   // Handlers
   const handleTakeSnapshot = async () => {
@@ -74,7 +77,7 @@ export function useBackupsLogic() {
         description: 'Database snapshot has been taken and saved successfully.',
       });
     } catch (err) {
-      console.error('Failed to create snapshot:', err);
+      logger.error('Failed to create snapshot:', err);
       toast({
         title: 'Error',
         description: 'Failed to create database snapshot.',
@@ -93,7 +96,7 @@ export function useBackupsLogic() {
       setIsDeleteDialogOpen(false);
       setFileToDelete('');
     } catch (err) {
-      console.error('Failed to delete backup:', err);
+      logger.error('Failed to delete backup:', err);
       toast({
         title: 'Error',
         description: 'Failed to delete backup',

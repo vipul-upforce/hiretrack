@@ -1,8 +1,7 @@
 'use client';
 
 import { DialogHeader } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import logger from '@/lib/logger';
 import { Candidate } from '@/types/candidate';
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -31,7 +30,6 @@ import RemarkInputSection from '../Remarks/RemarkInputSection';
 import { useRemarkHandlers } from '../../hooks/useRemarkHandlers';
 import { useUnassignHandlers } from '../../hooks/useUnassignHandlers';
 import { DetailsDialog } from './DetailsDialog';
-import { candidateDetailsFields } from '../Candidate/candidate-details-fields';
 import AddFollowUpDialog from './add-followup-dialog';
 import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
@@ -58,7 +56,6 @@ export function CandidateDetailsDialog({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
-  // const [user, setuser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
     (state: any) => state.auth || {},
   );
@@ -87,11 +84,6 @@ export function CandidateDetailsDialog({
       || (isRefetching && isHistoryLoading)
     ) return;
 
-    // Only show loading indicator for initial fetch, not for refetches
-    // if (!isRefetching) {
-    //   setIsHistoryLoading(true);
-    // }
-
     try {
       const response = await fetch(
         `/api/candidates/${localCandidate._id}/history`,
@@ -101,7 +93,7 @@ export function CandidateDetailsDialog({
         setCandidateHistory(data.history || []);
         setHistoryLoaded(true);
       } else {
-        console.error('Failed to fetch candidate history');
+        logger.error('Failed to fetch candidate history');
         if (!isRefetching) {
           toast({
             title: 'Error',
@@ -111,7 +103,7 @@ export function CandidateDetailsDialog({
         }
       }
     } catch (error) {
-      console.error('Error fetching candidate history:', error);
+      logger.error('Error fetching candidate history:', error);
       if (!isRefetching) {
         toast({
           title: 'Error',
@@ -251,7 +243,7 @@ export function CandidateDetailsDialog({
         variant: 'default',
       });
     } catch (error) {
-      console.error('Re-evaluation error:', error);
+      logger.error('Re-evaluation error:', error);
       toast({
         title: 'Error',
         description: (error as string) || 'Failed to re-evaluate candidate',
@@ -276,10 +268,6 @@ export function CandidateDetailsDialog({
 
   useEffect(() => {
     if (isAddingFollowUp) {
-      console.log(
-        localCandidate?.followUp?.note,
-        'localCandidate?.followUp?.note',
-      );
 
       const parts = localCandidate?.followUp?.note
         ? localCandidate.followUp.note
@@ -287,7 +275,6 @@ export function CandidateDetailsDialog({
           .map((p) => p.trim())
           .filter(Boolean)
         : [];
-      console.log(parts, 'Parts --=  ');
 
       const followUpParts = parts.filter((p) => {
         if (p.endsWith('has completed the last step.')) {
@@ -296,8 +283,6 @@ export function CandidateDetailsDialog({
         }
         return true;
       });
-
-      console.log(followUpParts, 'followUpParts = -iru8r8fi');
 
       // use the most recent follow-up note for editing, or empty string
       const userNote = followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
@@ -471,11 +456,6 @@ export function CandidateDetailsDialog({
           handleRemoveFollowUp={handleRemoveFollowUp}
           isOpen={isAddingFollowUp}
           onOpenChange={setIsAddingFollowUp}
-          // onJobAssignment={() => {
-          //   refetchCandidates?.();
-          //   onOpenChange(false);
-          //   setIsAssigningJob(false);
-          // }}
           refetch={refetch}
           handleAddFollowUp={handleAddFollowUp}
           setNewFollowUp={setNewFollowUp}
@@ -484,8 +464,6 @@ export function CandidateDetailsDialog({
           newFollowUpDate={newFollowUpDate}
           isLoading={isLoading}
           onAddingFollowup={async () => {
-            // await refetchCandidates?.();
-            // refetch();
             setIsAddingFollowUp(false);
             setIsAddingFollowUp(false);
             setNewFollowUp('');
@@ -514,25 +492,13 @@ export function CandidateDetailsDialog({
         isOpen={confirmUnassignOpen}
         setIsOpen={setConfirmUnassignOpen}
         onConfirm={(note, rating) => {
-          // debugger;
           confirmUnassign(note, rating);
         }}
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
         loadingText="Marking as done..."
-        // className="sm:max-w-[300px]"
       />
-      {/* <ConfirmationDialog
-        title="Mark as Done"
-        message="Are you sure you want to mark this assignment as completed?"
-        isOpen={confirmUnassignOpen}
-        setIsOpen={setConfirmUnassignOpen}
-        onConfirm={confirmUnassign}
-        onCancel={() => setConfirmUnassignOpen(false)}
-        isLoading={isLoading}
-        loadingText="Marking as done..."
-        className="sm:max-w-[300px]"
-      /> */}
+ 
       <ConfirmationDialog
         title="Re-evaluate Candidate with AI?"
         message="This will use your active AI provider to re-analyze the candidate's resume and may incur additional costs based on your AI provider's pricing. The existing evaluation scores will be overwritten with new results."

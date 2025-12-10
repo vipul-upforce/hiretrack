@@ -326,7 +326,10 @@ export async function POST(req: NextRequest) {
             },
           );
         } catch (updateError) {
-          console.error('Failed to update connection status:', updateError);
+          logger.error(
+            { updateError, url: req.url },
+            'Failed to update connection status',
+          );
         }
       }
 

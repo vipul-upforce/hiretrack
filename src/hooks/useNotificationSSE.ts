@@ -1,7 +1,6 @@
-import {
-  useEffect, useRef, useState, useCallback,
-} from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Candidate } from '@/types/candidate';
+import logger from '@/lib/logger';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
@@ -53,7 +52,6 @@ class SSEManager {
     this.eventSource.onopen = () => {
       this.isConnecting = false;
       this.broadcastConnectionChange(true);
-      console.log('SSE connection opened (shared)');
     };
 
     this.eventSource.onmessage = async (event) => {
@@ -61,12 +59,11 @@ class SSEManager {
         const data = JSON.parse(event.data);
         await this.handleMessage(data);
       } catch (e) {
-        console.log('UPEXPECTED ERROR : ', e);
+        logger.log('UPEXPECTED ERROR : ', e);
       }
     };
 
     this.eventSource.onerror = () => {
-      console.error('SSE error');
       this.broadcastConnectionChange(false);
       if (this.eventSource) {
         this.eventSource.close();
@@ -85,13 +82,19 @@ class SSEManager {
   }
 
   private async handleMessage(data: any) {
-    if (data?.type === 'notificationCountUpdated' && typeof data.count === 'number') {
+    if (
+      data?.type === 'notificationCountUpdated' &&
+      typeof data.count === 'number'
+    ) {
       this.subscribers.forEach((sub) => {
         sub.onNotificationCountUpdated?.(data.count);
       });
     }
 
-    if (data?.type === 'notification' && typeof data.notification === 'string') {
+    if (
+      data?.type === 'notification' &&
+      typeof data.notification === 'string'
+    ) {
       this.subscribers.forEach((sub) => {
         sub.onNotification?.(data.notification);
       });
@@ -121,7 +124,9 @@ class SSEManager {
     if (data.type === 'multipleCandidateUpdate') {
       const decodedCandidates = await getDecodedSSE(data.candidates);
       if (decodedCandidates) {
-        const updatedCandidates = Object.values(decodedCandidates) as Candidate[];
+        const updatedCandidates = Object.values(
+          decodedCandidates,
+        ) as Candidate[];
         this.subscribers.forEach((sub) => {
           sub.onMultipleCandidateUpdate?.(updatedCandidates);
         });
@@ -193,7 +198,6 @@ export function useNotificationSSE(
   const handleNotification = useCallback((notificationStr: string) => {
     setNotification(notificationStr);
     setNotifications((prev) => [notificationStr, ...prev]);
-    console.log('New notification received via SSE:', notificationStr);
   }, []);
 
   const handleNotifications = useCallback((notificationTokens: string[]) => {
@@ -202,12 +206,6 @@ export function useNotificationSSE(
   }, []);
 
   const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
-    console.log('Decoded candidate:', {
-      updatedCandidateId: updatedCandidate?._id,
-      status: updatedCandidate?.status,
-      updatedCandidate,
-    });
-
     setCandidates((prev) => {
       const index = prev.findIndex((c) => c._id === updatedCandidate._id);
       if (index >= 0) {
@@ -221,13 +219,18 @@ export function useNotificationSSE(
     });
   }, []);
 
-  const handleMultipleCandidateUpdate = useCallback((updatedCandidates: Candidate[]) => {
-    setCandidates((prev: Candidate[]) => {
-      const updatedIds = new Set(updatedCandidates.map((c: Candidate) => c._id));
-      const filtered = prev.filter((c) => !updatedIds.has(c._id));
-      return [...filtered, ...updatedCandidates];
-    });
-  }, []);
+  const handleMultipleCandidateUpdate = useCallback(
+    (updatedCandidates: Candidate[]) => {
+      setCandidates((prev: Candidate[]) => {
+        const updatedIds = new Set(
+          updatedCandidates.map((c: Candidate) => c._id),
+        );
+        const filtered = prev.filter((c) => !updatedIds.has(c._id));
+        return [...filtered, ...updatedCandidates];
+      });
+    },
+    [],
+  );
 
   const handleLanesUpdate = useCallback((lanesData: string[]) => {
     setLanes(lanesData);
@@ -282,7 +285,6 @@ export function useNotificationSSE(
     totalCount,
     notification,
     notifications,
-    // Candidate update state
     candidates,
     setCandidates,
     lanes,

@@ -30,9 +30,7 @@ export function AIReEvaluateTrigger({
                 size="icon"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // console.log("%%%%%%");
                   onReEvaluate();
-                  // handleReEvaluate();
                 }}
                 disabled={
                   isReEvaluating && isEvaluatingFor === localCandidate?._id

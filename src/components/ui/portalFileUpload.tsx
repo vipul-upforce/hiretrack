@@ -15,7 +15,7 @@ interface FileUploadProps {
       url: string;
       type: string;
       size: number;
-    }>
+    }>,
   ) => void;
   isEdit?: boolean;
   accept: Record<string, string[]>;
@@ -52,13 +52,6 @@ interface RenameFileState {
   };
 }
 
-// interface User {
-//   id: string;
-//   name: string;
-//   email: string;
-//   role: string;
-// }
-
 export const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
@@ -77,7 +70,6 @@ export function PortalFileUpload({
   setter,
   isEdit = true,
 }: FileUploadProps) {
-  // console.log('files :>> ', files);
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
@@ -88,9 +80,10 @@ export function PortalFileUpload({
       const newFile = new File([renameFile.file], newName, {
         type: renameFile.file.type,
       });
-      const updatedFiles = files.map((f) => (f === renameFile.file ? newFile : f));
+      const updatedFiles = files.map((f) =>
+        f === renameFile.file ? newFile : f,
+      );
       setter?.(updatedFiles);
-      // setDroppedFiles((prev = []) => [...new Set([...prev, newName])]);
     }
   };
 
@@ -104,9 +97,6 @@ export function PortalFileUpload({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
-      // setDroppedFiles((prev = []) => [
-      //   ...new Set([...prev, ...acceptedFiles.map((file) => file.name)]),
-      // ]);
     },
     [onFileSelect],
   );
@@ -117,7 +107,8 @@ export function PortalFileUpload({
     maxFiles,
   });
 
-  const previewFile: File | ExistingFile | undefined = files[0] || existingFiles[0];
+  const previewFile: File | ExistingFile | undefined =
+    files[0] || existingFiles[0];
 
   function isExistingFile(file: File | ExistingFile): file is ExistingFile {
     return (file as ExistingFile).url !== undefined;
@@ -125,18 +116,18 @@ export function PortalFileUpload({
 
   return (
     <div className="space-y-4" id={id}>
-      <div className="flex justify-center items-center gap-4">
-        <Card className="w-16 h-16 flex-shrink-0" {...getRootProps()}>
+      <div className="flex items-center justify-center gap-4">
+        <Card className="h-16 w-16 flex-shrink-0" {...getRootProps()}>
           <input {...getInputProps()} />
-          <CardContent className="p-2 h-full">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-md h-full flex items-center justify-center hover:border-muted-foreground/50 transition-colors cursor-pointer group">
+          <CardContent className="h-full p-2">
+            <div className="group flex h-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-muted-foreground/50">
               <Upload className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/70" />
             </div>
           </CardContent>
         </Card>
 
         <div className="flex-1">
-          <div className="flex items-center justify-between gap-4 p-2 bg-muted/30 rounded-md border">
+          <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/30 p-2">
             <div className="flex items-center gap-2">
               {previewFile?.type?.startsWith('image/') ? (
                 <img
@@ -146,10 +137,10 @@ export function PortalFileUpload({
                       : URL.createObjectURL(previewFile)
                   }
                   alt={previewFile.name}
-                  className="w-8 h-8 rounded object-cover"
+                  className="h-8 w-8 rounded object-cover"
                 />
               ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white">
                   {previewFile?.name?.charAt(0).toUpperCase() || 'N'}
                 </div>
               )}
@@ -157,10 +148,8 @@ export function PortalFileUpload({
                 <p className="text-sm font-medium">
                   {previewFile?.name || 'No file uploaded'}
                   {previewFile?.size && (
-                    <span className="text-xs text-muted-foreground ml-2">
-                      (
-                      {formatFileSize(previewFile.size)}
-                      )
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({formatFileSize(previewFile.size)})
                     </span>
                   )}
                 </p>
@@ -169,23 +158,10 @@ export function PortalFileUpload({
 
             {previewFile?.name && (
               <div className="flex items-center gap-2">
-                {/* <button
-                  type="button"
-                  className="p-2 hover:bg-muted rounded-md"
-                  onClick={() =>
-                    setRenameFile({
-                      file: files[0] || null,
-                      isExisting: !files[0],
-                      existingFile: existingFiles[0] || undefined,
-                    })
-                  }
-                >
-                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                </button> */}
                 {files[0] && (
                   <button
                     type="button"
-                    className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                    className="rounded-md p-2 hover:bg-muted hover:text-red-500"
                     onClick={() => handleRemoveFile(files[0].name)}
                   >
                     <X className="h-4 w-4 text-muted-foreground" />

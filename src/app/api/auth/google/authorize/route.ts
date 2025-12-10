@@ -7,6 +7,7 @@ import {
   getRedirectUri,
 } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -97,8 +98,8 @@ export async function GET(req: NextRequest) {
     // Get Google Calendar settings
     const settings = await Settings.findOne({ organizationId });
     if (
-      !settings?.googleCalendar?.clientId
-      || !settings?.googleCalendar?.clientSecret
+      !settings?.googleCalendar?.clientId ||
+      !settings?.googleCalendar?.clientSecret
     ) {
       return new NextResponse(
         `
@@ -145,8 +146,12 @@ export async function GET(req: NextRequest) {
     // Redirect to Google OAuth consent screen
     return NextResponse.redirect(authUrl);
   } catch (error) {
-    console.error('Google Calendar authorization error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Authorization failed';
+    logger.error(
+      { error, url: req.url },
+      'Google Calendar authorization error',
+    );
+    const errorMessage =
+      error instanceof Error ? error.message : 'Authorization failed';
     return new NextResponse(
       `
       <html>
