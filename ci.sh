@@ -62,7 +62,7 @@ for var in "${REQUIRED_VARS[@]}"; do
 done
 
 # ==================== SETUP ====================
-GITHUB_REPO="rahulp162/hiretrack-release"
+GITHUB_REPO="vipul-upforce/hiretrack-publish"
 VERSION_PREFIX="v"
 CURRENT_DIR=$(pwd)
 
