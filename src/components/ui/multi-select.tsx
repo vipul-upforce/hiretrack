@@ -55,7 +55,7 @@ export function MultiSelect({
         <Command>
           <CommandInput placeholder={`Search ${placeholder}...`} />
           <CommandList>
-            <CommandEmpty>No framework found.</CommandEmpty>
+            <CommandEmpty>No Assignee Found.</CommandEmpty>
             <CommandGroup>
               {options?.map((framework) => (
                 <CommandItem
