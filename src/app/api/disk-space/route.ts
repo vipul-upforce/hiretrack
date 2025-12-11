@@ -12,8 +12,6 @@ import { logger } from '@/lib/logger/logger.server';
  * @returns Total size in bytes
  */
 function calculateFolderSizeRecursive(dirPath: string): number {
-  let totalSize = 0;
-
   try {
     if (!fs.existsSync(dirPath)) {
       return 0;
@@ -26,28 +24,27 @@ function calculateFolderSizeRecursive(dirPath: string): number {
 
     const entries = fs.readdirSync(dirPath, { withFileTypes: true });
 
-    for (const entry of entries) {
+    return entries.reduce((acc, entry) => {
       const fullPath = path.join(dirPath, entry.name);
 
       try {
         if (entry.isDirectory()) {
-          totalSize += calculateFolderSizeRecursive(fullPath);
-        } else if (entry.isFile()) {
-          const fileStats = fs.statSync(fullPath);
-          totalSize += fileStats.size;
+          return acc + calculateFolderSizeRecursive(fullPath);
         }
+        if (entry.isFile()) {
+          const fileStats = fs.statSync(fullPath);
+          return acc + fileStats.size;
+        }
+        return acc;
       } catch {
         // Skip files/folders that can't be accessed (permissions, broken symlinks, etc.)
-        // Continue processing other entries
-        continue;
+        return acc;
       }
-    }
+    }, 0);
   } catch {
     // If directory can't be read, return 0
     return 0;
   }
-
-  return totalSize;
 }
 
 /**
@@ -81,7 +78,7 @@ function getFolderSize(folderPath: string): string {
     }
     const result = execSync(`du -sb "${folderPath}"`, { encoding: 'utf-8' });
     const sizeBytes = parseInt(result.split('\t')[0], 10);
-    if (!isNaN(sizeBytes)) {
+    if (!Number.isNaN(sizeBytes)) {
       return formatSize(sizeBytes);
     }
     const sizeBytesFallback = calculateFolderSizeRecursive(folderPath);
@@ -185,8 +182,8 @@ export async function GET(request: Request) {
 
     if (rootKey) {
       const baseRootPath = isWindows
-        ? WINDOWS_PATHS[rootKey]
-        : LINUX_PATHS[rootKey];
+        ? WINDOWS_PATHS.rootKey
+        : LINUX_PATHS.rootKey;
 
       if (!baseRootPath) {
         return NextResponse.json(
@@ -265,7 +262,7 @@ export async function GET(request: Request) {
     const baseFolders = ['nginx', 'pm2', 'hiretrack'];
 
     const foldersResult = baseFolders.map((key) => {
-      const folderPath = isWindows ? WINDOWS_PATHS[key] : LINUX_PATHS[key];
+      const folderPath = isWindows ? WINDOWS_PATHS.key : LINUX_PATHS.key;
       let size = '0B';
       try {
         size = getFolderSize(folderPath);

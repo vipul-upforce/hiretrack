@@ -1,7 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertCircle, CheckCircle, Clock, Mail,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Mail } from 'lucide-react';
 
 export const getStatusIcon = (status: string) => {
   switch (status) {
@@ -16,26 +14,30 @@ export const getStatusIcon = (status: string) => {
   }
 };
 
+function XCircleIcon() {
+  return <AlertCircle className="mr-1 h-3 w-3" />;
+}
+
 export const getStatusBadge = (status: string) => {
   switch (status) {
     case 'sent':
       return (
-        <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">
-          <CheckCircle className="h-3 w-3 mr-1" />
+        <Badge className="border-green-200 bg-green-100 text-green-800 hover:bg-green-200">
+          <CheckCircle className="mr-1 h-3 w-3" />
           Sent
         </Badge>
       );
     case 'failed':
       return (
-        <Badge className="bg-red-100 text-red-800 border-red-200 hover:bg-red-200">
+        <Badge className="border-red-200 bg-red-100 text-red-800 hover:bg-red-200">
           <XCircleIcon />
           Failed
         </Badge>
       );
     case 'pending':
       return (
-        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">
-          <Clock className="h-3 w-3 mr-1" />
+        <Badge className="border-yellow-200 bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+          <Clock className="mr-1 h-3 w-3" />
           Pending
         </Badge>
       );
@@ -43,10 +45,6 @@ export const getStatusBadge = (status: string) => {
       return null;
   }
 };
-
-function XCircleIcon() {
-  return <AlertCircle className="h-3 w-3 mr-1" />;
-}
 
 export const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return `${bytes} B`;

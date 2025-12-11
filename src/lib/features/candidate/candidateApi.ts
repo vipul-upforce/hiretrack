@@ -4,7 +4,6 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
 import { NextResponse } from 'next/server';
-import { Assignment } from '@/app/dashboard/page';
 
 interface AuthRequest {
   email: string;

@@ -38,10 +38,7 @@ const validationSchema = Yup.object({
     ),
 });
 
-const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
-  isOpen,
-  onClose,
-}) => {
+function ForgotPasswordDialog({ isOpen, onClose }: ForgotPasswordDialogProps) {
   const [createResetToken, { isLoading }] = useCreateResetTokenMutation();
   const [orgAccounts, setOrgAccounts] = useState<OrgAccount[]>([]);
   const [step, setStep] = useState<'email' | 'select-org'>('email');
@@ -74,9 +71,10 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       });
       setTimeout(() => onClose(), 2000);
     } catch (err: unknown) {
-      const errorMessage = typeof err === 'object' && err !== null && 'data' in err
-        ? (err as any).data?.error || 'Failed to send reset link.'
-        : 'An unexpected error occurred.';
+      const errorMessage =
+        typeof err === 'object' && err !== null && 'data' in err
+          ? (err as any).data?.error || 'Failed to send reset link.'
+          : 'An unexpected error occurred.';
 
       toast({
         title: 'Alert',
@@ -86,6 +84,12 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetDialog = () => {
+    setStep('email');
+    setOrgAccounts([]);
+    setEmailValue('');
   };
 
   const handleOrgSelection = async (
@@ -112,9 +116,10 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
         onClose();
       }, 2000);
     } catch (err: unknown) {
-      const errorMessage = typeof err === 'object' && err !== null && 'data' in err
-        ? (err as any).data?.error || 'Failed to send reset link.'
-        : 'An unexpected error occurred.';
+      const errorMessage =
+        typeof err === 'object' && err !== null && 'data' in err
+          ? (err as any).data?.error || 'Failed to send reset link.'
+          : 'An unexpected error occurred.';
 
       toast({
         title: 'Alert',
@@ -124,12 +129,6 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const resetDialog = () => {
-    setStep('email');
-    setOrgAccounts([]);
-    setEmailValue('');
   };
 
   const handleClose = () => {
@@ -152,7 +151,6 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
           )}
         </DialogHeader>
         <div className="p-4">
-
           {step === 'email' ? (
             <Formik
               initialValues={{ email: '' }}
@@ -172,13 +170,15 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                           placeholder="Enter your email"
                           disabled={isSubmitting || isLoading}
                           className={
-                            errors.email && touched.email ? 'border-red-500' : ''
+                            errors.email && touched.email
+                              ? 'border-red-500'
+                              : ''
                           }
                         />
                       )}
                     </Field>
                     {errors.email && touched.email && (
-                      <div className="text-red-500 text-xs">{errors.email}</div>
+                      <div className="text-xs text-red-500">{errors.email}</div>
                     )}
                   </div>
                   <div className="flex justify-end space-x-2">
@@ -190,7 +190,11 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={isSubmitting || isLoading}
+                    >
                       {isSubmitting || isLoading
                         ? 'Sending...'
                         : 'Send Reset Link'}
@@ -210,19 +214,23 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
               {({ isSubmitting }) => (
                 <Form className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="organization">Select your organization</Label>
+                    <Label htmlFor="organization">
+                      Select your organization
+                    </Label>
                     <hr />
                     <Field name="selectedOrgId">
                       {({ field, form }: any) => (
                         <RadioGroup
                           value={field.value}
-                          onValueChange={(value) => form.setFieldValue('selectedOrgId', value)}
-                          className="space-y-2 max-h-[40vh] overflow-y-auto"
+                          onValueChange={(value) =>
+                            form.setFieldValue('selectedOrgId', value)
+                          }
+                          className="max-h-[40vh] space-y-2 overflow-y-auto"
                         >
                           {orgAccounts.map((account) => (
                             <div
                               key={account.id}
-                              className="flex items-center space-x-3 p-3 border rounded-md"
+                              className="flex items-center space-x-3 rounded-md border p-3"
                             >
                               <RadioGroupItem
                                 value={account.organizationId}
@@ -257,7 +265,11 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
                     >
                       Back
                     </Button>
-                    <Button type="submit" variant="primary" disabled={isSubmitting || isLoading}>
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={isSubmitting || isLoading}
+                    >
                       {isSubmitting || isLoading ? 'Sending...' : 'Continue'}
                     </Button>
                   </div>
@@ -269,6 +281,6 @@ const ForgotPasswordDialog: React.FC<ForgotPasswordDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default ForgotPasswordDialog;

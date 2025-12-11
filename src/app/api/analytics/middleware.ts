@@ -152,7 +152,7 @@ function checkRateLimit(identifier: string): {
   }
 
   // Increment counter
-  rateLimitData.count++;
+  rateLimitData.count += 1;
   rateLimitStore.set(key, rateLimitData);
 
   return {

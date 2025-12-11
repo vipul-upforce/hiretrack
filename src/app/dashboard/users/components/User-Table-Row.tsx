@@ -1,9 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  EditIcon, ShieldQuestion, Trash2, Mail,
-} from 'lucide-react';
+import { EditIcon, ShieldQuestion, Trash2, Mail } from 'lucide-react';
 import { User } from '@/lib/features/users/usersApi';
 import { format } from 'date-fns';
 
@@ -55,7 +53,7 @@ export function UserTableRow({
       <TableCell>
         {user.isDeleted && (
           <div className="flex items-center gap-2">
-            <span className="line-through text-muted-foreground italic">
+            <span className="italic text-muted-foreground line-through">
               {user.name}
             </span>
             <Badge variant="destructive">Deleted</Badge>
@@ -66,19 +64,19 @@ export function UserTableRow({
       </TableCell>
 
       <TableCell>
-        <span className="px-2.5 py-1 bg-primary-foreground rounded-lg">
+        <span className="rounded-lg bg-primary-foreground px-2.5 py-1">
           {user.email}
         </span>
       </TableCell>
       <TableCell>
         <span
-          className={`capitalize px-2.5 py-1 rounded-md  ${getRoleBadgeColor(user.role)}`}
+          className={`rounded-md px-2.5 py-1 capitalize ${getRoleBadgeColor(user.role)}`}
         >
           {user.role}
         </span>
       </TableCell>
       <TableCell>{format(new Date(user.createdAt), 'MMM d, yyyy')}</TableCell>
-      <TableCell className="flex flex-row justify-between items-center gap-2">
+      <TableCell className="flex flex-row items-center justify-between gap-2">
         {user.role !== 'system' && (
           <div className="flex flex-row items-center gap-2">
             <Button
@@ -92,7 +90,7 @@ export function UserTableRow({
               className="bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
               {isDeleting ? (
-                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
                 <Trash2 className="h-4 w-4" />
               )}
@@ -102,7 +100,7 @@ export function UserTableRow({
               size="icon"
               onClick={() => onPasswordClick(user._id, user.name)}
               disabled={isUpdating}
-              className="bg-white dark:bg-black border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="border-gray-200 bg-white hover:bg-gray-100 dark:border-gray-600 dark:bg-black dark:hover:bg-gray-700"
             >
               <ShieldQuestion className="h-4 w-4 text-gray-700 dark:text-gray-300" />
             </Button>
@@ -120,10 +118,12 @@ export function UserTableRow({
                   });
                 }
               }}
-              disabled={isUpdating || user.role === "interviewer" || user.isDeleted}
-              className={`bg-white dark:bg-black border-gray-200 dark:border-gray-600 ${
+              disabled={
+                isUpdating || user.role === 'interviewer' || user.isDeleted
+              }
+              className={`border-gray-200 bg-white dark:border-gray-600 dark:bg-black ${
                 user.role === 'interviewer'
-                  ? 'opacity-50 cursor-not-allowed'
+                  ? 'cursor-not-allowed opacity-50'
                   : 'hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title={
@@ -148,13 +148,13 @@ export function UserTableRow({
             size="icon"
             onClick={() => onEditClick(user)}
             disabled={isUpdating}
-            className="bg-white dark:bg-black border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="border-gray-200 bg-white hover:bg-gray-100 dark:border-gray-600 dark:bg-black dark:hover:bg-gray-700"
           >
             <EditIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
           </Button>
         )}
         {user.role === 'system' && (
-          <span className="text-sm text-muted-foreground py-2">
+          <span className="py-2 text-sm text-muted-foreground">
             No actions available
           </span>
         )}

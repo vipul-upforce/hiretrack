@@ -12,7 +12,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserFromToken } from '@/lib/redux/authSlice';
 import { AppDispatch } from '@/lib/redux/store';
 import logger from '@/lib/logger';
-import { RootState } from '@reduxjs/toolkit/query';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;

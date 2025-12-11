@@ -278,10 +278,6 @@ export default function ApplyJobsContent({
     window.location.href = '/auth/login';
   };
 
-  // if (invalidPage) {
-  //   return <InvalidPage message="Page Doesn't Exist" />;
-  // }
-
   if (error && !isLoading) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
       return (

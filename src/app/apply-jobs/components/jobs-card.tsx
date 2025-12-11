@@ -60,6 +60,7 @@ export function JobCard({
 
           <div
             className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed line-clamp-3 mb-4"
+            // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{
               __html: job?.description || 'No description found',
             }}
@@ -67,9 +68,9 @@ export function JobCard({
 
           {/* Skills badges */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {job.skills.slice(0, 3).map((skill, i) => (
+            {job.skills.slice(0, 3).map((skill) => (
               <span
-                key={i}
+                key={skill}
                 className="px-3 py-1 text-xs font-medium rounded-full border"
                 style={{
                   backgroundColor: `${primaryColor}10`,
@@ -136,8 +137,8 @@ export function JobCard({
           {/* Custom fields */}
           {customFieldsToShow.length > 0 && (
             <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-              {customFieldsToShow.map(([key, value], i) => (
-                <div key={i}>
+              {customFieldsToShow.map(([key, value]) => (
+                <div key={key.toString()}>
                   <CustomFieldBadge kii={key} value={value} />
                 </div>
               ))}

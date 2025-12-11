@@ -1,19 +1,19 @@
-import React, { useState } from "react";
-import { Code, Eye, RotateCcw, Edit2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Editor } from "@monaco-editor/react";
-import { EmailTemplate } from "../types";
-import { TemplateVisualEditor } from "@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor";
+import React, { useState } from 'react';
+import { Code, RotateCcw, Edit2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Editor } from '@monaco-editor/react';
+import { TemplateVisualEditor } from '@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor';
+import { EmailTemplate } from '../types';
 
 interface TemplateEditorProps {
   currentTemplate: EmailTemplate;
   updateTemplate: (
     id: string,
     field: keyof EmailTemplate,
-    value: string
+    value: string,
   ) => void;
   resetToDefault: (id: string) => void;
   previewMode: boolean;
@@ -22,7 +22,7 @@ interface TemplateEditorProps {
   theme: string | undefined;
 }
 
-export const TemplateEditor: React.FC<TemplateEditorProps> = ({
+export function TemplateEditor({
   currentTemplate,
   updateTemplate,
   resetToDefault,
@@ -30,11 +30,62 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
   setPreviewMode,
   renderPreview,
   theme,
-}) => {
-  const [editorMode, setEditorMode] = useState<"code" | "visual">("visual");
+}: TemplateEditorProps) {
+  const [editorMode, setEditorMode] = useState<'code' | 'visual'>('visual');
+
+  let editorContent;
+
+  if (previewMode) {
+    editorContent = (
+      <div className="min-h-[400px] rounded-lg border bg-white p-4">
+        <div
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: renderPreview(
+              currentTemplate.content,
+              currentTemplate.variables,
+            ),
+          }}
+        />
+      </div>
+    );
+  } else if (editorMode === 'visual') {
+    editorContent = (
+      <TemplateVisualEditor
+        htmlContent={currentTemplate.content}
+        onContentChange={(html) =>
+          updateTemplate(currentTemplate.id, 'content', html)
+        }
+        className="min-h-[400px]"
+      />
+    );
+  } else {
+    editorContent = (
+      <div className="overflow-hidden rounded-lg border">
+        <Editor
+          height="400px"
+          language="html"
+          theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+          value={currentTemplate.content}
+          onChange={(value) =>
+            updateTemplate(currentTemplate.id, 'content', value || '')
+          }
+          options={{
+            fontSize: 14,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            lineNumbers: 'on',
+            folding: true,
+            automaticLayout: true,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="lg:col-span-2 space-y-4">
+    <div className="space-y-4 lg:col-span-2">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -42,7 +93,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               <Code className="h-5 w-5" />
               {currentTemplate.name}
             </CardTitle>
-            <div className="flex gap-2 ">
+            <div className="flex gap-2">
               {currentTemplate && (
                 <Button
                   variant="outline"
@@ -50,45 +101,32 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
                   className="h-8 rounded-md"
                   onClick={() => resetToDefault(currentTemplate.id)}
                 >
-                  <RotateCcw className="h-4 w-4 mr-2" />
+                  <RotateCcw className="mr-2 h-4 w-4" />
                   Reset to Default
                 </Button>
               )}
               {!previewMode && (
-                < >
-                 
+                <>
                   <Button
-                    variant={editorMode === "visual" ? "primary" : "outline"}
+                    variant={editorMode === 'visual' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setEditorMode("visual")}
+                    onClick={() => setEditorMode('visual')}
                     className="h-8"
                   >
-                    <Edit2 className="h-3 w-3 mr-1" />
+                    <Edit2 className="mr-1 h-3 w-3" />
                     Preview
                   </Button>
                   <Button
-                    variant={editorMode === "code" ? "primary" : "outline"}
+                    variant={editorMode === 'code' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setEditorMode("code")}
+                    onClick={() => setEditorMode('code')}
                     className="h-8"
                   >
-                    <Code className="h-4 w-4 mr-1" />
+                    <Code className="mr-1 h-4 w-4" />
                     Edit HTML
                   </Button>
                 </>
               )}
-              {/* <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPreviewMode(!previewMode)}
-              >
-                {previewMode ? (
-                  <Code className="h-4 w-4 mr-2" />
-                ) : (
-                  <Eye className="h-4 w-4 mr-2" />
-                )}
-                {previewMode ? "Edit" : "Preview"}
-              </Button> */}
             </div>
           </div>
         </CardHeader>
@@ -100,7 +138,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
               id="subject"
               value={currentTemplate.subject}
               onChange={(e) =>
-                updateTemplate(currentTemplate.id, "subject", e.target.value)
+                updateTemplate(currentTemplate.id, 'subject', e.target.value)
               }
               placeholder="Email subject line"
             />
@@ -109,49 +147,10 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({
           {/* Content Editor */}
           <div className="space-y-2">
             <Label>Email Content</Label>
-            {previewMode ? (
-              <div className="border rounded-lg p-4 min-h-[400px] bg-white">
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: renderPreview(
-                      currentTemplate.content,
-                      currentTemplate.variables
-                    ),
-                  }}
-                />
-              </div>
-            ) : editorMode === "visual" ? (
-              <TemplateVisualEditor
-                htmlContent={currentTemplate.content}
-                onContentChange={(html) =>
-                  updateTemplate(currentTemplate.id, "content", html)
-                }
-                className="min-h-[400px]"
-              />
-            ) : (
-              <div className="border rounded-lg overflow-hidden">
-                <Editor
-                  height="400px"
-                  language="html"
-                  theme={theme === "dark" ? "vs-dark" : "vs"}
-                  value={currentTemplate.content}
-                  onChange={(value) =>
-                    updateTemplate(currentTemplate.id, "content", value || "")
-                  }
-                  options={{
-                    fontSize: 14,
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    wordWrap: 'on',
-                    lineNumbers: 'on',
-                    folding: true,
-                    automaticLayout: true,
-                  }}
-              />
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  </div>
-);
+            {editorContent}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

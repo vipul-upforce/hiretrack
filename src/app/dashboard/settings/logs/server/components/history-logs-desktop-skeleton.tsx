@@ -36,6 +36,7 @@ function DesktopSkeletonHistroyLogs() {
         </TableHeader>
         <TableBody>
           {Array.from({ length: 20 }).map((_, idx) => (
+            // eslint-disable-next-line react/no-array-index-key
             <TableRow key={`skeleton-${idx}`} className="even:bg-muted/30">
               <TableCell>
                 <div className="space-y-2">

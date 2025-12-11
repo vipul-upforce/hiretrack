@@ -23,10 +23,6 @@ export function AddSpecificCustomFieldButton({
 }: AddJobOrCandidateCustomFieldProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  // const handleSave = (newField: CustomField) => {
-  //   onSave(newField);
-  //   setIsOpen(false);
-  // };
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -43,12 +39,7 @@ export function AddSpecificCustomFieldButton({
         onClose={handleClose}
         title={jobId ? 'Personalized fields for this Job' : 'Personalized fields for this Candidate'}
       >
-        {/* <AddSpecificCustomFieldForm
-          handleClose={handleClose}
-          onSave={handleSave}
-          jobId={jobId}
-          candidateId={candidateId}
-        /> */}
+     
         <SpecificCustomFieldList jobId={jobId} candidateId={candidateId} jobTitle={jobTitle} candidateName={candidateName} />
       </CustomFieldDialog>
     </div>

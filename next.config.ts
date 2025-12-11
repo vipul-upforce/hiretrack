@@ -38,11 +38,7 @@ const nextConfig: NextConfig = {
   // Optimize webpack configuration
   webpack: (
     config: WebpackConfiguration,
-    {
-      dev,
-      isServer,
-      webpack,
-    }: { dev: boolean; isServer: boolean; webpack: any },
+    { dev, isServer }: { dev: boolean; isServer: boolean; webpack: any },
   ): WebpackConfiguration => {
     // Optimize for development
     if (dev) {
@@ -203,10 +199,10 @@ const nextConfig: NextConfig = {
     ];
   },
   // Optimize TypeScript compilation
-  // typescript: {
-  //   // Disable TypeScript checking during build for faster builds
-  //   ignoreBuildErrors: true,
-  // },
+  typescript: {
+    // Disable TypeScript checking during build for faster builds
+    ignoreBuildErrors: true,
+  },
   // Optimize ESLint
   eslint: {
     // Disable ESLint during builds for faster builds

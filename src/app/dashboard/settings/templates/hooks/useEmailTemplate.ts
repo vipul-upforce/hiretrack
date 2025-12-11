@@ -265,7 +265,7 @@ export const useEmailTemplates = () => {
         variant: 'default',
         title: 'Custom template deleted successfully',
       });
-    } catch (error) {
+    } catch{
       toast({
         variant: 'destructive',
         title: 'Failed to delete custom template',

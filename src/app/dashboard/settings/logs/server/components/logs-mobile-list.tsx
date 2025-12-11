@@ -4,6 +4,7 @@ import {
   formatDate,
   formatTime,
 } from '@/app/dashboard/jobs/[id]/hooks/dateTimeFormatting';
+import React from 'react';
 import { LogEntry } from '../types';
 
 interface LogsMobileListProps {
@@ -18,24 +19,24 @@ export function LogsMobileList({
   onViewDetails,
 }: LogsMobileListProps) {
   return (
-    <div className="md:hidden p-3 space-y-3">
-      {logs.map((log, i) => (
+    <div className="space-y-3 p-3 md:hidden">
+      {logs.map((log) => (
         <div
-          key={`${log.candidateId}-${i}`}
+          key={`${log.dateTime}`}
           role="button"
           tabIndex={0}
           onClick={() => onViewDetails(log.candidateId)}
-          className="rounded-lg border bg-card p-3 shadow-sm hover:bg-muted/40 transition-colors"
+          className="rounded-lg border bg-card p-3 shadow-sm transition-colors hover:bg-muted/40"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="font-medium text-pretty">{renderTitle(log)}</div>
-              {log.note?.description
-                && typeof log.note.description === 'string' && (
-                  <div className="text-xs text-muted-foreground line-clamp-2 mt-1">
+              <div className="text-pretty font-medium">{renderTitle(log)}</div>
+              {log.note?.description &&
+                typeof log.note.description === 'string' && (
+                  <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                     {log.note.description}
                   </div>
-              )}
+                )}
             </div>
             <Button
               variant="ghost"
@@ -53,20 +54,20 @@ export function LogsMobileList({
           <div className="mt-3 grid grid-cols-1 gap-2">
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">Candidate</span>
-              <span className="font-medium truncate">
+              <span className="truncate font-medium">
                 {log.candidateData?.name || 'Unknown'}
               </span>
-              <span className="text-xs text-muted-foreground truncate">
+              <span className="truncate text-xs text-muted-foreground">
                 {log.candidateData?.email || '—'}
               </span>
             </div>
 
             <div className="flex flex-col">
               <span className="text-xs text-muted-foreground">Job</span>
-              <span className="font-medium truncate">
+              <span className="truncate font-medium">
                 {log.jobData?.title || '—'}
               </span>
-              <span className="text-xs text-muted-foreground truncate">
+              <span className="truncate text-xs text-muted-foreground">
                 {(log.jobData?.skills || []).slice(0, 3).join(', ') || '—'}
               </span>
             </div>

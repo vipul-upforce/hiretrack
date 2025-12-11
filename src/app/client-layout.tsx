@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
-
-import { useSelector } from 'react-redux';
 import { usePathname } from 'next/navigation';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
   const pathname = usePathname();

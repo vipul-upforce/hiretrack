@@ -3,10 +3,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { SectionProps } from '../types';
 
-export const EnhancedFeaturesSection: React.FC<SectionProps> = ({
+export function EnhancedFeaturesSection({
   config,
   updateConfig,
-}) => {
+}: SectionProps) {
   const features = [
     {
       id: 'enableConfidence',
@@ -35,10 +35,10 @@ export const EnhancedFeaturesSection: React.FC<SectionProps> = ({
   ];
 
   return (
-    <div className="border-t pt-4 space-y-4">
+    <div className="space-y-4 border-t pt-4">
       <div>
         <h3 className="text-sm font-semibold">Enhanced Evaluation Features</h3>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="mt-1 text-xs text-muted-foreground">
           Enable additional AI-powered insights for better candidate assessment
         </p>
       </div>
@@ -61,4 +61,4 @@ export const EnhancedFeaturesSection: React.FC<SectionProps> = ({
       ))}
     </div>
   );
-};
+}

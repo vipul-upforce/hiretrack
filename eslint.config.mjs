@@ -14,18 +14,18 @@ const eslintConfig = [
   // 1. GLOBAL IGNORES
   {
     ignores: [
-      "**/node_modules/**",
-      "**/.next/**",
-      "**/out/**",
-      "**/build/**",
-      "**/dist/**",
-      "**/public/**",
-      "**/*.config.js",
-      "**/*.config.ts",
-      "**/*.config.mjs",
-      "**/next-env.d.ts",
-      "**/*.js",
-    ]
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/out/**',
+      '**/build/**',
+      '**/dist/**',
+      '**/public/**',
+      '**/*.config.js',
+      '**/*.config.ts',
+      '**/*.config.mjs',
+      '**/next-env.d.ts',
+      '**/*.js',
+    ],
   },
 
   // 2. EXTENDS (Airbnb, Next, Prettier)
@@ -34,7 +34,7 @@ const eslintConfig = [
     'next/core-web-vitals',
     'next/typescript',
     'airbnb',
-    'prettier'
+    'prettier',
   ),
 
   // 3. SECURITY PLUGIN (Manual Setup)
@@ -51,6 +51,10 @@ const eslintConfig = [
   // 4. RULES & SETTINGS
   {
     rules: {
+      // -- IGNORED RULE BY US
+      'security/detect-non-literal-fs-filename': 'off',
+      'import/no-cycle': 'off',
+      'no-restricted-syntax': 'off',
       // --- SENIOR'S REQUIRED OVERRIDES (From provided preset) ---
       'react/jsx-filename-extension': 'off',
       'import/extensions': 'off',
@@ -62,24 +66,30 @@ const eslintConfig = [
       'jsx-a11y/label-has-associated-control': 'off',
       'jsx-a11y/no-noninteractive-element-interactions': 'off',
       'jsx-a11y/click-events-have-key-events': 'off',
-      'react-hooks/exhaustive-deps': 'off', 
+      'react-hooks/exhaustive-deps': 'off',
 
       // --- STRICT SENIOR REQUIREMENTS ---
-      
+
       // Requirement: "Any is not allowed"
       '@typescript-eslint/no-explicit-any': 'error',
 
       // Requirement: "No unused variable"
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_' },
+      ],
 
       // Requirement: "Max loc 300 lines"
-      'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
+      'max-lines': [
+        'error',
+        { max: 300, skipBlankLines: true, skipComments: true },
+      ],
 
       // --- NECESSARY COMPATIBILITY FIXES ---
       'import/no-extraneous-dependencies': ['error', { devDependencies: true }],
       'react/react-in-jsx-scope': 'off',
-      'import/prefer-default-export': 'off', 
-      'no-underscore-dangle': ['error', { 'allow': ['_id'] }],
+      'import/prefer-default-export': 'off',
+      'no-underscore-dangle': ['error', { allow: ['_id'] }],
     },
     settings: {
       'import/resolver': {

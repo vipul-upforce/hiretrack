@@ -10,9 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
 import { Eye, EyeOff } from 'lucide-react';
-import {
-  Formik, Form, Field, FieldProps,
-} from 'formik';
+import { Formik, Form, Field, FieldProps } from 'formik';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useResetPasswordbyAdminMutation } from '@/lib/features/auth/authApi';
@@ -32,7 +30,8 @@ export function ResetPasswordDialog({
   name,
 }: ResetPasswordDialogProps) {
   const { toast } = useToast();
-  const [resetPasswordbyAdmin, { isLoading: isReseting }] = useResetPasswordbyAdminMutation();
+  const [resetPasswordbyAdmin, { isLoading: isReseting }] =
+    useResetPasswordbyAdminMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -76,17 +75,11 @@ export function ResetPasswordDialog({
             confirmPassword: '',
           }}
           validationSchema={passwordValidationSchema}
-          onSubmit={(values) => handlePasswordUpdate({ password: values.password })}
+          onSubmit={(values) =>
+            handlePasswordUpdate({ password: values.password })
+          }
         >
-          {({
-            handleChange,
-            handleBlur,
-            handleSubmit,
-            values,
-            errors,
-            touched,
-            isSubmitting,
-          }) => (
+          {({ handleSubmit, errors, touched, isSubmitting }) => (
             <Form className="space-y-4 p-4">
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -106,7 +99,7 @@ export function ResetPasswordDialog({
                           }
                         />
                         {errors.password && touched.password && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.password}
                           </div>
                         )}
@@ -117,7 +110,7 @@ export function ResetPasswordDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
+                    className={`absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {!showPassword ? (
@@ -147,7 +140,7 @@ export function ResetPasswordDialog({
                           }
                         />
                         {errors.confirmPassword && touched.confirmPassword && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.confirmPassword}
                           </div>
                         )}
@@ -158,7 +151,7 @@ export function ResetPasswordDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
+                    className={`absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {!showConfirmPassword ? (
@@ -179,7 +172,7 @@ export function ResetPasswordDialog({
                 >
                   {isReseting ? (
                     <div className="flex items-center gap-1">
-                      <div className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       Updating...
                     </div>
                   ) : (

@@ -231,8 +231,8 @@ async function handleForceLicenseValidation(request: NextRequest) {
       return NextResponse.json({
         valid: false,
         error:
-          'Machine code mismatch. This license is not valid for this machine.',
-        hasLicenseFile: true,
+          'Mac        hasLicenseFile: true,hine code mismatch. This license is not valid for this machine.',
+
         machineCodeMismatch: true,
       });
     }

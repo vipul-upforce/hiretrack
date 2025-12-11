@@ -11,16 +11,14 @@ interface BackupListProps {
 export function BackupList({ files, loading, onDelete }: BackupListProps) {
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <FileIcon className="h-4 w-4" />
-        Backup Files (
-        {files.length}
-        )
+        Backup Files ({files.length})
       </h3>
-      <ul className="space-y-2 max-h-[40vh] overflow-y-auto">
-        {files.map((file, i) => (
+      <ul className="max-h-[40vh] space-y-2 overflow-y-auto">
+        {files.map((file) => (
           <BackupListItem
-            key={`${file.name}-${i}`}
+            key={`${file.name}+${file.createdAt}`}
             file={file}
             loading={loading}
             onDelete={onDelete}

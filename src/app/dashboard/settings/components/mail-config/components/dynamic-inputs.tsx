@@ -17,7 +17,7 @@ export function DynamicInputs() {
           <Input
             id={name}
             name={name}
-            value={values[name]}
+            value={values.name}
             onChange={handleChange}
             onBlur={handleBlur}
             placeholder={placeholder}

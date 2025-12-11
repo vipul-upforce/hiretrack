@@ -44,11 +44,9 @@ export default function BackupsDialog() {
         disabled={globalLoading}
       />
 
-      {isLoadingBackups ? (
-        <BackupSkeleton />
-      ) : files.length === 0 ? (
-        <BackupEmptyState />
-      ) : (
+      {isLoadingBackups && <BackupSkeleton />}
+      {!isLoadingBackups && files.length === 0 && <BackupEmptyState />}
+      {!isLoadingBackups && files.length > 0 && (
         <BackupList
           files={files}
           loading={globalLoading}

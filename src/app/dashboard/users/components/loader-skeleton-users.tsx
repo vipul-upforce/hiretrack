@@ -65,6 +65,7 @@ export default function LoaderSkeletonUsers() {
 
               <TableBody>
                 {rows.map((_, i) => (
+                  // eslint-disable-next-line react/no-array-index-key
                   <TableRow key={i}>
                     <TableCell>
                       <Skeleton className="h-5 w-32" />

@@ -20,10 +20,10 @@ export interface TimeZoneValues {
 
 export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
-  const {
-    data, isFetching, isLoading, refetch,
-  } = useGetTimeZoneQuery(undefined);
-  const [updateTimeZone, { isLoading: isUpdating }] = useUpdateTimeZoneMutation();
+  const { data, isFetching, isLoading, refetch } =
+    useGetTimeZoneQuery(undefined);
+  const [updateTimeZone, { isLoading: isUpdating }] =
+    useUpdateTimeZoneMutation();
 
   const initialTimeZone = useMemo(() => {
     const saved = data?.timezone?.name;
@@ -48,7 +48,7 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
 
       refetch();
       onClose();
-    } catch (err) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to update timezone',
@@ -67,13 +67,16 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
       enableReinitialize
     >
       {({
-        values, setFieldValue, handleSubmit, isSubmitting,
+        values,
+        setFieldValue,
+        handleSubmit: formikSubmit,
+        isSubmitting,
       }) => {
         const isDirty = values.timeZone !== initialTimeZone;
         const isDisabled = !isDirty || isSubmitting || isUpdating;
 
         return (
-          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+          <Form onSubmit={formikSubmit} className="flex h-full flex-col">
             <div className="px-6 py-4">
               <Label htmlFor="timeZone">Timezone</Label>
 
@@ -91,11 +94,11 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
               <ErrorMessage
                 name="timeZone"
                 component="div"
-                className="text-red-500 text-sm mt-1"
+                className="mt-1 text-sm text-red-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+            <div className="mt-auto flex justify-end gap-2 border-t border-border/10 px-6 py-4">
               <Button
                 type="button"
                 variant="outline"

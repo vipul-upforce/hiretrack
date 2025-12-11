@@ -9,5 +9,5 @@ export default function Home() {
     redirect('/auth/login'); // Ensure you import redirect from 'next/navigation'
   }
 
-  return <></>;
+  return null;
 }

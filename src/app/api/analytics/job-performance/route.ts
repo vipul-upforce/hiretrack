@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       let jobsOrgId;
       try {
         jobsOrgId = new ObjectId(user.organizationId);
-      } catch (e) {
+      } catch {
         // If conversion fails, use string (fallback)
         jobsOrgId = user.organizationId;
       }

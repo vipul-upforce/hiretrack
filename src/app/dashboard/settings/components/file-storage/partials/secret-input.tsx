@@ -31,7 +31,7 @@ export function SecretInput({ name, label }: SecretInputProps) {
           type="button"
           variant="ghost"
           size="icon"
-          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+          className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent"
           onClick={() => setShow(!show)}
         >
           {show ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -40,7 +40,7 @@ export function SecretInput({ name, label }: SecretInputProps) {
       <ErrorMessage
         name={name}
         component="div"
-        className="text-red-500 text-sm"
+        className="text-sm text-red-500"
       />
     </div>
   );

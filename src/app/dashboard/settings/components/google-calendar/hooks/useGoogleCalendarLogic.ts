@@ -81,7 +81,7 @@ export function useGoogleCalendarLogic() {
         title: 'Success',
         description: 'Google Calendar credentials saved successfully',
       });
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to save credentials',
@@ -118,7 +118,7 @@ export function useGoogleCalendarLogic() {
         description: 'Google Calendar disconnected successfully',
       });
       refetch();
-    } catch (error) {
+    } catch{
       toast({
         title: 'Error',
         description: 'Failed to disconnect Google Calendar',
@@ -143,7 +143,7 @@ export function useGoogleCalendarLogic() {
       try {
         responseText = await response.text();
         data = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch {
         data = {
           success: false,
           error: 'Invalid JSON response',

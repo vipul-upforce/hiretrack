@@ -105,7 +105,7 @@ export async function middleware(request: NextRequest) {
   if (isOrgPath) {
     const subPath = `/${pathParts[1]}`;
     if (subPath === '/apply-jobs') {
-      
+      //
     }
   } else if (
     !userData

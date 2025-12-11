@@ -2,12 +2,12 @@ import Image from 'next/image';
 
 interface ErrorStateProps {
   imageUrl: string;
-  errorMessage?: string;
+  errorMessage?: string | boolean | null;
 }
 
 export function ErrorState({ imageUrl, errorMessage }: ErrorStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
+    <div className="flex flex-col items-center justify-center px-4 py-12">
       <Image
         src={imageUrl || '/placeholder.svg'}
         alt="Error"
@@ -15,8 +15,8 @@ export function ErrorState({ imageUrl, errorMessage }: ErrorStateProps) {
         height={600}
         className="mb-6"
       />
-      {errorMessage && (
-        <p className="text-center text-muted-foreground font-semibold">
+      {errorMessage && typeof errorMessage === 'string' && (
+        <p className="text-center font-semibold text-muted-foreground">
           {errorMessage}
         </p>
       )}

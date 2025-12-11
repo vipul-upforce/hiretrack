@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { useSelector } from 'react-redux';
 import { User } from '@/lib/features/org/orgApi';
+import React from 'react';
 import GeminiConfigs from './gemini';
 import EmailTemplateEditor from './edit-mail-dialog';
 import ManageTagsDialog from '../../jobs/[id]/components/Dialogs/manage-tags-dialog';
@@ -65,71 +66,107 @@ function SettingDialog({
   );
   const orgId = user.organizationId;
 
-  if (setting.key === 'tags') return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
+  if (setting.key === 'tags')
+    return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
 
-  if (setting.key === 'evaluation') return <EvaluationSettings onClose={onClose} isOpen={isOpen} />;
+  if (setting.key === 'evaluation')
+    return <EvaluationSettings onClose={onClose} isOpen={isOpen} />;
+
+  // Helper to determine dialog size
+  const getDialogSize = (key: string) => {
+    switch (key) {
+      case 'ai-providers':
+      case 'google-calendar':
+        return '2xl';
+      case 'version':
+        return 'xl';
+      case 'backups':
+        return 'lg';
+      default:
+        return undefined;
+    }
+  };
+
+  // Helper to determine dialog class name
+  const getDialogClassName = (key: string) => {
+    switch (key) {
+      case 'portal':
+      case 'templates':
+        return 'flex min-h-[95vh] w-[90vw] max-w-7xl flex-col overflow-hidden';
+      case 'ai-providers':
+      case 'google-calendar':
+        return 'flex max-h-[90vh] flex-col overflow-hidden p-0';
+      case 'timezone':
+        return 'w-[90vw] max-w-2xl overflow-visible';
+      case 'version':
+        return 'flex max-h-[90vh] w-[100vw] flex-col overflow-hidden p-0';
+      case 'mail':
+        return 'hide-scrollbar flex max-h-[90vh] w-[60vw] flex-col overflow-y-auto p-0';
+      default:
+        return 'overflow-hidden';
+    }
+  };
+
+  // Helper to render the body content
+  const renderDialogBody = () => {
+    if (!ComponentToRender || setting.key === 'tags') {
+      return (
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          <p>No settings available for this option.</p>
+        </div>
+      );
+    }
+
+    const directRenderKeys = [
+      'timezone',
+      'fs',
+      'mail',
+      'multipleorgs',
+      'gemini',
+      'captcha',
+      'twoFA',
+    ];
+
+    if (directRenderKeys.includes(setting.key)) {
+      return <ComponentToRender onClose={onClose} isOpen={isOpen} />;
+    }
+
+    if (setting.key === 'ai-providers' || setting.key === 'google-calendar') {
+      return (
+        <div className="flex-1 overflow-hidden overflow-y-auto px-6 py-0">
+          <ComponentToRender onClose={onClose} isOpen={isOpen} />
+        </div>
+      );
+    }
+
+    if (setting.key === 'version') {
+      return (
+        <div className="flex-1 overflow-hidden overflow-y-auto py-0">
+          <ComponentToRender onClose={onClose} isOpen={isOpen} />
+        </div>
+      );
+    }
+
+    // Default wrapper
+    return (
+      <div className="flex-1 overflow-y-auto px-6 py-4">
+        <ComponentToRender onClose={onClose} isOpen={isOpen} />
+      </div>
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        size={
-          setting.key === 'ai-providers' || setting.key === 'google-calendar'
-            ? '2xl'
-            : setting.key === 'version'
-              ? 'xl'
-              : setting.key === 'backups'
-                ? 'lg'
-                : undefined
-        }
-        className={`${
-          setting.key === 'portal' || setting.key === 'templates'
-            ? 'max-w-7xl w-[90vw] min-h-[95vh] overflow-hidden flex flex-col'
-            : setting.key === 'ai-providers'
-              ? 'max-h-[90vh] p-0 overflow-hidden flex flex-col'
-              : setting.key === 'google-calendar'
-                ? 'max-h-[90vh] p-0 overflow-hidden flex flex-col'
-                : setting.key === 'timezone'
-                  ? 'max-w-2xl w-[90vw] overflow-visible'
-                  : setting.key === 'version'
-                    ? 'max-h-[90vh] w-[100vw] p-0 overflow-hidden flex flex-col'
-                    : setting.key === 'mail'
-                      ? 'max-h-[90vh] w-[60vw] p-0 hide-scrollbar overflow-y-auto flex flex-col'
-                      : 'overflow-hidden'
-        }`}
+        size={getDialogSize(setting.key)}
+        className={getDialogClassName(setting.key)}
       >
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{setting.title}</DialogTitle>
           <DialogDescription>{setting.description}</DialogDescription>
         </DialogHeader>
 
-        {ComponentToRender && setting.key !== 'tags' ? (
-          setting.key === 'timezone'
-          || setting.key === 'fs'
-          || setting.key === 'mail'
-          || setting.key === 'multipleorgs'
-          || setting.key === 'gemini'
-          || setting.key === 'captcha'
-          || setting.key === 'twoFA' ? (
-            <ComponentToRender onClose={onClose} isOpen={isOpen} />
-            ) : setting.key === 'ai-providers'
-            || setting.key === 'google-calendar' ? (
-              <div className="flex-1 overflow-hidden px-6 py-0 overflow-y-auto ">
-                <ComponentToRender onClose={onClose} isOpen={isOpen} />
-              </div>
-              ) : setting.key === 'version' ? (
-                <div className="flex-1 overflow-hidden py-0 overflow-y-auto">
-                  <ComponentToRender onClose={onClose} isOpen={isOpen} />
-                </div>
-              ) : (
-                <div className="flex-1 overflow-y-auto px-6 py-4">
-                  <ComponentToRender onClose={onClose} isOpen={isOpen} />
-                </div>
-              )
-        ) : (
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            <p>No settings available for this option.</p>
-          </div>
-        )}
+        {renderDialogBody()}
       </DialogContent>
     </Dialog>
   );

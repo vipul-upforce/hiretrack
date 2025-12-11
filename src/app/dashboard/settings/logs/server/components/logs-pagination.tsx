@@ -23,7 +23,7 @@ export function LogsPagination({
   const isLastPage = currentOffset + currentLogCount >= totalLines;
 
   return (
-    <div className="flex items-center justify-between gap-3 p-3 border-t bg-card/60">
+    <div className="flex items-center justify-between gap-3 border-t bg-card/60 p-3">
       <Button
         variant="outline"
         size="sm"
@@ -34,13 +34,7 @@ export function LogsPagination({
         <ChevronLeft className="h-4 w-4" />
       </Button>
       <p className="text-sm text-muted-foreground">
-        Page
-        {' '}
-        {currentPage}
-        {' '}
-        of
-        {' '}
-        {totalPages}
+        Page {currentPage} of {totalPages}
       </p>
       <Button
         variant="outline"

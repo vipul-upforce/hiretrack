@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import Cookies from 'js-cookie';
 import { fetchUserFromToken } from '@/lib/redux/authSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/redux/store';
@@ -48,8 +45,6 @@ export default function VerifyOtpForm() {
       });
 
       if (response.ok) {
-        // const { user } = await response.json();
-        // Cookies.set("token", user, { expires: 30 });
         toast({ title: 'Success', description: 'Login successful' });
         router.push('/dashboard');
       } else {
@@ -58,7 +53,7 @@ export default function VerifyOtpForm() {
       }
 
       dispatch(fetchUserFromToken());
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'An unknown error occurred',
@@ -94,7 +89,7 @@ export default function VerifyOtpForm() {
         const { message } = await response.json();
         toast({ title: 'Error', description: message, variant: 'destructive' });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to resend OTP',
@@ -113,7 +108,7 @@ export default function VerifyOtpForm() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Enter OTP</CardTitle>
@@ -143,11 +138,7 @@ export default function VerifyOtpForm() {
           <div className="mt-4 text-center">
             {cooldownSeconds > 0 ? (
               <p>
-                Please wait
-                {' '}
-                {formatCooldown(cooldownSeconds)}
-                {' '}
-                before requesting
+                Please wait {formatCooldown(cooldownSeconds)} before requesting
                 a new OTP
               </p>
             ) : (

@@ -2,9 +2,7 @@
 
 import React from 'react';
 import { Form, Formik } from 'formik';
-import {
-  Tabs, TabsList, TabsTrigger, TabsContent,
-} from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { VersionInfoSection } from './version/version-info-section';
@@ -45,17 +43,20 @@ export default function AboutDialog({
       enableReinitialize
     >
       {({
-        values, setFieldValue, handleSubmit, isSubmitting,
+        values,
+        setFieldValue,
+        handleSubmit: handleSubmitFormik,
+        isSubmitting,
       }) => (
-        <Form onSubmit={handleSubmit} className="flex flex-col h-full">
-          <Tabs defaultValue="version" className="w-full flex flex-col h-full">
+        <Form onSubmit={handleSubmitFormik} className="flex h-full flex-col">
+          <Tabs defaultValue="version" className="flex h-full w-full flex-col">
             {/* TAB HEADERS */}
-            <TabsList className="grid grid-cols-2 text-center self-center w-[95%] mb-4">
+            <TabsList className="mb-4 grid w-[95%] grid-cols-2 self-center text-center">
               <TabsTrigger value="version">Version</TabsTrigger>
               <TabsTrigger value="disk">Disk Space</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="version" className="flex flex-col h-full">
+            <TabsContent value="version" className="flex h-full flex-col">
               <div className="max-h-[60vh] overflow-y-scroll">
                 <VersionInfoSection
                   currentVersion={currentVersion}
@@ -81,27 +82,27 @@ export default function AboutDialog({
               </div>
 
               {updateAvailable && (
-              <div className="pt-4">
-                <Button
-                  type="button"
-                  onClick={handleUpdate}
-                  disabled={updatingRTK}
-                  className="w-full"
-                  style={{ backgroundColor: 'var(--portal-primary)' }}
-                >
-                  {updatingRTK ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Updating...
+                <div className="pt-4">
+                  <Button
+                    type="button"
+                    onClick={handleUpdate}
+                    disabled={updatingRTK}
+                    className="w-full"
+                    style={{ backgroundColor: 'var(--portal-primary)' }}
+                  >
+                    {updatingRTK ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
                       </>
-            ) : (
-              <>
+                    ) : (
+                      <>
                         <Download className="mr-2 h-4 w-4" />
                         Update now
                       </>
-            )}
-                </Button>
-              </div>
+                    )}
+                  </Button>
+                </div>
               )}
             </TabsContent>
 

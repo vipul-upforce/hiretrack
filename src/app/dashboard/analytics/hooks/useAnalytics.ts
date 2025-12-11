@@ -32,11 +32,9 @@ export type { AnalyticsFilters } from '@/lib/features/analytics/analyticsApi';
 
 type FetchAnalyticsHookResult = ReturnType<typeof useFetchAnalyticsQuery>;
 
-export interface CandidateFunnelSummary extends FunnelSummary {}
-
 export interface CandidateFunnelAnalytics {
   funnelData?: FunnelStage[];
-  summary?: CandidateFunnelSummary | null;
+  summary?: FunnelSummary | null;
 }
 
 export interface JobPerformanceSummary extends JobSummary {
@@ -57,22 +55,19 @@ export interface JobPerformanceInsights {
 export type JobPerformanceAnalytics = JobData & {
   summary?: JobPerformanceSummary | null;
   insights?: JobPerformanceInsights | null;
-}
-
-export interface InterviewAssignmentSummary extends InterviewSummary {}
+};
 
 export interface InterviewAssignmentAnalytics {
   assignmentData?: AssignmentData[];
-  summary?: InterviewAssignmentSummary | null;
+  summary?: InterviewSummary | null;
   insights?: Record<string, unknown> | null;
 }
 
 // Use centralized TrendsSummary
-export interface ApplicationTrendsSummary extends TrendsSummary {}
 
 export interface ApplicationTrendsAnalytics {
   trendData?: TrendData[];
-  summary?: ApplicationTrendsSummary | null;
+  summary?: TrendsSummary | null;
   insights?: Record<string, unknown> | null;
 }
 
@@ -112,6 +107,26 @@ export interface UseAnalyticsOptions {
   refetchInterval?: number;
 }
 
+function serializeFilters(
+  filters?: AnalyticsFilters,
+): SerializedAnalyticsFilters | undefined {
+  if (!filters) {
+    return undefined;
+  }
+
+  return {
+    jobIds: filters.jobIds,
+    candidateStatuses: filters.candidateStatuses,
+    interviewerIds: filters.interviewerIds,
+    locations: filters.locations,
+    granularity: filters.granularity,
+    dateRange: {
+      from: filters.dateRange?.from?.toISOString(),
+      to: filters.dateRange?.to?.toISOString(),
+    },
+  };
+}
+
 export function useAnalytics<T = unknown>({
   endpoint,
   filters,
@@ -138,10 +153,39 @@ export function useAnalytics<T = unknown>({
     shouldSkip || !queryArgs ? skipToken : queryArgs,
     refetchInterval
       ? {
-        pollingInterval: refetchInterval,
-      }
+          pollingInterval: refetchInterval,
+        }
       : undefined,
   );
+
+  function formatError(
+    error: FetchBaseQueryError | SerializedError | undefined,
+  ): string | null {
+    if (!error) {
+      return null;
+    }
+
+    if ('status' in error) {
+      const errorData = error.data as
+        | { message?: string; error?: string }
+        | string
+        | undefined;
+
+      if (typeof errorData === 'string') {
+        return errorData;
+      }
+
+      if (errorData?.message || errorData?.error) {
+        return errorData.message ?? errorData.error ?? null;
+      }
+
+      return typeof error.status === 'number'
+        ? `Analytics API error: ${error.status}`
+        : 'Analytics API error';
+    }
+
+    return error.message ?? 'Unknown error';
+  }
 
   const normalizedError = useMemo(
     () => formatError(queryResult.error),
@@ -213,50 +257,4 @@ export function useApplicationTrends(
     filters,
     organizationId,
   });
-}
-
-function formatError(
-  error: FetchBaseQueryError | SerializedError | undefined,
-): string | null {
-  if (!error) {
-    return null;
-  }
-
-  if ('status' in error) {
-    const errorData = error.data as { message?: string; error?: string } | string | undefined;
-
-    if (typeof errorData === 'string') {
-      return errorData;
-    }
-
-    if (errorData?.message || errorData?.error) {
-      return errorData.message ?? errorData.error ?? null;
-    }
-
-    return typeof error.status === 'number'
-      ? `Analytics API error: ${error.status}`
-      : 'Analytics API error';
-  }
-
-  return error.message ?? 'Unknown error';
-}
-
-function serializeFilters(
-  filters?: AnalyticsFilters,
-): SerializedAnalyticsFilters | undefined {
-  if (!filters) {
-    return undefined;
-  }
-
-  return {
-    jobIds: filters.jobIds,
-    candidateStatuses: filters.candidateStatuses,
-    interviewerIds: filters.interviewerIds,
-    locations: filters.locations,
-    granularity: filters.granularity,
-    dateRange: {
-      from: filters.dateRange?.from?.toISOString(),
-      to: filters.dateRange?.to?.toISOString(),
-    },
-  };
 }

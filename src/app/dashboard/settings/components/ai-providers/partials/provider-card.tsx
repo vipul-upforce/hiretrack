@@ -18,9 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  CheckCircle, XCircle, Loader2, Eye, EyeOff,
-} from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { getProviderModels } from '@/lib/ai-providers/models-config';
 import { AIProvidersValues, ProviderConfigItem } from '../types';
 import { getProviderIcon } from '../utils';
@@ -37,7 +35,7 @@ interface ProviderCardProps {
   onToggleVisibility: () => void;
 }
 
-export const ProviderCard: React.FC<ProviderCardProps> = ({
+export function ProviderCard({
   config,
   formik,
   primaryColor,
@@ -47,7 +45,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
   showApiKey,
   onVerify,
   onToggleVisibility,
-}) => {
+}: ProviderCardProps) {
   const {
     label,
     apiKeyField,
@@ -57,9 +55,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
     provider,
     description,
   } = config;
-  const {
-    values, handleChange, handleBlur, setFieldValue, errors, touched,
-  } = formik;
+  const { values, handleChange, handleBlur, setFieldValue, errors, touched } =
+    formik;
 
   const isActive = values.activeProvider === provider;
   const apiKeyValue = values[apiKeyField] || '';
@@ -80,12 +77,23 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
     }
   };
 
+  const getVerificationStatusColor = () => {
+    switch (verificationStatus) {
+      case 'success':
+        return 'text-green-600';
+      case 'error':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
+    }
+  };
+
   const activeStyle = isActive
     ? ({
-      borderColor: `${primaryColor}80`,
-      backgroundColor: `${primaryColor}0D`,
-      '--tw-ring-color': `${primaryColor}33`,
-    } as React.CSSProperties)
+        borderColor: `${primaryColor}80`,
+        backgroundColor: `${primaryColor}0D`,
+        '--tw-ring-color': `${primaryColor}33`,
+      } as React.CSSProperties)
     : {};
 
   return (
@@ -101,13 +109,13 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div
-              className={`p-2 rounded-lg ${isActive ? '' : 'bg-muted text-muted-foreground'}`}
+              className={`rounded-lg p-2 ${isActive ? '' : 'bg-muted text-muted-foreground'}`}
               style={
                 isActive
                   ? {
-                    backgroundColor: `${primaryColor}33`,
-                    color: primaryColor,
-                  }
+                      backgroundColor: `${primaryColor}33`,
+                      color: primaryColor,
+                    }
                   : {}
               }
             >
@@ -156,7 +164,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
               }`}
               style={isActive && !errors[apiKeyField] ? activeStyle : {}}
             />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-1">
+            <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-3">
               <Button
                 type="button"
                 variant="ghost"
@@ -176,13 +184,14 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                 size="sm"
                 className="h-6 px-2 text-xs"
                 onClick={() => {
-                  const finalModel = modelValue === 'custom' ? customModelValue : modelValue;
+                  const finalModel =
+                    modelValue === 'custom' ? customModelValue : modelValue;
                   onVerify(apiKeyValue, finalModel);
                 }}
                 disabled={
-                  verificationStatus === 'loading'
-                  || !apiKeyValue.trim()
-                  || (modelValue === 'custom' && !customModelValue.trim())
+                  verificationStatus === 'loading' ||
+                  !apiKeyValue.trim() ||
+                  (modelValue === 'custom' && !customModelValue.trim())
                 }
               >
                 Verify
@@ -195,15 +204,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
             className="text-sm text-red-500"
           />
           {verificationMessage && (
-            <p
-              className={`text-xs ${
-                verificationStatus === 'success'
-                  ? 'text-green-600'
-                  : verificationStatus === 'error'
-                    ? 'text-red-600'
-                    : 'text-gray-600'
-              }`}
-            >
+            <p className={`text-xs ${getVerificationStatusColor()}`}>
               {verificationMessage}
             </p>
           )}
@@ -245,7 +246,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                         {modelInfo.capabilities.costTier}
                       </Badge>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    <p className="mt-1 text-xs leading-relaxed text-gray-500">
                       {modelInfo.capabilities.description}
                     </p>
                   </div>
@@ -272,9 +273,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
         {modelValue === 'custom' && (
           <div className="space-y-2">
             <Label htmlFor={customModelField} className="text-sm font-medium">
-              Custom Model Name
-              {' '}
-              <span className="text-red-500">*</span>
+              Custom Model Name <span className="text-red-500">*</span>
             </Label>
             <Input
               id={customModelField}
@@ -290,8 +289,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
               }
             />
             <p className="text-xs text-gray-500">
-              Enter the exact model name as specified by the AI provider's API
-              documentation.
+              Enter the exact model name as specified by the AI provider&apos;s
+              API documentation.
             </p>
             <ErrorMessage
               name={customModelField}
@@ -299,14 +298,15 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
               className="text-sm text-red-500"
             />
 
-            <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <h4 className="text-sm font-medium mb-2 text-amber-800 dark:text-amber-200">
+            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+              <h4 className="mb-2 text-sm font-medium text-amber-800 dark:text-amber-200">
                 Custom Model
               </h4>
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                You're using a custom model. Please ensure the model name is
-                correct and supported by the provider's API. Capabilities and
-                features may vary depending on the specific model you specify.
+                You&apos;re using a custom model. Please ensure the model name
+                is correct and supported by the provider&apos;s API.
+                Capabilities and features may vary depending on the specific
+                model you specify.
               </p>
             </div>
           </div>
@@ -314,8 +314,8 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
 
         {/* Capabilities Display */}
         {modelValue && modelValue !== 'custom' && (
-          <div className="mt-4 p-3 bg-white dark:bg-black rounded-lg">
-            <h4 className="text-sm font-medium mb-2">Model Capabilities</h4>
+          <div className="mt-4 rounded-lg bg-white p-3 dark:bg-black">
+            <h4 className="mb-2 text-sm font-medium">Model Capabilities</h4>
             <div className="flex flex-wrap gap-2">
               {(() => {
                 const modelInfo = providerModels.find(
@@ -341,9 +341,7 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
                       </Badge>
                     )}
                     <Badge variant="outline" className="text-xs">
-                      {caps.maxTokens.toLocaleString()}
-                      {' '}
-                      tokens
+                      {caps.maxTokens.toLocaleString()} tokens
                     </Badge>
                   </>
                 );
@@ -354,4 +352,4 @@ export const ProviderCard: React.FC<ProviderCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+}

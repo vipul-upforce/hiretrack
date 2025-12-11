@@ -3,7 +3,6 @@
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { toast } from '@/hooks/use-toast';
 import useRoles from '@/hooks/useRoles';
-import { Candidate } from '@/types/candidate';
 import {
   useParams, usePathname, useRouter, redirect,
 } from 'next/navigation';

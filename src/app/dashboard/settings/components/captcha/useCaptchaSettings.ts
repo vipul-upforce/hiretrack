@@ -29,8 +29,8 @@ export const useCaptchaSettings = (onClose: () => void) => {
       if (data?.captcha) {
         try {
           const [decryptedSiteKey, decryptedSecretKey] = await Promise.all([
-            getDecodedCaptcha(data.captcha.siteKey || '', orgId),
-            getDecodedCaptcha(data.captcha.secretKey || '', orgId),
+            getDecodedCaptcha(data.captcha.siteKey || '', orgId as string),
+            getDecodedCaptcha(data.captcha.secretKey || '', orgId as string),
           ]);
 
           setDecryptedValues({
@@ -59,11 +59,13 @@ export const useCaptchaSettings = (onClose: () => void) => {
 
   const handleSubmit = async (values: CaptchaValues) => {
     if (isPermissionDenied) {
-      return toast({
+      toast({
         title: 'Not Allowed',
         description: 'This action is not allowed.',
         variant: 'destructive',
       });
+
+      return;
     }
 
     try {

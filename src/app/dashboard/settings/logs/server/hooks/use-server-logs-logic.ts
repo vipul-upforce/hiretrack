@@ -1,6 +1,4 @@
-import {
-  useState, useMemo, useEffect, useCallback,
-} from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useGetServerLogsQuery } from '@/lib/features/settings/settingsApi';
 import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
 import { useRenderLogTitle } from '@/app/dashboard/hooks/useRenderLogTitle';
@@ -75,7 +73,7 @@ export function useServerLogsLogic({
         return;
       }
       throw new Error('No candidate data returned');
-    } catch (err: any) {
+    } catch {
       onError?.(null);
       toast({
         title: 'Error',

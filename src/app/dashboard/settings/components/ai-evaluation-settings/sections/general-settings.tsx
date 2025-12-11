@@ -5,25 +5,26 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { SectionProps } from '../types';
 
-export const GeneralSettingsSection: React.FC<SectionProps> = ({
-  config,
-  updateConfig,
-}) => (
+function getTemperatureDescription(temperature: number): string {
+  if (temperature === 0) {
+    return 'Fully Deterministic';
+  }
+  if (temperature <= 0.3) {
+    return 'High Consistency';
+  }
+  return 'More Creative';
+}
+
+export function GeneralSettingsSection({ config, updateConfig }: SectionProps) {
   <div className="space-y-6">
     {/* Temperature Control */}
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <Label htmlFor="temperature">
-          Temperature:
-          {' '}
-          {config.temperature.toFixed(2)}
+          Temperature: {config.temperature.toFixed(2)}
         </Label>
         <span className="text-xs text-muted-foreground">
-          {config.temperature === 0
-            ? 'Fully Deterministic'
-            : config.temperature <= 0.3
-              ? 'High Consistency'
-              : 'More Creative'}
+          {getTemperatureDescription(config.temperature)}
         </span>
       </div>
       <Slider
@@ -36,8 +37,8 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
         className="w-full"
       />
       <p className="text-xs text-muted-foreground">
-        Lower values (0-0.2) give consistent, deterministic scores.
-        Recommended: 0.1 for 95% consistency.
+        Lower values (0-0.2) give consistent, deterministic scores. Recommended:
+        0.1 for 95% consistency.
       </p>
     </div>
 
@@ -52,26 +53,30 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
       <Switch
         id="autoEval"
         checked={config.autoEvaluateAllCandidates}
-        onCheckedChange={(val) => updateConfig('autoEvaluateAllCandidates', val)}
+        onCheckedChange={(val) =>
+          updateConfig('autoEvaluateAllCandidates', val)
+        }
       />
     </div>
 
     {/* Max PDF Pages */}
     {!config.autoEvaluateAllCandidates && (
-    <div className="space-y-2">
-      <Label htmlFor="maxPages">Max PDF Pages for Auto-Evaluation</Label>
-      <Input
-        id="maxPages"
-        type="number"
-        min={0}
-        value={config.maxPdfPages}
-        onChange={(e) => updateConfig('maxPdfPages', parseInt(e.target.value) || 0)}
-      />
-      <p className="text-xs text-muted-foreground">
-        Only PDFs with this many pages or fewer will be auto-evaluated. Set
-        to 0 for no limit.
-      </p>
-    </div>
+      <div className="space-y-2">
+        <Label htmlFor="maxPages">Max PDF Pages for Auto-Evaluation</Label>
+        <Input
+          id="maxPages"
+          type="number"
+          min={0}
+          value={config.maxPdfPages}
+          onChange={(e) =>
+            updateConfig('maxPdfPages', parseInt(e.target.value, 10) || 0)
+          }
+        />
+        <p className="text-xs text-muted-foreground">
+          Only PDFs with this many pages or fewer will be auto-evaluated. Set to
+          0 for no limit.
+        </p>
+      </div>
     )}
-  </div>
-);
+  </div>;
+}

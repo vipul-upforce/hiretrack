@@ -1,29 +1,29 @@
 const path = require('path');
-const { version : VERSION } = require('./package.json');
+const { version: VERSION } = require('./package.json');
 
 const LOG_DIR = path.resolve('../../.hiretrack/logs');
 
 module.exports = {
   apps: [
     {
-      name: `hiretrack-v${ VERSION}`,
-      script: "node_modules/next/dist/bin/next",
-      args: "start -p 3000",
-      cwd: "./",
-      exec_mode: "fork",
+      name: `hiretrack-v${VERSION}`,
+      script: 'node_modules/next/dist/bin/next',
+      args: 'start -p 3000',
+      cwd: './',
+      exec_mode: 'fork',
       instances: 1,
       autorestart: true,
       watch: false,
-      max_memory_restart: "3500M",
+      max_memory_restart: '3500M',
       env: {
-        NODE_ENV: "production",
+        NODE_ENV: 'production',
       },
       env_development: {
-        NODE_ENV: "development",
+        NODE_ENV: 'development',
       },
-      error_file: path.join(LOG_DIR, "pm2-error.log"),
-      out_file: path.join(LOG_DIR, "pm2-out.log"),
-      log_date_format: "YYYY-MM-DD HH:mm:ss",
+      error_file: path.join(LOG_DIR, 'pm2-error.log'),
+      out_file: path.join(LOG_DIR, 'pm2-out.log'),
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
     },
   ],
 };

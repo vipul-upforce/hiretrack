@@ -2,7 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import {
-  Formik, Form, Field, FormikErrors, FormikTouched, FieldProps,
+  Formik,
+  Form,
+  Field,
+  FormikErrors,
+  FormikTouched,
+  FieldProps,
 } from 'formik';
 import {
   Card,
@@ -56,17 +61,15 @@ export default function Signup() {
   ) => {
     try {
       if (userData) {
-      
         try {
-          const orgID_cookie = userData.organizationId || '';
+          const orgIdCookie = userData.organizationId || '';
           const signupData = {
             ...values,
             email: values.email.toLowerCase().trim(),
-            organizationId: orgID_cookie,
+            organizationId: orgIdCookie,
             name: values.name.trim(),
             triggerUserId: userData.id,
             triggerUserName: userData.name,
-
           };
           const response = await signup(signupData).unwrap();
 
@@ -82,8 +85,9 @@ export default function Signup() {
           }
         } catch (error: unknown) {
           if (error && typeof error === 'object' && 'data' in error) {
-            const errorMessage = (error.data as { error: string }).error
-              || 'Failed to parse user data from cookie';
+            const errorMessage =
+              (error.data as { error: string }).error ||
+              'Failed to parse user data from cookie';
             throw new Error(errorMessage);
           } else {
             throw new Error('Failed to parse user data from cookie');
@@ -104,10 +108,10 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardTitle className="text-center text-2xl">Create Account</CardTitle>
         </CardHeader>
         <CardContent>
           <Formik
@@ -140,7 +144,7 @@ export default function Signup() {
                           }
                         />
                         {errors.name && touched.name && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.name}
                           </div>
                         )}
@@ -166,7 +170,7 @@ export default function Signup() {
                           }
                         />
                         {errors.email && touched.email && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.email}
                           </div>
                         )}
@@ -193,7 +197,7 @@ export default function Signup() {
                             }
                           />
                           {errors.password && touched.password && (
-                            <div className="text-red-500 text-sm">
+                            <div className="text-sm text-red-500">
                               {errors.password}
                             </div>
                           )}
@@ -204,7 +208,7 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
+                      className={`absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {!showPassword ? (
@@ -233,12 +237,12 @@ export default function Signup() {
                                 : ''
                             }
                           />
-                          {errors.confirmPassword
-                            && touched.confirmPassword && (
-                              <div className="text-red-500 text-sm">
+                          {errors.confirmPassword &&
+                            touched.confirmPassword && (
+                              <div className="text-sm text-red-500">
                                 {errors.confirmPassword}
                               </div>
-                          )}
+                            )}
                         </>
                       )}
                     </Field>
@@ -246,8 +250,10 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className={`absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
                       {!showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -266,7 +272,9 @@ export default function Signup() {
                         <Select
                           {...field}
                           value={field.value} // Bind Formik value
-                          onValueChange={(value) => form.setFieldValue(field.name, value)}
+                          onValueChange={(value) =>
+                            form.setFieldValue(field.name, value)
+                          }
                           disabled={isLoading || isSubmitting}
                         >
                           <SelectTrigger>
@@ -281,7 +289,7 @@ export default function Signup() {
                           </SelectContent>
                         </Select>
                         {errors.role && touched.role && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.role}
                           </div>
                         )}
@@ -290,7 +298,7 @@ export default function Signup() {
                   </Field>
                 </div>
 
-                <CardFooter className="px-0 pt-6 flex-col space-y-4">
+                <CardFooter className="flex-col space-y-4 px-0 pt-6">
                   <Button
                     type="submit"
                     className="w-full"

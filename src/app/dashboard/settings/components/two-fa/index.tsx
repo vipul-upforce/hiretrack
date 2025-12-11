@@ -35,20 +35,21 @@ export default function TwoFASettings({ onClose }: TwoFASettingsProps) {
     enable2FA: !!data?.twoFA?.enable2FA,
   };
 
-  const isForbiddenError = (err: unknown): boolean => (
-    typeof err === 'object'
-      && err !== null
-      && 'status' in err
-      && (err as ApiError).status === 403
-  );
+  const isForbiddenError = (err: unknown): boolean =>
+    typeof err === 'object' &&
+    err !== null &&
+    'status' in err &&
+    (err as ApiError).status === 403;
 
   const handleSubmit = async (values: TwoFAValues) => {
     if (isForbiddenError(queryError)) {
-      return toast({
+      toast({
         title: 'Not Allowed',
         description: 'This action is not allowed.',
         variant: 'destructive',
       });
+
+      return;
     }
 
     try {
@@ -81,27 +82,32 @@ export default function TwoFASettings({ onClose }: TwoFASettingsProps) {
       enableReinitialize
     >
       {({
-        values, setFieldValue, handleSubmit, isSubmitting,
+        values,
+        setFieldValue,
+        handleSubmit: formikSubmit,
+        isSubmitting,
       }) => (
-        <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+        <Form onSubmit={formikSubmit} className="flex h-full flex-col">
           <div className="px-6 py-4">
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="enable2FA"
                 checked={values.enable2FA}
                 disabled={isForbiddenError(queryError)}
-                onCheckedChange={(checked) => setFieldValue('enable2FA', Boolean(checked))}
+                onCheckedChange={(checked) =>
+                  setFieldValue('enable2FA', Boolean(checked))
+                }
               />
               <Label htmlFor="enable2FA">Enable 2FA</Label>
             </div>
             <ErrorMessage
               name="enable2FA"
               component="div"
-              className="text-red-500 text-sm mt-1"
+              className="mt-1 text-sm text-red-500"
             />
           </div>
 
-          <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+          <div className="mt-auto flex justify-end gap-2 border-t border-border/10 px-6 py-4">
             <Button
               type="button"
               variant="outline"

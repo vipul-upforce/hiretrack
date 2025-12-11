@@ -17,7 +17,7 @@ function Settings() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const config = searchParams.get('config');
+    const config = searchParams?.get('config');
     if (config) {
       setOpenDialog(config);
     }

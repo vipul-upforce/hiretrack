@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { getPortalMetadata } from '@/lib/getPortalMetadata';
+import React from 'react';
 
 export async function generateMetadata(): Promise<Metadata> {
   const portalData = await getPortalMetadata();

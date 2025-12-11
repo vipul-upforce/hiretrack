@@ -2,9 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import {
-  Formik, Form, Field, FieldProps,
-} from 'formik';
+import { Formik, Form, Field, FieldProps } from 'formik';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User } from 'lucide-react';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -50,7 +48,7 @@ export function SignupForm() {
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 0.2 }}
-      className="relative w-full max-w-md mx-auto lg:max-w-full"
+      className="relative mx-auto w-full max-w-md lg:max-w-full"
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -58,7 +56,7 @@ export function SignupForm() {
       {/* Hover Glow Effect */}
       {isHovering && (
         <motion.div
-          className="absolute pointer-events-none w-96 h-96 rounded-full blur-3xl hidden lg:block"
+          className="pointer-events-none absolute hidden h-96 w-96 rounded-full blur-3xl lg:block"
           style={{
             background: `linear-gradient(135deg, ${portalSettings.primaryColor}20, ${portalSettings.secondaryColor}20, ${portalSettings.primaryColor}15)`,
             transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
@@ -67,9 +65,9 @@ export function SignupForm() {
         />
       )}
 
-      <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-6 sm:p-8 shadow-2xl">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">Create Account</h2>
+      <div className="relative rounded-2xl border border-border/50 bg-card/80 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
+        <div className="mb-8 text-center">
+          <h2 className="mb-2 text-2xl font-bold">Create Account</h2>
           {orgName && (
             <div className="mt-2">
               <span
@@ -92,9 +90,7 @@ export function SignupForm() {
           validationSchema={SignupSchema}
           onSubmit={handleSignupSubmit}
         >
-          {({
-            errors, touched, isSubmitting, values, setFieldValue,
-          }) => (
+          {({ errors, touched, isSubmitting, values, setFieldValue }) => (
             <Form className="space-y-5">
               <FormInput
                 name="name"
@@ -142,15 +138,15 @@ export function SignupForm() {
 
               {/* CAPTCHA */}
               {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
-              <div className="flex justify-center scale-90 sm:scale-100 origin-center">
-                <div className="recaptcha-container">
-                  <ReCAPTCHA
-                    sitekey={decryptedSiteKey}
-                    onChange={(token) => setCaptchaToken(token)}
-                    theme={theme as 'light' | 'dark'}
-                  />
+                <div className="flex origin-center scale-90 justify-center sm:scale-100">
+                  <div className="recaptcha-container">
+                    <ReCAPTCHA
+                      sitekey={decryptedSiteKey}
+                      onChange={(token) => setCaptchaToken(token)}
+                      theme={theme as 'light' | 'dark'}
+                    />
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Terms Checkbox */}
@@ -159,52 +155,49 @@ export function SignupForm() {
                   <div className="space-y-1">
                     <div className="flex items-start space-x-2">
                       <Checkbox
-              id="termsAccepted"
-              checked={field.value}
-              onCheckedChange={(checked) => {
-                setShowTermsDialog(true);
-                setFieldValue('termsAccepted', false);
-              }}
-            />
+                        id="termsAccepted"
+                        checked={field.value}
+                        onCheckedChange={() => {
+                          setShowTermsDialog(true);
+                          setFieldValue('termsAccepted', false);
+                        }}
+                      />
                       <label
-              htmlFor="termsAccepted"
-              className="text-xs sm:text-sm"
-            >
-              I agree to the
-              {' '}
-              <button
-                type="button"
-                className="underline"
-                style={{ color: portalSettings.primaryColor }}
-                onClick={(e) => {
+                        htmlFor="termsAccepted"
+                        className="text-xs sm:text-sm"
+                      >
+                        I agree to the{' '}
+                        <button
+                          type="button"
+                          className="underline"
+                          style={{ color: portalSettings.primaryColor }}
+                          onClick={(e) => {
                             e.preventDefault();
                             setShowTermsDialog(true);
                             setFieldValue('termsAccepted', false);
                           }}
-              >
+                        >
                           Terms
-              </button>
-              {' '}
-              and
-              {' '}
-              <button
-                type="button"
-                className="underline"
-                style={{ color: portalSettings.primaryColor }}
-                onClick={(e) => {
+                        </button>{' '}
+                        and{' '}
+                        <button
+                          type="button"
+                          className="underline"
+                          style={{ color: portalSettings.primaryColor }}
+                          onClick={(e) => {
                             e.preventDefault();
                             setShowTermsDialog(true);
                             setFieldValue('termsAccepted', false);
                           }}
-              >
+                        >
                           Privacy Policy
-              </button>
-            </label>
+                        </button>
+                      </label>
                     </div>
                     {errors.termsAccepted && touched.termsAccepted && (
-                    <div className="text-sm text-red-500">
-            {errors.termsAccepted}
-          </div>
+                      <div className="text-sm text-red-500">
+                        {errors.termsAccepted}
+                      </div>
                     )}
                   </div>
                 )}
@@ -213,22 +206,22 @@ export function SignupForm() {
               <motion.button
                 type="submit"
                 disabled={
-                  isSignupLoading
-                  || isSubmitting
-                  || !values?.termsAccepted
-                  || (captchaConfig?.captcha?.enableCaptcha && !captchaToken)
+                  isSignupLoading ||
+                  isSubmitting ||
+                  !values?.termsAccepted ||
+                  (captchaConfig?.captcha?.enableCaptcha && !captchaToken)
                 }
-                className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
+                className="group relative w-full overflow-hidden rounded-lg py-3 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{
                   background: `linear-gradient(135deg, ${portalSettings.primaryColor}, ${portalSettings.secondaryColor})`,
                 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-1000 group-hover:translate-x-[100%]" />
                 {isSignupLoading || isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Creating Account...
                   </div>
                 ) : (
@@ -236,14 +229,13 @@ export function SignupForm() {
                 )}
               </motion.button>
 
-              <div className="text-center pt-4">
-                <span className="text-muted-foreground text-sm">
-                  Already have an account?
-                  {' '}
+              <div className="pt-4 text-center">
+                <span className="text-sm text-muted-foreground">
+                  Already have an account?{' '}
                 </span>
                 <Link
                   href="/auth/login"
-                  className="font-medium hover:underline text-sm"
+                  className="text-sm font-medium hover:underline"
                   style={{ color: portalSettings.primaryColor }}
                 >
                   Sign in here

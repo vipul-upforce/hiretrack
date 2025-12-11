@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { EmailTemplate, SampleCustomTemplate } from './types';
 
 export const templateVariables = [
@@ -342,7 +343,8 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: 'new-remark',
     name: 'New Remark Added',
-    subject: 'New Remark Added for {{candidateName}} by {{reviewerName}} for {{jobTitle}} position',
+    subject:
+      'New Remark Added for {{candidateName}} by {{reviewerName}} for {{jobTitle}} position',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">

@@ -5,6 +5,7 @@ function MobileSkeletonHistroyLogs() {
   return (
     <div className="md:hidden p-3 space-y-3">
       {Array.from({ length: 8 }).map((_, idx) => (
+        // eslint-disable-next-line react/no-array-index-key
         <div key={`mskel-${idx}`} className="rounded-lg border bg-card p-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 space-y-2">

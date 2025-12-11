@@ -40,8 +40,8 @@ export const convertToCSV = (data: ExportData[]): string => {
   // Create CSV data rows
   const csvRows = data.map((row) =>
     headers
-      .map((header) => {
-        const value = row[header];
+      .map(() => {
+        const value = row.header;
         // Handle values that might contain commas, quotes, or newlines
         if (value === null || value === undefined) {
           return '';

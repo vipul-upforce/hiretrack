@@ -17,6 +17,7 @@ export default function EmailHistorySkeleton() {
         <TableHeader>
           <TableRow>
             {Array.from({ length: 7 }).map((_, i) => (
+              // eslint-disable-next-line react/no-array-index-key
               <TableHead key={i}>
                 <Skeleton className="h-4 w-24" />
               </TableHead>
@@ -25,6 +26,7 @@ export default function EmailHistorySkeleton() {
         </TableHeader>
         <TableBody>
           {Array.from({ length: 20 }).map((_, i) => (
+            // eslint-disable-next-line react/no-array-index-key
             <TableRow key={i}>
               <TableCell className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -46,14 +48,14 @@ export default function EmailHistorySkeleton() {
                 <Skeleton className="h-4 w-16" />
               </TableCell>
               <TableCell className="text-right">
-                <Skeleton className="h-6 w-8 ml-auto" />
+                <Skeleton className="ml-auto h-6 w-8" />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
 
-      <div className="flex justify-between items-center mt-4">
+      <div className="mt-4 flex items-center justify-between">
         <Skeleton className="h-8 w-8" />
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-8 w-8" />

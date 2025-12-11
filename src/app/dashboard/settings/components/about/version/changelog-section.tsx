@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { VersionInfo } from '../types';
 
@@ -19,6 +19,47 @@ export interface ChangelogSectionProps {
   currentVersion: string;
   latestVersion: string | null;
 }
+
+const markdownComponents: Components = {
+  h1: ({ ...props }) => <h3 className="text-base font-semibold" {...props} />,
+  h2: ({ ...props }) => <h4 className="text-sm font-semibold" {...props} />,
+  p: ({ ...props }) => (
+    <p className="mb-2 leading-relaxed last:mb-0" {...props} />
+  ),
+  ul: ({ ...props }) => <ul className="list-disc space-y-1 pl-5" {...props} />,
+  ol: ({ ...props }) => (
+    <ol className="list-decimal space-y-1 pl-5" {...props} />
+  ),
+  code: ({ children, ...props }) => (
+    <code
+      className="block overflow-x-auto rounded-md bg-muted p-3 font-mono text-[0.85em]"
+      {...props}
+    >
+      {children}
+    </code>
+  ),
+  a: ({ children, ...props }) => (
+    <a
+      className="underline hover:no-underline"
+      target="_blank"
+      rel="noreferrer"
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  table: ({ ...props }) => (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm" {...props} />
+    </div>
+  ),
+  th: ({ ...props }) => (
+    <th className="border-b px-2 py-1 text-left font-medium" {...props} />
+  ),
+  td: ({ ...props }) => (
+    <td className="border-b px-2 py-1 align-top" {...props} />
+  ),
+};
 
 export function ChangelogSection({
   changelogVersions,
@@ -30,15 +71,9 @@ export function ChangelogSection({
   return (
     <Card className="border-none shadow-none">
       <CardHeader className="pb-3 pt-0">
-        <CardTitle>What's New</CardTitle>
+        <CardTitle>What&apos;s New</CardTitle>
         <CardDescription>
-          Changes from version
-          {' '}
-          {currentVersion}
-          {' '}
-          to
-          {' '}
-          {latestVersion}
+          Changes from version {currentVersion} to {latestVersion}
         </CardDescription>
       </CardHeader>
 
@@ -46,8 +81,9 @@ export function ChangelogSection({
         <div className="space-y-4">
           {changelogVersions
             .sort(
-              (a, b) => new Date(b.publishedAt).getTime()
-                - new Date(a.publishedAt).getTime(),
+              (a, b) =>
+                new Date(b.publishedAt).getTime() -
+                new Date(a.publishedAt).getTime(),
             )
             .map((version, idx) => (
               <div key={version.version} className="space-y-2">
@@ -72,62 +108,7 @@ export function ChangelogSection({
                 <div className="rounded-md border bg-muted/30 p-3 text-sm">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{
-                      h1: ({ ...props }) => (
-                        <h3 className="text-base font-semibold" {...props} />
-                      ),
-                      h2: ({ ...props }) => (
-                        <h4 className="text-sm font-semibold" {...props} />
-                      ),
-                      p: ({ ...props }) => (
-                        <p
-                          className="leading-relaxed mb-2 last:mb-0"
-                          {...props}
-                        />
-                      ),
-                      ul: ({ ...props }) => (
-                        <ul className="list-disc pl-5 space-y-1" {...props} />
-                      ),
-                      ol: ({ ...props }) => (
-                        <ol
-                          className="list-decimal pl-5 space-y-1"
-                          {...props}
-                        />
-                      ),
-                      code: ({ children, ...props }) => (
-                        <code
-                          className="block overflow-x-auto rounded-md bg-muted p-3 font-mono text-[0.85em]"
-                          {...props}
-                        >
-                          {children}
-                        </code>
-                      ),
-                      a: ({ ...props }) => (
-                        <a
-                          className="underline hover:no-underline"
-                          target="_blank"
-                          rel="noreferrer"
-                          {...props}
-                        />
-                      ),
-                      table: ({ ...props }) => (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm" {...props} />
-                        </div>
-                      ),
-                      th: ({ ...props }) => (
-                        <th
-                          className="border-b px-2 py-1 text-left font-medium"
-                          {...props}
-                        />
-                      ),
-                      td: ({ ...props }) => (
-                        <td
-                          className="border-b px-2 py-1 align-top"
-                          {...props}
-                        />
-                      ),
-                    }}
+                    components={markdownComponents}
                   >
                     {version.releaseNotes}
                   </ReactMarkdown>

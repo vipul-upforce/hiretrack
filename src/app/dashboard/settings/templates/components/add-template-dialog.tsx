@@ -23,12 +23,12 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-} from "@/components/ui/card";
-import { Code, Eye, FileText, Mail, Plus, Edit2 } from "lucide-react";
-import { Editor } from "@monaco-editor/react";
-import { useTheme } from "@/components/theme-provider";
-import { TemplateVisualEditor } from "@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor";
-import { sampleCustomTemplates, templateVariables } from "../constants";
+} from '@/components/ui/card';
+import { Code, Eye, FileText, Mail, Plus, Edit2 } from 'lucide-react';
+import { Editor } from '@monaco-editor/react';
+import { useTheme } from '@/components/theme-provider';
+import { TemplateVisualEditor } from '@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor';
+import { sampleCustomTemplates, templateVariables } from '../constants';
 
 interface AddTemplateDialogProps {
   open: boolean;
@@ -47,7 +47,7 @@ interface AddTemplateDialogProps {
   insertVariableInNewTemplate: (variable: string) => void;
 }
 
-export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
+export function AddTemplateDialog({
   open,
   onOpenChange,
   newTemplate,
@@ -60,14 +60,77 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
   renderPreview,
   currentTemplateVariables,
   insertVariableInNewTemplate,
-}) => {
+}: AddTemplateDialogProps) {
   const { theme } = useTheme();
-  const [editorMode, setEditorMode] = useState<"code" | "visual">("visual");
+  const [editorMode, setEditorMode] = useState<'code' | 'visual'>('visual');
+
+  const renderEditorContent = () => {
+    // 1. Show Preview Mode
+    if (newTemplatePreviewMode) {
+      return (
+        <div className="min-h-[500px] overflow-auto rounded-lg border bg-white p-4">
+          <div
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html: renderPreview(
+                newTemplate.content,
+                currentTemplateVariables,
+              ),
+            }}
+          />
+        </div>
+      );
+    }
+
+    // 2. Show Visual Editor
+    if (editorMode === 'visual') {
+      return (
+        <TemplateVisualEditor
+          htmlContent={newTemplate.content}
+          onContentChange={(html) =>
+            setNewTemplate((prev) => ({
+              ...prev,
+              content: html,
+            }))
+          }
+          className="min-h-[500px]"
+        />
+      );
+    }
+
+    // 3. Show Code Editor (Default)
+    return (
+      <div className="overflow-hidden rounded-lg border">
+        <Editor
+          height="500px"
+          language="html"
+          theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+          value={newTemplate.content}
+          onChange={(value) =>
+            setNewTemplate((prev) => ({
+              ...prev,
+              content: value || '',
+            }))
+          }
+          onMount={(editor) => setNewTemplateEditor(editor)}
+          options={{
+            fontSize: 14,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            wordWrap: 'on',
+            lineNumbers: 'on',
+            folding: true,
+            automaticLayout: true,
+          }}
+        />
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-none !w-full !h-full !left-0 !top-0 !translate-x-0 !translate-y-0 min-w-0 lg:!max-w-[80vw] lg:!min-w-[900px] lg:!h-[90vh] lg:!left-[50%] lg:!top-[50%] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[70vw] overflow-hidden flex flex-col">
-        <DialogHeader className="px-6 pt-6 pr-12 border-b border-gray-200 dark:border-gray-700 pb-4">
+      <DialogContent className="!left-0 !top-0 flex !h-full !w-full min-w-0 !max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden lg:!left-[50%] lg:!top-[50%] lg:!h-[90vh] lg:!min-w-[900px] lg:!max-w-[80vw] lg:!translate-x-[-50%] lg:!translate-y-[-50%] xl:!max-w-[70vw]">
+        <DialogHeader className="border-b border-gray-200 px-6 pb-4 pr-12 pt-6 dark:border-gray-700">
           <DialogTitle className="text-xl font-semibold">
             Add Custom Email Template
           </DialogTitle>
@@ -78,9 +141,9 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Left Side - Template Form */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6 lg:col-span-2">
               {/* Quick Start with Sample Templates */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Quick Start</Label>
@@ -109,9 +172,9 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                         value={sample.name}
                         className="py-3"
                       >
-                        <div className="flex flex-col w-full">
+                        <div className="flex w-full flex-col">
                           <span className="font-medium">{sample.name}</span>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="mt-1 text-xs text-gray-500">
                             {sample.subject}
                           </p>
                         </div>
@@ -132,10 +195,12 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                 <Input
                   id="template-name"
                   value={newTemplate.name}
-                  onChange={(e) => setNewTemplate((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))}
+                  onChange={(e) =>
+                    setNewTemplate((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
                   placeholder="Enter template name"
                   className="h-10"
                 />
@@ -151,10 +216,12 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                 <Input
                   id="template-subject"
                   value={newTemplate.subject}
-                  onChange={(e) => setNewTemplate((prev) => ({
-                    ...prev,
-                    subject: e.target.value,
-                  }))}
+                  onChange={(e) =>
+                    setNewTemplate((prev) => ({
+                      ...prev,
+                      subject: e.target.value,
+                    }))
+                  }
                   placeholder="Enter email subject"
                   className="h-10"
                 />
@@ -168,96 +235,34 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                       <>
                         <Button
                           type="button"
-                          variant={editorMode === "visual" ? "primary" : "outline"}
+                          variant={
+                            editorMode === 'visual' ? 'primary' : 'outline'
+                          }
                           size="sm"
-                          onClick={() => setEditorMode("visual")}
+                          onClick={() => setEditorMode('visual')}
                           className="h-8"
                         >
-                          <Edit2 className="h-3 w-3 mr-1" />
+                          <Edit2 className="mr-1 h-3 w-3" />
                           Preview
                         </Button>
                         <Button
                           type="button"
-                          variant={editorMode === "code" ? "primary" : "outline"}
+                          variant={
+                            editorMode === 'code' ? 'primary' : 'outline'
+                          }
                           size="sm"
-                          onClick={() => setEditorMode("code")}
+                          onClick={() => setEditorMode('code')}
                           className="h-8"
                         >
-                          <Code className="h-3 w-3 mr-1" />
+                          <Code className="mr-1 h-3 w-3" />
                           Edit
                         </Button>
                       </>
                     )}
-                    {/* <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setNewTemplatePreviewMode(!newTemplatePreviewMode)
-                      }
-                      className="h-8"
-                    >
-                      {newTemplatePreviewMode ? (
-                        <>
-                          <Code className="h-4 w-4 mr-2" />
-                          Edit
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-4 w-4 mr-2" />
-                          Preview
-                        </>
-                      )}
-                    </Button> */}
                   </div>
                 </div>
 
-                {newTemplatePreviewMode ? (
-                  <div className="border rounded-lg p-4 min-h-[500px] bg-white overflow-auto">
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: renderPreview(
-                          newTemplate.content,
-                          currentTemplateVariables,
-                        ),
-                      }}
-                    />
-                  </div>
-                ) : editorMode === "visual" ? (
-                  <TemplateVisualEditor
-                    htmlContent={newTemplate.content}
-                    onContentChange={(html) =>
-                      setNewTemplate((prev) => ({
-                        ...prev,
-                        content: html,
-                      }))
-                    }
-                    className="min-h-[500px]"
-                  />
-                ) : (
-                  <div className="border rounded-lg overflow-hidden">
-                    <Editor
-                      height="500px"
-                      language="html"
-                      theme={theme === 'dark' ? 'vs-dark' : 'vs'}
-                      value={newTemplate.content}
-                      onChange={(value) => setNewTemplate((prev) => ({
-                        ...prev,
-                        content: value || '',
-                      }))}
-                      onMount={(editor) => setNewTemplateEditor(editor)}
-                      options={{
-                        fontSize: 14,
-                        minimap: { enabled: false },
-                        scrollBeyondLastLine: false,
-                        wordWrap: 'on',
-                        lineNumbers: 'on',
-                        folding: true,
-                        automaticLayout: true,
-                      }}
-                    />
-                  </div>
-                )}
+                {renderEditorContent()}
               </div>
             </div>
 
@@ -276,20 +281,21 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                 <CardContent>
                   <div className="space-y-2">
                     {templateVariables.map((variable) => (
-                      <div
+                      <button
+                        type="button"
                         key={variable}
-                        className="flex items-center justify-between p-3 bg-muted rounded-lg cursor-pointer hover:bg-muted/80 transition-colors"
+                        className="flex w-full cursor-pointer items-center justify-between rounded-lg bg-muted p-3 text-left transition-colors hover:bg-muted/80"
                         onClick={() => insertVariableInNewTemplate(variable)}
                       >
                         <div className="flex flex-col">
                           <code className="font-mono text-sm font-medium">{`{{${variable}}}`}</code>
-                          <span className="text-xs text-muted-foreground mt-1">
-                            {variable === 'SenderName'
-                              && 'Person sending the email'}
-                            {variable === 'ReceiverName'
-                              && 'Candidate receiving the email'}
-                            {variable === 'PortalName'
-                              && 'Your organization name'}
+                          <span className="mt-1 text-xs text-muted-foreground">
+                            {variable === 'SenderName' &&
+                              'Person sending the email'}
+                            {variable === 'ReceiverName' &&
+                              'Candidate receiving the email'}
+                            {variable === 'PortalName' &&
+                              'Your organization name'}
                           </span>
                         </div>
                         <Button
@@ -303,7 +309,7 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </CardContent>
@@ -319,21 +325,21 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
                 <CardContent className="space-y-3 text-sm">
                   <div>
                     <div className="font-medium">Variable Usage</div>
-                    <div className="text-muted-foreground mt-1">
+                    <div className="mt-1 text-muted-foreground">
                       Variables will be automatically replaced when sending
                       emails.
                     </div>
                   </div>
                   <div>
                     <div className="font-medium">Styling Guidelines</div>
-                    <div className="text-muted-foreground mt-1">
+                    <div className="mt-1 text-muted-foreground">
                       Use inline CSS styles for maximum email client
                       compatibility.
                     </div>
                   </div>
                   <div>
                     <div className="font-medium">Preview</div>
-                    <div className="text-muted-foreground mt-1">
+                    <div className="mt-1 text-muted-foreground">
                       Use the Preview button to see how your template will look
                       to recipients.
                     </div>
@@ -344,7 +350,7 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="flex justify-end gap-3 bg-background px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <DialogFooter className="flex justify-end gap-3 border-t border-gray-200 bg-background px-6 py-4 dark:border-gray-700">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -359,4 +365,4 @@ export const AddTemplateDialog: React.FC<AddTemplateDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
