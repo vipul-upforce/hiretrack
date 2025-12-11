@@ -23,6 +23,7 @@ export function InterviewerCardSkeleton() {
             <Skeleton className="h-5 w-20" />
             <div className="flex flex-wrap gap-3">
               {[...Array(3)].map((_, i) => (
+                // eslint-disable-next-line react/no-array-index-key
                 <Skeleton key={i} className="h-6 w-16 " />
               ))}
             </div>

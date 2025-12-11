@@ -17,7 +17,7 @@ export function DiskSpaceSection() {
   const toggleRoot = (rootName: string) => {
     setExpandedRoots((prev) => ({
       ...prev,
-      [rootName]: !prev[rootName],
+      [rootName]: !prev.rootName,
     }));
   };
 
