@@ -151,12 +151,12 @@ export async function GET(req: NextRequest) {
 
     Object.keys(stepValidators).forEach((stepKey) => {
       try {
-        stepStatus[stepKey] = stepValidators[
+        stepStatus.stepKey = stepValidators[
           stepKey as keyof typeof stepValidators
         ](settings, organization, userCount);
       } catch (error) {
-        stepStatus[stepKey] = stepKey !== 'customFields';
-        stepErrors[stepKey] =
+        stepStatus.stepKey = stepKey !== 'customFields';
+        stepErrors.stepKey =
           error instanceof Error ? error.message : 'Unknown error';
       }
     });
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
         percentage: progressPercentage,
       },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

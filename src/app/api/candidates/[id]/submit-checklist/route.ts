@@ -143,7 +143,7 @@ export async function POST(
 
     // Get or create lane checklist data
     const laneChecklistData =
-      (candidate.checklistData && candidate.checklistData[laneId]) || {};
+      (candidate.checklistData && candidate.checklistData.laneId) || {};
 
     // Store checklist responses
     const checklistData = {
@@ -236,7 +236,7 @@ export async function POST(
     await History!.findOneAndUpdate(
       {
         jobId:
-          typeof candidate?.jobId === 'object' && '_id' in candidate?.jobId
+          typeof candidate?.jobId === 'object' && '_id' in candidate.jobId
             ? candidate?.jobId?._id
             : candidate.jobId,
         candidateId: candidate?._id.toString(),
@@ -249,7 +249,7 @@ export async function POST(
 
     const candidateHistoryPopulated = await History?.findOne({
       jobId:
-        typeof candidate?.jobId === 'object' && '_id' in candidate?.jobId
+        typeof candidate?.jobId === 'object' && '_id' in candidate.jobId
           ? candidate?.jobId?._id
           : candidate.jobId,
       candidateId: candidate?._id.toString(),

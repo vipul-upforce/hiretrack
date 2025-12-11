@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { HardDrive, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
-const StorageStep: React.FC = () => {
+function StorageStep() {
   const [isConfigured, setIsConfigured] = useState(false);
   const { validateStep } = useOnboarding();
 
@@ -16,39 +16,47 @@ const StorageStep: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mx-auto border border-border/50">
-          <HardDrive className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+      <div className="space-y-2 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-border/50 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30">
+          <HardDrive className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-1">File Storage</h2>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+          <h2 className="mb-1 text-xl font-bold text-foreground">
+            File Storage
+          </h2>
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">
             Configure cloud storage for resumes and attachments.
           </p>
         </div>
       </div>
 
-      <Card className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}>
+      <Card
+        className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}
+      >
         <CardContent className="p-6">
           <Button
             variant="primary"
-            onClick={() => window.open('/dashboard/settings?config=fs', '_blank')}
+            onClick={() =>
+              window.open('/dashboard/settings?config=fs', '_blank')
+            }
             className="flex items-center gap-2"
           >
             Configure Storage
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="h-4 w-4" />
           </Button>
 
           {isConfigured && (
             <div className="mt-4 flex items-center gap-2 text-green-600 dark:text-green-400">
-              <CheckCircle2 className="w-4 h-4" />
-              <span className="text-sm font-medium">Cloud storage configured!</span>
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-sm font-medium">
+                Cloud storage configured!
+              </span>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
   );
-};
+}
 
 export default StorageStep;

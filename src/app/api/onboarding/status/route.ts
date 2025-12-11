@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest) {
 
     for (const key of allowedFields) {
       if (key in body) {
-        $set[`onboardingStatus.${key}`] = body[key];
+        $set[`onboardingStatus.${key}`] = body.key;
       }
     }
 

@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
     let stateData;
     try {
       stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-    } catch (e) {
+    } catch {
       return new NextResponse(
         `
         <html>

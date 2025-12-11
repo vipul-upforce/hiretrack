@@ -187,8 +187,8 @@ export async function PUT(
         });
 
         allKeys.forEach((key) => {
-          const prev = existingCandidate.customFields?.[key];
-          const curr = data.customFields?.[key];
+          const prev = existingCandidate.customFields?.key;
+          const curr = data.customFields?.key;
           if (
             (prev === '' ||
               prev === null ||

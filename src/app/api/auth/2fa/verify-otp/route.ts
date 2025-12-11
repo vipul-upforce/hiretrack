@@ -5,6 +5,23 @@ import { setSecureAuthTokens } from '@/lib/secureTokens';
 import { loginRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 
+const returnTokenBasedResponse = async (obj: any, orgId: string) => {
+  const token = await signToken(obj[0], orgId);
+
+  const response = NextResponse.json({
+    message: 'Logged In Successfully',
+    user: token,
+  });
+
+  // SECURITY FIX: Use secure token system with improved security
+  setSecureAuthTokens(response, token, {
+    expires: 30, // 30 days
+    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+  });
+
+  return response;
+};
+
 async function handleVerifyOtp(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -100,23 +117,6 @@ async function handleVerifyOtp(req: NextRequest) {
     );
   }
 }
-
-const returnTokenBasedResponse = async (obj: any, orgId: string) => {
-  const token = await signToken(obj[0], orgId);
-
-  const response = NextResponse.json({
-    message: 'Logged In Successfully',
-    user: token,
-  });
-
-  // SECURITY FIX: Use secure token system with improved security
-  setSecureAuthTokens(response, token, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-  });
-
-  return response;
-};
 
 // Export with rate limiting
 export async function POST(req: Request) {

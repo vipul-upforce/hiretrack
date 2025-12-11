@@ -37,7 +37,7 @@ export async function DELETE(
     // Use defaultLanes if available, fallback to lanes for backward compatibility
     const currentLanes = org.defaultLanes || org.lanes || [];
 
-    if (currentLanes.length == 1) {
+    if (currentLanes.length === 1) {
       return NextResponse.json(
         { error: "Can't delete all lanes" },
         { status: 400 },

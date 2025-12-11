@@ -33,7 +33,7 @@ async function handleResetPassword(req: NextRequest) {
         resetToken: resetTokenHash,
         resetTokenExpiry: { $gt: new Date() },
       });
-    } catch (e) {
+    } catch {
       user = null;
     }
 

@@ -41,7 +41,7 @@ export async function DELETE(
     try {
       const body = await request.json();
       migrationLane = body.migrationLane;
-    } catch (error) {
+    } catch {
       // Ignore error if request body is empty
     }
 

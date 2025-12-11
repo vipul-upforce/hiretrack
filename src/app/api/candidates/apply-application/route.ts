@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     let retries = 0;
     while (!CandidateAccount && retries < 5) {
       await new Promise((resolve) => setTimeout(resolve, 100));
-      retries++;
+      retries += 1;
     }
     const jobId = request.nextUrl.searchParams?.get('jobid');
 
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     let retries = 0;
     while (!CandidateAccount && retries < 5) {
       await new Promise((resolve) => setTimeout(resolve, 100));
-      retries++;
+      retries += 1;
     }
     if (!CandidateAccount) {
       return NextResponse.json({ error: 'Model not found' }, { status: 404 });

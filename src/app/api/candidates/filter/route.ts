@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     const body = await request.json();
-    const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
-    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20');
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20', 10);
     const skip = (page - 1) * limit;
     const {
       name,
@@ -37,10 +37,10 @@ export async function POST(request: NextRequest) {
     const query: Record<string, any> = { [logicOperator]: [] };
 
     const addLogicCondition = (condition: Record<string, unknown>) => {
-      if (!Array.isArray(query[logicOperator])) {
-        query[logicOperator] = [];
+      if (!Array.isArray(query.logicOperator)) {
+        query.logicOperator = [];
       }
-      (query[logicOperator] as Record<string, unknown>[]).push(condition);
+      (query.logicOperator as Record<string, unknown>[]).push(condition);
     };
 
     if (organizationId) {

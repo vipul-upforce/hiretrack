@@ -6,12 +6,41 @@
  * - @FirstNameLastName
  */
 
+import logger from '../logger';
+
 export interface MentionPattern {
   fullMatch: string; // The complete matched text (e.g., "@Aneri Shah")
   cleanMatch: string; // The match without @ (e.g., "Aneri Shah")
   firstName: string; // First name extracted
   lastName?: string; // Last name if present
   patterns: string[]; // All variations to match against
+}
+
+/**
+ * Generate all possible search patterns for a mention
+ * This helps match against different user name formats
+ */
+function generateSearchPatterns(
+  firstName: string,
+  lastName?: string,
+): string[] {
+  const patterns: string[] = [];
+
+  if (!firstName) return patterns;
+
+  // Always include the first name alone
+  patterns.push(firstName.toLowerCase());
+
+  if (lastName) {
+    // Include full name with space
+    patterns.push(`${firstName} ${lastName}`.toLowerCase());
+    // Include concatenated name
+    patterns.push(`${firstName}${lastName}`.toLowerCase());
+    // Include last name alone (for partial matches)
+    patterns.push(lastName.toLowerCase());
+  }
+
+  return [...new Set(patterns)]; // Remove duplicates
 }
 
 /**
@@ -31,11 +60,8 @@ export function extractMentions(text: string): MentionPattern[] {
 
     const mentions: MentionPattern[] = [];
     let match;
-    let matchCount = 0;
 
     while ((match = mentionRegex.exec(text)) !== null) {
-      matchCount += 1;
-
       const fullMatch = match[0]; // e.g., "@Aneri Shah"
       const cleanMatch = match[1]; // e.g., "Aneri Shah"
 
@@ -72,33 +98,6 @@ export function extractMentions(text: string): MentionPattern[] {
     logger.error('❌ Error extracting mentions:', error);
     return [];
   }
-}
-
-/**
- * Generate all possible search patterns for a mention
- * This helps match against different user name formats
- */
-function generateSearchPatterns(
-  firstName: string,
-  lastName?: string,
-): string[] {
-  const patterns: string[] = [];
-
-  if (!firstName) return patterns;
-
-  // Always include the first name alone
-  patterns.push(firstName.toLowerCase());
-
-  if (lastName) {
-    // Include full name with space
-    patterns.push(`${firstName} ${lastName}`.toLowerCase());
-    // Include concatenated name
-    patterns.push(`${firstName}${lastName}`.toLowerCase());
-    // Include last name alone (for partial matches)
-    patterns.push(lastName.toLowerCase());
-  }
-
-  return [...new Set(patterns)]; // Remove duplicates
 }
 
 /**

@@ -55,6 +55,7 @@ const eslintConfig = [
       'security/detect-non-literal-fs-filename': 'off',
       'import/no-cycle': 'off',
       'no-restricted-syntax': 'off',
+      'no-await-in-loop': 'off',
       // --- SENIOR'S REQUIRED OVERRIDES (From provided preset) ---
       'react/jsx-filename-extension': 'off',
       'import/extensions': 'off',

@@ -47,6 +47,8 @@ export async function GET(request: NextRequest) {
         case 'brevo':
           fromEmail = mailConfig.brevo_from || fromEmail;
           break;
+        default:
+          fromEmail = 'noreply@hiretrack.com';
       }
     }
 

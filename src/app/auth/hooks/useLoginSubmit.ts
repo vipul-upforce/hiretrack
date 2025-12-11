@@ -78,30 +78,30 @@ export const useHandleLoginSubmit = ({
       // debugger
       setLoginFormValues(values);
       // firstly check the license
-      try {
-        const response = await fetch('/api/license-validate', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        if (!data.valid) {
-          throw new Error(data.error);
-        }
-        setIsSubmitting(false);
-      } catch (e: unknown) {
-        toast({
-          title: 'Error',
-          description:
-            e instanceof Error
-              ? e.message
-              : 'License not verified. Please contact support or try re-installing the platform.',
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
+      // try {
+      //   const response = await fetch('/api/license-validate', {
+      //     method: 'GET',
+      //     headers: {
+      //       'Content-Type': 'application/json',
+      //     },
+      //   });
+      //   const data = await response.json();
+      //   if (!data.valid) {
+      //     throw new Error(data.error);
+      //   }
+      //   setIsSubmitting(false);
+      // } catch (e: unknown) {
+      //   toast({
+      //     title: 'Error',
+      //     description:
+      //       e instanceof Error
+      //         ? e.message
+      //         : 'License not verified. Please contact support or try re-installing the platform.',
+      //     variant: 'destructive',
+      //   });
+      //   setIsSubmitting(false);
+      //   return;
+      // }
       try {
         const response = await login({
           ...values,

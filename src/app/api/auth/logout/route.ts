@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { clearAuthTokens } from '@/lib/secureTokens';
 import { logger } from '@/lib/logger/logger.server';
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const response = NextResponse.json({
       message: 'Logged out successfully',

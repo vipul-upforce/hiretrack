@@ -3,20 +3,20 @@ import CVBatchProcessor from './components/cv-batch-processor';
 
 export default function Home() {
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section with improved design */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+            <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
               CV Upload
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <CVBatchProcessor />
       </div>
     </div>

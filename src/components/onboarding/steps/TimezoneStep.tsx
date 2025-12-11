@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
-const TimezoneStep: React.FC = () => {
+function TimezoneStep() {
   const [isConfigured, setIsConfigured] = useState(false);
   const { validateStep } = useOnboarding();
 
@@ -25,7 +25,7 @@ const TimezoneStep: React.FC = () => {
             Timezone Configuration
           </h2>
           <p className="text-sm text-muted-foreground max-w-xl mx-auto">
-            Set your organization's timezone for proper scheduling.
+            Set your organization&apos;s timezone for proper scheduling.
           </p>
         </div>
       </div>

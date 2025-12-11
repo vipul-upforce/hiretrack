@@ -9,15 +9,10 @@ import { logger } from '@/lib/logger/logger.server';
 async function handleSignup(req: NextRequest) {
   try {
     await connectToDatabase();
-    let {
-      email,
-      password,
-      name,
-      role,
-      organizationId,
-      triggerUserId,
-      triggerUserName,
-    } = await req.json();
+    const { email, password, name, role, triggerUserId, triggerUserName } =
+      await req.json();
+
+    let { organizationId } = await req.json();
 
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
       organizationId = new mongoose.Types.ObjectId(organizationId);
@@ -97,6 +92,10 @@ async function handleSignup(req: NextRequest) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An unknown error occured.' },
+      { status: 500 },
+    );
   }
 }
 
