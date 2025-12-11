@@ -7,7 +7,6 @@ const handleMeRoute = async(req: NextRequest) => {
     const token = req.cookies.get("auth_token")?.value;
     const orgId = req.cookies.get("org_id")?.value;
 
-    console.log("orgId in /api/auth/me:", orgId);
     // Default candidate user for unauthenticated requests
     const defaultCandidateUser = {
       id: "guest",

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { licenseValidateRateLimiter } from "@/lib/rateLimiter";
 import { machineIdSync, machineId } from "node-machine-id";
 import { execSync } from "child_process";
-
+import os from "os";
 // const fs ("fs");
 // const crypto = require("crypto");
 import { hostname } from "os";
@@ -82,20 +82,87 @@ interface LicenseValidationResponse {
 //   return id;
 // }
 
+// Helper: Get first non-internal, non-empty MAC address on Linux
+function getLinuxMacAddress(): string | null {
+  try {
+    // Try to get the MAC of default route interface
+    const interfaceName = execSync(
+      "ip route show default | awk '/default/ {print $5}' | head -n 1"
+    )
+      .toString()
+      .trim();
+
+    if (interfaceName) {
+      // Try /sys/class/net/INTERFACE/address
+      try {
+        const mac = execSync(
+          `cat /sys/class/net/${interfaceName}/address`
+        )
+          .toString()
+          .trim();
+        if (mac && mac !== "00:00:00:00:00:00") return mac;
+      } catch {}
+      // Fallback: ip link show
+      try {
+        const mac = execSync(
+          `ip link show "${interfaceName}" | awk '/ether/ {print $2}'`
+        )
+          .toString()
+          .trim();
+        if (mac && mac !== "00:00:00:00:00:00") return mac;
+      } catch {}
+    }
+  } catch {}
+  // Try to get first non-internal MAC from all network interfaces as fallback
+  try {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      const addrs = interfaces[name];
+      if (!addrs) continue;
+      for (const addr of addrs) {
+        if (
+          addr.mac &&
+          addr.mac !== "00:00:00:00:00:00" &&
+          !addr.internal
+        ) {
+          return addr.mac;
+        }
+      }
+    }
+  } catch {}
+  return null;
+}
+
+// Helper: Fetch public IP using a local call to curl
+function getLinuxPublicIp(): string | null {
+  // Try two popular services
+  const services = [
+    "curl -s ifconfig.me",
+    "curl -s icanhazip.com",
+  ];
+  for (const cmd of services) {
+    try {
+      const ip = execSync(cmd).toString().trim();
+      // rudimentary IPv4 check
+      if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return ip;
+    } catch {}
+  }
+  return "0.0.0.0";
+}
+
 export function generateMachineCode(): string {
   try {
     const osType = process.platform;
     let id: string;
 
     if (osType === "linux") {
-      // On Linux, reads from /etc/machine-id
-      id = execSync("cat /etc/machine-id").toString().trim();
+      // Compose machine ID from MAC + Public IP, then hash
+      const mac = getLinuxMacAddress() ?? "";
+      const ip = getLinuxPublicIp() ?? "";
+      const combined = `${mac.trim()}_${ip.trim()}`;
+      id = crypto.createHash("sha256").update(combined).digest("hex");
     } else if (osType === "darwin") {
-      // On macOS, executes: hostname | shasum -a 256 | awk '{print $1}'
-      // This:
-      // 1. Gets the hostname,
-      // 2. Computes its SHA256 hash (using shasum -a 256),
-      // 3. Extracts the first part (digest) using awk.
+      // On macOS, use hardware UUID
       id = execSync("system_profiler SPHardwareDataType | awk '/Hardware UUID/ { print $3; }'")
         .toString()
         .trim();

@@ -123,10 +123,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Debug user info first
-    console.log("=== DATABASE QUERY DEBUG ===");
-    console.log("Full user object:", JSON.stringify(user, null, 2));
-
     // Try to find organizationId from various possible locations
     const orgId =
       user.organizationInfo?.organizationId ||
@@ -190,18 +186,18 @@ export async function GET(req: NextRequest) {
     }
 
     if (settings) {
-      console.log("✅ Settings found!");
-      console.log(
-        "Settings keys:",
-        Object.keys(settings.toObject ? settings.toObject() : settings)
-      );
+      // console.log("✅ Settings found!");
+      // console.log(
+      //   "Settings keys:",
+      //   Object.keys(settings.toObject ? settings.toObject() : settings)
+      // );
 
       const settingsObj = settings.toObject ? settings.toObject() : settings;
-      console.log("Portal configs:", settingsObj.portalConfigs);
-      console.log("AI providers:", settingsObj.aiProviders);
-      console.log("Mail config:", settingsObj.mailConfig);
-      console.log("Google Calendar:", settingsObj.googleCalendar);
-      console.log("Timezone:", settingsObj.timeZone);
+      // console.log("Portal configs:", settingsObj.portalConfigs);
+      // console.log("AI providers:", settingsObj.aiProviders);
+      // console.log("Mail config:", settingsObj.mailConfig);
+      // console.log("Google Calendar:", settingsObj.googleCalendar);
+      // console.log("Timezone:", settingsObj.timeZone);
     }
 
     if (organization) {
