@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, OrganizationInfo } from '@/app/actions/auth';
 import { apiRateLimiter } from '@/lib/rateLimiter';
-import { logger } from '@/lib/logger/logger.server';
 
-const handleMeRoute = async (req: NextRequest) => {
-  try {
+const handleMeRoute = async(req: NextRequest) => {
+   try {
+    const token = req.cookies.get("auth_token")?.value;
+    const orgId = req.cookies.get("org_id")?.value;
+
     // Default candidate user for unauthenticated requests
     const defaultCandidateUser = {
       id: 'guest',
@@ -18,14 +20,19 @@ const handleMeRoute = async (req: NextRequest) => {
     };
 
     const result = await getAuthenticatedUser(req);
-
+    // if (!result) {
+    //   return NextResponse.json(
+    //     { message: "Unauthorised Access" },
+    //     { status: 401 }
+    //   );
+    // }
     if (result) {
       return NextResponse.json({ user: result }, { status: 200 });
     }
     // Treat invalid/missing auth as guest candidate
     return NextResponse.json({ user: defaultCandidateUser }, { status: 200 });
   } catch (error) {
-    logger.error({ error, url: req.url }, 'Error in /me API.');
+    console.error('Error in /api/auth/me:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 },
