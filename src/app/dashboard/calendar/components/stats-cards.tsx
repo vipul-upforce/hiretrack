@@ -55,9 +55,9 @@ export function StatsCards({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-      {stats.map((stat, index) => (
+      {stats.map((stat) => (
         <Card
-          key={index}
+          key={stat.title + stat.value}
           className={`relative overflow-hidden border-l-4 ${stat.borderColor} hover:shadow-md transition-shadow`}
         >
           <CardContent className="p-4 relative">

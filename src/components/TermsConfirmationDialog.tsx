@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ExternalLink, Shield, FileText } from 'lucide-react';
 
 interface TermsConfirmationDialogProps {
@@ -51,68 +51,71 @@ export function TermsConfirmationDialog({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent
         size={window.innerWidth < 1024 ? 'sm' : 'md'}
-        className="p-0 overflow-hidden flex flex-col "
+        className="flex flex-col overflow-hidden p-0"
         style={{
           zIndex: 9999,
           marginLeft: window.innerWidth < 1024 ? '0px' : '',
         }}
       >
         <DialogHeader className="px-6 py-4">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="mb-2 flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center"
+              className="flex h-10 w-10 items-center justify-center rounded-full"
               style={{
                 backgroundColor:
                   'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
               }}
             >
               <Shield
-                className="w-5 h-5"
+                className="h-5 w-5"
                 style={{ color: 'var(--portal-primary, #6366f1)' }}
               />
             </div>
             <DialogTitle>Confirm Application</DialogTitle>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
             Before submitting your application, please review and accept our
             terms and privacy policy.
           </p>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+        <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
           {/* Terms and Conditions */}
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <Checkbox
                 id="terms"
                 checked={termsAccepted}
-                onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setTermsAccepted(checked as boolean)
+                }
                 className="mt-1"
               />
               <div className="flex-1">
                 <label
                   htmlFor="terms"
-                  className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
+                  className="cursor-pointer text-sm leading-relaxed text-gray-700 dark:text-gray-300"
                 >
-                  I have read and agree to the
-                  {' '}
+                  I have read and agree to the{' '}
                   <button
                     type="button"
                     onClick={openTerms}
-                    className="underline inline-flex items-center gap-1 font-medium transition-colors"
+                    className="inline-flex items-center gap-1 font-medium underline transition-colors"
                     style={{
                       color: 'var(--portal-primary, #6366f1)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary-hover, #5b5fd6)';
+                      e.currentTarget.style.color =
+                        'var(--portal-primary-hover, #5b5fd6)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary, #6366f1)';
+                      e.currentTarget.style.color =
+                        'var(--portal-primary, #6366f1)';
                     }}
                   >
-                    <FileText className="w-3 h-3" />
+                    <FileText className="h-3 w-3" />
                     Terms and Conditions
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="h-3 w-3" />
                   </button>
                 </label>
               </div>
@@ -122,33 +125,36 @@ export function TermsConfirmationDialog({
               <Checkbox
                 id="privacy"
                 checked={privacyAccepted}
-                onCheckedChange={(checked) => setPrivacyAccepted(checked as boolean)}
+                onCheckedChange={(checked) =>
+                  setPrivacyAccepted(checked as boolean)
+                }
                 className="mt-1"
               />
               <div className="flex-1">
                 <label
                   htmlFor="privacy"
-                  className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer"
+                  className="cursor-pointer text-sm leading-relaxed text-gray-700 dark:text-gray-300"
                 >
-                  I have read and agree to the
-                  {' '}
+                  I have read and agree to the{' '}
                   <button
                     type="button"
                     onClick={openPrivacy}
-                    className="underline inline-flex items-center gap-1 font-medium transition-colors"
+                    className="inline-flex items-center gap-1 font-medium underline transition-colors"
                     style={{
                       color: 'var(--portal-primary, #6366f1)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary-hover, #5b5fd6)';
+                      e.currentTarget.style.color =
+                        'var(--portal-primary-hover, #5b5fd6)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.color = 'var(--portal-primary, #6366f1)';
+                      e.currentTarget.style.color =
+                        'var(--portal-primary, #6366f1)';
                     }}
                   >
-                    <Shield className="w-3 h-3" />
+                    <Shield className="h-3 w-3" />
                     Privacy Policy
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="h-3 w-3" />
                   </button>
                 </label>
               </div>
@@ -156,7 +162,7 @@ export function TermsConfirmationDialog({
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+        <div className="sticky bottom-0 z-10 flex flex-col gap-3 border-t bg-background px-6 py-4 sm:flex-row">
           <Button
             type="button"
             variant="outline"

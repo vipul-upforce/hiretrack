@@ -56,7 +56,7 @@ export const ColumnToggle = memo(({
             checked={value}
             onCheckedChange={(checked) => handleCheckedChange(key, checked)}
           >
-            {COLUMN_LABELS[key] || key.toUpperCase()}
+            {COLUMN_LABELS.key || key.toUpperCase()}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

@@ -34,11 +34,13 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
     totalStorage,
   } = useLogViewerLogic(props);
 
+  const { logType, searchQuery } = props;
+
   if (isFilesLoading) return <NginxLogsSkeleton />;
 
   return (
-    <div className="flex-1 flex min-h-0">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
+    <div className="flex min-h-0 flex-1">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-4">
         {/* File List */}
         <LogFileList
           files={files}
@@ -50,7 +52,7 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
         />
 
         {/* Log Content */}
-        <div className="col-span-3 flex flex-col min-h-0">
+        <div className="col-span-3 flex min-h-0 flex-col">
           {selectedFile ? (
             <>
               <LogViewerControls
@@ -63,9 +65,9 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
                 hasContent={fileContent.length > 0}
               />
               <LogViewer
-                key={`${selectedFile}-${props.logType}`}
+                key={`${selectedFile}-${logType}`}
                 content={fileContent}
-                searchQuery={props.searchQuery}
+                searchQuery={searchQuery}
                 showLineNumbers={showLn}
                 isLoading={globalLoading}
                 containerRef={logContainerRef}
@@ -78,13 +80,8 @@ export function SystemLogViewer(props: SystemLogViewerProps) {
               />
             </>
           ) : (
-            <div className="text-gray-500 dark:text-gray-400 text-sm flex-1 flex items-center justify-center">
-              Select a
-              {' '}
-              {props.logType.toUpperCase()}
-              {' '}
-              log file to view its
-              contents.
+            <div className="flex flex-1 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+              Select a {logType.toUpperCase()} log file to view its contents.
             </div>
           )}
         </div>

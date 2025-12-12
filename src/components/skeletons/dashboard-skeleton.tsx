@@ -1,3 +1,4 @@
+/* eslint-disable react/no-array-index-key */
 import { CandidateCardSkeleton } from './candidate-card-skelton';
 import { InterviewerCardSkeleton } from './interviewer-card-skelton';
 

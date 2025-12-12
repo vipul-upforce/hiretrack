@@ -58,10 +58,10 @@ export function EmbedPreview({
             style={{
               width: embedWidth.includes('%')
                 ? embedWidth
-                : `${parseInt(embedWidth) || 400}px`,
+                : `${parseInt(embedWidth, 10) || 400}px`,
               height: embedHeight.includes('px')
                 ? embedHeight
-                : `${parseInt(embedHeight) || 600}px`,
+                : `${parseInt(embedHeight, 10) || 600}px`,
               maxWidth: '100%',
               maxHeight: '80vh',
             }}

@@ -10,8 +10,7 @@ import { TimerResetIcon as ResetIcon, SearchIcon } from 'lucide-react';
 import { useFilterCandidatesQuery } from '@/lib/features/candidate/candidateApi';
 import { useToast } from '@/hooks/use-toast';
 import { Candidate } from '@/types/candidate';
-import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 import withAuthGuard from '../withAuthGuard';
 import { SearchSchema } from './searchSchema';
 
@@ -42,16 +41,13 @@ export const itemsPerPage = 100;
 
 function CandidateSearch() {
   const [searchResults, setSearchResults] = useState<Candidate[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageLimit, setCurrentPageLimit] = useState(20);
   const [totalRecordsCount, setTotalRecordsCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
   const { toast } = useToast();
   const [OrgID, setOrgID] = useState('');
 
@@ -68,13 +64,14 @@ function CandidateSearch() {
     createdAfter: '',
     createdBefore: '',
     logicOperator: '$and',
-    organizationId: user ? user.organizationId : '',
+    organizationId: user ? (user?.organizationId as string) : '',
     page: 1,
     limit: 20,
     customFields: null,
   };
 
-  const [currentFilters, setCurrentFilters] = useState<SearchFilter>(initialValues);
+  const [currentFilters, setCurrentFilters] =
+    useState<SearchFilter>(initialValues);
 
   const {
     data: filteredCandidates,
@@ -82,7 +79,7 @@ function CandidateSearch() {
     isFetching,
     isLoading: isQueryLoading,
   } = useFilterCandidatesQuery(currentFilters, {
-    skip: !user.organizationId,
+    skip: !user?.organizationId,
   });
 
   // FIX 1: Move the setSearchResults call inside useEffect
@@ -96,17 +93,19 @@ function CandidateSearch() {
         setTotalPages(filteredCandidates.pagination.totalPages || 0);
         setTotalRecordsCount(filteredCandidates.pagination.total || 0);
       }
-      setIsSearching(false);
     }
   }, [filteredCandidates]);
 
   // Optimistic update handler
   const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
-    setSearchResults((prevResults) => prevResults.map((candidate) => (candidate._id === updatedCandidate._id ? updatedCandidate : candidate)));
+    setSearchResults((prevResults) =>
+      prevResults.map((candidate) =>
+        candidate._id === updatedCandidate._id ? updatedCandidate : candidate,
+      ),
+    );
   }, []);
 
   const refetchResults = useCallback(async () => {
-    setIsSearching(true);
     try {
       const response = await filterCandidates().unwrap();
       setSearchResults(response.candidates || []);
@@ -123,8 +122,6 @@ function CandidateSearch() {
         description: `${error instanceof Error ? error.message : ''}`,
         variant: 'destructive',
       });
-    } finally {
-      setIsSearching(false);
     }
   }, [filterCandidates, toast]); // FIX 2: Add dependencies
 
@@ -146,7 +143,7 @@ function CandidateSearch() {
   // FIX 4: Simplify the initial load effect
   useEffect(() => {
     if (user && user.organizationId) {
-      setOrgID(user.organizationId);
+      setOrgID(user?.organizationId as string);
       const initialFilters = {
         ...initialValues,
         organizationId: user.organizationId,
@@ -201,36 +198,36 @@ function CandidateSearch() {
 
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
+        let aValue: any;
+        let bValue: any;
 
-      // Handle custom sorting fields
-      if (sortField === 'overallScore') {
-        aValue = a.scores?.overall ?? 0;
-        bValue = b.scores?.overall ?? 0;
-      } else if (sortField === 'jobAssignment') {
-        aValue = a.jobId?.title ?? '';
-        bValue = b.jobId?.title ?? '';
-      } else {
-        aValue = a[sortField as keyof Candidate];
-        bValue = b[sortField as keyof Candidate];
-      }
+        // Handle custom sorting fields
+        if (sortField === 'overallScore') {
+          aValue = a.scores?.overall ?? 0;
+          bValue = b.scores?.overall ?? 0;
+        } else if (sortField === 'jobAssignment') {
+          aValue = a.jobId?.title ?? '';
+          bValue = b.jobId?.title ?? '';
+        } else {
+          aValue = a[sortField as keyof Candidate];
+          bValue = b[sortField as keyof Candidate];
+        }
 
-      // Ensure both values are strings for localeCompare
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc'
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
-      }
+        // Ensure both values are strings for localeCompare
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortDirection === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
 
-      // Handle numeric comparison
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
+        // Handle numeric comparison
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
 
-      // Handle cases where one value is a string and the other is a number
-      return typeof aValue === 'string' ? 1 : -1;
-    })
+        // Handle cases where one value is a string and the other is a number
+        return typeof aValue === 'string' ? 1 : -1;
+      })
     : searchResults;
 
   return (
@@ -259,7 +256,7 @@ function CandidateSearch() {
               />
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-4 pt-4 border-t">
+              <div className="flex justify-end gap-4 border-t pt-4">
                 <Button
                   type="button"
                   variant="outline"

@@ -46,7 +46,7 @@ export function useLogViewerLogic({
   const [isLoadingDown, setIsLoadingDown] = useState(false);
 
   const linesPerLoad = 100;
-  const logContainerRef = useRef<HTMLDivElement>(null);
+  const logContainerRef = useRef<HTMLDivElement| null>(null);
   const previousScrollHeightRef = useRef<number>(0);
 
   const debouncedSearchQuery = useDebounce(rawSearch, 700);

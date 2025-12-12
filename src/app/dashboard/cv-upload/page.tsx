@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import CVBatchProcessor from './components/cv-batch-processor';
+import { CVBatchProcessor } from './components/cv-batch-processor';
 
 export default function Home() {
   return (

@@ -16,15 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Formik, Form, ErrorMessage, Field,
-} from 'formik';
+import { Formik, Form, ErrorMessage, Field } from 'formik';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateUserMutation } from '@/lib/features/users/usersApi';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
 import { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { userFormVaidationSchema } from '../schemas/userFormValidation.schema';
 
 interface SelectedUser {
@@ -50,7 +49,7 @@ export function EditUserDialog({
 }: EditUserDialogProps) {
   const { toast } = useToast();
   const dispatch = useDispatch();
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -82,16 +81,16 @@ export function EditUserDialog({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description:
-          `Error: ${
-            typeof error === 'object'
-          && error !== null
-          && 'data' in error
-          && typeof error.data === 'object'
-          && error.data
-          && 'error' in error.data
-              ? (error.data as { error: string }).error
-              : 'Unknown error'}`,
+        description: `Error: ${
+          typeof error === 'object' &&
+          error !== null &&
+          'data' in error &&
+          typeof error.data === 'object' &&
+          error.data &&
+          'error' in error.data
+            ? (error.data as { error: string }).error
+            : 'Unknown error'
+        }`,
         variant: 'destructive',
       });
     } finally {
@@ -103,7 +102,7 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden flex flex-col">
+      <DialogContent className="flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
@@ -124,7 +123,7 @@ export function EditUserDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <Form className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
               <div>
                 <Label>Name</Label>
                 <Field
@@ -137,7 +136,7 @@ export function EditUserDialog({
                 <ErrorMessage
                   name="name"
                   component="div"
-                  className="text-red-500 text-sm"
+                  className="text-sm text-red-500"
                 />
               </div>
               <div>
@@ -152,7 +151,7 @@ export function EditUserDialog({
                 <ErrorMessage
                   name="email"
                   component="div"
-                  className="text-red-500 text-sm"
+                  className="text-sm text-red-500"
                 />
               </div>
               {values.role !== 'system' && (
@@ -174,7 +173,7 @@ export function EditUserDialog({
                   <ErrorMessage
                     name="role"
                     component="div"
-                    className="text-red-500 text-sm"
+                    className="text-sm text-red-500"
                   />
                 </div>
               )}
@@ -194,7 +193,7 @@ export function EditUserDialog({
                 </div>
               )}
 
-              <div className="flex justify-end border-t bg-background pt-4 sticky bottom-0 z-10">
+              <div className="sticky bottom-0 z-10 flex justify-end border-t bg-background pt-4">
                 <Button
                   type="submit"
                   disabled={isUpdating || isLoading}

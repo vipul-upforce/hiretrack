@@ -50,9 +50,9 @@ export function RenderTodaysInterviews({
                 <div>
                   <p className="text-sm text-muted-foreground mb-1.5">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {assignment.skills.slice(0, 3).map((skill, skillIndex) => (
+                    {assignment.skills.slice(0, 3).map((skill) => (
                       <Badge
-                        key={`${assignment.id}-skill-${skillIndex}-${skill}`}
+                        key={`${assignment.id}-skill-${skill}`}
                         variant="secondary"
                         className="text-xs"
                       >

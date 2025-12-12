@@ -39,8 +39,8 @@ function RemarksPopover({
                   (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
                 )
                 .slice(0, 6)
-                .map((remark, index) => (
-                  <div key={index} className="border-b pb-2">
+                .map((remark) => (
+                  <div key={remark.date} className="border-b pb-2">
                     <div
                       className="text-sm capitalize align-center w-full whitespace-pre-wrap"
                       style={{ wordWrap: 'break-word' }}

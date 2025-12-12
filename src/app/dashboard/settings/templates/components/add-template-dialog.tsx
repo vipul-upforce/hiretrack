@@ -24,7 +24,7 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card';
-import { Code, Eye, FileText, Mail, Plus, Edit2 } from 'lucide-react';
+import { Code, FileText, Mail, Plus, Edit2 } from 'lucide-react';
 import { Editor } from '@monaco-editor/react';
 import { useTheme } from '@/components/theme-provider';
 import { TemplateVisualEditor } from '@/app/dashboard/jobs/[id]/components/Dialogs/email-candidate-components/TemplateVisualEditor';

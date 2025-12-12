@@ -182,8 +182,6 @@ export default function DashboardLayout({
 
   const {
     data: orgCheckData,
-    error: orgCheckError,
-    isLoading: orgCheckLoading,
   } = useCheckOrgQuery(user?.organizationId, { skip: !user });
 
   const dispatch = useDispatch();
@@ -278,7 +276,7 @@ export default function DashboardLayout({
     window.location.href = '/auth/login';
   };
 
-  const generate_share_org = async (e: React.FormEvent) => {
+  const generateShareOrg = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedUser = user;
     if (parsedUser) {
@@ -473,7 +471,7 @@ export default function DashboardLayout({
             onMarkAllAsRead={handleMarkAllAsReadCallback}
             onNotificationClick={handleNotificationClick}
             onPageChange={setNotificationPage}
-            onGenerateShareOrg={generate_share_org}
+            onGenerateShareOrg={generateShareOrg}
             onLogout={handleLogout}
             unreadCount={unreadCount}
             totalCount={totalCount}
@@ -508,7 +506,7 @@ export default function DashboardLayout({
               onMarkAllAsRead={handleMarkAllAsReadCallback}
               onNotificationClick={handleNotificationClick}
               onPageChange={setNotificationPage}
-              onGenerateShareOrg={generate_share_org}
+              onGenerateShareOrg={generateShareOrg}
               onLogout={handleLogout}
               unreadCount={unreadCount}
               totalCount={totalCount}

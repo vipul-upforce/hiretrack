@@ -51,18 +51,18 @@ function AttachmentsPopover({
             <Button
               onClick={(e) => e.stopPropagation()}
               variant="secondary"
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-lg hover:bg-accent hover:text-accent-foreground focus:z-10 focus:ring-4 focus:outline-none focus:ring-ring focus:text-accent-foreground"
+              className="inline-flex items-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus:z-10 focus:text-accent-foreground focus:outline-none focus:ring-4 focus:ring-ring"
             >
               {attachments.length === 1
                 ? '1 Attachment'
                 : `${attachments.length} Attachments`}
-              <Folder className="h-4 w-4 ml-1" />
+              <Folder className="ml-1 h-4 w-4" />
             </Button>
           )}
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-80 p-4 max-h-[70vh] overflow-y-auto focus:outline-none"
+          className="max-h-[70vh] w-80 overflow-y-auto p-4 focus:outline-none"
           side="bottom"
           align="start"
           avoidCollisions={false}
@@ -92,31 +92,29 @@ function AttachmentsPopover({
                   ) : (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-2 border rounded"
+                      className="flex items-center justify-between rounded border p-2"
                     >
-                      <div className="flex items-center space-x-2 w-full">
+                      <div className="flex w-full items-center space-x-2">
                         <FileIcon className="h-4 w-4" />
-                        <div className="flex flex-col w-full">
-                          <span className="text-sm w-full text-wrap break-all">
+                        <div className="flex w-full flex-col">
+                          <span className="w-full text-wrap break-all text-sm">
                             {file.name}
                           </span>
                           <span className="text-xs text-muted-foreground">
-                            (
-                            {(file.size / 1024).toFixed(1)}
-                            {' '}
-                            KB)
+                            ({(file.size / 1024).toFixed(1)} KB)
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {isImage ? (
                           <button
+                            type="button"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                               setSelectedImage(file);
                             }}
-                            className="text-xs text-blue-500 hover:underline cursor-pointer"
+                            className="cursor-pointer text-xs text-blue-500 hover:underline"
                           >
                             View
                           </button>
@@ -136,6 +134,7 @@ function AttachmentsPopover({
 
                 {hasMore && (
                   <button
+                    type="button"
                     onClick={() => {
                       setVisibleCount((prev) => prev + 6);
                       onMoreClick();
@@ -161,12 +160,12 @@ function AttachmentsPopover({
       >
         <DialogContent className="w-full max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="break-words sr-only">
+            <DialogTitle className="sr-only break-words">
               Image Preview
             </DialogTitle>
           </DialogHeader>
           {selectedImage && (
-            <div className="relative w-full aspect-[4/3]">
+            <div className="relative aspect-[4/3] w-full">
               <Image
                 src={selectedImage.url}
                 alt={selectedImage.name}

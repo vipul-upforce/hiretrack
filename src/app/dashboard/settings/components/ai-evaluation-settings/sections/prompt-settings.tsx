@@ -9,7 +9,7 @@ import { SectionProps } from '../types';
 import { DEFAULT_PROMPT } from '../constants';
 
 export function PromptSettingsSection({ config, updateConfig }: SectionProps) {
-  <div className="space-y-4 border-t pt-4">
+  return <div className="space-y-4 border-t pt-4">
     {/* Custom Prompt Toggle */}
     <div className="flex items-center justify-between space-x-2">
       <div className="space-y-0.5">
