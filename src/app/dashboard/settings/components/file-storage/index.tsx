@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useToast } from '@/hooks/use-toast';
 import {
   useGetFSConfigsQuery,
@@ -14,17 +14,10 @@ import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
 import * as jose from 'jose';
 import CryptoJS from 'crypto-js';
 
+import { useAppSelector } from '@/lib/redux/hooks';
 import FileStorageLoadingSkeleton from './loading-skeleton';
 import FileStorageForm from './file-storage-form';
 import { FileStorageValues } from './schema';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  fileStorage?: string;
-  organizationId?: string;
-}
 
 export default function FileStorageOptions({
   onClose,
@@ -33,9 +26,7 @@ export default function FileStorageOptions({
 }) {
   const dispatch = useDispatch();
   const { toast } = useToast();
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
 
   const { data, isLoading, refetch } = useGetFSConfigsQuery(undefined);
   const [updateStorageConfigs, { isLoading: isUpdating }] =
@@ -109,7 +100,7 @@ export default function FileStorageOptions({
       // Update Redux state and sign token
       if (user && user.organizationId) {
         const updatedUser = { ...user, fileStorage: values.storageType };
-        await signToken(updatedUser, user.organizationId);
+        await signToken(updatedUser, user?.organizationId as string);
 
         dispatch(
           updateUserInState({

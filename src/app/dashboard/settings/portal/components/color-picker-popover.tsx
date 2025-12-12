@@ -52,7 +52,9 @@ export function ColorPickerPopover({
               </p>
               <div className="grid grid-cols-5 gap-1">
                 {PREDEFINED_COLORS.map((color) => (
+                  // eslint-disable-next-line jsx-a11y/control-has-associated-label
                   <button
+                    type="button"
                     key={color}
                     className={cn(
                       'h-6 w-6 rounded border border-border',
@@ -71,7 +73,7 @@ export function ColorPickerPopover({
           value={value}
           onChange={handleInputChange}
           placeholder="#RRGGBB"
-          className="border bg-background border-border rounded-md px-3 py-1.5 w-24 focus:outline-none ring-primary ring-offset-2 text-sm"
+          className="w-24 rounded-md border border-border bg-background px-3 py-1.5 text-sm ring-primary ring-offset-2 focus:outline-none"
         />
       </div>
     </div>

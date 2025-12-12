@@ -24,7 +24,6 @@ export function RenderAttachments({
                 fileExtension || '',
               );
             })}
-            // maxPreview={3}
           />
         </div>
 
@@ -46,8 +45,8 @@ export function RenderAttachments({
               fileExtension || '',
             );
           })
-          .map((file, i) => (
-            <RenderOtherFileType key={i} file={file} />
+          .map((file) => (
+            <RenderOtherFileType key={file.id} file={file} />
           ))}
       </div>
     </div>

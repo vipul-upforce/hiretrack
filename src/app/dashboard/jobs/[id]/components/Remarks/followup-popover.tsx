@@ -22,20 +22,19 @@ function FollowupDisplay({
 }) {
   const [removeFUOpen, setRemoveFUOpen] = useState(false);
   const contentWithDate = (
-    <div className="border cursor-default dark:border-accent rounded w-fit px-2 py-1 flex flex-row items-center justify-between dark:bg-black bg-blue-50 hover:bg-blue-100 dark:hover:bg-gray-900 transition-colors duration-200">
+    <div className="flex w-fit cursor-default flex-row items-center justify-between rounded border bg-blue-50 px-2 py-1 transition-colors duration-200 hover:bg-blue-100 dark:border-accent dark:bg-black dark:hover:bg-gray-900">
       <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
-      <div className="flex flex-row items-center justify-between w-full">
-        <p className="text-foreground text-xs">
-          {formatDate(date || new Date())}
-          {' '}
-          at
+      <div className="flex w-full flex-row items-center justify-between">
+        <p className="text-xs text-foreground">
+          {formatDate(date || new Date())} at
           {formatTime(date || new Date())}
         </p>
       </div>
       {showToolTip && (
         <button
+          type="button"
           onClick={() => setRemoveFUOpen(true)}
-          className="w-4 h-4 ml-1 bg-transparent rounded text-muted-foreground hover:text-destructive transition-colors duration-200"
+          className="ml-1 h-4 w-4 rounded bg-transparent text-muted-foreground transition-colors duration-200 hover:text-destructive"
         >
           <XIcon size={10} strokeWidth={1.5} />
         </button>
@@ -43,15 +42,16 @@ function FollowupDisplay({
     </div>
   );
   const contentWODate = (
-    <div className="border cursor-default border-blue-200 rounded w-fit px-2 py-1 flex flex-row items-center justify-between bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
+    <div className="flex w-fit cursor-default flex-row items-center justify-between rounded border border-blue-200 bg-blue-50 px-2 py-1 transition-colors duration-200 hover:bg-blue-100">
       <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
-      <div className="flex flex-row items-center justify-between w-full">
-        <p className="text-foreground text-xs">Follow Up</p>
+      <div className="flex w-full flex-row items-center justify-between">
+        <p className="text-xs text-foreground">Follow Up</p>
       </div>
       {showToolTip && (
         <button
+          type="button"
           onClick={() => setRemoveFUOpen(true)}
-          className="w-4 h-4 ml-1 bg-transparent rounded text-muted-foreground hover:text-destructive transition-colors duration-200"
+          className="ml-1 h-4 w-4 rounded bg-transparent text-muted-foreground transition-colors duration-200 hover:text-destructive"
         >
           <XIcon size={10} strokeWidth={1.5} />
         </button>
@@ -66,7 +66,7 @@ function FollowupDisplay({
         message="Are you sure you want to remove this followup?"
         isOpen={removeFUOpen}
         setIsOpen={setRemoveFUOpen}
-        onConfirm={handleRemoveFollowUp || (() => { })}
+        onConfirm={handleRemoveFollowUp || (() => {})}
         onCancel={() => setRemoveFUOpen(false)}
         loadingText="Removing..."
         className="sm:max-w-[300px]"
@@ -79,8 +79,10 @@ function FollowupDisplay({
         <TooltipTrigger asChild>
           {date ? contentWithDate : contentWODate}
         </TooltipTrigger>
-        <TooltipContent className="bg-popover border border-border text-popover-foreground max-w-80 break-words shadow-lg">
-          <p className="text-md text-muted-foreground leading-relaxed">{note}</p>
+        <TooltipContent className="max-w-80 break-words border border-border bg-popover text-popover-foreground shadow-lg">
+          <p className="text-md leading-relaxed text-muted-foreground">
+            {note}
+          </p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

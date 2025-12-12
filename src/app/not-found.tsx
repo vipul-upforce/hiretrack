@@ -15,7 +15,6 @@ export function NoDataFound(props: INoDataFound) {
   const handleClick = () => {
     const user = Cookies.get('user');
     if (user) {
-      // debugger;
       router.push('/dashboard');
     } else {
       router.push('/auth/login');

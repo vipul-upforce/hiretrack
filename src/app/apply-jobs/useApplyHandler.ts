@@ -15,8 +15,8 @@ export const useApplyHandler = <T extends Record<string, any>>() => {
     for (const key in formik.initialValues) {
       if (
         key === 'customFields' &&
-        formik.initialValues[key] &&
-        typeof formik.initialValues[key] === 'object'
+        formik.initialValues.key &&
+        typeof formik.initialValues.key === 'object'
       ) {
         // Mark every key inside customFields as true
         touched[key] = {};

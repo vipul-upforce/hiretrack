@@ -5,12 +5,11 @@ import { Button } from '@/components/ui/button';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
-  User,
 } from '@/lib/features/org/orgApi';
 import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
-import { useSelector } from 'react-redux';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { CompletedBatches } from './completed-batches';
 import { FileList } from './file-list';
 import { FileUploader } from './file-uploader';
@@ -59,17 +58,15 @@ export function CVBatchProcessor() {
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
-  const { user: User }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // Fetch all batches using RTK Query
   const {
     data: batches,
     error,
     isLoading,
-  } = useFetchBatchesQuery(User ? User?.organizationId : '', {
-    skip: !User?.organizationId,
+  } = useFetchBatchesQuery(user ? (user?.organizationId as string) : '', {
+    skip: !user?.organizationId,
   });
 
   useEffect(() => {
@@ -102,7 +99,8 @@ export function CVBatchProcessor() {
         formData.append('file', file.file);
       });
 
-      const organizationId = User?.organizationId || '';
+      const organizationId = (user?.organizationId as string) || '';
+      // eslint-disable-next-line no-shadow
       const { data: batchResult, error } = await postBatch({
         formData,
         organizationId,
@@ -122,9 +120,7 @@ export function CVBatchProcessor() {
       setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
       setFiles([]);
     } catch (e) {
-      logger.error(
-        e instanceof Error ? e.message : 'Failed to process batch',
-      );
+      logger.error(e instanceof Error ? e.message : 'Failed to process batch');
     } finally {
       processingRef.current = false;
       setIsPosting(false);

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-array-index-key */
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
 import { Separator } from '../ui/separator';

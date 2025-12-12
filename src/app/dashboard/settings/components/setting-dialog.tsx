@@ -7,9 +7,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
 import React from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import GeminiConfigs from './gemini';
 import EmailTemplateEditor from './edit-mail-dialog';
 import ManageTagsDialog from '../../jobs/[id]/components/Dialogs/manage-tags-dialog';
@@ -61,13 +60,11 @@ function SettingDialog({
   setting: { title: string; description: string; key: string; orgId?: string };
 }) {
   const ComponentToRender = settingComponents[setting.key];
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
-  const orgId = user.organizationId;
+  const { user } = useAppSelector((state) => state.auth || {});
+  const orgId = user?.organizationId;
 
   if (setting.key === 'tags')
-    return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId} />;
+    return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId as string} />;
 
   if (setting.key === 'evaluation')
     return <EvaluationSettings onClose={onClose} isOpen={isOpen} />;

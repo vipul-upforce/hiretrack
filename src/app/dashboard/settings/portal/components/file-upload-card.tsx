@@ -52,7 +52,7 @@ export function FileUploadCard({
               variant="destructive"
               size="icon"
               className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => removeFile(type)}
+              onClick={() => removeFile?.(type)}
             >
               <X className="h-4 w-4" />
             </Button>
@@ -64,8 +64,8 @@ export function FileUploadCard({
               accept={accept}
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleFileUpload(file, type);
+                const thisFile = e.target.files?.[0];
+                if (thisFile) handleFileUpload?.(thisFile, type);
               }}
             />
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors">

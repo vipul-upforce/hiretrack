@@ -201,20 +201,20 @@ export function EmbedTab({
             <div className="flex gap-2">
               <span className="font-semibold">1.</span>
               <p>
-                Copy the embed code above by clicking the "Copy Code" button.
+                Copy the embed code above by clicking the &quot;Copy Code&quot; button.
               </p>
             </div>
             <div className="flex gap-2">
               <span className="font-semibold">2.</span>
               <p>
-                Paste the code into your website's HTML where you want the
+                Paste the code into your website&apos;s HTML where you want the
                 portal to appear.
               </p>
             </div>
             <div className="flex gap-2">
               <span className="font-semibold">3.</span>
               <p>
-                Adjust the width and height settings to fit your website's
+                Adjust the width and height settings to fit your website&apos;s
                 design.
               </p>
             </div>

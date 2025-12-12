@@ -3,10 +3,9 @@
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Clock, MapPin } from 'lucide-react';
-import { CustomCalendarEvent, CandidateAssignment, Job } from '../page';
+import { CustomCalendarEvent, Job } from '../page';
 import { MiniCalendar } from './mini-calendar';
 import { formatTime } from '../../jobs/[id]/hooks/dateTimeFormatting';
 
@@ -61,10 +60,11 @@ export function CalendarSidebar({
     const { interviewer } = event.extendedProps;
 
     return (
-      <div
+      <button
+      type='button'
         key={index}
         onClick={() => onEventClick(event)}
-        className="p-2 border rounded-md hover:bg-accent/50 cursor-pointer transition-colors"
+        className="p-2 border w-full text-left rounded-md hover:bg-accent/50 cursor-pointer transition-colors"
       >
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ export function CalendarSidebar({
             </div>
           )}
         </div>
-      </div>
+      </button>
     );
   };
 
@@ -126,7 +126,7 @@ export function CalendarSidebar({
         <Card className="max-h-[300px] flex-shrink-0 overflow-y-auto">
           <CardHeader className="p-3 pb-2">
             <CardTitle className="text-sm font-semibold">
-              Today's Schedule
+              Today&apos;s Schedule
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-0">

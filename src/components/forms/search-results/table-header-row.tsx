@@ -110,8 +110,8 @@ export const TableHeaderRow = memo(({
           return (
             <TableHead key={column} className="font-semibold text-foreground">
               <div className="flex items-center gap-2">
-                {ICON_MAP[column]}
-                <span>{COLUMN_LABELS[column] || column}</span>
+                {ICON_MAP.column}
+                <span>{COLUMN_LABELS.column || column}</span>
               </div>
             </TableHead>
           );
@@ -124,8 +124,8 @@ export const TableHeaderRow = memo(({
             onClick={() => onSort(column === 'archived' ? 'isDeleted' : column)}
           >
             <div className="flex items-center gap-2">
-              {ICON_MAP[column]}
-              <span>{COLUMN_LABELS[column] || column}</span>
+              {ICON_MAP.column}
+              <span>{COLUMN_LABELS.column || column}</span>
               {getSortIcon(
                 column === 'archived' ? 'isDeleted' : column,
                 sortField,

@@ -1,4 +1,3 @@
-// import { useState } from "react";
 import {
   Dialog,
   DialogHeader,
@@ -20,16 +19,14 @@ function CustomFieldDialog({
     <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
       <DialogContent
         size={!regular ? '2xl' : 'lg'}
-        className="p-0 flex flex-col overflow-hidden"
+        className="flex flex-col overflow-hidden p-0"
         aria-describedby="custom-field-dialog-description"
       >
         <DialogHeader className="px-6 py-4">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4 pb-4">
-          <div className="">
-            {children}
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 pb-4">
+          <div className="">{children}</div>
         </div>
       </DialogContent>
     </Dialog>

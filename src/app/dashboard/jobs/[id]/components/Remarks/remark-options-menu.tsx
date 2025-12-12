@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  MoreVertical, Edit, Eye, EyeOff,
-} from 'lucide-react';
+import { MoreVertical, Edit, Eye, EyeOff } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,7 +44,7 @@ export function RemarkOptionsMenu({
       await onTogglePrivacy?.(remarkId, checked);
       setIsLoading(false);
       setError(null);
-    } catch (err) {
+    } catch {
       setIsLoading(false);
       setError('Failed to update privacy!');
       setIsLocalPrivate(previousState); // Revert to the previous state on failure
@@ -60,7 +58,7 @@ export function RemarkOptionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className={`opacity-0 group-hover:opacity-100 transition duration-300 p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300 ${
+        className={`rounded-full p-1.5 opacity-0 transition duration-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 group-hover:opacity-100 dark:hover:bg-gray-800 ${
           isOpen ? 'opacity-100' : ''
         }`}
       >
@@ -87,7 +85,7 @@ export function RemarkOptionsMenu({
                 checked={isLocalPrivate}
                 disabled={isLoading}
                 onCheckedChange={handlePrivacyToggle}
-                className="w-8 h-4 drop-shadow-lg border border-1 border-solid"
+                className="border-1 h-4 w-8 border border-solid drop-shadow-lg"
               />
             </div>
             <DropdownMenuSeparator />
@@ -95,7 +93,7 @@ export function RemarkOptionsMenu({
         )}
 
         <div
-          className="flex items-center justify-between px-2 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+          className="flex cursor-pointer items-center justify-between px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={handleEdit}
         >
           Edit

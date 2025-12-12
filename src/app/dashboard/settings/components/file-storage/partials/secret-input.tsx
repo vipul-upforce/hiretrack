@@ -24,7 +24,7 @@ export function SecretInput({ name, label }: SecretInputProps) {
           id={name}
           name={name}
           type={show ? 'text' : 'password'}
-          value={values[name]}
+          value={values.name}
           onChange={(e) => setFieldValue(name, e.target.value.trim())}
         />
         <Button

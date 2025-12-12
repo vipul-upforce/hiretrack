@@ -12,7 +12,7 @@ export const useAiVerification = () => {
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
 
   const toggleApiKeyVisibility = (provider: string) => {
-    setShowApiKeys((prev) => ({ ...prev, [provider]: !prev[provider] }));
+    setShowApiKeys((prev) => ({ ...prev, [provider]: !prev.provider }));
   };
 
   const verifyApiKey = async (

@@ -87,12 +87,12 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) => Yup.object
       (value) => {
         if (value === undefined || value === null || value === '') return false;
         // If it's already a number, it's valid
-        if (typeof value === 'number') return !isNaN(value) && value >= 0;
+        if (typeof value === 'number') return !Number.isNaN(value) && value >= 0;
         // If it's a string, try to convert it
         if (typeof value === 'string') {
           const cleanValue = value.replace(/[,\s]/g, '');
           const numValue = parseFloat(cleanValue);
-          return !isNaN(numValue) && numValue >= 0;
+          return !Number.isNaN(numValue) && numValue >= 0;
         }
         return false;
       },

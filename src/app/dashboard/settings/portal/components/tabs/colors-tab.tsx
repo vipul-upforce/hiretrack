@@ -28,43 +28,46 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {PREDEFINED_COLOR_COMBINATIONS.map((combo) => (
               <button
+                type="button"
                 key={combo.name}
                 className={cn(
-                  'p-3 rounded-lg border-2 transition-all hover:scale-105 relative',
-                  settings.primaryColor === combo.primary
-                    && settings.secondaryColor === combo.secondary
+                  'relative rounded-lg border-2 p-3 transition-all hover:scale-105',
+                  settings.primaryColor === combo.primary &&
+                    settings.secondaryColor === combo.secondary
                     ? 'border-primary ring-2 ring-primary ring-offset-2'
-                    : 'border-border hover:border-primary/50',
-                  combo.isDefault
-                    && 'bg-gradient-to-br from-primary/5 to-secondary/5',
+                    : 'hover:border-primary/50 border-border',
+                  combo.isDefault &&
+                    'from-primary/5 bg-gradient-to-br to-secondary/5',
                 )}
-                onClick={() => setSettings((prev) => ({
-                  ...prev,
-                  primaryColor: combo.primary,
-                  secondaryColor: combo.secondary,
-                }))}
+                onClick={() =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    primaryColor: combo.primary,
+                    secondaryColor: combo.secondary,
+                  }))
+                }
               >
                 {combo.isDefault && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <Star className="w-3 h-3 text-white fill-current" />
+                  <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                    <Star className="h-3 w-3 fill-current text-white" />
                   </div>
                 )}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2 flex items-center gap-2">
                   <div
-                    className="w-4 h-4 rounded-full border border-border"
+                    className="h-4 w-4 rounded-full border border-border"
                     style={{ backgroundColor: combo.primary }}
                   />
                   <div
-                    className="w-4 h-4 rounded-full border border-border"
+                    className="h-4 w-4 rounded-full border border-border"
                     style={{ backgroundColor: combo.secondary }}
                   />
                 </div>
                 <p
                   className={cn(
-                    'text-xs font-medium text-center',
+                    'text-center text-xs font-medium',
                     combo.isDefault && 'font-semibold',
                   )}
                 >
@@ -82,22 +85,26 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
           <CardDescription>Fine-tune your color palette</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <ColorPickerPopover
               label="Primary Color"
               value={settings.primaryColor}
-              onChange={(color) => setSettings((prev) => ({
-                ...prev,
-                primaryColor: color,
-              }))}
+              onChange={(color) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  primaryColor: color,
+                }))
+              }
             />
             <ColorPickerPopover
               label="Secondary Color"
               value={settings.secondaryColor}
-              onChange={(color) => setSettings((prev) => ({
-                ...prev,
-                secondaryColor: color,
-              }))}
+              onChange={(color) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  secondaryColor: color,
+                }))
+              }
             />
           </div>
         </CardContent>

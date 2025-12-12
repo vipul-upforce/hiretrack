@@ -237,12 +237,13 @@ export const TableBodyRows = memo(
               )}
               {visibleColumns.name && (
                 <TableCell className="font-medium">
-                  <span
-                    className="hover:text-primary/80 cursor-pointer font-bold text-primary transition-colors hover:underline"
+                  <button
+                    type="button"
+                    className="hover:text-primary/80 text-left cursor-pointer font-bold text-primary transition-colors hover:underline"
                     onClick={(e) => handleViewDetails(candidate, e)}
                   >
                     {candidate.name}
-                  </span>
+                  </button>
                 </TableCell>
               )}
               {visibleColumns.skills && (

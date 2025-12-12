@@ -8,8 +8,8 @@
   const usersToUpdate = db.user.find({ name: { $not: / \:\)$/ } });
 
   let modifiedCount = 0;
-  usersToUpdate.forEach(function(user) {
-    const newName = user.name + " :)";
+  usersToUpdate.forEach((user) => {
+    const newName = `${user.name  } :)`;
     db.user.updateOne(
       { _id: user._id },
       { $set: { name: newName } }
