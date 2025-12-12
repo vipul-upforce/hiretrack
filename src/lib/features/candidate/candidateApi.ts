@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "@/lib/api/baseApi";
 import { Candidate } from "@/types/candidate";
 import { ICandidateHistory } from "@/lib/models/history";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
@@ -28,10 +28,7 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
-export const candidateApi = createApi({
-  reducerPath: "candidateApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
-  tagTypes: ["Candidate", "CandidateApplication"],
+export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
       query: (jobId) => {
@@ -222,6 +219,7 @@ export const {
   useFetchCandidatesQuery,
   useFetchCandidateByIdQuery,
   useFetchAssignmentsQuery,
+  useLazyFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
   useCreateCandidateMutation,
   useCreateGuestCandidateMutation,

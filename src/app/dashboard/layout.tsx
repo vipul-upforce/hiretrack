@@ -17,13 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import Cookies from "js-cookie";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
 import { IUser } from "@/lib/models/user";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
-import { logout } from "@/lib/redux/authSlice";
-import { useDispatch, useSelector } from "react-redux";
 import PortalHead from "@/components/layouts/PortalHead";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -42,6 +39,9 @@ import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
 import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
+import { ILocalUser } from "@/lib/redux/authSlice";
 
 interface SidebarItem {
   title: string;
@@ -103,7 +103,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userData, setUserData] = useState<IUser | null>(null);
+  const [userData, setUserData] = useState<ILocalUser | null>(null);
   const {
     data: portalConfigData,
     isLoading,
@@ -181,15 +181,16 @@ export default function DashboardLayout({
     }
   };
 
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth);
 
   const {
     data: orgCheckData,
     error: orgCheckError,
     isLoading: orgCheckLoading,
-  } = useCheckOrgQuery(user?.organizationId, { skip: !user });
+  } = useCheckOrgQuery(user?.organizationId as string, { skip: !user });
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const [triggerLogout] = useLogoutUserMutation();
 
   useEffect(() => {
     if (allowanceData) {
@@ -200,14 +201,10 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (orgCheckData && !orgCheckData.exists) {
-      Cookies.remove("token");
-      dispatch(logout());
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      fetch("/api/auth/logout");
+      triggerLogout();
       window.location.href = "/auth/login";
     }
-  }, [orgCheckData, dispatch]);
+  }, [orgCheckData, triggerLogout, dispatch]);
 
   useEffect(() => {
     if (
@@ -267,10 +264,11 @@ export default function DashboardLayout({
   }, []); // Remove isCollapsed dependency to avoid infinite loops
 
   const handleLogout = async () => {
-    dispatch(logout());
-    localStorage.removeItem("persist:auth");
-    localStorage.removeItem("persist:organization");
-    await fetch("/api/auth/logout");
+    try {
+      await triggerLogout().unwrap();
+    } catch (error) {
+      console.error("Logout failed", error);
+    }
     setUserData(null);
     setUserLoggedIn(false);
     refetch();

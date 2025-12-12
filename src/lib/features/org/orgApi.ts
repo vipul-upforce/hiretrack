@@ -1,6 +1,6 @@
 import { ITag } from "@/lib/models/organization";
 import { runIfCookiePresent } from "@/lib/utils/queryGuards";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "@/lib/api/baseApi";
 
 export interface CreateAdminRequest {
   email: string;
@@ -97,13 +97,7 @@ export interface Batch {
   updatedAt: string;
 }
 
-export const orgApi = createApi({
-  reducerPath: "orgApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
-    credentials: "include",
-  }),
-  tagTypes: ["Users", "Batches", "Tags"], // Add Batches to tagTypes
+export const orgApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createAdmin: builder.mutation<CreateAdminResponse, CreateAdminRequest>({
       query: (credentials) => ({

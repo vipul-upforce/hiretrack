@@ -24,15 +24,11 @@ export function setSecureAuthTokens(
   options: SecureTokenOptions = {}
 ) {
   const {
-    maxAge = 7 * 24 * 60 * 60, // 7 days in seconds
-    expires = 7, // 7 days (legacy format)
+    maxAge = 15 * 60, // 15 minutes in seconds
     domain,
     path = "/",
   } = options;
 
-  // Calculate expiration date
-  const expirationDate = new Date();
-  expirationDate.setDate(expirationDate.getDate() + expires);
 
   // Common security flags
   const isProduction = process.env.ENVIRONMENT === "production";

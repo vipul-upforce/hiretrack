@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "@/lib/api/baseApi";
 import { DateRange } from "react-day-picker";
 
 export interface AnalyticsFilters {
@@ -81,21 +81,11 @@ const buildQueryParams = ({ organizationId, filters }: AnalyticsQueryArgs) => {
   return params;
 };
 
-export const analyticsApi = createApi({
-  reducerPath: "analyticsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api/analytics",
-    credentials: "include",
-    prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
-  tagTypes: ["Analytics"],
+export const analyticsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchAnalytics: builder.query<AnalyticsResponse<any>, AnalyticsQueryArgs>({
       query: (args) => ({
-        url: `/${args.endpoint.replace(/^\/+/, "")}`,
+        url: `/analytics/${args.endpoint.replace(/^\/+/, "")}`,
         method: "GET",
         params: buildQueryParams(args),
       }),

@@ -85,7 +85,7 @@ function OrgRegisterPage() {
 
   useEffect(() => {
     async function checkAllowance() {
-      const data = await fetch("/api/organization");
+      const data = await fetch("/api/organization?limit=1");
       const allowance = await data.json();
 
       setOrganizationId(allowance.data?.[0]?.organizationId);

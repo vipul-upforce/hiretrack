@@ -128,6 +128,8 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
     isCandidate: isCandidate,
     deviceId: deviceId,
     deviceInfo: deviceInfo,
+    tokenVersion: obj[0].tokenVersion,
+    
   };
   
   const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
@@ -152,7 +154,6 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
 
   // Set short-lived access token in cookie
   let resp = setSecureAuthTokens(response, accessToken, {
-    expires: 0.0104, // ~15 minutes in days
     maxAge: 15 * 60, // 15 minutes in seconds
   });
 

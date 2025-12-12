@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase,{ User } from "@/lib/mongodb";
-import { getAuthenticatedUser, signToken } from "@/app/actions/auth";
+import { getAuthenticatedUser, signToken, type AuthenticatedUser } from "@/app/actions/auth";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
+import { UserDocument } from "@/lib/models/user";
 
 export async function DELETE(
   req: NextRequest,
@@ -84,7 +85,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await User.findById(id).lean().exec();
+    const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -124,13 +125,6 @@ export async function PUT(
       });
 
       if (adminCount <= 1) {
-        await User.findByIdAndUpdate(id, {
-          name: userData.name,
-          role: "admin",
-          isDeleted: false,
-          email: userData?.admin,
-        });
-
         return NextResponse.json(
           { error: "Cannot remove last admin" },
           { status: 400 }
@@ -138,13 +132,19 @@ export async function PUT(
       }
     }
 
-    await User.findByIdAndUpdate(id, userData);
+    const sanitizedUserData = { ...userData };
+    delete sanitizedUserData.tokenVersion;
 
-    if (session?.email === userData?.email) {
-      const updatedData = {
+    user.set(sanitizedUserData);
+    await (user as unknown as UserDocument).incrementTokenVersion();
+
+    if (session && session.id === id) {
+      const updatedData: AuthenticatedUser = {
         ...session,
-        name: userData?.name,
-        email: userData?.email,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        tokenVersion: user.tokenVersion,
       };
       const newToken = await refreshAndReAssignToken(updatedData, session.organizationId);
       return newToken;
@@ -165,8 +165,7 @@ const refreshAndReAssignToken = async (data: unknown, orgId: string) => {
 
   // SECURITY FIX: Use secure token system with improved security
   setSecureAuthTokens(response, newToken, {
-    expires: 7, // 7 days
-    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    maxAge: 15 * 60, // 15 minutes in seconds
   });
 
   return response;

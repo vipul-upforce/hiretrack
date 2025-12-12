@@ -1,7 +1,8 @@
+import { baseApi } from "@/lib/api/baseApi";
 import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
 import { OrgInfo } from "@/lib/models/user";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { NextResponse } from "next/server";
+import { logout } from "@/lib/redux/authSlice";
 
 interface AuthRequest {
   email: string;
@@ -28,13 +29,7 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
-export const authApi = createApi({
-  reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
-    credentials: "include", // Important for cookies
-  }),
-  tagTypes: ["Users"],
+export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
@@ -49,7 +44,7 @@ export const authApi = createApi({
         method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ["Users"], // Ensure correct format
+      invalidatesTags: ["Users"],
     }),
     resetPasswordbyAdmin: builder.mutation<
       NextResponse,
@@ -73,13 +68,26 @@ export const authApi = createApi({
     }),
     refreshToken: builder.mutation<
       { message: string; refreshToken: string; licenseValid: boolean },
-      { refreshToken: string }
+      void // No body needed - uses httpOnly cookie
     >({
-      query: (creds) => ({
+      query: () => ({
         url: "/auth/refresh",
         method: "POST",
-        body: creds,
+        // No body - refresh token is in httpOnly cookie
       }),
+    }),
+    logoutUser: builder.mutation<{ message?: string }, void>({
+      query: () => ({
+        url: "/auth/logout",
+        method: "GET",
+      }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } finally {
+          dispatch(logout());
+        }
+      },
     }),
   }),
 });
@@ -90,4 +98,5 @@ export const {
   useResetPasswordbyAdminMutation,
   useResetPasswordbyUserMutation,
   useRefreshTokenMutation,
+  useLogoutUserMutation,
 } = authApi;

@@ -6,7 +6,7 @@ export const revalidate = 0;
 export const pageMetaData = async () => {
   try {
     const url = process.env.BASE_URL || "http://localhost:3000";
-    const res = await fetch(`${url}/api/organization`, {
+    const res = await fetch(`${url}/api/organization?limit=1`, {
       cache: "no-store", // disable fetch caching
       next: { revalidate: 0 },
     });

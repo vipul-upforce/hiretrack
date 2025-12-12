@@ -37,7 +37,7 @@ export const useSignupLogic = () => {
   useEffect(() => {
     async function checkAllowance() {
       try {
-        const data = await fetch("/api/organization");
+        const data = await fetch("/api/organization?limit=1");
         const allowance = await data.json();
         setOrganizationId(allowance.data?.[0]?.organizationId || null);
 

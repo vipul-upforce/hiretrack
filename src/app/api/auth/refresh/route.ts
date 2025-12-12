@@ -1,16 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateRefreshToken, hashRefreshToken, verifyRefreshToken, updateRefreshToken, cleanupExpiredTokens, verifyAndDecryptRefreshToken } from "@/lib/refreshToken";
+import {
+  generateRefreshToken,
+  hashRefreshToken,
+  verifyRefreshToken,
+  updateRefreshToken,
+  cleanupExpiredTokens,
+  verifyAndDecryptRefreshToken,
+} from "@/lib/refreshToken";
 import { signAccessToken } from "@/app/actions/auth";
-import connectToDatabase, { User, CandidateAccount } from "@/lib/mongodb";
-import { passwordResetRateLimiter } from "@/lib/rateLimiter";
+import connectToDatabase, {
+  User,
+  CandidateAccount,
+  Settings,
+} from "@/lib/mongodb";
 import { setSecureAuthTokens } from "@/lib/secureTokens";
-import { validateAndUpdateLicense } from "@/lib/licenseUtils";
+import { validateLicense } from "@/lib/licenseUtils";
+import { UserRole } from "@/lib/models/JobLaneConfig";
+import { IUser } from "@/lib/models/user";
 
 async function handleRefreshToken(req: NextRequest) {
   try {
     await connectToDatabase();
-    const { refreshToken } = await req.json();
-    console.log("refreshToken from body 88", refreshToken);
+
+    // Read refresh token from httpOnly cookie only
+    const refreshToken = req.cookies.get("refresh_token")?.value;
+    
     if (!refreshToken) {
       return NextResponse.json(
         { error: "Refresh token is required" },
@@ -19,7 +33,7 @@ async function handleRefreshToken(req: NextRequest) {
     }
 
     // STEP 1: Validate license BEFORE refreshing token (runs every 15 min)
-    const licenseValidation = await validateAndUpdateLicense();
+    const licenseValidation = await validateLicense();
     if (!licenseValidation.valid) {
       // License is invalid - block token refresh
       return NextResponse.json(
@@ -35,20 +49,26 @@ async function handleRefreshToken(req: NextRequest) {
     // STEP 2: Decrypt and verify refresh token JWT (same method as access token)
     // First, try to decrypt without orgId (will fail, but we'll get error type)
     let tokenVerification = verifyAndDecryptRefreshToken(refreshToken, "");
+
     let orgId: string;
     let userId: string;
     let isCandidate: boolean;
     let deviceId: string | undefined;
     let deviceInfo: string | undefined;
-
+    let tokenVersion: number | undefined;
+    let role: UserRole | undefined;
     // If token is invalid, try to find orgId from database
     if (!tokenVerification.success || !tokenVerification.payload) {
       // Try to find user by hashed token in database to get orgId
       const tokenHash = hashRefreshToken(refreshToken);
+
+      console.log(tokenHash, "tokenHash-65");
+
+
       let user = await User.findOne({
         "refreshTokens.token": tokenHash,
         "refreshTokens.expiry": { $gt: new Date() },
-      }).select("+refreshTokens");
+      }).select("+refreshTokens organizationId");
 
       let foundIsCandidate = false;
       if (!user) {
@@ -57,7 +77,8 @@ async function handleRefreshToken(req: NextRequest) {
           "refreshTokens.expiry": { $gt: new Date() },
         }).select("+refreshTokens");
         foundIsCandidate = true;
-      }
+      } 
+      console.log(user , "user-77");
 
       if (!user) {
         return NextResponse.json(
@@ -69,8 +90,9 @@ async function handleRefreshToken(req: NextRequest) {
       // Now try to decrypt with correct orgId
       orgId = user.organizationId.toString();
       tokenVerification = verifyAndDecryptRefreshToken(refreshToken, orgId);
-      
+      console.log(tokenVerification, "tokenVerification-89");
       if (!tokenVerification.success || !tokenVerification.payload) {
+
         return NextResponse.json(
           { error: "Invalid or expired refresh token" },
           { status: 401 }
@@ -86,6 +108,8 @@ async function handleRefreshToken(req: NextRequest) {
       isCandidate = payload.isCandidate || false;
       deviceId = payload.deviceId;
       deviceInfo = payload.deviceInfo;
+      tokenVersion = payload.tokenVersion;
+      role = payload.role as UserRole;
     }
 
     const payload = tokenVerification.payload!;
@@ -94,6 +118,8 @@ async function handleRefreshToken(req: NextRequest) {
     if (isCandidate === undefined) isCandidate = payload.isCandidate || false;
     if (!deviceId) deviceId = payload.deviceId;
     if (!deviceInfo) deviceInfo = payload.deviceInfo;
+    if (!tokenVersion) tokenVersion = payload.tokenVersion;
+    if (!role) role = payload.role as UserRole;
 
     // STEP 3: Verify token exists in database
     await cleanupExpiredTokens(userId, isCandidate);
@@ -105,6 +131,7 @@ async function handleRefreshToken(req: NextRequest) {
       isCandidate
     );
 
+    console.log(verification, "verification-129");
     if (!verification.valid) {
       return NextResponse.json(
         { error: "Invalid or expired refresh token" },
@@ -115,29 +142,52 @@ async function handleRefreshToken(req: NextRequest) {
     // STEP 4: Get user data
     const user = isCandidate
       ? await CandidateAccount.findById(userId)
-      : await User.findById(userId);
+          .select("name _id role email organizationId")
+          .populate("organizationId")
+      : await User.findById(userId)
+          .select("tokenVersion name _id role email organizationId")
+          .populate("organizationId");
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    const fileStorage = await Settings.findOne({ organizationId: orgId })
+      .select("fileStorage")
+      .lean();
+
     // STEP 5: Generate new access token
+    const orgSource = user.organizationId as unknown;
+    const orgObject =
+      typeof (orgSource as { toObject?: () => unknown })?.toObject === "function"
+        ? (orgSource as { toObject: () => unknown }).toObject()
+        : orgSource;
+
     const userPayload = {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
-      organizationId: user.organizationId.toString(),
-      organizationInfo: (user as { organizationInfo?: unknown }).organizationInfo,
+      organizationId: orgId,
+      organizationInfo: user?.organizationId
+        ? { ...(orgObject as Record<string, unknown>) }
+        : undefined,
+      tokenVersion: !isCandidate
+        ? (user as IUser)?.tokenVersion || undefined
+        : undefined,
+      fileStorage: fileStorage?.fileStorage?.storageType as string,
     };
 
-    const newAccessToken = await signAccessToken(
-      userPayload,
-      orgId
-    );
+    // Remove customFields from organizationInfo (same as login route)
+    if (userPayload.organizationInfo) {
+      const orgInfo = userPayload
+        .organizationInfo as Record<string, unknown>;
+      if ("customFields" in orgInfo) {
+        delete orgInfo.customFields;
+      }
+    }
+
+    const newAccessToken = await signAccessToken(userPayload, orgId);
 
     // STEP 6: Token rotation - Generate new refresh token (JWT)
     const newRefreshTokenPayload = {
@@ -147,12 +197,15 @@ async function handleRefreshToken(req: NextRequest) {
       deviceId: verification.deviceId || deviceId,
       deviceInfo: deviceInfo || verification.payload?.deviceInfo,
       role: user.role,
+      tokenVersion: !isCandidate
+        ? (user as IUser)?.tokenVersion || undefined
+        : undefined,
     };
 
     const newRefreshToken = generateRefreshToken(newRefreshTokenPayload, orgId);
     const newRefreshTokenHash = hashRefreshToken(newRefreshToken);
     const oldTokenHash = hashRefreshToken(refreshToken);
-    
+
     // Update the specific token entry (token rotation)
     await updateRefreshToken(
       userId,
@@ -161,22 +214,52 @@ async function handleRefreshToken(req: NextRequest) {
       isCandidate
     );
 
-    // STEP 5: Return new tokens
+    // STEP 7: Set new tokens in httpOnly cookies
     const response = NextResponse.json({
       message: "Token refreshed successfully",
-      refreshToken: newRefreshToken,
       licenseValid: true,
     });
 
+    // Set new access token in httpOnly cookie
     setSecureAuthTokens(response, newAccessToken, {
-      expires: 0.0104, // ~15 minutes in days
       maxAge: 15 * 60, // 15 minutes in seconds
     });
 
+    // Set new refresh token in httpOnly cookie (token rotation)
+    const isProduction = process.env.ENVIRONMENT === "production";
+    response.cookies.set("refresh_token", newRefreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
+    });
+
+    // Refresh device_id cookie to keep device tracking aligned with rotated token
+    const nextDeviceId = verification.deviceId || deviceId;
+    if (nextDeviceId) {
+      response.cookies.set("device_id", nextDeviceId, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: "/",
+      });
+    }
+
+    // Refresh org_id cookie to keep org context consistent
+    if (orgId) {
+      response.cookies.set("org_id", orgId, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: "/",
+      });
+    }
+
     return response;
-  } catch (error) {
-    // Log error for debugging (remove console.error if using a logger)
-    console.log("Refresh token error from api/auth/refresh/route.ts 88", error);
+  } catch {
     return NextResponse.json(
       { error: "Failed to refresh token" },
       { status: 500 }
@@ -187,4 +270,3 @@ async function handleRefreshToken(req: NextRequest) {
 export async function POST(req: Request) {
   return await handleRefreshToken(req as NextRequest);
 }
-

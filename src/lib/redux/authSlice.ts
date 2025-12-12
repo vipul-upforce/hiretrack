@@ -1,9 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { EmailNotificationSettings, IUser, Organization, OrgInfo } from "@/lib/models/user";
+import { EmailNotificationSettings, Organization, OrgInfo } from "@/lib/models/user";
+import Cookies from "js-cookie";
 export interface ILocalUser {
   id: string;
-  organizationId: Organization |string;
+  _id?: string;
+  tokenVersion?: number;
+  
+  organizationId?: Organization |string;
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
@@ -17,6 +20,8 @@ export interface ILocalUser {
   otpExpires?: Date;
   otp?: number;
   emailNotificationSettings?: EmailNotificationSettings;
+  fileStorage?: string;
+  
 }
 interface AuthState {
   user: ILocalUser | null;
@@ -25,13 +30,17 @@ interface AuthState {
   error: string | null;
 }
 
+const getIsAuthenticated = () => {
+  const authState = Cookies.get("auth_state");
+  return authState ? true : false;
+};
+
 const initialState: AuthState = {
   user: null,
-  isAuthenticated: false,
+  isAuthenticated: getIsAuthenticated() || false,
   loading: false,
   error: null,
 };
-
 export const fetchUserFromToken = createAsyncThunk(
   "auth/fetchUserFromToken",
   async (_, { rejectWithValue }) => {
@@ -56,22 +65,6 @@ export const fetchUserFromToken = createAsyncThunk(
     }
   }
 );
-
-// Simple async thunk to call logout API - no response handling needed
-export const logoutUser = createAsyncThunk("auth/logoutUser", async () => {
-  try {
-    // Just ping the server to clear cookies - don't care about response
-    await fetch("/api/auth/logout");
-    localStorage.removeItem("persist:auth");
-    localStorage.removeItem("persist:organization");
-  } catch (error) {
-    // Ignore errors - we'll clear local state anyway
-    console.log("Logout API call failed, but continuing with local cleanup");
-  }
-
-  // Always return success since we don't care about the API response
-  return true;
-});
 
 const authSlice = createSlice({
   name: "auth",
@@ -112,14 +105,6 @@ const authSlice = createSlice({
       .addCase(fetchUserFromToken.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      })
-      // Handle logout API call
-      .addCase(logoutUser.fulfilled, (state) => {
-        // Clear state after API call
-        state.user = null;
-        state.isAuthenticated = false;
-        state.loading = false;
-        state.error = null;
       });
   },
 });

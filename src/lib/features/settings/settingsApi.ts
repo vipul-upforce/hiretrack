@@ -1,5 +1,5 @@
 // import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "@/lib/api/baseApi";
 import { VersionListResponse } from "@/app/dashboard/settings/components/about/types";
 
 // Interface for test connection request
@@ -122,24 +122,7 @@ export interface EmailHistoryRecord {
   attachments?: { fileName: string; fileSize: number; shareUrl: string }[];
 }
 
-export const settingsApi = createApi({
-  reducerPath: "settingsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
-  }),
-  tagTypes: [
-    "Settings",
-    "Backups",
-    "NginxLogs",
-    "ServerLogs",
-    "EmailHistory",
-    "Assets",
-    "AutoUpdate",
-    "SystemUpdate",
-    "VersionList",
-    "DiskSpace",
-    "PM2Logs",
-  ],
+export const settingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
       query: () => "/backups",

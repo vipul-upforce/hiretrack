@@ -1,3 +1,4 @@
+// /lib/licenseUtils.ts
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
@@ -98,7 +99,7 @@ export function readCofigData(): ConfigData | null {
 /**
  * Validate license with external API
  */
-export async function validateLicenseWithAPI(
+async function validateLicenseWithAPI(
   licenseKey: string,
   machineCode: string
 ): Promise<LicenseValidationResponse> {
@@ -148,11 +149,8 @@ export async function validateLicenseWithAPI(
   }
 }
 
-/**
- * Validate license and update license.json file
- * This is the main function to use for license validation
- */
-export async function validateAndUpdateLicense(): Promise<{
+
+export async function validateLicense(): Promise<{
   valid: boolean;
   error?: string;
 }> {

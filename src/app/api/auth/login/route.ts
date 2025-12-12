@@ -117,6 +117,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       name: userInOrg.name,
       email: userInOrg.email,
       role: userInOrg.role,
+      tokenVersion: userInOrg.tokenVersion,
       organizationId: userInOrg.organizationId,
       organizationInfo: orgInfo,
       fileStorage: orgSettings?.fileStorage?.storageType,
@@ -167,6 +168,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
     email: user.email,
     role: user.role,
     organizationId: user.organizationId,
+    tokenVersion: user.tokenVersion,
     organizationInfo: orgInfo,
     fileStorage: fileStorage?.fileStorage?.storageType,
   };
@@ -408,6 +410,7 @@ const checkMultipleOrgs = async (
         organizationId: userInOrg.organizationId,
         organizationInfo: orgInfo,
         fileStorage: fileStorage?.fileStorage?.storageType,
+        tokenVersion: userInOrg.tokenVersion,
       };
 
       const response = await returnTokenBasedResponse(tokenObj, req);
@@ -553,6 +556,7 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     isCandidate: isCandidate,
     deviceId: deviceId,
     deviceInfo: deviceInfo,
+    tokenVersion: obj.tokenVersion,
   };
   
   const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
@@ -577,8 +581,7 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
 
   // Set short-lived access token in cookie
   let resp = setSecureAuthTokens(response, accessToken, {
-    expires: 0.0104, // ~15 minutes in days
-    maxAge: 5 * 60, // 15 minutes in seconds
+    maxAge: 15 * 60, // 15 minutes in seconds
   });
 
   // Set refresh token in httpOnly cookie

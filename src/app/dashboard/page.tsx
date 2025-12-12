@@ -18,7 +18,7 @@ import { useSelector } from "react-redux";
 import RecentActivities from "./components/RecentActivities";
 import { useMarkNotificationAsReadMutation } from "@/lib/features/notifications/notificationsApi";
 import { useNotificationsContext } from "@/contexts/NotificationsContext";
-import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
+import { useLazyFetchCandidateByIdQuery,useLazyFetchAssignmentsQuery} from "@/lib/features/candidate/candidateApi";
 import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -128,6 +128,7 @@ export default function DashboardPage() {
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
+  const [triggerFetchAssignments] = useLazyFetchAssignmentsQuery();
   const [isActivitiesSidebarOpen, setIsActivitiesSidebarOpen] = useState(() => {
     // Load preference from localStorage on initial render
     if (typeof window !== "undefined") {
@@ -190,18 +191,14 @@ export default function DashboardPage() {
       }
 
       try {
-        const params = new URLSearchParams({
-          isPagination: "true",
-          page: page.toString(),
-          limit: itemsPerPage.toString(),
+        const data = await triggerFetchAssignments({
+          isPagination: true,
+          page,
+          limit: itemsPerPage,
           filterValue: filterText.toString(),
           assignedTo: selectedAssignedTo,
-        });
+        }).unwrap();
 
-        const response = await fetch(
-          `/api/candidates/assignments?${params.toString()}`
-        );
-        const data = await response.json();
         setAssignmentsCounts((prev) => ({
           ...prev,
           totalInterviews: data[0]?.totalInterviews || 0,
@@ -229,7 +226,7 @@ export default function DashboardPage() {
       }
     },
 
-    [filterText, selectedAssignedTo, itemsPerPage]
+    [filterText, selectedAssignedTo, itemsPerPage, triggerFetchAssignments]
   );
 
   const loadMoreData = useCallback(() => {
@@ -280,7 +277,7 @@ export default function DashboardPage() {
     setHasMoreData(true);
     setAssignments([]);
     fetchAssignments(1, false);
-  }, [selectedAssignedTo, filterText]);
+  }, [selectedAssignedTo, filterText, fetchAssignments]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -766,3 +763,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

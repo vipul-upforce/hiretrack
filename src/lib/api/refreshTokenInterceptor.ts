@@ -41,6 +41,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        credentials: "include",
       },
       body: JSON.stringify({ refreshToken }),
       credentials: "include",
@@ -77,6 +78,7 @@ export async function refreshAccessToken(): Promise<string | null> {
   } catch (error) {
     processQueue(error as Error, null);
     isRefreshing = false;
+    console.error(error, "error-79");
 
     // Clear tokens and redirect to login
     localStorage.removeItem("refresh_token");
@@ -100,6 +102,10 @@ export function setupTokenRefreshInterceptor() {
   window.fetch = async function (...args) {
     let response = await originalFetch(...args);
     // If 401, try to refresh token
+    console.log("response",response, "response-103");
+
+
+
     if (
       response.status === 401 &&
       !args[0]?.toString().includes("/auth/refresh")

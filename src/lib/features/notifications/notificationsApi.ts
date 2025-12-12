@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from "@/lib/api/baseApi";
 import { INotification } from "@/lib/models/notification";
 
 interface NotificationsResponse {
@@ -35,13 +35,7 @@ interface MarkAllAsReadResponse {
   modifiedCount: number;
 }
 
-export const notificationsApi = createApi({
-  reducerPath: "notificationsApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api/notifications",
-    credentials: "include",
-  }),
-  tagTypes: ["Notification", "NotificationCount"],
+export const notificationsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getNotifications: builder.query<NotificationsResponse, GetNotificationsParams>({
       query: (params = {}) => {
@@ -53,7 +47,7 @@ export const notificationsApi = createApi({
         if (params.type) searchParams.append("type", params.type);
         if (params.priority) searchParams.append("priority", params.priority);
 
-        return `?${searchParams.toString()}`;
+        return `/notifications?${searchParams.toString()}`;
       },
       providesTags: (result, error, params) => [
         { type: "Notification", id: "LIST" },
@@ -65,13 +59,13 @@ export const notificationsApi = createApi({
     }),
 
     getNotificationCount: builder.query<NotificationCountResponse, void>({
-      query: () => "/count",
+      query: () => "/notifications/count",
       providesTags: [{ type: "NotificationCount", id: "COUNT" }],
     }),
 
     markNotificationAsRead: builder.mutation<MarkAsReadResponse, string>({
       query: (id) => ({
-        url: `/${id}/read`,
+        url: `/notifications/${id}/read`,
         method: "PUT",
       }),
       invalidatesTags: (result, error, id) => [
@@ -120,7 +114,7 @@ export const notificationsApi = createApi({
 
     markAllNotificationsAsRead: builder.mutation<MarkAllAsReadResponse, void>({
       query: () => ({
-        url: "/mark-all-read",
+        url: "/notifications/mark-all-read",
         method: "PUT",
       }),
       invalidatesTags: [

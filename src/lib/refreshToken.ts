@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import CryptoJS from "crypto-js";
 import { generateOrgJwtSecret } from "./jwtSecretGenerator";
 import { User, CandidateAccount } from "@/lib/mongodb";
+import { UserRole } from "./models/JobLaneConfig";
 
 export interface RefreshTokenPayload {
   userId: string;
@@ -10,6 +11,8 @@ export interface RefreshTokenPayload {
   isCandidate: boolean;
   deviceId?: string;
   deviceInfo?: string;
+  tokenVersion?: number;
+  role?: UserRole | string;
 }
 
 /**

@@ -9,6 +9,7 @@ import { NotificationButton } from "@/components/ui/notifications";
 import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
 import SidebarLogo from "./SidebarLogo";
 import type { IUser } from "@/lib/models/user";
+import { ILocalUser } from "@/lib/redux/authSlice";
 
 interface SidebarItem {
   title: string;
@@ -20,7 +21,7 @@ interface SidebarItem {
 interface SidebarContentProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  userData: IUser | null;
+  userData: ILocalUser | IUser | null;
   portalConfigData: any;
   isLoading: boolean;
   theme: string;
