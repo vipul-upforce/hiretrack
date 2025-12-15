@@ -78,7 +78,7 @@ ${resumeText}`;
         {
           role: "system",
           content:
-            "You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.",
+            "You are an expert technical recruiter.Return ONLY valid JSON based on the structure provided.Never include explanations, markdown, or commentary.",
         },
         {
           role: "user",

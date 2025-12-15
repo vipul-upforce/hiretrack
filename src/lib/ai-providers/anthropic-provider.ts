@@ -66,7 +66,7 @@ ${resumeText}`;
     const finalPrompt =
       prompt +
       `Resume Text: ${resumeText}` +
-      "IMPORTANT: Return ONLY the JSON object, no additional text or explanation.";
+      "You are an expert technical recruiter.Return ONLY valid JSON based on the structure provided.Never include explanations, markdown, or commentary.";
 
     const response = await anthropic.messages.create({
       model: selectedModel,
@@ -77,7 +77,7 @@ ${resumeText}`;
           role: "user",
           content: [{ type: "text", text: finalPrompt }],
         },
-      ],
+      ]
     });
 
     const content = response.content[0];
