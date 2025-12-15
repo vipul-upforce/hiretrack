@@ -16,7 +16,7 @@ export function isScoreObject(value: unknown): value is ScoreObject {
  * Type guard to check if value is a valid number
  */
 export function isValidNumber(value: unknown): value is number {
-  return typeof value === "number" && !isNaN(value) && isFinite(value);
+  return typeof value === "number" && !Number.isNaN(value) && Number.isFinite(value);
 }
 
 /**

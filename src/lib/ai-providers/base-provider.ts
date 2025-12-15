@@ -1,6 +1,7 @@
+
 import * as pdfjs from 'pdfjs-dist';
-// @ts-ignore
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
 import { AIProvider, ProcessedResumeData } from './types';
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -8,6 +9,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 export abstract class BaseAIProvider implements AIProvider {
   abstract name: string;
 
+  // They will be used in concrete implementations
   abstract processResume(
     base64Resume: string,
     apiKey: string,
@@ -19,22 +21,30 @@ export abstract class BaseAIProvider implements AIProvider {
     model?: string
   ): Promise<{ isValid: boolean; error?: string }>;
 
-  protected async extractTextFromPdf(base64Pdf: string): Promise<string> {
+  abstract evaluateResume(
+    resumeBase64: string,
+    apiKey: string,
+    prompt: string,
+    model?: string,
+    temperature?: number,
+  ): Promise<string>;
+
+  protected static async extractTextFromPdf(base64Pdf: string): Promise<string> {
     const pdfData = Buffer.from(base64Pdf, 'base64');
     const uint8Array = new Uint8Array(pdfData);
     const pdf = await pdfjs.getDocument({ data: uint8Array }).promise;
     let textContent = '';
 
-    for (let i = 1; i <= pdf.numPages; i++) {
+    for (let i = 1; i <= pdf.numPages; i += 1) {
       const page = await pdf.getPage(i);
       const pageText = await page.getTextContent();
-      textContent += pageText.items.map((item: any) => item.str).join(' ');
+      textContent += pageText.items.map((item) => (item as TextItem).str).join(' ');
     }
 
     return textContent;
   }
 
-  protected getStandardPrompt(): string {
+  protected static getStandardPrompt(): string {
     return `
     first of all you should check if the provided document is a CV or Resume, 
     If not then return JSON: {error:"Not a valid CV"}
@@ -80,14 +90,14 @@ export abstract class BaseAIProvider implements AIProvider {
     Below is the resume content:`;
   }
 
-  protected cleanJsonResponse(response: string): string {
+  protected static cleanJsonResponse(response: string): string {
     return response
       .replace(/```json\n?/g, '')
       .replace(/```/g, '')
       .trim();
   }
 
-  protected parseJsonResponse(jsonString: string): ProcessedResumeData {
+  protected static parseJsonResponse(jsonString: string): ProcessedResumeData {
     try {
       const parsedData = JSON.parse(jsonString);
 
@@ -113,15 +123,5 @@ export abstract class BaseAIProvider implements AIProvider {
         `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
-  }
-
-  public async evaluateResume(
-    resumeBase64: string,
-    apiKey: string,
-    prompt: string,
-    model?: string,
-    temperature?: number,
-  ): Promise<string> {
-    return '';
   }
 }

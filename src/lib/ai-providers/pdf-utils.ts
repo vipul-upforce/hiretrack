@@ -1,5 +1,4 @@
 import * as pdfjs from 'pdfjs-dist';
-// @ts-ignore
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
 
@@ -10,7 +9,7 @@ export async function extractTextFromPdf(base64Pdf: string): Promise<string> {
   const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
   let textContent = '';
 
-  for (let i = 1; i <= pdf.numPages; i++) {
+  for (let i = 1; i <= pdf.numPages; i += 1) {
     const page = await pdf.getPage(i);
     const pageText = await page.getTextContent();
     textContent += pageText.items

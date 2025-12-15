@@ -90,7 +90,7 @@ export class AIEvaluationService {
   private static getAIProviders(
     settings: ISettings | Partial<ISettings>
   ): IAIProviders {
-    let aiProviders = settings.aiProviders;
+    let { aiProviders } = settings;
 
     if (!aiProviders) {
       const legacyGeminiKey = settings.gemini?.gemini_key || "";
@@ -210,18 +210,19 @@ export class AIEvaluationService {
     evaluation: EvaluationResult,
     config: IEvaluationConfig | Partial<IEvaluationConfig>
   ): EvaluationResult {
+    const filtered = { ...evaluation };
+    
     if (config.enableConfidenceScores === false) {
-      delete evaluation.confidenceScores;
-      delete evaluation.evidenceLinks;
+      delete filtered.evidenceLinks;
     }
     if (config.enableRedFlagsDetection === false) {
-      delete evaluation.redFlags;
+      delete filtered.redFlags;
     }
     if (config.enableSkillsMatrix === false) {
-      delete evaluation.skillsMatrix;
+      delete filtered.skillsMatrix;
     }
 
-    return evaluation;
+    return filtered;
   }
 
   /**
