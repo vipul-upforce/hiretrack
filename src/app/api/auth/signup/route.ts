@@ -57,7 +57,7 @@ async function handleSignup(req: NextRequest) {
       password: hashedPassword,
       name,
       role,
-      orgId,
+      organizationId: orgId.toString(),
     });
 
     // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
