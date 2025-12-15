@@ -1,20 +1,23 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CandidateStatusBadge } from "../jobs/[id]/components/Utils/candidate-status-badge";
-import { Assignment } from "../page";
-import { CandidateStatus } from "@/types/candidate";
-import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { formatDate, formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
-import CustomFieldBadge from "../jobs/[id]/components/Candidate/CustomFieldBadge";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { CandidateStatus } from '@/types/candidate';
+import {
+  BriefcaseIcon, CalendarIcon, ClockIcon, Zap,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { CandidateStatusBadge } from '../jobs/[id]/components/Utils/candidate-status-badge';
+import { Assignment } from '../page';
+import { formatDate, formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
+import CustomFieldBadge from '../jobs/[id]/components/Candidate/CustomFieldBadge';
 
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-
-export const RenderInterviewerAssignments = ({
+export function RenderInterviewerAssignments({
   interviewerAssignments,
 }: {
   interviewerAssignments: Assignment[];
-}) => {
-  const { formNameObject } = useCustomForm("Candidate");
+}) {
+  const { formNameObject } = useCustomForm('Candidate');
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -40,7 +43,7 @@ export const RenderInterviewerAssignments = ({
                 <div>
                   <p className="text-sm text-muted-foreground">Position</p>
                   <p className="font-medium">
-                    {assignment?.jobId?.title || "N/A"}
+                    {assignment?.jobId?.title || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -62,7 +65,8 @@ export const RenderInterviewerAssignments = ({
                     ))}
                     {assignment.skills.length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +{assignment.skills.length - 3}
+                        +
+                        {assignment.skills.length - 3}
                       </Badge>
                     )}
                   </div>
@@ -78,9 +82,9 @@ export const RenderInterviewerAssignments = ({
                     <p className="text-sm font-medium">
                       {assignment?.assignment?.time
                         ? formatDate(
-                            assignment?.assignment?.time.toLocaleString()
-                          )
-                        : "N/A"}
+                          assignment?.assignment?.time.toLocaleString(),
+                        )
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -92,29 +96,28 @@ export const RenderInterviewerAssignments = ({
                     <p className="text-sm font-medium">
                       {assignment?.assignment?.time
                         ? formatTime(
-                            assignment?.assignment?.time.toLocaleString()
-                          )
-                        : "N/A"}
+                          assignment?.assignment?.time.toLocaleString(),
+                        )
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {assignment.customFields &&
-                  Object.entries(assignment.customFields)
+                {assignment.customFields
+                  && Object.entries(assignment.customFields)
                     .filter(([key, value]) => {
                       const field = formNameObject?.fields.find(
-                        (f) => f.label === key
+                        (f) => f.label === key,
                       );
                       if (
-                        field?.candidateId &&
-                        field.candidateId !== assignment._id
-                      )
-                        return false;
+                        field?.candidateId
+                        && field.candidateId !== assignment._id
+                      ) return false;
                       if (
-                        (typeof value === "string" && value === "") ||
-                        (typeof value === "object" &&
-                          Object.keys(value).length === 0)
+                        (typeof value === 'string' && value === '')
+                        || (typeof value === 'object'
+                          && Object.keys(value).length === 0)
                       ) {
                         return false;
                       }
@@ -132,4 +135,4 @@ export const RenderInterviewerAssignments = ({
       ))}
     </div>
   );
-};
+}

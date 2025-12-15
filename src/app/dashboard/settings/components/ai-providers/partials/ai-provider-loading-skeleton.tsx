@@ -1,15 +1,16 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import React from "react";
+/* eslint-disable react/no-array-index-key */
+import { Skeleton } from '@/components/ui/skeleton';
+import React from 'react';
 
-const AiProviderSkeleton = () => {
+function AiProviderSkeleton() {
   return (
-    <div className="flex flex-col h-[calc(86vh-80px)] overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 sticky top-0">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="flex h-[calc(86vh-80px)] flex-col overflow-hidden">
+      <div className="sticky top-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="border rounded-xl p-6 space-y-5 min-h-[300px]"
+              className="min-h-[300px] space-y-5 rounded-xl border p-6"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -38,7 +39,7 @@ const AiProviderSkeleton = () => {
           ))}
         </div>
 
-        <div className="border rounded-xl p-4 space-y-3">
+        <div className="space-y-3 rounded-xl border p-4">
           <Skeleton className="h-4 w-52" />
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -48,12 +49,12 @@ const AiProviderSkeleton = () => {
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0">
+      <div className="sticky bottom-0 flex justify-end space-x-2 border-t bg-background px-6 py-4">
         <Skeleton className="h-10 w-24" />
         <Skeleton className="h-10 w-40" />
       </div>
     </div>
   );
-};
+}
 
 export default AiProviderSkeleton;

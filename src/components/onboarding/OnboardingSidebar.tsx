@@ -1,28 +1,26 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import {
   Sparkles,
   ChevronRight,
   X,
   Settings,
   CheckCircle2,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useOnboarding } from "./OnboardingProvider";
-import ConfirmationDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import ConfirmationDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
+import { useOnboarding } from './OnboardingProvider';
 
 interface OnboardingSidebarProps {
   isCollapsed: boolean;
 }
 
-const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
-  isCollapsed,
-}) => {
+function OnboardingSidebar({ isCollapsed }: OnboardingSidebarProps) {
   const { setIsOpen, progress, doNotShowAgain, onboardingStatus, isLoading } =
     useOnboarding();
 
@@ -56,14 +54,14 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
   if (isCollapsed) {
     // Collapsed sidebar view - just an icon button
     return (
-      <div className="px-3 mb-2">
+      <div className="mb-2 px-3">
         <Button
           variant="ghost"
           size="icon"
           onClick={handleOpenOnboarding}
           className={cn(
-            "w-full h-10 rounded-lg relative transition-all duration-200",
-            "hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            'relative h-10 w-full rounded-lg transition-all duration-200',
+            'hover:bg-blue-50 dark:hover:bg-blue-900/20',
           )}
           title={`Setup Progress: ${progressPercentage}%`}
         >
@@ -74,9 +72,9 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
           )}
 
           {!isComplete && (
-            <div className="absolute -top-1 -right-1">
-              <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
-                <span className="text-[8px] text-white font-bold">
+            <div className="absolute -right-1 -top-1">
+              <div className="flex h-3 w-3 items-center justify-center rounded-full bg-blue-500">
+                <span className="text-[8px] font-bold text-white">
                   {Math.round(progressPercentage / 10)}
                 </span>
               </div>
@@ -89,13 +87,13 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
 
   // Expanded sidebar view - full card
   return (
-    <div className="px-3 mb-3 mt-16">
+    <div className="mb-3 mt-16 px-3">
       <Card
         className={cn(
-          "border-2 transition-all duration-200 cursor-pointer hover:shadow-md",
+          'cursor-pointer border-2 transition-all duration-200 hover:shadow-md',
           isComplete
-            ? "border-green-300 bg-green-50 dark:bg-green-900/10"
-            : "border-portal-primary bg-[hsl(var(--portal-primary-h),var(--portal-primary-s),var(--portal-primary-l),0.12)] dark:bg-[hsl(var(--portal-primary-h),var(--portal-primary-s),var(--portal-primary-l),0.18)]"
+            ? 'border-green-300 bg-green-50 dark:bg-green-900/10'
+            : 'border-portal-primary bg-[hsl(var(--portal-primary-h),var(--portal-primary-s),var(--portal-primary-l),0.12)] dark:bg-[hsl(var(--portal-primary-h),var(--portal-primary-s),var(--portal-primary-l),0.18)]',
         )}
       >
         <CardContent className="p-3">
@@ -106,18 +104,18 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
                 {isComplete ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                 ) : (
-                  <Sparkles className="h-4 w-4 text-portal-primary" />
+                  <Sparkles className="text-portal-primary h-4 w-4" />
                 )}
 
                 <span
                   className={cn(
-                    "text-xs font-medium",
+                    'text-xs font-medium',
                     isComplete
-                      ? "text-green-700 dark:text-green-300"
-                      : "text-portal-primary"
+                      ? 'text-green-700 dark:text-green-300'
+                      : 'text-portal-primary',
                   )}
                 >
-                  {isComplete ? "Setup Complete!" : "Setup Guide"}
+                  {isComplete ? 'Setup Complete!' : 'Setup Guide'}
                 </span>
               </div>
 
@@ -125,10 +123,10 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
                 <Badge
                   variant="secondary"
                   className={cn(
-                    "text-[10px] px-1.5 py-0.5",
+                    'px-1.5 py-0.5 text-[10px]',
                     isComplete
-                      ? "bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200"
-                      : "bg-[hsl(var(--primary)/0.15)] text-portal-primary"
+                      ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200'
+                      : 'text-portal-primary bg-[hsl(var(--primary)/0.15)]',
                   )}
                 >
                   {progressPercentage}%
@@ -149,18 +147,18 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
               <Progress
                 value={progressPercentage}
                 className={cn(
-                  "h-2",
-                  isComplete ? "bg-green-200" : "bg-secondary"
+                  'h-2',
+                  isComplete ? 'bg-green-200' : 'bg-secondary',
                 )}
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>
-                  {progress ? `${progress.completed}/${progress.total}` : "0/8"}{" "}
+                  {progress ? `${progress.completed}/${progress.total}` : '0/8'}{' '}
                   configured
                 </span>
                 {!isComplete && (
                   <span>
-                    {progress ? progress.total - progress.completed : 8}{" "}
+                    {progress ? progress.total - progress.completed : 8}{' '}
                     remaining
                   </span>
                 )}
@@ -171,11 +169,11 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
             <Button
               onClick={handleOpenOnboarding}
               size="sm"
-              variant={isComplete ? "outline" : "primary"}
+              variant={isComplete ? 'outline' : 'primary'}
               className={cn(
-                "w-full h-7 text-xs gap-1.5",
+                'h-7 w-full gap-1.5 text-xs',
                 isComplete &&
-                  "border-green-300 text-green-700 hover:bg-green-100 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20"
+                  'border-green-300 text-green-700 hover:bg-green-100 dark:border-green-600 dark:text-green-300 dark:hover:bg-green-900/20',
               )}
             >
               {isComplete ? (
@@ -206,6 +204,6 @@ const OnboardingSidebar: React.FC<OnboardingSidebarProps> = ({
       />
     </div>
   );
-};
+}
 
 export default OnboardingSidebar;

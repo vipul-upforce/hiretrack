@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { INotification } from "@/lib/models/notification";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { INotification } from '@/lib/models/notification';
 
 interface NotificationsResponse {
   notifications: INotification[];
@@ -36,76 +36,76 @@ interface MarkAllAsReadResponse {
 }
 
 export const notificationsApi = createApi({
-  reducerPath: "notificationsApi",
+  reducerPath: 'notificationsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api/notifications",
-    credentials: "include",
+    baseUrl: '/api/notifications',
+    credentials: 'include',
   }),
-  tagTypes: ["Notification", "NotificationCount"],
+  tagTypes: ['Notification', 'NotificationCount'],
   endpoints: (builder) => ({
     getNotifications: builder.query<NotificationsResponse, GetNotificationsParams>({
       query: (params = {}) => {
         const searchParams = new URLSearchParams();
-        
-        if (params.page) searchParams.append("page", params.page.toString());
-        if (params.limit) searchParams.append("limit", params.limit.toString());
-        if (params.isRead !== undefined) searchParams.append("isRead", params.isRead.toString());
-        if (params.type) searchParams.append("type", params.type);
-        if (params.priority) searchParams.append("priority", params.priority);
+
+        if (params.page) searchParams.append('page', params.page.toString());
+        if (params.limit) searchParams.append('limit', params.limit.toString());
+        if (params.isRead !== undefined) searchParams.append('isRead', params.isRead.toString());
+        if (params.type) searchParams.append('type', params.type);
+        if (params.priority) searchParams.append('priority', params.priority);
 
         return `?${searchParams.toString()}`;
       },
       providesTags: (result, error, params) => [
-        { type: "Notification", id: "LIST" },
+        { type: 'Notification', id: 'LIST' },
         ...(result?.notifications || []).map((notification) => ({
-          type: "Notification" as const,
+          type: 'Notification' as const,
           id: notification._id,
         })),
       ],
     }),
 
     getNotificationCount: builder.query<NotificationCountResponse, void>({
-      query: () => "/count",
-      providesTags: [{ type: "NotificationCount", id: "COUNT" }],
+      query: () => '/count',
+      providesTags: [{ type: 'NotificationCount', id: 'COUNT' }],
     }),
 
     markNotificationAsRead: builder.mutation<MarkAsReadResponse, string>({
       query: (id) => ({
         url: `/${id}/read`,
-        method: "PUT",
+        method: 'PUT',
       }),
       invalidatesTags: (result, error, id) => [
-        { type: "Notification", id },
-        { type: "Notification", id: "LIST" },
-        { type: "NotificationCount", id: "COUNT" },
+        { type: 'Notification', id },
+        { type: 'Notification', id: 'LIST' },
+        { type: 'NotificationCount', id: 'COUNT' },
       ],
       // Optimistic update
       async onQueryStarted(id, { dispatch, queryFulfilled }) {
         // Update the notification in the cache optimistically
         const patchResult = dispatch(
           notificationsApi.util.updateQueryData(
-            "getNotifications",
+            'getNotifications',
             {},
             (draft) => {
               const notification = draft.notifications.find((n) => n._id === id);
               if (notification) {
                 notification.isRead = true;
               }
-            }
-          )
+            },
+          ),
         );
 
         // Update the count optimistically
         const countPatchResult = dispatch(
           notificationsApi.util.updateQueryData(
-            "getNotificationCount",
+            'getNotificationCount',
             undefined,
             (draft) => {
               if (draft.unreadCount > 0) {
                 draft.unreadCount -= 1;
               }
-            }
-          )
+            },
+          ),
         );
 
         try {
@@ -120,37 +120,37 @@ export const notificationsApi = createApi({
 
     markAllNotificationsAsRead: builder.mutation<MarkAllAsReadResponse, void>({
       query: () => ({
-        url: "/mark-all-read",
-        method: "PUT",
+        url: '/mark-all-read',
+        method: 'PUT',
       }),
       invalidatesTags: [
-        { type: "Notification", id: "LIST" },
-        { type: "NotificationCount", id: "COUNT" },
+        { type: 'Notification', id: 'LIST' },
+        { type: 'NotificationCount', id: 'COUNT' },
       ],
       // Optimistic update
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         // Update all notifications in the cache optimistically
         const patchResult = dispatch(
           notificationsApi.util.updateQueryData(
-            "getNotifications",
+            'getNotifications',
             {},
             (draft) => {
               draft.notifications.forEach((notification) => {
                 notification.isRead = true;
               });
-            }
-          )
+            },
+          ),
         );
 
         // Update the count optimistically
         const countPatchResult = dispatch(
           notificationsApi.util.updateQueryData(
-            "getNotificationCount",
+            'getNotificationCount',
             undefined,
             (draft) => {
               draft.unreadCount = 0;
-            }
-          )
+            },
+          ),
         );
 
         try {

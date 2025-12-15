@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { NextPage } from "next";
-import AuthGuardLoading from "./ui/authGuardLoader";
-import { useSelector } from "react-redux";
-import { User } from "@/lib/features/org/orgApi";
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { NextPage } from 'next';
+import { useSelector } from 'react-redux';
+import { User } from '@/lib/features/org/orgApi';
+import logger from '@/lib/logger';
+import { AuthGuardLoading } from './ui/authGuardLoader';
 
 let allowanceCache: {
   value: boolean | null;
@@ -28,61 +29,24 @@ interface AuthGuardOptions {
 
 const withAuthGuard = <P extends object>(
   WrappedComponent: NextPage<P>,
-  options: AuthGuardOptions = {}
+  options: AuthGuardOptions = {},
 ): NextPage<P> => {
   const {
     requiredRoles = [],
-    fallbackPath = "/dashboard",
+    fallbackPath = '/dashboard',
     checkAllowance = false,
     allowAuthenticated = true,
   } = options;
 
   const displayName =
-    WrappedComponent.displayName || WrappedComponent.name || "Component";
+    WrappedComponent.displayName || WrappedComponent.name || 'Component';
 
-  const AuthGuardComponent: NextPage<P> = (props) => {
+  function AuthGuardComponent(props: NextPage<P>) {
     const { user, isAuthenticated }: { user: User; isAuthenticated: boolean } =
       useSelector((state: any) => state.auth || {});
 
     const router = useRouter();
     const pathname = usePathname();
-
-    const getInitialAuthState = () => {
-      if (isAuthenticated === undefined) {
-        return "loading";
-      }
-
-      if (pathname === "/register/org" && checkAllowance) {
-        return "loading";
-      }
-
-      if (checkAllowance && !isAllowanceCacheValid()) {
-        return "loading";
-      }
-
-      if (!allowAuthenticated && isAuthenticated) {
-        return "unauthorized";
-      }
-
-      if (allowAuthenticated && !isAuthenticated) {
-        return "unauthorized";
-      }
-
-      if (
-        isAuthenticated &&
-        requiredRoles.length > 0 &&
-        (!user?.role || !requiredRoles.includes(user.role))
-      ) {
-        return "unauthorized";
-      }
-
-      return "authorized";
-    };
-    const [authState, setAuthState] = useState<
-      "loading" | "authorized" | "unauthorized"
-    >(getInitialAuthState);
-    const isCheckingAllowance = useRef(false);
-    const hasInitialized = useRef(false);
 
     const isAllowanceCacheValid = useCallback(() => {
       const currentUserId = user?.id || null;
@@ -93,6 +57,43 @@ const withAuthGuard = <P extends object>(
         Date.now() - allowanceCache.timestamp < CACHE_DURATION
       );
     }, [user?.id]);
+
+    const getInitialAuthState = () => {
+      if (isAuthenticated === undefined) {
+        return 'loading';
+      }
+
+      if (pathname === '/register/org' && checkAllowance) {
+        return 'loading';
+      }
+
+      if (checkAllowance && !isAllowanceCacheValid()) {
+        return 'loading';
+      }
+
+      if (!allowAuthenticated && isAuthenticated) {
+        return 'unauthorized';
+      }
+
+      if (allowAuthenticated && !isAuthenticated) {
+        return 'unauthorized';
+      }
+
+      if (
+        isAuthenticated &&
+        requiredRoles.length > 0 &&
+        (!user?.role || !requiredRoles.includes(user.role))
+      ) {
+        return 'unauthorized';
+      }
+
+      return 'authorized';
+    };
+    const [authState, setAuthState] = useState<
+      'loading' | 'authorized' | 'unauthorized'
+    >(getInitialAuthState);
+    const isCheckingAllowance = useRef(false);
+    const hasInitialized = useRef(false);
 
     const fetchAllowance = useCallback(async (): Promise<boolean> => {
       const currentUserId = user?.id || null;
@@ -108,7 +109,7 @@ const withAuthGuard = <P extends object>(
       isCheckingAllowance.current = true;
 
       try {
-        const response = await fetch("/api/organization");
+        const response = await fetch('/api/organization');
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -125,7 +126,7 @@ const withAuthGuard = <P extends object>(
 
         return allowanceData.allow;
       } catch (error) {
-        console.error("Allowance check failed:", error);
+        logger.error('Allowance check failed:', error);
         return false;
       } finally {
         isCheckingAllowance.current = false;
@@ -133,18 +134,17 @@ const withAuthGuard = <P extends object>(
     }, [user?.id, isAllowanceCacheValid]);
 
     const performAuthCheck = useCallback(async () => {
-
       try {
-        if (pathname === "/register/org") {
+        if (pathname === '/register/org') {
           if (checkAllowance) {
             const hasAllowance = await fetchAllowance();
             if (!hasAllowance) {
               router.replace(fallbackPath);
-              setAuthState("unauthorized");
+              setAuthState('unauthorized');
               return;
             }
           }
-          setAuthState("authorized");
+          setAuthState('authorized');
           return;
         }
 
@@ -152,20 +152,20 @@ const withAuthGuard = <P extends object>(
           const hasAllowance = await fetchAllowance();
           if (!hasAllowance) {
             router.replace(fallbackPath);
-            setAuthState("unauthorized");
+            setAuthState('unauthorized');
             return;
           }
         }
 
         if (!allowAuthenticated && isAuthenticated) {
           router.replace(fallbackPath);
-          setAuthState("unauthorized");
+          setAuthState('unauthorized');
           return;
         }
 
         if (allowAuthenticated && !isAuthenticated) {
           router.replace(fallbackPath);
-          setAuthState("unauthorized");
+          setAuthState('unauthorized');
           return;
         }
 
@@ -175,14 +175,14 @@ const withAuthGuard = <P extends object>(
           (!user?.role || !requiredRoles.includes(user.role))
         ) {
           router.replace(fallbackPath);
-          setAuthState("unauthorized");
+          setAuthState('unauthorized');
           return;
         }
 
-        setAuthState("authorized");
+        setAuthState('authorized');
       } catch (error) {
-        console.error("Auth check failed:", error);
-        setAuthState("unauthorized");
+        logger.error('Auth check failed:', error);
+        setAuthState('unauthorized');
       }
     }, [
       pathname,
@@ -199,11 +199,11 @@ const withAuthGuard = <P extends object>(
 
     useEffect(() => {
       if (isAuthenticated === undefined) {
-        setAuthState("loading");
+        setAuthState('loading');
         return;
       }
 
-      if (authState !== "loading" && !checkAllowance) {
+      if (authState !== 'loading' && !checkAllowance) {
         return;
       }
 
@@ -222,14 +222,14 @@ const withAuthGuard = <P extends object>(
       }
     }, [user?.id]);
 
-    if (authState === "loading") {
+    if (authState === 'loading') {
       return <AuthGuardLoading />;
     }
 
-    return authState === "authorized" ? (
+    return authState === 'authorized' ? (
       <WrappedComponent {...props} user={{ role: user?.role || null }} />
     ) : null;
-  };
+  }
 
   AuthGuardComponent.displayName = `withAuthGuard(${displayName})`;
 

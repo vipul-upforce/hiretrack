@@ -1,14 +1,14 @@
-import React from "react";
-import { HexColorPicker } from "react-colorful";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import React from 'react';
+import { HexColorPicker } from 'react-colorful';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { PREDEFINED_COLORS } from "../constants";
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { PREDEFINED_COLORS } from '../constants';
 
 interface ColorPickerPopoverProps {
   value: string;
@@ -52,11 +52,13 @@ export function ColorPickerPopover({
               </p>
               <div className="grid grid-cols-5 gap-1">
                 {PREDEFINED_COLORS.map((color) => (
+                  // eslint-disable-next-line jsx-a11y/control-has-associated-label
                   <button
+                    type="button"
                     key={color}
                     className={cn(
-                      "h-6 w-6 rounded border border-border",
-                      value === color && "ring-2 ring-primary ring-offset-2"
+                      'h-6 w-6 rounded border border-border',
+                      value === color && 'ring-2 ring-primary ring-offset-2',
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => onChange(color)}
@@ -71,7 +73,7 @@ export function ColorPickerPopover({
           value={value}
           onChange={handleInputChange}
           placeholder="#RRGGBB"
-          className="border bg-background border-border rounded-md px-3 py-1.5 w-24 focus:outline-none ring-primary ring-offset-2 text-sm"
+          className="w-24 rounded-md border border-border bg-background px-3 py-1.5 text-sm ring-primary ring-offset-2 focus:outline-none"
         />
       </div>
     </div>

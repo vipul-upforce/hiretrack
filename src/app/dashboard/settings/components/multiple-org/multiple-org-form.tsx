@@ -1,10 +1,11 @@
-"use client";
-import React from "react";
-import { Formik, Form, ErrorMessage } from "formik";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { MultipleOrgsValues, multipleOrgSchema } from "./schema";
+'use client';
+
+import React from 'react';
+import { Formik, Form, ErrorMessage } from 'formik';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { MultipleOrgsValues, multipleOrgSchema } from './schema';
 
 interface MultipleOrgFormProps {
   initialValues: MultipleOrgsValues;
@@ -36,13 +37,11 @@ export default function MultipleOrgForm({
                 id="multipleOrg"
                 checked={values.multipleOrg}
                 disabled={isReadOnly || isSubmitting}
-                onCheckedChange={(checked) =>
-                  setFieldValue("multipleOrg", Boolean(checked))
-                }
+                onCheckedChange={(checked) => setFieldValue('multipleOrg', Boolean(checked))}
               />
               <Label
                 htmlFor="multipleOrg"
-                className={isReadOnly ? "text-muted-foreground" : ""}
+                className={isReadOnly ? 'text-muted-foreground' : ''}
               >
                 Allow multiple organizations
               </Label>
@@ -68,7 +67,7 @@ export default function MultipleOrgForm({
               disabled={isSubmitting || isReadOnly}
               variant="primary"
             >
-              {isSubmitting ? "Saving..." : "Save"}
+              {isSubmitting ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </Form>

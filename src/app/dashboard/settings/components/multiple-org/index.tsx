@@ -1,16 +1,17 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { useToast } from "@/hooks/use-toast";
+import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import {
   useGetMultipleOrgConfigsQuery,
   useUpdateMultipleOrgMutation,
-} from "@/lib/features/settings/settingsApi";
-import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
-import MultipleOrgLoadingSkeleton from "./loading-skeleton";
-import MultipleOrgForm from "./multiple-org-form";
-import { MultipleOrgsValues } from "./schema";
+} from '@/lib/features/settings/settingsApi';
+import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
+import MultipleOrgLoadingSkeleton from './loading-skeleton';
+import MultipleOrgForm from './multiple-org-form';
+import { MultipleOrgsValues } from './schema';
 
 interface MultipleOrgsConfigsProps {
   onClose: () => void;
@@ -27,7 +28,7 @@ export default function MultipleOrgsConfigs({
   const [updateMultipleOrgConfigs, { isLoading: isUpdating }] =
     useUpdateMultipleOrgMutation();
 
-  const isPermissionDenied = error && "status" in error && error.status === 403;
+  const isPermissionDenied = error && 'status' in error && error.status === 403;
 
   useEffect(() => {
     refetch();
@@ -36,9 +37,9 @@ export default function MultipleOrgsConfigs({
   const handleSubmit = async (values: MultipleOrgsValues) => {
     if (isPermissionDenied) {
       toast({
-        title: "Not Allowed",
-        description: "You do not have permission to perform this action.",
-        variant: "destructive",
+        title: 'Not Allowed',
+        description: 'You do not have permission to perform this action.',
+        variant: 'destructive',
       });
       return;
     }
@@ -48,18 +49,18 @@ export default function MultipleOrgsConfigs({
       dispatch(setAllowMultipleOrgs(values.multipleOrg));
 
       toast({
-        title: "Success",
-        description: "Organization settings updated successfully.",
+        title: 'Success',
+        description: 'Organization settings updated successfully.',
       });
 
       refetch();
       onClose();
     } catch (err) {
-      console.error("Failed to update org configs:", err);
+      logger.error('Failed to update org configs:', err);
       toast({
-        title: "Error",
-        description: "Failed to update settings. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update settings. Please try again.',
+        variant: 'destructive',
       });
     }
   };

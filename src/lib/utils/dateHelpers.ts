@@ -4,12 +4,12 @@
  * @returns Offset in milliseconds
  */
 export function parseGMTOffset(offset: string | undefined | null): number {
-  if (!offset || offset === "GMT+00:00") return 0;
-  const sign = offset.startsWith("GMT+") ? 1 : -1;
+  if (!offset || offset === 'GMT+00:00') return 0;
+  const sign = offset.startsWith('GMT+') ? 1 : -1;
   const [hours, minutes] = offset
-    .replace("GMT+", "")
-    .replace("GMT-", "")
-    .split(":")
+    .replace('GMT+', '')
+    .replace('GMT-', '')
+    .split(':')
     .map(Number);
   return sign * (hours * 60 * 60 * 1000 + minutes * 60 * 1000);
 }
@@ -31,7 +31,7 @@ export function getTimeZoneDates(timeZoneOffset: number) {
     0,
     0,
     0,
-    0
+    0,
   );
   const endOfToday = new Date(
     nowInUserTimeZone.getFullYear(),
@@ -40,7 +40,7 @@ export function getTimeZoneDates(timeZoneOffset: number) {
     23,
     59,
     59,
-    999
+    999,
   );
 
   // Convert to UTC for database queries
@@ -56,7 +56,7 @@ export function getTimeZoneDates(timeZoneOffset: number) {
     0,
     0,
     0,
-    0
+    0,
   );
   const endOfWeek = new Date(
     startOfWeek.getFullYear(),
@@ -65,7 +65,7 @@ export function getTimeZoneDates(timeZoneOffset: number) {
     23,
     59,
     59,
-    999
+    999,
   );
 
   // Convert to UTC for database queries
@@ -79,4 +79,3 @@ export function getTimeZoneDates(timeZoneOffset: number) {
     endOfWeekUTC,
   };
 }
-

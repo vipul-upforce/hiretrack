@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { FileUploader } from "./file-uploader";
-import { FileList } from "./file-list";
-import { CompletedBatches } from "./completed-batches";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
-  User,
-} from "@/lib/features/org/orgApi";
-import { useToast } from "@/hooks/use-toast";
-import withAuthGuard from "@/components/withAuthGuard";
-import { useSelector } from "react-redux";
-import CvBatchLoader from "./CvBatchLoader";
+} from '@/lib/features/org/orgApi';
+import { useToast } from '@/hooks/use-toast';
+import withAuthGuard from '@/components/withAuthGuard';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { CompletedBatches } from './completed-batches';
+import { FileList } from './file-list';
+import { FileUploader } from './file-uploader';
+import CvBatchLoader from './CvBatchLoader';
 
 export type FileWithPreview = {
   id: string;
@@ -26,7 +26,7 @@ export type FileWithPreview = {
 export type ProcessedItem = {
   filename: string;
   candidateId: string;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   message: string;
   error?: string;
   processedAt: string;
@@ -39,7 +39,7 @@ export type Batch = {
   totalFiles: number;
   successCount: number;
   failureCount: number;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   items: ProcessedItem[];
   startedAt: string;
   completedAt?: string;
@@ -58,20 +58,16 @@ export function CVBatchProcessor() {
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
-  const { user: User }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // Fetch all batches using RTK Query
   const {
     data: batches,
     error,
     isLoading,
-  } = useFetchBatchesQuery(User ? User?.organizationId : "", {
-    skip: !User?.organizationId,
+  } = useFetchBatchesQuery(user ? (user?.organizationId as string) : '', {
+    skip: !user?.organizationId,
   });
-
- 
 
   useEffect(() => {
     if (batches) {
@@ -83,7 +79,7 @@ export function CVBatchProcessor() {
     const processedFiles = newFiles.map((file) => ({
       id: crypto.randomUUID(),
       file,
-      isZip: file.type === "application/zip" || file.name.endsWith(".zip"),
+      isZip: file.type === 'application/zip' || file.name.endsWith('.zip'),
     }));
     setFiles((prevFiles) => [...prevFiles, ...processedFiles]);
   }, []);
@@ -100,32 +96,31 @@ export function CVBatchProcessor() {
     try {
       const formData = new FormData();
       files.forEach((file) => {
-        formData.append("file", file.file);
+        formData.append('file', file.file);
       });
 
-      const organizationId = User?.organizationId || "";
+      const organizationId = (user?.organizationId as string) || '';
+      // eslint-disable-next-line no-shadow
       const { data: batchResult, error } = await postBatch({
         formData,
         organizationId,
       });
       if (error) {
         toast({
-          variant: "destructive",
-          title: "Batch Not Processed",
+          variant: 'destructive',
+          title: 'Batch Not Processed',
           description:
-            "data" in error && typeof error.data === "object" && error.data
-              ? (error.data as ErrorResponse).error || "Failed to process batch"
-              : "Failed to process batch",
+            'data' in error && typeof error.data === 'object' && error.data
+              ? (error.data as ErrorResponse).error || 'Failed to process batch'
+              : 'Failed to process batch',
         });
         return;
       }
 
       setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
       setFiles([]);
-    } catch (error) {
-      console.log(
-        error instanceof Error ? error.message : "Failed to process batch"
-      );
+    } catch (e) {
+      logger.error(e instanceof Error ? e.message : 'Failed to process batch');
     } finally {
       processingRef.current = false;
       setIsPosting(false);
@@ -145,7 +140,7 @@ export function CVBatchProcessor() {
               disabled={files.length === 0 || isPosting}
               variant="primary"
             >
-              {isPosting ? "Processing..." : "Process Batch"}
+              {isPosting ? 'Processing...' : 'Process Batch'}
             </Button>
           </div>
           <FileList
@@ -166,8 +161,8 @@ export function CVBatchProcessor() {
 }
 
 export default withAuthGuard(CVBatchProcessor, {
-  requiredRoles: ["admin", "hr"],
-  fallbackPath: "/dashboard",
+  requiredRoles: ['admin', 'hr'],
+  fallbackPath: '/dashboard',
   checkAllowance: false,
   allowAuthenticated: true,
 });

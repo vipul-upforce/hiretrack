@@ -1,13 +1,13 @@
-import React from "react";
-import { cn } from "@/lib/utils";
-import UniqueLoading from "./morph-loading";
+import React from 'react';
+import { cn } from '@/lib/utils';
+import UniqueLoading from './morph-loading';
 
 interface ProfessionalLoaderProps {
   /**
    * Size variant of the loader
    * @default "default"
    */
-  size?: "sm" | "default" | "lg" | "xl" | "full";
+  size?: 'sm' | 'default' | 'lg' | 'xl' | 'full';
   /**
    * Text to display below the loader
    */
@@ -23,7 +23,7 @@ interface ProfessionalLoaderProps {
   /**
    * Custom color for the loader (uses portal primary by default)
    */
-  variant?: "primary" | "secondary" | "muted";
+  variant?: 'primary' | 'secondary' | 'muted';
 }
 
 /**
@@ -31,21 +31,21 @@ interface ProfessionalLoaderProps {
  * Replaces mismatched skeleton loaders with a smooth, professional loading experience
  */
 export function ProfessionalLoader({
-  size = "default",
+  size = 'default',
   text,
   className,
   fullscreen = false,
-  variant = "primary",
+  variant = 'primary',
 }: ProfessionalLoaderProps) {
   // Map sizes to UniqueLoading sizes
-  const morphSize = size === "sm" || size === "default" ? "sm" : size === "lg" || size === "xl" ? "md" : "lg";
+  const morphSize = size === 'sm' || size === 'default' ? 'sm' : size === 'lg' || size === 'xl' ? 'md' : 'lg';
 
   const loader = (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-4",
-        fullscreen && "min-h-screen",
-        className
+        'flex flex-col items-center justify-center gap-4',
+        fullscreen && 'min-h-screen',
+        className,
       )}
     >
       <UniqueLoading variant="morph" size={morphSize} />
@@ -81,7 +81,7 @@ export function CardLoader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
+    <div className={cn('flex flex-col gap-4', className)}>
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
@@ -120,7 +120,7 @@ export function TableLoader({ rows = 5 }: { rows?: number }) {
  * Page loader - full page loading state
  */
 export function PageLoader({
-  text = "Loading...",
+  text = 'Loading...',
 }: {
   text?: string;
 }) {
@@ -140,7 +140,7 @@ export function InlineLoader({
   className?: string;
 }) {
   return (
-    <UniqueLoading variant="morph" size="sm" className={cn("w-8 h-8", className)} />
+    <UniqueLoading variant="morph" size="sm" className={cn('w-8 h-8', className)} />
   );
 }
 
@@ -155,7 +155,7 @@ export function ContentLoader({
   className?: string;
 }) {
   return (
-    <div className={cn("flex items-center justify-center py-8", className)}>
+    <div className={cn('flex items-center justify-center py-8', className)}>
       <UniqueLoading variant="morph" size="md" />
     </div>
   );

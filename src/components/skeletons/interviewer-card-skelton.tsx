@@ -1,6 +1,6 @@
-import { Skeleton } from "../ui/skeleton";
+import { Skeleton } from '../ui/skeleton';
 
-export const InterviewerCardSkeleton = () => {
+export function InterviewerCardSkeleton() {
   return (
     <div className="w-[430px] h-auto border rounded-xl p-2 animate-pulse">
       <div className="space-y-7 p-2">
@@ -23,6 +23,7 @@ export const InterviewerCardSkeleton = () => {
             <Skeleton className="h-5 w-20" />
             <div className="flex flex-wrap gap-3">
               {[...Array(3)].map((_, i) => (
+                // eslint-disable-next-line react/no-array-index-key
                 <Skeleton key={i} className="h-6 w-16 " />
               ))}
             </div>
@@ -48,4 +49,4 @@ export const InterviewerCardSkeleton = () => {
       </div>
     </div>
   );
-};
+}

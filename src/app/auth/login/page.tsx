@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import LoginFormContent from "./LoginFormContent";
-import LoadingScreen from "@/app/loading-screen";
+import { Suspense } from 'react';
+import LoadingScreen from '@/app/loading-screen';
+import LoginFormContent from './LoginFormContent';
 
 export default function Login() {
   return (

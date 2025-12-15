@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useState, useCallback } from "react";
+import { useState, useCallback } from 'react';
 
 interface MentionUser {
   _id: string;
@@ -29,7 +29,7 @@ export function useMentionPicker(): UseMentionPickerReturn {
     setSelectedMentions((prev) => {
       // Check if user is already selected
       const isAlreadySelected = prev.some(
-        (mention) => mention._id === user._id
+        (mention) => mention._id === user._id,
       );
       if (isAlreadySelected) {
         return prev;
@@ -39,18 +39,14 @@ export function useMentionPicker(): UseMentionPickerReturn {
   }, []);
 
   const removeMention = useCallback((userId: string) => {
-    setSelectedMentions((prev) =>
-      prev.filter((mention) => mention._id !== userId)
-    );
+    setSelectedMentions((prev) => prev.filter((mention) => mention._id !== userId));
   }, []);
 
   const clearMentions = useCallback(() => {
     setSelectedMentions([]);
   }, []);
 
-  const getMentionText = useCallback(() => {
-    return selectedMentions.map((user) => `@${user.name}`).join(" ");
-  }, [selectedMentions]);
+  const getMentionText = useCallback(() => selectedMentions.map((user) => `@${user.name}`).join(' '), [selectedMentions]);
 
   const insertMentionInText = useCallback(
     (text: string, user: MentionUser, cursorPosition: number) => {
@@ -58,7 +54,7 @@ export function useMentionPicker(): UseMentionPickerReturn {
       const afterCursor = text.substring(cursorPosition);
 
       // Find the last @ before cursor
-      const lastAtIndex = beforeCursor.lastIndexOf("@");
+      const lastAtIndex = beforeCursor.lastIndexOf('@');
 
       if (lastAtIndex !== -1) {
         const textBeforeAt = beforeCursor.substring(0, lastAtIndex);
@@ -67,9 +63,9 @@ export function useMentionPicker(): UseMentionPickerReturn {
       }
 
       // If no @ found, just append the mention
-      return beforeCursor + `@${user.name} ` + afterCursor;
+      return `${beforeCursor}@${user.name} ${afterCursor}`;
     },
-    []
+    [],
   );
 
   return {

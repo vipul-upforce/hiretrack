@@ -3,8 +3,8 @@
  * Displays action buttons for PDF generation
  */
 
-import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Download, Loader2 } from 'lucide-react';
 
 interface ShareCandidateDialogFooterProps {
   isGenerating: boolean;

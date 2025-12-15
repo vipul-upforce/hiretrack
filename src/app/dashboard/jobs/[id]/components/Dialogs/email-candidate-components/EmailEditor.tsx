@@ -13,8 +13,8 @@ interface EmailEditorProps {
   setSubject: (subject: string) => void;
   body: string;
   setBody: (body: string) => void;
-  contentMode: "rich" | "html";
-  setContentMode: (mode: "rich" | "html") => void;
+  contentMode: 'rich' | 'html';
+  setContentMode: (mode: 'rich' | 'html') => void;
   selectedTemplate: string;
   setSelectedTemplate: (templateId: string) => void;
   templates: EmailTemplate[];
@@ -32,45 +32,42 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
   setSelectedTemplate,
   templates,
   theme,
-}) => {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="subject">Subject *</Label>
-        <Input
-          id="subject"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          placeholder="Enter email subject"
-        />
-      </div>
+}) => (
+  <div className="space-y-4">
+    <div className="space-y-2">
+      <Label htmlFor="subject">Subject *</Label>
+      <Input
+        id="subject"
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+        placeholder="Enter email subject"
+      />
+    </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="body">Message *</Label>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setContentMode(contentMode === "rich" ? "html" : "rich")
-              }
-            >
-              {contentMode === "rich" ? (
-                <>
-                  <Code className="h-4 w-4 mr-2" />
-                  Advanced HTML
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label htmlFor="body">Message *</Label>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setContentMode(contentMode === 'rich' ? 'html' : 'rich')}
+          >
+            {contentMode === 'rich' ? (
+              <>
+                <Code className="h-4 w-4 mr-2" />
+                Advanced HTML
+              </>
+            ) : (
+              <>
+                <Edit className="h-4 w-4 mr-2" />
+                Simple Editor
                 </>
-              ) : (
-                <>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Simple Editor
-                </>
-              )}
-            </Button>
-          </div>
+            )}
+          </Button>
         </div>
+      </div>
 
         {contentMode === "rich" ? (
           <div className="space-y-3">
@@ -118,38 +115,36 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
                       Compose Your Email
                     </div>
                   </div>
-                  <RichTextEditor
+                <RichTextEditor
                     value={body}
                     onChange={(value) => setBody(value)}
                     placeholder="Type your email message here... Use the formatting toolbar above to style your text."
                     className="min-h-[300px]"
                   />
-                </div>
-              </>
-            )}
-          </div>
-        ) : (
-          <div className="border rounded-lg overflow-hidden">
-            <Editor
-              height="300px"
-              language="html"
-              theme={theme === "dark" ? "vs-dark" : "vs"}
-              value={body}
-              onChange={(value) => setBody(value || "")}
-              options={{
-                fontSize: 14,
-                minimap: { enabled: false },
-                scrollBeyondLastLine: false,
-                wordWrap: "on",
-                lineNumbers: "on",
-                folding: true,
-                automaticLayout: true,
-              }}
-            />
-          </div>
-        )}
-      </div>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <Editor
+            height="300px"
+            language="html"
+            theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+            value={body}
+            onChange={(value) => setBody(value || '')}
+            options={{
+              fontSize: 14,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              wordWrap: 'on',
+              lineNumbers: 'on',
+              folding: true,
+              automaticLayout: true,
+            }}
+          />
+        </div>
+      )}
     </div>
-  );
-};
-
+  </div>
+);

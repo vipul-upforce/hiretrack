@@ -1,7 +1,8 @@
-import { AIProvider, ProcessedResumeData } from "./types";
-import * as pdfjs from "pdfjs-dist";
+import * as pdfjs from 'pdfjs-dist';
 // @ts-ignore
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+import { AIProvider, ProcessedResumeData } from './types';
+
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export abstract class BaseAIProvider implements AIProvider {
@@ -19,15 +20,15 @@ export abstract class BaseAIProvider implements AIProvider {
   ): Promise<{ isValid: boolean; error?: string }>;
 
   protected async extractTextFromPdf(base64Pdf: string): Promise<string> {
-    const pdfData = Buffer.from(base64Pdf, "base64");
+    const pdfData = Buffer.from(base64Pdf, 'base64');
     const uint8Array = new Uint8Array(pdfData);
     const pdf = await pdfjs.getDocument({ data: uint8Array }).promise;
-    let textContent = "";
+    let textContent = '';
 
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const pageText = await page.getTextContent();
-      textContent += pageText.items.map((item: any) => item.str).join(" ");
+      textContent += pageText.items.map((item: any) => item.str).join(' ');
     }
 
     return textContent;
@@ -81,8 +82,8 @@ export abstract class BaseAIProvider implements AIProvider {
 
   protected cleanJsonResponse(response: string): string {
     return response
-      .replace(/```json\n?/g, "")
-      .replace(/```/g, "")
+      .replace(/```json\n?/g, '')
+      .replace(/```/g, '')
       .trim();
   }
 
@@ -93,9 +94,9 @@ export abstract class BaseAIProvider implements AIProvider {
       // Check if the response indicates an invalid CV
       if (parsedData.error) {
         return {
-          name: "",
-          location: "",
-          contact: "",
+          name: '',
+          location: '',
+          contact: '',
           experience: 0,
           relevantExperience: 0,
           skills: [],
@@ -109,7 +110,7 @@ export abstract class BaseAIProvider implements AIProvider {
       return parsedData;
     } catch (error) {
       throw new Error(
-        `Failed to parse JSON response: ${error instanceof Error ? error.message : "Unknown error"}`
+        `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
@@ -119,8 +120,8 @@ export abstract class BaseAIProvider implements AIProvider {
     apiKey: string,
     prompt: string,
     model?: string,
-    temperature?: number
+    temperature?: number,
   ): Promise<string> {
-    return "";
+    return '';
   }
 }

@@ -1,9 +1,10 @@
 'use client";';
-import React from "react";
-import { Separator } from "../ui/separator";
-import { Button } from "../ui/button";
 
-const EmailNotificationSettingsSkeleton = () => {
+import React from 'react';
+import { Separator } from '../ui/separator';
+import { Button } from '../ui/button';
+
+function EmailNotificationSettingsSkeleton() {
   return (
     <div>
       <div className="px-6 pb-4 space-y-4 max-h-[70vh] overflow-y-auto">
@@ -39,6 +40,6 @@ const EmailNotificationSettingsSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default EmailNotificationSettingsSkeleton;

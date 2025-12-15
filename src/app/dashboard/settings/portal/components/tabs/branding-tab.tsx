@@ -1,11 +1,11 @@
-import React from "react";
-import { PortalSettings } from "../../types";
-import { FileUploadCard } from "../../components/file-upload-card";
+import React from 'react';
+import { PortalSettings } from '../../types';
+import { FileUploadCard } from '../file-upload-card';
 
 interface BrandingTabProps {
   settings: PortalSettings;
   handleFileUpload: (file: File, type: keyof PortalSettings) => Promise<void>;
-  removeFile: (type: keyof PortalSettings) => void;
+  removeFile: (file: string) => void;
 }
 
 export function BrandingTab({
@@ -14,7 +14,7 @@ export function BrandingTab({
   removeFile,
 }: BrandingTabProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <FileUploadCard
         title="Light Theme Logo"
         description="Logo for light theme"

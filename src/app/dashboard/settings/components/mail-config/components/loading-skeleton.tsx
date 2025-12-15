@@ -1,6 +1,6 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
-export const LoadingState = () => {
+export function LoadingState() {
   return (
     <div className="px-6 py-4 space-y-6 animate-in fade-in duration-200">
       <div className="space-y-6">
@@ -19,4 +19,4 @@ export const LoadingState = () => {
       </div>
     </div>
   );
-};
+}

@@ -1,29 +1,39 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { User } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { User } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
     const [userData] = await Promise.all([
-      getAuthenticatedUser(req, ["admin", "hr"]),
+      getAuthenticatedUser(req, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const organizationId = userData.organizationId;
-    const interviewers = await User.find({
+    const { organizationId } = userData;
+    const interviewers = await User?.find({
       organizationId,
       role: {
-        $ne: "system",
+        $ne: 'system',
       },
       isDeleted: { $ne: true },
-    }).select("_id name email organizationId").lean().exec();
+    })
+      .select('_id name email organizationId')
+      .lean()
+      .exec();
 
     return NextResponse.json(interviewers);
   } catch (error: unknown) {
+    logger.error({ error }, 'Error fetching interviewers');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 }

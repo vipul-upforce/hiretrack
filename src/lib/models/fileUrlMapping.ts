@@ -1,5 +1,4 @@
-
-import { Schema, Document } from "mongoose";
+import { Schema, Document } from 'mongoose';
 
 export interface IFileUrlMapping extends Document {
   fileId: string;
@@ -8,8 +7,10 @@ export interface IFileUrlMapping extends Document {
 
 export const FileUrlMappingSchema = new Schema<IFileUrlMapping>(
   {
-    fileId: { type: String, required: true, unique: true, index: true },
+    fileId: {
+      type: String, required: true, unique: true, index: true,
+    },
     realUrl: { type: String, required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );

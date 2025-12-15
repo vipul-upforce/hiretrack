@@ -1,27 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History, JobLaneConfig } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { filterChecklistResponses } from "@/lib/utils/checklistVisibility";
-import type { UserRole } from "@/lib/models/JobLaneConfig";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { History, JobLaneConfig } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { filterChecklistResponses } from '@/lib/utils/checklistVisibility';
+import type { UserRole } from '@/lib/models/JobLaneConfig';
+import { logger } from '@/lib/logger/logger.server';
 // Disable static generation for this API route
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const [{ id }, userData] = await Promise.all([
       params,
-      getAuthenticatedUser(request, ["admin", "hr", "interviewer"]),
+      getAuthenticatedUser(request, ['admin', 'hr', 'interviewer']),
       connectToDatabase(),
     ]);
 
     if (!userData) {
       return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
     }
 
@@ -30,19 +31,19 @@ export async function GET(
 
     if (!History) {
       return NextResponse.json(
-        { error: "History model not found" },
-        { status: 404 }
+        { error: 'History model not found' },
+        { status: 404 },
       );
     }
     const populateFields = [
-      { path: "history.currentInterviewer", select: "_id name email" },
-      { path: "history.previousInterviewer", select: "_id name email" },
-      { path: "history.assignmentBy", select: "_id name email" },
-      { path: "history.note.userId", select: "_id name email" },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
     ];
     // Get candidate history
     const history = await History?.findOne({
-      candidateId: candidateId,
+      candidateId,
     })
       .populate(populateFields)
       .lean();
@@ -54,17 +55,19 @@ export async function GET(
     // Get job lane configuration for checklist field filtering
     const laneConfig = await JobLaneConfig?.findOne({
       jobId: history.jobId,
-    }).lean().exec();
+    })
+      .lean()
+      .exec();
 
     // Filter history entries and checklist responses based on user role
     const filteredHistory = history.history
       ? history.history
           .filter((entry) =>
-            role === "admin" || role === "hr"
+            role === 'admin' || role === 'hr'
               ? true
-              : entry.remark.id
+              : entry?.remark?.id
                 ? !entry.remark?.isPrivate
-                : true
+                : true,
           )
           .map((entry: any) => {
             // If this entry has checklist data, filter the responses based on user role
@@ -72,11 +75,11 @@ export async function GET(
               // Find the checklist configuration to get field visibility settings
               let checklistFields: any[] = [];
               const targetLane = laneConfig.laneConfigs.find(
-                (lc: any) => lc.laneId === entry.checklistForm.laneId
+                (lc: any) => lc.laneId === entry.checklistForm.laneId,
               );
               if (targetLane) {
                 const checklist =
-                  entry.checklistForm.checklistType === "incoming"
+                  entry.checklistForm.checklistType === 'incoming'
                     ? targetLane.incomingChecklist
                     : targetLane.outgoingChecklist;
 
@@ -89,7 +92,7 @@ export async function GET(
               const filteredResponses = filterChecklistResponses(
                 entry.checklistForm.responses,
                 checklistFields,
-                userData?.role as UserRole
+                userData?.role as UserRole,
               );
 
               return {
@@ -107,17 +110,17 @@ export async function GET(
 
     return NextResponse.json({
       history: filteredHistory,
-      candidateId: candidateId,
+      candidateId,
       jobId: history.jobId,
     });
   } catch (error) {
-    console.error("Error fetching candidate history:", error);
+    logger.error({ error }, 'Error fetching candidate history');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }

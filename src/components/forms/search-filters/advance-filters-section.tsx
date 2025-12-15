@@ -1,10 +1,13 @@
-"use client";
-import { CardContent, CardHeader, CardTitle, Card } from "@/components/ui/card";
-import { ChevronDown, ChevronRight, Settings } from "lucide-react";
-import { DateRangeFilter } from "./date-range-filter";
-import { CustomFieldsDialog } from "./custom-fields-dialog";
-import type { CustomField } from "@/Custom_Fields/Types/CustomField";
-import type { SearchFilter } from "../candidate-search";
+'use client';
+
+import {
+  CardContent, CardHeader, CardTitle, Card,
+} from '@/components/ui/card';
+import { ChevronDown, ChevronRight, Settings } from 'lucide-react';
+import type { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { DateRangeFilter } from './date-range-filter';
+import { CustomFieldsDialog } from './custom-fields-dialog';
+import type { SearchFilter } from '../candidate-search';
 
 interface AdvancedFiltersSectionProps {
   isAdvancedExpanded: boolean;

@@ -1,10 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef } from "react";
-import { File as FileIcon, Pencil, X, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { RenameFileDialog } from "./rename-file-dialog";
-import { useSelector } from "react-redux";
+import { useEffect, useState, useRef } from 'react';
+import {
+  File as FileIcon, Pencil, X, Plus,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useSelector } from 'react-redux';
+import { RenameFileDialog } from './rename-file-dialog';
 
 interface MobileFileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -54,13 +56,13 @@ interface User {
 }
 
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return '0 Bytes';
 
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 };
 
 export function MobileFileUpload({
@@ -69,10 +71,10 @@ export function MobileFileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
-  id = "",
+  id = '',
   setter,
   isEdit = true,
-  buttonText = "Add Files",
+  buttonText = 'Add Files',
   showFileLimit = true,
 }: MobileFileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
@@ -80,7 +82,7 @@ export function MobileFileUpload({
     isExisting: false,
   });
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
   const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,15 +93,11 @@ export function MobileFileUpload({
         const newFile = new File([renameFile.file], newName, {
           type: renameFile.file.type,
         });
-        const updatedFiles = files.map((f) =>
-          f === renameFile.file ? newFile : f
-        );
+        const updatedFiles = files.map((f) => (f === renameFile.file ? newFile : f));
         setter?.(updatedFiles);
       } else {
         // Assuming renameFile.file is an object with a url property
-        const updatedFiles = files.map((f) =>
-          f === renameFile.file ? { ...f, name: newName } : f
-        );
+        const updatedFiles = files.map((f) => (f === renameFile.file ? { ...f, name: newName } : f));
         setter?.(updatedFiles);
       }
       setDroppedFiles((prev) => {
@@ -111,14 +109,14 @@ export function MobileFileUpload({
 
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
-      (file) => file?.name !== fileNameToRemove
+      (file) => file?.name !== fileNameToRemove,
     );
     setter(updatedFiles);
     setDroppedFiles((prev) => prev.filter((name) => name !== fileNameToRemove));
   };
 
   const handleFileInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length > 0) {
@@ -130,7 +128,7 @@ export function MobileFileUpload({
     }
     // Reset the input value to allow selecting the same file again
     if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+      fileInputRef.current.value = '';
     }
   };
 
@@ -141,7 +139,7 @@ export function MobileFileUpload({
   // Convert accept object to string format for input element
   const acceptString = Object.entries(accept)
     .flatMap(([mimeType, extensions]) => [mimeType, ...extensions])
-    .join(",");
+    .join(',');
 
   const totalFiles = files.length + existingFiles.length;
   const canAddMore = totalFiles < maxFiles;
@@ -174,20 +172,28 @@ export function MobileFileUpload({
         {/* File limit and size information */}
         {showFileLimit && (
           <div className="text-xs text-muted-foreground text-center space-y-1">
-            {user &&
-              (user.role === "candidate" || user.role === "") &&
-              maxFiles > 1 && (
+            {user
+              && (user.role === 'candidate' || user.role === '')
+              && maxFiles > 1 && (
                 <p>
-                  Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
+                  Maximum
+                  {' '}
+                  {maxFiles}
+                  {' '}
+                  files allowed (
+                  {totalFiles}
+                  /
+                  {maxFiles}
+                  )
                 </p>
-              )}
-            {user && (user.role === "candidate" || user.role === "") && (
+            )}
+            {user && (user.role === 'candidate' || user.role === '') && (
               <p>File size limit: 3MB per file</p>
             )}
-            {user &&
-              ["hr", "admin", "interviewer"].includes(user.role || "") && (
+            {user
+              && ['hr', 'admin', 'interviewer'].includes(user.role || '') && (
                 <p>File size limit: 50MB per file</p>
-              )}
+            )}
           </div>
         )}
       </div>
@@ -215,13 +221,11 @@ export function MobileFileUpload({
               <button
                 type="button"
                 className="p-2 hover:bg-muted-foreground/10 rounded-md transition-colors"
-                onClick={() =>
-                  setRenameFile({
-                    file: null,
-                    isExisting: true,
-                    existingFile: file,
-                  })
-                }
+                onClick={() => setRenameFile({
+                  file: null,
+                  isExisting: true,
+                  existingFile: file,
+                })}
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
@@ -251,12 +255,10 @@ export function MobileFileUpload({
                 <button
                   type="button"
                   className="p-2 hover:bg-primary/20 rounded-md transition-colors"
-                  onClick={() =>
-                    setRenameFile({
-                      file,
-                      isExisting: false,
-                    })
-                  }
+                  onClick={() => setRenameFile({
+                    file,
+                    isExisting: false,
+                  })}
                 >
                   <Pencil className="h-4 w-4 text-primary" />
                 </button>
@@ -288,7 +290,7 @@ export function MobileFileUpload({
       <RenameFileDialog
         isOpen={!!renameFile.file || !!renameFile.existingFile}
         onClose={() => setRenameFile({ file: null, isExisting: false })}
-        fileName={renameFile.file?.name || renameFile.existingFile?.name || ""}
+        fileName={renameFile.file?.name || renameFile.existingFile?.name || ''}
         onRename={handleRename}
       />
     </div>

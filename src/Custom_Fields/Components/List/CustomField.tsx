@@ -1,10 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { CustomFieldsContext } from "../../Context";
-import React, { useCallback, useContext, useState } from "react";
-import Breadcrumbs from "../Breadcrums";
-import CustomFieldForm from "../Form/CustomFieldForm";
-import CustomFieldList from "./CustomFieldList";
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import React, { useCallback, useContext, useState } from 'react';
+import { CustomFieldsContext } from '../../Context';
+import Breadcrumbs from '../Breadcrums';
+import CustomFieldForm from '../Form/CustomFieldForm';
+import CustomFieldList from './CustomFieldList';
+
 function FormCustomFieldList() {
   const { selectedFormId, setStepName } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +19,7 @@ function FormCustomFieldList() {
   }, [setIsOpen]);
 
   const breadcrumbs = [
-    <div key="custom-fields" onClick={() => setStepName("FormList")}>
+    <div key="custom-fields" onClick={() => setStepName('FormList')}>
       Personalized Form Fields
     </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,
@@ -28,7 +29,7 @@ function FormCustomFieldList() {
     <div>
       <div className="flex justify-between">
         <Breadcrumbs breadcrumbs={breadcrumbs} />
-        <Button onClick={handleOpen} variant="primary" >
+        <Button onClick={handleOpen} variant="primary">
           <Plus className="mr-2 h-4 w-4" />
           Add a new field
         </Button>

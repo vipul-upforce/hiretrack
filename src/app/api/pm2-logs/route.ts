@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { execSync } from "child_process";
+import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { logger } from '@/lib/logger/logger.server';
 
 function getFolderSizeWin(folderPath: string): number {
   let total = 0;
@@ -22,18 +23,18 @@ function getFolderSizeWin(folderPath: string): number {
 }
 
 export async function GET() {
-  const isLinux = process.platform === "linux";
+  const isLinux = process.platform === 'linux';
 
   const logDir = isLinux
-    ? path.join(process.env.HOME || "/root", ".pm2", "logs")
-    : "C:/Users/Upforce/.pm2/logs";
+    ? path.join(process.env.HOME || '/root', '.pm2', 'logs')
+    : 'C:/Users/Upforce/.pm2/logs';
   try {
     const files = fs.readdirSync(logDir);
 
     const filteredFiles = files.filter(
       (file) =>
-        (file.endsWith(".log") || file.endsWith(".txt")) &&
-        !file.endsWith(".gz")
+        (file.endsWith('.log') || file.endsWith('.txt')) &&
+        !file.endsWith('.gz'),
     );
 
     let sizeBytes = 0;
@@ -41,27 +42,27 @@ export async function GET() {
     if (isLinux) {
       try {
         const result = execSync(`du -sb "${logDir}"`).toString();
-        sizeBytes = parseInt(result.split("\t")[0], 10) || 0;
+        sizeBytes = parseInt(result.split('\t')[0], 10) || 0;
       } catch (err) {
-        console.error("du command failed:", err);
+        logger.error({ err }, 'du command failed for PM2 Logs');
       }
     } else {
       sizeBytes = getFolderSizeWin(logDir);
     }
 
-    const sizeMB = (sizeBytes / 1024 / 1024).toFixed(2) + " MB";
+    const sizeMB = `${(sizeBytes / 1024 / 1024).toFixed(2)} MB`;
 
     return NextResponse.json({
       path: logDir,
       files: filteredFiles,
-      sizeBytes: sizeBytes,
+      sizeBytes,
       size: sizeMB,
     });
   } catch (error) {
-    console.error("PM2 log read error:", error);
+    logger.error({ error }, 'Failed to read PM2 log directory');
     return NextResponse.json(
-      { error: "Failed to read PM2 log directory" },
-      { status: 500 }
+      { error: 'Failed to read PM2 log directory' },
+      { status: 500 },
     );
   }
 }

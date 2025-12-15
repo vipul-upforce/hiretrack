@@ -50,7 +50,7 @@ async function backupData() {
   
   try {
     // Create backup collections
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     
     // Backup organizations
     const organizations = await db.collection('organizations').find({}).toArray();
@@ -82,7 +82,7 @@ async function migrateOrganizations() {
   console.log('\n🏢 Migrating organizations...');
   
   try {
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     const organizations = await db.collection('organizations').find({}).toArray();
     
     for (const org of organizations) {
@@ -120,7 +120,7 @@ async function migrateJobs() {
   console.log('\n💼 Migrating jobs...');
   
   try {
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     const jobs = await db.collection('jobs').find({}).toArray();
     
     if (jobs.length === 0) {
@@ -164,7 +164,7 @@ async function validateCandidates() {
   console.log('\n👥 Validating candidates...');
   
   try {
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     const candidates = await db.collection('candidates').find({}).toArray();
     
     if (candidates.length === 0) {
@@ -197,7 +197,7 @@ async function validateCandidates() {
           candidateName: candidate.name,
           jobTitle: job.title,
           currentStatus: candidate.status,
-          validLanes: validLanes
+          validLanes
         });
         
         // Auto-fix by setting to 'applied' if invalid
@@ -231,7 +231,7 @@ async function cleanupOldFields() {
   console.log('\n🧹 Cleaning up old fields...');
   
   try {
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     
     // Remove old 'lanes' field from organizations (now using 'defaultLanes')
     const result = await db.collection('organizations').updateMany(

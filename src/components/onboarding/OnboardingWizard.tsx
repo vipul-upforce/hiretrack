@@ -1,26 +1,25 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { useOnboarding } from "./OnboardingProvider";
-import { ChevronLeft, ChevronRight, X, Check, SkipForward } from "lucide-react";
-import ProgressIndicator from "./ProgressIndicator";
-import WelcomeStep from "./steps/WelcomeStep";
-import PortalConfigStep from "./steps/PortalConfigStep";
-import AIProviderStep from "./steps/AIProviderStep";
-import EmailConfigStep from "./steps/EmailConfigStep";
-import CalendarStep from "./steps/CalendarStep";
-import TimezoneStep from "./steps/TimezoneStep";
-import StorageStep from "./steps/StorageStep";
-import UsersStep from "./steps/UsersStep";
-import CustomFieldsStep from "./steps/CustomFieldsStep";
-import CompletionStep from "./steps/CompletionStep";
-import CaptchaConfigStep from "./steps/CaptchaConfigStep";
-import ConfirmationDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
+import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { ChevronLeft, ChevronRight, X, Check, SkipForward } from 'lucide-react';
+import ConfirmationDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
+import { useOnboarding } from './OnboardingProvider';
+import ProgressIndicator from './ProgressIndicator';
+import WelcomeStep from './steps/WelcomeStep';
+import PortalConfigStep from './steps/PortalConfigStep';
+import AIProviderStep from './steps/AIProviderStep';
+import EmailConfigStep from './steps/EmailConfigStep';
+import CalendarStep from './steps/CalendarStep';
+import TimezoneStep from './steps/TimezoneStep';
+import StorageStep from './steps/StorageStep';
+import UsersStep from './steps/UsersStep';
+import CustomFieldsStep from './steps/CustomFieldsStep';
+import CompletionStep from './steps/CompletionStep';
+import CaptchaConfigStep from './steps/CaptchaConfigStep';
 
-
-const OnboardingWizard: React.FC = () => {
+function OnboardingWizard() {
   const {
     setIsOpen,
     currentStepIndex,
@@ -58,6 +57,11 @@ const OnboardingWizard: React.FC = () => {
     validate();
   }, [currentStep, currentStepData]);
 
+  // Finish onboarding
+  const handleFinish = async () => {
+    await updateOnboardingStatus({ isCompleted: true });
+    setIsOpen(false);
+  };
   // Next button
   const handleNext = async () => {
     if (currentStep === 0) {
@@ -99,12 +103,6 @@ const OnboardingWizard: React.FC = () => {
     await updateOnboardingStatus({ currentStep: nextStep });
   };
 
-  // Finish onboarding
-  const handleFinish = async () => {
-    await updateOnboardingStatus({ isCompleted: true });
-    setIsOpen(false);
-  };
-
   const renderStepContent = () => {
     if (currentStep === 0) return <WelcomeStep />;
     if (currentStep === totalSteps - 1) return <CompletionStep />;
@@ -112,54 +110,52 @@ const OnboardingWizard: React.FC = () => {
     if (!currentStepData) return null;
 
     switch (currentStepData.id) {
-      case "portal":
+      case 'portal':
         return <PortalConfigStep />;
-      case "captcha":
+      case 'captcha':
         return <CaptchaConfigStep />;
-      case "aiProviders":
+      case 'aiProviders':
         return <AIProviderStep />;
-      case "email":
+      case 'email':
         return <EmailConfigStep />;
-      case "calendar":
+      case 'calendar':
         return <CalendarStep />;
-      case "timezone":
+      case 'timezone':
         return <TimezoneStep />;
-      case "storage":
+      case 'storage':
         return <StorageStep />;
-      case "users":
+      case 'users':
         return <UsersStep />;
-      case "customFields":
+      case 'customFields':
         return <CustomFieldsStep />;
       default:
         return <div>Step not implemented</div>;
     }
   };
 
-  const getProgressPercentage = () => {
-    return ((currentStep + 1) / totalSteps) * 100;
-  };
+  const getProgressPercentage = () => ((currentStep + 1) / totalSteps) * 100;
 
   return (
     <>
-      <div className="flex flex-col h-full">
+      <div className="flex h-full flex-col">
         {/* HEADER */}
-        <div className="bg-muted/30 dark:bg-muted/20 px-8 py-6 border-b flex-shrink-0">
+        <div className="flex-shrink-0 border-b bg-muted/30 px-8 py-6 dark:bg-muted/20">
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">
                 Step {currentStep + 1} of {totalSteps}
               </span>
 
-              <span className="text-sm text-muted-foreground bg-background px-3 py-1 rounded-full border">
+              <span className="rounded-full border bg-background px-3 py-1 text-sm text-muted-foreground">
                 {progress
                   ? `${progress.completed}/${progress.total} configured`
-                  : "0/9 configured"}
+                  : '0/9 configured'}
               </span>
             </div>
 
             <Progress
               value={getProgressPercentage()}
-              className="h-3 bg-background border"
+              className="h-3 border bg-background"
             />
           </div>
 
@@ -176,8 +172,8 @@ const OnboardingWizard: React.FC = () => {
         </div>
 
         {/* FOOTER */}
-        <div className="bg-muted/30 dark:bg-muted/20 px-8 py-6 border-t flex-shrink-0">
-          <div className="flex justify-between items-center">
+        <div className="flex-shrink-0 border-t bg-muted/30 px-8 py-6 dark:bg-muted/20">
+          <div className="flex items-center justify-between">
             {/* LEFT BUTTONS */}
             {currentStep === 0 ? (
               <Button
@@ -185,12 +181,12 @@ const OnboardingWizard: React.FC = () => {
                 onClick={() => setShowDismissDialog(true)}
                 className="text-muted-foreground hover:text-destructive"
               >
-                <X className="w-4 h-4 mr-2" />
-                Don't show again
+                <X className="mr-2 h-4 w-4" />
+                Don&apos;t show again
               </Button>
             ) : (
               <Button variant="outline" onClick={handlePrevious}>
-                <ChevronLeft className="w-4 h-4 mr-2" />
+                <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
             )}
@@ -203,12 +199,10 @@ const OnboardingWizard: React.FC = () => {
                   onClick={handleSkip}
                   disabled={isCurrentConfigured}
                   className={
-                    isCurrentConfigured
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
+                    isCurrentConfigured ? 'cursor-not-allowed opacity-50' : ''
                   }
                 >
-                  <SkipForward className="w-4 h-4 mr-2" />
+                  <SkipForward className="mr-2 h-4 w-4" />
                   Skip
                 </Button>
               )}
@@ -217,17 +211,17 @@ const OnboardingWizard: React.FC = () => {
                 <Button
                   onClick={handleNext}
                   variant="primary"
-                  className=" text-white"
+                  className="text-white"
                 >
                   Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
+                  <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
                 <Button
                   onClick={handleFinish}
                   className="bg-gradient-to-r from-green-600 to-emerald-600 text-white"
                 >
-                  <Check className="w-4 h-4 mr-2" />
+                  <Check className="mr-2 h-4 w-4" />
                   Finish Setup
                 </Button>
               )}
@@ -248,9 +242,8 @@ const OnboardingWizard: React.FC = () => {
         }}
         onCancel={() => setShowDismissDialog(false)} // Close the dialog without action
       />
-     
     </>
   );
-};
+}
 
 export default OnboardingWizard;

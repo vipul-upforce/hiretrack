@@ -40,11 +40,9 @@ export const ALL_NOTIFICATION_TYPES: EmailNotificationType[] = [
 export const createDefaultNotificationSettings = (): Record<
   EmailNotificationType,
   boolean
-> => {
-  return Object.fromEntries(
+> => Object.fromEntries(
     ALL_NOTIFICATION_TYPES.map((type) => [type, true])
   ) as Record<EmailNotificationType, boolean>;
-};
 
 /**
  * Type for admin override settings

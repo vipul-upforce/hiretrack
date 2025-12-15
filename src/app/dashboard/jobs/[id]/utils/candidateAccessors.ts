@@ -3,11 +3,11 @@
  * Provides type-safe access to potentially inconsistent data structures
  */
 
-import { Candidate } from "@/types/candidate";
+import { Candidate } from '@/types/candidate';
 import {
   isPopulatedJobId,
   isPopulatedInterviewer,
-} from "./candidateTypeGuards";
+} from './candidateTypeGuards';
 
 /**
  * Get job ID from candidate (handles both string and object)
@@ -21,7 +21,7 @@ export function getJobId(candidate: Candidate | null | undefined): string | null
     return candidate.jobId._id;
   }
 
-  if (typeof candidate.jobId === "string") {
+  if (typeof candidate.jobId === 'string') {
     return candidate.jobId;
   }
 
@@ -52,7 +52,7 @@ export function getJobTitle(candidate: Candidate | null | undefined): string | n
  * Get interviewer name from candidate
  */
 export function getInterviewerName(
-  candidate: Candidate | null | undefined
+  candidate: Candidate | null | undefined,
 ): string | undefined {
   if (!candidate?.assignment?.interviewerId) {
     return undefined;
@@ -69,7 +69,7 @@ export function getInterviewerName(
  * Get interviewer ID from candidate
  */
 export function getInterviewerId(
-  candidate: Candidate | null | undefined
+  candidate: Candidate | null | undefined,
 ): string | undefined {
   if (!candidate?.assignment?.interviewerId) {
     return undefined;
@@ -79,7 +79,7 @@ export function getInterviewerId(
     return candidate.assignment.interviewerId._id;
   }
 
-  if (typeof candidate.assignment.interviewerId === "string") {
+  if (typeof candidate.assignment.interviewerId === 'string') {
     return candidate.assignment.interviewerId;
   }
 
@@ -95,7 +95,7 @@ function isDateObject(value: unknown): value is Date {
 
 export function getTrackingDate(
   candidate: Candidate | null | undefined,
-  field: "createdAt" | "updatedAt"
+  field: 'createdAt' | 'updatedAt',
 ): Date | null {
   if (!candidate?.tracking) return null;
 
@@ -106,7 +106,7 @@ export function getTrackingDate(
     return value;
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const date = new Date(value);
     return isNaN(date.getTime()) ? null : date;
   }
@@ -126,8 +126,7 @@ export function hasAssignment(candidate: Candidate | null | undefined): boolean 
  */
 export function hasGoogleMeet(candidate: Candidate | null | undefined): boolean {
   return (
-    hasAssignment(candidate) &&
-    candidate.assignment?.googleMeet !== undefined
+    hasAssignment(candidate)
+    && candidate.assignment?.googleMeet !== undefined
   );
 }
-

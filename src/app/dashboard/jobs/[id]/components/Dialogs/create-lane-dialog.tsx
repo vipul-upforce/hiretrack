@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { QuickCreateDialog } from "@/components/ui/specialized-dialogs";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { QuickCreateDialog } from '@/components/ui/specialized-dialogs';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useState } from 'react';
 
 interface CreateLaneDialogProps {
   onAddLane: (title: string) => void;
@@ -14,22 +14,21 @@ interface CreateLaneDialogProps {
 
 export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState('');
   const { toast } = useToast();
-
 
   const handleSubmit = () => {
     if (!title.trim()) {
       toast({
-        title: "Error",
-        description: "Lane title is required",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Lane title is required',
+        variant: 'destructive',
       });
       return;
     }
 
     onAddLane(title);
-    setTitle("");
+    setTitle('');
     setIsOpen(false);
   };
 
@@ -46,7 +45,7 @@ export function CreateLaneDialog({ onAddLane }: CreateLaneDialogProps) {
         isOpen={isOpen}
         onClose={() => {
           setIsOpen(false);
-          setTitle("");
+          setTitle('');
         }}
         onSubmit={handleSubmit}
         title="Add New Lane"

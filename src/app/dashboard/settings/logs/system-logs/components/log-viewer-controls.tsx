@@ -32,7 +32,7 @@ export function LogViewerControls({
         {isLoading && !hasContent && (
           <div className="px-4">
             <div className="flex items-center justify-center">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-primary"></div>
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-primary" />
             </div>
           </div>
         )}

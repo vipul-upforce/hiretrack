@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext, ReactNode } from "react";
-import { INotification } from "@/lib/models/notification";
+import React, { createContext, useContext, ReactNode } from 'react';
+import { INotification } from '@/lib/models/notification';
 
 interface NotificationsContextType {
   notifications: INotification[];
@@ -10,7 +10,7 @@ interface NotificationsContextType {
 }
 
 const NotificationsContext = createContext<NotificationsContextType | undefined>(
-  undefined
+  undefined,
 );
 
 export function NotificationsProvider({
@@ -37,9 +37,8 @@ export function useNotificationsContext() {
   const context = useContext(NotificationsContext);
   if (context === undefined) {
     throw new Error(
-      "useNotificationsContext must be used within a NotificationsProvider"
+      'useNotificationsContext must be used within a NotificationsProvider',
     );
   }
   return context;
 }
-

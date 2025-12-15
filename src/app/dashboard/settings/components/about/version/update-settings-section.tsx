@@ -1,10 +1,10 @@
-import { AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { CheckCircle, Download, Loader2 } from "lucide-react";
-import { VersionListResponse } from "../types";
+import { AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { CheckCircle, Download, Loader2 } from 'lucide-react';
+import { VersionListResponse } from '../types';
 
 export interface UpdateSettingsSectionProps {
   values: {
@@ -35,9 +35,7 @@ export function UpdateSettingsSection({
             <Checkbox
               id="enableAutoUpdate"
               checked={values.enableAutoUpdate}
-              onCheckedChange={(checked) =>
-                setFieldValue("enableAutoUpdate", Boolean(checked))
-              }
+              onCheckedChange={(checked) => setFieldValue('enableAutoUpdate', Boolean(checked))}
               disabled={isSubmitting}
             />
             <Label htmlFor="enableAutoUpdate">Enable Auto-Update</Label>
@@ -48,7 +46,7 @@ export function UpdateSettingsSection({
               variant="primary"
               className="h-[24px] text-xs"
             >
-              {isSubmitting ? "Saving..." : "Save Settings"}
+              {isSubmitting ? 'Saving...' : 'Save Settings'}
             </Button>
           </div>
         </CardContent>

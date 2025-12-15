@@ -1,12 +1,62 @@
-import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
-import { ICandidateHistory } from "@/lib/models/history";
-import { Job } from "./job";
-import { ITag } from "@/lib/models/organization";
-import { Attachment } from "@/app/api/candidates/route";
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
+import { ICandidateHistory } from '@/lib/models/history';
+import { ITag } from '@/lib/models/organization';
+import { Attachment } from '@/app/api/candidates/route';
+import { Job } from './job';
 
 export interface JobDetail {
   title: string;
   description: string;
+}
+
+export type CandidateStatus =
+  | 'applied'
+  | 'screening'
+  | 'shortlisted'
+  | 'processing'
+  | 'accepted'
+  | 'rejected'
+  | 'default';
+
+export interface Remark {
+  description: string;
+  date: string;
+  rating?: number;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+}
+
+interface Assignment {
+  interviewerId:
+    | string
+    | { _id: string; name: string; email: string; duration: string };
+  time: string;
+  duration?: string;
+  assignedAt: string;
+  googleMeet?: {
+    eventId: string;
+    meetingLink: string;
+    htmlLink: string;
+    summary: string;
+    description: string;
+    meetingAttachments?: Attachment[];
+    meetingNotes?: string;
+    attendeeResponses?: Array<{
+      email: string;
+      name?: string;
+      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
+      comment?: string;
+      lastUpdated: Date;
+      notificationSent?: boolean;
+    }>;
+    lastSyncedAt?: Date;
+  };
+  status?: string;
+  assignment?: { status: string };
+  jobId?: Job;
 }
 
 export interface Candidate {
@@ -128,58 +178,8 @@ export interface Candidate {
   };
 }
 
-export type CandidateStatus =
-  | "applied"
-  | "screening"
-  | "shortlisted"
-  | "processing"
-  | "accepted"
-  | "rejected"
-  | "default";
-
 export interface CandidateColumn {
   id: CandidateStatus;
   title: string;
   candidates: Candidate[];
-}
-
-export interface Remark {
-  description: string;
-  date: string;
-  rating?: number;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-}
-
-interface Assignment {
-  interviewerId:
-    | string
-    | { _id: string; name: string; email: string; duration: string };
-  time: string;
-  duration?: string;
-  assignedAt: string;
-  googleMeet?: {
-    eventId: string;
-    meetingLink: string;
-    htmlLink: string;
-    summary: string;
-    description: string;
-    meetingAttachments?: Attachment[];
-    meetingNotes?: string;
-    attendeeResponses?: Array<{
-      email: string;
-      name?: string;
-      responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
-      comment?: string;
-      lastUpdated: Date;
-      notificationSent?: boolean;
-    }>;
-    lastSyncedAt?: Date;
-  };
-  status?: string;
-  assignment?: { status: string };
-  jobId?: Job;
 }

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Loader2 } from "lucide-react";
-import { useGetDiskFolderDetailsQuery } from "@/lib/features/settings/settingsApi";
-import { FileTreeItem } from "./file-tree-item";
+import { Loader2 } from 'lucide-react';
+import { useGetDiskFolderDetailsQuery } from '@/lib/features/settings/settingsApi';
+import { FileTreeItem } from './file-tree-item';
 
 interface DirectoryContentsProps {
   root: string;
@@ -17,7 +17,7 @@ export function DirectoryContents({
 }: DirectoryContentsProps) {
   const { data, isFetching, isError } = useGetDiskFolderDetailsQuery(
     { root, path },
-    { refetchOnMountOrArgChange: false }
+    { refetchOnMountOrArgChange: false },
   );
 
   if (isFetching) {
@@ -47,8 +47,8 @@ export function DirectoryContents({
     );
   }
   const sortedItems = [...data.files].sort((a, b) => {
-    if (a.type === "folder" && b.type === "file") return -1;
-    if (a.type === "file" && b.type === "folder") return 1;
+    if (a.type === 'folder' && b.type === 'file') return -1;
+    if (a.type === 'file' && b.type === 'folder') return 1;
     return a.name.localeCompare(b.name);
   });
 

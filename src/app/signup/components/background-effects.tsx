@@ -1,8 +1,10 @@
-"use client";
+'use client';
 
-import React, { useRef, useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { cx } from "@/lib/cx";
+import React, {
+  useRef, useState, useEffect, useCallback,
+} from 'react';
+import { motion } from 'framer-motion';
+import { cx } from '@/lib/cx';
 
 interface AnimatedGridPatternProps {
   width?: number;
@@ -41,28 +43,24 @@ function AnimatedGridPattern({
     ];
   }
 
-  const [squares, setSquares] = useState(() =>
-    Array.from({ length: numSquares }, (_, i) => ({ id: i, pos: [0, 0] }))
-  );
+  const [squares, setSquares] = useState(() => Array.from({ length: numSquares }, (_, i) => ({ id: i, pos: [0, 0] })));
 
   useEffect(() => {
     if (dimensions.width && dimensions.height) {
       setSquares(
-        Array.from({ length: numSquares }, (_, i) => ({ id: i, pos: getPos() }))
+        Array.from({ length: numSquares }, (_, i) => ({ id: i, pos: getPos() })),
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dimensions, numSquares]);
 
   const updateSquarePosition = (id: number) => {
-    setSquares((current) =>
-      current.map((sq) => (sq.id === id ? { ...sq, pos: getPos() } : sq))
-    );
+    setSquares((current) => current.map((sq) => (sq.id === id ? { ...sq, pos: getPos() } : sq)));
   };
 
   useEffect(() => {
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         setDimensions({
           width: entry.contentRect.width,
           height: entry.contentRect.height,
@@ -72,8 +70,7 @@ function AnimatedGridPattern({
     // @ts-ignore
     if (containerRef.current) resizeObserver.observe(containerRef.current);
     // @ts-ignore
-    return () =>
-      containerRef.current && resizeObserver.unobserve(containerRef.current);
+    return () => containerRef.current && resizeObserver.unobserve(containerRef.current);
   }, []);
 
   return (
@@ -81,8 +78,8 @@ function AnimatedGridPattern({
       ref={containerRef}
       aria-hidden="true"
       className={cx(
-        "pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30",
-        className
+        'pointer-events-none absolute inset-0 h-full w-full fill-gray-400/30 stroke-gray-400/30',
+        className,
       )}
       {...props}
     >
@@ -112,7 +109,7 @@ function AnimatedGridPattern({
               duration,
               repeat: 1,
               delay: index * 0.1,
-              repeatType: "reverse",
+              repeatType: 'reverse',
             }}
             onAnimationComplete={() => updateSquarePosition(id)}
             key={`${x}-${y}-${index}`}
@@ -144,7 +141,7 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   squareSize = 4,
   gridGap = 6,
   flickerChance = 0.3,
-  color = "rgb(0, 0, 0)",
+  color = 'rgb(0, 0, 0)',
   width,
   height,
   className,
@@ -157,11 +154,11 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
 
   const memoizedColor = React.useMemo(() => {
     const toRGBA = (color: string) => {
-      if (typeof window === "undefined") return `rgba(0, 0, 0,`;
-      const canvas = document.createElement("canvas");
+      if (typeof window === 'undefined') return 'rgba(0, 0, 0,';
+      const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 1;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return "rgba(255, 0, 0,";
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return 'rgba(255, 0, 0,';
       ctx.fillStyle = color;
       ctx.fillRect(0, 0, 1, 1);
       const [r, g, b] = Array.from(ctx.getImageData(0, 0, 1, 1).data);
@@ -180,21 +177,21 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       const cols = Math.floor(width / (squareSize + gridGap));
       const rows = Math.floor(height / (squareSize + gridGap));
       const squares = new Float32Array(cols * rows);
-      for (let i = 0; i < squares.length; i++)
-        squares[i] = Math.random() * maxOpacity;
-      return { cols, rows, squares, dpr };
+      for (let i = 0; i < squares.length; i++) squares[i] = Math.random() * maxOpacity;
+      return {
+        cols, rows, squares, dpr,
+      };
     },
-    [squareSize, gridGap, maxOpacity]
+    [squareSize, gridGap, maxOpacity],
   );
 
   const updateSquares = useCallback(
     (squares: Float32Array, deltaTime: number) => {
       for (let i = 0; i < squares.length; i++) {
-        if (Math.random() < flickerChance * deltaTime)
-          squares[i] = Math.random() * maxOpacity;
+        if (Math.random() < flickerChance * deltaTime) squares[i] = Math.random() * maxOpacity;
       }
     },
-    [flickerChance, maxOpacity]
+    [flickerChance, maxOpacity],
   );
 
   const drawGrid = useCallback(
@@ -205,10 +202,10 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       cols: number,
       rows: number,
       squares: Float32Array,
-      dpr: number
+      dpr: number,
     ) => {
       ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = "transparent";
+      ctx.fillStyle = 'transparent';
       ctx.fillRect(0, 0, width, height);
       for (let i = 0; i < cols; i++) {
         for (let j = 0; j < rows; j++) {
@@ -218,19 +215,19 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
             i * (squareSize + gridGap) * dpr,
             j * (squareSize + gridGap) * dpr,
             squareSize * dpr,
-            squareSize * dpr
+            squareSize * dpr,
           );
         }
       }
     },
-    [memoizedColor, squareSize, gridGap]
+    [memoizedColor, squareSize, gridGap],
   );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
     let animationFrameId: number;
     let gridParams: ReturnType<typeof setupCanvas>;
@@ -255,7 +252,7 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
         gridParams.cols,
         gridParams.rows,
         gridParams.squares,
-        gridParams.dpr
+        gridParams.dpr,
       );
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -263,7 +260,7 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
     resizeObserver.observe(container);
     const intersectionObserver = new IntersectionObserver(
       ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 0 }
+      { threshold: 0 },
     );
     intersectionObserver.observe(canvas);
     if (isInView) animationFrameId = requestAnimationFrame(animate);
@@ -285,11 +282,11 @@ const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   );
 };
 
-export const BackgroundEffects = ({
+export function BackgroundEffects({
   primaryColor,
 }: {
   primaryColor: string;
-}) => {
+}) {
   return (
     <div className="absolute inset-0 z-0">
       <AnimatedGridPattern
@@ -298,8 +295,8 @@ export const BackgroundEffects = ({
         duration={3}
         repeatDelay={1}
         className={cx(
-          "[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]",
-          "inset-x-0 inset-y-[-30%] h-[200%] skew-y-12"
+          '[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]',
+          'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
         )}
       />
       <FlickeringGrid
@@ -312,4 +309,4 @@ export const BackgroundEffects = ({
       />
     </div>
   );
-};
+}

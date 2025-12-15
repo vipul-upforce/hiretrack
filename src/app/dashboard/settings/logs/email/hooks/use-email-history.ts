@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
-import { useGetEmailHistoryQuery } from "@/lib/features/settings/settingsApi";
-import { useDebounce } from "@/hooks/useDebounce";
-import { EmailHistoryRecord } from "../types";
+import { useState, useEffect } from 'react';
+import { useGetEmailHistoryQuery } from '@/lib/features/settings/settingsApi';
+import { useDebounce } from '@/hooks/useDebounce';
+import { EmailHistoryRecord } from '../types';
 
 export function useEmailHistory() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
   const [selectedEmail, setSelectedEmail] = useState<EmailHistoryRecord | null>(
-    null
+    null,
   );
   const [rawSearch, setRawSearch] = useState(search);
 
@@ -20,13 +19,12 @@ export function useEmailHistory() {
     setPage(1); // Reset page on search change
   }, [debouncedSearchQuery]);
 
-  const { data, error, isLoading, isFetching, refetch } =
-    useGetEmailHistoryQuery({
-      page,
-      limit: pageSize,
-      search,
-      status: statusFilter,
-    });
+  const { data, isLoading, isFetching, refetch } = useGetEmailHistoryQuery({
+    page,
+    limit: 20,
+    search,
+    status: statusFilter,
+  });
 
   const emails = data?.emails ?? [];
   const totalPages = data?.pagination?.total ?? 1;

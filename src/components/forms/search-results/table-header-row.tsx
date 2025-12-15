@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type React from "react";
+import type React from 'react';
 
-import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
+import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   ArrowUpDown,
   ArrowUp,
@@ -17,16 +17,16 @@ import {
   Calendar,
   Clock,
   Archive,
-} from "lucide-react";
-import { memo } from "react";
+} from 'lucide-react';
+import { memo } from 'react';
 
 interface TableHeaderRowProps {
   visibleColumns: Record<string, boolean>;
   sortField: string | null;
-  sortDirection: "asc" | "desc";
+  sortDirection: 'asc' | 'desc';
   onSort: (field: string) => void;
   selectAll: boolean;
-  onSelectAll: (checked: boolean | "indeterminate") => void;
+  onSelectAll: (checked: boolean | 'indeterminate') => void;
 }
 
 const ICON_MAP: Record<string, React.ReactNode> = {
@@ -41,113 +41,109 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 };
 
 const COLUMN_LABELS: Record<string, string> = {
-  name: "Name",
-  skills: "Skills",
-  location: "Location",
-  jobAssignment: "Job Assignment",
-  overallScore: "Overall Score",
-  expectedCTC: "ECTC",
-  currentCTC: "CCTC",
-  experience: "Exp",
-  createdAt: "Applied",
-  archived: "Deleted",
+  name: 'Name',
+  skills: 'Skills',
+  location: 'Location',
+  jobAssignment: 'Job Assignment',
+  overallScore: 'Overall Score',
+  expectedCTC: 'ECTC',
+  currentCTC: 'CCTC',
+  experience: 'Exp',
+  createdAt: 'Applied',
+  archived: 'Deleted',
 };
 
 const SORTABLE_COLUMNS = new Set([
-  "name",
-  "location",
-  "jobAssignment",
-  "overallScore",
-  "expectedCTC",
-  "currentCTC",
-  "experience",
-  "createdAt",
-  "isDeleted",
+  'name',
+  'location',
+  'jobAssignment',
+  'overallScore',
+  'expectedCTC',
+  'currentCTC',
+  'experience',
+  'createdAt',
+  'isDeleted',
 ]);
 
 function getSortIcon(
   field: string,
   sortField: string | null,
-  sortDirection: "asc" | "desc"
+  sortDirection: 'asc' | 'desc',
 ) {
   if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
-  return sortDirection === "asc" ? (
+  return sortDirection === 'asc' ? (
     <ArrowUp className="ml-2 h-4 w-4" />
   ) : (
     <ArrowDown className="ml-2 h-4 w-4" />
   );
 }
 
-export const TableHeaderRow = memo(function TableHeaderRow({
+export const TableHeaderRow = memo(({
   visibleColumns,
   sortField,
   sortDirection,
   onSort,
   selectAll,
   onSelectAll,
-}: TableHeaderRowProps) {
-  return (
-    <TableHeader>
-      <TableRow className="bg-muted/50 hover:bg-muted/50 border-b-2">
-        {visibleColumns.select && (
-          <TableHead className="w-[40px]">
-            <Checkbox
-              checked={selectAll}
-              onCheckedChange={onSelectAll}
-              aria-label="Select all candidates"
-            />
-          </TableHead>
-        )}
-        {Object.entries(visibleColumns).map(([column, isVisible]) => {
-          if (column === "select" || column === "actions" || !isVisible) {
-            return null;
-          }
+}: TableHeaderRowProps) => (
+  <TableHeader>
+    <TableRow className="bg-muted/50 hover:bg-muted/50 border-b-2">
+      {visibleColumns.select && (
+      <TableHead className="w-[40px]">
+        <Checkbox
+          checked={selectAll}
+          onCheckedChange={onSelectAll}
+          aria-label="Select all candidates"
+        />
+      </TableHead>
+      )}
+      {Object.entries(visibleColumns).map(([column, isVisible]) => {
+        if (column === 'select' || column === 'actions' || !isVisible) {
+          return null;
+        }
 
-          const isSortable = SORTABLE_COLUMNS.has(
-            column === "archived" ? "isDeleted" : column
-          );
+        const isSortable = SORTABLE_COLUMNS.has(
+          column === 'archived' ? 'isDeleted' : column,
+        );
 
-          if (!isSortable) {
-            return (
-              <TableHead key={column} className="font-semibold text-foreground">
-                <div className="flex items-center gap-2">
-                  {ICON_MAP[column]}
-                  <span>{COLUMN_LABELS[column] || column}</span>
-                </div>
-              </TableHead>
-            );
-          }
-
+        if (!isSortable) {
           return (
-            <TableHead
-              key={column}
-              className="cursor-pointer font-semibold text-foreground"
-              onClick={() =>
-                onSort(column === "archived" ? "isDeleted" : column)
-              }
-            >
+            <TableHead key={column} className="font-semibold text-foreground">
               <div className="flex items-center gap-2">
-                {ICON_MAP[column]}
-                <span>{COLUMN_LABELS[column] || column}</span>
-                {getSortIcon(
-                  column === "archived" ? "isDeleted" : column,
-                  sortField,
-                  sortDirection
-                )}
+                {ICON_MAP.column}
+                <span>{COLUMN_LABELS.column || column}</span>
               </div>
             </TableHead>
           );
-        })}
-        {visibleColumns.actions && (
-          <TableHead className="w-[50px] font-semibold text-foreground">
-            <div className="flex items-center justify-center">
-              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+        }
+
+        return (
+          <TableHead
+            key={column}
+            className="cursor-pointer font-semibold text-foreground"
+            onClick={() => onSort(column === 'archived' ? 'isDeleted' : column)}
+          >
+            <div className="flex items-center gap-2">
+              {ICON_MAP.column}
+              <span>{COLUMN_LABELS.column || column}</span>
+              {getSortIcon(
+                column === 'archived' ? 'isDeleted' : column,
+                sortField,
+                sortDirection,
+              )}
             </div>
           </TableHead>
-        )}
-      </TableRow>
-    </TableHeader>
-  );
-});
+        );
+      })}
+      {visibleColumns.actions && (
+      <TableHead className="w-[50px] font-semibold text-foreground">
+        <div className="flex items-center justify-center">
+          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </TableHead>
+      )}
+    </TableRow>
+  </TableHeader>
+));
 
-TableHeaderRow.displayName = "TableHeaderRow";
+TableHeaderRow.displayName = 'TableHeaderRow';

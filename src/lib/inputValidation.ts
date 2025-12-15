@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 /**
  * Input validation utilities for API endpoints
@@ -14,7 +14,7 @@ export const VALIDATION_PATTERNS = {
   safeString: /^[a-zA-Z0-9\s\-_.@]*$/,
   url: /^https?:\/\/.+/,
   contact: /^\+?[\d\s\-\(\)]+$/,
-  filename: /^[a-zA-Z0-9\-_.]+$/
+  filename: /^[a-zA-Z0-9\-_.]+$/,
 };
 
 // Maximum lengths for common fields
@@ -27,7 +27,7 @@ export const MAX_LENGTHS = {
   title: 200,
   message: 2000,
   shortText: 50,
-  mediumText: 500
+  mediumText: 500,
 };
 
 export interface ValidationRule {
@@ -176,10 +176,10 @@ function containsHtmlOrScript(value: string): boolean {
     /on\w+\s*=/gi,
     /<object\b/gi,
     /<embed\b/gi,
-    /<form\b/gi
+    /<form\b/gi,
   ];
 
-  return dangerousPatterns.some(pattern => pattern.test(value));
+  return dangerousPatterns.some((pattern) => pattern.test(value));
 }
 
 /**
@@ -187,7 +187,7 @@ function containsHtmlOrScript(value: string): boolean {
  */
 export function sanitizeString(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   return input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
@@ -204,12 +204,12 @@ export function sanitizeString(input: string): string {
  */
 export function validateQueryParams(searchParams: URLSearchParams, schema: ValidationSchema) {
   const data: Record<string, any> = {};
-  
+
   // Convert URLSearchParams to object
   for (const [key, value] of searchParams.entries()) {
     data[key] = value;
   }
-  
+
   return validateInput(data, schema);
 }
 
@@ -218,35 +218,35 @@ export function validateQueryParams(searchParams: URLSearchParams, schema: Valid
  */
 export function withInputValidation(
   schema: ValidationSchema,
-  handler: (validatedData: any, req: any) => Promise<NextResponse>
+  handler: (validatedData: any, req: any) => Promise<NextResponse>,
 ) {
   return async (req: any) => {
     try {
       const body = await req.json();
       const validation = validateInput(body, schema);
-      
+
       if (!validation.isValid) {
         return NextResponse.json(
-          { 
-            error: 'Validation failed', 
-            details: validation.errors 
+          {
+            error: 'Validation failed',
+            details: validation.errors,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
-      
+
       return handler(body, req);
     } catch (error) {
       if (error instanceof SyntaxError) {
         return NextResponse.json(
           { error: 'Invalid JSON in request body' },
-          { status: 400 }
+          { status: 400 },
         );
       }
-      
+
       return NextResponse.json(
         { error: 'Internal server error' },
-        { status: 500 }
+        { status: 500 },
       );
     }
   };
@@ -259,35 +259,35 @@ export const COMMON_SCHEMAS = {
   pagination: {
     page: { type: 'number' as const, min: 1, max: 1000 },
     limit: { type: 'number' as const, min: 1, max: 100 },
-    skip: { type: 'number' as const, min: 0 }
+    skip: { type: 'number' as const, min: 0 },
   },
-  
+
   organization: {
-    organizationId: { 
-      required: true, 
+    organizationId: {
+      required: true,
       type: 'objectId' as const,
-      pattern: VALIDATION_PATTERNS.objectId 
-    }
+      pattern: VALIDATION_PATTERNS.objectId,
+    },
   },
-  
+
   email: {
     email: {
       required: true,
       type: 'email' as const,
       maxLength: MAX_LENGTHS.email,
-      pattern: VALIDATION_PATTERNS.email
-    }
-  },
-  
-  search: {
-    q: { 
-      type: 'string' as const, 
-      maxLength: 200, 
-      sanitize: true 
+      pattern: VALIDATION_PATTERNS.email,
     },
-    filter: { 
-      type: 'string' as const, 
-      maxLength: 100 
-    }
-  }
+  },
+
+  search: {
+    q: {
+      type: 'string' as const,
+      maxLength: 200,
+      sanitize: true,
+    },
+    filter: {
+      type: 'string' as const,
+      maxLength: 100,
+    },
+  },
 };

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import AdmZip from "adm-zip";
+import { NextRequest, NextResponse } from 'next/server';
+import AdmZip from 'adm-zip';
 import connectToDatabase, {
   Candidate,
   Settings,
@@ -14,6 +14,7 @@ import { NotificationService } from "@/lib/notifications/notificationService";
 import { Types } from "mongoose";
 import { getAuthenticatedUser } from "@/app/actions/auth";
 import { ISettings, IAIProviders } from "@/lib/models/settings";
+import logger from '@/lib/logger';
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -59,15 +60,11 @@ async function processResume(
     // Use the already decrypted AI providers directly
     const aiProviders = decryptedAiProviders;
 
-    const activeProvider = aiProviders.activeProvider;
+    const { activeProvider } = aiProviders;
     const apiKey = aiProviders[activeProvider]?.api_key;
-
-    console.log("processResume - Active Provider:", activeProvider);
-    console.log("processResume - Has API Key:", !!apiKey);
-
     if (!apiKey) {
       throw new Error(
-        `API key not found for active provider: ${activeProvider}`
+        `API key not found for active provider: ${activeProvider}`,
       );
     }
 
@@ -83,7 +80,7 @@ async function processResume(
     const parsedData = await provider.processResume(
       base64Resume,
       apiKey,
-      selectedModel
+      selectedModel,
     );
     console.log('parsedData in process-cv ---------------------------->', parsedData);
 
@@ -92,7 +89,7 @@ async function processResume(
       return {
         ...parsedData,
         organizationId,
-        status: "rejected",
+        status: 'rejected',
         isDeleted: false,
       };
     }
@@ -101,7 +98,7 @@ async function processResume(
     const existingCandidate = await Candidate?.findOne({
       name: parsedData.name,
       email: parsedData.email,
-      organizationId: organizationId,
+      organizationId,
       isDeleted: false,
     });
 
@@ -109,21 +106,21 @@ async function processResume(
       return {
         ...parsedData,
         organizationId,
-        status: "rejected",
+        status: 'rejected',
         isDeleted: false,
-        error: "Candidate with this name and email already exists",
+        error: 'Candidate with this name and email already exists',
       };
     }
 
     return {
       ...parsedData,
       organizationId,
-      status: "applied",
+      status: 'applied',
       isDeleted: false,
     };
   } catch (error) {
     throw new Error(
-      error instanceof Error ? error.message : "Failed to process resume"
+      error instanceof Error ? error.message : 'Failed to process resume',
     );
   }
 }
@@ -136,24 +133,24 @@ function processZipEntries(zip: AdmZip): File[] {
   for (const entry of entries) {
     // Skip macOS system files and hidden files
     if (
-      entry.entryName.startsWith("__MACOSX/") ||
-      entry.entryName.includes("/._") ||
-      entry.entryName.startsWith("._")
+      entry.entryName.startsWith('__MACOSX/') ||
+      entry.entryName.includes('/._') ||
+      entry.entryName.startsWith('._')
     ) {
       continue;
     }
 
     // Check if it's a directory by checking if the path ends with '/'
-    if (entry.entryName.endsWith("/")) {
+    if (entry.entryName.endsWith('/')) {
       continue; // Skip directories as we'll process their contents through their files
     }
     // Check if it's a PDF file
-    else if (entry.entryName.toLowerCase().endsWith(".pdf")) {
+    else if (entry.entryName.toLowerCase().endsWith('.pdf')) {
       const content = entry.getData();
       // Extract just the filename from the full path
-      const filename = entry.entryName.split("/").pop() || entry.entryName;
+      const filename = entry.entryName.split('/').pop() || entry.entryName;
       const file = new File([content as BlobPart], filename, {
-        type: "application/pdf",
+        type: 'application/pdf',
       });
       files.push(file);
     }
@@ -166,31 +163,31 @@ export async function POST(request: NextRequest) {
   await connectToDatabase();
   if (!Candidate || !Settings || !CVBatch) {
     return NextResponse.json(
-      { error: "Database not connected" },
-      { status: 400 }
+      { error: 'Database not connected' },
+      { status: 400 },
     );
   }
 
   const user = await getAuthenticatedUser(request);
   if (!user) {
     return NextResponse.json(
-      { error: "User not Authenticated" },
-      { status: 401 }
+      { error: 'User not Authenticated' },
+      { status: 401 },
     );
   }
   const formData = await request.formData();
   const { searchParams } = new URL(request.url);
-  const organizationId = searchParams?.get("organizationId");
+  const organizationId = searchParams?.get('organizationId');
   if (!organizationId) {
     return NextResponse.json(
-      { error: "organizationId is required" },
-      { status: 400 }
+      { error: 'organizationId is required' },
+      { status: 400 },
     );
   }
   const cvBatchInfo = new CVBatch({
     organizationId,
     totalFiles: 0,
-    status: "processing",
+    status: 'processing',
   });
 
   try {
@@ -201,40 +198,40 @@ export async function POST(request: NextRequest) {
     
     if (!settings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
     // Check if AI providers are configured with backward compatibility
-    let aiProviders: IAIProviders | AIProviders = settings.aiProviders as IAIProviders | undefined;
+    let aiProvider : IAIProviders | AIProviders | undefined = settings.aiProviders as IAIProviders | AIProviders | undefined;
 
     // Handle backward compatibility for legacy Gemini-only installations
-    if (!aiProviders) {
+    if (!aiProvider) {
       // Check if there's a legacy gemini configuration
-      const legacyGeminiKey = settings.gemini?.gemini_key || "";
+      const legacyGeminiKey = settings.gemini?.gemini_key || '';
 
-      aiProviders = {
-        activeProvider: "gemini",
+      aiProvider = {
+        activeProvider: 'gemini',
         gemini: {
           api_key: legacyGeminiKey,
-          model: "gemini-1.5-flash",
-          customModel: "",
+          model: 'gemini-1.5-flash',
+          customModel: '',
         },
         openai: {
-          api_key: "",
-          model: "gpt-4o-mini",
-          customModel: "",
+          api_key: '',
+          model: 'gpt-4o-mini',
+          customModel: '',
         },
         anthropic: {
-          api_key: "",
-          model: "claude-3-5-sonnet-20241022",
-          customModel: "",
+          api_key: '',
+          model: 'claude-3-5-sonnet-20241022',
+          customModel: '',
         },
         perplexity: {
-          api_key: "",
-          model: "sonar-pro",
-          customModel: "",
+          api_key: '',
+          model: 'sonar-pro',
+          customModel: '',
         },
       } as IAIProviders;
 
@@ -243,32 +240,32 @@ export async function POST(request: NextRequest) {
 
     // Decrypt API keys from database - MOVED UP
     // Note: decryptProviderKeys returns the same structure but with decrypted keys
-    const decryptedAiProviders = decryptProviderKeys(aiProviders, organizationId) as AIProviders;
+    const decryptedAiProviders = decryptProviderKeys(aiProvider, organizationId) as AIProviders;
 
     const activeProvider = decryptedAiProviders.activeProvider;
     const apiKey = decryptedAiProviders[activeProvider]?.api_key;
 
     // Add debug logging similar to evaluate API
-   
+
     if (!apiKey) {
       return NextResponse.json(
         {
           error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found`,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     const files: File[] = [];
-    const uploadedFiles = formData.getAll("file");
+    const uploadedFiles = formData.getAll('file');
 
     if (uploadedFiles.length === 0) {
-      return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
+      return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
     }
 
     for (const uploadedFile of uploadedFiles) {
       if (uploadedFile instanceof File) {
-        if (uploadedFile.name.endsWith(".zip")) {
+        if (uploadedFile.name.endsWith('.zip')) {
           const arrayBuffer = await uploadedFile.arrayBuffer();
           const buffer = Buffer.from(arrayBuffer);
           const zip = new AdmZip(buffer);
@@ -276,14 +273,14 @@ export async function POST(request: NextRequest) {
           // Use the new recursive function to process ZIP entries
           const zipFiles = processZipEntries(zip);
           files.push(...zipFiles);
-        } else if (uploadedFile.type === "application/pdf") {
+        } else if (uploadedFile.type === 'application/pdf') {
           files.push(uploadedFile);
         } else {
           return NextResponse.json(
             {
-              error: "Invalid file type. Only PDF and ZIP files are supported",
+              error: 'Invalid file type. Only PDF and ZIP files are supported',
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -298,12 +295,7 @@ export async function POST(request: NextRequest) {
     for (const file of files) {
       try {
         const arrayBuffer = await file.arrayBuffer();
-        const base64Data = Buffer.from(arrayBuffer).toString("base64");
-
-        // Log the base64 data length for debugging
-        console.log(
-          `Processing file: ${file.name}, Base64 length: ${base64Data.length}`
-        );
+        const base64Data = Buffer.from(arrayBuffer).toString('base64');
 
         // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
@@ -316,7 +308,7 @@ export async function POST(request: NextRequest) {
           // Add error item to batch
           cvBatchInfo.items.push({
             filename: file.name,
-            status: "failed",
+            status: 'failed',
             error: candidateData.error,
             processedAt: new Date(),
           });
@@ -341,12 +333,12 @@ export async function POST(request: NextRequest) {
         // Save the resume using handleSingleFile
         const resumeFile = await handleSingleFile(
           fileObject,
-          settings.fileStorage?.storageType || "local",
-          organizationId as string
+          settings.fileStorage?.storageType || 'local',
+          organizationId as string,
         );
 
         if (!resumeFile) {
-          throw new Error("Failed to save resume file");
+          throw new Error('Failed to save resume file');
         }
 
         // Create candidate record
@@ -358,12 +350,12 @@ export async function POST(request: NextRequest) {
         // Validate required fields
         const requiredFields: Array<keyof ExtendedProcessedResumeData> = ["name"];
         const missingFields = requiredFields.filter(
-          (field) => !candidateData[field]
+          (field) => !candidateData[field],
         );
 
         if (missingFields.length > 0) {
           throw new Error(
-            `Validation Error: Required fields not provided: ${missingFields.join(", ")}`
+            `Validation Error: Required fields not provided: ${missingFields.join(', ')}`,
           );
         }
 
@@ -375,7 +367,7 @@ export async function POST(request: NextRequest) {
           history: [
             {
               dateTime: new Date(),
-              title: "cv-process batch",
+              title: 'cv-process batch',
               previousInterviewer: null,
               currentInterviewer: null,
               assignmentBy: user.id,
@@ -386,8 +378,8 @@ export async function POST(request: NextRequest) {
         cvBatchInfo.items.push({
           filename: file.name,
           candidateId: candidate._id,
-          status: "success",
-          message: "Successfully processed and created candidate",
+          status: 'success',
+          message: 'Successfully processed and created candidate',
           processedAt: new Date(),
         });
         cvBatchInfo.successCount += 1;
@@ -395,28 +387,28 @@ export async function POST(request: NextRequest) {
         results.push({
           filename: file.name,
           candidateId: candidate._id,
-          status: "success",
+          status: 'success',
         });
       } catch (error) {
         // Add error item to batch
         cvBatchInfo.items.push({
           filename: file.name,
-          status: "failed",
-          error: error instanceof Error ? error.message : "Unknown error",
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
           processedAt: new Date(),
         });
         cvBatchInfo.failureCount += 1;
 
         errors.push({
           filename: file.name,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
-    
+
     // Update batch status
 
-    cvBatchInfo.status = "completed";
+    cvBatchInfo.status = 'completed';
     cvBatchInfo.completedAt = new Date();
     await cvBatchInfo.save();
 
@@ -426,20 +418,21 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id.toString(),
       successCount: cvBatchInfo.successCount,
       failureCount: cvBatchInfo.failureCount,
-      triggerUserId: user?.id,
-      triggerUserName: user?.name || "Unknown User",
+      triggerUserId: user?.id!,
+      triggerUserName: user?.name || 'Unknown User',
     });
 
     return NextResponse.json({
-      message: "Processing completed",
+      message: 'Processing completed',
       batchId: cvBatchInfo._id,
       processed: results,
-      errors: errors,
+      errors,
     });
   } catch (error) {
+    logger.error({ error, url: request.url }, 'Error processing CV batch');
     // If there's an error in the main process, update the batch if it exists
     if (cvBatchInfo) {
-      cvBatchInfo.status = "failed";
+      cvBatchInfo.status = 'failed';
       cvBatchInfo.completedAt = new Date();
       await cvBatchInfo.save();
     }
@@ -449,9 +442,9 @@ export async function POST(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred",
+            : 'An unexpected error occurred',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -461,30 +454,30 @@ export async function GET(request: NextRequest) {
   await connectToDatabase();
   if (!Candidate || !Settings || !CVBatch) {
     return NextResponse.json(
-      { error: "Database not connected" },
-      { status: 400 }
+      { error: 'Database not connected' },
+      { status: 400 },
     );
   }
 
   const user = await getAuthenticatedUser(request);
   if (!user) {
     return NextResponse.json(
-      { error: "User not Authenticated" },
-      { status: 401 }
+      { error: 'User not Authenticated' },
+      { status: 401 },
     );
   }
   const { searchParams } = new URL(request.url);
-  const organizationId = searchParams?.get("organizationId");
+  const organizationId = searchParams?.get('organizationId');
 
   if (!organizationId) {
     return NextResponse.json(
-      { error: "organizationId is required" },
-      { status: 400 }
+      { error: 'organizationId is required' },
+      { status: 400 },
     );
   }
 
   if (!CVBatch) {
-    return NextResponse.json({ error: "DB Not Connected" }, { status: 400 });
+    return NextResponse.json({ error: 'DB Not Connected' }, { status: 400 });
   }
 
   try {
@@ -492,14 +485,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(batches, { status: 200 });
   } catch (error) {
+    logger.error({ error, url: request.url }, 'Error fetching CV batches');
     return NextResponse.json(
       {
         error:
           error instanceof Error
             ? error.message
-            : "An unexpected error occurred",
+            : 'An unexpected error occurred',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

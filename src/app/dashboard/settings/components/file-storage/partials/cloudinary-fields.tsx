@@ -1,10 +1,11 @@
-"use client";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { ErrorMessage, useFormikContext } from "formik";
-import { SecretInput } from "./secret-input";
-import { Button } from "@/components/ui/button";
-import { FileStorageValues } from "../schema";
+'use client';
+
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { ErrorMessage, useFormikContext } from 'formik';
+import { Button } from '@/components/ui/button';
+import { SecretInput } from './secret-input';
+import { FileStorageValues } from '../schema';
 
 interface CloudinaryFieldsProps {
   onTest: (values: FileStorageValues) => void;
@@ -22,9 +23,7 @@ export function CloudinaryFields({ onTest, isTesting }: CloudinaryFieldsProps) {
           id="cloudinaryCloudName"
           name="cloudinaryCloudName"
           value={values.cloudinaryCloudName}
-          onChange={(e) =>
-            setFieldValue("cloudinaryCloudName", e.target.value.trim())
-          }
+          onChange={(e) => setFieldValue('cloudinaryCloudName', e.target.value.trim())}
         />
         <ErrorMessage
           name="cloudinaryCloudName"
@@ -43,7 +42,7 @@ export function CloudinaryFields({ onTest, isTesting }: CloudinaryFieldsProps) {
           onClick={() => onTest(values)}
           disabled={isTesting}
         >
-          {isTesting ? "Testing..." : "Test Credentials"}
+          {isTesting ? 'Testing...' : 'Test Credentials'}
         </Button>
       </div>
     </div>

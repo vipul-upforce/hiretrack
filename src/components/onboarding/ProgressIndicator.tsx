@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Check, X, SkipForward } from "lucide-react";
-import { useOnboarding } from "./OnboardingProvider";
-import { cn } from "@/lib/utils";
+import React from 'react';
+import { Check, SkipForward } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useOnboarding } from './OnboardingProvider';
 
-const ProgressIndicator: React.FC = () => {
+function ProgressIndicator() {
   const { steps, currentStepIndex } = useOnboarding();
 
   return (
@@ -23,48 +23,48 @@ const ProgressIndicator: React.FC = () => {
                 {/* Step Circle */}
                 <div
                   className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 shadow-sm",
+                    'flex h-10 w-10 items-center justify-center rounded-full border-2 shadow-sm transition-all duration-300',
                     {
                       // Current step
-                      "border-blue-500 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-blue-200 dark:shadow-blue-900/50":
+                      'border-blue-500 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-blue-200 dark:shadow-blue-900/50':
                         isCurrent,
                       // Completed step
-                      "border-green-500 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-green-200 dark:shadow-green-900/50":
+                      'border-green-500 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-green-200 dark:shadow-green-900/50':
                         isPast && step.isCompleted,
                       // Skipped step
-                      "border-yellow-500 bg-gradient-to-br from-yellow-500 to-orange-500 text-white shadow-yellow-200 dark:shadow-yellow-900/50":
+                      'border-yellow-500 bg-gradient-to-br from-yellow-500 to-orange-500 text-white shadow-yellow-200 dark:shadow-yellow-900/50':
                         isPast && step.isSkipped,
                       // Future step
-                      "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted/50":
+                      'hover:border-primary/50 border-border bg-background text-muted-foreground hover:bg-muted/50':
                         isFuture,
                       // Past step (not completed or skipped)
-                      "border-muted-foreground/40 bg-muted text-muted-foreground":
+                      'border-muted-foreground/40 bg-muted text-muted-foreground':
                         isPast && !step.isCompleted && !step.isSkipped,
-                    }
+                    },
                   )}
                 >
-                  {isPast && step.isCompleted && <Check className="w-5 h-5" />}
+                  {isPast && step.isCompleted && <Check className="h-5 w-5" />}
                   {isPast && step.isSkipped && (
-                    <SkipForward className="w-4 h-4" />
+                    <SkipForward className="h-4 w-4" />
                   )}
                   {(isCurrent ||
                     isFuture ||
                     (isPast && !step.isCompleted && !step.isSkipped)) && (
-                    <step.icon className="w-5 h-5" />
+                    <step.icon className="h-5 w-5" />
                   )}
                 </div>
 
                 {/* Step Label */}
-                <div className="ml-3 hidden sm:block min-w-0">
+                <div className="ml-3 hidden min-w-0 sm:block">
                   <div
-                    className={cn("text-sm font-medium truncate max-w-32", {
-                      "text-blue-600 dark:text-blue-400": isCurrent,
-                      "text-green-600 dark:text-green-400":
+                    className={cn('max-w-32 truncate text-sm font-medium', {
+                      'text-blue-600 dark:text-blue-400': isCurrent,
+                      'text-green-600 dark:text-green-400':
                         isPast && step.isCompleted,
-                      "text-yellow-600 dark:text-yellow-400":
+                      'text-yellow-600 dark:text-yellow-400':
                         isPast && step.isSkipped,
                       // "text-muted-foreground": isFuture,
-                      "text-muted-foreground":
+                      'text-muted-foreground':
                         isPast && !step.isCompleted && !step.isSkipped,
                     })}
                   >
@@ -77,14 +77,14 @@ const ProgressIndicator: React.FC = () => {
               {index < steps.length - 1 && (
                 <div
                   className={cn(
-                    "w-8 h-1 mx-2 rounded-full transition-all duration-300",
+                    'mx-2 h-1 w-8 rounded-full transition-all duration-300',
                     {
-                      "bg-gradient-to-r from-blue-300 to-purple-400 dark:from-blue-600 dark:to-purple-700":
+                      'bg-gradient-to-r from-blue-300 to-purple-400 dark:from-blue-600 dark:to-purple-700':
                         currentStepIndex === stepNumber,
-                      "bg-gradient-to-r from-green-400 to-emerald-500 dark:from-green-600 dark:to-emerald-700":
+                      'bg-gradient-to-r from-green-400 to-emerald-500 dark:from-green-600 dark:to-emerald-700':
                         currentStepIndex > stepNumber,
-                      "bg-border dark:bg-border": currentStepIndex < stepNumber,
-                    }
+                      'bg-border dark:bg-border': currentStepIndex < stepNumber,
+                    },
                   )}
                 />
               )}
@@ -94,6 +94,6 @@ const ProgressIndicator: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
 export default ProgressIndicator;

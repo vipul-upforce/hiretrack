@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendData } from "./ApplicationTrendsChart";
-import { ApplicationTrendsLineChart } from "./application-trendline-chart";
-import { StatusBreakdownAreaChart } from "./status-breakdown-chart";
-import { GrowthRateChart } from "./growth-rate-chart";
-import { ConversionRateChart } from "./conversion-rate-chart";
+import React from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TrendData } from './ApplicationTrendsChart';
+import { ApplicationTrendsLineChart } from './application-trendline-chart';
+import { StatusBreakdownAreaChart } from './status-breakdown-chart';
+import { GrowthRateChart } from './growth-rate-chart';
+import { ConversionRateChart } from './conversion-rate-chart';
 
 interface ApplicationTrendsTabsProps {
   trendData: TrendData[];
@@ -14,11 +14,11 @@ interface ApplicationTrendsTabsProps {
   setShowMovingAverage: (value: boolean) => void;
 }
 
-const ApplicationTrendsTabs: React.FC<ApplicationTrendsTabsProps> = ({
+function ApplicationTrendsTabs({
   trendData,
   showMovingAverage,
   setShowMovingAverage,
-}) => {
+}: ApplicationTrendsTabsProps) {
   return (
     <Tabs defaultValue="trends" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -30,7 +30,7 @@ const ApplicationTrendsTabs: React.FC<ApplicationTrendsTabsProps> = ({
 
       <TabsContent value="trends" className="mt-4">
         <div className="h-[550px]">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="text-lg font-semibold">Application Volume Trends</h3>
             <div className="flex items-center gap-2">
               <input
@@ -54,7 +54,7 @@ const ApplicationTrendsTabs: React.FC<ApplicationTrendsTabsProps> = ({
 
       <TabsContent value="breakdown" className="mt-4">
         <div className="h-[550px]">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="mb-4 text-lg font-semibold">
             Application Status Breakdown Over Time
           </h3>
           <StatusBreakdownAreaChart data={trendData} />
@@ -63,7 +63,7 @@ const ApplicationTrendsTabs: React.FC<ApplicationTrendsTabsProps> = ({
 
       <TabsContent value="growth" className="mt-4">
         <div className="h-[550px]">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="mb-4 text-lg font-semibold">
             Period-over-Period Growth Rate
           </h3>
           <GrowthRateChart data={trendData} />
@@ -72,7 +72,7 @@ const ApplicationTrendsTabs: React.FC<ApplicationTrendsTabsProps> = ({
 
       <TabsContent value="conversion" className="mt-4">
         <div className="h-[550px]">
-          <h3 className="text-lg font-semibold mb-4">
+          <h3 className="mb-4 text-lg font-semibold">
             Conversion vs Rejection Rate Trends
           </h3>
           <ConversionRateChart data={trendData} />
@@ -80,6 +80,6 @@ const ApplicationTrendsTabs: React.FC<ApplicationTrendsTabsProps> = ({
       </TabsContent>
     </Tabs>
   );
-};
+}
 
 export default ApplicationTrendsTabs;

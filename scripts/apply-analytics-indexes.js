@@ -18,7 +18,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const {MONGODB_URI} = process.env;
 
 if (!MONGODB_URI) {
   console.error('❌ MONGODB_URI environment variable is required');

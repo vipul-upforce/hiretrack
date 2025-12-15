@@ -1,21 +1,19 @@
-export type FormObject = {
-  fields: CustomField[];
-  formName: string;
-};
+export type Types =
+  | 'text'
+  | 'number'
+  | 'email'
+  | 'password'
+  | 'date'
+  | 'time'
+  | 'datetime'
+  | 'checkbox'
+  | 'radio'
+  | 'select'
+  | 'multiSelect'
+  | 'textarea'
+  | 'file';
 
-export type SelectedFormObject = {
-  formId: string;
-  fields: CustomField[];
-  formName: string;
-};
-
-export type CustomFields = {
-  [key: string]: FormObject;
-};
-
-export type RegulerFormProps = {
-  setIsOpen: () => void;
-};
+export type Persistance = 'permanent' | 'temporary';
 
 export interface CustomField {
   id: string;
@@ -31,6 +29,23 @@ export interface CustomField {
   showOnCard?: boolean;
   privateInt?: boolean;
 }
+export type SelectedFormObject = {
+  formId: string;
+  fields: CustomField[];
+  formName: string;
+};
+export type FormObject = {
+  fields: CustomField[];
+  formName: string;
+};
+
+export type CustomFields = {
+  [key: string]: FormObject;
+};
+
+export type RegulerFormProps = {
+  setIsOpen: () => void;
+};
 
 export type CustomFieldFormProps = {
   isOpen: boolean;
@@ -39,20 +54,3 @@ export type CustomFieldFormProps = {
   existingFields?: CustomField[];
   isEditMode?: boolean;
 };
-
-export type Types =
-  | "text"
-  | "number"
-  | "email"
-  | "password"
-  | "date"
-  | "time"
-  | "datetime"
-  | "checkbox"
-  | "radio"
-  | "select"
-  | "multiSelect"
-  | "textarea"
-  | "file";
-
-export type Persistance = "permanent" | "temporary";

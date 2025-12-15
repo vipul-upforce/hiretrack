@@ -1,14 +1,14 @@
-import { toast } from "@/hooks/use-toast";
-import { CandidateColumn, CandidateStatus } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
+import { toast } from '@/hooks/use-toast';
+import { CandidateColumn, CandidateStatus } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
 import {
   useUpdateLanesMutation,
   useDeleteLaneMutation,
   useDeleteJobLaneMutation,
   useEditLaneMutation,
   useRenameJobLaneMutation,
-} from "@/lib/features/lane/laneApi";
-import { useState } from "react";
+} from '@/lib/features/lane/laneApi';
+import { useState } from 'react';
 
 interface UseKanbanBoardProps {
   columns: CandidateColumn[];
@@ -43,7 +43,7 @@ export const useKanbanBoard = ({
     try {
       // NEW: Use job-specific lanes if jobId is provided
       const updateData: any = {
-        userId: user?.id || "",
+        userId: user?.id || '',
         lanes: lansArray,
       };
 
@@ -54,30 +54,30 @@ export const useKanbanBoard = ({
       await updateLanes(updateData).unwrap();
 
       toast({
-        title: "Success",
+        title: 'Success',
         description: jobId
-          ? "Job lanes updated successfully"
-          : "Lanes updated successfully",
+          ? 'Job lanes updated successfully'
+          : 'Lanes updated successfully',
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }
   };
 
   const handleAddLane = (title: string) => {
-    const newLaneId = title.toLowerCase().replace(/\s+/g, "-");
+    const newLaneId = title.toLowerCase().replace(/\s+/g, '-');
     const isDuplicate = columns.some((column) => column.id === newLaneId);
     if (isDuplicate) {
       toast({
-        title: "Error",
+        title: 'Error',
         description: `Lane with title \"${title}\" already exists.`, // Corrected escaping for consistency
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -108,9 +108,9 @@ export const useKanbanBoard = ({
           laneName: laneId,
         }).unwrap();
         toast({
-          title: "Lane deleted",
-          description: "Lane deleted from this job successfully",
-          variant: "default",
+          title: 'Lane deleted',
+          description: 'Lane deleted from this job successfully',
+          variant: 'default',
         });
       } else {
         // Fallback to organization-wide deletion (for default lanes management)
@@ -119,9 +119,9 @@ export const useKanbanBoard = ({
           laneId,
         }).unwrap();
         toast({
-          title: "Lane deleted",
-          description: "Lane deleted successfully",
-          variant: "default",
+          title: 'Lane deleted',
+          description: 'Lane deleted successfully',
+          variant: 'default',
         });
       }
 
@@ -133,12 +133,11 @@ export const useKanbanBoard = ({
         setMigrationLanes(err.data.lanes);
         setIsMigrationDialogOpen(true);
       } else {
-        const errorMessage =
-          (err.data as { error: string }).error || "Failed to delete the lane";
+        const errorMessage = (err.data as { error: string }).error || 'Failed to delete the lane';
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }
@@ -157,20 +156,19 @@ export const useKanbanBoard = ({
           migrationLane,
         }).unwrap();
         toast({
-          title: "Lane deleted",
-          description: "Lane deleted and candidates migrated successfully",
-          variant: "default",
+          title: 'Lane deleted',
+          description: 'Lane deleted and candidates migrated successfully',
+          variant: 'default',
         });
       }
       const newColumns = columns.filter((col) => col.id !== laneToDelete);
       setColumns(newColumns);
     } catch (err: any) {
-      const errorMessage =
-        (err.data as { error: string }).error || "Failed to delete the lane";
+      const errorMessage = (err.data as { error: string }).error || 'Failed to delete the lane';
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     }
     setIsMigrationDialogOpen(false);
@@ -189,38 +187,37 @@ export const useKanbanBoard = ({
           newLaneName: laneId,
         }).unwrap();
         toast({
-          title: "Success",
-          description: "Lane renamed for this job successfully",
-          variant: "default",
+          title: 'Success',
+          description: 'Lane renamed for this job successfully',
+          variant: 'default',
         });
       } else {
         // Fallback to organization-wide renaming (for default lanes management)
         await editLane({
           organizationId: user.organizationId as string,
-          prevLaneId: prevLaneId,
+          prevLaneId,
           newLaneId: laneId,
         }).unwrap();
         toast({
-          title: "Success",
-          description: "Lane edited successfully",
-          variant: "default",
+          title: 'Success',
+          description: 'Lane edited successfully',
+          variant: 'default',
         });
       }
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "data" in err) {
-        const errorMessage =
-          (err.data as { error: string }).error || "Failed to edit the lane";
+      if (err && typeof err === 'object' && 'data' in err) {
+        const errorMessage = (err.data as { error: string }).error || 'Failed to edit the lane';
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } else {
-        const errorMessage = "An unknown error occurred";
+        const errorMessage = 'An unknown error occurred';
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }

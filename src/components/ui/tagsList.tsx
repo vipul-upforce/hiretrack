@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import type { Candidate } from "@/types/candidate";
+import type { Candidate } from '@/types/candidate';
 // import { \ } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 
-const TagsList = ({ candidate }: { candidate: Candidate }) => {
+function TagsList({ candidate }: { candidate: Candidate }) {
   // const [hoveredTag, setHoveredTag] = useState<number | null>(null);
 
   if (!candidate.tags || candidate.tags.length === 0) return null;
@@ -39,6 +39,6 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
       </div>
     </TooltipProvider>
   );
-};
+}
 
 export default TagsList;

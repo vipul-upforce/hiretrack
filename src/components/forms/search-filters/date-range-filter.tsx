@@ -1,14 +1,15 @@
-"use client";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { DatePicker } from "@/components/ui/date-picker";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+} from '@/components/ui/popover';
+import { DatePicker } from '@/components/ui/date-picker';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface DateRangeFilterProps {
   createdAfter: string;
@@ -32,7 +33,7 @@ export function DateRangeFilter({
       return !isNaN(dateValue.getTime()) ? dateValue : null;
     }
 
-    if (dateValue && typeof dateValue.toDate === "function") {
+    if (dateValue && typeof dateValue.toDate === 'function') {
       try {
         const date = dateValue.toDate();
         return !isNaN(date.getTime()) ? date : null;
@@ -41,12 +42,12 @@ export function DateRangeFilter({
       }
     }
 
-    if (typeof dateValue === "string") {
+    if (typeof dateValue === 'string') {
       const date = new Date(dateValue);
       return !isNaN(date.getTime()) ? date : null;
     }
 
-    if (typeof dateValue === "number") {
+    if (typeof dateValue === 'number') {
       const date = new Date(dateValue);
       return !isNaN(date.getTime()) ? date : null;
     }
@@ -63,9 +64,9 @@ export function DateRangeFilter({
             <Button
               variant="outline"
               className={`w-full justify-start text-left font-normal h-9 ${
-                hasError("createdAfter") || hasError("createdBefore")
-                  ? "border-destructive"
-                  : ""
+                hasError('createdAfter') || hasError('createdBefore')
+                  ? 'border-destructive'
+                  : ''
               }`}
             >
               <CalendarIcon className="mr-2 h-3 w-3" />
@@ -78,29 +79,38 @@ export function DateRangeFilter({
                   : null;
 
                 const isValidAfter = afterDate && !isNaN(afterDate.getTime());
-                const isValidBefore =
-                  beforeDate && !isNaN(beforeDate.getTime());
+                const isValidBefore = beforeDate && !isNaN(beforeDate.getTime());
 
                 if (isValidAfter && isValidBefore) {
                   return (
                     <span>
-                      {format(afterDate, "MMM dd")} -{" "}
-                      {format(beforeDate, "MMM dd, yyyy")}
+                      {format(afterDate, 'MMM dd')}
+                      {' '}
+                      -
+                      {' '}
+                      {format(beforeDate, 'MMM dd, yyyy')}
                     </span>
                   );
-                } else if (isValidAfter) {
-                  return <span>From {format(afterDate, "MMM dd, yyyy")}</span>;
-                } else if (isValidBefore) {
+                } if (isValidAfter) {
                   return (
-                    <span>Until {format(beforeDate, "MMM dd, yyyy")}</span>
+                    <span>
+                      From
+                      {format(afterDate, 'MMM dd, yyyy')}
+                    </span>
                   );
-                } else {
+                } if (isValidBefore) {
                   return (
-                    <span className="text-muted-foreground">
-                      Select date range
+                    <span>
+                      Until
+                      {format(beforeDate, 'MMM dd, yyyy')}
                     </span>
                   );
                 }
+                return (
+                  <span className="text-muted-foreground">
+                    Select date range
+                  </span>
+                );
               })()}
             </Button>
           </PopoverTrigger>
@@ -116,8 +126,8 @@ export function DateRangeFilter({
                     const beforeDate = new Date(beforeStr);
 
                     if (
-                      !isNaN(afterDate.getTime()) &&
-                      !isNaN(beforeDate.getTime())
+                      !isNaN(afterDate.getTime())
+                      && !isNaN(beforeDate.getTime())
                     ) {
                       return [afterDate, beforeDate];
                     }
@@ -136,34 +146,34 @@ export function DateRangeFilter({
                   if (start) {
                     const startOfDay = new Date(start);
                     startOfDay.setHours(0, 0, 0, 0);
-                    setFieldValue("createdAfter", startOfDay.toISOString());
+                    setFieldValue('createdAfter', startOfDay.toISOString());
                   } else {
-                    setFieldValue("createdAfter", "");
+                    setFieldValue('createdAfter', '');
                   }
 
                   if (end) {
                     const endOfDay = new Date(end);
                     endOfDay.setHours(23, 59, 59, 999);
-                    setFieldValue("createdBefore", endOfDay.toISOString());
+                    setFieldValue('createdBefore', endOfDay.toISOString());
                   } else {
-                    setFieldValue("createdBefore", "");
+                    setFieldValue('createdBefore', '');
                   }
                 } else {
-                  setFieldValue("createdAfter", "");
-                  setFieldValue("createdBefore", "");
+                  setFieldValue('createdAfter', '');
+                  setFieldValue('createdBefore', '');
                 }
               }}
-              range={true}
+              range
               showTimePicker={false}
               format="MM/DD/YYYY"
               placeholder="Select date range"
             />
           </PopoverContent>
         </Popover>
-        {(hasError("createdAfter") || hasError("createdBefore")) && (
+        {(hasError('createdAfter') || hasError('createdBefore')) && (
           <p className="text-xs text-destructive">
-            {getErrorMessage("createdAfter") ||
-              getErrorMessage("createdBefore")}
+            {getErrorMessage('createdAfter')
+              || getErrorMessage('createdBefore')}
           </p>
         )}
       </div>

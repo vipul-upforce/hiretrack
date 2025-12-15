@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { DateRange } from "react-day-picker";
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { DateRange } from 'react-day-picker';
 
 export interface AnalyticsFilters {
   dateRange?: DateRange;
@@ -7,7 +7,7 @@ export interface AnalyticsFilters {
   candidateStatuses?: string[];
   interviewerIds?: string[];
   locations?: string[];
-  granularity?: "daily" | "weekly" | "monthly";
+  granularity?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface SerializedAnalyticsFilters {
@@ -19,7 +19,7 @@ export interface SerializedAnalyticsFilters {
   candidateStatuses?: string[];
   interviewerIds?: string[];
   locations?: string[];
-  granularity?: "daily" | "weekly" | "monthly";
+  granularity?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface AnalyticsResponse<T> {
@@ -59,19 +59,19 @@ const buildQueryParams = ({ organizationId, filters }: AnalyticsQueryArgs) => {
   }
 
   if (filters?.jobIds?.length) {
-    params.jobIds = filters.jobIds.join(",");
+    params.jobIds = filters.jobIds.join(',');
   }
 
   if (filters?.candidateStatuses?.length) {
-    params.statuses = filters.candidateStatuses.join(",");
+    params.statuses = filters.candidateStatuses.join(',');
   }
 
   if (filters?.interviewerIds?.length) {
-    params.interviewerIds = filters.interviewerIds.join(",");
+    params.interviewerIds = filters.interviewerIds.join(',');
   }
 
   if (filters?.locations?.length) {
-    params.locations = filters.locations.join(",");
+    params.locations = filters.locations.join(',');
   }
 
   if (filters?.granularity) {
@@ -82,26 +82,26 @@ const buildQueryParams = ({ organizationId, filters }: AnalyticsQueryArgs) => {
 };
 
 export const analyticsApi = createApi({
-  reducerPath: "analyticsApi",
+  reducerPath: 'analyticsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api/analytics",
-    credentials: "include",
+    baseUrl: '/api/analytics',
+    credentials: 'include',
     prepareHeaders: (headers) => {
-      headers.set("Content-Type", "application/json");
+      headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),
-  tagTypes: ["Analytics"],
+  tagTypes: ['Analytics'],
   endpoints: (builder) => ({
     fetchAnalytics: builder.query<AnalyticsResponse<any>, AnalyticsQueryArgs>({
       query: (args) => ({
-        url: `/${args.endpoint.replace(/^\/+/, "")}`,
-        method: "GET",
+        url: `/${args.endpoint.replace(/^\/+/, '')}`,
+        method: 'GET',
         params: buildQueryParams(args),
       }),
       providesTags: (_result, _error, arg) => [
         {
-          type: "Analytics",
+          type: 'Analytics',
           id: `${arg.endpoint}`,
         },
       ],

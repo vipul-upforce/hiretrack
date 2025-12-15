@@ -1,21 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import { Candidate } from "@/lib/mongodb";
-import dayjs from "dayjs";
-import { CustomField } from "@/Custom_Fields/Types/CustomField";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Candidate } from '@/lib/mongodb';
+import dayjs from 'dayjs';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { logger } from '@/lib/logger/logger.server';
 import {
   buildDateRangeCondition,
   buildTimeRangeCondition,
   getKeysType,
-} from "./util";
+} from './util';
 
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
 
     const body = await request.json();
-    const page = parseInt(request.nextUrl.searchParams.get("page") || "1");
-    const limit = parseInt(request.nextUrl.searchParams.get("limit") || "20");
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1', 10);
+    const limit = parseInt(request.nextUrl.searchParams.get('limit') || '20', 10);
     const skip = (page - 1) * limit;
     const {
       name,
@@ -31,30 +31,30 @@ export async function POST(request: NextRequest) {
       createdBefore,
       organizationId,
       customFields,
-      logicOperator = "$or",
+      logicOperator = '$or',
     } = body;
 
     const query: Record<string, any> = { [logicOperator]: [] };
 
     const addLogicCondition = (condition: Record<string, unknown>) => {
-      if (!Array.isArray(query[logicOperator])) {
-        query[logicOperator] = [];
+      if (!Array.isArray(query.logicOperator)) {
+        query.logicOperator = [];
       }
-      (query[logicOperator] as Record<string, unknown>[]).push(condition);
+      (query.logicOperator as Record<string, unknown>[]).push(condition);
     };
 
     if (organizationId) {
       if (!query.$and) query.$and = [];
-      query.$and.push({ organizationId: organizationId });
+      query.$and.push({ organizationId });
     } else {
-      return NextResponse.json({ error: "Please Add OrgID" }, { status: 500 });
+      return NextResponse.json({ error: 'Please Add OrgID' }, { status: 500 });
     }
 
     if (name) {
       addLogicCondition({
         name: {
           $regex: name.trim(),
-          $options: "i",
+          $options: 'i',
         },
       });
     }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       const skillsConditions = skills.map((skill: string) => ({
         skills: {
           $regex: skill.trim(),
-          $options: "i",
+          $options: 'i',
         },
       }));
 
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       addLogicCondition({
         location: {
           $regex: location.trim(),
-          $options: "i",
+          $options: 'i',
         },
       });
     }
@@ -106,10 +106,10 @@ export async function POST(request: NextRequest) {
       const dateQuery: { $gte?: Date; $lte?: Date } = {};
       if (createdAfter) dateQuery.$gte = new Date(createdAfter);
       if (createdBefore) dateQuery.$lte = new Date(createdBefore);
-      addLogicCondition({ "tracking.createdAt": dateQuery });
+      addLogicCondition({ 'tracking.createdAt': dateQuery });
     }
 
-    if (customFields && typeof customFields === "object") {
+    if (customFields && typeof customFields === 'object') {
       const types = (await getKeysType(organizationId)) || [];
 
       Object.entries(customFields).forEach(([key, value]) => {
@@ -119,19 +119,19 @@ export async function POST(request: NextRequest) {
 
         const fieldPath = `customFields.${key}`;
         const matchedType = types.find(
-          (type: CustomField) => type.label === key
+          (type: CustomField) => type.label === key,
         );
         const fieldType = matchedType?.type;
 
         if (
           fieldType &&
-          (fieldType === "date" || fieldType === "datetime") &&
+          (fieldType === 'date' || fieldType === 'datetime') &&
           Array.isArray(value)
         ) {
           const dateCondition = buildDateRangeCondition(
             fieldPath,
             value,
-            fieldType
+            fieldType,
           );
 
           if (dateCondition) {
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        if (fieldType === "time" && Array.isArray(value)) {
+        if (fieldType === 'time' && Array.isArray(value)) {
           const timeCondition = buildTimeRangeCondition(fieldPath, value);
           if (timeCondition) {
             addLogicCondition(timeCondition);
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
           const fallbackCondition = buildDateRangeCondition(
             fieldPath,
             value,
-            "datetime"
+            'datetime',
           );
           if (fallbackCondition) {
             addLogicCondition(fallbackCondition);
@@ -164,11 +164,11 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        if (typeof value === "string" && value.trim() !== "") {
+        if (typeof value === 'string' && value.trim() !== '') {
           addLogicCondition({
             [fieldPath]: {
               $regex: value,
-              $options: "i",
+              $options: 'i',
             },
           });
           return;
@@ -176,8 +176,8 @@ export async function POST(request: NextRequest) {
 
         if (Array.isArray(value) && value.length > 0) {
           const regexArray = value
-            .filter((v) => typeof v === "string" && v.trim() !== "")
-            .map((v) => new RegExp(v, "i"));
+            .filter((v) => typeof v === 'string' && v.trim() !== '')
+            .map((v) => new RegExp(v, 'i'));
 
           if (regexArray.length > 0) {
             addLogicCondition({
@@ -191,12 +191,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!Candidate) {
-      throw new Error("Candidate model is not available");
+      throw new Error('Candidate model is not available');
     }
 
     const candidatesResult = await Candidate.aggregate([
       { $match: query },
-      { $sort: { "tracking.createdAt": -1 } },
+      { $sort: { 'tracking.createdAt': -1 } },
 
       // $facet to run two pipelines: paginated data and total count
       {
@@ -207,145 +207,145 @@ export async function POST(request: NextRequest) {
             // all your existing lookups and projections go here
             {
               $lookup: {
-                from: "users",
-                localField: "remarks.userId",
-                foreignField: "_id",
-                as: "remarksUser",
+                from: 'users',
+                localField: 'remarks.userId',
+                foreignField: '_id',
+                as: 'remarksUser',
               },
             },
             {
               $lookup: {
-                from: "users",
-                localField: "assignment.interviewerId",
-                foreignField: "_id",
-                as: "interviewer",
+                from: 'users',
+                localField: 'assignment.interviewerId',
+                foreignField: '_id',
+                as: 'interviewer',
               },
             },
             {
               $unwind: {
-                path: "$interviewer",
+                path: '$interviewer',
                 preserveNullAndEmptyArrays: true,
               },
             },
             {
               $lookup: {
-                from: "jobs",
-                localField: "jobId",
-                foreignField: "_id",
-                as: "job",
+                from: 'jobs',
+                localField: 'jobId',
+                foreignField: '_id',
+                as: 'job',
               },
             },
             {
               $unwind: {
-                path: "$job",
+                path: '$job',
                 preserveNullAndEmptyArrays: true,
               },
             },
             {
               $lookup: {
-                from: "histories",
+                from: 'histories',
                 let: {
-                  jobId: { $toString: "$jobId" },
-                  candidateId: { $toString: "$_id" },
+                  jobId: { $toString: '$jobId' },
+                  candidateId: { $toString: '$_id' },
                 },
                 pipeline: [
                   {
-                    $unwind: "$history",
+                    $unwind: '$history',
                   },
                   {
                     $match: {
                       $expr: {
                         $and: [
-                          { $eq: [{ $toString: "$jobId" }, "$$jobId"] },
+                          { $eq: [{ $toString: '$jobId' }, '$$jobId'] },
                           {
                             $eq: [
-                              { $toString: "$candidateId" },
-                              "$$candidateId",
+                              { $toString: '$candidateId' },
+                              '$$candidateId',
                             ],
                           },
                         ],
                       },
                     },
                   },
-                  { $unwind: "$history" },
+                  { $unwind: '$history' },
                   {
                     $lookup: {
-                      from: "users",
-                      localField: "history.assignmentBy",
-                      foreignField: "_id",
-                      as: "history.assignmentBy",
+                      from: 'users',
+                      localField: 'history.assignmentBy',
+                      foreignField: '_id',
+                      as: 'history.assignmentBy',
                     },
                   },
                   {
                     $unwind: {
-                      path: "$history.assignmentBy",
+                      path: '$history.assignmentBy',
                       preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
                     $lookup: {
-                      from: "users",
-                      localField: "history.currentInterviewer",
-                      foreignField: "_id",
-                      as: "history.currentInterviewer",
+                      from: 'users',
+                      localField: 'history.currentInterviewer',
+                      foreignField: '_id',
+                      as: 'history.currentInterviewer',
                     },
                   },
                   {
                     $unwind: {
-                      path: "$history.currentInterviewer",
+                      path: '$history.currentInterviewer',
                       preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
                     $lookup: {
-                      from: "users",
-                      localField: "history.previousInterviewer",
-                      foreignField: "_id",
-                      as: "history.previousInterviewer",
+                      from: 'users',
+                      localField: 'history.previousInterviewer',
+                      foreignField: '_id',
+                      as: 'history.previousInterviewer',
                     },
                   },
                   {
                     $unwind: {
-                      path: "$history.previousInterviewer",
+                      path: '$history.previousInterviewer',
                       preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
                     $unwind: {
-                      path: "$history.note",
+                      path: '$history.note',
                       preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
                     $lookup: {
-                      from: "users",
-                      localField: "history.note.userId",
-                      foreignField: "_id",
-                      as: "history.note.userId",
+                      from: 'users',
+                      localField: 'history.note.userId',
+                      foreignField: '_id',
+                      as: 'history.note.userId',
                     },
                   },
                   {
                     $unwind: {
-                      path: "$history.note.userId",
+                      path: '$history.note.userId',
                       preserveNullAndEmptyArrays: true,
                     },
                   },
                   {
                     $group: {
-                      _id: "$_id",
-                      jobId: { $first: "$jobId" },
-                      candidateId: { $first: "$candidateId" },
-                      history: { $push: "$history" },
+                      _id: '$_id',
+                      jobId: { $first: '$jobId' },
+                      candidateId: { $first: '$candidateId' },
+                      history: { $push: '$history' },
                     },
                   },
                 ],
-                as: "history",
+                as: 'history',
               },
             },
             {
               $project: {
                 _id: 1,
-                jobId: "$job",
+                jobId: '$job',
                 organizationId: 1,
                 name: 1,
                 location: 1,
@@ -365,15 +365,15 @@ export async function POST(request: NextRequest) {
                 customFields: 1,
                 tracking: 1,
                 isDeleted: 1,
-                history: { $arrayElemAt: ["$history.history", 0] },
+                history: { $arrayElemAt: ['$history.history', 0] },
                 assignment: {
                   $mergeObjects: [
-                    "$assignment",
+                    '$assignment',
                     {
                       interviewerId: {
-                        _id: "$interviewer._id",
-                        name: "$interviewer.name",
-                        email: "$interviewer.email",
+                        _id: '$interviewer._id',
+                        name: '$interviewer.name',
+                        email: '$interviewer.email',
                       },
                     },
                   ],
@@ -381,7 +381,7 @@ export async function POST(request: NextRequest) {
               },
             },
           ],
-          totalCount: [{ $count: "count" }],
+          totalCount: [{ $count: 'count' }],
         },
       },
     ]);
@@ -399,12 +399,13 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error in candidate filtering.');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "An unknown error occurred" },
-      { status: 500 }
+      { error: 'An unknown error occurred' },
+      { status: 500 },
     );
   }
 }

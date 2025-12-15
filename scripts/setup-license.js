@@ -24,7 +24,7 @@ function log(message, color = 'reset') {
 // Generate machine code
 function generateMachineCode() {
   const os = process.platform;
-  const arch = process.arch;
+  const {arch} = process;
   const hostname = require('os').hostname();
   const networkInterfaces = require('os').networkInterfaces();
   

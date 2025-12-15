@@ -84,10 +84,10 @@ export interface TrendData {
   processingCount: number;
   acceptedCount: number;
   rejectedCount: number;
-  trend: "up" | "down" | "stable";
+  trend: 'up' | 'down' | 'stable';
   growthRate: number;
   jobDiversity: number;
-  periodType: "daily" | "weekly" | "monthly";
+  periodType: 'daily' | 'weekly' | 'monthly';
   conversionRate: number;
   rejectionRate: number;
   movingAverage?: number;
@@ -97,7 +97,7 @@ export interface ScoreData {
   scoreRange: string;
   count: number;
   percentage: number;
-  dimension: "overall" | "experience" | "skills" | "affordability" | "education" | "projects" | "certifications";
+  dimension: 'overall' | 'experience' | 'skills' | 'affordability' | 'education' | 'projects' | 'certifications';
 }
 
 export interface GeographicData {

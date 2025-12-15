@@ -1,13 +1,15 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronRight, Bell } from "lucide-react";
-import Link from "next/link";
-import { INotification } from "@/lib/models/notification";
-import { NotificationItem } from "@/components/ui/notifications/NotificationItem";
-import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
-import UniqueLoading from "@/components/ui/morph-loading";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ChevronRight, Bell } from 'lucide-react';
+import Link from 'next/link';
+import { INotification } from '@/lib/models/notification';
+import { NotificationItem } from '@/components/ui/notifications/NotificationItem';
+import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
+import UniqueLoading from '@/components/ui/morph-loading';
 
 interface RecentActivitiesProps {
   notifications: INotification[];
@@ -52,7 +54,7 @@ export default function RecentActivities({
                   notification={notification}
                   onClick={onNotificationClick}
                   className="hover:bg-muted/50 transition-colors"
-                  disableReadStyling={true}
+                  disableReadStyling
                 />
               ))}
             </div>

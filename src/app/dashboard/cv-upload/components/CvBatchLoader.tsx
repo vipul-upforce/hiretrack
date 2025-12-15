@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
-const CvBatchLoader = () => {
+function CvBatchLoader() {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <Skeleton className="h-6 w-48" /> {/* Section title */}
+        <Skeleton className="h-6 w-48" />
+        {' '}
+        {/* Section title */}
         {[1, 2, 3, 4, 5, 6, 7].map((i) => (
           <div key={i} className="border rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
@@ -26,6 +28,6 @@ const CvBatchLoader = () => {
       </div>
     </div>
   );
-};
+}
 
 export default CvBatchLoader;

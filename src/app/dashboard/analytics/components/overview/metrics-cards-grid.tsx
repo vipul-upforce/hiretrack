@@ -1,12 +1,15 @@
-"use client";
-import { MetricCard } from "./metric-card";
+'use client';
+
 import {
   UsersIcon,
   BriefcaseIcon,
   ClockIcon,
   BarChartIcon,
-} from "lucide-react";
-import type { FunnelData, JobData, InterviewData, TrendsData } from "../types";
+} from 'lucide-react';
+import { MetricCard } from './metric-card';
+import type {
+  FunnelData, JobData, InterviewData, TrendsData,
+} from '../types';
 
 interface MetricsCardsGridProps {
   funnelData: FunnelData;
@@ -43,21 +46,21 @@ export function MetricsCardsGrid({
         iconBgColor="bg-blue-100 dark:bg-blue-950/20"
         mainValue={`${funnelData?.summary?.overallConversionRate || 0}%`}
         showTrendIcon={
-          !isLoadingFunnel &&
-          (funnelData?.summary?.overallConversionRate || 0) > 10
+          !isLoadingFunnel
+          && (funnelData?.summary?.overallConversionRate || 0) > 10
         }
         trendIsPositive
         secondaryMetrics={[
           {
-            label: "Total",
+            label: 'Total',
             value: `${funnelData?.summary?.totalCandidates || 0} candidates`,
           },
           {
-            label: "Accepted",
+            label: 'Accepted',
             value: funnelData?.summary?.acceptedCandidates || 0,
           },
         ]}
-        onDetailsClick={() => onNavigateToTab("funnel")}
+        onDetailsClick={() => onNavigateToTab('funnel')}
         isLoading={isLoadingFunnel}
       />
 
@@ -73,15 +76,15 @@ export function MetricsCardsGrid({
         showTrendIcon={false}
         secondaryMetrics={[
           {
-            label: "Success Rate",
+            label: 'Success Rate',
             value: `${jobData?.summary?.overallSuccessRate || 0}%`,
           },
           {
-            label: "Applications",
+            label: 'Applications',
             value: jobData?.summary?.totalApplications || 0,
           },
         ]}
-        onDetailsClick={() => onNavigateToTab("jobs")}
+        onDetailsClick={() => onNavigateToTab('jobs')}
         isLoading={isLoadingJob}
         detailsButtonLabel="Show Details"
       />
@@ -96,21 +99,21 @@ export function MetricsCardsGrid({
         iconBgColor="bg-purple-100 dark:bg-purple-950/20"
         mainValue={`${interviewData?.summary?.overallCompletionRate || 0}%`}
         showTrendIcon={
-          !isLoadingInterview &&
-          (interviewData?.summary?.overallCompletionRate || 0) > 80
+          !isLoadingInterview
+          && (interviewData?.summary?.overallCompletionRate || 0) > 80
         }
         trendIsPositive
         secondaryMetrics={[
           {
-            label: "Interviewers",
+            label: 'Interviewers',
             value: interviewData?.summary?.totalInterviewers || 0,
           },
           {
-            label: "Total Assignments",
+            label: 'Total Assignments',
             value: interviewData?.summary?.totalAssignments || 0,
           },
         ]}
-        onDetailsClick={() => onNavigateToTab("interviews")}
+        onDetailsClick={() => onNavigateToTab('interviews')}
         isLoading={isLoadingInterview}
       />
 
@@ -126,15 +129,15 @@ export function MetricsCardsGrid({
         showTrendIcon={false}
         secondaryMetrics={[
           {
-            label: "Conversion",
+            label: 'Conversion',
             value: `${trendsData?.summary?.overallConversionRate || 0}%`,
           },
           {
-            label: "Daily Avg",
+            label: 'Daily Avg',
             value: trendsData?.summary?.avgApplicationsPerPeriod || 0,
           },
         ]}
-        onDetailsClick={() => onNavigateToTab("trends")}
+        onDetailsClick={() => onNavigateToTab('trends')}
         isLoading={isLoadingTrends}
       />
     </div>

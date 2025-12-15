@@ -1,24 +1,24 @@
-import { GoogleGenerativeAI, Part } from "@google/generative-ai";
-import { BaseAIProvider } from "./base-provider";
-import { ProcessedResumeData } from "./types";
-import { getDefaultModel } from "./models-config";
+import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+import { BaseAIProvider } from './base-provider';
+import { ProcessedResumeData } from './types';
+import { getDefaultModel } from './models-config';
 
 export class GeminiProvider extends BaseAIProvider {
-  name = "gemini";
+  name = 'gemini';
 
   async processResume(
     base64Resume: string,
     apiKey: string,
-    modelName?: string
+    modelName?: string,
   ): Promise<ProcessedResumeData> {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const selectedModel = modelName || getDefaultModel("gemini");
+      const selectedModel = modelName || getDefaultModel('gemini');
 
       const model = genAI.getGenerativeModel({
         model: selectedModel,
         generationConfig: {
-          responseMimeType: "application/json",
+          responseMimeType: 'application/json',
           temperature: 0.1,
         },
       });
@@ -32,12 +32,12 @@ No explanations, no markdown, no extra text.
       const result = await model.generateContent({
         contents: [
           {
-            role: "user",
+            role: 'user',
             parts: [
-              { text: prompt + "\n\n" + this.getStandardPrompt() },
+              { text: `${prompt}\n\n${this.getStandardPrompt()}` },
               {
                 inlineData: {
-                  mimeType: "application/pdf",
+                  mimeType: 'application/pdf',
                   data: base64Resume,
                 },
               },
@@ -48,7 +48,7 @@ No explanations, no markdown, no extra text.
 
       const raw = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!raw) throw new Error("No valid JSON response from Gemini");
+      if (!raw) throw new Error('No valid JSON response from Gemini');
 
       const cleaned = this.cleanJsonResponse(raw);
       return this.parseJsonResponse(cleaned);
@@ -56,7 +56,7 @@ No explanations, no markdown, no extra text.
       throw new Error(
         error instanceof Error
           ? error.message
-          : "Failed to process resume with Gemini"
+          : 'Failed to process resume with Gemini',
       );
     }
   }
@@ -66,16 +66,16 @@ No explanations, no markdown, no extra text.
     apiKey: string,
     prompt: string,
     modelName?: string,
-    temperature?: number
+    temperature?: number,
   ): Promise<string> {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const selectedModel = modelName || getDefaultModel("gemini");
+      const selectedModel = modelName || getDefaultModel('gemini');
 
       const model = genAI.getGenerativeModel({
         model: selectedModel,
         generationConfig: {
-          responseMimeType: "application/json",
+          responseMimeType: 'application/json',
           temperature: temperature ?? 0.1,
         },
       });
@@ -89,12 +89,12 @@ Never include explanations, markdown, or commentary.
       const result = await model.generateContent({
         contents: [
           {
-            role: "user",
+            role: 'user',
             parts: [
-              { text: systemPrompt + "\n\n" + prompt },
+              { text: `${systemPrompt}\n\n${prompt}` },
               {
                 inlineData: {
-                  mimeType: "application/pdf",
+                  mimeType: 'application/pdf',
                   data: resumeBase64,
                 },
               },
@@ -105,56 +105,55 @@ Never include explanations, markdown, or commentary.
 
       const text = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!text) throw new Error("No valid JSON response from Gemini");
+      if (!text) throw new Error('No valid JSON response from Gemini');
 
       return text;
     } catch (error) {
       throw new Error(
         error instanceof Error
           ? error.message
-          : "Failed to evaluate resume with Gemini"
+          : 'Failed to evaluate resume with Gemini',
       );
     }
   }
 
   async validateApiKey(
     apiKey: string,
-    modelName?: string
+    modelName?: string,
   ): Promise<{ isValid: boolean; error?: string }> {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const selectedModel = modelName || getDefaultModel("gemini");
+      const selectedModel = modelName || getDefaultModel('gemini');
       const model = genAI.getGenerativeModel({
         model: selectedModel,
-        generationConfig: { responseMimeType: "application/json" },
+        generationConfig: { responseMimeType: 'application/json' },
       });
 
       const result = await model.generateContent({
         contents: [
           {
-            role: "user",
+            role: 'user',
             parts: [{ text: 'Return {"status": "ok"}' }],
           },
         ],
       });
 
       if (!result?.response) {
-        return { isValid: false, error: "No response received from Gemini" };
+        return { isValid: false, error: 'No response received from Gemini' };
       }
 
       return { isValid: true };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-      if (errorMessage.includes("API_KEY_INVALID"))
-        return { isValid: false, error: "Invalid API key" };
+      if (errorMessage.includes('API_KEY_INVALID')) return { isValid: false, error: 'Invalid API key' };
 
-      if (errorMessage.includes("model"))
+      if (errorMessage.includes('model')) {
         return {
           isValid: false,
-          error: `Model '${modelName || getDefaultModel("gemini")}' not found`,
+          error: `Model '${modelName || getDefaultModel('gemini')}' not found`,
         };
+      }
 
       return { isValid: false, error: errorMessage };
     }

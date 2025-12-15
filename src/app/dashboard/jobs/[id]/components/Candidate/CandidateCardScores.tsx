@@ -3,8 +3,8 @@
  * Displays evaluation scores in circular format
  */
 
-import { Candidate } from "@/types/candidate";
-import { GridCircularScores } from "../Utils/circular-score";
+import { Candidate } from '@/types/candidate';
+import { GridCircularScores } from '../Utils/circular-score';
 
 interface CandidateCardScoresProps {
   candidate: Candidate;
@@ -26,4 +26,3 @@ export function CandidateCardScores({ candidate }: CandidateCardScoresProps) {
     </div>
   );
 }
-

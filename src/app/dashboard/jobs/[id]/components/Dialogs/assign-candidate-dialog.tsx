@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { Formik, Form, FormikHelpers } from "formik";
+import { useEffect, useState } from 'react';
+import { Formik, Form, FormikHelpers } from 'formik';
 import {
   Dialog,
   DialogContent,
@@ -9,29 +9,30 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useFetchInterviewersQuery } from "@/lib/features/user/userApi";
-import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Loader2 } from "lucide-react";
-import { useGetGoogleCalendarConfigQuery } from "@/lib/features/settings/settingsApi";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { useFetchInterviewersQuery } from '@/lib/features/user/userApi';
+import { Textarea } from '@/components/ui/textarea';
+import { Trash2, Loader2 } from 'lucide-react';
+import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings/settingsApi';
+import { useToast } from '@/hooks/use-toast';
+import dayjs from 'dayjs';
+import { useSelector } from 'react-redux';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import logger from '@/lib/logger';
+import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 import {
   validationSchema,
   FormValues,
   User,
   AssignCandidateDialogProps,
-} from "../../schemas/AssignCandidateSchema";
-import { useAssignCandidate } from "../../hooks/useAssignCandidate";
-import dayjs from "dayjs";
-import { useSelector } from "react-redux";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { InterviewerSelector } from "./assign-candidate-components/InterviewerSelector";
-import { DateTimePickerSection } from "./assign-candidate-components/DateTimePickerSection";
-import { GoogleMeetIntegration } from "./assign-candidate-components/GoogleMeetIntegration";
-import { AssignmentDetailsSection } from "./assign-candidate-components/AssignmentDetailsSection";
-import ConfirmationDialog from "./ConfirmationDialog";
+} from '../../schemas/AssignCandidateSchema';
+import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
+import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
+import { GoogleMeetIntegration } from './assign-candidate-components/GoogleMeetIntegration';
+import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
+import ConfirmationDialog from './ConfirmationDialog';
 
 export function AssignCandidateDialog({
   candidate,
@@ -45,7 +46,7 @@ export function AssignCandidateDialog({
 }: AssignCandidateDialogProps) {
   const { toast } = useToast();
   const [showCancelMeetDialog, setShowCancelMeetDialog] = useState(false);
-  const [cancelNotes, setCancelNotes] = useState("");
+  const [cancelNotes, setCancelNotes] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
 
   const { user: reduxUser } = useSelector((state: any) => state.auth || {});
@@ -53,17 +54,15 @@ export function AssignCandidateDialog({
   // Cast Redux user to schema User type
   const user: User | null = reduxUser
     ? {
-        id: reduxUser.id || reduxUser._id || "",
-        name: reduxUser.name || "",
-        email: reduxUser.email || "",
-        role: reduxUser.role || "",
-        organizationInfo: reduxUser.organizationInfo || undefined,
-      }
+      id: reduxUser.id || reduxUser._id || '',
+      name: reduxUser.name || '',
+      email: reduxUser.email || '',
+      role: reduxUser.role || '',
+      organizationInfo: reduxUser.organizationInfo || undefined,
+    }
     : null;
-  const { data: interviewers, refetch: refetchInterviewers } =
-    useFetchInterviewersQuery();
-  const { data: googleCalendarData } =
-    useGetGoogleCalendarConfigQuery(undefined);
+  const { data: interviewers, refetch: refetchInterviewers } = useFetchInterviewersQuery();
+  const { data: googleCalendarData } = useGetGoogleCalendarConfigQuery(undefined);
   const {
     confirmUnassignOpen,
     setConfirmUnassignOpen,
@@ -89,8 +88,7 @@ export function AssignCandidateDialog({
 
   const getDefaultGuests = (selectedInterviewer: any) => {
     const defaultGuests = [];
-    if (selectedInterviewer?.email)
-      defaultGuests.push(selectedInterviewer.email);
+    if (selectedInterviewer?.email) defaultGuests.push(selectedInterviewer.email);
     if (candidate.email) defaultGuests.push(candidate.email);
     if (user?.email && user.email !== selectedInterviewer?.email) {
       defaultGuests.push(user.email);
@@ -100,18 +98,18 @@ export function AssignCandidateDialog({
 
   const initialValues: FormValues = {
     interviewerId:
-      typeof candidate.assignment?.interviewerId === "string"
+      typeof candidate.assignment?.interviewerId === 'string'
         ? candidate.assignment.interviewerId
-        : candidate.assignment?.interviewerId?._id || "",
+        : candidate.assignment?.interviewerId?._id || '',
     time: candidate.assignment?.time
       ? dayjs(candidate?.assignment?.time)
       : null,
-    remark: "",
+    remark: '',
     rating: null,
     attachments: [],
     scheduleGoogleMeet: !!candidate?.assignment?.googleMeet?.eventId,
     meetDuration: 60,
-    meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || "",
+    meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || '',
     meetingAttachments:
       candidate?.assignment?.googleMeet?.meetingAttachments || [],
     additionalGuests: [],
@@ -120,10 +118,10 @@ export function AssignCandidateDialog({
   function getOnAltEnterSubmit(
     values: FormValues,
     formikHelpers: FormikHelpers<FormValues>,
-    isSubmitting: boolean
+    isSubmitting: boolean,
   ) {
     return (fieldValue: string) => (e: React.KeyboardEvent) => {
-      if (e.altKey && e.key === "Enter") {
+      if (e.altKey && e.key === 'Enter') {
         e.preventDefault();
         if (fieldValue?.trim() && !isSubmitting) {
           handleFormSubmit(values, formikHelpers);
@@ -134,19 +132,19 @@ export function AssignCandidateDialog({
 
   const handleFormSubmit = async (
     values: FormValues,
-    formikHelpers: FormikHelpers<FormValues>
+    formikHelpers: FormikHelpers<FormValues>,
   ) => {
     if (values.scheduleGoogleMeet && values.time) {
       try {
         const selectedInterviewer = interviewers?.find(
-          (i) => i._id === values.interviewerId
+          (i) => i._id === values.interviewerId,
         );
 
         if (!selectedInterviewer) {
           toast({
-            title: "Error",
-            description: "Selected interviewer not found",
-            variant: "destructive",
+            title: 'Error',
+            description: 'Selected interviewer not found',
+            variant: 'destructive',
           });
           formikHelpers.setSubmitting(false);
           return;
@@ -177,49 +175,49 @@ export function AssignCandidateDialog({
               };
             }
             return file;
-          })
+          }),
         );
 
         const isUpdating = candidate.assignment?.googleMeet?.eventId;
         const apiUrl = isUpdating
-          ? "/api/google-calendar/update-meet"
-          : "/api/google-calendar/schedule-meet";
-        const method = isUpdating ? "PUT" : "POST";
+          ? '/api/google-calendar/update-meet'
+          : '/api/google-calendar/schedule-meet';
+        const method = isUpdating ? 'PUT' : 'POST';
 
         const requestBody = isUpdating
           ? {
-              eventId: candidate.assignment?.googleMeet.eventId,
-              candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString(),
-              duration: values.meetDuration || 30,
-              guests: allGuests,
-            }
+            eventId: candidate.assignment?.googleMeet.eventId,
+            candidateId: candidate._id,
+            scheduledTime: values.time?.toISOString(),
+            duration: values.meetDuration || 30,
+            guests: allGuests,
+          }
           : {
-              candidateId: candidate._id,
-              candidateName: candidate.name,
-              candidateEmail: candidate.email,
-              interviewerId: selectedInterviewer._id,
-              interviewerName: selectedInterviewer.name,
-              scheduledTime: values.time?.toISOString(),
-              duration: values.meetDuration || 30,
-              guests: allGuests,
-              jobTitle: candidate.jobId?.title || "Position",
-              organizationName: user?.organizationInfo?.name || "Company",
-              meetingNotes: values.meetingNotes || "",
-              meetingAttachments: processedMeetingAttachments,
-            };
+            candidateId: candidate._id,
+            candidateName: candidate.name,
+            candidateEmail: candidate.email,
+            interviewerId: selectedInterviewer._id,
+            interviewerName: selectedInterviewer.name,
+            scheduledTime: values.time?.toISOString(),
+            duration: values.meetDuration || 30,
+            guests: allGuests,
+            jobTitle: candidate.jobId?.title || 'Position',
+            organizationName: user?.organizationInfo?.name || 'Company',
+            meetingNotes: values.meetingNotes || '',
+            meetingAttachments: processedMeetingAttachments,
+          };
 
         const response = await fetch(apiUrl, {
           method,
-          headers: { "Content-Type": "application/json" },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
         });
 
         const result = await response.json();
 
         if (!response.ok) {
-          console.error("❌ API Error:", result.error);
-          throw new Error(result.error || "Failed to schedule Google Meet");
+          logger.error('❌ API Error:', result.error);
+          throw new Error(result.error || 'Failed to schedule Google Meet');
         }
 
         const updatedValues = {
@@ -237,7 +235,7 @@ export function AssignCandidateDialog({
           },
           attachments: [...values.attachments, ...processedMeetingAttachments],
         };
-        
+
         await handleSubmit(updatedValues, formikHelpers, user, interviewers);
 
         if (refetch) {
@@ -245,19 +243,19 @@ export function AssignCandidateDialog({
         }
 
         toast({
-          title: "Success",
+          title: 'Success',
           description: isUpdating
-            ? "Google Meet updated and candidate assigned"
-            : "Google Meet scheduled and candidate assigned",
+            ? 'Google Meet updated and candidate assigned'
+            : 'Google Meet scheduled and candidate assigned',
         });
       } catch (error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description:
             error instanceof Error
               ? error.message
-              : "Failed to schedule Google Meet",
-          variant: "destructive",
+              : 'Failed to schedule Google Meet',
+          variant: 'destructive',
         });
         formikHelpers.setSubmitting(false);
       }
@@ -274,7 +272,10 @@ export function AssignCandidateDialog({
           className="overflow-hidden flex flex-col justify-start"
         >
           <DialogHeader>
-            <DialogTitle>Assign Candidate - {candidate.name}</DialogTitle>
+            <DialogTitle>
+              Assign Candidate -
+              {candidate.name}
+            </DialogTitle>
           </DialogHeader>
 
           <Formik
@@ -289,10 +290,10 @@ export function AssignCandidateDialog({
                 <Form className="flex-1 flex flex-col h-full overflow-hidden">
                   <div
                     className={`flex-1 px-6 py-4 space-y-6 ${
-                      !candidate.assignment?.googleMeet?.eventId &&
-                      !values.scheduleGoogleMeet
-                        ? ""
-                        : "overflow-y-auto"
+                      !candidate.assignment?.googleMeet?.eventId
+                      && !values.scheduleGoogleMeet
+                        ? ''
+                        : 'overflow-y-auto'
                     }`}
                   >
                     <div className="grid gap-4 py-4">
@@ -331,7 +332,7 @@ export function AssignCandidateDialog({
                           onClick={handleUnassign}
                         >
                           {isUnassigning && <LoadingSpinner w={5} />}
-                          {isUnassigning ? "Marking..." : "Mark As Done"}
+                          {isUnassigning ? 'Marking...' : 'Mark As Done'}
                         </Button>
                       )}
                     </div>
@@ -352,7 +353,7 @@ export function AssignCandidateDialog({
                         {isSubmitting && (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         )}
-                        {isSubmitting ? "Assigning..." : "Assign"}
+                        {isSubmitting ? 'Assigning...' : 'Assign'}
                       </Button>
                     </div>
                   </div>
@@ -396,7 +397,8 @@ export function AssignCandidateDialog({
                   htmlFor="cancelNotes"
                   className="text-sm font-semibold text-foreground"
                 >
-                  Cancellation Notes{" "}
+                  Cancellation Notes
+                  {' '}
                   <span className="text-muted-foreground font-normal">
                     (Optional)
                   </span>
@@ -419,7 +421,7 @@ export function AssignCandidateDialog({
                 className="mt-2 sm:mt-0"
                 onClick={() => {
                   setShowCancelMeetDialog(false);
-                  setCancelNotes("");
+                  setCancelNotes('');
                 }}
               >
                 Keep Meeting
@@ -433,25 +435,25 @@ export function AssignCandidateDialog({
                   try {
                     const response = await fetch(
                       `/api/google-calendar/update-meet?eventId=${candidate.assignment?.googleMeet?.eventId}&candidateId=${candidate._id}&cancelNotes=${encodeURIComponent(cancelNotes)}`,
-                      { method: "DELETE" }
+                      { method: 'DELETE' },
                     );
                     if (response.ok) {
                       toast({
-                        title: "Success",
-                        description: "Google Meet cancelled successfully",
+                        title: 'Success',
+                        description: 'Google Meet cancelled successfully',
                       });
                       refetch();
                       onOpenChange(false);
                       setShowCancelMeetDialog(false);
-                      setCancelNotes("");
+                      setCancelNotes('');
                     } else {
-                      throw new Error("Failed to cancel meeting");
+                      throw new Error('Failed to cancel meeting');
                     }
                   } catch (error) {
                     toast({
-                      title: "Error",
-                      description: "Failed to cancel Google Meet",
-                      variant: "destructive",
+                      title: 'Error',
+                      description: 'Failed to cancel Google Meet',
+                      variant: 'destructive',
                     });
                   } finally {
                     setIsCancelling(false);

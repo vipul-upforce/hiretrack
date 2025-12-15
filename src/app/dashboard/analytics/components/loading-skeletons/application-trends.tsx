@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import React from "react";
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import React from 'react';
 
-const ApplicationTrendsSkeleton = () => {
+function ApplicationTrendsSkeleton() {
   return (
     <Card>
       <CardHeader>
@@ -60,6 +60,6 @@ const ApplicationTrendsSkeleton = () => {
       </CardContent>
     </Card>
   );
-};
+}
 
 export default ApplicationTrendsSkeleton;

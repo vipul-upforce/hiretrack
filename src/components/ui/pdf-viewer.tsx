@@ -1,10 +1,13 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { File, Download } from "lucide-react";
-import { DialogTitle } from "@radix-ui/react-dialog";
+import { useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { File, Download } from 'lucide-react';
+import { DialogTitle } from '@radix-ui/react-dialog';
+import logger from '@/lib/logger';
+import Image from 'next/image';
+
 interface PDFViewerProps {
   files: Array<{
     name: string;
@@ -26,27 +29,27 @@ export function PDFViewer({ files }: PDFViewerProps) {
 
   const downloadFile = async (url: string, filename: string) => {
     if (!url || !filename) {
-      console.error("Invalid URL or filename provided");
+      logger.error('Invalid URL or filename provided');
       return;
     }
 
     try {
       // Fetch the file as a blob
       const response = await fetch(url, {
-        method: "GET",
-        mode: "cors",
-        credentials: "same-origin",
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'same-origin',
       });
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch file: ${response.status} ${response.statusText}`
+          `Failed to fetch file: ${response.status} ${response.statusText}`,
         );
       }
 
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
 
@@ -57,27 +60,27 @@ export function PDFViewer({ files }: PDFViewerProps) {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Download failed:", error);
+      logger.error('Download failed:', error);
     }
   };
 
   return (
     <>
       <div className="grid gap-2">
-        {files.map((file, index) => (
+        {files.map((file) => (
           <div
-            key={index}
-            className="flex items-center gap-2 p-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group w-full"
+            key={file.url}
+            className="group flex w-full items-center gap-2 rounded-md border border-gray-200 bg-white p-3 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-black dark:hover:bg-gray-700"
           >
             <div
-              className="flex items-center gap-2 flex-1 cursor-pointer w-full"
+              className="flex w-full flex-1 cursor-pointer items-center gap-2"
               onClick={() => {
                 setSelectedFile(file);
               }}
             >
-              <div className="p-3 bg-gray-200 dark:bg-gray-600 rounded-md">
+              <div className="rounded-md bg-gray-200 p-3 dark:bg-gray-600">
                 <svg
-                  className="w-5 h-5 text-gray-600 dark:text-gray-300"
+                  className="h-5 w-5 text-gray-600 dark:text-gray-300"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -91,13 +94,14 @@ export function PDFViewer({ files }: PDFViewerProps) {
                   />
                 </svg>
               </div>
-              <div className="flex-1 w-[90%]">
-                <p className="text-sm font-medium truncate break-all text-wrap text-gray-900 dark:text-gray-100">
+              <div className="w-[90%] flex-1">
+                <p className="truncate text-wrap break-all text-sm font-medium text-gray-900 dark:text-gray-100">
                   {file.name}
                 </p>
                 {file.size && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {Math.round(file.size / 1024)}KB
+                    {Math.round(file.size / 1024)}
+                    KB
                   </p>
                 )}
               </div>
@@ -105,7 +109,7 @@ export function PDFViewer({ files }: PDFViewerProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-100 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="h-8 w-8 text-gray-600 opacity-100 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-gray-100"
               onClick={() => downloadFile(file.url || file.base64, file.name)}
             >
               <Download className="h-4 w-4" />
@@ -115,29 +119,29 @@ export function PDFViewer({ files }: PDFViewerProps) {
       </div>
 
       <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
-        <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col justify-start">
-          <DialogTitle></DialogTitle>
+        <DialogContent className="flex h-[90vh] flex-col justify-start p-0 sm:max-w-[80vw] xl:max-w-[50vw]">
+          <DialogTitle />
           <div
-            className="pl-4 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-black"
+            className="shrink-0 border-b border-gray-200 bg-white pl-4 dark:border-gray-700 dark:bg-black"
             style={{
-              display: "contents",
+              display: 'contents',
             }}
           >
-            <div className="flex items-center gap-2 pl-4 py-3">
+            <div className="flex items-center gap-2 py-3 pl-4">
               <File className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-              <span className="font-medium truncate text-gray-900 dark:text-gray-100">
+              <span className="truncate font-medium text-gray-900 dark:text-gray-100">
                 {selectedFile?.name}
               </span>
             </div>
 
             <button
-              className="absolute right-12 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+              type="button"
+              className="absolute right-12 top-4 rounded-sm text-gray-600 opacity-70 ring-offset-background transition-opacity hover:text-gray-900 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground dark:text-gray-300 dark:hover:text-gray-100"
               onClick={() => {
-                // debugger;
                 selectedFile &&
                   downloadFile(
                     selectedFile.url || selectedFile.base64,
-                    selectedFile.name
+                    selectedFile.name,
                   );
               }}
             >
@@ -146,19 +150,19 @@ export function PDFViewer({ files }: PDFViewerProps) {
           </div>
 
           <div className="flex-1 overflow-auto">
-            {selectedFile?.type.startsWith("image/") ? (
-              <div className="flex items-center justify-center min-h-full p-4">
-                <img
-                  src={selectedFile.url || selectedFile.base64}
+            {selectedFile?.type.startsWith('image/') ? (
+              <div className="flex min-h-full items-center justify-center p-4">
+                <Image
+                  src={selectedFile.url! || selectedFile.base64!}
                   alt={selectedFile.name}
-                  className="max-w-full max-h-full object-contain rounded-lg"
+                  className="max-h-full max-w-full rounded-lg object-contain"
                 />
               </div>
             ) : (
-              <div className="w-full h-full">
+              <div className="h-full w-full">
                 <iframe
                   src={selectedFile?.url || selectedFile?.base64}
-                  className="w-full h-full"
+                  className="h-full w-full"
                   title={selectedFile?.name}
                 />
               </div>

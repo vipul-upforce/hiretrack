@@ -1,25 +1,26 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NginxLogsSkeleton() {
   return (
-    <div className="flex-1 flex min-h-0">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1 min-h-0">
-        <div className="col-span-1 flex flex-col min-h-0">
-          <Skeleton className="h-5 w-32 mb-2" />
+    <div className="flex min-h-0 flex-1">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="col-span-1 flex min-h-0 flex-col">
+          <Skeleton className="mb-2 h-5 w-32" />
 
-          <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto">
             {Array.from({ length: 8 }).map((_, i) => (
+              // eslint-disable-next-line react/no-array-index-key
               <Skeleton key={i} className="h-8 w-full rounded" />
             ))}
           </div>
         </div>
 
-        <div className="col-span-3 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-4 flex-shrink-0">
-            <div className="flex flex-row items-center w-[70%] gap-3">
+        <div className="col-span-3 flex min-h-0 flex-col">
+          <div className="mb-4 flex flex-shrink-0 items-center justify-between">
+            <div className="flex w-[70%] flex-row items-center gap-3">
               <Skeleton className="h-4 w-32" />
               <Skeleton className="h-10 w-full max-w-md" />
-              <Skeleton className="h-4 w-4 rounded-full" />{" "}
+              <Skeleton className="h-4 w-4 rounded-full" />{' '}
             </div>
 
             <div className="flex flex-row items-center gap-3">
@@ -28,9 +29,27 @@ export default function NginxLogsSkeleton() {
             </div>
           </div>
 
-          <div className="bg-muted p-4 rounded-md flex-1 overflow-y-auto min-h-0 space-y-2"></div>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto rounded-md bg-muted p-4" />
         </div>
       </div>
+    </div>
+  );
+}
+
+export function LogSkeleton() {
+  return (
+    <div className="w-full space-y-2">
+      {Array.from({ length: 15 }).map((_, i) => {
+        const randomWidth = Math.floor(Math.random() * 40) + 60;
+        return (
+          <Skeleton
+            // eslint-disable-next-line react/no-array-index-key
+            key={i}
+            className="h-5 rounded-md bg-muted-foreground/10"
+            style={{ width: `${randomWidth}%` }}
+          />
+        );
+      })}
     </div>
   );
 }

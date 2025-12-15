@@ -1,9 +1,9 @@
-import { createContext, Dispatch, SetStateAction } from "react";
+import { createContext, Dispatch, SetStateAction } from 'react';
 import {
   CustomField,
   CustomFields,
   SelectedFormObject,
-} from "../Types/CustomField";
+} from '../Types/CustomField';
 
 // Define the shape of your context state
 export type CustomFieldsContextType = {
@@ -43,7 +43,7 @@ export const CustomFieldsContext = createContext<CustomFieldsContextType>({
   handleAddFormId: () => {},
   handleEditFormId: () => {},
   handleDeleteFormId: () => {},
-  stepName: "",
+  stepName: '',
   setStepName: () => {},
   selecteFormIdTarget: () => {},
   selectedFormId: null,
@@ -54,6 +54,6 @@ export const CustomFieldsContext = createContext<CustomFieldsContextType>({
   userLoggedIn: false,
   setUserLoggedIn: () => {},
   setSelectedFormId: () => {},
-  deleteFormIDAllIndCustomFields:()=>{}
+  deleteFormIDAllIndCustomFields: () => {},
   // postCustomFields: () => {},
 });

@@ -1,16 +1,16 @@
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Star } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { PortalSettings } from "../../types";
-import { PREDEFINED_COLOR_COMBINATIONS } from "../../constants";
-import { ColorPickerPopover } from "../color-picker-popover";
+} from '@/components/ui/card';
+import { Star } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { PortalSettings } from '../../types';
+import { PREDEFINED_COLOR_COMBINATIONS } from '../../constants';
+import { ColorPickerPopover } from '../color-picker-popover';
 
 interface ColorsTabProps {
   settings: PortalSettings;
@@ -28,18 +28,19 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             {PREDEFINED_COLOR_COMBINATIONS.map((combo) => (
               <button
+                type="button"
                 key={combo.name}
                 className={cn(
-                  "p-3 rounded-lg border-2 transition-all hover:scale-105 relative",
+                  'relative rounded-lg border-2 p-3 transition-all hover:scale-105',
                   settings.primaryColor === combo.primary &&
                     settings.secondaryColor === combo.secondary
-                    ? "border-primary ring-2 ring-primary ring-offset-2"
-                    : "border-border hover:border-primary/50",
+                    ? 'border-primary ring-2 ring-primary ring-offset-2'
+                    : 'hover:border-primary/50 border-border',
                   combo.isDefault &&
-                    "bg-gradient-to-br from-primary/5 to-secondary/5"
+                    'from-primary/5 bg-gradient-to-br to-secondary/5',
                 )}
                 onClick={() =>
                   setSettings((prev) => ({
@@ -50,24 +51,24 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
                 }
               >
                 {combo.isDefault && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                    <Star className="w-3 h-3 text-white fill-current" />
+                  <div className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                    <Star className="h-3 w-3 fill-current text-white" />
                   </div>
                 )}
-                <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2 flex items-center gap-2">
                   <div
-                    className="w-4 h-4 rounded-full border border-border"
+                    className="h-4 w-4 rounded-full border border-border"
                     style={{ backgroundColor: combo.primary }}
                   />
                   <div
-                    className="w-4 h-4 rounded-full border border-border"
+                    className="h-4 w-4 rounded-full border border-border"
                     style={{ backgroundColor: combo.secondary }}
                   />
                 </div>
                 <p
                   className={cn(
-                    "text-xs font-medium text-center",
-                    combo.isDefault && "font-semibold"
+                    'text-center text-xs font-medium',
+                    combo.isDefault && 'font-semibold',
                   )}
                 >
                   {combo.name}
@@ -84,7 +85,7 @@ export function ColorsTab({ settings, setSettings }: ColorsTabProps) {
           <CardDescription>Fine-tune your color palette</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <ColorPickerPopover
               label="Primary Color"
               value={settings.primaryColor}

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { Droppable } from "@hello-pangea/dnd";
-import { Job } from "@/types/job";
-import JobCard from "./job-card";
-import { CustomScrollbar } from "@/components/ui/custom-scrollbar";
+import { Droppable } from '@hello-pangea/dnd';
+import { Job } from '@/types/job';
+import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
+import JobCard from './job-card';
 
 interface KanbanColumnProps {
   column: {
@@ -20,7 +20,7 @@ interface KanbanColumnProps {
   onEmailSettingsClick?: (job: Job) => void;
 }
 
-const KanbanColumn = ({
+function KanbanColumn({
   column,
   isCreatingJob,
   setSelectedJob,
@@ -29,8 +29,7 @@ const KanbanColumn = ({
   handleDeleteClick,
   setDuplicate,
   onEmailSettingsClick,
-}: KanbanColumnProps) => {
-
+}: KanbanColumnProps) {
   return (
     <div className="flex-1 min-w-[30px] px-2">
       <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-lg p-3 min-w-0 w-full max-w-full">
@@ -53,10 +52,10 @@ const KanbanColumn = ({
                   ref={provided.innerRef}
                   className="h-auto space-y-3 pb-4 min-w-0"
                 >
-                  {isCreatingJob && column.id === "draft" && (
+                  {isCreatingJob && column.id === 'draft' && (
                     <div className="animate-pulse bg-gray-100 dark:bg-black rounded-xl p-4 shadow-sm">
-                      <div className="h-5 w-2/3 bg-gray-300 dark:bg-gray-700 rounded mb-2"></div>
-                      <div className="h-4 w-1/3 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                      <div className="h-5 w-2/3 bg-gray-300 dark:bg-gray-700 rounded mb-2" />
+                      <div className="h-4 w-1/3 bg-gray-300 dark:bg-gray-700 rounded" />
                     </div>
                   )}
 
@@ -82,6 +81,6 @@ const KanbanColumn = ({
       </div>
     </div>
   );
-};
+}
 
 export default KanbanColumn;

@@ -1,7 +1,7 @@
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
-import { OrgInfo } from "@/lib/models/user";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { NextResponse } from "next/server";
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import { OrgInfo } from '@/lib/models/user';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { NextResponse } from 'next/server';
 
 interface AuthRequest {
   email: string;
@@ -29,35 +29,35 @@ interface AuthResponse {
 }
 
 export const authApi = createApi({
-  reducerPath: "authApi",
+  reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
-    credentials: "include", // Important for cookies
+    baseUrl: '/api',
+    credentials: 'include', // Important for cookies
   }),
-  tagTypes: ["Users"],
+  tagTypes: ['Users'],
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
-        url: "/auth/login",
-        method: "POST",
+        url: '/auth/login',
+        method: 'POST',
         body: credentials,
       }),
     }),
     signup: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
-        url: "/auth/signup",
-        method: "POST",
+        url: '/auth/signup',
+        method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ["Users"], // Ensure correct format
+      invalidatesTags: ['Users'], // Ensure correct format
     }),
     resetPasswordbyAdmin: builder.mutation<
       NextResponse,
       { password: string; candidateId: string }
     >({
       query: (creds) => ({
-        url: "/auth/reset-password",
-        method: "PUT",
+        url: '/auth/reset-password',
+        method: 'PUT',
         body: creds,
       }),
     }),
@@ -66,8 +66,8 @@ export const authApi = createApi({
       { password: string; token: string }
     >({
       query: (creds) => ({
-        url: "/auth/reset-password",
-        method: "POST",
+        url: '/auth/reset-password',
+        method: 'POST',
         body: creds,
       }),
     }),

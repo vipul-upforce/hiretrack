@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import { Job, Candidate, History } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
-import { ICandidateHistory } from "@/lib/models/history";
-import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
-import { NotificationService } from "@/lib/notifications/notificationService";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Job, Candidate, History } from '@/lib/mongodb';
+import { auth } from '@/lib/auth';
+import { ICandidateHistory } from '@/lib/models/history';
+import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,39 +14,47 @@ export async function POST(req: NextRequest) {
 
     if (!organizationId) {
       return NextResponse.json(
-        { error: "Organization ID not found" },
-        { status: 404 }
+        { error: 'Organization ID not found' },
+        { status: 404 },
       );
     }
 
     const body = await req.json();
     const { jobId, candidateIds } = body;
 
-    if (!jobId || !candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+    if (
+      !jobId ||
+      !candidateIds ||
+      !Array.isArray(candidateIds) ||
+      candidateIds.length === 0
+    ) {
       return NextResponse.json(
-        { error: "Job ID and candidate IDs array are required" },
-        { status: 400 }
+        { error: 'Job ID and candidate IDs array are required' },
+        { status: 400 },
       );
     }
 
     if (!Candidate || !History || !Job) {
       return NextResponse.json(
-        { error: "Database models not found" },
-        { status: 404 }
+        { error: 'Database models not found' },
+        { status: 404 },
       );
     }
 
     // Fetch the target job
     const targetJob = await Job.findById(jobId);
     if (!targetJob) {
-      return NextResponse.json({ error: "Target job not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Target job not found' },
+        { status: 404 },
+      );
     }
 
     const lane = session?.user?.organizationInfo?.lanes
       ? session?.user?.organizationInfo?.lanes[0]
       : session?.user?.organizationInfo?.defaultLanes
         ? session?.user?.organizationInfo?.defaultLanes[0]
-        : "applied";
+        : 'applied';
 
     // Process each candidate
     const movedCandidateIds: string[] = [];
@@ -59,28 +67,30 @@ export async function POST(req: NextRequest) {
       if (candidate.jobId?.toString() === jobId) continue;
 
       const previousJobId = candidate.jobId?.toString() || null;
-      const previousJob = previousJobId ? await Job.findById(previousJobId) : null;
+      const previousJob = previousJobId
+        ? await Job.findById(previousJobId)
+        : null;
 
       // Update candidate
       await Candidate.findByIdAndUpdate(candidateId, {
-        jobId: jobId,
+        jobId,
         status: lane,
         $set: {
-          "tracking.assignedToJobDate": new Date().toISOString(),
+          'tracking.assignedToJobDate': new Date().toISOString(),
         },
       });
 
       // Update history if exists
       if (previousJobId) {
         const existingHistory = await History.findOne({
-          candidateId: candidateId,
+          candidateId,
           jobId: previousJobId,
         });
 
         if (existingHistory) {
           await History.findOneAndUpdate(
-            { candidateId: candidateId, jobId: previousJobId },
-            { $set: { jobId: jobId } }
+            { candidateId, jobId: previousJobId },
+            { $set: { jobId } },
           );
         }
       }
@@ -88,9 +98,9 @@ export async function POST(req: NextRequest) {
       // Create history entry
       const historyEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
-        title: "Assigned to Job",
+        title: 'Assigned to Job',
         note: {
-          description: `Candidate moved from ${previousJob?.title || "No previous job"} to ${targetJob.title}`,
+          description: `Candidate moved from ${previousJob?.title || 'No previous job'} to ${targetJob.title}`,
           date: new Date().toISOString(),
           rating: 0,
           userId: session?.user.id || null,
@@ -104,7 +114,7 @@ export async function POST(req: NextRequest) {
       await History.findOneAndUpdate(
         { jobId, candidateId },
         { $push: { history: historyEntry } },
-        { upsert: true }
+        { upsert: true },
       );
 
       // Collect candidate IDs for notification
@@ -115,17 +125,17 @@ export async function POST(req: NextRequest) {
     if (session?.user && movedCandidateIds.length > 0) {
       try {
         await NotificationService.notifyBulkCandidateMoved({
-          organizationId: organizationId,
+          organizationId,
           candidateIds: movedCandidateIds,
           toJobId: jobId,
           toJobTitle: targetJob.title,
           triggerUserId: session.user.id,
-          triggerUserName: session.user.name || "Unknown User",
+          triggerUserName: session.user.name || 'Unknown User',
         });
       } catch (notificationError) {
-        console.error(
-          "Failed to send bulk candidate moved notification:",
-          notificationError
+        logger.error(
+          { notificationError, url: req.url },
+          'Failed to send bulk candidate moved notification',
         );
       }
     }
@@ -135,16 +145,16 @@ export async function POST(req: NextRequest) {
       _id: { $in: candidateIds },
     }).populate([
       {
-        path: "assignment.interviewerId",
-        select: "_id name email",
+        path: 'assignment.interviewerId',
+        select: '_id name email',
       },
       {
-        path: "remarks.userId",
-        select: "name email",
+        path: 'remarks.userId',
+        select: 'name email',
       },
       {
-        path: "jobId",
-        select: "title description",
+        path: 'jobId',
+        select: 'title description',
       },
     ]);
 
@@ -164,7 +174,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      updatedCandidates: updatedCandidates.map(c => ({
+      updatedCandidates: updatedCandidates.map((c) => ({
         ...c.toObject(),
         jobId: {
           _id: jobId,
@@ -174,11 +184,10 @@ export async function POST(req: NextRequest) {
       })),
     });
   } catch (error: unknown) {
-    console.error(error);
+    logger.error({ error, url: req.url });
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ error: "Unknown error" }, { status: 500 });
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
-

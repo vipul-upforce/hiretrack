@@ -3,7 +3,7 @@
  * Displays action buttons for form submission
  */
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 interface CreateCandidateDialogFooterProps {
   userRole: string | undefined;
@@ -53,14 +53,11 @@ export function CreateCandidateDialogFooter({
         style={{ backgroundColor: primaryColor }}
       >
         {isSubmitting
-          ? "Saving..."
-          : userRole === "candidate" || userRole === ""
-            ? "Apply"
-            : "Add Candidate"}
+          ? 'Saving...'
+          : userRole === 'candidate' || userRole === ''
+            ? 'Apply'
+            : 'Add Candidate'}
       </Button>
     </div>
   );
 }
-
-
-

@@ -1,16 +1,17 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useToast } from "@/hooks/use-toast";
-import { useUpdateCandidateMutation } from "@/lib/features/candidate/candidateApi";
-import { useFetchOrgTagsQuery } from "@/lib/features/org/orgApi";
-import { User } from "@/lib/features/users/usersApi";
-import { ITag } from "@/lib/models/organization";
-import { Candidate } from "@/types/candidate";
-import { Settings } from "lucide-react";
-import { useEffect, useState } from "react";
-import ManageTagsDialog from "./manage-tags-dialog";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
+import { useUpdateCandidateMutation } from '@/lib/features/candidate/candidateApi';
+import { useFetchOrgTagsQuery } from '@/lib/features/org/orgApi';
+import { User } from '@/lib/features/users/usersApi';
+import { ITag } from '@/lib/models/organization';
+import { Candidate } from '@/types/candidate';
+import { Settings } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import ManageTagsDialog from './manage-tags-dialog';
 
 interface TagsDialogProps {
   user: User | null;
@@ -20,22 +21,20 @@ interface TagsDialogProps {
   isDialog?: boolean;
 }
 
-const TagsDialog = ({
+function TagsDialog({
   user,
   candidate,
   refetch,
   onClose,
   isDialog,
-}: TagsDialogProps) => {
-  const orgId: string =
-    user && typeof user.organizationId === "string" ? user?.organizationId : "";
+}: TagsDialogProps) {
+  const orgId: string = user && typeof user.organizationId === 'string' ? user?.organizationId : '';
   const {
     data: tagsObj,
     isLoading,
     error,
   } = useFetchOrgTagsQuery({ organizationId: orgId });
-  const [updateCandidate, { isLoading: isUpdating, error: candidateError }] =
-    useUpdateCandidateMutation();
+  const [updateCandidate, { isLoading: isUpdating, error: candidateError }] = useUpdateCandidateMutation();
   const [selectedTags, setSelectedTags] = useState<ITag[]>([]);
   const [allTags, setAllTags] = useState<ITag[]>([]);
   const [isManageTagsOpen, setIsManageTagsOpen] = useState(false);
@@ -48,9 +47,7 @@ const TagsDialog = ({
     [...orgTags, ...candidateTags].forEach((tag) => {
       uniqueTagsMap.set(tag.title, tag);
     });
-    const combinedTags = Array.from(uniqueTagsMap.values()).sort((a, b) =>
-      a.title.localeCompare(b.title)
-    );
+    const combinedTags = Array.from(uniqueTagsMap.values()).sort((a, b) => a.title.localeCompare(b.title));
     setAllTags(combinedTags);
   }, [tagsObj, candidate.tags]);
 
@@ -61,11 +58,9 @@ const TagsDialog = ({
   }, [candidate.tags]);
 
   const handleTagSelection = (tag: ITag) => {
-    setSelectedTags((prev) =>
-      prev.some((t) => t.title === tag.title)
-        ? prev.filter((t) => t.title !== tag.title)
-        : [...prev, tag]
-    );
+    setSelectedTags((prev) => (prev.some((t) => t.title === tag.title)
+      ? prev.filter((t) => t.title !== tag.title)
+      : [...prev, tag]));
   };
 
   const handleSave = async (e: React.MouseEvent) => {
@@ -74,15 +69,15 @@ const TagsDialog = ({
       await updateCandidate({ ...candidate, tags: selectedTags }).unwrap();
       refetch();
       toast({
-        title: "Success",
-        description: "Candidate tags updated successfully.",
+        title: 'Success',
+        description: 'Candidate tags updated successfully.',
       });
-    } catch (error) {
-      console.error("Failed to update candidate tags:", error);
+    } catch (er) {
+      logger.error('Failed to update candidate tags:', er);
       toast({
-        title: "Error",
-        description: "Failed to update candidate tags. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update candidate tags. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -97,8 +92,7 @@ const TagsDialog = ({
     onClose();
   };
 
-  const hasChanges =
-    JSON.stringify(selectedTags) !== JSON.stringify(candidate.tags);
+  const hasChanges = JSON.stringify(selectedTags) !== JSON.stringify(candidate.tags);
 
   return (
     <div
@@ -121,7 +115,7 @@ const TagsDialog = ({
         <p className="text-gray-500">No tags available.</p>
       ) : (
         <div className="flex-1 overflow-y-auto">
-          {" "}
+          {' '}
           <div className="flex flex-col gap-3">
             {allTags.map((tag) => (
               <div key={tag.title} className="flex items-center gap-3">
@@ -145,14 +139,14 @@ const TagsDialog = ({
           </div>
         </div>
       )}
-      <div className={`flex justify-end mt-4 ${isDialog ? "w-[110%]" : ""}`}>
+      <div className={`flex justify-end mt-4 ${isDialog ? 'w-[110%]' : ''}`}>
         <Button
           variant="primary"
           onClick={handleSave}
           disabled={isUpdating || !hasChanges}
           className="min-w-[80px]"
         >
-          {isUpdating ? <LoadingSpinner w={4} /> : "Save"}
+          {isUpdating ? <LoadingSpinner w={4} /> : 'Save'}
         </Button>
       </div>
       {isManageTagsOpen && (
@@ -164,6 +158,6 @@ const TagsDialog = ({
       )}
     </div>
   );
-};
+}
 
 export default TagsDialog;

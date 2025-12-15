@@ -1,18 +1,18 @@
-import { NextRequest } from "next/server";
-import { Organization } from "./mongodb";
-import { CustomField } from "@/Custom_Fields/Types/CustomField";
-import { ICandidate } from "./models/candidate";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest } from 'next/server';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { Organization } from './mongodb';
+import { ICandidate } from './models/candidate';
 
 // Helper function to filter customFields for a single candidate
 const filterCandidateCustomFields = (
   candidate: ICandidate,
-  privateFieldLabels: string[]
+  privateFieldLabels: string[],
 ): ICandidate => {
   const filteredCustomFields = Object.fromEntries(
     Object.entries(candidate.customFields || {}).filter(
-      ([key]) => !privateFieldLabels.includes(key)
-    )
+      ([key]) => !privateFieldLabels.includes(key),
+    ),
   );
   return {
     ...candidate,
@@ -35,11 +35,9 @@ const getFilterPrivateCF = async (candidates: ICandidate[], req: NextRequest): P
     .filter((field) => field.privateInt === true)
     .map((field) => field.label);
 
-  if (userData.role === "interviewer") {
+  if (userData.role === 'interviewer') {
     const candidatesWithoutPrivateCF = await Promise.all(
-      candidates.map(async (candidate) =>
-        filterCandidateCustomFields(candidate, privateFieldLabels)
-      )
+      candidates.map(async (candidate) => filterCandidateCustomFields(candidate, privateFieldLabels)),
     );
     return candidatesWithoutPrivateCF;
   }
@@ -50,12 +48,7 @@ const getFilterPrivateCF = async (candidates: ICandidate[], req: NextRequest): P
 
 // Function to filter private customFields for a single candidate
 const getFilterPrivateCFSingle = async (candidate: ICandidate, role: string, organizationId:string): Promise<any> => {
-    console.log("🦊🦊🦊🦊🦊🦊 candidte-role-orgId: ", candidate, role, organizationId)
   if (!Organization) return undefined;
-
-//   const user = await auth(req);
-//   const userData = user?.user;
-//   if (!userData) return undefined;
 
   const orgData = await Organization.findById(organizationId);
   if (!orgData) return candidate;
@@ -65,13 +58,12 @@ const getFilterPrivateCFSingle = async (candidate: ICandidate, role: string, org
     .filter((field) => field.privateInt === true)
     .map((field) => field.label);
 
-  if (role === "interviewer") {
+  if (role === 'interviewer') {
     return filterCandidateCustomFields(candidate, privateFieldLabels);
   }
 
   // Return candidate unchanged if not interviewer
   return candidate;
 };
-
 
 export { getFilterPrivateCF, getFilterPrivateCFSingle };

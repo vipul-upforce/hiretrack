@@ -1,21 +1,16 @@
-"use client";
+'use client';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { DragDropContext } from "@hello-pangea/dnd";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useEffect, useContext, useCallback, useMemo } from "react";
-import { CreateJobDialog } from "./components/create-job-dialog";
-import { JobDetailsDialog } from "./components/job-details-dialog";
-import { initialColumns } from "./data/initial-data";
-import { Job } from "@/types/job";
+import { DragDropContext } from '@hello-pangea/dnd';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
+import { Job } from '@/types/job';
 import {
   useCreateJobMutation,
   useFetchJobsQuery,
   useUpdateJobStatusMutation,
-  useDeleteJobMutation,
-} from "@/lib/features/job/jobApi";
-import { toast } from "@/hooks/use-toast";
-import { Checkbox } from "@/components/ui/checkbox";
+} from '@/lib/features/job/jobApi';
+import { toast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,34 +20,35 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import KanbanColumn from "./components/kanban-column";
-import { Button } from "@/components/ui/button";
-import { Mail, Settings2 } from "lucide-react";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import CustomFieldDialog from "@/Custom_Fields/Components/Common/CustomFieldDialog";
-import Stepper from "@/Custom_Fields/Components/Stepper";
-import DefaultLanesButton from "./components/DefaultLanesButton";
-import { useSelector } from "react-redux";
-import { useGetUsersQuery } from "@/lib/features/users/usersApi";
-import { JobEmailNotificationSettingsDialog } from "@/components/dialogs/JobEmailNotificationSettingsDialog";
-import { GlobalEmailNotificationSettingsDialog } from "@/components/dialogs/GlobalEmailNotificationSettingsDialog";
-import { ViewToggle } from "./components/view-toggle";
-import { JobsTableView } from "./components/jobs-table";
-import {
-  JobsFilters,
-  StatusFilterValue,
-  DateFilterValue,
-  SortOption,
-} from "./components/jobs-filters";
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Mail, Settings2 } from 'lucide-react';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import CustomFieldDialog from '@/Custom_Fields/Components/Common/CustomFieldDialog';
+import Stepper from '@/Custom_Fields/Components/Stepper';
+import { useSelector } from 'react-redux';
+import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
+import { GlobalEmailNotificationSettingsDialog } from '@/components/dialogs/GlobalEmailNotificationSettingsDialog';
 import {
   startOfWeek,
   startOfMonth,
   startOfQuarter,
   isAfter,
   isSameDay,
-} from "date-fns";
-import JobsSkeleton from "./components/jobs-board-skeleton";
+} from 'date-fns';
+import { ViewToggle } from './components/view-toggle';
+import { JobsTableView } from './components/jobs-table';
+import {
+  JobsFilters,
+  StatusFilterValue,
+  DateFilterValue,
+} from './components/jobs-filters';
+import DefaultLanesButton from './components/DefaultLanesButton';
+import KanbanColumn from './components/kanban-column';
+import { initialColumns } from './data/initial-data';
+import { JobDetailsDialog } from './components/job-details-dialog';
+import { CreateJobDialog } from './components/create-job-dialog';
+import JobsSkeleton from './components/jobs-board-skeleton';
 
 interface User {
   role: string;
@@ -84,38 +80,25 @@ function JobCustomFieldsDialog({
       customFields &&
       Object.keys(customFields).length > 0
     ) {
-      console.log("Attempting to auto-select job position form...");
-
       // Find the "job position" form ID
       const jobPositionFormEntry = Object.entries(customFields).find(
-        ([_, form]) => {
-          console.log(
-            "Checking form:",
-            form.formName,
-            "normalized:",
-            form.formName.toLowerCase()
-          );
-          return form.formName.toLowerCase() === "job position";
-        }
+        ([_, form]) => form.formName.toLowerCase() === 'job position',
       );
 
       if (jobPositionFormEntry) {
         const [formId] = jobPositionFormEntry;
-        console.log("Found job position form, selecting:", formId);
         selecteFormIdTarget(formId);
-        setStepName("formCustomFieldList");
+        setStepName('formCustomFieldList');
         setHasAutoSelected(true);
       } else {
-        console.log("No job position form found, staying on FormList");
-        setStepName("FormList");
+        setStepName('FormList');
         setHasAutoSelected(true);
       }
     }
   }, [isOpen, hasAutoSelected, customFields, selecteFormIdTarget, setStepName]);
 
   const handleClose = useCallback(() => {
-    console.log("JobCustomFieldsDialog closing, resetting to FormList");
-    setStepName("FormList");
+    setStepName('FormList');
     setHasAutoSelected(false);
     onClose();
   }, [setStepName, onClose]);
@@ -142,7 +125,7 @@ function KanbanPage() {
   const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
   // const [user, setUser] = useState<User | null>(null);
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -157,10 +140,7 @@ function KanbanPage() {
   } = useFetchJobsQuery(undefined, {
     skip: !user,
   });
-  const { data: users } = useGetUsersQuery();
-  // const router = useRouter();
   const [updateJobStatus] = useUpdateJobStatusMutation();
-  const [deleteJob] = useDeleteJobMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
@@ -173,18 +153,18 @@ function KanbanPage() {
     useState<Job | null>(null);
 
   // View mode and filters state with localStorage persistence
-  const [viewMode, setViewMode] = useState<"board" | "table">(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("jobs-board-view-mode");
-      return (saved as "board" | "table") || "board";
+  const [viewMode, setViewMode] = useState<'board' | 'table'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('jobs-board-view-mode');
+      return (saved as 'board' | 'table') || 'board';
     }
-    return "board";
+    return 'board';
   });
 
   const [statusFilters, setStatusFilters] = useState<StatusFilterValue[]>(
     () => {
-      if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("jobs-board-status-filters");
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('jobs-board-status-filters');
         try {
           return saved ? JSON.parse(saved) : [];
         } catch {
@@ -192,12 +172,12 @@ function KanbanPage() {
         }
       }
       return [];
-    }
+    },
   );
 
   const [dateFilters, setDateFilters] = useState<DateFilterValue[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("jobs-board-date-filters");
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('jobs-board-date-filters');
       try {
         return saved ? JSON.parse(saved) : [];
       } catch {
@@ -207,12 +187,11 @@ function KanbanPage() {
     return [];
   });
 
-  const [sortBy, setSortBy] = useState<SortOption>("date-desc");
   const [sortField, setSortField] = useState<string | null>(
-    "tracking.createdAt"
+    'tracking.createdAt',
   );
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -221,7 +200,7 @@ function KanbanPage() {
   }, [user, refetch]);
   useEffect(() => {
     if (selectedJob && duplicate) {
-      handleJobCreated({ ...selectedJob, status: "draft", isPublished: false });
+      handleJobCreated({ ...selectedJob, status: 'draft', isPublished: false });
       setDuplicate(false);
     }
   }, [selectedJob, duplicate]);
@@ -233,14 +212,14 @@ function KanbanPage() {
         jobs: jobs.filter(
           (job) =>
             job.status === column.id &&
-            (showArchived ? job.isDeleted : !job.isDeleted)
+            (showArchived ? job.isDeleted : !job.isDeleted),
         ),
       }));
       setColumns(initialColumnsWithJobs);
     }
   }, [jobs, showArchived]);
 
-  const handleJobCreated = async (newJob: Omit<Job, "id">) => {
+  const handleJobCreated = async (newJob: Omit<Job, 'id'>) => {
     setIsCreatingJob(true);
     const job: Job = {
       ...newJob,
@@ -251,22 +230,22 @@ function KanbanPage() {
 
     try {
       toast({
-        title: "Uploading Documents",
-        description: "It can take while if its big file",
+        title: 'Uploading Documents',
+        description: 'It can take while if its big file',
       });
       const res = (await createJob(job).unwrap()) as unknown;
 
       if (res) {
         await refetch(); // Wait for refetch to complete
         toast({
-          title: "Success",
-          description: "Job created successfully",
+          title: 'Success',
+          description: 'Job created successfully',
         });
       }
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to create job",
+        title: 'Error',
+        description: 'Failed to create job',
       });
     } finally {
       setIsCreatingJob(false);
@@ -280,46 +259,46 @@ function KanbanPage() {
 
   // Save view mode to localStorage when it changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("jobs-board-view-mode", viewMode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('jobs-board-view-mode', viewMode);
     }
   }, [viewMode]);
 
   // Save status filters to localStorage when they change
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       localStorage.setItem(
-        "jobs-board-status-filters",
-        JSON.stringify(statusFilters)
+        'jobs-board-status-filters',
+        JSON.stringify(statusFilters),
       );
     }
   }, [statusFilters]);
 
   // Save date filters to localStorage when they change
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== 'undefined') {
       localStorage.setItem(
-        "jobs-board-date-filters",
-        JSON.stringify(dateFilters)
+        'jobs-board-date-filters',
+        JSON.stringify(dateFilters),
       );
     }
   }, [dateFilters]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection("asc");
+      setSortDirection('asc');
     }
   };
 
   // Filter and sort jobs for table view
   const filteredAndSortedJobs = useMemo(() => {
-    if (!jobs || viewMode === "board") return [];
+    if (!jobs || viewMode === 'board') return [];
 
     let filtered = jobs.filter((job) =>
-      showArchived ? job.isDeleted : !job.isDeleted
+      showArchived ? job.isDeleted : !job.isDeleted,
     );
 
     // Apply search query filter
@@ -329,14 +308,14 @@ function KanbanPage() {
         (job) =>
           job.title.toLowerCase().includes(query) ||
           job.description?.toLowerCase().includes(query) ||
-          job.skills?.some((skill) => skill.toLowerCase().includes(query))
+          job.skills?.some((skill) => skill.toLowerCase().includes(query)),
       );
     }
 
     // Apply status filters (OR logic - show if matches any selected status)
     if (statusFilters.length > 0) {
       filtered = filtered.filter((job) =>
-        statusFilters.includes(job.status as StatusFilterValue)
+        statusFilters.includes(job.status as StatusFilterValue),
       );
     }
 
@@ -349,19 +328,19 @@ function KanbanPage() {
 
         return dateFilters.some((filter) => {
           switch (filter) {
-            case "today":
+            case 'today':
               return isSameDay(createdDate, now);
-            case "week":
+            case 'week':
               return (
                 isAfter(createdDate, startOfWeek(now)) ||
                 isSameDay(createdDate, startOfWeek(now))
               );
-            case "month":
+            case 'month':
               return (
                 isAfter(createdDate, startOfMonth(now)) ||
                 isSameDay(createdDate, startOfMonth(now))
               );
-            case "quarter":
+            case 'quarter':
               return (
                 isAfter(createdDate, startOfQuarter(now)) ||
                 isSameDay(createdDate, startOfQuarter(now))
@@ -379,13 +358,13 @@ function KanbanPage() {
         let aValue: any;
         let bValue: any;
 
-        if (sortField === "createdAt") {
+        if (sortField === 'createdAt') {
           aValue = new Date(a.tracking?.createdAt || 0).getTime();
           bValue = new Date(b.tracking?.createdAt || 0).getTime();
-        } else if (sortField === "candidateCount") {
+        } else if (sortField === 'candidateCount') {
           aValue = a.candidateCount || 0;
           bValue = b.candidateCount || 0;
-        } else if (sortField === "experience") {
+        } else if (sortField === 'experience') {
           aValue = a.experience || 0;
           bValue = b.experience || 0;
         } else {
@@ -394,15 +373,15 @@ function KanbanPage() {
         }
 
         // Handle string comparison
-        if (typeof aValue === "string" && typeof bValue === "string") {
-          return sortDirection === "asc"
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortDirection === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
         }
 
         // Handle numeric comparison
-        if (typeof aValue === "number" && typeof bValue === "number") {
-          return sortDirection === "asc" ? aValue - bValue : bValue - aValue;
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
         }
 
         return 0;
@@ -436,7 +415,7 @@ function KanbanPage() {
 
     const sourceColumn = columns.find((col) => col.id === source.droppableId);
     const destColumn = columns.find(
-      (col) => col.id === destination.droppableId
+      (col) => col.id === destination.droppableId,
     );
 
     if (!sourceColumn || !destColumn) return;
@@ -479,7 +458,7 @@ function KanbanPage() {
         status: destination.droppableId,
         openJobCardsOrder:
           newColumns
-            .find((col) => col.id === "open")
+            .find((col) => col.id === 'open')
             ?.jobs.map((job) => job._id) || [],
       }).unwrap();
     } catch {
@@ -488,9 +467,9 @@ function KanbanPage() {
       setColumns(revertColumns);
 
       toast({
-        title: "Error",
-        description: "Failed to update job status",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update job status',
+        variant: 'destructive',
       });
     }
   };
@@ -501,7 +480,7 @@ function KanbanPage() {
       jobs: column.jobs.map((job) =>
         job._id === updatedJob._id
           ? { ...updatedJob, candidateCount: updatedJob.candidateCount || 0 }
-          : job
+          : job,
       ),
     }));
 
@@ -521,21 +500,21 @@ function KanbanPage() {
 
       setSelectedJob(null);
       toast({
-        title: "Success",
-        description: `Job Action Applied successfully.`,
+        title: 'Success',
+        description: 'Job Action Applied successfully.',
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } else {
         toast({
-          title: "Error",
-          description: "Failed to delete job position",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to delete job position',
+          variant: 'destructive',
         });
       }
     } finally {
@@ -549,18 +528,18 @@ function KanbanPage() {
   if (error) return <div>Error loading jobs</div>;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section - stays the same always */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+            <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
               Job Positions
             </CardTitle>
 
             {/* Right Section - Controls and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
               {/* Show Archived */}
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -579,7 +558,7 @@ function KanbanPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   variant="outline"
                   onClick={() => setIsGlobalEmailSettingsOpen(true)}
@@ -608,14 +587,14 @@ function KanbanPage() {
       </div>
 
       {/* Filters and View Toggle Section - below header */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 flex-1">
+      <div className="flex items-center gap-3 border-b border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-black">
+        <div className="flex flex-1 items-center gap-3">
           {/* Search Input - Only show in table view */}
-          {viewMode === "table" && (
-            <div className="flex-1 max-w-md">
+          {viewMode === 'table' && (
+            <div className="max-w-md flex-1">
               <div className="relative">
                 <svg
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -632,14 +611,14 @@ function KanbanPage() {
                   placeholder="Search jobs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm text-gray-900 placeholder:text-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-primary dark:border-gray-700 dark:bg-black dark:text-white dark:placeholder:text-gray-400"
                 />
               </div>
             </div>
           )}
 
           {/* Filters - Only show in table view */}
-          {viewMode === "table" && (
+          {viewMode === 'table' && (
             <JobsFilters
               statusFilters={statusFilters}
               dateFilters={dateFilters}
@@ -654,11 +633,11 @@ function KanbanPage() {
       </div>
 
       {/* Content Area - Board or Table View */}
-      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
-        {viewMode === "board" ? (
+      <div className="mt-4 flex-1 overflow-hidden px-4 pb-4">
+        {viewMode === 'board' ? (
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="h-full overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500">
-              <div className="h-full flex gap-1 min-w-full">
+            <div className="scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-500 h-full overflow-x-auto overflow-y-hidden">
+              <div className="flex h-full min-w-full gap-1">
                 {columns.map((column) => (
                   <KanbanColumn
                     key={column.id}
@@ -724,11 +703,11 @@ function KanbanPage() {
               onClick={handleDeleteConfirm}
               className={
                 !selectedJob?.isDeleted
-                  ? "bg-destructive hover:bg-destructive/90"
-                  : "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
+                  ? 'bg-destructive hover:bg-destructive/90'
+                  : 'bg-blue hover:bg-blue text-blue-500 hover:text-blue-500/90'
               }
             >
-              {selectedJob?.isDeleted ? "Unarchive" : "Archive"}
+              {selectedJob?.isDeleted ? 'Unarchive' : 'Archive'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -760,10 +739,3 @@ function KanbanPage() {
 }
 
 export default KanbanPage;
-
-// export default withAuthGuard(KanbanPage, {
-//   requiredRoles: ["admin", "hr"],
-//   fallbackPath: "/dashboard",
-//   checkAllowance: false,
-//   allowAuthenticated: true,
-// });

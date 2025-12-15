@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRightIcon } from "lucide-react";
-import { Dispatch, SetStateAction } from "react";
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRightIcon } from 'lucide-react';
+import { Dispatch, SetStateAction } from 'react';
 
 interface LogsPaginationProps {
   currentPage: number;
@@ -23,7 +23,7 @@ export function LogsPagination({
   const isLastPage = currentOffset + currentLogCount >= totalLines;
 
   return (
-    <div className="flex items-center justify-between gap-3 p-3 border-t bg-card/60">
+    <div className="flex items-center justify-between gap-3 border-t bg-card/60 p-3">
       <Button
         variant="outline"
         size="sm"

@@ -3,16 +3,18 @@
  * Displays candidate information, skills, custom fields, resume, attachments, and AI scores
  */
 
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { candidateDetailsFields } from "../../Candidate/candidate-details-fields";
-import ResumeEvaluationDetails from "../../Candidate/ResumeEvaluationDetails";
-import { followUpSepretorPatternRegex, scoreColors } from "@/lib/constants";
-import { QuickTooltip } from "@/components/ui/tooltip";
-import { Trophy, Bell, Edit, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useFollowUpParsing } from "../../../hooks/useFollowUpParsing";
-import { getJobId } from "../../../utils/candidateAccessors";
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import { followUpSepretorPatternRegex, scoreColors } from '@/lib/constants';
+import { QuickTooltip } from '@/components/ui/tooltip';
+import {
+  Trophy, Bell, Edit, Trash2,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import ResumeEvaluationDetails from '../../Candidate/ResumeEvaluationDetails';
+import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
+import { useFollowUpParsing } from '../../../hooks/useFollowUpParsing';
+import { getJobId } from '../../../utils/candidateAccessors';
 
 interface CandidateOverviewTabProps {
   candidate: Candidate;
@@ -28,10 +30,10 @@ interface CandidateOverviewTabProps {
 const getOrdinalSuffix = (num: number): string => {
   const j = num % 10;
   const k = num % 100;
-  if (j === 1 && k !== 11) return num + "st";
-  if (j === 2 && k !== 12) return num + "nd";
-  if (j === 3 && k !== 13) return num + "rd";
-  return num + "th";
+  if (j === 1 && k !== 11) return `${num}st`;
+  if (j === 2 && k !== 12) return `${num}nd`;
+  if (j === 3 && k !== 13) return `${num}rd`;
+  return `${num}th`;
 };
 
 /**
@@ -45,7 +47,9 @@ interface ScoreCardProps {
   tooltipContent?: React.ReactNode;
 }
 
-function ScoreCard({ score, label, description, icon, tooltipContent }: ScoreCardProps) {
+function ScoreCard({
+  score, label, description, icon, tooltipContent,
+}: ScoreCardProps) {
   const normalizedScore = Math.max(1, Math.min(10, score));
   const roundedScore = Math.round(normalizedScore);
   const scoreColor = scoreColors[roundedScore];
@@ -60,7 +64,8 @@ function ScoreCard({ score, label, description, icon, tooltipContent }: ScoreCar
           className={`text-2xl font-bold ${scoreColor.text}`}
           style={{ color: scoreColor.text }}
         >
-          {score}/10
+          {score}
+          /10
         </div>
         <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mt-1">
           {label}
@@ -93,14 +98,16 @@ interface FollowUpSectionProps {
   onRemove: () => void;
 }
 
-function FollowUpSection({ candidate, user, onEdit, onRemove }: FollowUpSectionProps) {
+function FollowUpSection({
+  candidate, user, onEdit, onRemove,
+}: FollowUpSectionProps) {
   const parsed = useFollowUpParsing(candidate);
 
   if (!candidate.followUp?.date && !candidate.followUp?.note) {
     return null;
   }
 
-  if (user?.role === "interviewer") {
+  if (user?.role === 'interviewer') {
     return null;
   }
 
@@ -116,10 +123,13 @@ function FollowUpSection({ candidate, user, onEdit, onRemove }: FollowUpSectionP
               </h4>
               {candidate.followUp.date && (
                 <span className="text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-800/50 px-2 py-1 rounded">
-                  {new Date(candidate.followUp.date).toLocaleDateString()} at{" "}
+                  {new Date(candidate.followUp.date).toLocaleDateString()}
+                  {' '}
+                  at
+                  {' '}
                   {new Date(candidate.followUp.date).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </span>
               )}
@@ -149,13 +159,14 @@ function FollowUpSection({ candidate, user, onEdit, onRemove }: FollowUpSectionP
             )}
             {candidate.followUp.userId && (
               <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                Created by:{" "}
+                Created by:
+                {' '}
                 <span className="font-bold">{candidate.followUp.userId.name}</span>
               </div>
             )}
           </div>
         </div>
-        {(user?.role === "admin" || user?.role === "hr") && (
+        {(user?.role === 'admin' || user?.role === 'hr') && (
           <div className="flex items-center gap-1 flex-shrink-0">
             <Button
               variant="ghost"
@@ -200,8 +211,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
     return null;
   }
 
-  const hasRanking =
-    candidate.scores?.comparativeRanking?.overallRank !== undefined;
+  const hasRanking = candidate.scores?.comparativeRanking?.overallRank !== undefined;
 
   return (
     <div className="space-y-4">
@@ -210,7 +220,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
       </h3>
       <div
         className={`grid grid-cols-2 gap-4 ${
-          hasRanking ? "md:grid-cols-5" : "md:grid-cols-4"
+          hasRanking ? 'md:grid-cols-5' : 'md:grid-cols-4'
         }`}
       >
         {candidate.scores.overall !== undefined && (
@@ -218,7 +228,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
             score={candidate.scores.overall}
             label="Overall Fit"
             description="Combined assessment"
-            icon={
+            icon={(
               <svg
                 className={`w-5 h-5 ${scoreColors[Math.round(Math.max(1, Math.min(10, candidate.scores.overall)))].text}`}
                 style={{
@@ -235,7 +245,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-            }
+            )}
           />
         )}
 
@@ -244,7 +254,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
             score={candidate.scores.experience}
             label="Experience"
             description="Relevant experience match"
-            icon={
+            icon={(
               <svg
                 className={`w-5 h-5 ${scoreColors[Math.round(Math.max(1, Math.min(10, candidate.scores.experience)))].text}`}
                 style={{
@@ -261,7 +271,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
                   d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
                 />
               </svg>
-            }
+            )}
           />
         )}
 
@@ -270,7 +280,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
             score={candidate.scores.skills}
             label="Skills Match"
             description="Technical skills alignment"
-            icon={
+            icon={(
               <svg
                 className={`w-5 h-5 ${scoreColors[Math.round(Math.max(1, Math.min(10, candidate.scores.skills)))].text}`}
                 style={{
@@ -287,7 +297,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
                   d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
                 />
               </svg>
-            }
+            )}
           />
         )}
 
@@ -296,7 +306,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
             score={candidate.scores.affordability}
             label="Affordability"
             description="Cost-effectiveness match"
-            icon={
+            icon={(
               <svg
                 className={`w-5 h-5 ${scoreColors[Math.round(Math.max(1, Math.min(10, candidate.scores.affordability)))].text}`}
                 style={{
@@ -313,38 +323,44 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
                   d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-            }
+            )}
           />
         )}
 
-        {candidate.scores?.comparativeRanking &&
-          candidate.scores.comparativeRanking.overallRank !== undefined && (
+        {candidate.scores?.comparativeRanking
+          && candidate.scores.comparativeRanking.overallRank !== undefined && (
             <QuickTooltip
-              content={
+              content={(
                 <div className="space-y-2 p-1">
                   <div className="font-semibold text-xs mb-2">Ranking Breakdown</div>
                   <div className="space-y-1.5">
                     <div className="flex justify-between gap-4">
                       <span className="text-gray-300">Skills:</span>
                       <span className="font-semibold">
-                        {candidate.scores.comparativeRanking.skillsPercentile} percentile
+                        {candidate.scores.comparativeRanking.skillsPercentile}
+                        {' '}
+                        percentile
                       </span>
                     </div>
                     <div className="flex justify-between gap-4">
                       <span className="text-gray-300">Experience:</span>
                       <span className="font-semibold">
-                        {candidate.scores.comparativeRanking.experiencePercentile} percentile
+                        {candidate.scores.comparativeRanking.experiencePercentile}
+                        {' '}
+                        percentile
                       </span>
                     </div>
                     <div className="flex justify-between gap-4">
                       <span className="text-gray-300">Affordability:</span>
                       <span className="font-semibold">
-                        {candidate.scores.comparativeRanking.affordabilityPercentile} percentile
+                        {candidate.scores.comparativeRanking.affordabilityPercentile}
+                        {' '}
+                        percentile
                       </span>
                     </div>
                   </div>
                 </div>
-              }
+              )}
               side="top"
             >
               <div
@@ -371,13 +387,18 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
                     Candidate Rank
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {candidate.scores.comparativeRanking.percentile} percentile •{" "}
-                    {candidate.scores.comparativeRanking.totalCandidates} total
+                    {candidate.scores.comparativeRanking.percentile}
+                    {' '}
+                    percentile •
+                    {' '}
+                    {candidate.scores.comparativeRanking.totalCandidates}
+                    {' '}
+                    total
                   </div>
                 </div>
               </div>
             </QuickTooltip>
-          )}
+        )}
       </div>
     </div>
   );
@@ -412,20 +433,20 @@ export function CandidateOverviewTab({
             Skills
           </h3>
           {candidateDetailsFields
-            .find((field) => field.id === "skills")
+            .find((field) => field.id === 'skills')
             ?.render(candidate, user)}
         </div>
       )}
 
       {/* Custom Fields */}
-      {candidate.customFields &&
-        Object.keys(candidate.customFields).length > 0 && (
+      {candidate.customFields
+        && Object.keys(candidate.customFields).length > 0 && (
           <div className="space-y-4">
             {candidateDetailsFields
-              .find((field) => field.id === "metafields")
+              .find((field) => field.id === 'metafields')
               ?.render(candidate, user)}
           </div>
-        )}
+      )}
 
       {/* Resume Section */}
       {candidate.resume && (
@@ -434,7 +455,7 @@ export function CandidateOverviewTab({
             Resume
           </h3>
           {candidateDetailsFields
-            .find((field) => field.id === "resume")
+            .find((field) => field.id === 'resume')
             ?.render(candidate, user)}
         </div>
       )}
@@ -443,7 +464,7 @@ export function CandidateOverviewTab({
       {candidate.attachments && candidate.attachments.length > 0 && (
         <div className="space-y-4">
           {candidateDetailsFields
-            .find((field) => field.id === "attachments")
+            .find((field) => field.id === 'attachments')
             ?.render(candidate, user)}
         </div>
       )}
@@ -464,4 +485,3 @@ export function CandidateOverviewTab({
     </div>
   );
 }
-

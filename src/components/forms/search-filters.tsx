@@ -1,16 +1,17 @@
-"use client";
-import { useFormikContext } from "formik";
-import { useEffect, useState } from "react";
-import type { SearchFilter } from "./candidate-search";
+'use client';
+
+import { useFormikContext } from 'formik';
+import { useEffect, useState } from 'react';
 import type {
   CustomField,
   FormObject,
-} from "@/Custom_Fields/Types/CustomField";
-import { BasicSearchSection } from "./search-filters/basic-search-section";
-import { SalaryExperienceSection } from "./search-filters/salary-experience-section";
-import { AdvancedFiltersSection } from "./search-filters/advance-filters-section";
-import useCookie from "@/hooks/useCookie";
-import { useLazyGetCustomFieldsQuery } from "@/lib/features/org/orgApi";
+} from '@/Custom_Fields/Types/CustomField';
+import useCookie from '@/hooks/useCookie';
+import { useLazyGetCustomFieldsQuery } from '@/lib/features/org/orgApi';
+import type { SearchFilter } from './candidate-search';
+import { BasicSearchSection } from './search-filters/basic-search-section';
+import { SalaryExperienceSection } from './search-filters/salary-experience-section';
+import { AdvancedFiltersSection } from './search-filters/advance-filters-section';
 
 export function SearchFilters({
   handleSearch,
@@ -25,27 +26,26 @@ export function SearchFilters({
   const [isSalaryExpanded, setIsSalaryExpanded] = useState(false);
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
 
-  const { values, errors, touched, setFieldValue, handleChange, handleBlur } =
-    useFormikContext<SearchFilter>();
+  const {
+    values, errors, touched, setFieldValue, handleChange, handleBlur,
+  } = useFormikContext<SearchFilter>();
   const user = useCookie();
   const [getCustomField] = useLazyGetCustomFieldsQuery();
 
-  const hasError = (fieldName: string) => {
-    return !!(
-      errors[fieldName as keyof typeof errors] &&
-      touched[fieldName as keyof typeof touched]
-    );
-  };
+  const hasError = (fieldName: string) => !!(
+    errors[fieldName as keyof typeof errors]
+      && touched[fieldName as keyof typeof touched]
+  );
 
   const getErrorMessage = (fieldName: string) => {
     const error = errors[fieldName as keyof typeof errors];
-    return hasError(fieldName) ? (typeof error === "string" ? error : "") : "";
+    return hasError(fieldName) ? (typeof error === 'string' ? error : '') : '';
   };
 
   useEffect(() => {
     if (
-      !values.customFields ||
-      Object.keys(values.customFields || {}).length === 0
+      !values.customFields
+      || Object.keys(values.customFields || {}).length === 0
     ) {
       setCols([]);
     }
@@ -55,10 +55,9 @@ export function SearchFilters({
     (async () => {
       if (user?.organizationId) {
         const data = await getCustomField(user?.organizationId);
-        const metaFieldsData =
-          (Object.values(data?.data || {}) as FormObject[]).find(
-            (form) => form.formName === "Candidate"
-          )?.fields || [];
+        const metaFieldsData = (Object.values(data?.data || {}) as FormObject[]).find(
+          (form) => form.formName === 'Candidate',
+        )?.fields || [];
         setMetaFields(metaFieldsData as CustomField[] | []);
       }
     })();
@@ -69,39 +68,35 @@ export function SearchFilters({
     const selectedField = metaFields.find((f: CustomField) => f.id === fieldId);
     if (!selectedField) return;
     const existsElsewhere = cols.some(
-      (col) => col.fieldId === fieldId && col.id !== colId
+      (col) => col.fieldId === fieldId && col.id !== colId,
     );
     if (existsElsewhere) {
       return;
     }
-    const newCols = cols.map((col) =>
-      col.id === colId
-        ? {
-            ...col,
-            fieldId,
-            label: selectedField.label,
-            type: selectedField.type,
-            options: selectedField.options as string[],
-            name: selectedField.label,
-            value: selectedField ? "" : (col.value ?? ""),
-          }
-        : col
-    );
+    const newCols = cols.map((col) => (col.id === colId
+      ? {
+        ...col,
+        fieldId,
+        label: selectedField.label,
+        type: selectedField.type,
+        options: selectedField.options as string[],
+        name: selectedField.label,
+        value: selectedField ? '' : (col.value ?? ''),
+      }
+      : col));
     setCols(newCols);
     setFieldValue(
-      "customFields",
-      Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
+      'customFields',
+      Object.fromEntries(newCols.map(({ label, value }) => [label, value])),
     );
   };
 
   const updateColValue = (id: string, value: string) => {
-    const newCols = cols.map((col) =>
-      col.id === id ? { ...col, value: value } : col
-    );
+    const newCols = cols.map((col) => (col.id === id ? { ...col, value } : col));
     setCols(newCols);
     setFieldValue(
-      "customFields",
-      Object.fromEntries(newCols.map(({ label, value }) => [label, value]))
+      'customFields',
+      Object.fromEntries(newCols.map(({ label, value }) => [label, value])),
     );
   };
 
@@ -140,8 +135,8 @@ export function SearchFilters({
       <AdvancedFiltersSection
         isAdvancedExpanded={isAdvancedExpanded}
         setIsAdvancedExpanded={setIsAdvancedExpanded}
-        createdAfter={values.createdAfter || ""}
-        createdBefore={values.createdBefore || ""}
+        createdAfter={values.createdAfter || ''}
+        createdBefore={values.createdBefore || ''}
         setFieldValue={setFieldValue}
         hasError={hasError}
         getErrorMessage={getErrorMessage}

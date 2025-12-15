@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { X, Plus } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { X, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface ChipInputProps {
   value?: string[];
@@ -27,13 +27,13 @@ export function ChipInput({
   showAddButton = false,
 }: ChipInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const [inputValue, setInputValue] = React.useState("");
+  const [inputValue, setInputValue] = React.useState('');
   const [open, setOpen] = React.useState(false);
   const [selectedValues, setSelectedValues] = React.useState<string[]>([]);
 
   React.useEffect(() => {
     // if (value.length > 0) {
-    if (typeof value === "string") {
+    if (typeof value === 'string') {
       setSelectedValues([value]);
     } else {
       setSelectedValues(value);
@@ -52,39 +52,39 @@ export function ChipInput({
     const hasAlphanumeric = /[a-zA-Z0-9]/.test(trimmedValue);
     const hasLongSpecialCharSequence = /[^a-zA-Z0-9]{5,}/.test(trimmedValue);
 
-    if (trimmedValue !== "" && hasAlphanumeric && !hasLongSpecialCharSequence) {
+    if (trimmedValue !== '' && hasAlphanumeric && !hasLongSpecialCharSequence) {
       const currentValues = selectedValues || [];
       if (!currentValues.includes(trimmedValue)) {
         const newValues = [...currentValues, trimmedValue];
         setSelectedValues(newValues);
         onChange(newValues);
-        setInputValue("");
+        setInputValue('');
       }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // For desktop: handle Enter key
-    if (e.key === "Enter" && inputValue !== "") {
+    if (e.key === 'Enter' && inputValue !== '') {
       e.preventDefault();
       addSkill(inputValue);
     }
 
     // Handle backspace for removing chips
-    if (e.key === "Delete" || e.key === "Backspace") {
-      if (inputValue === "" && (selectedValues || []).length > 0) {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (inputValue === '' && (selectedValues || []).length > 0) {
         handleUnselect(selectedValues[selectedValues.length - 1]);
       }
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const { value } = e.target;
     setInputValue(value);
 
     // Mobile-friendly: Check for comma or space separation
-    if (value.includes(",")) {
-      const parts = value.split(/[,]+/).filter((part) => part.trim() !== "");
+    if (value.includes(',')) {
+      const parts = value.split(/[,]+/).filter((part) => part.trim() !== '');
       if (parts.length > 1) {
         // Add all parts except the last one (which might be incomplete)
         parts.slice(0, -1).forEach((part) => addSkill(part));
@@ -96,14 +96,14 @@ export function ChipInput({
 
   // Handle composition events for mobile keyboards
   const handleCompositionEnd = (
-    e: React.CompositionEvent<HTMLInputElement>
+    e: React.CompositionEvent<HTMLInputElement>,
   ) => {
-    const value = e.currentTarget.value;
+    const { value } = e.currentTarget;
     setInputValue(value);
 
     // Check if the composition ended with a comma or space
-    if (value.includes(",")) {
-      const parts = value.split(/[,]+/).filter((part) => part.trim() !== "");
+    if (value.includes(',')) {
+      const parts = value.split(/[,]+/).filter((part) => part.trim() !== '');
       if (parts.length > 1) {
         parts.slice(0, -1).forEach((part) => addSkill(part));
         setInputValue(parts[parts.length - 1]);
@@ -112,36 +112,36 @@ export function ChipInput({
   };
 
   return (
-    <div className="relative" style={{ width: fullWidth ? "100%" : "" }}>
+    <div className="relative" style={{ width: fullWidth ? '100%' : '' }}>
       <div className="group border border-input px-3 py-2 text-sm rounded-md focus-within:ring-2 focus-within:ring-ring">
         <div className="flex gap-1 flex-wrap">
-          {typeof selectedValues === "string"
+          {typeof selectedValues === 'string'
             ? null
             : (selectedValues || []).map((item) => (
-                <Badge
-                  key={item}
-                  variant="secondary"
-                  className="bg-muted hover:bg-muted/80 break-all"
+              <Badge
+                key={item}
+                variant="secondary"
+                className="bg-muted hover:bg-muted/80 break-all"
+              >
+                {item}
+                <button
+                  type="button"
+                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleUnselect(item);
+                    }
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onClick={() => handleUnselect(item)}
                 >
-                  {item}
-                  <button
-                    type="button"
-                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleUnselect(item);
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={() => handleUnselect(item)}
-                  >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </button>
-                </Badge>
-              ))}
+                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                </button>
+              </Badge>
+            ))}
           <input
             ref={inputRef}
             type="text"
@@ -157,7 +157,7 @@ export function ChipInput({
             placeholder={placeholder}
             className="ml-2 bg-transparent outline-none placeholder:text-muted-foreground flex-1"
           />
-          {showAddButton && inputValue.trim() !== "" && (
+          {showAddButton && inputValue.trim() !== '' && (
             <Button
               type="button"
               size="sm"

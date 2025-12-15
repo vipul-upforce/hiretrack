@@ -1,14 +1,21 @@
-import React from "react";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { SectionProps } from "../types";
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { SectionProps } from '../types';
 
-export const GeneralSettingsSection: React.FC<SectionProps> = ({
-  config,
-  updateConfig,
-}) => {
+function getTemperatureDescription(temperature: number): string {
+  if (temperature === 0) {
+    return 'Fully Deterministic';
+  }
+  if (temperature <= 0.3) {
+    return 'High Consistency';
+  }
+  return 'More Creative';
+}
+
+export function GeneralSettingsSection({ config, updateConfig }: SectionProps) {
   return (
     <div className="space-y-6">
       {/* Temperature Control */}
@@ -18,11 +25,7 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
             Temperature: {config.temperature.toFixed(2)}
           </Label>
           <span className="text-xs text-muted-foreground">
-            {config.temperature === 0
-              ? "Fully Deterministic"
-              : config.temperature <= 0.3
-                ? "High Consistency"
-                : "More Creative"}
+            {getTemperatureDescription(config.temperature)}
           </span>
         </div>
         <Slider
@@ -31,7 +34,7 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
           max={1}
           step={0.05}
           value={[config.temperature]}
-          onValueChange={([value]) => updateConfig("temperature", value)}
+          onValueChange={([value]) => updateConfig('temperature', value)}
           className="w-full"
         />
         <p className="text-xs text-muted-foreground">
@@ -52,7 +55,7 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
           id="autoEval"
           checked={config.autoEvaluateAllCandidates}
           onCheckedChange={(val) =>
-            updateConfig("autoEvaluateAllCandidates", val)
+            updateConfig('autoEvaluateAllCandidates', val)
           }
         />
       </div>
@@ -67,7 +70,7 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
             min={0}
             value={config.maxPdfPages}
             onChange={(e) =>
-              updateConfig("maxPdfPages", parseInt(e.target.value) || 0)
+              updateConfig('maxPdfPages', parseInt(e.target.value, 10) || 0)
             }
           />
           <p className="text-xs text-muted-foreground">
@@ -78,4 +81,4 @@ export const GeneralSettingsSection: React.FC<SectionProps> = ({
       )}
     </div>
   );
-};
+}

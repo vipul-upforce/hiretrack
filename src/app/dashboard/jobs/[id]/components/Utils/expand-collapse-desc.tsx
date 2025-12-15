@@ -1,14 +1,16 @@
-import { useState, useRef, useEffect, ReactNode } from "react";
-import { ChevronUp, ChevronDown } from "lucide-react";
+import {
+  useState, useRef, useEffect, ReactNode,
+} from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
-const ExpandableDescription = ({
+function ExpandableDescription({
   description,
   open,
 }: {
   description: string | ReactNode;
   height?: number;
   open?: boolean;
-}) => {
+}) {
   const [isExpanded, setIsExpanded] = useState(open || false);
   const [isOverflowing, setIsOverflowing] = useState(open || false);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -21,10 +23,10 @@ const ExpandableDescription = ({
     };
 
     checkOverflow();
-    window.addEventListener("resize", checkOverflow);
+    window.addEventListener('resize', checkOverflow);
 
     return () => {
-      window.removeEventListener("resize", checkOverflow);
+      window.removeEventListener('resize', checkOverflow);
     };
   }, [description]);
 
@@ -33,7 +35,7 @@ const ExpandableDescription = ({
       <div
         ref={contentRef}
         className={`text-sm whitespace-pre-wrap flex  break-words transition-all duration-200 ease-in-out
-          ${isExpanded ? "max-h-full pb-5" : `max-h-[60px] h-auto overflow-hidden`}`}
+          ${isExpanded ? 'max-h-full pb-5' : 'max-h-[60px] h-auto overflow-hidden'}`}
       >
         {/* {typeof description === "string" ? (
           <p
@@ -46,12 +48,12 @@ const ExpandableDescription = ({
           (description ?? <p>No description found</p>)
         )} */}
 
-        {typeof description === "string" ? (
+        {typeof description === 'string' ? (
           <div
             className="text-sm whitespace-pre-wrap pb-0 ml-[1rem]"
-            style={{ wordWrap: "break-word" }}
+            style={{ wordWrap: 'break-word' }}
             dangerouslySetInnerHTML={{
-              __html: description || "No description found",
+              __html: description || 'No description found',
             }}
           />
         ) : (
@@ -79,6 +81,6 @@ const ExpandableDescription = ({
       )}
     </div>
   );
-};
+}
 
 export default ExpandableDescription;

@@ -1,10 +1,12 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { AlertCircle, Edit, Plus, Settings2, Trash } from "lucide-react";
-import { useContext, useMemo, useState } from "react";
-import JobSpecificCustomFieldForm from "./jobSpecificCustomFieldForm";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import {
+  AlertCircle, Edit, Plus, Settings2, Trash,
+} from 'lucide-react';
+import { useContext, useMemo, useState } from 'react';
+import JobSpecificCustomFieldForm from './jobSpecificCustomFieldForm';
 
 export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
   const context = useContext(CustomFieldsContext);
@@ -23,7 +25,7 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
     if (!customFields) return [];
 
     const candidateForm = Object.entries(customFields).find(
-      ([_, form]) => form.formName.toLowerCase() === "candidate"
+      ([_, form]) => form.formName.toLowerCase() === 'candidate',
     );
 
     if (!candidateForm) return [];
@@ -36,7 +38,7 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
     if (!customFields) return null;
 
     const candidateForm = Object.entries(customFields).find(
-      ([_, form]) => form.formName.toLowerCase() === "candidate"
+      ([_, form]) => form.formName.toLowerCase() === 'candidate',
     );
 
     return candidateForm ? candidateForm[0] : null;
@@ -110,11 +112,14 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
                     </div>
                     <div>
                       <CardTitle className="text-base">
-                        {field.label.split(" |||||(")[0]}
+                        {field.label.split(' |||||(')[0]}
                       </CardTitle>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {field.type} •{" "}
-                        {field.required ? "Required" : "Optional"}
+                        {field.type}
+                        {' '}
+                        •
+                        {' '}
+                        {field.required ? 'Required' : 'Optional'}
                       </p>
                     </div>
                   </div>

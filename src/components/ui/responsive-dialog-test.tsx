@@ -1,16 +1,16 @@
 /**
  * Responsive Dialog Test Component
- * 
+ *
  * This component demonstrates responsive dialog behavior across different screen sizes.
  * Use this to test how dialogs adapt to mobile, tablet, and desktop viewports.
  */
 
-import React, { useState } from "react";
-import { Button } from "./button";
-import { BaseDialog } from "./base-dialog";
-import { Input } from "./input";
-import { Label } from "./label";
-import { Textarea } from "./textarea";
+import React, { useState } from 'react';
+import { Button } from './button';
+import { BaseDialog } from './base-dialog';
+import { Input } from './input';
+import { Label } from './label';
+import { Textarea } from './textarea';
 
 export function ResponsiveDialogTest() {
   const [activeDialog, setActiveDialog] = useState<string | null>(null);
@@ -27,28 +27,28 @@ export function ResponsiveDialogTest() {
       </div>
       <div>
         <Label htmlFor="message">Message</Label>
-        <Textarea 
-          id="message" 
-          placeholder="Enter your message..." 
+        <Textarea
+          id="message"
+          placeholder="Enter your message..."
           rows={4}
         />
       </div>
       <div className="space-y-2">
         <h4 className="font-medium">Long Content Test</h4>
         <p className="text-sm text-muted-foreground">
-          This is a longer piece of content to test how dialogs handle scrolling 
-          and overflow on different screen sizes. Lorem ipsum dolor sit amet, 
-          consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore 
+          This is a longer piece of content to test how dialogs handle scrolling
+          and overflow on different screen sizes. Lorem ipsum dolor sit amet,
+          consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore
           et dolore magna aliqua.
         </p>
         <p className="text-sm text-muted-foreground">
-          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi 
-          ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit 
+          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
+          ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
           in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
         </p>
         <p className="text-sm text-muted-foreground">
-          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia 
-          deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste 
+          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
+          deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste
           natus error sit voluptatem accusantium doloremque laudantium.
         </p>
       </div>
@@ -58,25 +58,25 @@ export function ResponsiveDialogTest() {
   return (
     <div className="p-8 space-y-4">
       <h2 className="text-2xl font-bold mb-6">Responsive Dialog Tests</h2>
-      
+
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {/* Different dialog sizes */}
-        <Button onClick={() => setActiveDialog("xs")}>
+        <Button onClick={() => setActiveDialog('xs')}>
           XS Dialog (320px)
         </Button>
-        <Button onClick={() => setActiveDialog("sm")}>
+        <Button onClick={() => setActiveDialog('sm')}>
           SM Dialog (400px)
         </Button>
-        <Button onClick={() => setActiveDialog("md")}>
+        <Button onClick={() => setActiveDialog('md')}>
           MD Dialog (500px)
         </Button>
-        <Button onClick={() => setActiveDialog("lg")}>
+        <Button onClick={() => setActiveDialog('lg')}>
           LG Dialog (700px)
         </Button>
-        <Button onClick={() => setActiveDialog("xl")}>
+        <Button onClick={() => setActiveDialog('xl')}>
           XL Dialog (900px)
         </Button>
-        <Button onClick={() => setActiveDialog("2xl")}>
+        <Button onClick={() => setActiveDialog('2xl')}>
           2XL Dialog (1200px)
         </Button>
       </div>
@@ -84,16 +84,45 @@ export function ResponsiveDialogTest() {
       <div className="mt-8 p-4 bg-muted rounded-lg">
         <h3 className="font-semibold mb-2">Responsive Behavior Notes:</h3>
         <ul className="text-sm space-y-1 text-muted-foreground">
-          <li>• <strong>Mobile (≤640px):</strong> All dialogs use 90vw width with proper margins</li>
-          <li>• <strong>Tablet (641px-1024px):</strong> XL/2XL dialogs limited to 85vw</li>
-          <li>• <strong>Desktop ({'>'}1024px):</strong> Dialogs use their defined max-widths</li>
-          <li>• <strong>Height:</strong> All dialogs respect 90vh max-height with scrollable content</li>
-          <li>• <strong>Buttons:</strong> Stack vertically on mobile, horizontal on desktop</li>
+          <li>
+            •
+            <strong>Mobile (≤640px):</strong>
+            {' '}
+            All dialogs use 90vw width with proper margins
+          </li>
+          <li>
+            •
+            <strong>Tablet (641px-1024px):</strong>
+            {' '}
+            XL/2XL dialogs limited to 85vw
+          </li>
+          <li>
+            •
+            <strong>
+              Desktop (
+              {'>'}
+              1024px):
+            </strong>
+            {' '}
+            Dialogs use their defined max-widths
+          </li>
+          <li>
+            •
+            <strong>Height:</strong>
+            {' '}
+            All dialogs respect 90vh max-height with scrollable content
+          </li>
+          <li>
+            •
+            <strong>Buttons:</strong>
+            {' '}
+            Stack vertically on mobile, horizontal on desktop
+          </li>
         </ul>
       </div>
 
       {/* Dialog Instances */}
-      {["xs", "sm", "md", "lg", "xl", "2xl"].map((size) => (
+      {['xs', 'sm', 'md', 'lg', 'xl', '2xl'].map((size) => (
         <BaseDialog
           key={size}
           isOpen={activeDialog === size}
@@ -102,12 +131,12 @@ export function ResponsiveDialogTest() {
           description={`Testing ${size} dialog size across different screen sizes`}
           size={size as any}
           primaryAction={{
-            label: "Save Changes",
+            label: 'Save Changes',
             onClick: () => setActiveDialog(null),
-            variant: "success",
+            variant: 'success',
           }}
           secondaryAction={{
-            label: "Cancel",
+            label: 'Cancel',
             onClick: () => setActiveDialog(null),
           }}
         >

@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import React from "react";
-import { Form, Formik } from "formik";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
-import { VersionInfoSection } from "./version/version-info-section";
-import { UpdateSettingsSection } from "./version/update-settings-section";
-import { ChangelogSection } from "./version/changelog-section";
-import { DiskSpaceSection } from "./disk-space";
-import { aboutFormSchema } from "./schema";
-import { useAboutVersion } from "./version/useAboutVersion";
-import { AboutValues } from "./types";
-import AboutVersionLoadingSkeleton from "./loading-skeleton";
+import React from 'react';
+import { Form, Formik } from 'formik';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Download, Loader2 } from 'lucide-react';
+import { VersionInfoSection } from './version/version-info-section';
+import { UpdateSettingsSection } from './version/update-settings-section';
+import { ChangelogSection } from './version/changelog-section';
+import { DiskSpaceSection } from './disk-space';
+import { aboutFormSchema } from './schema';
+import { useAboutVersion } from './version/useAboutVersion';
+import { AboutValues } from './types';
+import AboutVersionLoadingSkeleton from './loading-skeleton';
 
 export default function AboutDialog({
   onClose,
@@ -42,16 +42,21 @@ export default function AboutDialog({
       onSubmit={handleSubmit}
       enableReinitialize
     >
-      {({ values, setFieldValue, handleSubmit, isSubmitting }) => (
-        <Form onSubmit={handleSubmit} className="flex flex-col h-full">
-          <Tabs defaultValue="version" className="w-full flex flex-col h-full">
+      {({
+        values,
+        setFieldValue,
+        handleSubmit: handleSubmitFormik,
+        isSubmitting,
+      }) => (
+        <Form onSubmit={handleSubmitFormik} className="flex h-full flex-col">
+          <Tabs defaultValue="version" className="flex h-full w-full flex-col">
             {/* TAB HEADERS */}
-            <TabsList className="grid grid-cols-2 text-center self-center w-[95%] mb-4">
+            <TabsList className="mb-4 grid w-[95%] grid-cols-2 self-center text-center">
               <TabsTrigger value="version">Version</TabsTrigger>
               <TabsTrigger value="disk">Disk Space</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="version" className="flex flex-col h-full">
+            <TabsContent value="version" className="flex h-full flex-col">
               <div className="max-h-[60vh] overflow-y-scroll">
                 <VersionInfoSection
                   currentVersion={currentVersion}
@@ -83,7 +88,7 @@ export default function AboutDialog({
                     onClick={handleUpdate}
                     disabled={updatingRTK}
                     className="w-full"
-                    style={{ backgroundColor: "var(--portal-primary)" }}
+                    style={{ backgroundColor: 'var(--portal-primary)' }}
                   >
                     {updatingRTK ? (
                       <>
@@ -102,7 +107,7 @@ export default function AboutDialog({
             </TabsContent>
 
             <TabsContent value="disk" className="flex-1 overflow-y-scroll">
-                <DiskSpaceSection />
+              <DiskSpaceSection />
             </TabsContent>
           </Tabs>
         </Form>

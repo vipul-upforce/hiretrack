@@ -1,26 +1,30 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
     const [userData] = await Promise.all([
-      getAuthenticatedUser(req, ["admin", "hr"]),
+      getAuthenticatedUser(req, ['admin', 'hr']),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const organizationId = userData.organizationId;
+    const { organizationId } = userData;
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
 
-    const settings = await Settings.findOne({ organizationId: organizationId }).select("emailTemplates").lean().exec();
+    const settings = await Settings.findOne({ organizationId })
+      .select('emailTemplates')
+      .lean()
+      .exec();
 
     if (!settings || !settings.emailTemplates) {
       return NextResponse.json({
@@ -36,10 +40,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ templates: emailTemplates });
   } catch (error) {
-    console.error("Error fetching email templates:", error);
+    logger.error({ error, url: req.url }, 'Error fetching email templates');
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }
@@ -47,28 +51,24 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const [userData, templates] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       req.json(),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
-
-    // console.log("Request body:", JSON.stringify(body, null, 2));
-
-
-    if (!templates || typeof templates !== "object") {
+    if (!templates || typeof templates !== 'object') {
       return NextResponse.json(
-        { error: "Invalid templates data structure" },
-        { status: 400 }
+        { error: 'Invalid templates data structure' },
+        { status: 400 },
       );
     }
 
@@ -82,17 +82,15 @@ export async function PUT(req: NextRequest) {
       ) {
         return NextResponse.json(
           { error: `Invalid template structure for ${templateId}` },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       // Ensure variables field exists, use simplified variables for custom templates
       if (!temp.variables) {
-        temp.variables = ["SenderName", "ReceiverName", "PortalName"];
+        temp.variables = ['SenderName', 'ReceiverName', 'PortalName'];
       }
     }
-
-    // console.log("Templates to save:", JSON.stringify(templates, null, 2));
 
     const updatedSettings = await Settings.findOneAndUpdate(
       { organizationId: userData.organizationId },
@@ -105,32 +103,27 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
-        strict: false, // Allow fields not in schema temporarily
-        select: "emailTemplates",
-      }
+        strict: false,
+        select: 'emailTemplates',
+      },
     );
 
     if (!updatedSettings) {
       return NextResponse.json(
-        { error: "Failed to update settings" },
-        { status: 500 }
+        { error: 'Failed to update settings' },
+        { status: 500 },
       );
     }
 
-    console.log(
-      "Updated settings email templates:",
-      updatedSettings.emailTemplates
-    );
-
     return NextResponse.json({
-      message: "Email templates updated successfully",
+      message: 'Email templates updated successfully',
       templates: updatedSettings.emailTemplates,
     });
   } catch (error) {
-    console.error("Error updating email templates:", error);
+    logger.error({ error, url: req.url }, 'Error updating email templates');
     return NextResponse.json(
-      { error: "Internal server error", details: error },
-      { status: 500 }
+      { error: 'Internal server error', details: error },
+      { status: 500 },
     );
   }
 }

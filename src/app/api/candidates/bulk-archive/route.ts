@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, History } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
-import { broadcastCandidateUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Candidate, History } from '@/lib/mongodb';
+import { auth } from '@/lib/auth';
+import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { logger } from '@/lib/logger/logger.server';
 
 interface BulkArchiveRequest {
   candidateIds: string[];
-  action: "archive" | "unarchive";
+  action: 'archive' | 'unarchive';
 }
 
 interface BulkArchiveResponse {
@@ -16,32 +17,34 @@ interface BulkArchiveResponse {
   failedCount: number;
 }
 
-export async function POST(req: NextRequest): Promise<NextResponse<BulkArchiveResponse | { error: string }>> {
+export async function POST(
+  req: NextRequest,
+): Promise<NextResponse<BulkArchiveResponse | { error: string }>> {
   try {
     await connectToDatabase();
-    const body = await req.json() as BulkArchiveRequest;
+    const body = (await req.json()) as BulkArchiveRequest;
     const { candidateIds, action } = body;
     const userCookie = await auth(req);
     const dateTime = new Date().toISOString();
 
     if (!Candidate || !History) {
       return NextResponse.json(
-        { error: "Models not available" },
-        { status: 500 }
+        { error: 'Models not available' },
+        { status: 500 },
       );
     }
 
     if (!Array.isArray(candidateIds) || candidateIds.length === 0) {
       return NextResponse.json(
-        { error: "Invalid candidate IDs" },
-        { status: 400 }
+        { error: 'Invalid candidate IDs' },
+        { status: 400 },
       );
     }
 
-    if (!["archive", "unarchive"].includes(action)) {
+    if (!['archive', 'unarchive'].includes(action)) {
       return NextResponse.json(
         { error: "Invalid action. Must be 'archive' or 'unarchive'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,38 +53,38 @@ export async function POST(req: NextRequest): Promise<NextResponse<BulkArchiveRe
       _id: { $in: candidateIds },
     }).populate([
       {
-        path: "assignment.interviewerId",
-        select: "_id name email",
+        path: 'assignment.interviewerId',
+        select: '_id name email',
       },
       {
-        path: "remarks.userId",
-        select: "name email",
+        path: 'remarks.userId',
+        select: 'name email',
       },
       {
-        path: "jobId",
-        select: "title description",
+        path: 'jobId',
+        select: 'title description',
       },
     ]);
 
     if (candidates.length === 0) {
       return NextResponse.json(
-        { error: "No candidates found" },
-        { status: 404 }
+        { error: 'No candidates found' },
+        { status: 404 },
       );
     }
 
     // Determine target state
-    const targetIsDeleted = action === "archive";
+    const targetIsDeleted = action === 'archive';
 
     // Filter candidates that need to be updated
     const candidatesToUpdate = candidates.filter(
-      (candidate) => candidate.isDeleted !== targetIsDeleted
+      (candidate) => candidate.isDeleted !== targetIsDeleted,
     );
 
     if (candidatesToUpdate.length === 0) {
       return NextResponse.json<BulkArchiveResponse>({
         success: true,
-        message: `All selected candidates are already ${action === "archive" ? "archived" : "unarchived"}`,
+        message: `All selected candidates are already ${action === 'archive' ? 'archived' : 'unarchived'}`,
         updatedCount: 0,
         skippedCount: candidates.length,
         failedCount: 0,
@@ -92,41 +95,41 @@ export async function POST(req: NextRequest): Promise<NextResponse<BulkArchiveRe
     const updatePromises = candidatesToUpdate.map(async (candidate) => {
       try {
         const historyEntry = {
-          dateTime: dateTime,
-          title: targetIsDeleted ? "Archived" : "Unarchived",
+          dateTime,
+          title: targetIsDeleted ? 'Archived' : 'Unarchived',
           previousInterviewer: null,
           currentInterviewer: null,
           assignmentBy: userCookie?.user.id,
         };
 
         // Update history
-        const updatedHistory = await History.findOneAndUpdate(
+        const updatedHistory = await History?.findOneAndUpdate(
           { candidateId: candidate._id, jobId: candidate.jobId },
           { $push: { history: historyEntry } },
-          { new: true, upsert: true }
+          { new: true, upsert: true },
         )
-          .populate("history.currentInterviewer", "_id name email")
-          .populate("history.previousInterviewer", "_id name email")
-          .populate("history.assignmentBy", "_id name email")
-          .populate("history.note.userId", "_id name email");
+          .populate('history.currentInterviewer', '_id name email')
+          .populate('history.previousInterviewer', '_id name email')
+          .populate('history.assignmentBy', '_id name email')
+          .populate('history.note.userId', '_id name email');
 
         // Update candidate
-        const updatedCandidate = await Candidate.findByIdAndUpdate(
+        const updatedCandidate = await Candidate?.findByIdAndUpdate(
           candidate._id,
           { isDeleted: targetIsDeleted },
-          { new: true }
+          { new: true },
         ).populate([
           {
-            path: "assignment.interviewerId",
-            select: "_id name email",
+            path: 'assignment.interviewerId',
+            select: '_id name email',
           },
           {
-            path: "remarks.userId",
-            select: "name email",
+            path: 'remarks.userId',
+            select: 'name email',
           },
           {
-            path: "jobId",
-            select: "title description",
+            path: 'jobId',
+            select: 'title description',
           },
         ]);
 
@@ -143,39 +146,43 @@ export async function POST(req: NextRequest): Promise<NextResponse<BulkArchiveRe
 
         return { success: true, candidateId: candidate._id.toString() };
       } catch (error) {
-        console.error(`Error updating candidate ${candidate._id}:`, error);
+        logger.error(
+          { error, url: req.url },
+          `Error updating candidate ${candidate._id}`,
+        );
         return {
           success: false,
           candidateId: candidate._id.toString(),
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     });
 
     const results = await Promise.allSettled(updatePromises);
     const successfulUpdates = results.filter(
-      (r) => r.status === "fulfilled" && r.value.success
+      (r) => r.status === 'fulfilled' && r.value.success,
     ).length;
     const failedUpdates = results.filter(
-      (r) => r.status === "rejected" || (r.status === "fulfilled" && !r.value.success)
+      (r) =>
+        r.status === 'rejected' ||
+        (r.status === 'fulfilled' && !r.value.success),
     ).length;
 
     return NextResponse.json<BulkArchiveResponse>({
       success: true,
-      message: `Successfully ${action === "archive" ? "archived" : "unarchived"} ${successfulUpdates} candidate(s)`,
+      message: `Successfully ${action === 'archive' ? 'archived' : 'unarchived'} ${successfulUpdates} candidate(s)`,
       updatedCount: successfulUpdates,
       skippedCount: candidates.length - candidatesToUpdate.length,
       failedCount: failedUpdates,
     });
   } catch (error) {
-    console.error("Bulk archive error:", error);
+    logger.error({ error, url: req.url }, 'Bulk archive error');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 500 }
+      { error: 'Unknown error occurred' },
+      { status: 500 },
     );
   }
 }
-

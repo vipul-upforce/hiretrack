@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-const Modal = ({
+function Modal({
   isOpen,
   onClose,
   // imageUrl,
@@ -8,7 +8,7 @@ const Modal = ({
   isOpen: boolean;
   onClose: () => void;
   imageUrl: string;
-}) => {
+}) {
   if (!isOpen) return null;
 
   return (
@@ -37,6 +37,6 @@ const Modal = ({
       </div>
     </div>
   );
-};
+}
 
 export default Modal;

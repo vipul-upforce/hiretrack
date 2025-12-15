@@ -1,17 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import { promisify } from "util";
-import path from "path";
-import fs from "fs/promises";
-import { existsSync } from "fs";
-import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs/promises';
+import { existsSync } from 'fs';
+import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 const execAsync = promisify(exec);
 
 // Path to store the last archive timestamp
-const metadataDir = path.join(process.cwd(), "..", "metadata");
-const lastArchiveFile = path.join(metadataDir, "last_archive.json");
+const metadataDir = path.join(process.cwd(), '..', 'metadata');
+const lastArchiveFile = path.join(metadataDir, 'last_archive.json');
 
 // Save the last archive timestamp
 async function saveLastArchiveTimestamp(organizationId: string) {
@@ -24,22 +25,22 @@ async function saveLastArchiveTimestamp(organizationId: string) {
     }
     await fs.writeFile(lastArchiveFile, JSON.stringify(metadata, null, 2));
   } catch (error) {
-    console.error("Error saving last archive timestamp:", error);
+    logger.error({ error }, 'Error saving last archive timestamp.');
   }
 }
 
 // Read the last archive timestamp
 async function readLastArchiveTimestamp(
-  organizationId: string
+  organizationId: string,
 ): Promise<string | null> {
   try {
     if (existsSync(lastArchiveFile)) {
-      const data = await fs.readFile(lastArchiveFile, "utf-8");
+      const data = await fs.readFile(lastArchiveFile, 'utf-8');
       const metadata = JSON.parse(data);
       return metadata[organizationId] || null;
     }
   } catch (error) {
-    console.error("Error reading last archive timestamp:", error);
+    logger.error({ error }, 'Error reading last archive timestamp.');
   }
   return null;
 }
@@ -63,29 +64,28 @@ async function calculateDirectorySize(dirPath: string): Promise<number> {
 }
 
 export async function GET(req: NextRequest) {
- 
   try {
-    const user = await getAuthenticatedUser(req, ["admin"]);
+    const user = await getAuthenticatedUser(req, ['admin']);
     if (!user) {
-      return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
+      return NextResponse.json({ message: 'Not Authorized' }, { status: 401 });
     }
-    const organizationId = user.organizationId;
-    const assetsRoot = path.join(process.cwd(), "..", "assets");
+    const { organizationId } = user;
+    const assetsRoot = path.join(process.cwd(), '..', 'assets');
     const timestamp = Date.now().toString();
     const archiveFileName = `assets-${timestamp}.tar.gz`;
     const tempDir = path.join(
       process.cwd(),
-      "..",
-      "temp",
-      `assets-${timestamp}`
+      '..',
+      'temp',
+      `assets-${timestamp}`,
     );
     const tempArchivePath = path.join(tempDir, archiveFileName);
 
     // Check if assets directory exists
     if (!existsSync(assetsRoot)) {
       return NextResponse.json(
-        { message: "Assets directory does not exist" },
-        { status: 404 }
+        { message: 'Assets directory does not exist' },
+        { status: 404 },
       );
     }
 
@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     await fs.mkdir(tempDir, { recursive: true });
 
     // Copy assets to temporary directory
-    const tempAssetsDir = path.join(tempDir, "assets");
+    const tempAssetsDir = path.join(tempDir, 'assets');
     await fs.mkdir(tempAssetsDir, { recursive: true });
     await fs.cp(assetsRoot, tempAssetsDir, { recursive: true });
 
@@ -102,11 +102,11 @@ export async function GET(req: NextRequest) {
     try {
       await execAsync(tarCommand);
     } catch (tarError) {
-      console.error("Compression failed:", tarError);
+      logger.error({ tarError, url: req.url }, 'Compression failed:');
       await fs.rm(tempDir, { recursive: true, force: true });
       return NextResponse.json(
-        { message: "Failed to compress assets", error: String(tarError) },
-        { status: 500 }
+        { message: 'Failed to compress assets', error: String(tarError) },
+        { status: 500 },
       );
     }
 
@@ -123,39 +123,40 @@ export async function GET(req: NextRequest) {
     return new NextResponse(archiveBuffer as BodyInit, {
       status: 200,
       headers: {
-        "Content-Type": "application/gzip",
-        "Content-Disposition": `attachment; filename="${archiveFileName}"`,
-        "Content-Length": archiveBuffer.length.toString(),
+        'Content-Type': 'application/gzip',
+        'Content-Disposition': `attachment; filename="${archiveFileName}"`,
+        'Content-Length': archiveBuffer.length.toString(),
       },
     });
   } catch (error) {
-    console.error("Error during assets archiving process:", error);
+    logger.error(
+      { error, url: req.url },
+      'Error during assets archiving process',
+    );
     return NextResponse.json(
       {
-        message: "Internal server error",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function POST(req: NextRequest) {
-
   try {
-
-    const user = await getAuthenticatedUser(req, ["admin"]);
+    const user = await getAuthenticatedUser(req, ['admin']);
     if (!user) {
-      return NextResponse.json({ message: "Not Authorized" }, { status: 401 });
+      return NextResponse.json({ message: 'Not Authorized' }, { status: 401 });
     }
-    const organizationId = user.organizationId;
-    const assetsRoot = path.join(process.cwd(), "..", "assets");
+    const { organizationId } = user;
+    const assetsRoot = path.join(process.cwd(), '..', 'assets');
 
     // Check if assets directory exists
     if (!existsSync(assetsRoot)) {
       return NextResponse.json(
-        { message: "Assets directory does not exist" },
-        { status: 404 }
+        { message: 'Assets directory does not exist' },
+        { status: 404 },
       );
     }
 
@@ -164,25 +165,25 @@ export async function POST(req: NextRequest) {
     const lastArchivedAt = await readLastArchiveTimestamp(organizationId);
     const formattedDate = await getFormattedDate(req, lastArchivedAt as string);
     const assetsData = {
-      name: "assets",
-      type: "directory",
-      path: "assets",
+      name: 'assets',
+      type: 'directory',
+      path: 'assets',
       size: totalSize,
       lastArchivedAt: formattedDate || null,
     };
 
     return NextResponse.json(
-      { message: "Assets metadata retrieved successfully", data: assetsData },
-      { status: 200 }
+      { message: 'Assets metadata retrieved successfully', data: assetsData },
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Error retrieving assets metadata:", error);
+    logger.error({ error, url: req.url }, 'Error retrieving assets metadata.');
     return NextResponse.json(
       {
-        message: "Internal server error",
-        error: error instanceof Error ? error.message : "Unknown error",
+        message: 'Internal server error',
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

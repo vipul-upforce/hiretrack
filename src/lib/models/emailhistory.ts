@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IEmailHistory extends Document {
   organizationId: mongoose.Types.ObjectId;
@@ -20,7 +20,7 @@ export interface IEmailHistory extends Document {
     shareId: string;
     shareUrl: string;
   }>;
-  status: "sent" | "failed" | "pending";
+  status: 'sent' | 'failed' | 'pending';
   provider: string;
   providerMessageId?: string;
   error?: string;
@@ -38,13 +38,13 @@ const EmailHistorySchema = new Schema<IEmailHistory>(
   {
     organizationId: {
       type: Schema.Types.ObjectId,
-      ref: "Organization",
+      ref: 'Organization',
       required: true,
       index: true,
     },
     sentBy: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
       index: true,
     },
@@ -59,11 +59,11 @@ const EmailHistorySchema = new Schema<IEmailHistory>(
     recipientType: {
       type: String,
       required: true,
-      default: "candidate",
+      default: 'candidate',
     },
     recipientId: {
       type: Schema.Types.ObjectId,
-      refPath: "recipientType",
+      refPath: 'recipientType',
       required: true,
       index: true,
     },
@@ -113,8 +113,8 @@ const EmailHistorySchema = new Schema<IEmailHistory>(
     }],
     status: {
       type: String,
-      enum: ["sent", "failed", "pending"],
-      default: "pending",
+      enum: ['sent', 'failed', 'pending'],
+      default: 'pending',
       index: true,
     },
     provider: {
@@ -126,17 +126,17 @@ const EmailHistorySchema = new Schema<IEmailHistory>(
     metadata: {
       jobId: {
         type: Schema.Types.ObjectId,
-        ref: "Job",
+        ref: 'Job',
       },
       candidateId: {
         type: Schema.Types.ObjectId,
-        ref: "Candidate",
+        ref: 'Candidate',
       },
       templateUsed: String,
     },
     sentAt: Date,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Compound indexes for common queries
@@ -145,6 +145,6 @@ EmailHistorySchema.index({ organizationId: 1, recipientEmail: 1, sentAt: -1 });
 EmailHistorySchema.index({ organizationId: 1, sentBy: 1, sentAt: -1 });
 
 // Text index for searching email content
-EmailHistorySchema.index({ subject: "text", body: "text", recipientEmail: "text" });
+EmailHistorySchema.index({ subject: 'text', body: 'text', recipientEmail: 'text' });
 
 export default EmailHistorySchema;

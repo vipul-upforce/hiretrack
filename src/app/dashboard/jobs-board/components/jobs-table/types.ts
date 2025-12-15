@@ -1,4 +1,4 @@
-import { Job } from "@/types/job";
+import { Job } from '@/types/job';
 
 export interface JobsTableProps {
   jobs: Job[];
@@ -9,11 +9,11 @@ export interface JobsTableProps {
   setDuplicate: (x: boolean) => void;
   onEmailSettingsClick?: (job: Job) => void;
   sortField: string | null;
-  sortDirection: "asc" | "desc";
+  sortDirection: 'asc' | 'desc';
   onSort: (field: string) => void;
 }
 
-export type ColumnId = "applications" | "experience" | "skills" | string; // string for custom fields
+export type ColumnId = 'applications' | 'experience' | 'skills' | string; // string for custom fields
 
 export interface CustomFieldDef {
   label: string;

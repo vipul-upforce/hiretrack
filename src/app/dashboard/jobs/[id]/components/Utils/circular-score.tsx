@@ -1,12 +1,12 @@
-import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { scoreColors } from "@/lib/constants";
-import { useTheme } from "@/components/theme-provider";
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { scoreColors } from '@/lib/constants';
+import { useTheme } from '@/components/theme-provider';
 
 interface CircularScoreProps {
   score: number | null | undefined;
   category: string;
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   showLabel?: boolean;
   showTooltip?: boolean;
   treatZeroAsEmpty?: boolean;
@@ -15,57 +15,56 @@ interface CircularScoreProps {
 export function CircularScore({
   score,
   category,
-  size = "sm",
+  size = 'sm',
   showLabel = false,
   showTooltip = false,
   treatZeroAsEmpty = false,
 }: CircularScoreProps) {
-  const hasScore =
-    score !== null &&
-    score !== undefined &&
-    !isNaN(score) &&
-    !(treatZeroAsEmpty && score === 0);
+  const hasScore = score !== null
+    && score !== undefined
+    && !isNaN(score)
+    && !(treatZeroAsEmpty && score === 0);
   const normalizedScore = hasScore ? Math.max(0, Math.min(10, score)) : 0;
   const percentage = hasScore ? (normalizedScore / 10) * 100 : 0;
   const displayScore = hasScore
     ? score % 1 === 0
       ? score.toString()
       : score.toFixed(1)
-    : "-";
+    : '-';
 
   // Size configurations
   const sizeConfig = {
     xs: {
-      container: "w-12 h-12",
-      svg: "w-12 h-12",
+      container: 'w-12 h-12',
+      svg: 'w-12 h-12',
       strokeWidth: 6,
       radius: 46,
-      fontSize: "text-sm",
-      labelSize: "text-xs",
+      fontSize: 'text-sm',
+      labelSize: 'text-xs',
     },
     sm: {
-      container: "w-20 h-20",
-      svg: "w-20 h-20",
+      container: 'w-20 h-20',
+      svg: 'w-20 h-20',
       strokeWidth: 6,
       radius: 30,
-      fontSize: "text-base",
-      labelSize: "text-xs",
+      fontSize: 'text-base',
+      labelSize: 'text-xs',
     },
     md: {
-      container: "w-16 h-16",
-      svg: "w-16 h-16",
+      container: 'w-16 h-16',
+      svg: 'w-16 h-16',
       strokeWidth: 4,
       radius: 24,
-      fontSize: "text-sm",
-      labelSize: "text-xs",
+      fontSize: 'text-sm',
+      labelSize: 'text-xs',
     },
     lg: {
-      container: "w-20 h-20",
-      svg: "w-20 h-20",
+      container: 'w-20 h-20',
+      svg: 'w-20 h-20',
       strokeWidth: 5,
       radius: 30,
-      fontSize: "text-base",
-      labelSize: "text-sm",
+      fontSize: 'text-base',
+      labelSize: 'text-sm',
     },
   };
 
@@ -75,23 +74,23 @@ export function CircularScore({
 
   // Color based on score
   const getScoreColor = (score: number, hasScore: boolean) => {
-    if (!hasScore) return "stroke-gray-300 dark:stroke-gray-600";
-    if (score >= 8) return "stroke-emerald-500";
-    if (score >= 7) return "stroke-teal-500";
-    if (score >= 6) return "stroke-blue-500";
-    if (score >= 5) return "stroke-amber-500";
-    if (score >= 3) return "stroke-orange-500";
-    return "stroke-red-500";
+    if (!hasScore) return 'stroke-gray-300 dark:stroke-gray-600';
+    if (score >= 8) return 'stroke-emerald-500';
+    if (score >= 7) return 'stroke-teal-500';
+    if (score >= 6) return 'stroke-blue-500';
+    if (score >= 5) return 'stroke-amber-500';
+    if (score >= 3) return 'stroke-orange-500';
+    return 'stroke-red-500';
   };
 
   const getBackgroundColor = (score: number, hasScore: boolean) => {
-    if (!hasScore) return "stroke-gray-100 dark:stroke-gray-800";
-    if (score >= 8) return "stroke-emerald-100 dark:stroke-emerald-900";
-    if (score >= 7) return "stroke-teal-100 dark:stroke-teal-900";
-    if (score >= 6) return "stroke-blue-100 dark:stroke-blue-900";
-    if (score >= 5) return "stroke-amber-100 dark:stroke-amber-900";
-    if (score >= 3) return "stroke-orange-100 dark:stroke-orange-900";
-    return "stroke-red-100 dark:stroke-red-900";
+    if (!hasScore) return 'stroke-gray-100 dark:stroke-gray-800';
+    if (score >= 8) return 'stroke-emerald-100 dark:stroke-emerald-900';
+    if (score >= 7) return 'stroke-teal-100 dark:stroke-teal-900';
+    if (score >= 6) return 'stroke-blue-100 dark:stroke-blue-900';
+    if (score >= 5) return 'stroke-amber-100 dark:stroke-amber-900';
+    if (score >= 3) return 'stroke-orange-100 dark:stroke-orange-900';
+    return 'stroke-red-100 dark:stroke-red-900';
   };
 
   const scoreColor = getScoreColor(normalizedScore, hasScore);
@@ -100,7 +99,7 @@ export function CircularScore({
   const tooltipContent = `${category}: ${displayScore}/10`;
 
   const circleElement = (
-    <div className={cn("relative", config.container)}>
+    <div className={cn('relative', config.container)}>
       <svg viewBox="0 0 100 100">
         {/* Background circle */}
         <circle
@@ -117,15 +116,15 @@ export function CircularScore({
           cy="50"
           r={config.radius}
           fill="none"
-          className={cn(scoreColor, "transition-all duration-500 ease-out")}
+          className={cn(scoreColor, 'transition-all duration-500 ease-out')}
           strokeWidth={config.strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           style={{
             transition:
-              "stroke-dashoffset 0.5s ease-in-out, filter 0.3s ease-out",
-            filter: "drop-shadow(0 0 0px transparent)",
+              'stroke-dashoffset 0.5s ease-in-out, filter 0.3s ease-out',
+            filter: 'drop-shadow(0 0 0px transparent)',
           }}
         />
       </svg>
@@ -133,8 +132,8 @@ export function CircularScore({
       <div className="absolute inset-0 flex items-center justify-center">
         <span
           className={cn(
-            "font-bold text-foreground transition-all duration-300 ease-out",
-            config.fontSize
+            'font-bold text-foreground transition-all duration-300 ease-out',
+            config.fontSize,
           )}
         >
           {displayScore}
@@ -150,8 +149,8 @@ export function CircularScore({
       {showLabel && (
         <span
           className={cn(
-            "text-center text-muted-foreground font-bold mt-1",
-            config.labelSize
+            'text-center text-muted-foreground font-bold mt-1',
+            config.labelSize,
           )}
         >
           {category}
@@ -175,7 +174,7 @@ function CompactScoreBadge({
   const colorData = scoreColors[roundedScore] || scoreColors[1];
 
   // Use dark mode colors if theme is dark
-  const isDarkMode = theme === "dark";
+  const isDarkMode = theme === 'dark';
   const colors = isDarkMode ? colorData.dark : colorData;
 
   const displayScore = score % 1 === 0 ? score.toString() : score.toFixed(1);
@@ -191,7 +190,10 @@ function CompactScoreBadge({
         border: `1px solid ${colors.border}`,
       }}
     >
-      <span className="text-[11px] mr-1 font-normal">{category}:</span>
+      <span className="text-[11px] mr-1 font-normal">
+        {category}
+        :
+      </span>
       <span className="font-semibold">{displayScore}</span>
     </Badge>
   );
@@ -253,30 +255,30 @@ export function GridCircularScores({
         score={scoreData.overall}
         category="Overall"
         size="xs"
-        showLabel={true}
+        showLabel
         showTooltip={false}
       />
       <CircularScore
         score={scoreData.experience}
         category="Experience"
         size="xs"
-        showLabel={true}
+        showLabel
         showTooltip={false}
       />
       <CircularScore
         score={scoreData.skills}
         category="Skills"
         size="xs"
-        showLabel={true}
+        showLabel
         showTooltip={false}
       />
       <CircularScore
         score={scoreData.affordability}
         category="Affordability"
         size="xs"
-        showLabel={true}
+        showLabel
         showTooltip={false}
-        treatZeroAsEmpty={true}
+        treatZeroAsEmpty
       />
     </div>
   );

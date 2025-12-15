@@ -1,8 +1,6 @@
 type Object = { [key: string]: any };
 
-const isObject = (item: any): item is Object => {
-  return item && typeof item === "object" && !Array.isArray(item);
-};
+const isObject = (item: any): item is Object => item && typeof item === 'object' && !Array.isArray(item);
 
 /**
  * Deep merge two objects by overriding target with fields in source.

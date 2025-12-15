@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   RefreshCw,
   Save,
@@ -14,15 +14,15 @@ import {
   Code,
   Home,
   ChevronRight,
-} from "lucide-react";
-import Link from "next/link";
-import { usePortalConfiguration } from "./hooks/use-portal-configuration";
-import { GeneralTab } from "./components/tabs/general-tab";
-import { BrandingTab } from "./components/tabs/branding-tab";
-import { ColorsTab } from "./components/tabs/colors-tab";
-import { AdvancedTab } from "./components/tabs/advanced-tab";
-import { EmbedTab } from "./components/tabs/embed-tab";
-import { PortalPreviewPane } from "./components/preview/portal-preview-pane";
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePortalConfiguration } from './hooks/use-portal-configuration';
+import { GeneralTab } from './components/tabs/general-tab';
+import { BrandingTab } from './components/tabs/branding-tab';
+import { ColorsTab } from './components/tabs/colors-tab';
+import { AdvancedTab } from './components/tabs/advanced-tab';
+import { EmbedTab } from './components/tabs/embed-tab';
+import { PortalPreviewPane } from './components/preview/portal-preview-pane';
 
 export default function PortalConfigurationPage() {
   const {
@@ -41,22 +41,22 @@ export default function PortalConfigurationPage() {
     generatePortalUrl,
     user,
     hasMultipleOrgs,
-    fetching
+    fetching,
   } = usePortalConfiguration();
 
-  const [activeTab, setActiveTab] = useState<string>("general");
+  const [activeTab, setActiveTab] = useState<string>('general');
 
-  const [embedWidth, setEmbedWidth] = useState<string>("100%");
-  const [embedHeight, setEmbedHeight] = useState<string>("600px");
+  const [embedWidth, setEmbedWidth] = useState<string>('100%');
+  const [embedHeight, setEmbedHeight] = useState<string>('600px');
   const [embedShowBorder, setEmbedShowBorder] = useState<boolean>(true);
   const [embedHideHeader, setEmbedHideHeader] = useState<boolean>(false);
   const [embedHideFooter, setEmbedHideFooter] = useState<boolean>(false);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
           <p className="text-muted-foreground">Loading portal settings...</p>
         </div>
       </div>
@@ -64,47 +64,51 @@ export default function PortalConfigurationPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-col gap-2">
-              <nav className="flex items-center text-sm text-muted-foreground font-medium">
+              <nav className="flex items-center text-sm font-medium text-muted-foreground">
                 <Link
                   href="/dashboard"
-                  className="flex items-center hover:text-foreground transition-colors"
+                  className="flex items-center transition-colors hover:text-foreground"
                 >
-                  <Home className="h-4 w-4 mr-2" />
+                  <Home className="mr-2 h-4 w-4" />
                   Dashboard
                 </Link>
-                <ChevronRight className="h-4 w-4 mx-2" />
+                <ChevronRight className="mx-2 h-4 w-4" />
                 <Link
                   href="/dashboard/settings"
-                  className="hover:text-foreground transition-colors"
+                  className="transition-colors hover:text-foreground"
                 >
                   Settings
                 </Link>
-                <ChevronRight className="h-4 w-4 mx-2" />
-                <span className="text-foreground font-semibold">
+                <ChevronRight className="mx-2 h-4 w-4" />
+                <span className="font-semibold text-foreground">
                   Portal Configuration
                 </span>
               </nav>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
               <div className="flex gap-2">
-                <Button variant="outline" disabled={fetching} onClick={() => refetch()}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  {fetching ? "Refreshing...": "Refresh"}
+                <Button
+                  variant="outline"
+                  disabled={fetching}
+                  onClick={() => refetch()}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  {fetching ? 'Refreshing...' : 'Refresh'}
                 </Button>
                 <Button
                   variant="primary"
                   onClick={handleSave}
                   disabled={saving}
                 >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Saving..." : "Save Changes"}
+                  <Save className="mr-2 h-4 w-4" />
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>
@@ -112,10 +116,10 @@ export default function PortalConfigurationPage() {
         </Card>
       </div>
 
-      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Left Column: Tabs */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             <Tabs
               defaultValue="general"
               value={activeTab}

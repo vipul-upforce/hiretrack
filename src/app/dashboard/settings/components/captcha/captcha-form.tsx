@@ -1,10 +1,9 @@
-import { Form, FormikProps } from "formik";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { ErrorMessage } from "formik";
-import { CaptchaValues } from "./types";
+import { Form, FormikProps, ErrorMessage } from 'formik';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { CaptchaValues } from './types';
 
 interface CaptchaFormViewProps {
   formik: FormikProps<CaptchaValues>;
@@ -19,7 +18,9 @@ export default function CaptchaForm({
   isUpdating,
   isPermissionDenied,
 }: CaptchaFormViewProps) {
-  const { values, setFieldValue, isSubmitting, handleSubmit } = formik;
+  const {
+    values, setFieldValue, isSubmitting, handleSubmit,
+  } = formik;
 
   return (
     <Form onSubmit={handleSubmit} className="flex flex-col h-full">
@@ -28,9 +29,7 @@ export default function CaptchaForm({
           <Checkbox
             id="enableCaptcha"
             checked={values.enableCaptcha}
-            onCheckedChange={(checked) =>
-              setFieldValue("enableCaptcha", Boolean(checked))
-            }
+            onCheckedChange={(checked) => setFieldValue('enableCaptcha', Boolean(checked))}
             disabled={isPermissionDenied}
           />
           <Label htmlFor="enableCaptcha">Enable CAPTCHA</Label>
@@ -49,7 +48,7 @@ export default function CaptchaForm({
                 id="siteKey"
                 name="siteKey"
                 value={values.siteKey}
-                onChange={(e) => setFieldValue("siteKey", e.target.value)}
+                onChange={(e) => setFieldValue('siteKey', e.target.value)}
                 placeholder="Enter reCAPTCHA site key"
                 disabled={isPermissionDenied}
               />
@@ -65,7 +64,7 @@ export default function CaptchaForm({
                 id="secretKey"
                 name="secretKey"
                 value={values.secretKey}
-                onChange={(e) => setFieldValue("secretKey", e.target.value)}
+                onChange={(e) => setFieldValue('secretKey', e.target.value)}
                 placeholder="Enter reCAPTCHA secret key"
                 disabled={isPermissionDenied}
               />
@@ -93,7 +92,7 @@ export default function CaptchaForm({
           disabled={isSubmitting || isUpdating || isPermissionDenied}
           variant="primary"
         >
-          {isSubmitting || isUpdating ? "Saving..." : "Save"}
+          {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
         </Button>
       </div>
     </Form>

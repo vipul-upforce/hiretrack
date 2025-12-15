@@ -3,8 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import {hostname} from 'os';
-import {networkInterfaces} from 'os';
+import {hostname,networkInterfaces} from 'os';
 
 // Colors for console output
 const colors = {
@@ -25,7 +24,7 @@ function log(message, color = 'reset') {
 // Generate machine code (same as in the API)
 function generateMachineCode() {
   const os = process.platform;
-  const arch = process.arch;
+  const {arch} = process;
   
   // Get MAC address from first network interface
   const allInterfaces = Object.values(networkInterfaces).flat();
@@ -147,9 +146,9 @@ async function testLicense() {
   log('🎉 License system test completed!', 'green');
   log('');
   log('📋 Summary:', 'blue');
-  log('   - License file: ' + (licenseData ? '✅ Found' : '❌ Missing'), licenseData ? 'green' : 'red');
-  log('   - Machine code: ' + (licenseData?.machineCode === currentMachineCode ? '✅ Valid' : '❌ Invalid'), licenseData?.machineCode === currentMachineCode ? 'green' : 'red');
-  log('   - API endpoint: ' + (licenseValidationUrl ? '✅ Configured' : '⚠️  Not configured'), licenseValidationUrl ? 'green' : 'yellow');
+  log(`   - License file: ${  licenseData ? '✅ Found' : '❌ Missing'}`, licenseData ? 'green' : 'red');
+  log(`   - Machine code: ${  licenseData?.machineCode === currentMachineCode ? '✅ Valid' : '❌ Invalid'}`, licenseData?.machineCode === currentMachineCode ? 'green' : 'red');
+  log(`   - API endpoint: ${  licenseValidationUrl ? '✅ Configured' : '⚠️  Not configured'}`, licenseValidationUrl ? 'green' : 'yellow');
   log('');
   log('🔧 Next Steps:', 'blue');
   log('   1. Start your Next.js server: npm run dev', 'cyan');

@@ -149,6 +149,7 @@ async function calculateComparativeRanking(
       scores: { $exists: true },
       isDeleted: { $ne: true },
     }).select('_id scores');
+    }).select('_id scores');
 
     if (!candidates || candidates.length === 0) {
       return {
@@ -168,8 +169,12 @@ async function calculateComparativeRanking(
 
     // Determine which score to use for ranking (weighted score if available, otherwise overall)
     const useWeightedScore = currentScores.weightedScore != null;
-    const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore ? 'weighted' : 'overall';
-    const currentRankingScore = useWeightedScore ? currentScores.weightedScore : currentScores.overall;
+    const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore
+      ? 'weighted'
+      : 'overall';
+    const currentRankingScore = useWeightedScore
+      ? currentScores.weightedScore
+      : currentScores.overall;
 
     /**
      * Calculate percentile rank using midpoint method for handling ties
@@ -216,24 +221,31 @@ async function calculateComparativeRanking(
         return c.scores?.overall != null;
       })
       .sort((a, b) => {
-        const scoreA = useWeightedScore ? (a.scores?.weightedScore || 0) : (a.scores?.overall || 0);
-        const scoreB = useWeightedScore ? (b.scores?.weightedScore || 0) : (b.scores?.overall || 0);
+        const scoreA = useWeightedScore
+          ? a.scores?.weightedScore || 0
+          : a.scores?.overall || 0;
+        const scoreB = useWeightedScore
+          ? b.scores?.weightedScore || 0
+          : b.scores?.overall || 0;
         return scoreB - scoreA; // Highest first
       });
     const index = sortedCandidates.findIndex(
       (c) => c._id.toString() === candidateId.toString(),
     );
 
-    const currentCandidateRank = index === -1 ? sortedCandidates.length : index + 1;
+    const currentCandidateRank =
+      index === -1 ? sortedCandidates.length : index + 1;
 
     // Check for ties at the same ranking score
     const candidatesWithSameScore = sortedCandidates.filter((c) => {
-      const score = useWeightedScore ? c.scores?.weightedScore : c.scores?.overall;
+      const score = useWeightedScore
+        ? c.scores?.weightedScore
+        : c.scores?.overall;
       return score === currentRankingScore;
     });
     const hasTie = candidatesWithSameScore.length > 1;
     let tiedWithCount = 0;
-    if(hasTie){
+    if (hasTie) {
       tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
     }
     // Get all ranking scores for percentile calculation
@@ -260,7 +272,7 @@ async function calculateComparativeRanking(
       rankingBasedOn,
     };
   } catch (error) {
-    console.error('Error calculating comparative ranking:', error);
+    logger.error({ error }, 'Error calculating comparative ranking');
     return {
       overallRank: 1,
       totalCandidates: 1,
@@ -280,7 +292,7 @@ async function calculateComparativeRanking(
 
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
-    message: "SUCESSSS",
+    message: 'SUCESSSS',
   });
 }
 
@@ -290,29 +302,27 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     if (!Candidate || !Settings) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
 
     const data = await request.json() as EvaluateCandidateRequest;
     if (!data || !data.candidateId) {
       return NextResponse.json(
-        { error: "Candidate ID is required" },
-        { status: 400 }
+        { error: 'Candidate ID is required' },
+        { status: 400 },
       );
     }
 
     const { candidateId } = data;
     const candidate = await Candidate.findById(candidateId)
-      .select("resume jobId contact scores expectedCTC currentCTC")
+      .select('resume jobId contact scores expectedCTC currentCTC')
       .populate({
-        path: "jobId",
-        select: "description organizationId title skills salary experience evaluationWeights",
-      })
-      .lean() as unknown as CandidateWithJob | null;
-    
-    console.log(candidate, "candidate in resume evaluation api");
+        path: 'jobId',
+        select:
+          'description organizationId title skills salary experience evaluationWeights',
+      });
 
     if (!candidate) {
       return NextResponse.json(
@@ -340,31 +350,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         { status: 404 },
       );
     }
+    }
 
     // Check if AI providers are configured with backward compatibility
-    let aiProviders: IAIProviders = settingsData.aiProviders || {
-      activeProvider: 'gemini',
-      gemini: {
-        api_key: '',
-        model: 'gemini-1.5-flash',
-        customModel: '',
-      },
-      openai: {
-        api_key: '',
-        model: 'gpt-4o-mini',
-        customModel: '',
-      },
-      anthropic: {
-        api_key: '',
-        model: 'claude-3-5-sonnet-20241022',
-        customModel: '',
-      },
-      perplexity: {
-        api_key: '',
-        model: 'sonar-pro',
-        customModel: '',
-      },
-    };
+  let aiProviders = settingsData.aiProviders;
 
     // Handle backward compatibility for legacy Gemini-only installations
     if (!settingsData.aiProviders && settingsData.gemini?.gemini_key) {
@@ -393,8 +382,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
           customModel: '',
         },
       };
-
-      console.log('Using backward compatibility for legacy Gemini settings');
     }
 
     // Decrypt API keys from database
@@ -402,23 +389,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     const { activeProvider } = aiProviders;
     const apiKey = aiProviders[activeProvider]?.api_key;
-
-    // Debug logging
-    console.log(
-      'AI Providers from settings:',
-      JSON.stringify(
-        {
-          activeProvider: aiProviders.activeProvider,
-          hasGeminiKey: !!aiProviders.gemini?.api_key,
-          hasOpenAIKey: !!aiProviders.openai?.api_key,
-          hasAnthropicKey: !!aiProviders.anthropic?.api_key,
-          hasPerplexityKey: !!aiProviders.perplexity?.api_key,
-          anthropicObject: aiProviders.anthropic,
-        },
-        null,
-        2,
-      ),
-    );
 
     if (!apiKey) {
       return NextResponse.json(
@@ -432,7 +402,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       const origin = request.headers.get('origin') || '';
       resumeUrl = `${origin}${resumeUrl}`.trim();
     }
-    console.log('📌📌RESUME URL : ', resumeUrl);
     if (!resumeUrl) {
       return NextResponse.json(
         { error: 'Resume URL not found' },
@@ -482,8 +451,8 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         const pageCount = pdf.numPages;
 
         if (
-          evaluationConfig.maxPdfPages > 0
-        && pageCount > evaluationConfig.maxPdfPages
+          evaluationConfig.maxPdfPages > 0 &&
+          pageCount > evaluationConfig.maxPdfPages
         ) {
           return NextResponse.json(
             {
@@ -493,7 +462,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
           );
         }
       } catch (pdfError) {
-        console.warn('PDF page count check failed:', pdfError);
+        logger.error(
+          { error: pdfError, url: request.url },
+          'PDF page count check failed',
+        );
       }
     }
 
@@ -678,12 +650,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       },
       { status: 200 },
     );
-  } catch (error: unknown) {
-    console.log('Upper: ', error);
+  } catch (error) {
+    logger.error({ error, url: request.url }, 'Error evaluating candidate.');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    console.log(error);
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 },

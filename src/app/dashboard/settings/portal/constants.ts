@@ -1,57 +1,57 @@
 export const PREDEFINED_COLORS = [
-  "#6366f1", // Indigo
-  "#8b5cf6", // Purple
-  "#3b82f6", // Blue
-  "#06b6d4", // Cyan
-  "#10b981", // Emerald
-  "#f59e0b", // Amber
-  "#ef4444", // Red
-  "#ec4899", // Pink
-  "#f97316", // Orange
-  "#84cc16", // Lime
+  '#6366f1', // Indigo
+  '#8b5cf6', // Purple
+  '#3b82f6', // Blue
+  '#06b6d4', // Cyan
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#ec4899', // Pink
+  '#f97316', // Orange
+  '#84cc16', // Lime
 ];
 
 export const PREDEFINED_COLOR_COMBINATIONS = [
   {
-    name: "Default Theme",
-    primary: "#6366f1",
-    secondary: "#8b5cf6",
+    name: 'Default Theme',
+    primary: '#6366f1',
+    secondary: '#8b5cf6',
     isDefault: true,
   },
   {
-    name: "Ocean Blue",
-    primary: "#3b82f6",
-    secondary: "#06b6d4",
+    name: 'Ocean Blue',
+    primary: '#3b82f6',
+    secondary: '#06b6d4',
   },
   {
-    name: "Forest Green",
-    primary: "#10b981",
-    secondary: "#84cc16",
+    name: 'Forest Green',
+    primary: '#10b981',
+    secondary: '#84cc16',
   },
   {
-    name: "Sunset Orange",
-    primary: "#f97316",
-    secondary: "#f59e0b",
+    name: 'Sunset Orange',
+    primary: '#f97316',
+    secondary: '#f59e0b',
   },
   {
-    name: "Cherry Blossom",
-    primary: "#ec4899",
-    secondary: "#f43f5e",
+    name: 'Cherry Blossom',
+    primary: '#ec4899',
+    secondary: '#f43f5e',
   },
   {
-    name: "Midnight",
-    primary: "#64748b",
-    secondary: "#3e4456",
+    name: 'Midnight',
+    primary: '#64748b',
+    secondary: '#3e4456',
   },
   {
-    name: "Emerald Mint",
-    primary: "#059669",
-    secondary: "#34d399",
+    name: 'Emerald Mint',
+    primary: '#059669',
+    secondary: '#34d399',
   },
   {
-    name: "Royal Purple",
-    primary: "#7c3aed",
-    secondary: "#a855f7",
+    name: 'Royal Purple',
+    primary: '#7c3aed',
+    secondary: '#a855f7',
   },
 ];
 

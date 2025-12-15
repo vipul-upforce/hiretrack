@@ -1,12 +1,11 @@
-// import { useState } from "react";
 import {
   Dialog,
   DialogHeader,
   DialogTitle,
   DialogContent,
-} from "@/components/ui/dialog";
-import { CustomFieldDialogProps } from "../../Types";
-import React from "react";
+} from '@/components/ui/dialog';
+import React from 'react';
+import { CustomFieldDialogProps } from '../../Types';
 
 function CustomFieldDialog({
   isOpen,
@@ -19,17 +18,15 @@ function CustomFieldDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
       <DialogContent
-        size={!regular ? "2xl" : "lg"}
-        className="p-0 flex flex-col overflow-hidden"
+        size={!regular ? '2xl' : 'lg'}
+        className="flex flex-col overflow-hidden p-0"
         aria-describedby="custom-field-dialog-description"
       >
         <DialogHeader className="px-6 py-4">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4 pb-4">
-          <div className="">
-            {children}
-          </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 pb-4">
+          <div className="">{children}</div>
         </div>
       </DialogContent>
     </Dialog>

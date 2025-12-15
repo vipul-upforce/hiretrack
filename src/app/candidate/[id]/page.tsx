@@ -1,12 +1,13 @@
-"use client";
+'use client';
 
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { toast } from "@/hooks/use-toast";
-import useRoles from "@/hooks/useRoles";
-import { Candidate } from "@/types/candidate";
-import { useParams, usePathname, useRouter, redirect } from "next/navigation";
-import { useEffect } from "react";
-import { useFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
+import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
+import { toast } from '@/hooks/use-toast';
+import useRoles from '@/hooks/useRoles';
+import {
+  useParams, usePathname, useRouter, redirect,
+} from 'next/navigation';
+import { useEffect } from 'react';
+import { useFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
 
 export default function CandidateDetailsPage() {
   const params = useParams();
@@ -30,9 +31,9 @@ export default function CandidateDetailsPage() {
     if (!candidate || !id) return;
 
     // If user is admin or hr → redirect to the job details view with candidateId
-    if (candidate.jobId && (role === "admin" || role === "hr")) {
+    if (candidate.jobId && (role === 'admin' || role === 'hr')) {
       router.replace(
-        `/dashboard/jobs/${candidate.jobId._id}?candidateId=${id}`
+        `/dashboard/jobs/${candidate.jobId._id}?candidateId=${id}`,
       );
     }
   }, [candidate, role, id, router]);
@@ -47,9 +48,9 @@ export default function CandidateDetailsPage() {
       }
 
       toast({
-        title: "Error",
-        description: "Failed to load the candidate.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load the candidate.',
+        variant: 'destructive',
       });
     }
   }, [isError, error, pathname, router]);
@@ -61,14 +62,14 @@ export default function CandidateDetailsPage() {
     <div className="w-screen h-[100dvh]">
       <CandidateDetailsDialog
         candidate={candidate}
-        isOpen={true}
+        isOpen
         onOpenChange={() => {
           redirect(`/dashboard/jobs/${candidate?.jobId?._id}`);
         }}
         onUpdate={() => {
           window.location.reload();
         }}
-        hideCloseButtons={true}
+        hideCloseButtons
       />
     </div>
   );

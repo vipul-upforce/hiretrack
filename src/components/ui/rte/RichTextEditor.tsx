@@ -1,18 +1,19 @@
-"use client";
-import type React from "react";
-import { useCallback, useEffect, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
-import TextAlign from "@tiptap/extension-text-align";
-import Color from "@tiptap/extension-color";
-import TextStyle from "@tiptap/extension-text-style";
-import FontFamily from "@tiptap/extension-font-family";
-import Highlight from "@tiptap/extension-highlight";
-import { Extension } from "@tiptap/core";
-import "./rteStyles.css";
+'use client';
+
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import TextAlign from '@tiptap/extension-text-align';
+import Color from '@tiptap/extension-color';
+import TextStyle from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
+import Highlight from '@tiptap/extension-highlight';
+import { Extension } from '@tiptap/core';
+import './rteStyles.css';
 
 import {
   Bold,
@@ -28,17 +29,17 @@ import {
   Palette,
   Type,
   Highlighter,
-} from "lucide-react";
-import { Toggle } from "../toggle";
-import { Button } from "../button";
+} from 'lucide-react';
+import { colorOptions, fontFamilies, highlightColors } from '@/lib/rteUtils';
+import { Toggle } from '../toggle';
+import { Button } from '../button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../dropdown-menu";
-import { Popover, PopoverContent, PopoverTrigger } from "../popover";
-import { colorOptions, fontFamilies, highlightColors } from "@/lib/rteUtils";
+} from '../dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '../popover';
 
 interface RichTextEditorProps {
   value: string;
@@ -58,9 +59,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
   onBlur,
-  placeholder = "Write something...",
+  placeholder = 'Write something...',
   readOnly = false,
-  className = "",
+  className = '',
   maxLength,
   id,
   name,
@@ -68,7 +69,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   touched,
   ...props
 }) => {
-  const [currentFont, setCurrentFont] = useState("Default");
+  const [currentFont, setCurrentFont] = useState('Default');
   const [isFocused, setIsFocused] = useState(false);
 
   const editor = useEditor({
@@ -76,13 +77,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       StarterKit.configure({
         paragraph: {
           HTMLAttributes: {
-            class: "my-paragraph",
+            class: 'my-paragraph',
           },
         },
         hardBreak: {
           keepMarks: false,
           HTMLAttributes: {
-            class: "hard-break",
+            class: 'hard-break',
           },
         },
       }),
@@ -92,7 +93,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }),
       Image,
       TextAlign.configure({
-        types: ["heading", "paragraph"],
+        types: ['heading', 'paragraph'],
       }),
       TextStyle,
       Color,
@@ -102,12 +103,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }),
 
       Extension.create({
-        name: "customEnterKeymap",
+        name: 'customEnterKeymap',
         addKeyboardShortcuts() {
           return {
-            "Shift-Enter": ({ editor }) => {
-              return editor.commands.setHardBreak();
-            },
+            'Shift-Enter': ({ editor }) => editor.commands.setHardBreak(),
           };
         },
       }),
@@ -135,7 +134,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose dark:prose-invert focus:outline-none min-h-[150px] max-w-none p-4",
+          'prose prose-sm sm:prose dark:prose-invert focus:outline-none min-h-[150px] max-w-none p-4',
         placeholder,
       },
     },
@@ -153,7 +152,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       editor.chain().focus().setFontFamily(fontFamily).run();
       setCurrentFont(fontName);
     },
-    [editor]
+    [editor],
   );
 
   const setColor = useCallback(
@@ -161,7 +160,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       if (!editor) return;
       editor.chain().focus().setColor(color).run();
     },
-    [editor]
+    [editor],
   );
 
   const setHighlight = useCallback(
@@ -169,14 +168,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       if (!editor) return;
       editor.chain().focus().toggleHighlight({ color }).run();
     },
-    [editor]
+    [editor],
   );
 
   if (!editor) {
     return <div className="h-64 w-full animate-pulse bg-muted rounded-md" />;
   }
 
-  const borderColor = isFocused ? "border-primary" : "border-input";
+  const borderColor = isFocused ? 'border-primary' : 'border-input';
 
   return (
     <div className={`border rounded-md ${borderColor} ${className}`}>
@@ -184,7 +183,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <div className="flex flex-wrap gap-1 p-1 border-b">
           <Toggle
             size="sm"
-            pressed={editor.isActive("bold")}
+            pressed={editor.isActive('bold')}
             onPressedChange={() => editor.chain().focus().toggleBold().run()}
             aria-label="Bold"
           >
@@ -193,7 +192,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive("italic")}
+            pressed={editor.isActive('italic')}
             onPressedChange={() => editor.chain().focus().toggleItalic().run()}
             aria-label="Italic"
           >
@@ -202,10 +201,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive("underline")}
-            onPressedChange={() =>
-              editor.chain().focus().toggleUnderline().run()
-            }
+            pressed={editor.isActive('underline')}
+            onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
             aria-label="Underline"
           >
             <UnderlineIcon className="h-4 w-4" />
@@ -224,9 +221,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   key={font.value}
                   onClick={() => setFontFamily(font.value, font.name)}
                   className={
-                    editor.isActive("textStyle", { fontFamily: font.value })
-                      ? "bg-accent"
-                      : ""
+                    editor.isActive('textStyle', { fontFamily: font.value })
+                      ? 'bg-accent'
+                      : ''
                   }
                 >
                   <span style={{ fontFamily: font.value }}>{font.name}</span>
@@ -289,10 +286,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive("bulletList")}
-            onPressedChange={() =>
-              editor.chain().focus().toggleBulletList().run()
-            }
+            pressed={editor.isActive('bulletList')}
+            onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
             aria-label="Bullet List"
           >
             <List className="h-4 w-4" />
@@ -300,10 +295,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive("orderedList")}
-            onPressedChange={() =>
-              editor.chain().focus().toggleOrderedList().run()
-            }
+            pressed={editor.isActive('orderedList')}
+            onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
             aria-label="Ordered List"
           >
             <ListOrdered className="h-4 w-4" />
@@ -311,10 +304,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive({ textAlign: "left" })}
-            onPressedChange={() =>
-              editor.chain().focus().setTextAlign("left").run()
-            }
+            pressed={editor.isActive({ textAlign: 'left' })}
+            onPressedChange={() => editor.chain().focus().setTextAlign('left').run()}
             aria-label="Align Left"
           >
             <AlignLeft className="h-4 w-4" />
@@ -322,10 +313,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive({ textAlign: "center" })}
-            onPressedChange={() =>
-              editor.chain().focus().setTextAlign("center").run()
-            }
+            pressed={editor.isActive({ textAlign: 'center' })}
+            onPressedChange={() => editor.chain().focus().setTextAlign('center').run()}
             aria-label="Align Center"
           >
             <AlignCenter className="h-4 w-4" />
@@ -333,10 +322,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
           <Toggle
             size="sm"
-            pressed={editor.isActive({ textAlign: "right" })}
-            onPressedChange={() =>
-              editor.chain().focus().setTextAlign("right").run()
-            }
+            pressed={editor.isActive({ textAlign: 'right' })}
+            onPressedChange={() => editor.chain().focus().setTextAlign('right').run()}
             aria-label="Align Right"
           >
             <AlignRight className="h-4 w-4" />
@@ -370,11 +357,14 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         <p
           className={`text-right text-sm mt-1 mx-1 ${
             editor?.getText().length >= maxLength
-              ? "text-red-500"
-              : "text-gray-400"
+              ? 'text-red-500'
+              : 'text-gray-400'
           }`}
         >
-          {editor?.getText().length || 0} / {maxLength}
+          {editor?.getText().length || 0}
+          {' '}
+          /
+          {maxLength}
         </p>
       )}
 

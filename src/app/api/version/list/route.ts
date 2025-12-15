@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { logger } from '@/lib/logger/logger.server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -6,8 +7,8 @@ export async function GET(request: NextRequest) {
 
     if (!licenseValidationUrl) {
       return NextResponse.json(
-        { error: "LICENSE_VALIDATION_URL not configured" },
-        { status: 500 }
+        { error: 'LICENSE_VALIDATION_URL not configured' },
+        { status: 500 },
       );
     }
 
@@ -16,21 +17,18 @@ export async function GET(request: NextRequest) {
 
     // Fetch version list from the license validation server
     const response = await fetch(versionListUrl, {
-      method: "GET",
+      method: 'GET',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       // Add timeout to prevent hanging requests
       signal: AbortSignal.timeout(10000), // 10 second timeout
     });
 
     if (!response.ok) {
-      console.error(
-        `Failed to fetch version list: ${response.status} ${response.statusText}`
-      );
       return NextResponse.json(
-        { error: "Failed to fetch version list from server" },
-        { status: response.status }
+        { error: 'Failed to fetch version list from server' },
+        { status: response.status },
       );
     }
 
@@ -38,19 +36,29 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(versionData);
   } catch (error: unknown) {
-    console.error("Error fetching version list:", error);
+    logger.error({ error, url: request.url }, 'Error fetching version list');
 
     // Handle timeout errors
-    if (error instanceof Error && error.name === "AbortError") {
+    if (error instanceof Error && error.name === 'AbortError') {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Request timeout - server may be unavailable" },
-        { status: 408 }
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Request timeout - server may be unavailable',
+        },
+        { status: 408 },
       );
     }
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Internal server error while fetching version list" },
-      { status: 500 }
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Internal server error while fetching version list',
+      },
+      { status: 500 },
     );
   }
 }

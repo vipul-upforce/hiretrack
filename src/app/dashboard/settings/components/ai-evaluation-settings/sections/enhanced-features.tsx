@@ -1,44 +1,44 @@
-import React from "react";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { SectionProps } from "../types";
+import React from 'react';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { SectionProps } from '../types';
 
-export const EnhancedFeaturesSection: React.FC<SectionProps> = ({
+export function EnhancedFeaturesSection({
   config,
   updateConfig,
-}) => {
+}: SectionProps) {
   const features = [
     {
-      id: "enableConfidence",
-      key: "enableConfidenceScores" as const,
-      label: "Confidence Scores & Evidence Links",
-      desc: "AI provides confidence levels and specific resume sections for each score",
+      id: 'enableConfidence',
+      key: 'enableConfidenceScores' as const,
+      label: 'Confidence Scores & Evidence Links',
+      desc: 'AI provides confidence levels and specific resume sections for each score',
     },
     {
-      id: "enableRedFlags",
-      key: "enableRedFlagsDetection" as const,
-      label: "Red Flags Detection",
-      desc: "Automatically detect potential concerns (gaps, job hopping, salary mismatch)",
+      id: 'enableRedFlags',
+      key: 'enableRedFlagsDetection' as const,
+      label: 'Red Flags Detection',
+      desc: 'Automatically detect potential concerns (gaps, job hopping, salary mismatch)',
     },
     {
-      id: "enableSkills",
-      key: "enableSkillsMatrix" as const,
-      label: "Skills Verification Matrix",
-      desc: "Detailed breakdown of required vs. present skills with evidence",
+      id: 'enableSkills',
+      key: 'enableSkillsMatrix' as const,
+      label: 'Skills Verification Matrix',
+      desc: 'Detailed breakdown of required vs. present skills with evidence',
     },
     {
-      id: "enableRanking",
-      key: "enableComparativeRanking" as const,
-      label: "Comparative Ranking (Admin Only)",
-      desc: "Show candidate rank and percentile within job applicant pool",
+      id: 'enableRanking',
+      key: 'enableComparativeRanking' as const,
+      label: 'Comparative Ranking (Admin Only)',
+      desc: 'Show candidate rank and percentile within job applicant pool',
     },
   ];
 
   return (
-    <div className="border-t pt-4 space-y-4">
+    <div className="space-y-4 border-t pt-4">
       <div>
         <h3 className="text-sm font-semibold">Enhanced Evaluation Features</h3>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="mt-1 text-xs text-muted-foreground">
           Enable additional AI-powered insights for better candidate assessment
         </p>
       </div>
@@ -61,4 +61,4 @@ export const EnhancedFeaturesSection: React.FC<SectionProps> = ({
       ))}
     </div>
   );
-};
+}

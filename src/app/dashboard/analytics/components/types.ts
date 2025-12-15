@@ -1,5 +1,5 @@
 // Import API types for consistency
-import type { JobPerformanceData as APIJobPerformanceData } from "@/app/api/analytics/types";
+import type { JobPerformanceData as APIJobPerformanceData } from '@/app/api/analytics/types';
 
 export interface DateRange {
   from: Date;

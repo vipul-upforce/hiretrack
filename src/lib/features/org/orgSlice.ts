@@ -1,11 +1,11 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   allowMultipleOrgs: false,
 };
 
 export const organizationSlice = createSlice({
-  name: "organization",
+  name: 'organization',
   initialState,
   reducers: {
     setAllowMultipleOrgs: (state, action) => {

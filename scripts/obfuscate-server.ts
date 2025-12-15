@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import JavaScriptObfuscator from "javascript-obfuscator";
+import logger from "@/lib/logger";
 
 const root = path.resolve(__dirname, "..");
 const nextServerDirs = [
@@ -202,7 +203,7 @@ function shouldSkip(file: string) {
   const isNotJS = !file.endsWith(".js");
 
   if (shouldSkipFile) {
-    console.log(
+    logger.log(
       `Skipping obfuscation for: ${file} (matches exclusion pattern)`
     );
   }
@@ -215,9 +216,8 @@ function obfuscateFile(file: string) {
     const code = fs.readFileSync(file, "utf8");
     const obfuscated = JavaScriptObfuscator.obfuscate(code, obfuscationOptions);
     fs.writeFileSync(file, obfuscated.getObfuscatedCode(), "utf8");
-    console.log("✅ Obfuscated:", file);
   } catch (err) {
-    console.error("❌ Failed to obfuscate", file, err);
+    logger.error("❌ Failed to obfuscate", file, err);
   }
 }
 
@@ -236,7 +236,6 @@ for (const dir of nextServerDirs) {
   });
 }
 
-console.log("\n📊 Obfuscation Summary:");
-console.log(`✅ Files obfuscated: ${obfuscatedCount}`);
-console.log(`⏭️  Files skipped: ${skippedCount}`);
-console.log("🔒 Server-side obfuscation completed with SSE-safe exclusions");
+logger.log("\n📊 Obfuscation Summary:");
+logger.log(`✅ Files obfuscated: ${obfuscatedCount}`);
+logger.log(`⏭️  Files skipped: ${skippedCount}`);

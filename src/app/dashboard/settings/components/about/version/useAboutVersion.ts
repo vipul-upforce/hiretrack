@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
-import { useToast } from "@/hooks/use-toast";
-import packageJson from "@/../package.json";
+import { useState, useEffect, useCallback } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import packageJson from '@/../package.json';
 import {
   useGetAutoUpdateQuery,
   useToggleAutoUpdateMutation,
   useLazyGetVersionListQuery,
   useTriggerUpdateMutation,
-} from "@/lib/features/settings/settingsApi";
-import { AboutValues, VersionListResponse, VersionInfo } from "./../types";
-import { FormikHelpers } from "formik";
+} from '@/lib/features/settings/settingsApi';
+import { FormikHelpers } from 'formik';
+import { AboutValues, VersionListResponse, VersionInfo } from '../types';
 
 interface UseAboutVersionProps {
   onClose: (values?: AboutValues) => void;
@@ -21,17 +21,14 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [versionList, setVersionList] = useState<VersionListResponse | null>(
-    null
+    null,
   );
   const [changelogVersions, setChangelogVersions] = useState<VersionInfo[]>([]);
 
-  const { data: autoUpdateData, error: autoUpdateError } =
-    useGetAutoUpdateQuery();
+  const { data: autoUpdateData, error: autoUpdateError } = useGetAutoUpdateQuery();
   const [toggleAutoUpdate] = useToggleAutoUpdateMutation();
-  const [fetchVersionListRTK, { isFetching: checkingUpdatesRTK }] =
-    useLazyGetVersionListQuery();
-  const [triggerUpdateRTK, { isLoading: updatingRTK }] =
-    useTriggerUpdateMutation();
+  const [fetchVersionListRTK, { isFetching: checkingUpdatesRTK }] = useLazyGetVersionListQuery();
+  const [triggerUpdateRTK, { isLoading: updatingRTK }] = useTriggerUpdateMutation();
 
   const currentVersion = packageJson.version;
 
@@ -59,22 +56,22 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
         setUpdateAvailable(true);
 
         const currentIndex = versionData.versions.findIndex(
-          (v: VersionInfo) => v.version === currentVersion
+          (v: VersionInfo) => v.version === currentVersion,
         );
         const latestIndex = versionData.versions.findIndex(
-          (v: VersionInfo) => v.version === latest
+          (v: VersionInfo) => v.version === latest,
         );
 
         if (currentIndex > latestIndex) {
           setChangelogVersions(
-            versionData.versions.slice(latestIndex, currentIndex)
+            versionData.versions.slice(latestIndex, currentIndex),
           );
         } else {
           setChangelogVersions(versionData.versions.slice(0, latestIndex + 1));
         }
 
         toast({
-          title: "Update Available",
+          title: 'Update Available',
           description: `New version ${latest} is available. Current version: ${currentVersion}`,
         });
       } else {
@@ -82,15 +79,15 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
         setChangelogVersions([]);
 
         toast({
-          title: "Up to Date",
-          description: "You are running the latest version.",
+          title: 'Up to Date',
+          description: 'You are running the latest version.',
         });
       }
     } catch (e: any) {
       toast({
-        title: "Error",
-        description: e?.message || "Failed to check for updates",
-        variant: "destructive",
+        title: 'Error',
+        description: e?.message || 'Failed to check for updates',
+        variant: 'destructive',
       });
     }
   }, [currentVersion, fetchVersionListRTK, toast]);
@@ -100,16 +97,16 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
       await triggerUpdateRTK().unwrap();
 
       toast({
-        title: "Update Started",
+        title: 'Update Started',
         description:
-          "The update process has begun. Expected downtime in ~1 minute.",
+          'The update process has begun. Expected downtime in ~1 minute.',
       });
 
       setTimeout(() => {
         toast({
-          title: "Expected Downtime",
-          description: "The system may experience a brief downtime.",
-          variant: "destructive",
+          title: 'Expected Downtime',
+          description: 'The system may experience a brief downtime.',
+          variant: 'destructive',
           duration: 10000,
         });
       }, 60000);
@@ -117,9 +114,9 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
       onClose();
     } catch (e: any) {
       toast({
-        title: "Error",
-        description: e?.message || "Failed to start update",
-        variant: "destructive",
+        title: 'Error',
+        description: e?.message || 'Failed to start update',
+        variant: 'destructive',
       });
     }
   }, [triggerUpdateRTK, toast, onClose]);
@@ -127,18 +124,18 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const handleSubmit = useCallback(
     async (
       values: AboutValues,
-      { setSubmitting }: FormikHelpers<AboutValues>
+      { setSubmitting }: FormikHelpers<AboutValues>,
     ) => {
       try {
         if (
-          initialValues &&
-          values.enableAutoUpdate !== initialValues.enableAutoUpdate
+          initialValues
+          && values.enableAutoUpdate !== initialValues.enableAutoUpdate
         ) {
           const result = await toggleAutoUpdate().unwrap();
 
           toast({
-            title: "Success",
-            description: "Auto-update settings updated successfully",
+            title: 'Success',
+            description: 'Auto-update settings updated successfully',
           });
 
           setInitialValues({ enableAutoUpdate: !!result.autoUpdate });
@@ -148,15 +145,15 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
         }
       } catch (e: any) {
         toast({
-          title: "Error",
-          description: e?.message || "Failed to update settings",
-          variant: "destructive",
+          title: 'Error',
+          description: e?.message || 'Failed to update settings',
+          variant: 'destructive',
         });
       } finally {
         setSubmitting(false);
       }
     },
-    [initialValues, toggleAutoUpdate, toast, onClose]
+    [initialValues, toggleAutoUpdate, toast, onClose],
   );
 
   return {

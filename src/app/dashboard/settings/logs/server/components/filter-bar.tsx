@@ -1,13 +1,13 @@
-import { Search, RefreshCwIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Search, RefreshCwIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 
 interface FilterBarProps {
   searchTerm: string;
@@ -44,7 +44,7 @@ export function FilterBar({
         <Button onClick={onRefresh} disabled={isRefreshing} variant="secondary">
           <RefreshCwIcon
             className={`h-1 w-1 transition-transform ${
-              isRefreshing ? "animate-spin" : ""
+              isRefreshing ? 'animate-spin' : ''
             }`}
           />
         </Button>

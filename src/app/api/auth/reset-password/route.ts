@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import connectToDatabase, { CandidateAccount,User } from "@/lib/mongodb";
-import { getAuthenticatedUser } from  "@/app/actions/auth";
-import { passwordResetRateLimiter } from "@/lib/rateLimiter";
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import connectToDatabase, { CandidateAccount, User } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { passwordResetRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleResetPassword(req: NextRequest) {
   try {
@@ -12,16 +13,16 @@ async function handleResetPassword(req: NextRequest) {
 
     if (!User || !CandidateAccount) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 500 }
+        { error: 'Database not connected' },
+        { status: 500 },
       );
     }
 
     // Hash the token from the request
     const resetTokenHash = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(token)
-      .digest("hex");
+      .digest('hex');
 
     // Find user with valid reset token
     let user = null;
@@ -32,10 +33,8 @@ async function handleResetPassword(req: NextRequest) {
         resetToken: resetTokenHash,
         resetTokenExpiry: { $gt: new Date() },
       });
-      // console.log("Checking user collection:", user ? "Found" : "Not found");
-    } catch (e) {
+    } catch {
       user = null;
-      console.log("ERROR FINDING USER:", e);
     }
 
     if (!user) {
@@ -49,13 +48,13 @@ async function handleResetPassword(req: NextRequest) {
           isCandidate = true;
         }
       } catch (e) {
-        console.log("ERROR FINDING CANDIDATE:", e);
+        logger.error({ error: e, url: req.url }, 'ERROR FINDING CANDIDATE');
         user = null;
       }
     }
 
     if (!user) {
-      throw new Error("Invalid or expired reset token");
+      throw new Error('Invalid or expired reset token');
     }
 
     // Hash the new password
@@ -77,14 +76,14 @@ async function handleResetPassword(req: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: "Password reset successful" },
-      { status: 200 }
+      { message: 'Password reset successful' },
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error({ error, url: req.url }, 'Reset password error');
     return NextResponse.json(
-      { error: "Failed to reset password" },
-      { status: 500 }
+      { error: 'Failed to reset password' },
+      { status: 500 },
     );
   }
 }
@@ -102,36 +101,36 @@ export async function PUT(req: NextRequest) {
 
     if (!candidateId || !password) {
       return NextResponse.json(
-        { error: "Candidate ID and password are required" },
-        { status: 400 }
+        { error: 'Candidate ID and password are required' },
+        { status: 400 },
       );
     }
     if (!User) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 404 }
+        { error: 'Database not connected' },
+        { status: 404 },
       );
     }
 
     if (password.length < 7) {
       return NextResponse.json(
-        { error: "Password must be at least 6 characters long" },
-        { status: 400 }
+        { error: 'Password must be at least 6 characters long' },
+        { status: 400 },
       );
     }
 
-    const userData = await getAuthenticatedUser(req, "admin");
+    const userData = await getAuthenticatedUser(req, 'admin');
     if (!userData) {
       return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
     }
     const user = await User.findById(candidateId);
     if (!user) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
 
@@ -145,14 +144,14 @@ export async function PUT(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: "Password reset successful" },
-      { status: 200 }
+      { message: 'Password reset successful' },
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error({ error, url: req.url }, 'Reset password error');
     return NextResponse.json(
-      { error: "Failed to reset password" },
-      { status: 500 }
+      { error: 'Failed to reset password' },
+      { status: 500 },
     );
   }
 }

@@ -1,24 +1,24 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const FormFieldSchema = new mongoose.Schema({
   moduleType: {
     type: String,
-    enum: ["jobs", "candidates"],
+    enum: ['jobs', 'candidates'],
     required: true,
   },
   fieldType: {
     type: String,
     enum: [
-      "text",
-      "number",
-      "select",
-      "multiSelect",
-      "radio",
-      "checkbox",
-      "date",
-      "file",
-      "textarea",
-      "chip",
+      'text',
+      'number',
+      'select',
+      'multiSelect',
+      'radio',
+      'checkbox',
+      'date',
+      'file',
+      'textarea',
+      'chip',
     ],
     required: true,
   },
@@ -46,7 +46,7 @@ const FormFieldSchema = new mongoose.Schema({
   },
 });
 
-export const FormField = mongoose.model("FormField", FormFieldSchema);
+export const FormField = mongoose.model('FormField', FormFieldSchema);
 
 export interface FormField {
   _id: string;

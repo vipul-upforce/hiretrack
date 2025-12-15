@@ -3,11 +3,11 @@
  * Provides single source of truth for candidate data
  */
 
-import { useMemo } from "react";
-import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
-import { useSSE } from "@/hooks/useSSE";
-import { normalizeCandidate, NormalizedCandidate } from "../utils/candidateNormalizer";
-import { Candidate } from "@/types/candidate";
+import { useMemo } from 'react';
+import { useFetchCandidatesQuery } from '@/lib/features/candidate/candidateApi';
+import { useSSE } from '@/hooks/useSSE';
+import { Candidate } from '@/types/candidate';
+import { normalizeCandidate, NormalizedCandidate } from '../utils/candidateNormalizer';
 
 interface UseNormalizedCandidatesProps {
   jobId: string;
@@ -35,10 +35,10 @@ export function useNormalizedCandidates({
 
   // Get SSE candidates (only if setSelectedCandidate is provided)
   const { candidates: sseCandidates } = useSSE(
-    role || "",
+    role || '',
     setSelectedCandidate || (() => {}),
     selectedCandidate || null,
-    jobId
+    jobId,
   );
 
   // Normalize and merge candidates
@@ -76,4 +76,3 @@ export function useNormalizedCandidates({
     refetch,
   };
 }
-

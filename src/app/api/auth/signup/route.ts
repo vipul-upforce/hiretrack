@@ -1,58 +1,43 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import connectToDatabase, { CandidateAccount,User, Lane  } from "@/lib/mongodb";
-import mongoose from "mongoose";
-import { signupRateLimiter } from "@/lib/rateLimiter";
-import { NotificationService } from "@/lib/notifications/notificationService";
-
-const DEFAULT_LANES = [
-  "applied",
-  "screening",
-  "shortlisted",
-  "processing",
-  "accepted",
-  "rejected",
-];
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import connectToDatabase, { CandidateAccount, User, Lane } from '@/lib/mongodb';
+import mongoose from 'mongoose';
+import { signupRateLimiter } from '@/lib/rateLimiter';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 async function handleSignup(req: NextRequest) {
   try {
     await connectToDatabase();
-    var {
-      email,
-      password,
-      name,
-      role,
-      organizationId,
-      triggerUserId,
-      triggerUserName,
-    } = await req.json();
+    const { email, password, name, role, triggerUserId, triggerUserName } =
+      await req.json();
+
+    let { organizationId } = await req.json();
 
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
       organizationId = new mongoose.Types.ObjectId(organizationId);
     }
     if (!User || !Lane) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
     // Check if user already exists in the same organization
-    // console.log("EXISTING USER: ",organizationId)
     const existingUser =
       (await User.findOne({ email, organizationId })) ||
       (await CandidateAccount?.findOne({ email, organizationId }));
-    // console.log("EXISTING USER: ",existingUser)
 
     if (existingUser) {
       if (existingUser.isDeleted) {
         return NextResponse.json(
-          { error: "User already exists, but is deactivated." },
-          { status: 400 }
+          { error: 'User already exists, but is deactivated.' },
+          { status: 400 },
         );
       }
       return NextResponse.json(
-        { error: "User already exists in this organization" },
-        { status: 400 }
+        { error: 'User already exists in this organization' },
+        { status: 400 },
       );
     }
 
@@ -67,14 +52,9 @@ async function handleSignup(req: NextRequest) {
       role,
       organizationId,
     });
-    // Create default lanes for the user
-    // await Lane.create({
-    //   userId: user._id,
-    //   lanes: DEFAULT_LANES,
-    // });
 
     // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
-    if (triggerUserId && triggerUserName && role !== "candidate") {
+    if (triggerUserId && triggerUserName && role !== 'candidate') {
       try {
         await NotificationService.notifyUserAdded({
           organizationId: organizationId.toString(),
@@ -82,28 +62,20 @@ async function handleSignup(req: NextRequest) {
           newUserName: user.name,
           newUserEmail: user.email,
           newUserRole: user.role,
-          triggerUserId: triggerUserId,
-          triggerUserName: triggerUserName,
+          triggerUserId,
+          triggerUserName,
         });
       } catch (notificationError) {
-        console.error(
-          "Failed to send user creation notification:",
-          notificationError
+        logger.error(
+          { notificationError },
+          'Failed to send user creation notification',
         );
-        // Don't fail the API call if notification fails
       }
     }
 
-    // // Generate token
-    // const token = signToken({
-    //   id: user._id,
-    //   email: user.email,
-    //   role: user.role,
-    // });
-
     const response = NextResponse.json(
       {
-        message: "User created successfully",
+        message: 'User created successfully',
         user: {
           id: user._id.toString(),
           name: user.name,
@@ -111,22 +83,19 @@ async function handleSignup(req: NextRequest) {
           role: user.role,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
-
-    // // Set cookie
-    // response.cookies.set('token', token, {
-    //   httpOnly: false,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'strict',
-    //   maxAge: 86400, // 1 day
-    // });
 
     return response;
   } catch (error: unknown) {
+    logger.error({ error }, 'Error during user signup');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An unknown error occured.' },
+      { status: 500 },
+    );
   }
 }
 

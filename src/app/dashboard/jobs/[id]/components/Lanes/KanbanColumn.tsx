@@ -1,31 +1,33 @@
-"use client";
+'use client';
 
 import {
   Droppable,
   Draggable,
   type DroppableProvided,
   type DraggableProvided,
-} from "@hello-pangea/dnd";
+} from '@hello-pangea/dnd';
 import {
   GripVertical,
   ArrowRightToLine,
   ArrowLeftFromLine,
-} from "lucide-react";
-import { CandidateCard } from "../Candidate/candidate-card";
-import { Candidate } from "@/types/candidate";
-import { LaneOptionsMenu } from "./lanes-options-menu";
-import { getJobId, getTrackingDate } from "../../utils/candidateAccessors";
-import { useState, useMemo, memo, useCallback, useRef } from "react";
-import { usePathname } from "next/navigation";
-import { Virtuoso } from "react-virtuoso";
+} from 'lucide-react';
+import { Candidate } from '@/types/candidate';
+import {
+  useState, useMemo, memo, useCallback, useRef,
+} from 'react';
+import { usePathname } from 'next/navigation';
+import { Virtuoso } from 'react-virtuoso';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { ILaneConfig } from "@/lib/models/JobLaneConfig";
-import CustomScrollbarLane from "@/components/ui/custom-scrollbar-lane";
+} from '@/components/ui/tooltip';
+import { ILaneConfig } from '@/lib/models/JobLaneConfig';
+import CustomScrollbarLane from '@/components/ui/custom-scrollbar-lane';
+import { getJobId, getTrackingDate } from '../../utils/candidateAccessors';
+import { LaneOptionsMenu } from './lanes-options-menu';
+import { CandidateCard } from '../Candidate/candidate-card';
 
 interface PendingMove {
   candidateId: string;
@@ -37,7 +39,7 @@ interface PendingMove {
 
 interface SortConfig {
   field: string | null;
-  direction: "asc" | "desc";
+  direction: 'asc' | 'desc';
   enabled: boolean;
 }
 
@@ -66,14 +68,14 @@ interface KanbanColumnProps {
   onConfigureChecklist?: (
     laneId: string,
     laneName: string,
-    initialTab?: "incoming" | "outgoing"
+    initialTab?: 'incoming' | 'outgoing'
   ) => void;
   isDragging?: boolean;
   pendingMoves?: PendingMove[];
   laneConfig?: ILaneConfig;
 }
 
-const KanbanColumn = memo(function KanbanColumn({
+const KanbanColumn = memo(({
   column,
   index,
   isFileOver,
@@ -95,19 +97,19 @@ const KanbanColumn = memo(function KanbanColumn({
   onConfigureChecklist,
   pendingMoves = [],
   laneConfig,
-}: KanbanColumnProps) {
+}: KanbanColumnProps) => {
   const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState<boolean>(false);
   const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(null);
 
   // Simplified sort state
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     field: null,
-    direction: "asc",
+    direction: 'asc',
     enabled: true,
   });
 
   const pathname = usePathname();
-  const jobId = pathname?.split("/")[3];
+  const jobId = pathname?.split('/')[3];
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
   // Simplified sort function
@@ -115,80 +117,78 @@ const KanbanColumn = memo(function KanbanColumn({
     (
       candidates: Candidate[],
       field: string,
-      direction: "asc" | "desc"
-    ): Candidate[] => {
-      return [...candidates].sort((a, b) => {
-        const getValue = (candidate: Candidate, field: string): string | number | Date | null | undefined => {
-          switch (field) {
-            case "name":
-              return candidate.name?.toLowerCase() || "";
-            case "email":
-              return candidate.email?.toLowerCase() || "";
-            case "ctc":
-              return candidate.currentCTC ?? 0;
-            case "expectedCtc":
-              return candidate.expectedCTC ?? 0;
-            case "experience":
-              return typeof candidate.experience === "number"
-                ? candidate.experience
-                : parseInt(candidate.experience as string) || 0;
-            case "skills":
-              return Array.isArray(candidate.skills)
-                ? candidate.skills.length
+      direction: 'asc' | 'desc',
+    ): Candidate[] => [...candidates].sort((a, b) => {
+      const getValue = (candidate: Candidate, field: string): string | number | Date | null | undefined => {
+        switch (field) {
+          case 'name':
+            return candidate.name?.toLowerCase() || '';
+          case 'email':
+            return candidate.email?.toLowerCase() || '';
+          case 'ctc':
+            return candidate.currentCTC ?? 0;
+          case 'expectedCtc':
+            return candidate.expectedCTC ?? 0;
+          case 'experience':
+            return typeof candidate.experience === 'number'
+              ? candidate.experience
+              : parseInt(candidate.experience as string) || 0;
+          case 'skills':
+            return Array.isArray(candidate.skills)
+              ? candidate.skills.length
+              : 0;
+          case 'appliedDate':
+            return candidate.appliedDate
+              ? new Date(candidate.appliedDate).getTime()
+              : 0;
+          case 'assignmentDate':
+            return candidate.assignment?.time
+              ? new Date(candidate.assignment?.time).getTime()
+              : 0;
+          case 'noticePeriod':
+            return candidate.noticePeriod
+              ? new Date(candidate.noticePeriod).getTime()
+              : 0;
+          case 'aiScore':
+            return candidate.scores?.overall
+              ? new Date(candidate.scores.overall).getTime()
+              : 0;
+          case 'followupDate':
+            return candidate?.followUp?.date
+              ? new Date(candidate?.followUp?.date).getTime()
+              : 0;
+          case 'createdAt':
+            return candidate.tracking?.createdAt
+              ? new Date(candidate.tracking?.createdAt).getTime()
+              : 0;
+          case 'lastModified':
+            const updatedAt = getTrackingDate(candidate, 'updatedAt');
+            const createdAt = getTrackingDate(candidate, 'createdAt');
+            return updatedAt
+              ? updatedAt.getTime()
+              : createdAt
+                ? createdAt.getTime()
                 : 0;
-            case "appliedDate":
-              return candidate.appliedDate
-                ? new Date(candidate.appliedDate).getTime()
-                : 0;
-            case "assignmentDate":
-              return candidate.assignment?.time
-                ? new Date(candidate.assignment?.time).getTime()
-                : 0;
-            case "noticePeriod":
-              return candidate.noticePeriod
-                ? new Date(candidate.noticePeriod).getTime()
-                : 0;
-            case "aiScore":
-              return candidate.scores?.overall
-                ? new Date(candidate.scores.overall).getTime()
-                : 0;
-            case "followupDate":
-              return candidate?.followUp?.date
-                ? new Date(candidate?.followUp?.date).getTime()
-                : 0;
-            case "createdAt":
-              return candidate.tracking?.createdAt
-                ? new Date(candidate.tracking?.createdAt).getTime()
-                : 0;
-            case "lastModified":
-              const updatedAt = getTrackingDate(candidate, "updatedAt");
-              const createdAt = getTrackingDate(candidate, "createdAt");
-              return updatedAt
-                ? updatedAt.getTime()
-                : createdAt
-                  ? createdAt.getTime()
-                  : 0;
-            default:
-              return "";
-          }
-        };
+          default:
+            return '';
+        }
+      };
 
-        const aValue = getValue(a, field);
-        const bValue = getValue(b, field);
+      const aValue = getValue(a, field);
+      const bValue = getValue(b, field);
 
-        if (aValue < bValue) return direction === "asc" ? -1 : 1;
-        if (aValue > bValue) return direction === "asc" ? 1 : -1;
-        return 0;
-      });
-    },
-    []
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1;
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+      return 0;
+    }),
+    [],
   );
 
   // Single source of truth for processed candidates
   const processedCandidates = useMemo(() => {
     // First filter by jobId
     const filtered = column.candidates.filter((candidate) => {
-        const candidateJobId = getJobId(candidate)?.toString() || "";
+      const candidateJobId = getJobId(candidate)?.toString() || '';
       return candidateJobId === jobId?.toString();
     });
 
@@ -201,7 +201,7 @@ const KanbanColumn = memo(function KanbanColumn({
   }, [column.candidates, jobId, sortConfig, sortCandidates]);
 
   // Handle sort from LaneOptionsMenu
-  const handleSort = useCallback((field: string, direction: "asc" | "desc") => {
+  const handleSort = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSortConfig({ field, direction, enabled: true });
   }, []);
 
@@ -216,7 +216,7 @@ const KanbanColumn = memo(function KanbanColumn({
       setSelectedCandidate(candidate);
       setIsDetailsOpen(true);
     },
-    [setSelectedCandidate, setIsDetailsOpen]
+    [setSelectedCandidate, setIsDetailsOpen],
   );
 
   const handleDeleteClickMemo = useCallback(
@@ -224,7 +224,7 @@ const KanbanColumn = memo(function KanbanColumn({
       setSelectedCandidate(candidate);
       handleDeleteClick(id);
     },
-    [setSelectedCandidate, handleDeleteClick]
+    [setSelectedCandidate, handleDeleteClick],
   );
 
   return (
@@ -233,10 +233,10 @@ const KanbanColumn = memo(function KanbanColumn({
         <div
           ref={provided.innerRef}
           {...provided.draggableProps}
-          className={`flex-1 min-w-[450px] ${index === 0 ? "pl-0 pr-1" : "px-1"}`}
+          className={`flex-1 min-w-[450px] ${index === 0 ? 'pl-0 pr-1' : 'px-1'}`}
           style={{
             ...provided.draggableProps.style,
-            userSelect: "none",
+            userSelect: 'none',
           }}
         >
           <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-sm p-2 min-w-0 w-full max-w-full">
@@ -272,7 +272,7 @@ const KanbanColumn = memo(function KanbanColumn({
                                 onConfigureChecklist?.(
                                   column.id,
                                   column.title,
-                                  "incoming"
+                                  'incoming',
                                 );
                               }}
                             >
@@ -281,10 +281,11 @@ const KanbanColumn = memo(function KanbanColumn({
                           </TooltipTrigger>
                           <TooltipContent className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                             <p className="text-xs">
-                              Incoming checklist:{" "}
+                              Incoming checklist:
+                              {' '}
                               {laneConfig.incomingChecklist.name}
-                              {laneConfig.incomingChecklist.isMandatory &&
-                                " (Mandatory)"}
+                              {laneConfig.incomingChecklist.isMandatory
+                                && ' (Mandatory)'}
                               <br />
                               <span className="text-blue-600 dark:text-blue-400">
                                 Click to configure
@@ -305,7 +306,7 @@ const KanbanColumn = memo(function KanbanColumn({
                                 onConfigureChecklist?.(
                                   column.id,
                                   column.title,
-                                  "outgoing"
+                                  'outgoing',
                                 );
                               }}
                             >
@@ -314,10 +315,11 @@ const KanbanColumn = memo(function KanbanColumn({
                           </TooltipTrigger>
                           <TooltipContent className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
                             <p className="text-xs">
-                              Outgoing checklist:{" "}
+                              Outgoing checklist:
+                              {' '}
                               {laneConfig.outgoingChecklist.name}
-                              {laneConfig.outgoingChecklist.isMandatory &&
-                                " (Mandatory)"}
+                              {laneConfig.outgoingChecklist.isMandatory
+                                && ' (Mandatory)'}
                               <br />
                               <span className="text-blue-600 dark:text-blue-400">
                                 Click to configure
@@ -360,23 +362,23 @@ const KanbanColumn = memo(function KanbanColumn({
                     className="h-full relative"
                     onDragOver={(e) => {
                       if (
-                        e.dataTransfer.types.includes("Files") &&
-                        column.id === "applied"
+                        e.dataTransfer.types.includes('Files')
+                        && column.id === 'applied'
                       ) {
                         e.preventDefault();
                         e.stopPropagation();
                         setIsFileOver(true);
-                        e.dataTransfer.dropEffect = "link";
+                        e.dataTransfer.dropEffect = 'link';
                       }
                     }}
                     onDragLeave={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       setIsFileOver(false);
-                      e.dataTransfer.dropEffect = "none";
+                      e.dataTransfer.dropEffect = 'none';
                     }}
                     onDrop={(e) => {
-                      if (e.dataTransfer.types.includes("Files")) {
+                      if (e.dataTransfer.types.includes('Files')) {
                         e.preventDefault();
                         e.stopPropagation();
                         setIsFileOver(false);
@@ -385,7 +387,7 @@ const KanbanColumn = memo(function KanbanColumn({
                       }
                     }}
                   >
-                    {isFileOver && column.id === "applied" && (
+                    {isFileOver && column.id === 'applied' && (
                       <div className="absolute bg-gray-200/50 h-full w-full border border-dashed border-gray-500 rounded-lg pointer-events-none z-10">
                         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white p-2 rounded-md shadow-lg text-lg font-semibold pointer-events-none animate-fade-in">
                           Drop file here!
@@ -399,16 +401,15 @@ const KanbanColumn = memo(function KanbanColumn({
                       scrollerRef={scrollerRef}
                     >
                       <Virtuoso
-                        style={{ height: "100%", scrollbarWidth: "none" }}
+                        style={{ height: '100%', scrollbarWidth: 'none' }}
                         data={processedCandidates}
                         increaseViewportBy={{ bottom: 250, top: 100 }}
                         scrollerRef={() => scrollerRef}
                         computeItemKey={(index, candidate) => candidate._id}
                         itemContent={(index, candidate) => {
                           const isPending = pendingMoves.some(
-                            (pm) =>
-                              pm.candidateId === candidate._id &&
-                              pm.targetLaneId === column.id
+                            (pm) => pm.candidateId === candidate._id
+                              && pm.targetLaneId === column.id,
                           );
 
                           return (
@@ -421,28 +422,21 @@ const KanbanColumn = memo(function KanbanColumn({
                                 onViewDetails={handleViewDetails}
                                 openRemarks={openRemarksFor === candidate._id}
                                 setOpenRemarksFor={setOpenRemarksFor}
-                                onDeleteClick={(id: string) =>
-                                  handleDeleteClickMemo(id, candidate)
-                                }
+                                onDeleteClick={(id: string) => handleDeleteClickMemo(id, candidate)}
                                 onEditClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log("Edit candidate:", candidate);
                                 }}
                                 onAssignClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log("Assign candidate:", candidate);
                                 }}
                                 onMarkAsDoneClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log("Mark as done:", candidate);
                                 }}
                                 onFollowUpClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log("Follow up:", candidate);
                                 }}
                                 onAddRemarkClick={(candidate) => {
                                   setSelectedCandidate(candidate);
-                                  console.log("Add remark:", candidate);
                                 }}
                                 isPending={isPending}
                               />

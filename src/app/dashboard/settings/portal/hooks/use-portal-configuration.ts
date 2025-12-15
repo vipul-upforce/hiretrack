@@ -1,21 +1,22 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { toast } from 'sonner';
 import {
   useGetPortalConfigsQuery,
   useUpdatePortalConfigsMutation,
-} from "@/lib/features/settings/settingsApi";
-import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
-import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
-import { PortalSettings, FileUpload } from "../types";
-import { User } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
+} from '@/lib/features/settings/settingsApi';
+import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
+import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
+import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import logger from '@/lib/logger';
+import { PortalSettings, FileUpload } from '../types';
 
 export function usePortalConfiguration() {
   const dispatch = useDispatch();
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
 
   const {
@@ -30,19 +31,46 @@ export function usePortalConfiguration() {
     useUpdatePortalConfigsMutation();
 
   const [settings, setSettings] = useState<PortalSettings>({
-    portalName: "",
+    portalName: '',
     portalLogo: null,
     portalLogoDark: null,
     portalFavicon: null,
     portalHeader: null,
     portalFooter: null,
-    primaryColor: "#6366f1",
-    secondaryColor: "#8b5cf6",
+    primaryColor: '#6366f1',
+    secondaryColor: '#8b5cf6',
   });
 
-  const [headerHtml, setHeaderHtml] = useState<string>("");
-  const [footerHtml, setFooterHtml] = useState<string>("");
+  const [headerHtml, setHeaderHtml] = useState<string>('');
+  const [footerHtml, setFooterHtml] = useState<string>('');
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState<boolean>(false);
+
+  // Helpers
+  const loadPortalData = (data: any) => {
+    setSettings({
+      portalName: data.portalName || '',
+      portalLogo: data.portalLogo || null,
+      portalLogoDark: data.portalLogoDark || null,
+      portalFavicon: data.portalFavicon || null,
+      portalHeader: data.portalHeader || null,
+      portalFooter: data.portalFooter || null,
+      primaryColor: data.primaryColor || '#6366f1',
+      secondaryColor: data.secondaryColor || '#8b5cf6',
+    });
+
+    if (data.portalHeader?.url) {
+      fetch(data.portalHeader.url)
+        .then((res) => res.text())
+        .then((html) => setHeaderHtml(html))
+        .catch((err) => logger.error('Failed to load header HTML:', err));
+    }
+    if (data.portalFooter?.url) {
+      fetch(data.portalFooter.url)
+        .then((res) => res.text())
+        .then((html) => setFooterHtml(html))
+        .catch((err) => logger.error('Failed to load footer HTML:', err));
+    }
+  };
 
   useEffect(() => {
     if (portalData) {
@@ -56,36 +84,9 @@ export function usePortalConfiguration() {
     }
   }, [allowanceData]);
 
-  // Helpers
-  const loadPortalData = (data: any) => {
-    setSettings({
-      portalName: data.portalName || "",
-      portalLogo: data.portalLogo || null,
-      portalLogoDark: data.portalLogoDark || null,
-      portalFavicon: data.portalFavicon || null,
-      portalHeader: data.portalHeader || null,
-      portalFooter: data.portalFooter || null,
-      primaryColor: data.primaryColor || "#6366f1",
-      secondaryColor: data.secondaryColor || "#8b5cf6",
-    });
-
-    if (data.portalHeader?.url) {
-      fetch(data.portalHeader.url)
-        .then((res) => res.text())
-        .then((html) => setHeaderHtml(html))
-        .catch((err) => console.error("Failed to load header HTML:", err));
-    }
-    if (data.portalFooter?.url) {
-      fetch(data.portalFooter.url)
-        .then((res) => res.text())
-        .then((html) => setFooterHtml(html))
-        .catch((err) => console.error("Failed to load footer HTML:", err));
-    }
-  };
-
   const handleFileUpload = async (file: File, type: keyof PortalSettings) => {
-    if (type === "portalFavicon" && file.size > 50000) {
-      toast.error("Favicon must be smaller than 50KB");
+    if (type === 'portalFavicon' && file.size > 50000) {
+      toast.error('Favicon must be smaller than 50KB');
       return;
     }
 
@@ -109,8 +110,7 @@ export function usePortalConfiguration() {
 
   const handleSave = async () => {
     try {
-      const { portalHeader, portalFooter, ...settingsWithoutHtmlFiles } =
-        settings;
+      const { ...settingsWithoutHtmlFiles } = settings;
       const payload = {
         ...settingsWithoutHtmlFiles,
         portalHeaderHtml: headerHtml,
@@ -130,25 +130,25 @@ export function usePortalConfiguration() {
         dispatch(updateUserInState(updatedUser));
       }
 
-      toast.success("Portal settings saved successfully");
-    } catch (error) {
-      toast.error("Failed to save portal settings");
+      toast.success('Portal settings saved successfully');
+    } catch {
+      toast.error('Failed to save portal settings');
     }
   };
 
   const generatePortalUrl = (additionalParams: string[] = []) => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
     let url: string;
 
     if (hasMultipleOrgs && user?.organizationInfo?.name) {
       const orgParam = `o=${user.organizationInfo.name}`;
       const allParams = [orgParam, ...additionalParams].filter(Boolean);
-      url = `${origin}/apply-jobs?${allParams.join("&")}`;
+      url = `${origin}/apply-jobs?${allParams.join('&')}`;
     } else {
       const allParams = additionalParams.filter(Boolean);
       url =
         allParams.length > 0
-          ? `${origin}/apply-jobs?${allParams.join("&")}`
+          ? `${origin}/apply-jobs?${allParams.join('&')}`
           : `${origin}/apply-jobs`;
     }
 

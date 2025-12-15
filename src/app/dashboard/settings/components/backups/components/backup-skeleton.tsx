@@ -1,33 +1,34 @@
-import { FileIcon } from "lucide-react";
+import { FileIcon } from 'lucide-react';
 
 export function BackupSkeleton() {
   return (
     <div>
-      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <FileIcon className="h-4 w-4 text-gray-400" />
-        <div className="h-3 w-36 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+        <div className="h-3 w-36 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
       </h3>
 
-      <ul className="space-y-2 max-h-[40vh] overflow-y-auto">
+      <ul className="max-h-[40vh] space-y-2 overflow-y-auto">
         {[...Array(4)].map((_, i) => (
           <div
+            // eslint-disable-next-line react/no-array-index-key
             key={i}
-            className="flex items-center justify-between p-3 px-4 border rounded-lg bg-white dark:bg-gray-900"
+            className="flex items-center justify-between rounded-lg border bg-white p-3 px-4 dark:bg-gray-900"
           >
-            <div className="flex items-center space-x-3 w-full">
-              <div className="h-4 w-4 bg-gray-300 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="flex flex-col w-full space-y-2">
-                <div className="h-3 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+            <div className="flex w-full items-center space-x-3">
+              <div className="h-4 w-4 animate-pulse rounded bg-gray-300 dark:bg-gray-700" />
+              <div className="flex w-full flex-col space-y-2">
+                <div className="h-3 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
                 <div className="flex gap-4">
-                  <div className="h-3 w-24 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-                  <div className="h-3 w-20 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                  <div className="h-3 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
+                  <div className="h-3 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <div className="h-4 w-4 bg-gray-300 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-6 w-6 bg-gray-300 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-4 w-4 animate-pulse rounded bg-gray-300 dark:bg-gray-700" />
+              <div className="h-6 w-6 animate-pulse rounded bg-gray-300 dark:bg-gray-700" />
             </div>
           </div>
         ))}

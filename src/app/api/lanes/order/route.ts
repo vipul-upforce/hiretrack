@@ -1,13 +1,12 @@
-import { NextResponse } from "next/server";
-import { Lane } from "@/lib/mongodb";
-import connectToDatabase from "@/lib/mongodb";
+import { NextResponse } from 'next/server';
+import connectToDatabase, { Lane } from '@/lib/mongodb';
 
 export async function PUT(request: Request) {
   try {
     await connectToDatabase();
     const { lanes } = await request.json();
     if (!Lane) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Lane not found' }, { status: 404 });
     }
 
     // Update each lane's order in the database
@@ -16,7 +15,7 @@ export async function PUT(request: Request) {
         await Lane!.findByIdAndUpdate(lane._id, {
           $set: { order: lane.order },
         });
-      })
+      }),
     );
 
     return NextResponse.json({ success: true });

@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { clearAuthTokens } from "@/lib/secureTokens";
+import { NextResponse } from 'next/server';
+import { clearAuthTokens } from '@/lib/secureTokens';
+import { logger } from '@/lib/logger/logger.server';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const response = NextResponse.json({
-      message: "Logged out successfully"
+      message: 'Logged out successfully',
     });
 
     // SECURITY FIX: Clear both authentication tokens securely
@@ -12,10 +13,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("Logout error:", error);
-    return NextResponse.json(
-      { error: "Logout failed" },
-      { status: 500 }
-    );
+    logger.error({ error }, 'Logout error');
+    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
   }
 }

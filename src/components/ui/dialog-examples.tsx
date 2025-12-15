@@ -1,6 +1,6 @@
 /**
  * Dialog Examples - Demonstrating the usage of the unified dialog system
- * 
+ *
  * This file shows how to use the different dialog components:
  * - BaseDialog: Full control dialog with custom actions
  * - ConfirmationDialog: Simple yes/no confirmations
@@ -11,45 +11,45 @@
  * - QuickCreateDialog: Simple create forms
  */
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   BaseDialog,
   ConfirmationDialog,
   FormDialog,
-} from "./base-dialog";
+} from './base-dialog';
 import {
   DeleteDialog,
   WarningDialog,
   InfoDialog,
   QuickCreateDialog,
-} from "./specialized-dialogs";
-import { Button } from "./button";
-import { Input } from "./input";
-import { Label } from "./label";
+} from './specialized-dialogs';
+import { Button } from './button';
+import { Input } from './input';
+import { Label } from './label';
 
 export function DialogExamples() {
   const [showExample, setShowExample] = useState<string | null>(null);
-  const [formValue, setFormValue] = useState("");
+  const [formValue, setFormValue] = useState('');
 
   return (
     <div className="grid grid-cols-2 gap-4 p-4">
       {/* Base Dialog Example */}
-      <Button onClick={() => setShowExample("base")}>
+      <Button onClick={() => setShowExample('base')}>
         Base Dialog
       </Button>
       <BaseDialog
-        isOpen={showExample === "base"}
+        isOpen={showExample === 'base'}
         onClose={() => setShowExample(null)}
         title="Custom Dialog"
         description="This is a flexible base dialog"
         size="md"
         primaryAction={{
-          label: "Save",
+          label: 'Save',
           onClick: () => setShowExample(null),
-          variant: "success",
+          variant: 'success',
         }}
         secondaryAction={{
-          label: "Cancel",
+          label: 'Cancel',
           onClick: () => setShowExample(null),
         }}
       >
@@ -57,14 +57,13 @@ export function DialogExamples() {
       </BaseDialog>
 
       {/* Confirmation Dialog */}
-      <Button onClick={() => setShowExample("confirm")}>
+      <Button onClick={() => setShowExample('confirm')}>
         Confirmation
       </Button>
       <ConfirmationDialog
-        isOpen={showExample === "confirm"}
+        isOpen={showExample === 'confirm'}
         onClose={() => setShowExample(null)}
         onConfirm={() => {
-          console.log("Confirmed!");
           setShowExample(null);
         }}
         title="Confirm Action"
@@ -74,19 +73,18 @@ export function DialogExamples() {
       </ConfirmationDialog>
 
       {/* Form Dialog */}
-      <Button onClick={() => setShowExample("form")}>
+      <Button onClick={() => setShowExample('form')}>
         Form Dialog
       </Button>
       <FormDialog
-        isOpen={showExample === "form"}
+        isOpen={showExample === 'form'}
         onClose={() => {
           setShowExample(null);
-          setFormValue("");
+          setFormValue('');
         }}
         onSubmit={() => {
-          console.log("Submitted:", formValue);
           setShowExample(null);
-          setFormValue("");
+          setFormValue('');
         }}
         title="Create Item"
         isValid={formValue.trim().length > 0}
@@ -103,14 +101,13 @@ export function DialogExamples() {
       </FormDialog>
 
       {/* Delete Dialog */}
-      <Button onClick={() => setShowExample("delete")} variant="destructive">
+      <Button onClick={() => setShowExample('delete')} variant="destructive">
         Delete Dialog
       </Button>
       <DeleteDialog
-        isOpen={showExample === "delete"}
+        isOpen={showExample === 'delete'}
         onClose={() => setShowExample(null)}
         onConfirm={() => {
-          console.log("Deleted!");
           setShowExample(null);
         }}
         itemName="Important File"
@@ -118,11 +115,11 @@ export function DialogExamples() {
       />
 
       {/* Warning Dialog */}
-      <Button onClick={() => setShowExample("warning")} variant="warning">
+      <Button onClick={() => setShowExample('warning')} variant="warning">
         Warning Dialog
       </Button>
       <WarningDialog
-        isOpen={showExample === "warning"}
+        isOpen={showExample === 'warning'}
         onClose={() => setShowExample(null)}
         onConfirm={() => setShowExample(null)}
         title="Proceed with Caution"
@@ -130,30 +127,29 @@ export function DialogExamples() {
       />
 
       {/* Info Dialog */}
-      <Button onClick={() => setShowExample("info")} variant="info">
+      <Button onClick={() => setShowExample('info')} variant="info">
         Info Dialog
       </Button>
       <InfoDialog
-        isOpen={showExample === "info"}
+        isOpen={showExample === 'info'}
         onClose={() => setShowExample(null)}
         title="Information"
         message="Your operation completed successfully. All changes have been saved."
       />
 
       {/* Quick Create Dialog */}
-      <Button onClick={() => setShowExample("quick")}>
+      <Button onClick={() => setShowExample('quick')}>
         Quick Create
       </Button>
       <QuickCreateDialog
-        isOpen={showExample === "quick"}
+        isOpen={showExample === 'quick'}
         onClose={() => {
           setShowExample(null);
-          setFormValue("");
+          setFormValue('');
         }}
         onSubmit={() => {
-          console.log("Quick created:", formValue);
           setShowExample(null);
-          setFormValue("");
+          setFormValue('');
         }}
         title="Quick Add"
         isValid={formValue.trim().length > 0}

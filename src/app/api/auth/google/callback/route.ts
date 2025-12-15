@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
 import {
   createOAuth2Client,
   getRedirectUri,
-} from "@/lib/google-calendar/config";
-import { encryptText, decryptText } from "@/lib/encryption";
-import { google } from "googleapis";
+} from '@/lib/google-calendar/config';
+import { encryptText, decryptText } from '@/lib/encryption';
+import { google } from 'googleapis';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,15 +26,15 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
-    const searchParams = req.nextUrl.searchParams;
-    const code = searchParams.get("code");
-    const state = searchParams.get("state");
-    const error = searchParams.get("error");
+    const { searchParams } = req.nextUrl;
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const error = searchParams.get('error');
 
     // Handle user denial
     if (error) {
@@ -49,23 +50,23 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
     if (!code || !state) {
       return NextResponse.json(
-        { error: "Missing authorization code or state" },
-        { status: 400 }
+        { error: 'Missing authorization code or state' },
+        { status: 400 },
       );
     }
 
     // Decode and verify state
     let stateData;
     try {
-      stateData = JSON.parse(Buffer.from(state, "base64").toString());
-    } catch (e) {
+      stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+    } catch {
       return new NextResponse(
         `
         <html>
@@ -78,8 +79,8 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
@@ -99,14 +100,13 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
-    // const orgId = req.cookies.get("org_id")?.value;
     // Get settings
     const settings = await Settings.findOne({
-      organizationId: organizationId,
+      organizationId,
     });
     if (
       !settings?.googleCalendar?.clientId ||
@@ -124,45 +124,28 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
-    // Decrypt client secret
-    // console.log(orgId, "orgId in google calendar callback route");
-    console.log(
-      organizationId,
-      "organizationId in google calendar callback route"
-    );
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      organizationId
+      organizationId,
     );
 
     // Create OAuth2 client
     const redirectUri = getRedirectUri(req);
     const oauth2Client = createOAuth2Client({
       clientId: settings.googleCalendar.clientId,
-      clientSecret: clientSecret,
-      redirectUri: redirectUri,
+      clientSecret,
+      redirectUri,
     });
 
-    // Exchange code for tokens
-    console.log("Exchanging code for tokens...");
     const { tokens } = await oauth2Client.getToken(code);
-    // console.log('Received tokens:', {
-    //   access_token: tokens.access_token ? 'present' : 'missing',
-    //   refresh_token: tokens.refresh_token ? 'present' : 'missing',
-    //   scope: tokens.scope,
-    //   expiry_date: tokens.expiry_date
-    // });
 
     // Check if we have a refresh token
     if (!tokens.refresh_token) {
-      console.error(
-        "No refresh token received! This usually means the user was already connected."
-      );
       return new NextResponse(
         `
         <html>
@@ -178,8 +161,8 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
@@ -187,23 +170,20 @@ export async function GET(req: NextRequest) {
 
     // Validate that we have the required scopes
     const requiredScopes = [
-      "https://www.googleapis.com/auth/calendar",
-      "https://www.googleapis.com/auth/calendar.events",
-      "https://www.googleapis.com/auth/userinfo.email",
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/calendar.events',
+      'https://www.googleapis.com/auth/userinfo.email',
     ];
-    const grantedScopes = tokens.scope?.split(" ") || [];
-    // console.log("Required scopes:", requiredScopes);
-    // console.log("Granted scopes:", grantedScopes);
+    const grantedScopes = tokens.scope?.split(' ') || [];
 
     const hasCalendarScope = requiredScopes
       .slice(0, 2)
       .some((scope) => grantedScopes.includes(scope));
     const hasEmailScope = grantedScopes.includes(
-      "https://www.googleapis.com/auth/userinfo.email"
+      'https://www.googleapis.com/auth/userinfo.email',
     );
 
     if (!hasCalendarScope) {
-      console.error("Missing calendar scopes!");
       return new NextResponse(
         `
         <html>
@@ -216,13 +196,12 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
     if (!hasEmailScope) {
-      console.error("Missing email scope!");
       return new NextResponse(
         `
         <html>
@@ -235,41 +214,38 @@ export async function GET(req: NextRequest) {
         </html>
       `,
         {
-          headers: { "Content-Type": "text/html" },
-        }
+          headers: { 'Content-Type': 'text/html' },
+        },
       );
     }
 
-    // Get user email
-    console.log("Getting user info...");
     const oauth2 = google.oauth2({
       auth: oauth2Client,
-      version: "v2",
+      version: 'v2',
     });
     const userInfo = await oauth2.userinfo.get();
-    const userEmail = userInfo.data.email || "";
-    // console.log("User email:", userEmail);
+    const userEmail = userInfo.data.email || '';
 
     // Encrypt and save tokens
     const encryptedAccessToken = encryptText(
-      tokens.access_token || "",
-      organizationId
+      tokens.access_token || '',
+      organizationId,
     );
     const encryptedRefreshToken = tokens.refresh_token
       ? encryptText(tokens.refresh_token, organizationId)
-      : "";
+      : '';
 
     await Settings.findOneAndUpdate(
-      { organizationId: organizationId },
+      { organizationId },
       {
         $set: {
-          "googleCalendar.isConnected": true,
-          "googleCalendar.accessToken": encryptedAccessToken,
-          "googleCalendar.refreshToken": encryptedRefreshToken,
-          "googleCalendar.expiryDate": tokens.expiry_date,
-          "googleCalendar.connectedEmail": userEmail,
+          'googleCalendar.isConnected': true,
+          'googleCalendar.accessToken': encryptedAccessToken,
+          'googleCalendar.refreshToken': encryptedRefreshToken,
+          'googleCalendar.expiryDate': tokens.expiry_date,
+          'googleCalendar.connectedEmail': userEmail,
         },
-      }
+      },
     );
 
     // Return success HTML that communicates with parent window
@@ -324,13 +300,13 @@ export async function GET(req: NextRequest) {
       </html>
     `,
       {
-        headers: { "Content-Type": "text/html" },
-      }
+        headers: { 'Content-Type': 'text/html' },
+      },
     );
   } catch (error) {
-    console.error("Google Calendar callback error:", error);
+    logger.error({ error }, 'Google Calendar callback error');
     const errorMessage =
-      error instanceof Error ? error.message : "Connection failed";
+      error instanceof Error ? error.message : 'Connection failed';
     return new NextResponse(
       `
       <html>
@@ -346,8 +322,8 @@ export async function GET(req: NextRequest) {
       </html>
     `,
       {
-        headers: { "Content-Type": "text/html" },
-      }
+        headers: { 'Content-Type': 'text/html' },
+      },
     );
   }
 }

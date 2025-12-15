@@ -1,12 +1,12 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { IChecklistField } from "./JobLaneConfig";
+import mongoose, { Schema, Document } from 'mongoose';
+import { IChecklistField } from './JobLaneConfig';
 
 // Interface for checklist templates
 export interface IChecklistTemplate extends Document {
   organizationId: Schema.Types.ObjectId;
   name: string;
   description?: string;
-  type: "incoming" | "outgoing"; // Template type
+  type: 'incoming' | 'outgoing'; // Template type
   fields: IChecklistField[];
   isActive: boolean;
   createdBy: Schema.Types.ObjectId;
@@ -22,16 +22,16 @@ const checklistFieldSchema = new Schema<IChecklistField>({
     type: String,
     required: true,
     enum: [
-      "text",
-      "number",
-      "email",
-      "date",
-      "checkbox",
-      "radio",
-      "select",
-      "multiSelect",
-      "textarea",
-      "file",
+      'text',
+      'number',
+      'email',
+      'date',
+      'checkbox',
+      'radio',
+      'select',
+      'multiSelect',
+      'textarea',
+      'file',
     ],
   },
   required: { type: Boolean, default: false },
@@ -45,11 +45,11 @@ const checklistFieldSchema = new Schema<IChecklistField>({
   },
   visibleOnForm: {
     type: [String],
-    enum: ["admin", "hr", "interviewer", "candidate"],
+    enum: ['admin', 'hr', 'interviewer', 'candidate'],
   },
   visibleInHistory: {
     type: [String],
-    enum: ["admin", "hr", "interviewer", "candidate"],
+    enum: ['admin', 'hr', 'interviewer', 'candidate'],
   },
   order: { type: Number, required: true },
 });
@@ -57,7 +57,7 @@ const checklistFieldSchema = new Schema<IChecklistField>({
 export const checklistTemplateSchema = new Schema<IChecklistTemplate>({
   organizationId: {
     type: Schema.Types.ObjectId,
-    ref: "Organization",
+    ref: 'Organization',
     required: true,
   },
   name: { type: String, required: true },
@@ -65,13 +65,13 @@ export const checklistTemplateSchema = new Schema<IChecklistTemplate>({
   type: {
     type: String,
     required: true,
-    enum: ["incoming", "outgoing"],
+    enum: ['incoming', 'outgoing'],
   },
   fields: [checklistFieldSchema],
   isActive: { type: Boolean, default: true },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     required: true,
   },
   createdAt: { type: Date, default: Date.now },
@@ -83,7 +83,7 @@ checklistTemplateSchema.index({ organizationId: 1, type: 1 });
 checklistTemplateSchema.index({ organizationId: 1, isActive: 1 });
 
 // Update timestamp on save
-checklistTemplateSchema.pre("save", function (next) {
+checklistTemplateSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });

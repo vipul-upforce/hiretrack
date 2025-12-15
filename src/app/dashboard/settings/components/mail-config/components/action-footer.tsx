@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useFormikContext } from "formik";
-import { SMTPFormValues } from "../types";
+} from '@/components/ui/tooltip';
+import { useFormikContext } from 'formik';
+import { SMTPFormValues } from '../types';
 
 interface ActionFooterProps {
   onClose: () => void;
@@ -14,11 +14,11 @@ interface ActionFooterProps {
   isConnectionSuccessful: boolean;
 }
 
-export const ActionFooter = ({
+export function ActionFooter({
   onClose,
   isUpdating,
   isConnectionSuccessful,
-}: ActionFooterProps) => {
+}: ActionFooterProps) {
   const { isSubmitting } = useFormikContext<SMTPFormValues>();
 
   return (
@@ -41,11 +41,11 @@ export const ActionFooter = ({
                 disabled={isSubmitting || isUpdating || !isConnectionSuccessful}
                 title={
                   !isConnectionSuccessful
-                    ? "Test the connection before saving."
-                    : ""
+                    ? 'Test the connection before saving.'
+                    : ''
                 }
               >
-                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </TooltipTrigger>
@@ -56,4 +56,4 @@ export const ActionFooter = ({
       </TooltipProvider>
     </div>
   );
-};
+}

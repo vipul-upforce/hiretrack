@@ -1,14 +1,15 @@
-import { Field, FieldProps, useFormikContext, FormikProps } from "formik";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { MentionTextarea } from "@/components/ui/mention-textarea";
-import { Rating } from "@mui/material";
-import { Paperclip, FileIcon, X } from "lucide-react";
-import { User } from "../../../schemas/AssignCandidateSchema";
-import { FormValues } from "../../../schemas/AssignCandidateSchema";
-import { useSanitizeFiles } from "@/hooks/useSanitizeFiles";
-import { handleFileSelect } from "../../../hooks/fileUploadUtils";
-import { Candidate } from "@/types/candidate";
+import {
+  Field, FieldProps, useFormikContext, FormikProps,
+} from 'formik';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Rating } from '@mui/material';
+import { Paperclip, FileIcon, X } from 'lucide-react';
+import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
+import { Candidate } from '@/types/candidate';
+import { User, FormValues } from '../../../schemas/AssignCandidateSchema';
+import { handleFileSelect } from '../../../hooks/fileUploadUtils';
 
 interface AssignmentDetailsSectionProps {
   user: User | null;
@@ -39,18 +40,18 @@ export function AssignmentDetailsSection({
           {({ field }: FieldProps) => (
             <MentionTextarea
               placeholder="Add a remark... (Alt+Enter to submit)"
-              value={field.value || ""}
-              onChange={(value: string) => setFieldValue("remark", value)}
+              value={field.value || ''}
+              onChange={(value: string) => setFieldValue('remark', value)}
               onKeyDown={getOnAltEnterSubmit(
                 values,
                 formikProps,
-                isSubmitting
+                isSubmitting,
               )(field.value)}
               organizationId={
-                user?.organizationInfo?._id ||
-                ""
+                user?.organizationInfo?._id
+                || ''
               }
-              currentUserRole={user?.role || ""}
+              currentUserRole={user?.role || ''}
               rows={3}
             />
           )}
@@ -63,7 +64,7 @@ export function AssignmentDetailsSection({
                 <Rating
                   name="rating"
                   value={field.value}
-                  onChange={(e, value) => setFieldValue("rating", value)}
+                  onChange={(e, value) => setFieldValue('rating', value)}
                   precision={0.5}
                 />
               )}
@@ -82,11 +83,11 @@ export function AssignmentDetailsSection({
               size="sm"
               className="flex items-center gap-2 h-8"
               onClick={() => {
-                const input = document.createElement("input");
-                input.type = "file";
+                const input = document.createElement('input');
+                input.type = 'file';
                 input.multiple = true;
                 input.onchange = (e) => {
-                  const files = (e.target as HTMLInputElement).files;
+                  const { files } = (e.target as HTMLInputElement);
                   if (files && files.length > 0) {
                     const sanitizedFiles = sanitizeFiles(Array.from(files));
                     handleFileSelect({
@@ -123,9 +124,9 @@ export function AssignmentDetailsSection({
                     size="sm"
                     onClick={() => {
                       const updatedFiles = values.attachments?.filter(
-                        (_: any, i: number) => i !== index
+                        (_: any, i: number) => i !== index,
                       );
-                      setFieldValue("attachments", updatedFiles);
+                      setFieldValue('attachments', updatedFiles);
                     }}
                     className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
                   >
@@ -140,4 +141,3 @@ export function AssignmentDetailsSection({
     </>
   );
 }
-

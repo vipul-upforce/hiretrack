@@ -1,4 +1,4 @@
-import { IChecklistField, IChecklist, UserRole } from "@/lib/models/JobLaneConfig";
+import { IChecklistField, IChecklist, UserRole } from '@/lib/models/JobLaneConfig';
 
 /**
  * Filters checklist fields based on user role and visibility context
@@ -10,11 +10,11 @@ import { IChecklistField, IChecklist, UserRole } from "@/lib/models/JobLaneConfi
 export function filterFieldsByRole(
   fields: IChecklistField[],
   userRole: UserRole,
-  context: 'form' | 'history'
+  context: 'form' | 'history',
 ): IChecklistField[] {
   if (!fields || !Array.isArray(fields)) return [];
 
-  return fields.filter(field => {
+  return fields.filter((field) => {
     // Handle backward compatibility - if visibility arrays don't exist, show to all roles except 'candidate'
     const visibilityArray = context === 'form' ? field.visibleOnForm : field.visibleInHistory;
 
@@ -37,7 +37,7 @@ export function filterFieldsByRole(
 export function filterChecklistByRole(
   checklist: IChecklist | null | undefined,
   userRole: UserRole,
-  context: 'form' | 'history'
+  context: 'form' | 'history',
 ): IChecklist | null {
   if (!checklist) return null;
 
@@ -50,7 +50,7 @@ export function filterChecklistByRole(
 
   return {
     ...checklist,
-    fields: filteredFields
+    fields: filteredFields,
   };
 }
 
@@ -64,7 +64,7 @@ export function filterChecklistByRole(
 export function shouldShowChecklist(
   checklist: IChecklist | null | undefined,
   userRole: UserRole,
-  context: 'form' | 'history'
+  context: 'form' | 'history',
 ): boolean {
   return filterChecklistByRole(checklist, userRole, context) !== null;
 }
@@ -79,7 +79,7 @@ export function shouldShowChecklist(
 export function filterChecklistResponses(
   responses: Record<string, any> | Map<string, any>,
   fields: IChecklistField[],
-  userRole: UserRole
+  userRole: UserRole,
 ): Record<string, any> {
   if (!responses || !fields) return {};
 
@@ -89,7 +89,7 @@ export function filterChecklistResponses(
     : responses;
 
   const visibleFields = filterFieldsByRole(fields, userRole, 'history');
-  const visibleFieldIds = new Set(visibleFields.map(f => f.id));
+  const visibleFieldIds = new Set(visibleFields.map((f) => f.id));
 
   // Filter responses to only include visible fields
   const filteredResponses: Record<string, any> = {};
@@ -112,13 +112,13 @@ export function filterChecklistResponses(
 export function validateUserCanSubmitFields(
   fieldIds: string[],
   fields: IChecklistField[],
-  userRole: UserRole
+  userRole: UserRole,
 ): boolean {
   const visibleFields = filterFieldsByRole(fields, userRole, 'form');
-  const visibleFieldIds = new Set(visibleFields.map(f => f.id));
+  const visibleFieldIds = new Set(visibleFields.map((f) => f.id));
 
   // Check if all submitted field IDs are in the visible fields
-  return fieldIds.every(fieldId => visibleFieldIds.has(fieldId));
+  return fieldIds.every((fieldId) => visibleFieldIds.has(fieldId));
 }
 
 /**

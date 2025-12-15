@@ -1,5 +1,7 @@
-import { JobPerformanceData } from "@/app/api/analytics/types";
-import { Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { JobPerformanceData } from '@/app/api/analytics/types';
+import {
+  Legend, Pie, PieChart, ResponsiveContainer, Tooltip,
+} from 'recharts';
 
 // Job Status Distribution Pie Chart
 export const JobStatusChart: React.FC<{ data: JobPerformanceData[] }> = ({
@@ -10,18 +12,18 @@ export const JobStatusChart: React.FC<{ data: JobPerformanceData[] }> = ({
       acc[job.status] = (acc[job.status] || 0) + 1;
       return acc;
     },
-    {} as Record<string, number>
+    {} as Record<string, number>,
   );
 
   const pieData = Object.entries(statusCounts).map(([status, count]) => ({
     name: status.charAt(0).toUpperCase() + status.slice(1),
     value: count,
     fill:
-      status === "open"
-        ? "#10B981"
-        : status === "closed"
-          ? "#6B7280"
-          : "#F59E0B",
+      status === 'open'
+        ? '#10B981'
+        : status === 'closed'
+          ? '#6B7280'
+          : '#F59E0B',
   }));
 
   // Custom label component for better dark mode support
@@ -45,7 +47,7 @@ export const JobStatusChart: React.FC<{ data: JobPerformanceData[] }> = ({
         x={x}
         y={y}
         fill="hsl(var(--foreground))"
-        textAnchor={x > cx ? "start" : "end"}
+        textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         fontSize="12"
         fontWeight="500"
@@ -85,10 +87,13 @@ export const JobStatusChart: React.FC<{ data: JobPerformanceData[] }> = ({
                 <div className="bg-background border rounded-lg shadow-lg p-3">
                   <p className="font-semibold text-foreground">{data.name}</p>
                   <p className="text-foreground">
-                    Count: <span className="font-bold">{payload[0].value}</span>
+                    Count:
+                    {' '}
+                    <span className="font-bold">{payload[0].value}</span>
                   </p>
                   <p className="text-foreground">
-                    Status:{" "}
+                    Status:
+                    {' '}
                     <span className="font-bold capitalize">
                       {data.name.toLowerCase()}
                     </span>

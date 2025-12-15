@@ -1,11 +1,11 @@
-import { Job } from "@/types/job";
-import { Button } from "@/components/ui/button";
+import { Job } from '@/types/job';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu';
 import {
   MoreHorizontal,
   Layout,
@@ -16,15 +16,15 @@ import {
   Trash2,
   ArchiveRestore,
   BarChart3,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useRouter } from "next/navigation";
-import { User } from "@/lib/features/org/orgApi";
+} from '@/components/ui/tooltip';
+import { useRouter } from 'next/navigation';
+import { User } from '@/lib/features/org/orgApi';
 
 interface JobActionsCellProps {
   job: Job;
@@ -128,7 +128,7 @@ export function JobActionsCell({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {user?.role === "admin" && (
+          {user?.role === 'admin' && (
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();

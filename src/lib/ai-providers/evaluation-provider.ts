@@ -24,7 +24,7 @@ import { getEvaluationMetadata } from "./evaluation-metadata";
  * Handles evaluation using various AI providers (Gemini, OpenAI, Anthropic, Perplexity)
  */
 export class AIEvaluationService {
-  private static modelUsed: string = "";
+  private static modelUsed: string = '';
 
   /**
    * Evaluates a candidate's resume using AI
@@ -39,7 +39,7 @@ export class AIEvaluationService {
     resumeBase64: string,
     settings: ISettings | Partial<ISettings>,
     jobData: JobForEvaluate,
-    candidate: ICandidate
+    candidate: ICandidate,
   ): Promise<EvaluationResult> {
     try {
       const aiProviders = this.getAIProviders(settings);
@@ -55,13 +55,13 @@ export class AIEvaluationService {
         apiKey,
         prompt,
         selectedModel,
-        evaluationConfig.temperature
+        evaluationConfig.temperature,
       );
 
       let evaluationResult = parseEvaluationResponse(response);
       evaluationResult = this.filterEvaluationBySettings(
         evaluationResult,
-        evaluationConfig
+        evaluationConfig,
       );
 
       const evaluationMetadata = await getEvaluationMetadata(
@@ -161,7 +161,7 @@ export class AIEvaluationService {
   private static buildPrompt(
     evaluationConfig: IEvaluationConfig,
     jobData: JobForEvaluate,
-    candidate: ICandidate
+    candidate: ICandidate,
   ): string {
     return evaluationConfig.customPrompt
       ? buildPromptWithCustomTemplate(
@@ -242,7 +242,7 @@ export class AIEvaluationService {
       skills: number;
       experience: number;
       affordability: number;
-    }
+    },
   ): number {
     const numericScores = {
       overall: extractNumericScore(scores.overall, 0),
