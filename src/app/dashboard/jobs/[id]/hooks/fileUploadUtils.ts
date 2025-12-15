@@ -16,12 +16,13 @@ interface SetterParams {
 }
 
 // Function to convert a file to a data URL
-export const readFileAsDataURL = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(reader.result as string);
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
+export const readFileAsDataURL = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 
 // Handle file selection and renaming duplicates
 export const handleFileSelect = async ({
@@ -41,8 +42,8 @@ export const handleFileSelect = async ({
       if (
         existingAttachments.some(
           (existingFile) => existingFile.name === file.name,
-        )
-        || currentFormAttachments.some(
+        ) ||
+        currentFormAttachments.some(
           (existingFile) => existingFile.name === file.name,
         )
       ) {
@@ -77,8 +78,9 @@ export const handleSetter = ({
   });
 
   const updatedAttachments = uiFiles.map((file, index) => {
-    const existingAttachment = currentFormAttachments[index]
-      || currentFormAttachments.find((att) => att.size === file.size);
+    const existingAttachment =
+      currentFormAttachments.at(index) ||
+      currentFormAttachments.find((att) => att.size === file.size);
 
     if (existingAttachment) {
       return {
@@ -98,17 +100,19 @@ export const handleSetter = ({
 
   // Identify duplicate files
   const duplicateFiles = updatedAttachments.filter(
-    (newFile) => existingAttachments.some(
-      (existingFile) => existingFile.name === newFile.name,
-    )
-      || currentFormAttachments.some(
+    (newFile) =>
+      existingAttachments.some(
+        (existingFile) => existingFile.name === newFile.name,
+      ) ||
+      currentFormAttachments.some(
         (existingFile) => existingFile.name === newFile.name,
       ),
   );
 
   // Filter out duplicates to keep unique/renamed attachments
   updatedAttachments.filter(
-    (newFile) => !duplicateFiles.some((duplicate) => duplicate.name === newFile.name),
+    (newFile) =>
+      !duplicateFiles.some((duplicate) => duplicate.name === newFile.name),
   );
   setFieldValue('attachments', updatedAttachments);
 };
