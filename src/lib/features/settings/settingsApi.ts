@@ -1,10 +1,10 @@
 // import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
-import { baseApi } from "@/lib/api/baseApi";
-import { VersionListResponse } from "@/app/dashboard/settings/components/about/types";
+import { baseApi } from '@/lib/api/baseApi';
+import { VersionListResponse } from '@/app/dashboard/settings/components/about/types';
 
 // Interface for test connection request
 interface TestConnectionRequest {
-  storageType: "cloudinary" | "s3" | "smtp" | "resend";
+  storageType: 'cloudinary' | 's3' | 'smtp' | 'resend';
   credentials: {
     cloud_name?: string;
     api_key?: string;
@@ -22,7 +22,7 @@ export interface DiskFolderItem {
   relativePath: string;
   size: string;
   rawSize: number;
-  type: "file" | "folder";
+  type: 'file' | 'folder';
   childrenCount?: number;
 }
 
@@ -115,7 +115,7 @@ export interface EmailHistoryRecord {
   sentByName?: string;
   sentByEmail: string;
   createdAt: string;
-  status: "sent" | "failed" | "pending";
+  status: 'sent' | 'failed' | 'pending';
   body?: string;
   cc?: string[];
   bcc?: string[];
@@ -125,231 +125,231 @@ export interface EmailHistoryRecord {
 export const settingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
-      query: () => "/backups",
-      providesTags: ["Backups"],
+      query: () => '/backups',
+      providesTags: ['Backups'],
     }),
     takeSnapshot: builder.mutation<any, void>({
       query: () => ({
-        url: "/db/take-snapshot",
-        method: "GET",
+        url: '/db/take-snapshot',
+        method: 'GET',
       }),
-      invalidatesTags: ["Backups"],
+      invalidatesTags: ['Backups'],
     }),
     deleteBackup: builder.mutation<any, string>({
       query: (fileName) => ({
-        url: "/db/take-snapshot",
-        method: "POST",
+        url: '/db/take-snapshot',
+        method: 'POST',
         body: { fileName },
       }),
-      invalidatesTags: ["Backups"],
+      invalidatesTags: ['Backups'],
     }),
     getSMTPConfigs: builder.query({
       query: () => ({
-        url: `/settings/smtp`,
-        method: "GET",
+        url: '/settings/smtp',
+        method: 'GET',
       }),
     }),
     getMailTemplates: builder.query({
       query: () => ({
-        url: `/settings/templates`,
-        method: "GET",
+        url: '/settings/templates',
+        method: 'GET',
       }),
     }),
     getGeminiConfigs: builder.query({
       query: () => ({
-        url: `/settings/gemini`,
-        method: "GET",
+        url: '/settings/gemini',
+        method: 'GET',
       }),
     }),
     getAIProvidersConfigs: builder.query({
       query: () => ({
-        url: `/settings/ai-providers`,
-        method: "GET",
+        url: '/settings/ai-providers',
+        method: 'GET',
       }),
     }),
     get2FAConfigs: builder.query({
       query: () => ({
-        url: `/settings/twofa`,
-        method: "GET",
+        url: '/settings/twofa',
+        method: 'GET',
       }),
     }),
     getCaptchaConfigs: builder.query({
       query: () => ({
-        url: `/settings/captcha`,
-        method: "GET",
+        url: '/settings/captcha',
+        method: 'GET',
       }),
     }),
     getTimeZone: builder.query({
       query: () => ({
-        url: `/settings/timezone`,
-        method: "GET",
+        url: '/settings/timezone',
+        method: 'GET',
       }),
     }),
     getMultipleOrgConfigs: builder.query({
       query: () => ({
-        url: `/settings/multipleorg`,
-        method: "GET",
+        url: '/settings/multipleorg',
+        method: 'GET',
       }),
     }),
     getFSConfigs: builder.query({
       query: () => ({
-        url: `/settings/fs`,
-        method: "GET",
+        url: '/settings/fs',
+        method: 'GET',
       }),
     }),
     getGoogleCalendarConfig: builder.query({
       query: () => ({
-        url: `/settings/google-calendar`,
-        method: "GET",
+        url: '/settings/google-calendar',
+        method: 'GET',
       }),
-      providesTags: ["Settings"],
+      providesTags: ['Settings'],
     }),
     updateSMTPConfigs: builder.mutation({
       query: (mailConfig) => ({
-        url: "/settings/smtp",
-        method: "PUT",
+        url: '/settings/smtp',
+        method: 'PUT',
         body: mailConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     fetchAssetsMetadata: builder.query({
       query: () => ({
-        url: "/download/assets",
-        method: "POST",
+        url: '/download/assets',
+        method: 'POST',
         body: {},
       }),
-      providesTags: ["Assets"],
+      providesTags: ['Assets'],
     }),
     updateMailTemplates: builder.mutation({
       query: (mailTemplates) => ({
-        url: "/settings/templates",
-        method: "PUT",
+        url: '/settings/templates',
+        method: 'PUT',
         body: mailTemplates,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     updateGemini: builder.mutation({
       query: (genimiConfig) => ({
-        url: "/settings/gemini",
-        method: "PUT",
+        url: '/settings/gemini',
+        method: 'PUT',
         body: genimiConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     updateAIProviders: builder.mutation({
       query: (aiProvidersConfig) => ({
-        url: "/settings/ai-providers",
-        method: "PUT",
+        url: '/settings/ai-providers',
+        method: 'PUT',
         body: aiProvidersConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     update2FA: builder.mutation({
       query: (twoFAConfig) => ({
-        url: "/settings/twofa",
-        method: "PUT",
+        url: '/settings/twofa',
+        method: 'PUT',
         body: twoFAConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     updateCaptcha: builder.mutation({
       query: (captchaConfig) => ({
-        url: "/settings/captcha",
-        method: "PUT",
+        url: '/settings/captcha',
+        method: 'PUT',
         body: captchaConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     updateTimeZone: builder.mutation({
       query: (timezone) => ({
-        url: "/settings/timezone",
-        method: "PUT",
+        url: '/settings/timezone',
+        method: 'PUT',
         body: timezone,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     updateMultipleOrg: builder.mutation({
       query: (multipleOrgConfig) => ({
-        url: "/settings/multipleorg",
-        method: "PUT",
+        url: '/settings/multipleorg',
+        method: 'PUT',
         body: multipleOrgConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     testConnection: builder.mutation<
       TestConnectionResponse,
       TestConnectionRequest
     >({
       query: (body) => ({
-        url: "/test-connection",
-        method: "POST",
+        url: '/test-connection',
+        method: 'POST',
         body,
       }),
     }),
     updateFSConfigs: builder.mutation({
       query: (fsConfig) => ({
-        url: "/settings/fs",
-        method: "PUT",
+        url: '/settings/fs',
+        method: 'PUT',
         body: fsConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     getPortalConfigs: builder.query({
       query: () => ({
-        url: `/settings/portal`,
-        method: "get",
+        url: '/settings/portal',
+        method: 'get',
       }),
-      providesTags: ["Settings"],
+      providesTags: ['Settings'],
     }),
     updatePortalConfigs: builder.mutation({
       query: (portalConfigs) => ({
-        url: "/settings/portal",
-        method: "PUT",
+        url: '/settings/portal',
+        method: 'PUT',
         body: portalConfigs,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     updateGoogleCalendar: builder.mutation({
       query: (googleCalendarConfig) => ({
-        url: "/settings/google-calendar",
-        method: "PUT",
+        url: '/settings/google-calendar',
+        method: 'PUT',
         body: googleCalendarConfig,
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     disconnectGoogleCalendar: builder.mutation({
       query: () => ({
-        url: "/settings/google-calendar",
-        method: "DELETE",
+        url: '/settings/google-calendar',
+        method: 'DELETE',
       }),
-      invalidatesTags: ["Settings"],
+      invalidatesTags: ['Settings'],
     }),
     createResetToken: builder.mutation({
       query: ({ email, selectedOrgId }) => ({
-        url: "/auth/forgot-password",
-        method: "POST",
+        url: '/auth/forgot-password',
+        method: 'POST',
         body: { email, selectedOrgId },
       }),
     }),
     getNginxLogFiles: builder.query<SystemLogsResponse, void>({
-      query: () => "/nginx-logs",
-      providesTags: ["NginxLogs"],
+      query: () => '/nginx-logs',
+      providesTags: ['NginxLogs'],
       transformResponse: (response: SystemLogsResponse) => ({
         path: response.path,
         files: response.files || [],
         sizeBytes: response.sizeBytes || 0,
-        size: response.size || "0 MB",
+        size: response.size || '0 MB',
       }),
       keepUnusedDataFor: 300,
     }),
     getPm2LogFiles: builder.query<SystemLogsResponse, void>({
-      query: () => "/pm2-logs",
-      providesTags: ["PM2Logs"],
+      query: () => '/pm2-logs',
+      providesTags: ['PM2Logs'],
       transformResponse: (response: SystemLogsResponse) => ({
         path: response.path,
         files: response.files || [],
         sizeBytes: response.sizeBytes || 0,
-        size: response.size || "0 MB",
+        size: response.size || '0 MB',
       }),
       keepUnusedDataFor: 300,
     }),
@@ -379,7 +379,7 @@ export const settingsApi = baseApi.injectEndpoints({
       { logs: LogEntry[]; offset: number; totalLines: number },
       { offset: number; limit: number; query?: string }
     >({
-      query: ({ offset, limit, query = "" }) => {
+      query: ({ offset, limit, query = '' }) => {
         const params = new URLSearchParams({
           offset: offset.toString(),
           limit: limit.toString(),
@@ -415,56 +415,57 @@ export const settingsApi = baseApi.injectEndpoints({
       { emails: EmailHistoryRecord[]; pagination: { total: number } },
       { page: number; limit: number; search?: string; status?: string }
     >({
-      query: ({ page, limit, search = "", status = "" }) => {
+      query: ({
+        page, limit, search = '', status = '',
+      }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
           ...(search && { search }),
-          ...(status && status !== "all" && { status }),
+          ...(status && status !== 'all' && { status }),
         });
         return `/email-history?${params.toString()}`;
       },
-      providesTags: ["EmailHistory"],
+      providesTags: ['EmailHistory'],
     }),
     getAutoUpdate: builder.query<AutoUpdateResponse, void>({
-      query: () => `/settings/auto-update`,
-      providesTags: ["AutoUpdate"],
+      query: () => '/settings/auto-update',
+      providesTags: ['AutoUpdate'],
     }),
 
     toggleAutoUpdate: builder.mutation<AutoUpdateResponse, void>({
       query: () => ({
-        url: `/settings/auto-update`,
-        method: "POST",
+        url: '/settings/auto-update',
+        method: 'POST',
       }),
-      invalidatesTags: ["AutoUpdate"],
+      invalidatesTags: ['AutoUpdate'],
     }),
 
     getVersionList: builder.query<VersionListResponse, void>({
-      query: () => `/version/list`,
-      providesTags: ["VersionList"],
+      query: () => '/version/list',
+      providesTags: ['VersionList'],
     }),
 
     getDiskSpace: builder.query<DiskSpaceResponse, void>({
-      query: () => `/disk-space`,
-      providesTags: ["DiskSpace"],
+      query: () => '/disk-space',
+      providesTags: ['DiskSpace'],
     }),
     getDiskFolderDetails: builder.query<
       DiskFolderDetailResponse,
       { root: string; path?: string }
     >({
-      query: ({ root, path = "" }) =>
-        `/disk-space?root=${root}&path=${encodeURIComponent(path)}`,
+      query: ({ root, path = '' }) => `/disk-space?root=${root}&path=${encodeURIComponent(path)}`,
       providesTags: (result, error, arg) => [
-        { type: "DiskSpace", id: `${arg.root}-${arg.path}` },
+        { type: 'DiskSpace', id: `${arg.root}-${arg.path}` },
       ],
     }),
 
     triggerUpdate: builder.mutation<TriggerUpdateResponse, void>({
       query: () => ({
-        url: `/system/update`,
-        method: "POST",
+        url: '/system/update',
+        method: 'POST',
       }),
-      invalidatesTags: ["SystemUpdate", "VersionList"],
+      invalidatesTags: ['SystemUpdate', 'VersionList'],
     }),
   }),
 });

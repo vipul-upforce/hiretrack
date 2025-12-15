@@ -1,29 +1,30 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import SettingDialog from "./components/setting-dialog";
-import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
-import withAuthGuard from "@/components/withAuthGuard";
-import { Tags, Palette } from "lucide-react";
-import { settingGroups } from "./constants";
-import SettingsCard from "./components/settings/setting-card";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import AddCustomFieldButton from '@/Custom_Fields/Components/AddCustomFieldButton';
+import withAuthGuard from '@/components/withAuthGuard';
+import { Tags, Palette } from 'lucide-react';
+import SettingDialog from './components/setting-dialog';
+import { settingGroups } from './constants';
+import SettingsCard from './components/settings/setting-card';
 
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const config = searchParams.get("config");
+    const config = searchParams?.get('config');
     if (config) {
       setOpenDialog(config);
     }
   }, [searchParams]);
 
   // Helper function to check if setting opens in new page
-  const opensInNewPage = (key: string) => {
-    return ["users", "portal", "templates", "logs"].includes(key);
-  };
+  const opensInNewPage = (key: string) => ['users', 'portal', 'templates', 'logs'].includes(key);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
@@ -69,7 +70,7 @@ function Settings() {
             <AddCustomFieldButton />
             <Card
               className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
-              onClick={() => setOpenDialog("tags")}
+              onClick={() => setOpenDialog('tags')}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start gap-3">
@@ -92,14 +93,14 @@ function Settings() {
           </div>
 
           {/* Dialog Component for Tags */}
-          {openDialog === "tags" && (
+          {openDialog === 'tags' && (
             <SettingDialog
-              isOpen={openDialog === "tags"}
+              isOpen={openDialog === 'tags'}
               onClose={() => setOpenDialog(null)}
               setting={{
-                title: "Candidate Tags",
-                key: "tags",
-                description: "Organize candidates with custom tags",
+                title: 'Candidate Tags',
+                key: 'tags',
+                description: 'Organize candidates with custom tags',
               }}
             />
           )}
@@ -110,8 +111,8 @@ function Settings() {
 }
 
 export default withAuthGuard(Settings, {
-  requiredRoles: ["admin"],
-  fallbackPath: "/dashboard",
+  requiredRoles: ['admin'],
+  fallbackPath: '/dashboard',
   checkAllowance: false,
   allowAuthenticated: true,
 });

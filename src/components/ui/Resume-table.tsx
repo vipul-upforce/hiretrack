@@ -1,21 +1,23 @@
-import { Fragment } from "react";
-import type { Resume } from "@/lib/redux/types";
+import { Fragment } from 'react';
+import type { Resume } from '@/lib/redux/types';
 import {
   initialEducation,
   initialWorkExperience,
-} from "@/lib/redux/resumeSlice";
-import { deepClone } from "@/lib/deep-clone";
-import { cx } from "@/lib/cx";
+} from '@/lib/redux/resumeSlice';
+import { deepClone } from '@/lib/deep-clone';
+import { cx } from '@/lib/cx';
 
-const TableRowHeader = ({ children }: { children: React.ReactNode }) => (
-  <tr className="divide-x bg-gray-100">
-    <th className="px-3 py-2 font-semibold" scope="colgroup" colSpan={2}>
-      {children}
-    </th>
-  </tr>
-);
+function TableRowHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <tr className="divide-x bg-gray-100">
+      <th className="px-3 py-2 font-semibold" scope="colgroup" colSpan={2}>
+        {children}
+      </th>
+    </tr>
+  );
+}
 
-const TableRow = ({
+function TableRow({
   label,
   value,
   className,
@@ -23,38 +25,40 @@ const TableRow = ({
   label: string;
   value: string | string[];
   className?: string | false;
-}) => (
-  <tr className={cx("divide-x", className)}>
-    <th className="px-3 py-2 font-medium" scope="row">
-      {label}
-    </th>
-    <td className="w-full px-3 py-2">
-      {typeof value === "string"
-        ? value
-        : value.map((x, idx) => (
+}) {
+  return (
+    <tr className={cx('divide-x', className)}>
+      <th className="px-3 py-2 font-medium" scope="row">
+        {label}
+      </th>
+      <td className="w-full px-3 py-2">
+        {typeof value === 'string'
+          ? value
+          : value.map((x, idx) => (
             <Fragment key={idx}>
-              • {x}
+              •
+              {' '}
+              {x}
               <br />
             </Fragment>
           ))}
-    </td>
-  </tr>
-);
+      </td>
+    </tr>
+  );
+}
 
-export const ResumeTable = ({ resume }: { resume: Resume }) => {
-  const educations =
-    resume.educations.length === 0
-      ? [deepClone(initialEducation)]
-      : resume.educations;
-  const workExperiences =
-    resume.workExperiences.length === 0
-      ? [deepClone(initialWorkExperience)]
-      : resume.workExperiences;
+export function ResumeTable({ resume }: { resume: Resume }) {
+  const educations = resume.educations.length === 0
+    ? [deepClone(initialEducation)]
+    : resume.educations;
+  const workExperiences = resume.workExperiences.length === 0
+    ? [deepClone(initialWorkExperience)]
+    : resume.workExperiences;
   const skills = [...resume.skills.descriptions];
   const featuredSkills = resume.skills.featuredSkills
     .filter((item) => item.skill.trim())
     .map((item) => item.skill)
-    .join(", ")
+    .join(', ')
     .trim();
   if (featuredSkills) {
     skills.unshift(featuredSkills);
@@ -80,9 +84,9 @@ export const ResumeTable = ({ resume }: { resume: Resume }) => {
               label="Descriptions"
               value={education.descriptions}
               className={
-                educations.length - 1 !== 0 &&
-                idx !== educations.length - 1 &&
-                "!border-b-4"
+                educations.length - 1 !== 0
+                && idx !== educations.length - 1
+                && '!border-b-4'
               }
             />
           </Fragment>
@@ -97,9 +101,9 @@ export const ResumeTable = ({ resume }: { resume: Resume }) => {
               label="Descriptions"
               value={workExperience.descriptions}
               className={
-                workExperiences.length - 1 !== 0 &&
-                idx !== workExperiences.length - 1 &&
-                "!border-b-4"
+                workExperiences.length - 1 !== 0
+                && idx !== workExperiences.length - 1
+                && '!border-b-4'
               }
             />
           </Fragment>
@@ -115,9 +119,9 @@ export const ResumeTable = ({ resume }: { resume: Resume }) => {
               label="Descriptions"
               value={project.descriptions}
               className={
-                resume.projects.length - 1 !== 0 &&
-                idx !== resume.projects.length - 1 &&
-                "!border-b-4"
+                resume.projects.length - 1 !== 0
+                && idx !== resume.projects.length - 1
+                && '!border-b-4'
               }
             />
           </Fragment>
@@ -127,4 +131,4 @@ export const ResumeTable = ({ resume }: { resume: Resume }) => {
       </tbody>
     </table>
   );
-};
+}

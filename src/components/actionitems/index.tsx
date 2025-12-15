@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { CandidateCard } from "@/app/dashboard/jobs/[id]/components/Candidate/candidate-card";
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { Assignment } from "@/app/dashboard/page";
-import { Candidate, CandidateStatus, Remark } from "@/types/candidate";
-import { toast } from "@/hooks/use-toast";
+import { useEffect, useState } from 'react';
+import { CandidateCard } from '@/app/dashboard/jobs/[id]/components/Candidate/candidate-card';
+import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
+import { Assignment } from '@/app/dashboard/page';
+import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
+import { toast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 
 function ActionItems({
   assignment,
@@ -26,15 +27,15 @@ function ActionItems({
 
     try {
       const response = await fetch(`/api/candidates/${candidate._id}`, {
-        method: "GET",
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch candidate");
+        throw new Error(errorData.error || 'Failed to fetch candidate');
       }
 
       const updatedCandidate: Candidate = await response.json();
@@ -42,39 +43,37 @@ function ActionItems({
 
       const updatedAssignments = !updatedCandidate.assignment
         ? assignments.filter(
-            (assignment) => assignment._id !== updatedCandidate._id
-          )
-        : assignments.map((assignment) =>
-            assignment._id === updatedCandidate._id
-              ? { ...assignment, ...updatedCandidate } // merge updated data
-              : assignment
-          );
+          (assignment) => assignment._id !== updatedCandidate._id,
+        )
+        : assignments.map((assignment) => (assignment._id === updatedCandidate._id
+          ? { ...assignment, ...updatedCandidate } // merge updated data
+          : assignment));
       setAssignments(updatedAssignments);
       toast({
-        title: "Success",
-        description: "Candidate data refreshed successfully",
+        title: 'Success',
+        description: 'Candidate data refreshed successfully',
       });
     } catch (error) {
-      console.error("Failed to refetch candidate:", error);
+      logger.error('Failed to refetch candidate:', error);
       toast({
-        title: "Error",
-        description: "Failed to refresh candidate data. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to refresh candidate data. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
   useEffect(() => {
     if (assignment) {
-      if ("jobDetails" in assignment) {
+      if ('jobDetails' in assignment) {
         setCandidate(assignment as Candidate);
       } else {
         const transformedCandidate: Candidate = {
           _id: assignment._id || assignment.id,
           jobId: {
-            _id: assignment.jobId._id || "",
+            _id: assignment.jobId._id || '',
             title: assignment.jobId.title,
-            description: assignment.jobId.description || "",
+            description: assignment.jobId.description || '',
             skills: assignment.jobId.skills || [],
           },
           name: assignment.candidateName || assignment.name,
@@ -124,26 +123,21 @@ function ActionItems({
         onViewDetails={() => setIsDetailsOpen(true)}
         openRemarks={openRemarksFor === candidate._id}
         setOpenRemarksFor={setOpenRemarksFor}
-        onDashboard={true}
-        onEditClick={(candidate) => {
+        onDashboard
+        onEditClick={() => {
           // Handle edit - could open edit dialog
-          console.log("Edit candidate:", candidate);
         }}
-        onAssignClick={(candidate) => {
+        onAssignClick={() => {
           // Handle assign - could open assign dialog
-          console.log("Assign candidate:", candidate);
         }}
-        onMarkAsDoneClick={(candidate) => {
+        onMarkAsDoneClick={() => {
           // Handle mark as done
-          console.log("Mark as done:", candidate);
         }}
-        onFollowUpClick={(candidate) => {
+        onFollowUpClick={() => {
           // Handle follow up
-          console.log("Follow up:", candidate);
         }}
-        onAddRemarkClick={(candidate) => {
+        onAddRemarkClick={() => {
           // Handle add remark
-          console.log("Add remark:", candidate);
         }}
       />
       <CandidateDetailsDialog

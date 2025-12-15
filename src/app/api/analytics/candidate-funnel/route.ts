@@ -1,17 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Candidate, Job, Organization } from "@/lib/mongodb";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Candidate, Job, Organization } from '@/lib/mongodb';
+import { Types } from 'mongoose';
+import { logger } from '@/lib/logger/logger.server';
 import {
   withAnalyticsAuth,
   createAnalyticsResponse,
   createAnalyticsErrorResponse,
-} from "../middleware";
+} from '../middleware';
 import {
   parseAnalyticsRequest,
   calculateConversionRate,
   getStageColor,
-} from "../utils";
-import { FunnelData } from "../types";
-import { Types } from "mongoose";
+} from '../utils';
+import { FunnelData } from '../types';
 
 interface defaultLanesResponse {
   defaultLanes?: string[];
@@ -25,24 +26,22 @@ export async function GET(request: NextRequest) {
       await connectToDatabase();
 
       if (!Candidate) {
-        return createAnalyticsErrorResponse("Database connection failed", 500);
+        return createAnalyticsErrorResponse('Database connection failed', 500);
       }
 
       const { organizationId, dateRange, filters } = parseAnalyticsRequest(req);
 
       let defaultLanes: defaultLanesResponse;
       if (filters?.jobIds && filters?.jobIds?.length > 0) {
-        defaultLanes = await Job.findOne({
+        defaultLanes = await Job?.findOne({
           _id: filters.jobIds[0],
-          organizationId: organizationId,
-        }).select("lanes");
+          organizationId,
+        }).select('lanes');
       } else {
-        defaultLanes =
-          await Organization.findById(organizationId).select("defaultLanes");
+        defaultLanes = await Organization?.findById(organizationId).select('defaultLanes');
       }
 
-      const defaultLanesFinal =
-        defaultLanes.defaultLanes || defaultLanes.lanes || [];
+      const defaultLanesFinal = defaultLanes.defaultLanes || defaultLanes.lanes || [];
 
       // Build aggregation pipeline for candidate funnel analysis
       const pipeline = [
@@ -51,7 +50,7 @@ export async function GET(request: NextRequest) {
           $match: {
             organizationId: user.organizationId,
             ...(dateRange && {
-              "tracking.createdAt": {
+              'tracking.createdAt': {
                 $gte: dateRange.start,
                 $lte: dateRange.end,
               },
@@ -77,16 +76,16 @@ export async function GET(request: NextRequest) {
         // Group by status to get counts
         {
           $group: {
-            _id: "$status",
+            _id: '$status',
             count: { $sum: 1 },
             // Calculate average time in stage
             avgTimeInStage: {
               $avg: {
-                $subtract: ["$tracking.updatedAt", "$tracking.createdAt"],
+                $subtract: ['$tracking.updatedAt', '$tracking.createdAt'],
               },
             },
             // Collect creation dates for trend analysis
-            createdDates: { $push: "$tracking.createdAt" },
+            createdDates: { $push: '$tracking.createdAt' },
           },
         },
         // Sort by stage order (we'll handle this in post-processing)
@@ -148,7 +147,7 @@ export async function GET(request: NextRequest) {
         } else {
           conversionRate = calculateConversionRate(
             currentCount,
-            previousStageCount
+            previousStageCount,
           );
           previousStageCount = totalCandidates;
         }
@@ -166,63 +165,60 @@ export async function GET(request: NextRequest) {
 
       // Calculate overall funnel metrics
       const appliedCount = funnelData[0]?.count || 0;
-      const acceptedCount =
-        funnelData.find((f) => f.stage.toLowerCase() === "accepted")?.count ||
-        0;
-      const rejectedCount =
-        funnelData.find((f) => f.stage.toLowerCase() === "rejected")?.count ||
-        0;
+      const acceptedCount = funnelData.find((f) => f.stage.toLowerCase() === 'accepted')?.count
+        || 0;
+      const rejectedCount = funnelData.find((f) => f.stage.toLowerCase() === 'rejected')?.count
+        || 0;
 
-      const overallConversionRate =
-        appliedCount > 0
-          ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100
-          : 0;
+      const overallConversionRate = appliedCount > 0
+        ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100
+        : 0;
 
       const response = createAnalyticsResponse(
         {
           funnelData,
           summary: {
-            totalCandidates: totalCandidates,
+            totalCandidates,
             acceptedCandidates: acceptedCount,
             rejectedCandidates: rejectedCount,
             overallConversionRate,
             avgTimeToHire:
-              funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0) /
-              funnelData.length,
+              funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0)
+              / funnelData.length,
           },
         },
         user.organizationId,
         {
           totalRecords: totalCandidates,
           dateRange,
-        }
+        },
       );
 
       return NextResponse.json(response);
     } catch (error: unknown) {
-      console.error("Candidate funnel analytics error:", error);
+      logger.error({error, url: request.url}, ' Candidate funnel analytics error.');
 
       // Handle specific error types with better messages
       if (
-        error instanceof Error && error.message?.includes("timeout") ||
-        error instanceof Error && error.message?.includes("maxTimeMS")
+        error instanceof Error && error.message?.includes('timeout')
+        || error instanceof Error && error.message?.includes('maxTimeMS')
       ) {
         return createAnalyticsErrorResponse(
-          "Query timeout - please try a smaller date range or add job filters",
-          408
+          'Query timeout - please try a smaller date range or add job filters',
+          408,
         );
       }
 
-      if (error instanceof Error && error.message?.includes("memory")) {
+      if (error instanceof Error && error.message?.includes('memory')) {
         return createAnalyticsErrorResponse(
-          "Dataset too large - please add filters to reduce data size",
-          413
+          'Dataset too large - please add filters to reduce data size',
+          413,
         );
       }
 
       return createAnalyticsErrorResponse(
-        "Failed to generate candidate funnel analytics",
-        500
+        'Failed to generate candidate funnel analytics',
+        500,
       );
     }
   });

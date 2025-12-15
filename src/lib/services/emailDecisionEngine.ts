@@ -1,46 +1,46 @@
-import connectToDatabase, { User, Settings } from "@/lib/mongodb";
-import { EmailNotificationSettings } from "@/lib/models/user";
-import { OrganizationEmailNotifications } from "@/lib/models/settings";
-import mongoose from "mongoose";
+import connectToDatabase, { User, Settings } from '@/lib/mongodb';
+import { EmailNotificationSettings } from '@/lib/models/user';
+import { OrganizationEmailNotifications } from '@/lib/models/settings';
+import mongoose from 'mongoose';
 
 export type EmailNotificationType =
-  | "newApplications"
-  | "interviewAssignments"
-  | "statusUpdates"
-  | "newRemarks"
-  | "stepCompleted"
-  | "mentions";
+  | 'newApplications'
+  | 'interviewAssignments'
+  | 'statusUpdates'
+  | 'newRemarks'
+  | 'stepCompleted'
+  | 'mentions';
 
 export enum NotificationType {
-  NEW_APPLICATIONS = "newApplications",
-  INTERVIEW_ASSIGNMENTS = "interviewAssignments",
-  STATUS_UPDATES = "statusUpdates",
-  NEW_REMARKS = "newRemarks",
-  STEP_COMPLETED = "stepCompleted",
-  MENTIONS = "mentions",
+  NEW_APPLICATIONS = 'newApplications',
+  INTERVIEW_ASSIGNMENTS = 'interviewAssignments',
+  STATUS_UPDATES = 'statusUpdates',
+  NEW_REMARKS = 'newRemarks',
+  STEP_COMPLETED = 'stepCompleted',
+  MENTIONS = 'mentions',
 
   // CANDIDATE_APPLIED = "newApplications",
   // CANDIDATE_STATUS_UPDATED = "statusUpdates",
   // CANDIDATE_ASSIGNED = "interviewAssignmentsd",
   // CANDIDATE_UNASSIGNED = "stepCompleted",
   // REMARK_ADDED = "newRemarks",
-  CANDIDATE_DETAILS_UPDATED = "detailsUpdated",
-  MEETING_SCHEDULED = "meetingScheduled",
-  MEETING_UPDATED = "meetingUpdated",
-  MEETING_CANCELLED = "meetingCancelled",
-  MEETING_INVITE_ACCEPTED = "meetingInviteAccepted",
-  MEETING_INVITE_DECLINED = "meetingInviteDeclined",
-  MEETING_INVITE_TENTATIVE = "meetingInviteTentative",
-  FOLLOWUP_ADDED = "followupAdded",
-  FOLLOWUP_UPDATED = "followupUpdated",
-  FOLLOWUP_REMOVED = "followupRemoved",
-  JOB_CREATED = "jobCreated",
-  JOB_UPDATED = "jobUpdated",
-  USER_ADDED = "userAdded",
-  BULK_IMPORT_COMPLETED = "bulkImportCompleted",
-  CANDIDATE_REJECTED = "candidateRejected",
-  INTERVIEW_COMPLETED = "interviewCompleted",
-  CANDIDATE_MOVED = "candidateMoved",
+  CANDIDATE_DETAILS_UPDATED = 'detailsUpdated',
+  MEETING_SCHEDULED = 'meetingScheduled',
+  MEETING_UPDATED = 'meetingUpdated',
+  MEETING_CANCELLED = 'meetingCancelled',
+  MEETING_INVITE_ACCEPTED = 'meetingInviteAccepted',
+  MEETING_INVITE_DECLINED = 'meetingInviteDeclined',
+  MEETING_INVITE_TENTATIVE = 'meetingInviteTentative',
+  FOLLOWUP_ADDED = 'followupAdded',
+  FOLLOWUP_UPDATED = 'followupUpdated',
+  FOLLOWUP_REMOVED = 'followupRemoved',
+  JOB_CREATED = 'jobCreated',
+  JOB_UPDATED = 'jobUpdated',
+  USER_ADDED = 'userAdded',
+  BULK_IMPORT_COMPLETED = 'bulkImportCompleted',
+  CANDIDATE_REJECTED = 'candidateRejected',
+  INTERVIEW_COMPLETED = 'interviewCompleted',
+  CANDIDATE_MOVED = 'candidateMoved',
 }
 export interface NotificationDecisionContext {
   organizationId: string;
@@ -49,23 +49,23 @@ export interface NotificationDecisionContext {
   jobId?: string;
   triggererUserId?: string;
   isMention?: boolean;
-  notificationCategory: "email" | "inApp";
+  notificationCategory: 'email' | 'inApp';
 }
 
 export interface NotificationDecisionResult {
   shouldSend: boolean;
   reason: string;
   effectiveSettings: {
-    source: "job-level" | "global-user" | "admin-override" | "org-default";
+    source: 'job-level' | 'global-user' | 'admin-override' | 'org-default';
     enabled: boolean;
-    category: "email" | "inApp";
+    category: 'email' | 'inApp';
   };
 }
 
 /**
  * Determine if a notification (email or in-app) should be sent to a user
  * Uses common EmailNotificationSettings for both email and in-app notifications
- * 
+ *
  * Implements the NEW priority chain:
  * 1. Admin Override = OFF for notification type → Everything OFF (no override possible)
  * 2. Admin Override = ON (or undefined) → Check:
@@ -74,7 +74,7 @@ export interface NotificationDecisionResult {
  *    c) Organization Default Settings (fallback)
  */
 export async function shouldSendNotification(
-  context: NotificationDecisionContext
+  context: NotificationDecisionContext,
 ): Promise<NotificationDecisionResult> {
   try {
     await connectToDatabase();
@@ -83,9 +83,9 @@ export async function shouldSendNotification(
     if (!context.recipientUserId) {
       return {
         shouldSend: false,
-        reason: "No recipient user ID provided",
+        reason: 'No recipient user ID provided',
         effectiveSettings: {
-          source: "org-default",
+          source: 'org-default',
           enabled: false,
           category: context.notificationCategory,
         },
@@ -99,9 +99,9 @@ export async function shouldSendNotification(
     ) {
       return {
         shouldSend: false,
-        reason: "User triggered the action themselves",
+        reason: 'User triggered the action themselves',
         effectiveSettings: {
-          source: "org-default",
+          source: 'org-default',
           enabled: false,
           category: context.notificationCategory,
         },
@@ -111,21 +111,21 @@ export async function shouldSendNotification(
     // Get user and organization settings
     const [user, orgSettings] = await Promise.all([
       User.findById(context.recipientUserId)
-        .select("emailNotificationSettings  role")
+        .select('emailNotificationSettings  role')
         .lean(),
       Settings.findOne({
         organizationId: new mongoose.Types.ObjectId(context.organizationId),
       })
-        .select("organizationEmailNotifications ")
+        .select('organizationEmailNotifications ')
         .lean(),
     ]);
 
     if (!user) {
       return {
         shouldSend: false,
-        reason: "Recipient user not found",
+        reason: 'Recipient user not found',
         effectiveSettings: {
-          source: "org-default",
+          source: 'org-default',
           enabled: false,
           category: context.notificationCategory,
         },
@@ -133,12 +133,12 @@ export async function shouldSendNotification(
     }
 
     // Only send notifications to admin, hr, and interviewer roles
-    if (!["admin", "hr", "interviewer"].includes(user.role)) {
+    if (!['admin', 'hr', 'interviewer'].includes(user.role)) {
       return {
         shouldSend: false,
         reason: `User role '${user.role}' is not eligible for notifications`,
         effectiveSettings: {
-          source: "org-default",
+          source: 'org-default',
           enabled: false,
           category: context.notificationCategory,
         },
@@ -150,7 +150,7 @@ export async function shouldSendNotification(
       const mentionDecision = await resolveMentionNotificationSetting(
         user,
         orgSettings,
-        context
+        context,
       );
       return mentionDecision;
     }
@@ -159,17 +159,17 @@ export async function shouldSendNotification(
     const settingDecision = await resolveNotificationSetting(
       user,
       orgSettings,
-      context
+      context,
     );
 
     return settingDecision;
   } catch (error) {
-    console.error("Error in notification decision engine:", error);
+    logger.error('Error in notification decision engine:', error);
     return {
       shouldSend: false,
-      reason: `Error determining notification: ${error instanceof Error ? error.message : "Unknown error"}`,
+      reason: `Error determining notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
       effectiveSettings: {
-        source: "org-default",
+        source: 'org-default',
         enabled: false,
         category: context.notificationCategory,
       },
@@ -179,33 +179,33 @@ export async function shouldSendNotification(
 
 /**
  * Resolve notification setting based on priority chain
- * 
+ *
  * NEW PRIORITY LOGIC:
  * 1. Admin Override = OFF for notification type → Everything OFF (no override possible)
  * 2. Admin Override = ON (or undefined) → Check:
  *    a) Job-Level User Settings (highest)
  *    b) Global User Settings
  *    c) Organization Default Settings (fallback)
- * 
+ *
  * Uses common EmailNotificationSettings for both email and in-app notifications
  */
 async function resolveNotificationSetting(
   user: any,
   orgSettings: any,
-  context: NotificationDecisionContext
+  context: NotificationDecisionContext,
 ): Promise<NotificationDecisionResult> {
-  const notificationType = context.notificationType;
-  
+  const { notificationType } = context;
+
   // Use common EmailNotificationSettings for both email and in-app notifications
-  const settingsKey = "emailNotificationSettings";
-  const orgSettingsKey = "organizationEmailNotifications";
+  const settingsKey = 'emailNotificationSettings';
+  const orgSettingsKey = 'organizationEmailNotifications';
 
   // STEP 1: Check Admin Override FIRST (per notification type)
   // If Admin Override = OFF for this notification type → Everything OFF
   if (orgSettings?.[orgSettingsKey]?.adminOverrides) {
     const adminOverride =
       orgSettings[orgSettingsKey].adminOverrides.get?.(
-        context.recipientUserId
+        context.recipientUserId,
       ) || orgSettings[orgSettingsKey].adminOverrides[context.recipientUserId];
 
     if (adminOverride && adminOverride[notificationType] !== undefined) {
@@ -215,7 +215,7 @@ async function resolveNotificationSetting(
           shouldSend: false,
           reason: `Admin override is OFF for ${notificationType} - all notifications disabled`,
           effectiveSettings: {
-            source: "admin-override",
+            source: 'admin-override',
             enabled: false,
             category: context.notificationCategory,
           },
@@ -226,7 +226,7 @@ async function resolveNotificationSetting(
   }
 
   // STEP 2: Admin Override = ON (or undefined) → Check priority chain
-  
+
   // 2a. Job-Level User Settings (highest priority when Admin Override = ON)
   if (context.jobId && user[settingsKey]?.jobLevel) {
     const jobSettings =
@@ -238,7 +238,7 @@ async function resolveNotificationSetting(
         shouldSend: jobSettings[notificationType],
         reason: `Job-level ${context.notificationCategory} setting for ${notificationType}`,
         effectiveSettings: {
-          source: "job-level",
+          source: 'job-level',
           enabled: jobSettings[notificationType],
           category: context.notificationCategory,
         },
@@ -252,7 +252,7 @@ async function resolveNotificationSetting(
       shouldSend: user[settingsKey].global[notificationType],
       reason: `Global user ${context.notificationCategory} setting for ${notificationType}`,
       effectiveSettings: {
-        source: "global-user",
+        source: 'global-user',
         enabled: user[settingsKey].global[notificationType],
         category: context.notificationCategory,
       },
@@ -267,7 +267,7 @@ async function resolveNotificationSetting(
     shouldSend: defaultEnabled,
     reason: `Organization default ${context.notificationCategory} setting for ${notificationType}`,
     effectiveSettings: {
-      source: "org-default",
+      source: 'org-default',
       enabled: defaultEnabled,
       category: context.notificationCategory,
     },
@@ -280,7 +280,7 @@ async function resolveNotificationSetting(
 async function resolveMentionNotificationSetting(
   user: any,
   orgSettings: any,
-  context: NotificationDecisionContext
+  context: NotificationDecisionContext,
 ): Promise<NotificationDecisionResult> {
   const mentionContext = {
     ...context,
@@ -289,7 +289,7 @@ async function resolveMentionNotificationSetting(
   const mentionDecision = await resolveNotificationSetting(
     user,
     orgSettings,
-    mentionContext
+    mentionContext,
   );
 
   if (!mentionDecision.shouldSend) {
@@ -311,7 +311,7 @@ async function resolveMentionNotificationSetting(
  * Batch check for multiple users - more efficient for bulk operations
  */
 export async function batchCheckNotifications(
-  contexts: NotificationDecisionContext[]
+  contexts: NotificationDecisionContext[],
 ): Promise<NotificationDecisionResult[]> {
   const results: NotificationDecisionResult[] = [];
 
@@ -333,13 +333,13 @@ export async function batchCheckNotifications(
     const [users, orgSettings] = await Promise.all([
       User.find({ _id: { $in: userIds } })
         // .select("_id emailNotificationSettings inAppNotificationSettings role")
-        .select("_id emailNotificationSettings  role")
+        .select('_id emailNotificationSettings  role')
         .lean(),
       Settings.findOne({
         organizationId: new mongoose.Types.ObjectId(orgId),
       })
         // .select("organizationEmailNotifications organizationInAppNotifications")
-        .select("organizationEmailNotifications ")
+        .select('organizationEmailNotifications ')
         .lean(),
     ]);
 
@@ -352,9 +352,9 @@ export async function batchCheckNotifications(
       if (!user) {
         results.push({
           shouldSend: false,
-          reason: "Recipient user not found",
+          reason: 'Recipient user not found',
           effectiveSettings: {
-            source: "org-default",
+            source: 'org-default',
             enabled: false,
             category: context.notificationCategory,
           },
@@ -369,9 +369,9 @@ export async function batchCheckNotifications(
       ) {
         results.push({
           shouldSend: false,
-          reason: "User triggered the action themselves",
+          reason: 'User triggered the action themselves',
           effectiveSettings: {
-            source: "org-default",
+            source: 'org-default',
             enabled: false,
             category: context.notificationCategory,
           },
@@ -380,12 +380,12 @@ export async function batchCheckNotifications(
       }
 
       // Skip non-eligible roles
-      if (!["admin", "hr", "interviewer"].includes(user.role)) {
+      if (!['admin', 'hr', 'interviewer'].includes(user.role)) {
         results.push({
           shouldSend: false,
           reason: `User role '${user.role}' is not eligible for notifications`,
           effectiveSettings: {
-            source: "org-default",
+            source: 'org-default',
             enabled: false,
             category: context.notificationCategory,
           },
@@ -399,7 +399,7 @@ export async function batchCheckNotifications(
         decision = await resolveMentionNotificationSetting(
           user,
           orgSettings,
-          context
+          context,
         );
       } else {
         decision = await resolveNotificationSetting(user, orgSettings, context);
@@ -418,7 +418,7 @@ export async function batchCheckNotifications(
 export async function getUserEffectiveNotificationSettings(
   userId: string,
   organizationId: string,
-  jobId?: string
+  jobId?: string,
 ): Promise<{
   email: Record<NotificationType, { enabled: boolean; source: string }>;
   inApp: Record<NotificationType, { enabled: boolean; source: string }>;
@@ -431,16 +431,16 @@ export async function getUserEffectiveNotificationSettings(
     await connectToDatabase();
 
     const [user, orgSettings] = await Promise.all([
-      User.findById(userId).select("emailNotificationSettings  role").lean(),
+      User.findById(userId).select('emailNotificationSettings  role').lean(),
       Settings.findOne({
         organizationId: new mongoose.Types.ObjectId(organizationId),
       })
-        .select("organizationEmailNotifications")
+        .select('organizationEmailNotifications')
         .lean(),
     ]);
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found');
     }
 
     const notificationTypes: NotificationType[] = [
@@ -450,12 +450,7 @@ export async function getUserEffectiveNotificationSettings(
       NotificationType.NEW_REMARKS,
       NotificationType.STEP_COMPLETED,
       NotificationType.MENTIONS,
-      // NotificationType.CANDIDATE_APPLIED,
-      // NotificationType.CANDIDATE_STATUS_UPDATED,
       NotificationType.CANDIDATE_DETAILS_UPDATED,
-      // NotificationType.CANDIDATE_ASSIGNED,
-      // NotificationType.CANDIDATE_UNASSIGNED,
-      // NotificationType.REMARK_ADDED,
       NotificationType.MEETING_SCHEDULED,
       NotificationType.MEETING_UPDATED,
       NotificationType.MEETING_CANCELLED,
@@ -497,12 +492,12 @@ export async function getUserEffectiveNotificationSettings(
         organizationId,
         recipientUserId: userId,
         notificationType: type,
-        notificationCategory: "email",
+        notificationCategory: 'email',
       };
       const emailDecision = await resolveNotificationSetting(
         user,
         orgSettings,
-        emailContext
+        emailContext,
       );
       email[type] = {
         enabled: emailDecision?.shouldSend,
@@ -514,12 +509,12 @@ export async function getUserEffectiveNotificationSettings(
         organizationId,
         recipientUserId: userId,
         notificationType: type,
-        notificationCategory: "inApp",
+        notificationCategory: 'inApp',
       };
       const inAppDecision = await resolveNotificationSetting(
         user,
         orgSettings,
-        inAppContext
+        inAppContext,
       );
       inApp[type] = {
         enabled: inAppDecision.shouldSend,
@@ -533,12 +528,12 @@ export async function getUserEffectiveNotificationSettings(
           recipientUserId: userId,
           notificationType: type,
           jobId,
-          notificationCategory: "email",
+          notificationCategory: 'email',
         };
         const jobEmailDecision = await resolveNotificationSetting(
           user,
           orgSettings,
-          jobEmailContext
+          jobEmailContext,
         );
         jobLevel.email[type] = {
           enabled: jobEmailDecision.shouldSend,
@@ -550,12 +545,12 @@ export async function getUserEffectiveNotificationSettings(
           recipientUserId: userId,
           notificationType: type,
           jobId,
-          notificationCategory: "inApp",
+          notificationCategory: 'inApp',
         };
         const jobInAppDecision = await resolveNotificationSetting(
           user,
           orgSettings,
-          jobInAppContext
+          jobInAppContext,
         );
         jobLevel.inApp[type] = {
           enabled: jobInAppDecision.shouldSend,
@@ -566,7 +561,7 @@ export async function getUserEffectiveNotificationSettings(
 
     return jobId ? { email, inApp, jobLevel } : { email, inApp };
   } catch (error) {
-    console.error("Error getting user effective notification settings:", error);
+    logger.error('Error getting user effective notification settings:', error);
     throw error;
   }
 }

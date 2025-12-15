@@ -1,21 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import os from "os";
-import path from "path";
+import { NextResponse } from 'next/server';
+import { exec } from 'child_process';
+import os from 'os';
+import path from 'path';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    console.log("Starting system update process...");
+    console.log('Starting system update process...');
 
     // Get the user's home directory (cross-platform)
     const homeDir = os.homedir();
 
     // Construct path to installer script in user's home
-    const installerPath = path.join(homeDir, ".hiretrack", "installer.sh");
+    const installerPath = path.join(homeDir, '.hiretrack', 'installer.sh');
 
     // Determine shell based on OS
-    const isWindows = process.platform === "win32";
-    const shell = isWindows ? "cmd.exe" : "/bin/bash";
+    const isWindows = process.platform === 'win32';
+    const shell = isWindows ? 'cmd.exe' : '/bin/bash';
 
     // Construct command
     const command = isWindows
@@ -31,26 +31,24 @@ export async function POST(request: NextRequest) {
     console.log(`Update process initiated with PID: ${childProcess.pid}`);
 
     // Log stdout/stderr
-    childProcess.stdout?.on("data", (data) => console.log(`[stdout] ${data}`));
-    childProcess.stderr?.on("data", (data) =>
-      console.error(`[stderr] ${data}`)
-    );
-    childProcess.on("error", (error) => console.error("Error:", error));
+    childProcess.stdout?.on('data', (data) => console.log(`[stdout] ${data}`));
+    childProcess.stderr?.on('data', (data) => console.error(`[stderr] ${data}`));
+    childProcess.on('error', (error) => console.error('Error:', error));
 
     return NextResponse.json({
       success: true,
-      message: "Update process initiated successfully",
+      message: 'Update process initiated successfully',
       pid: childProcess.pid,
       homeDir,
     });
   } catch (error: unknown) {
-    console.error("Error in update endpoint:", error);
+    console.error('Error in update endpoint:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error while initiating update",
+        error: error instanceof Error ? error.message : 'Internal server error while initiating update',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

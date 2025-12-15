@@ -1,14 +1,14 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Copy } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/card';
+import { Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface RedirectUriCardProps {
   redirectUri: string;
@@ -20,8 +20,8 @@ export function RedirectUriCard({ redirectUri }: RedirectUriCardProps) {
   const handleCopy = () => {
     navigator.clipboard.writeText(redirectUri);
     toast({
-      title: "Copied!",
-      description: "Redirect URI copied to clipboard",
+      title: 'Copied!',
+      description: 'Redirect URI copied to clipboard',
     });
   };
 

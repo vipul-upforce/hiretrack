@@ -1,25 +1,24 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCcwIcon } from "lucide-react";
-import { useJobPerformance } from "../../hooks/useAnalytics";
-import { AnalyticsFilters } from "../../hooks/useAnalytics";
-import JobPerformanceSkeleton from "./../loading-skeletons/job-performance";
-import SummaryCards from "./summary-cards";
-import JobStatusBreakdown from "./job-status-breakdown";
-import InsightsCards from "./insights-cards";
-import JobPerformanceTabs from "./job-performance-tabs";
-import JobPerformanceExport from "./job-performance-export";
-import EmptyState from "../empty-state";
-import type { JobPerformanceData } from "../types";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCcwIcon } from 'lucide-react';
+import { useJobPerformance, AnalyticsFilters } from '../../hooks/useAnalytics';
+import JobPerformanceSkeleton from '../loading-skeletons/job-performance';
+import SummaryCards from './summary-cards';
+import JobStatusBreakdown from './job-status-breakdown';
+import InsightsCards from './insights-cards';
+import JobPerformanceTabs from './job-performance-tabs';
+import JobPerformanceExport from './job-performance-export';
+import EmptyState from '../empty-state';
+import type { JobPerformanceData } from '../types';
 
 export interface JobPerformanceChartProps {
   filters?: AnalyticsFilters;
@@ -30,9 +29,11 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
   filters,
   organizationId,
 }) => {
-  const { data, loading, error, refetch } = useJobPerformance(
+  const {
+    data, loading, error, refetch,
+  } = useJobPerformance(
     filters,
-    organizationId
+    organizationId,
   );
   const [jobData, setJobData] = useState<JobPerformanceData[]>([]);
   const [summary, setSummary] = useState<any>(null);
@@ -41,7 +42,7 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
 
   useEffect(() => {
     if (data) {
-      setJobData(data.jobPerformanceData|| []);
+      setJobData(data.jobPerformanceData || []);
       setSummary(data.summary || null);
       setInsights(data.insights || null);
       setDataReady(true);

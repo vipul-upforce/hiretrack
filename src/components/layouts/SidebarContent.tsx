@@ -1,16 +1,15 @@
-import React, { memo } from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronRight, LogOut, Link2Icon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { NotificationButton } from "@/components/ui/notifications";
-import OnboardingSidebar from "@/components/onboarding/OnboardingSidebar";
-import SidebarLogo from "./SidebarLogo";
-import type { IUser } from "@/lib/models/user";
-import { ILocalUser } from "@/lib/redux/authSlice";
-
+import React, { memo } from'react';
+import { Button } from'@/components/ui/button';
+import { ChevronRight, LogOut, Link2Icon } from'lucide-react';
+import { cn } from'@/lib/utils';
+import Link from'next/link';
+import { usePathname } from'next/navigation';
+import { ThemeToggle } from'@/components/ui/theme-toggle';
+import { NotificationButton } from'@/components/ui/notifications';
+import OnboardingSidebar from'@/components/onboarding/OnboardingSidebar';
+import SidebarLogo from'./SidebarLogo';
+import type { IUser } from'@/lib/models/user';
+import { ILocalUser } from'@/lib/redux/authSlice';
 interface SidebarItem {
   title: string;
   href: string;
@@ -73,11 +72,11 @@ const SidebarContent = memo(
     const pathname = usePathname();
 
     const getUserInitials = (name?: string) => {
-      if (!name) return "U";
+      if (!name) return 'U';
       return name
-        .split(" ")
+        .split(' ')
         .map((word) => word.charAt(0))
-        .join("")
+        .join('')
         .toUpperCase()
         .slice(0, 2);
     };
@@ -86,10 +85,10 @@ const SidebarContent = memo(
       <div className="flex flex-col h-full">
         <div
           className={cn(
-            "flex items-center transition-all duration-200",
+            'flex items-center transition-all duration-200',
             isCollapsed
-              ? "h-16 justify-center px-2"
-              : "h-16 justify-between px-4"
+              ? 'h-16 justify-center px-2'
+              : 'h-16 justify-between px-4',
           )}
         >
           {isCollapsed ? (
@@ -129,45 +128,44 @@ const SidebarContent = memo(
           <div className="space-y-2">
             {sidebarItems.map((item) => {
               if (
-                (item.role === "admin" && userData?.role !== "admin") ||
-                (item.role === "hr" &&
-                  userData?.role !== "admin" &&
-                  userData?.role !== "hr") ||
-                (userData?.role === "interviewer" && item.title === "Jobs") ||
-                (userData?.role === "interviewer" && item.title === "Search") ||
-                (userData?.role === "interviewer" && item.title === "CV Upload")
+                (item.role === 'admin' && userData?.role !== 'admin')
+                || (item.role === 'hr'
+                  && userData?.role !== 'admin'
+                  && userData?.role !== 'hr')
+                || (userData?.role === 'interviewer' && item.title === 'Jobs')
+                || (userData?.role === 'interviewer' && item.title === 'Search')
+                || (userData?.role === 'interviewer' && item.title === 'CV Upload')
               ) {
                 return null;
               }
-              const isActive =
-                (item.title === "Settings" &&
-                  pathname.startsWith("/dashboard/settings")) ||
-                (item.title === "Analytics" &&
-                  pathname.startsWith("/dashboard/analytics")) ||
-                (item.title === "Email History" &&
-                  pathname.startsWith("/dashboard/email-history")) ||
-                pathname === item.href;
+              const isActive = (item.title === 'Settings'
+                  && pathname.startsWith('/dashboard/settings'))
+                || (item.title === 'Analytics'
+                  && pathname.startsWith('/dashboard/analytics'))
+                || (item.title === 'Email History'
+                  && pathname.startsWith('/dashboard/email-history'))
+                || pathname === item.href;
 
               return (
                 <Link key={item.href} href={item.href}>
                   <span
                     className={cn(
-                      "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                      isActive && "portal-nav-active",
-                      isCollapsed ? "justify-center" : "justify-start"
+                      'w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent',
+                      isActive && 'portal-nav-active',
+                      isCollapsed ? 'justify-center' : 'justify-start',
                     )}
                     style={
                       isActive
                         ? {
-                            backgroundColor: `rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)`,
-                            color: `var(--portal-primary, #6366f1)`,
-                            borderLeft: `3px solid var(--portal-primary, #6366f1)`,
-                          }
+                          backgroundColor: 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                          color: 'var(--portal-primary, #6366f1)',
+                          borderLeft: '3px solid var(--portal-primary, #6366f1)',
+                        }
                         : {}
                     }
                   >
                     {item.icon}
-                    <span className={cn("", isCollapsed && "hidden")}>
+                    <span className={cn('', isCollapsed && 'hidden')}>
                       {item.title}
                     </span>
                   </span>
@@ -177,7 +175,7 @@ const SidebarContent = memo(
           </div>
 
           {/* Onboarding Widget - only show for admin users */}
-          {userData?.role === "admin" && (
+          {userData?.role === 'admin' && (
             <OnboardingSidebar isCollapsed={isCollapsed} />
           )}
         </div>
@@ -185,8 +183,8 @@ const SidebarContent = memo(
           {/* Notifications and Theme Toggle */}
           <div
             className={cn(
-              "flex justify-start items-center gap-2 mb-2",
-              isCollapsed ? "flex-col" : "flex-row"
+              'flex justify-start items-center gap-2 mb-2',
+              isCollapsed ? 'flex-col' : 'flex-row',
             )}
           >
             {userData && (
@@ -220,13 +218,13 @@ const SidebarContent = memo(
           <div className="mt-auto space-y-2">
             <div
               className={cn(
-                "flex items-center gap-3 bg-card rounded-lg p-2 transition-all border border-border",
-                isCollapsed ? "flex-col justify-center" : "justify-start"
+                'flex items-center gap-3 bg-card rounded-lg p-2 transition-all border border-border',
+                isCollapsed ? 'flex-col justify-center' : 'justify-start',
               )}
             >
               <div className="flex-shrink-0">
                 <div
-                  className={`flex items-center justify-center bg-muted text-muted-foreground font-semibold h-8 w-8 rounded-full ${isCollapsed ? "aspect-ratio-square h-6 w-6" : "ring-2 ring-border"}`}
+                  className={`flex items-center justify-center bg-muted text-muted-foreground font-semibold h-8 w-8 rounded-full ${isCollapsed ? 'aspect-ratio-square h-6 w-6' : 'ring-2 ring-border'}`}
                 >
                   {getUserInitials(userData?.name)}
                 </div>
@@ -244,7 +242,7 @@ const SidebarContent = memo(
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-8 w-8 rounded-full ${isCollapsed ? "ml-0" : "ml-auto"}`}
+                className={`h-8 w-8 rounded-full ${isCollapsed ? 'ml-0' : 'ml-auto'}`}
                 onClick={onGenerateShareOrg}
                 title="Copy Portal URL"
               >
@@ -256,52 +254,50 @@ const SidebarContent = memo(
           <Button
             variant="ghost"
             className={cn(
-              "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-destructive hover:bg-destructive/10 text-destructive",
-              isCollapsed ? "justify-center" : "justify-start"
+              'w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:text-destructive hover:bg-destructive/10 text-destructive',
+              isCollapsed ? 'justify-center' : 'justify-start',
             )}
             onClick={onLogout}
           >
             <LogOut className="h-5 w-5" />
-            <span className={cn("", isCollapsed && "hidden")}>Logout</span>
+            <span className={cn('', isCollapsed && 'hidden')}>Logout</span>
           </Button>
         </div>
       </div>
     );
   },
   // Custom comparison - only re-render when these change
-  (prevProps, nextProps) => {
-    return (
-      prevProps.isCollapsed === nextProps.isCollapsed &&
-      prevProps.userData?.role === nextProps.userData?.role &&
-      prevProps.userData?.name === nextProps.userData?.name &&
-      prevProps.userData?.email === nextProps.userData?.email &&
-      prevProps.portalConfigData?.portalLogo?.url ===
-        nextProps.portalConfigData?.portalLogo?.url &&
-      prevProps.portalConfigData?.portalLogoDark?.url ===
-        nextProps.portalConfigData?.portalLogoDark?.url &&
-      prevProps.portalConfigData?.portalName ===
-        nextProps.portalConfigData?.portalName &&
-      prevProps.isLoading === nextProps.isLoading &&
-      prevProps.theme === nextProps.theme &&
-      prevProps.notificationCountData?.unreadCount ===
-        nextProps.notificationCountData?.unreadCount &&
-      prevProps.notificationCountData?.totalCount ===
-        nextProps.notificationCountData?.totalCount &&
-      prevProps.isNotificationDropdownOpen ===
-        nextProps.isNotificationDropdownOpen &&
-      prevProps.totalCount === nextProps.totalCount &&
-      prevProps.unreadCount === nextProps.unreadCount &&
-      prevProps.onMarkAllAsRead === nextProps.onMarkAllAsRead &&
-      prevProps.onMarkAsRead === nextProps.onMarkAsRead &&
-      prevProps.onNotificationClick === nextProps.onNotificationClick &&
-      prevProps.onPageChange === nextProps.onPageChange &&
-      prevProps.onLogout === nextProps.onLogout
+  (prevProps, nextProps) => (
+    prevProps.isCollapsed === nextProps.isCollapsed
+      && prevProps.userData?.role === nextProps.userData?.role
+      && prevProps.userData?.name === nextProps.userData?.name
+      && prevProps.userData?.email === nextProps.userData?.email
+      && prevProps.portalConfigData?.portalLogo?.url
+        === nextProps.portalConfigData?.portalLogo?.url
+      && prevProps.portalConfigData?.portalLogoDark?.url
+        === nextProps.portalConfigData?.portalLogoDark?.url
+      && prevProps.portalConfigData?.portalName
+        === nextProps.portalConfigData?.portalName
+      && prevProps.isLoading === nextProps.isLoading
+      && prevProps.theme === nextProps.theme
+      && prevProps.notificationCountData?.unreadCount
+        === nextProps.notificationCountData?.unreadCount
+      && prevProps.notificationCountData?.totalCount
+        === nextProps.notificationCountData?.totalCount
+      && prevProps.isNotificationDropdownOpen
+        === nextProps.isNotificationDropdownOpen
+      && prevProps.totalCount === nextProps.totalCount
+      && prevProps.unreadCount === nextProps.unreadCount
+      && prevProps.onMarkAllAsRead === nextProps.onMarkAllAsRead
+      && prevProps.onMarkAsRead === nextProps.onMarkAsRead
+      && prevProps.onNotificationClick === nextProps.onNotificationClick
+      && prevProps.onPageChange === nextProps.onPageChange
+      && prevProps.onLogout === nextProps.onLogout
       // Note: We intentionally ignore notificationsData changes when dropdown is closed
       // to prevent re-renders during polling
-    );
-  }
+  ),
 );
 
-SidebarContent.displayName = "SidebarContent";
+SidebarContent.displayName = 'SidebarContent';
 
 export default SidebarContent;

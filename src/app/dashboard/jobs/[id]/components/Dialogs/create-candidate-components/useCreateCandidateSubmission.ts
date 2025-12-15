@@ -1,20 +1,20 @@
 /**
  * Custom hook for handling candidate creation submission logic
  */
-
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import {
   useApplicationEventMailMutation,
   useCreateCandidateMutation,
   useEvaluateCandidateMutation,
   useUpdateAppliedApplicationMutation,
   useUpdateCandidateHistoryMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { v4 as uuidv4 } from "uuid";
-import { ICandidateHistory } from "@/lib/models/history";
-import { Resume } from "@/lib/redux/types";
-import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
+} from '@/lib/features/candidate/candidateApi';
+import { v4 as uuidv4 } from 'uuid';
+import { ICandidateHistory } from '@/lib/models/history';
+import { Resume } from '@/lib/redux/types';
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
+import logger from '@/lib/logger';
 
 interface CandidateFormValues {
   name: string;
@@ -47,19 +47,18 @@ interface UseCreateCandidateSubmissionProps {
 }
 
 // Helper function to convert file to base64
-const convertFileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const convertFileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
-};
 
 // Helper function to evaluate candidate
 async function evaluateCandidate(
   candidateId: string,
-  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0]
+  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0],
 ) {
   try {
     const result = await evaluateCandidateMutation({ candidateId }).unwrap();
@@ -74,7 +73,7 @@ async function sendAppliedEventMail(
   candidateId: string,
   applicationEventMailMutation: ReturnType<
     typeof useApplicationEventMailMutation
-  >[0]
+  >[0],
 ) {
   try {
     const resp = await applicationEventMailMutation({ candidateId }).unwrap();
@@ -104,7 +103,6 @@ export function useCreateCandidateSubmission({
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
 
   const submitCandidate = async (values: CandidateFormValues) => {
-    console.log("submitCandidate", isFormSubmitting, isCreating);
     // Prevent duplicate submissions
     if (isFormSubmitting || isCreating) {
       return;
@@ -115,10 +113,10 @@ export function useCreateCandidateSubmission({
 
     if (hasDuplicates) {
       toast({
-        title: "Alert",
+        title: 'Alert',
         description:
-          "Duplicate file names found! Please rename before submitting.",
-        variant: "destructive",
+          'Duplicate file names found! Please rename before submitting.',
+        variant: 'destructive',
       });
       return;
     }
@@ -126,17 +124,17 @@ export function useCreateCandidateSubmission({
     try {
       setIsFormSubmitting(true);
       const hasOnlySpaces = Object.entries(values).some((value) => {
-        if (typeof value[1] === "string") {
-          return value[1].length > 0 && value[1].trim() === "";
+        if (typeof value[1] === 'string') {
+          return value[1].length > 0 && value[1].trim() === '';
         }
         return false;
       });
 
       if (hasOnlySpaces) {
         toast({
-          title: "Validation Error",
-          description: "Fields cannot contain only spaces",
-          variant: "destructive",
+          title: 'Validation Error',
+          description: 'Fields cannot contain only spaces',
+          variant: 'destructive',
         });
         setIsFormSubmitting(false);
         return;
@@ -147,38 +145,38 @@ export function useCreateCandidateSubmission({
         : null;
 
       const attachmentsBase64 = await Promise.all(
-        values.attachments.map((file) => convertFileToBase64(file))
+        values.attachments.map((file) => convertFileToBase64(file)),
       );
 
       const candidateData = {
         ...values,
         jobId: {
           _id: jobId,
-          title: "",
-          description: "",
+          title: '',
+          description: '',
         },
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
         relevantExperience: Number(
-          parseFloat(String(values.relevantExperience)).toFixed(2)
+          parseFloat(String(values.relevantExperience)).toFixed(2),
         ),
         noticePeriod: Number(
-          parseFloat(String(values.noticePeriod)).toFixed(0)
+          parseFloat(String(values.noticePeriod)).toFixed(0),
         ),
         email: values.email || parsedResumeData?.profile?.email,
         ...(values.assignee && values.time
           ? {
-              assignee: values.assignee === "-1" ? "" : values.assignee,
+              assignee: values.assignee === '-1' ? '' : values.assignee,
               time: values.time,
             }
           : {}),
         resume: resumeBase64
           ? {
               id: uuidv4(),
-              name: values.resume?.name || "",
+              name: values.resume?.name || '',
               url: resumeBase64,
-              type: "pdf",
+              type: 'pdf',
               size: values.resume?.size || 0,
             }
           : undefined,
@@ -198,26 +196,26 @@ export function useCreateCandidateSubmission({
       const candidateId = createdCandidate._id;
 
       // Always attempt evaluation if resume is PDF
-      if (values.resume && values.resume.type === "application/pdf") {
+      if (values.resume && values.resume.type === 'application/pdf') {
         try {
           evaluateCandidate(candidateId, evaluateCandidateMutation);
         } catch (evalError) {
-          console.warn(
-            "AI evaluation failed or was skipped by server:",
-            evalError
+          logger.warn(
+            'AI evaluation failed or was skipped by server:',
+            evalError,
           );
         }
       }
 
       // Handle additional updates (if applicable)
-      if (user?.role === "candidate" || user?.role === "") {
+      if (user?.role === 'candidate' || user?.role === '') {
         try {
           await updateAppliedApplication({ id: jobId });
         } catch (error: unknown) {
           toast({
-            title: "Failed",
+            title: 'Failed',
             description: `${
-              error instanceof Error ? error.message : "Unknown Error Occurred"
+              error instanceof Error ? error.message : 'Unknown Error Occurred'
             }`,
           });
         }
@@ -225,22 +223,22 @@ export function useCreateCandidateSubmission({
 
       if (createdCandidate?.assignment?.interviewerId) {
         const newHistoryEntry: ICandidateHistory = {
-          dateTime: new Date().toISOString() || "",
+          dateTime: new Date().toISOString() || '',
           title:
-            typeof createdCandidate?.assignment?.interviewerId === "object" &&
+            typeof createdCandidate?.assignment?.interviewerId === 'object' &&
             createdCandidate?.assignment?.interviewerId?.name
               ? `Assigned to ${createdCandidate.assignment.interviewerId.name} : Assigned by ${user!.name}`
-              : "",
+              : '',
           currentInterviewer:
-            typeof createdCandidate?.assignment?.interviewerId === "object" &&
+            typeof createdCandidate?.assignment?.interviewerId === 'object' &&
             createdCandidate?.assignment?.interviewerId
               ? Object(createdCandidate.assignment.interviewerId._id)
               : null,
           previousInterviewer: null,
           assignmentBy: user && user.id,
           note: {
-            description: "",
-            date: "",
+            description: '',
+            date: '',
             rating: 0,
             userId: null,
           },
@@ -261,37 +259,37 @@ export function useCreateCandidateSubmission({
       }
 
       onSuccess();
-      if (user?.role === "candidate" || user?.role === "") {
+      if (user?.role === 'candidate' || user?.role === '') {
         sendAppliedEventMail(candidateId, applicationEventMailMutation);
       }
     } catch (error) {
-      console.error("Create candidate error:", error);
+      logger.error('Create candidate error:', error);
 
       let errorMessage =
-        "Failed to create candidate due to an unexpected error.";
+        'Failed to create candidate due to an unexpected error.';
 
-      if (typeof error === "object" && error !== null) {
-        if ("data" in error) {
+      if (typeof error === 'object' && error !== null) {
+        if ('data' in error) {
           const errorData = (error as { data?: any }).data;
           if (errorData?.error) {
             errorMessage = errorData.error;
           } else if (errorData?.message) {
             errorMessage = errorData.message;
-          } else if (typeof errorData === "string") {
+          } else if (typeof errorData === 'string') {
             errorMessage = errorData;
           }
         } else if (
-          "message" in error &&
-          typeof (error as any).message === "string"
+          'message' in error &&
+          typeof (error as any).message === 'string'
         ) {
           errorMessage = (error as any).message;
         }
       }
 
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsFormSubmitting(false);
@@ -306,6 +304,3 @@ export function useCreateCandidateSubmission({
     isLoading: isAdding || isEvaluating || isSendingEmail || isLoading,
   };
 }
-
-
-

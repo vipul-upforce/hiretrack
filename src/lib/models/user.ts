@@ -1,4 +1,4 @@
-import mongoose, { Schema, ObjectId, HydratedDocument, Model } from "mongoose";
+import mongoose, { Schema, ObjectId, HydratedDocument, Model } from 'mongoose';
 
 export interface OrgInfo {
   customFields?: any;
@@ -83,7 +83,7 @@ export interface IUser {
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
-  role: "admin" | "hr" | "interviewer" | "candidate" | "system";
+  role: 'admin' | 'hr' | 'interviewer' | 'candidate' | 'system';
   password: string;
   createdAt: Date;
   updatedAt: Date;
@@ -116,9 +116,9 @@ export const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     role: {
       type: String,
-      enum: ["hr", "interviewer", "admin"],
+      enum: ['hr', 'interviewer', 'admin'],
       required: true,
-      default: "hr",
+      default: 'hr',
     },
     password: {
       type: String,
@@ -126,7 +126,7 @@ export const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     organizationId: {
       type: Schema.Types.ObjectId,
-      ref: "Organization",
+      ref: 'Organization',
       required: false,
     },
     resetToken: {
@@ -217,7 +217,7 @@ export const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 export default userSchema;

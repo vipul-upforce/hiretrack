@@ -1,5 +1,5 @@
-import React from "react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AnalyticsLayout({
   children,

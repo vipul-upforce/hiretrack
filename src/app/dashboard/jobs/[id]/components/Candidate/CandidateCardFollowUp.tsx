@@ -3,11 +3,11 @@
  * Displays follow-up reminder with notes and actions
  */
 
-import { Bell, Edit, Trash2 } from "lucide-react";
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
-import { useFollowUpParsing } from "../../hooks/useFollowUpParsing";
+import { Bell, Edit, Trash2 } from 'lucide-react';
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
+import { useFollowUpParsing } from '../../hooks/useFollowUpParsing';
 
 interface CandidateCardFollowUpProps {
   candidate: Candidate;
@@ -36,7 +36,10 @@ export function CandidateCardFollowUp({
           <div className="flex-1 min-w-0">
             {candidate.followUp.date && (
               <div className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">
-                {formatDate(candidate.followUp.date)} at{" "}
+                {formatDate(candidate.followUp.date)}
+                {' '}
+                at
+                {' '}
                 {formatTime(candidate.followUp.date)}
               </div>
             )}
@@ -65,13 +68,14 @@ export function CandidateCardFollowUp({
             )}
             {candidate.followUp.userId && (
               <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                Created by:{" "}
+                Created by:
+                {' '}
                 <span className="font-bold">{candidate.followUp.userId.name}</span>
               </div>
             )}
           </div>
         </div>
-        {user?.role !== "candidate" && user?.role !== "interviewer" && (
+        {user?.role !== 'candidate' && user?.role !== 'interviewer' && (
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={(e) => {
@@ -97,4 +101,3 @@ export function CandidateCardFollowUp({
     </div>
   );
 }
-

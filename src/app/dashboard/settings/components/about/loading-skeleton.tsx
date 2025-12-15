@@ -1,8 +1,9 @@
-"use client";
-import { Skeleton } from "@/components/ui/skeleton";
-import React from "react";
+'use client';
 
-const AboutVersionLoadingSkeleton = () => {
+import { Skeleton } from '@/components/ui/skeleton';
+import React from 'react';
+
+function AboutVersionLoadingSkeleton() {
   return (
     <div className="px-6 py-4 space-y-6">
       <div className="mb-4 grid w-full h-10 grid-cols-2 self-center rounded-lg bg-muted p-1">
@@ -22,6 +23,6 @@ const AboutVersionLoadingSkeleton = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AboutVersionLoadingSkeleton;

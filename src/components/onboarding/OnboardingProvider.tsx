@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, {
   createContext,
@@ -6,9 +6,23 @@ import React, {
   useEffect,
   useState,
   ReactNode,
-} from "react";
-import { onboardingApi } from "@/lib/features/onboarding/onboardingApi";
-import { useSelector } from "react-redux";
+} from 'react';
+import { onboardingApi } from '@/lib/features/onboarding/onboardingApi';
+import { useSelector } from 'react-redux';
+
+import {
+  Globe,
+  Bot,
+  Mail,
+  Calendar,
+  Clock,
+  HardDrive,
+  Users,
+  Palette,
+  ShieldCheck,
+} from 'lucide-react';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 export interface OnboardingStep {
   id: string;
@@ -67,15 +81,97 @@ interface OnboardingContextType {
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(
-  undefined
+  undefined,
 );
 interface OnboardingProviderProps {
   children: ReactNode;
 }
 
-export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
-  children,
-}) => {
+const getDefaultSteps = (): OnboardingStep[] => [
+  {
+    id: 'portal',
+    title: 'Portal Configuration',
+    description: 'Customize your portal branding and appearance',
+    icon: Globe,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'captcha',
+    title: 'Captcha Verification',
+    description: 'Enable captcha for verifying user interactions',
+    icon: ShieldCheck,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'aiProviders',
+    title: 'AI Providers',
+    description: 'Configure AI providers for resume processing',
+    icon: Bot,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'email',
+    title: 'Email Configuration',
+    description: 'Set up email delivery for notifications',
+    icon: Mail,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'calendar',
+    title: 'Google Calendar',
+    description: 'Connect Google Calendar for interview scheduling',
+    icon: Calendar,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'timezone',
+    title: 'Timezone',
+    description: 'Set your organization timezone',
+    icon: Clock,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'storage',
+    title: 'File Storage',
+    description: 'Configure cloud storage for files',
+    icon: HardDrive,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'users',
+    title: 'Add Users',
+    description: 'Invite team members to your organization',
+    icon: Users,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+  {
+    id: 'customFields',
+    title: 'Custom Fields',
+    description: 'Create custom form fields for jobs and candidates',
+    icon: Palette,
+    isCompleted: false,
+    isSkipped: false,
+    isRequired: false,
+  },
+];
+
+export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -85,30 +181,27 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
 
-  // Initialize onboarding data
-  useEffect(() => {
-    if (user?.role === "admin") {
-      fetchOnboardingData();
-    } else {
-      setIsLoading(false);
+  const refreshProgress = async (status: OnboardingStatus | null) => {
+    try {
+      const data = await onboardingApi.validate();
+      if (!data) return;
+
+      setProgress(data.progress);
+
+      // SAFELY MAP STEPS
+      const updatedSteps = getDefaultSteps().map((step) => ({
+        ...step,
+        isCompleted: data.stepStatus[step.id] || false,
+        isSkipped: status?.skippedSteps.includes(step.id) || false,
+      }));
+
+      setSteps(updatedSteps);
+    } catch (error) {
+      logger.error('Error refreshing progress:', error);
     }
-  }, [user]);
-
-  useEffect(() => {
-    if (!isLoading && onboardingStatus && user?.role === "admin") {
-      const shouldShow =
-        !onboardingStatus.isCompleted &&
-        !onboardingStatus.doNotShowAgain &&
-        (progress?.percentage || 0) < 50 &&
-        onboardingStatus.currentStep === 0;
-
-      if (shouldShow) {
-        setTimeout(() => setIsOpen(true), 1000);
-      }
-    }
-  }, [isLoading, onboardingStatus, progress, user?.role]);
+  };
 
   const fetchOnboardingData = async () => {
     try {
@@ -124,36 +217,36 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
         await refreshProgress(status);
       }
     } catch (error) {
-      console.error("Error loading onboarding:", error);
+      logger.error('Error loading onboarding:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const refreshProgress = async (status: OnboardingStatus | null) => {
-    try {
-      const data = await onboardingApi.validate();
-      if (!data) return;
-
-      setProgress(data.progress);
-      console.log(data.progress, "data.progress");
-
-      // SAFELY MAP STEPS
-      const updatedSteps = getDefaultSteps().map((step) => ({
-        ...step,
-        isCompleted: data.stepStatus[step.id] || false,
-        isSkipped: status?.skippedSteps.includes(step.id) || false,
-      }));
-
-      setSteps(updatedSteps);
-    } catch (error) {
-      console.error("Error refreshing progress:", error);
+  // Initialize onboarding data
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchOnboardingData();
+    } else {
+      setIsLoading(false);
     }
-  };
+  }, [user]);
 
-  const updateOnboardingStatus = async (
-    updates: Partial<OnboardingStatus>
-  ) => {
+  useEffect(() => {
+    if (!isLoading && onboardingStatus && user?.role === 'admin') {
+      const shouldShow =
+        !onboardingStatus.isCompleted &&
+        !onboardingStatus.doNotShowAgain &&
+        (progress?.percentage || 0) < 50 &&
+        onboardingStatus.currentStep === 0;
+
+      if (shouldShow) {
+        setTimeout(() => setIsOpen(true), 1000);
+      }
+    }
+  }, [isLoading, onboardingStatus, progress, user?.role]);
+
+  const updateOnboardingStatus = async (updates: Partial<OnboardingStatus>) => {
     try {
       const updatedStatus = await onboardingApi.updateStatus(updates);
       if (!updatedStatus) return;
@@ -163,7 +256,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       // REFRESH WITH NEWEST STATUS
       await refreshProgress(updatedStatus);
     } catch (error) {
-      console.error("Error updating status:", error);
+      logger.error('Error updating status:', error);
     }
   };
 
@@ -173,7 +266,7 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     const updated = {
       ...onboardingStatus,
       completedSteps: Array.from(
-        new Set([...onboardingStatus.completedSteps, stepId])
+        new Set([...onboardingStatus.completedSteps, stepId]),
       ),
       skippedSteps: onboardingStatus.skippedSteps.filter((x) => x !== stepId),
     };
@@ -187,19 +280,18 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
     const updated = {
       ...onboardingStatus,
       skippedSteps: Array.from(
-        new Set([...onboardingStatus.skippedSteps, stepId])
+        new Set([...onboardingStatus.skippedSteps, stepId]),
       ),
       completedSteps: onboardingStatus.completedSteps.filter(
-        (x) => x !== stepId
+        (x) => x !== stepId,
       ),
     };
 
     await updateOnboardingStatus(updated);
   };
 
-  const validateStep = async (stepId: string): Promise<boolean> => {
-    return await onboardingApi.validateStep(stepId);
-  };
+  const validateStep = async (stepId: string): Promise<boolean> =>
+    await onboardingApi.validateStep(stepId);
 
   const doNotShowAgain = async () => {
     await updateOnboardingStatus({ doNotShowAgain: true });
@@ -228,106 +320,10 @@ export const OnboardingProvider: React.FC<OnboardingProviderProps> = ({
       {children}
     </OnboardingContext.Provider>
   );
-};
+}
 
 export const useOnboarding = () => {
   const ctx = useContext(OnboardingContext);
-  if (!ctx) throw new Error("useOnboarding must be used within provider");
+  if (!ctx) throw new Error('useOnboarding must be used within provider');
   return ctx;
 };
-
-import {
-  Globe,
-  Bot,
-  Mail,
-  Calendar,
-  Clock,
-  HardDrive,
-  Users,
-  Palette,
-  ShieldCheck,
-} from "lucide-react";
-
-const getDefaultSteps = (): OnboardingStep[] => [
-  {
-    id: "portal",
-    title: "Portal Configuration",
-    description: "Customize your portal branding and appearance",
-    icon: Globe,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "captcha",
-    title: "Captcha Verification",
-    description: "Enable captcha for verifying user interactions",
-    icon: ShieldCheck,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "aiProviders",
-    title: "AI Providers",
-    description: "Configure AI providers for resume processing",
-    icon: Bot,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "email",
-    title: "Email Configuration",
-    description: "Set up email delivery for notifications",
-    icon: Mail,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "calendar",
-    title: "Google Calendar",
-    description: "Connect Google Calendar for interview scheduling",
-    icon: Calendar,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "timezone",
-    title: "Timezone",
-    description: "Set your organization timezone",
-    icon: Clock,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "storage",
-    title: "File Storage",
-    description: "Configure cloud storage for files",
-    icon: HardDrive,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "users",
-    title: "Add Users",
-    description: "Invite team members to your organization",
-    icon: Users,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: "customFields",
-    title: "Custom Fields",
-    description: "Create custom form fields for jobs and candidates",
-    icon: Palette,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-];

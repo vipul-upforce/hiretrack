@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings, Candidate, History } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { createOAuth2Client } from "@/lib/google-calendar/config";
-import { decryptText } from "@/lib/encryption";
-import { google } from "googleapis";
-import { NotificationService } from "@/lib/notifications/notificationService";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings, Candidate, History } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { createOAuth2Client } from '@/lib/google-calendar/config';
+import { decryptText } from '@/lib/encryption';
+import { google } from 'googleapis';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
 
 interface UpdateMeetRequest {
   candidateId?: string;
@@ -18,58 +19,56 @@ export async function PUT(req: NextRequest) {
   try {
     // Optimize: Parallelize authentication, database connection, and request parsing
     const [userData, , body] = await Promise.all([
-      getAuthenticatedUser(req, ["admin", "hr", "interviewer"]),
+      getAuthenticatedUser(req, ['admin', 'hr', 'interviewer']),
       connectToDatabase(),
       req.json(),
     ]);
 
     if (!userData) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const organizationId = userData.organizationId;
+    const { organizationId } = userData;
     const orgId = userData.organizationId;
-    const { candidateId, eventId, scheduledTime, duration, guests } = body as UpdateMeetRequest;
+    const { candidateId, eventId, scheduledTime, duration, guests } =
+      body as UpdateMeetRequest;
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings model not available" },
-        { status: 500 }
+        { error: 'Settings model not available' },
+        { status: 500 },
       );
     }
 
     // Optimize: Fetch only needed fields from Settings
     const settings = await Settings.findOne({ organizationId })
-      .select("googleCalendar timeZone.name")
+      .select('googleCalendar timeZone.name')
       .lean()
       .exec();
 
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
-        { error: "Google Calendar is not connected" },
-        { status: 400 }
+        { error: 'Google Calendar is not connected' },
+        { status: 400 },
       );
     }
 
     // Decrypt credentials
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      orgId
+      orgId,
     );
     const accessToken = decryptText(settings.googleCalendar.accessToken, orgId);
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
-      orgId
+      orgId,
     );
 
     // Create OAuth2 client
     const oauth2Client = createOAuth2Client({
       clientId: settings.googleCalendar.clientId,
-      clientSecret: clientSecret,
-      redirectUri: "",
+      clientSecret,
+      redirectUri: '',
     });
 
     // Set credentials
@@ -80,16 +79,16 @@ export async function PUT(req: NextRequest) {
     });
 
     // Create calendar instance
-    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     // Get existing event
     const existingEvent = await calendar.events.get({
-      calendarId: "primary",
-      eventId: eventId,
+      calendarId: 'primary',
+      eventId,
     });
 
     if (!existingEvent.data) {
-      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
     // Prepare update data
     const updateData: {
@@ -103,18 +102,18 @@ export async function PUT(req: NextRequest) {
       const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
 
       // Get organization timezone from settings
-      let organizationTimezone = settings.timeZone?.name || "Asia/Kolkata";
+      let organizationTimezone = settings.timeZone?.name || 'Asia/Kolkata';
 
       // Map common timezone names to Google Calendar format
       const timezoneMap: { [key: string]: string } = {
-        "Asia/Kolkata": "Asia/Kolkata",
-        "America/New_York": "America/New_York",
-        "America/Los_Angeles": "America/Los_Angeles",
-        "Europe/London": "Europe/London",
-        "GMT+05:30": "Asia/Kolkata",
-        "GMT+00:00": "UTC",
-        "GMT-05:00": "America/New_York",
-        "GMT-08:00": "America/Los_Angeles",
+        'Asia/Kolkata': 'Asia/Kolkata',
+        'America/New_York': 'America/New_York',
+        'America/Los_Angeles': 'America/Los_Angeles',
+        'Europe/London': 'Europe/London',
+        'GMT+05:30': 'Asia/Kolkata',
+        'GMT+00:00': 'UTC',
+        'GMT-05:00': 'America/New_York',
+        'GMT-08:00': 'America/Los_Angeles',
       };
 
       organizationTimezone =
@@ -136,10 +135,10 @@ export async function PUT(req: NextRequest) {
 
     // Update the event
     const response = await calendar.events.patch({
-      calendarId: "primary",
-      eventId: eventId,
+      calendarId: 'primary',
+      eventId,
       requestBody: updateData,
-      sendUpdates: "all",
+      sendUpdates: 'all',
     });
 
     // Extract updated event details for response
@@ -151,8 +150,8 @@ export async function PUT(req: NextRequest) {
     const attendees =
       updatedEvent.attendees?.map((att) => ({
         email: att.email,
-        name: att.displayName || att.email?.split("@")[0] || att.email,
-        responseStatus: att.responseStatus || "needsAction",
+        name: att.displayName || att.email?.split('@')[0] || att.email,
+        responseStatus: att.responseStatus || 'needsAction',
         lastUpdated: new Date(),
         notificationSent: false,
       })) || [];
@@ -162,18 +161,18 @@ export async function PUT(req: NextRequest) {
       try {
         const updateFields: Record<string, unknown> = {};
         if (updatedEvent.hangoutLink) {
-          updateFields["assignment.googleMeet.meetingLink"] =
+          updateFields['assignment.googleMeet.meetingLink'] =
             updatedEvent.hangoutLink;
         }
         if (updatedEvent.htmlLink) {
-          updateFields["assignment.googleMeet.htmlLink"] =
+          updateFields['assignment.googleMeet.htmlLink'] =
             updatedEvent.htmlLink;
         }
         // Update summary, description, and attendeeResponses if changed
-        updateFields["assignment.googleMeet.summary"] = summary;
-        updateFields["assignment.googleMeet.description"] = description;
-        updateFields["assignment.googleMeet.attendeeResponses"] = attendees;
-        updateFields["assignment.googleMeet.lastSyncedAt"] = new Date();
+        updateFields['assignment.googleMeet.summary'] = summary;
+        updateFields['assignment.googleMeet.description'] = description;
+        updateFields['assignment.googleMeet.attendeeResponses'] = attendees;
+        updateFields['assignment.googleMeet.lastSyncedAt'] = new Date();
 
         if (Object.keys(updateFields).length > 0) {
           await Candidate.findByIdAndUpdate(candidateId, {
@@ -181,7 +180,10 @@ export async function PUT(req: NextRequest) {
           });
         }
       } catch (error) {
-        console.error("Failed to update candidate record:", error);
+        logger.error(
+          { error, url: req.url },
+          'Failed to update candidate record with new meeting details',
+        );
       }
     }
 
@@ -193,24 +195,24 @@ export async function PUT(req: NextRequest) {
       summary,
       description,
       attendees,
-      message: "Google Meet updated successfully",
+      message: 'Google Meet updated successfully',
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("invalid_grant")) {
+    if (error instanceof Error && error.message.includes('invalid_grant')) {
       return NextResponse.json(
         {
-          error: "Google Calendar token expired. Please reconnect in settings.",
+          error: 'Google Calendar token expired. Please reconnect in settings.',
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to update meeting",
+          error instanceof Error ? error.message : 'Failed to update meeting',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -218,63 +220,66 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const [userData] = await Promise.all([
-      getAuthenticatedUser(req, ["admin", "hr", "interviewer"]),
+      getAuthenticatedUser(req, ['admin', 'hr', 'interviewer']),
       connectToDatabase(),
     ]);
     if (!userData) {
       return NextResponse.json(
-        { message: "Unauthorised Access" },
-        { status: 401 }
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
     }
-    const organizationId = userData.organizationId;
+    const { organizationId } = userData;
     const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get("eventId");
-    const candidateId = searchParams.get("candidateId");
-    const cancelNotes = searchParams.get("cancelNotes") || "";
+    const eventId = searchParams.get('eventId');
+    const candidateId = searchParams.get('candidateId');
+    const cancelNotes = searchParams.get('cancelNotes') || '';
 
     if (!eventId) {
       return NextResponse.json(
-        { error: "Event ID is required" },
-        { status: 400 }
+        { error: 'Event ID is required' },
+        { status: 400 },
       );
     }
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings model not available" },
-        { status: 500 }
+        { error: 'Settings model not available' },
+        { status: 500 },
       );
     }
 
     // Optimize: Fetch only needed fields from Settings
     const settings = await Settings.findOne({ organizationId })
-      .select("googleCalendar timeZone.name")
+      .select('googleCalendar timeZone.name')
       .lean()
       .exec();
 
     if (!settings?.googleCalendar?.isConnected) {
       return NextResponse.json(
-        { error: "Google Calendar is not connected" },
-        { status: 400 }
+        { error: 'Google Calendar is not connected' },
+        { status: 400 },
       );
     }
 
     // Decrypt credentials
     const clientSecret = decryptText(
       settings.googleCalendar.clientSecret,
-      organizationId 
+      organizationId,
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
+    const accessToken = decryptText(
+      settings.googleCalendar.accessToken,
+      organizationId,
+    );
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
-      organizationId
+      organizationId,
     );
 
     // Create OAuth2 client
     const oauth2Client = createOAuth2Client({
       clientId: settings.googleCalendar.clientId,
-      clientSecret: clientSecret,
-      redirectUri: "",
+      clientSecret,
+      redirectUri: '',
     });
 
     // Set credentials
@@ -285,52 +290,56 @@ export async function DELETE(req: NextRequest) {
     });
 
     // Create calendar instance
-    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
     // Optimize: Cancel event and clear candidate data in parallel where possible
     const cancelEventPromise = cancelNotes.trim()
       ? (async () => {
           try {
             const existingEvent = await calendar.events.get({
-              calendarId: "primary",
-              eventId: eventId,
+              calendarId: 'primary',
+              eventId,
             });
 
-            const updatedDescription = `${existingEvent.data.description || ""}\n\n--- MEETING CANCELLED ---\nReason: ${cancelNotes}\nCancelled on: ${new Date().toISOString()}`;
+            const updatedDescription = `${existingEvent.data.description || ''}\n\n--- MEETING CANCELLED ---\nReason: ${cancelNotes}\nCancelled on: ${new Date().toISOString()}`;
 
             await calendar.events.patch({
-              calendarId: "primary",
-              eventId: eventId,
+              calendarId: 'primary',
+              eventId,
               requestBody: {
                 description: updatedDescription,
-                status: "cancelled",
+                status: 'cancelled',
               },
-              sendUpdates: "all",
+              sendUpdates: 'all',
             });
           } catch (error) {
-            console.error("Failed to cancel event:", error);
+            logger.error({ error, url: req.url }, 'Failed to cancel event');
           }
         })()
       : calendar.events.patch({
-          calendarId: "primary",
-          eventId: eventId,
+          calendarId: 'primary',
+          eventId,
           requestBody: {
-            status: "cancelled",
+            status: 'cancelled',
           },
-          sendUpdates: "all",
+          sendUpdates: 'all',
         });
 
     // Clear Google Meet data from candidate record (can run in parallel with event cancellation)
-    const clearCandidatePromise = candidateId && Candidate
-      ? Candidate.findByIdAndUpdate(candidateId, {
-          $unset: { "assignment.googleMeet": "" },
-        })
-          .lean()
-          .exec()
-          .catch((error) => {
-            console.error("Failed to clear candidate record:", error);
+    const clearCandidatePromise =
+      candidateId && Candidate
+        ? Candidate.findByIdAndUpdate(candidateId, {
+            $unset: { 'assignment.googleMeet': '' },
           })
-      : Promise.resolve(null);
+            .lean()
+            .exec()
+            .catch((error) => {
+              logger.error(
+                { error, url: req.url },
+                'Failed to clear candidate record',
+              );
+            })
+        : Promise.resolve(null);
 
     // Wait for both operations
     await Promise.all([cancelEventPromise, clearCandidatePromise]);
@@ -338,63 +347,66 @@ export async function DELETE(req: NextRequest) {
     // Fetch candidate for notification (only if needed)
     if (candidateId) {
       // Optimize: Fetch only needed fields with optimized populate
-      const candidate = await Candidate.findById(candidateId)
-        .select("_id name jobId assignment.interviewerId")
+      const candidate = await Candidate?.findById(candidateId)
+        .select('_id name jobId assignment.interviewerId')
         .populate({
-          path: "jobId",
-          select: "_id title",
+          path: 'jobId',
+          select: '_id title',
         })
         .populate({
-          path: "assignment.interviewerId",
-          select: "_id name",
+          path: 'assignment.interviewerId',
+          select: '_id name',
         })
         .lean();
 
       if (candidate) {
         const jobId =
           candidate.jobId &&
-          typeof candidate.jobId !== "string" &&
-          "_id" in candidate.jobId
+          typeof candidate.jobId !== 'string' &&
+          '_id' in candidate.jobId
             ? candidate.jobId._id.toString()
             : candidate.jobId
               ? candidate.jobId.toString()
-              : "";
+              : '';
 
         const jobTitle =
           candidate.jobId &&
-          typeof candidate.jobId !== "string" &&
-          "title" in candidate.jobId
+          typeof candidate.jobId !== 'string' &&
+          'title' in candidate.jobId
             ? candidate.jobId.title
-            : "Unknown Job";
+            : 'Unknown Job';
 
         if (History) {
           try {
             const historyEntry = {
               dateTime: new Date().toISOString(),
-              title: "Google Meet Cancelled",
+              title: 'Google Meet Cancelled',
               assignmentBy: userData?.id,
-              previousInterviewer: candidate.assignment.interviewerId,
-              currentInterviewer: candidate.assignment.interviewerId,
+              previousInterviewer: candidate?.assignment?.interviewerId,
+              currentInterviewer: candidate?.assignment?.interviewerId,
               note: {
                 userId: userData?.id,
                 description: cancelNotes
                   ? `Google Meet Cancelled. Reason: ${cancelNotes}`
-                  : "Google Meet Cancelled.",
+                  : 'Google Meet Cancelled.',
               },
             };
 
             await History.findOneAndUpdate(
               {
                 candidateId: candidate._id,
-                jobId: jobId,
+                jobId,
               },
               {
                 $push: { history: historyEntry },
               },
-              { upsert: true, new: true }
+              { upsert: true, new: true },
             );
           } catch (historyError) {
-            console.error("Failed to save cancellation history:", historyError);
+            logger.error(
+              { error: historyError, url: req.url },
+              'Failed to save cancellation history',
+            );
           }
         }
 
@@ -406,40 +418,40 @@ export async function DELETE(req: NextRequest) {
           jobTitle,
           interviewerId:
             candidate.assignment?.interviewerId &&
-            typeof candidate.assignment.interviewerId !== "string"
-              ? candidate.assignment.interviewerId._id.toString()
-              : "",
+            typeof candidate.assignment.interviewerId !== 'string'
+              ? candidate.assignment.interviewerId._id?.toString()!
+              : '',
           interviewerName:
             candidate.assignment?.interviewerId &&
-            typeof candidate.assignment.interviewerId !== "string"
-              ? candidate.assignment.interviewerId.name
-              : "Interviewer",
-          triggerUserId: userData?.id || "",
-          triggerUserName: userData?.name || "System",
+            typeof candidate.assignment.interviewerId !== 'string'
+              ? candidate.assignment.interviewerId.name!
+              : 'Interviewer',
+          triggerUserId: userData?.id || '',
+          triggerUserName: userData?.name || 'System',
         });
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: "Google Meet cancelled successfully",
+      message: 'Google Meet cancelled successfully',
     });
   } catch (error) {
-    if (error instanceof Error && error.message.includes("invalid_grant")) {
+    if (error instanceof Error && error.message.includes('invalid_grant')) {
       return NextResponse.json(
         {
-          error: "Google Calendar token expired. Please reconnect in settings.",
+          error: 'Google Calendar token expired. Please reconnect in settings.',
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Failed to cancel meeting",
+          error instanceof Error ? error.message : 'Failed to cancel meeting',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

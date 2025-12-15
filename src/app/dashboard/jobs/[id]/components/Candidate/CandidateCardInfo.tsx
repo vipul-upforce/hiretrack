@@ -3,8 +3,10 @@
  * Displays key information: experience, location, CTC, notice period, contact, email
  */
 
-import { Clock, MapPin, Calendar, Phone, Mail, Copy } from "lucide-react";
-import { Candidate } from "@/types/candidate";
+import {
+  Clock, MapPin, Calendar, Phone, Mail, Copy,
+} from 'lucide-react';
+import { Candidate } from '@/types/candidate';
 
 interface CandidateCardInfoProps {
   candidate: Candidate;
@@ -24,7 +26,9 @@ export function CandidateCardInfo({
             Experience
           </span>
           <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-            {candidate.experience} years
+            {candidate.experience}
+            {' '}
+            years
           </span>
         </div>
       </div>
@@ -46,7 +50,9 @@ export function CandidateCardInfo({
             Expected CTC
           </span>
           <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-            {candidate.expectedCTC} LPA
+            {candidate.expectedCTC}
+            {' '}
+            LPA
           </span>
         </div>
       </div>
@@ -57,7 +63,7 @@ export function CandidateCardInfo({
             Notice Period
           </span>
           <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-            {candidate.noticePeriod ? `${candidate.noticePeriod} days` : "-"}
+            {candidate.noticePeriod ? `${candidate.noticePeriod} days` : '-'}
           </span>
         </div>
       </div>
@@ -70,7 +76,7 @@ export function CandidateCardInfo({
             Current CTC
           </span>
           <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
-            {candidate.currentCTC ? `${candidate.currentCTC} LPA` : "-"}
+            {candidate.currentCTC ? `${candidate.currentCTC} LPA` : '-'}
           </span>
         </div>
       </div>
@@ -82,13 +88,13 @@ export function CandidateCardInfo({
           </span>
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-gray-900 dark:text-gray-100 font-semibold truncate flex-1 min-w-0">
-              {candidate.contact || "N/A"}
+              {candidate.contact || 'N/A'}
             </span>
             {candidate.contact && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCopy(candidate.contact, "Contact number");
+                  onCopy(candidate.contact, 'Contact number');
                 }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
               >
@@ -112,7 +118,7 @@ export function CandidateCardInfo({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onCopy(candidate.email, "Email");
+                  onCopy(candidate.email, 'Email');
                 }}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
               >
@@ -125,4 +131,3 @@ export function CandidateCardInfo({
     </div>
   );
 }
-

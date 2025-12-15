@@ -186,9 +186,9 @@ async function handleRefreshToken(req: NextRequest) {
         delete orgInfo.customFields;
       }
     }
-
+    console.log("userPayload-189",userPayload)
     const newAccessToken = await signAccessToken(userPayload, orgId);
-
+    console.log("newAccessToken-191",newAccessToken)
     // STEP 6: Token rotation - Generate new refresh token (JWT)
     const newRefreshTokenPayload = {
       userId: userId,
@@ -221,7 +221,7 @@ async function handleRefreshToken(req: NextRequest) {
     });
 
     // Set new access token in httpOnly cookie
-    setSecureAuthTokens(response, newAccessToken, {
+    await setSecureAuthTokens(response, newAccessToken, {
       maxAge: 15 * 60, // 15 minutes in seconds
     });
 

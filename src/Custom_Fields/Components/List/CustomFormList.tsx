@@ -1,8 +1,8 @@
-import React, { useContext, useState } from "react";
-import { CustomFieldsContext } from "../../Context";
-import AddFormID from "../Form/AddFormID";
-import FormIDCard from "../Form/FormCard";
-import { FileText, AlertTriangle } from "lucide-react";
+import React, { useContext, useState } from 'react';
+import { FileText, AlertTriangle } from 'lucide-react';
+import { CustomFieldsContext } from '../../Context';
+import AddFormID from '../Form/AddFormID';
+import FormIDCard from '../Form/FormCard';
 
 function CustomFieldFormList() {
   const { customFields } = useContext(CustomFieldsContext);
@@ -26,7 +26,7 @@ function CustomFieldFormList() {
       <div className="flex flex-col py-4 pt-0 gap-4 sticky top-0">
         {Object.entries(customFields).map(([formId, form]) => {
           const fields = form.fields.filter(
-            (field) => !field.candidateId && !field.jobId
+            (field) => !field.candidateId && !field.jobId,
           );
           return (
             <FormIDCard
@@ -60,14 +60,14 @@ function CustomFieldFormList() {
                 <p className="font-medium mb-2">Important Notes</p>
                 <ul className="text-amber-700 dark:text-amber-300 space-y-1.5">
                   <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 mt-2 flex-shrink-0"></span>
+                    <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 mt-2 flex-shrink-0" />
                     <span>
                       Removing a field will still preserve saved data if any job
                       or candidate has data for that field
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 mt-2 flex-shrink-0"></span>
+                    <span className="w-1 h-1 rounded-full bg-amber-600 dark:bg-amber-400 mt-2 flex-shrink-0" />
                     <span>
                       For newly created fields, you'll need to manually add them
                       to existing jobs and candidates

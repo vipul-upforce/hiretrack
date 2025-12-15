@@ -1,5 +1,5 @@
-import { Candidate } from "@/types/candidate";
-import React, { Dispatch, SetStateAction } from "react";
+import { Candidate } from '@/types/candidate';
+import React, { Dispatch, SetStateAction } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,16 +8,16 @@ import {
   DialogTrigger,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
-import { MentionTextarea } from "@/components/ui/mention-textarea";
-import { Button } from "@/components/ui/button";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import dayjs, { Dayjs } from "dayjs";
-import { Loader2 } from "lucide-react";
-import { useSelector } from "react-redux";
+} from '@/components/ui/dialog';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Button } from '@/components/ui/button';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import dayjs, { Dayjs } from 'dayjs';
+import { Loader2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 // import { sentRemarkMail } from "@/lib/utils";
 
-const AddFollowUpDialog = ({
+function AddFollowUpDialog({
   candidate,
   isOpen,
   onOpenChange,
@@ -45,7 +45,7 @@ const AddFollowUpDialog = ({
   onAddingFollowup: () => void;
   handleRemoveFollowUp: () => void;
   isLoading: boolean;
-}) => {
+}) {
   const { user } = useSelector((state: any) => state.auth || {});
 
   //   const [newFollowUp, setNewFollowUP] = useState("");
@@ -54,11 +54,14 @@ const AddFollowUpDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
-        <div></div>
+        <div />
       </DialogTrigger>
       <DialogContent className="w-[700px] p-0  flex flex-col ">
         <DialogHeader className="px-6 py-4 pr-12">
-          <DialogTitle>Create A Followup for {candidate.name}</DialogTitle>
+          <DialogTitle>
+            Create A Followup for
+            {candidate.name}
+          </DialogTitle>
           <DialogDescription>
             Schedule a follow-up reminder for this candidate.
           </DialogDescription>
@@ -70,7 +73,7 @@ const AddFollowUpDialog = ({
             value={newFollowUp}
             onChange={setNewFollowUp}
             onKeyDown={(e) => {
-              if (e.altKey && e.key === "Enter") {
+              if (e.altKey && e.key === 'Enter') {
                 e.preventDefault();
                 if (newFollowUp.trim() && !isLoading) {
                   handleAddFollowUp();
@@ -78,8 +81,8 @@ const AddFollowUpDialog = ({
                 }
               }
             }}
-            organizationId={user?.organizationId || ""}
-            currentUserRole={user?.role || ""}
+            organizationId={user?.organizationId || ''}
+            currentUserRole={user?.role || ''}
             rows={4}
           />
           <div className="relative" style={{ zIndex: 100 }}>
@@ -128,21 +131,21 @@ const AddFollowUpDialog = ({
               }}
               variant="info"
               disabled={
-                isLoading ||
-                (!newFollowUp.trim() && !newFollowUpDate)
+                isLoading
+                || (!newFollowUp.trim() && !newFollowUpDate)
               }
-            
+
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {candidate?.followUp?.note || candidate?.followUp?.date
-                ? "Update Followup"
-                : "Create Followup"}
+                ? 'Update Followup'
+                : 'Create Followup'}
             </Button>
           </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default AddFollowUpDialog;

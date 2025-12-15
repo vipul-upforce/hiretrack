@@ -1,12 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, {
   Candidate,
   EmailHistory,
   Settings,
   History,
-} from "@/lib/mongodb";
-import { sendMail } from "@/lib/emailUtils";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+} from '@/lib/mongodb';
+import { sendMail } from '@/lib/emailUtils';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,11 +17,11 @@ export async function POST(request: NextRequest) {
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const user = userData;
-    if (user.role === "candidate" || user.role === "") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (user.role === 'candidate' || user.role === '') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Parse request body
@@ -37,8 +38,8 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!candidateId || !subject || !body) {
       return NextResponse.json(
-        { error: "Missing required fields: candidateId, subject, body" },
-        { status: 400 }
+        { error: 'Missing required fields: candidateId, subject, body' },
+        { status: 400 },
       );
     }
 
@@ -49,56 +50,62 @@ export async function POST(request: NextRequest) {
 
     if (cc.length > 0 && !validateEmails(cc)) {
       return NextResponse.json(
-        { error: "Invalid CC email addresses" },
-        { status: 400 }
+        { error: 'Invalid CC email addresses' },
+        { status: 400 },
       );
     }
 
     if (bcc.length > 0 && !validateEmails(bcc)) {
       return NextResponse.json(
-        { error: "Invalid BCC email addresses" },
-        { status: 400 }
+        { error: 'Invalid BCC email addresses' },
+        { status: 400 },
       );
     }
 
     if (replyTo && !emailRegex.test(replyTo)) {
       return NextResponse.json(
-        { error: "Invalid reply-to email address" },
-        { status: 400 }
+        { error: 'Invalid reply-to email address' },
+        { status: 400 },
       );
     }
 
     const [candidate, settings] = await Promise.all([
-      Candidate!.findOne({
-        _id: candidateId,
-        organizationId: user.organizationId,
-      }).select("email name jobId").lean().exec(),
-      Settings!.findOne({
-        organizationId: user.organizationId,
-      }).select("mailConfig"),
+      Candidate!
+        .findOne({
+          _id: candidateId,
+          organizationId: user.organizationId,
+        })
+        .select('email name jobId')
+        .lean()
+        .exec(),
+      Settings!
+        .findOne({
+          organizationId: user.organizationId,
+        })
+        .select('mailConfig'),
     ]);
 
     if (!candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
 
     if (!settings) {
       return NextResponse.json(
-        { error: "Organization settings not found" },
-        { status: 404 }
+        { error: 'Organization settings not found' },
+        { status: 404 },
       );
     }
 
     // Prepare email body with attachments
     let finalBody = body;
-    let htmlBody = body.replace(/\n/g, "<br>");
+    let htmlBody = body.replace(/\n/g, '<br>');
 
     if (attachments.length > 0) {
       // Plain text version
-      finalBody += "\n\nAttachments (click links to download):\n";
+      finalBody += '\n\nAttachments (click links to download):\n';
       attachments.forEach((attachment: any) => {
         finalBody += `- ${attachment.fileName}: ${attachment.shareUrl}\n`;
       });
@@ -122,20 +129,20 @@ export async function POST(request: NextRequest) {
           </li>`;
       });
 
-      htmlBody += "</ul>";
+      htmlBody += '</ul>';
     }
 
     // Prepare email data
     const candidateEmail =
-      typeof candidate.email === "string"
+      typeof candidate.email === 'string'
         ? candidate.email
-        : (candidate.email as any)?.email || "unknown@email.com";
+        : (candidate.email as any)?.email || 'unknown@email.com';
 
     const fromEmail =
       settings.mailConfig.smtp_from ||
       settings.mailConfig.resend_from ||
       settings.mailConfig.brevo_from ||
-      "noreply@hiretrack.com";
+      'noreply@hiretrack.com';
 
     const emailData = {
       to: candidateEmail,
@@ -147,18 +154,17 @@ export async function POST(request: NextRequest) {
       replyTo: replyTo || user.email,
       from: fromEmail, // Use just the email address instead of formatted string
     };
-    console.log("CREATING HISTORY ENTRY...");
 
     // Determine email provider for history logging
-    let provider = "unknown";
+    let provider = 'unknown';
     if (settings.mailConfig.mailProvider) {
       provider = settings.mailConfig.mailProvider;
     } else if (settings.mailConfig.resend_from) {
-      provider = "resend";
+      provider = 'resend';
     } else if (settings.mailConfig.brevo_from) {
-      provider = "brevo";
+      provider = 'brevo';
     } else if (settings.mailConfig.smtp_from) {
-      provider = "smtp";
+      provider = 'smtp';
     }
 
     // Create email history record first
@@ -167,7 +173,7 @@ export async function POST(request: NextRequest) {
       sentBy: user.id,
       sentByEmail: user.email,
       sentByName: user.name || user.email,
-      recipientType: "Candidate",
+      recipientType: 'Candidate',
       recipientId: candidate._id,
       recipientEmail: candidateEmail,
       recipientName: candidate.name,
@@ -182,7 +188,7 @@ export async function POST(request: NextRequest) {
         shareId: att.shareId,
         shareUrl: att.shareUrl,
       })),
-      status: "pending",
+      status: 'pending',
       provider,
       metadata: {
         jobId: candidate.jobId,
@@ -203,18 +209,18 @@ export async function POST(request: NextRequest) {
           emailData.replyTo,
           emailData.from,
           {
-            emailHistoryId: String(emailHistory._id),
+            emailHistoryId: String(emailHistory?._id),
           },
-          user.email
+          user.email,
         ),
 
         // Update email history with success status
         await EmailHistory!.updateOne(
-          { _id: emailHistory._id },
+          { _id: emailHistory?._id },
           {
-            status: "sent",
+            status: 'sent',
             sentAt: new Date(),
-          }
+          },
         ),
 
         // Add to candidate history
@@ -227,7 +233,7 @@ export async function POST(request: NextRequest) {
             $push: {
               history: {
                 dateTime: new Date().toISOString(),
-                title: !!subject ? subject : "Direct Email Sent",
+                title: subject || 'Direct Email Sent',
                 previousInterviewer: null,
                 currentInterviewer: null,
                 assignmentBy: user.id,
@@ -241,40 +247,57 @@ export async function POST(request: NextRequest) {
               },
             },
           },
-          { upsert: true }
+          { upsert: true },
         ),
       ]);
 
       // Check if email was sent successfully
       if (!emailResult?.success) {
-        throw new Error(emailResult.error || "Failed to send email");
+        throw new Error(emailResult.error || 'Failed to send email');
       }
 
       return NextResponse.json({
         success: true,
-        message: "Email sent successfully",
-        emailHistoryId: emailHistory._id,
+        message: 'Email sent successfully',
+        emailHistoryId: emailHistory?._id,
       });
     } catch (emailError: unknown) {
       // Update email history with failure
       await EmailHistory!.updateOne(
-        { _id: emailHistory._id },
+        { _id: emailHistory?._id },
         {
-          status: "failed",
-          error: emailError instanceof Error ? emailError.message : "Failed to send email",
-        }
+          status: 'failed',
+          error:
+            emailError instanceof Error
+              ? emailError.message
+              : 'Failed to send email',
+        },
       );
 
       return NextResponse.json(
-        { error: "Failed to send email", details: emailError instanceof Error ? emailError.message : "Failed to send email" },
-        { status: 500 }
+        {
+          error: 'Failed to send email',
+          details:
+            emailError instanceof Error
+              ? emailError.message
+              : 'Failed to send email',
+        },
+        { status: 500 },
       );
     }
   } catch (error: unknown) {
-    console.error("Error in send email to candidate:", error);
+    logger.error(
+      { error, url: request.url },
+      'Error in send email to candidate',
+    );
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to process email request" },
-      { status: 500 }
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to process email request',
+      },
+      { status: 500 },
     );
   }
 }

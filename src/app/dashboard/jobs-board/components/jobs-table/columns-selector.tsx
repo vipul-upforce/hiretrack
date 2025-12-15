@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -6,9 +6,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Columns } from "lucide-react";
-import { CustomFieldDef } from "./types";
+} from '@/components/ui/dropdown-menu';
+import { Columns } from 'lucide-react';
+import { CustomFieldDef } from './types';
 
 interface ColumnsSelectorProps {
   visibleColumns: Set<string>;
@@ -49,22 +49,22 @@ export function ColumnsSelector({
         {/* Standard Optional Columns */}
         <DropdownMenuCheckboxItem
           className="cursor-pointer"
-          checked={visibleColumns.has("applications")}
-          onCheckedChange={(checked) => toggleColumn("applications", checked)}
+          checked={visibleColumns.has('applications')}
+          onCheckedChange={(checked) => toggleColumn('applications', checked)}
         >
           Applications
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
           className="cursor-pointer"
-          checked={visibleColumns.has("experience")}
-          onCheckedChange={(checked) => toggleColumn("experience", checked)}
+          checked={visibleColumns.has('experience')}
+          onCheckedChange={(checked) => toggleColumn('experience', checked)}
         >
           Experience
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
           className="cursor-pointer"
-          checked={visibleColumns.has("skills")}
-          onCheckedChange={(checked) => toggleColumn("skills", checked)}
+          checked={visibleColumns.has('skills')}
+          onCheckedChange={(checked) => toggleColumn('skills', checked)}
         >
           Skills
         </DropdownMenuCheckboxItem>
@@ -81,11 +81,9 @@ export function ColumnsSelector({
                 className="cursor-pointer"
                 key={field.label}
                 checked={visibleColumns.has(field.label)}
-                onCheckedChange={(checked) =>
-                  toggleColumn(field.label, checked)
-                }
+                onCheckedChange={(checked) => toggleColumn(field.label, checked)}
               >
-                {field.label.split(" |||||(")[0]}
+                {field.label.split(' |||||(')[0]}
               </DropdownMenuCheckboxItem>
             ))}
           </>

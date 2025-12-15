@@ -1,20 +1,21 @@
-import { sendMail as sendMailWithContext } from "./emailUtils";
 import connectToDatabase, {
   Settings,
   User,
   Candidate,
   EmailHistory,
-} from "@/lib/mongodb";
-import mongoose from "mongoose";
-import { ISettings } from "@/lib/models/settings";
-import { findMentionedUsers } from "@/lib/services/userMentionService";
+} from '@/lib/mongodb';
+import mongoose from 'mongoose';
+import { ISettings } from '@/lib/models/settings';
+import { findMentionedUsers } from '@/lib/services/userMentionService';
 import {
   batchCheckNotifications,
   NotificationType,
   NotificationDecisionContext,
-} from "@/lib/services/emailDecisionEngine";
-import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
-import { NotificationService } from "./notifications/notificationService";
+} from '@/lib/services/emailDecisionEngine';
+import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { sendMail as sendMailWithContext } from './emailUtils';
+import { NotificationService } from './notifications/notificationService';
+import logger from './logger';
 
 interface UnifiedEmailOptions {
   organizationId: string;
@@ -50,7 +51,7 @@ interface UnifiedEmailOptions {
  * Unified email sending function that tracks all emails in history
  */
 export async function sendUnifiedMail(
-  options: UnifiedEmailOptions
+  options: UnifiedEmailOptions,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     await connectToDatabase();
@@ -59,11 +60,11 @@ export async function sendUnifiedMail(
     const settings = await Settings.findOne({
       organizationId: options.organizationId,
     })
-      .select("mailConfig")
+      .select('mailConfig')
       .lean()
       .exec();
     if (!settings || !settings.mailConfig) {
-      return { success: false, error: "Mail configuration not found" };
+      return { success: false, error: 'Mail configuration not found' };
     }
 
     // Convert to array if single email
@@ -84,41 +85,40 @@ export async function sendUnifiedMail(
         : undefined;
 
     // If we have a candidateId but no recipient name, try to fetch it
-    let recipientName = options.recipientName;
+    let { recipientName } = options;
     if (!recipientName && candidateId) {
       try {
-        const candidate = await Candidate.findById(candidateId)
-          .select("name")
+        const candidate = await Candidate?.findById(candidateId)
+          .select('name')
           .lean();
         if (candidate) {
           recipientName = candidate.name;
         }
       } catch (error) {
-        console.error("Failed to fetch candidate name:", error);
+        logger.error('Failed to fetch candidate name:', error);
       }
     }
 
     // Create a single email history record for the primary recipient with BCC
-    const emailHistory = await EmailHistory.create({
+    const emailHistory = await EmailHistory?.create({
       organizationId: new mongoose.Types.ObjectId(options.organizationId),
       sentBy: options.sentBy,
       sentByEmail: options.sentByEmail,
       sentByName: options.sentByName,
-      recipientType: options.recipientType || "user",
+      recipientType: options.recipientType || 'user',
       recipientId: options.recipientId,
       recipientEmail: primaryRecipient,
       recipientName: recipientName || primaryRecipient,
       subject: options.subject,
-      body: options.html || options.text || "",
+      body: options.html || options.text || '',
       cc: options.cc || [],
       bcc: additionalRecipients, // Include additional recipients in BCC
       replyTo: options.replyTo,
       attachments: options.attachments || [],
-      status: "pending",
-      provider: settings.mailConfig.mailProvider || "unknown",
+      status: 'pending',
+      provider: settings.mailConfig.mailProvider || 'unknown',
       metadata: options.metadata,
     });
-    console.log("Email history created:", emailHistory);
 
     // Send a single email with primary recipient in 'to' and additional recipients in 'bcc'
     const result = await sendMailWithContext(
@@ -136,34 +136,33 @@ export async function sendUnifiedMail(
         sentBy: options.sentBy,
         sentByEmail: options.sentByEmail,
         sentByName: options.sentByName,
-        recipientType: options.recipientType || "user",
+        recipientType: options.recipientType || 'user',
         recipientId: options.recipientId,
         recipientName: recipientName || primaryRecipient,
         metadata: options.metadata,
         attachments: options.attachments,
-        emailHistoryId: emailHistory._id.toString(),
-      }
+        emailHistoryId: emailHistory?._id.toString(),
+      },
     );
 
     // Update email history status based on send result
     if (!result.success) {
-      await EmailHistory.findByIdAndUpdate(emailHistory._id, {
-        status: "failed",
+      await EmailHistory?.findByIdAndUpdate(emailHistory?._id, {
+        status: 'failed',
         error: result.error,
       });
       return result;
     }
 
-    await EmailHistory.findByIdAndUpdate(emailHistory._id, {
-      status: "sent",
+    await EmailHistory?.findByIdAndUpdate(emailHistory?._id, {
+      status: 'sent',
       messageId: result.messageId,
     });
     return result;
   } catch (error) {
-    console.error("Unified email send error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to send email",
+      error: error instanceof Error ? error.message : 'Failed to send email',
     };
   }
 }
@@ -187,7 +186,7 @@ export async function sendEventEmailWithHistory(
       eventType?: string;
     };
   },
-  triggererEmail?: string
+  triggererEmail?: string,
 ): Promise<{ status: number; message: string }> {
   try {
     await connectToDatabase();
@@ -195,19 +194,22 @@ export async function sendEventEmailWithHistory(
     // 1. Get organization's mail configuration
     const settings = await Settings.findOne({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-    }).select("mailConfig").lean().exec();
+    })
+      .select('mailConfig')
+      .lean()
+      .exec();
 
     if (!settings || !settings.mailConfig) {
       return {
         status: 500,
-        message: "Mail configuration not found for the organization.",
+        message: 'Mail configuration not found for the organization.',
       };
     }
-    const mailConfig = settings.mailConfig;
+    const { mailConfig } = settings;
 
     // 2. Determine if this is a 2FA or password reset email
-    const isAuthEmail = ["2fa_authentication", "password_reset"].includes(
-      context.metadata?.eventType || ""
+    const isAuthEmail = ['2fa_authentication', 'password_reset'].includes(
+      context.metadata?.eventType || '',
     );
 
     // 3. Filter out triggerer's email unless it's a 2FA or password reset email
@@ -216,37 +218,27 @@ export async function sendEventEmailWithHistory(
       const triggerer = context.sentByEmail || triggererEmail;
 
       filteredEmails = emails.filter((email) => email && email !== triggerer);
-      if (triggerer) {
-        console.log(
-          "⌛ Filtered out triggerer's email:",
-          triggerer,
-          "from recipients:",
-          emails,
-          "-> result:",
-          filteredEmails
-        );
-      }
     }
 
     if (filteredEmails.length === 0) {
-      return { status: 404, message: "No valid recipients found." };
+      return { status: 404, message: 'No valid recipients found.' };
     }
 
     // 4. Find recipient users to get their IDs and correct names
     const candidateRecipient =
-      filteredEmails[0] && context.metadata?.eventType === "job_application"
-        ? await Candidate.findOne({
+      filteredEmails[0] && context.metadata?.eventType === 'job_application'
+        ? await Candidate?.findOne({
             email: filteredEmails[0],
             organizationId: new mongoose.Types.ObjectId(organizationId),
           })
-            .select("_id name email")
+            .select('_id name email')
             .lean()
         : null;
-    const recipients = await User.find({
+    const recipients = await User?.find({
       email: { $in: filteredEmails },
       organizationId: new mongoose.Types.ObjectId(organizationId),
     })
-      .select("_id name email")
+      .select('_id name email')
       .lean();
 
     // 5. Filter recipients based on notification settings (skip for 2FA and password reset emails)
@@ -255,31 +247,30 @@ export async function sendEventEmailWithHistory(
       : await filterRecipientsByNotificationSettings(
           recipients,
           organizationId,
-          context
+          context,
         );
 
     const allRecipients = candidateRecipient
-      ? [candidateRecipient, ...filteredRecipients]
+      ? [candidateRecipient, ...filteredRecipients!]
       : filteredRecipients;
 
-    if (allRecipients.length === 0) {
+    if (allRecipients?.length === 0) {
       return {
         status: 404,
-        message: "No valid recipients found after filtering.",
+        message: 'No valid recipients found after filtering.',
       };
     }
-    console.log("🔥 Filtered recipients:", allRecipients);
 
     // 6. Determine email provider for history logging
-    let provider = "unknown";
+    let provider = 'unknown';
     if (mailConfig.mailProvider) {
       provider = mailConfig.mailProvider;
     } else if (mailConfig.resend_from) {
-      provider = "resend";
+      provider = 'resend';
     } else if (mailConfig.brevo_from) {
-      provider = "brevo";
+      provider = 'brevo';
     } else if (mailConfig.smtp_from) {
-      provider = "smtp";
+      provider = 'smtp';
     }
 
     // 7. Validate jobId and candidateId
@@ -295,11 +286,11 @@ export async function sendEventEmailWithHistory(
         : undefined;
 
     // 8. Send a single email with primary recipient in 'to' and others in 'bcc'
-    const primaryRecipient = allRecipients[0];
-    const bccRecipients = allRecipients.slice(1).map((r) => r.email);
+    const primaryRecipient = allRecipients![0];
+    const bccRecipients = allRecipients!.slice(1).map((r) => r.email);
 
     // Create a single email history record
-    const emailHistory = await EmailHistory.create({
+    const emailHistory = await EmailHistory?.create({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       sentBy: context.sentBy,
       sentByEmail: context.sentByEmail,
@@ -307,8 +298,8 @@ export async function sendEventEmailWithHistory(
       recipientType:
         candidateRecipient &&
         primaryRecipient.email === candidateRecipient.email
-          ? "candidate"
-          : "user",
+          ? 'candidate'
+          : 'user',
       recipientId: primaryRecipient._id,
       recipientEmail: primaryRecipient.email,
       recipientName: primaryRecipient.name || primaryRecipient.email,
@@ -318,7 +309,7 @@ export async function sendEventEmailWithHistory(
       bcc: bccRecipients, // Additional recipients in BCC
       replyTo: context.sentByEmail,
       attachments: [],
-      status: "pending",
+      status: 'pending',
       provider,
       metadata: context.metadata
         ? {
@@ -329,7 +320,6 @@ export async function sendEventEmailWithHistory(
           }
         : undefined,
     });
-    console.log("Email history created:", emailHistory);
 
     // Send the email
     const result = await sendMailWithContext(
@@ -343,13 +333,13 @@ export async function sendEventEmailWithHistory(
       context.sentByEmail,
       undefined,
       {
-        emailHistoryId: emailHistory._id.toString(),
-      }
+        emailHistoryId: emailHistory?._id.toString(),
+      },
     );
 
     // Update email history status
-    await EmailHistory.findByIdAndUpdate(emailHistory._id, {
-      status: result.success ? "sent" : "failed",
+    await EmailHistory?.findByIdAndUpdate(emailHistory?._id, {
+      status: result.success ? 'sent' : 'failed',
       messageId: result.messageId,
       error: result.error,
     });
@@ -361,13 +351,12 @@ export async function sendEventEmailWithHistory(
       };
     }
 
-    return { status: 200, message: "All event emails sent successfully." };
+    return { status: 200, message: 'All event emails sent successfully.' };
   } catch (error) {
-    console.error("Event email send error:", error);
     return {
       status: 500,
       message:
-        error instanceof Error ? error.message : "Failed to send event emails",
+        error instanceof Error ? error.message : 'Failed to send event emails',
     };
   }
 }
@@ -394,7 +383,7 @@ export async function sendSmartNotification(
     html: string;
     text?: string;
   },
-  potentialRecipients: string[]
+  potentialRecipients: string[],
 ): Promise<{
   status: number;
   message: string;
@@ -406,14 +395,12 @@ export async function sendSmartNotification(
 
     // Validate jobId and candidateId
     if (context.jobId && !mongoose.Types.ObjectId.isValid(context.jobId)) {
-      console.warn(`Invalid jobId provided: ${context.jobId}`);
       context.jobId = undefined;
     }
     if (
       context.candidateId &&
       !mongoose.Types.ObjectId.isValid(context.candidateId)
     ) {
-      console.warn(`Invalid candidateId provided: ${context.candidateId}`);
       context.candidateId = undefined;
     }
 
@@ -425,35 +412,34 @@ export async function sendSmartNotification(
     if (
       context.content &&
       [NotificationType.NEW_REMARKS, NotificationType.STATUS_UPDATES].includes(
-        notificationType
+        notificationType,
       )
     ) {
       try {
         const mentionResult = await findMentionedUsers(
           context.content,
           organizationId,
-          context.validMentionUserIds
+          context.validMentionUserIds,
         );
         mentionedUsers = mentionResult.mentionedUsers.map((u) =>
-          u._id.toString()
+          u._id.toString(),
         );
-        console.log("Mentioned users:", mentionedUsers);
       } catch (mentionError) {
-        console.error("Error in mention detection:", mentionError);
+        logger.error('Error in mention detection:', mentionError);
       }
     }
 
     // 2. Convert potential recipients to user IDs
     const userIds = await resolveRecipientsToUserIds(
       potentialRecipients,
-      organizationId
+      organizationId,
     );
     const allRecipients = [...new Set([...userIds, ...mentionedUsers])];
 
     if (allRecipients.length === 0) {
       return {
         status: 200,
-        message: "No eligible recipients for notifications",
+        message: 'No eligible recipients for notifications',
         sentToUsers,
         mentionedUsers,
       };
@@ -468,7 +454,7 @@ export async function sendSmartNotification(
         jobId: context.jobId,
         triggererUserId: context.triggererUserId,
         isMention: mentionedUsers.includes(userId),
-        notificationCategory: "email",
+        notificationCategory: 'email',
       }));
 
     const inAppDecisionContexts: NotificationDecisionContext[] =
@@ -479,7 +465,7 @@ export async function sendSmartNotification(
         jobId: context.jobId,
         triggererUserId: context.triggererUserId,
         isMention: mentionedUsers.includes(userId),
-        notificationCategory: "inApp",
+        notificationCategory: 'inApp',
       }));
 
     const [emailDecisions, inAppDecisions] = await Promise.all([
@@ -496,13 +482,13 @@ export async function sendSmartNotification(
         }
         return acc;
       },
-      [] as { userId: string; email: boolean; inApp: boolean }[]
+      [] as { userId: string; email: boolean; inApp: boolean }[],
     );
 
     if (eligibleUsers.length === 0) {
       return {
         status: 200,
-        message: "No users have enabled notifications for this type",
+        message: 'No users have enabled notifications for this type',
         sentToUsers,
         mentionedUsers,
       };
@@ -522,7 +508,7 @@ export async function sendSmartNotification(
         organizationId,
         emailEligibleUserIds,
         emailContent,
-        context
+        context,
       );
       if (emailResult.success) {
         eligibleUsers.forEach((u) => {
@@ -531,7 +517,7 @@ export async function sendSmartNotification(
           }
         });
       } else {
-        console.error("Email sending failed:", emailResult.error);
+        logger.error('Email sending failed:', emailResult.error);
       }
     }
 
@@ -542,13 +528,12 @@ export async function sendSmartNotification(
       mentionedUsers,
     };
   } catch (error) {
-    console.error("Smart notification error:", error);
     return {
       status: 500,
       message:
         error instanceof Error
           ? error.message
-          : "Failed to send smart notifications",
+          : 'Failed to send smart notifications',
       sentToUsers: [],
       mentionedUsers: [],
     };
@@ -577,7 +562,7 @@ export async function sendRemarkNotificationWithMentions(
     recipientName?: string;
     validMentionUserIds?: string[]; // User IDs selected from mention picker
   },
-  potentialRecipients: string[]
+  potentialRecipients: string[],
 ): Promise<{
   status: number;
   message: string;
@@ -587,21 +572,21 @@ export async function sendRemarkNotificationWithMentions(
   // Define variables for the email template
   const variables = {
     recipientName: context.recipientName,
-    candidateName: context.candidateName || "",
-    jobTitle: context.jobTitle || "Unknown Position",
-    reviewerName: context.reviewerName || "Unknown",
-    remarkDate: context.remarkDate || new Date().toISOString().split("T")[0],
-    rating: context.rating !== undefined ? context.rating : "Not Provided",
+    candidateName: context.candidateName || '',
+    jobTitle: context.jobTitle || 'Unknown Position',
+    reviewerName: context.reviewerName || 'Unknown',
+    remarkDate: context.remarkDate || new Date().toISOString().split('T')[0],
+    rating: context.rating !== undefined ? context.rating : 'Not Provided',
     remarkText: remarkContent,
-    candidateProfileLink: context.candidateProfileLink || "#",
-    organizationName: context.organizationName || "Your Organization",
+    candidateProfileLink: context.candidateProfileLink || '#',
+    organizationName: context.organizationName || 'Your Organization',
   };
 
   // Get the mapped email template
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
-    "new-remark",
+    'new-remark',
     variables,
-    organizationId
+    organizationId,
   );
 
   // Construct the email content object
@@ -616,12 +601,12 @@ export async function sendRemarkNotificationWithMentions(
     {
       ...context,
       content: remarkContent,
-      eventType: "new_remark",
-      templateUsed: "remark-notification",
+      eventType: 'new_remark',
+      templateUsed: 'remark-notification',
       validMentionUserIds: context.validMentionUserIds,
     },
     emailContentObj,
-    potentialRecipients
+    potentialRecipients,
   );
 }
 
@@ -640,7 +625,7 @@ async function sendNotificationToUsers(
     candidateId?: string;
     eventType?: string;
     templateUsed?: string;
-  }
+  },
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Get user emails
@@ -648,7 +633,7 @@ async function sendNotificationToUsers(
       _id: { $in: userIds },
       organizationId: new mongoose.Types.ObjectId(organizationId),
     })
-      .select("_id email name")
+      .select('_id email name')
       .lean();
 
     if (users.length === 0) {
@@ -674,9 +659,9 @@ async function sendNotificationToUsers(
       emailContent.subject,
       emailContent.html,
       {
-        sentBy: context.triggererUserId || "system",
-        sentByEmail: context.triggererEmail || "system@hiretrack.com",
-        sentByName: context.triggererName || "System",
+        sentBy: context.triggererUserId || 'system',
+        sentByEmail: context.triggererEmail || 'system@hiretrack.com',
+        sentByName: context.triggererName || 'System',
         metadata: {
           jobId,
           candidateId,
@@ -684,7 +669,7 @@ async function sendNotificationToUsers(
           eventType: context.eventType,
         },
       },
-      context.triggererEmail
+      context.triggererEmail,
     );
 
     return {
@@ -692,10 +677,9 @@ async function sendNotificationToUsers(
       error: result.status !== 200 ? result.message : undefined,
     };
   } catch (error) {
-    console.error("Send notification to users error:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -705,7 +689,7 @@ async function sendNotificationToUsers(
  */
 async function resolveRecipientsToUserIds(
   recipients: string[],
-  organizationId: string
+  organizationId: string,
 ): Promise<string[]> {
   try {
     const userIds: string[] = [];
@@ -713,11 +697,11 @@ async function resolveRecipientsToUserIds(
 
     // Filter out null/undefined recipients and separate user IDs from emails
     recipients
-      .filter((recipient) => recipient && typeof recipient === "string")
+      .filter((recipient) => recipient && typeof recipient === 'string')
       .forEach((recipient) => {
         if (mongoose.Types.ObjectId.isValid(recipient)) {
           userIds.push(recipient);
-        } else if (recipient.includes("@")) {
+        } else if (recipient.includes('@')) {
           emails.push(recipient);
         }
       });
@@ -728,7 +712,7 @@ async function resolveRecipientsToUserIds(
         email: { $in: emails },
         organizationId: new mongoose.Types.ObjectId(organizationId),
       })
-        .select("_id")
+        .select('_id')
         .lean();
 
       userIds.push(...users.map((u) => u._id.toString()));
@@ -736,7 +720,6 @@ async function resolveRecipientsToUserIds(
 
     return [...new Set(userIds)];
   } catch (error) {
-    console.error("Error resolving recipients to user IDs:", error);
     return [];
   }
 }
@@ -761,7 +744,7 @@ async function filterRecipientsByNotificationSettings(
       templateUsed?: string;
       eventType?: string;
     };
-  }
+  },
 ): Promise<
   Array<{ _id: string | { toString(): string }; email?: string; name?: string }>
 > {
@@ -797,7 +780,6 @@ async function filterRecipientsByNotificationSettings(
     followup_updated: NotificationType.FOLLOWUP_UPDATED,
     followup_removed: NotificationType.FOLLOWUP_REMOVED,
 
-
     // jobs
     job_created: NotificationType.JOB_CREATED,
     job_updated: NotificationType.JOB_UPDATED,
@@ -808,11 +790,9 @@ async function filterRecipientsByNotificationSettings(
     bulk_import_completed: NotificationType.BULK_IMPORT_COMPLETED,
   };
 
-  const rawEventType = context.metadata?.eventType || "";
+  const rawEventType = context.metadata?.eventType || '';
   const notificationType = eventTypeToNotificationType[rawEventType];
   // NotificationType.STATUS_UPDATES;
-
-  console.log(notificationType, "→ chosen NotificationType for", rawEventType);
 
   // Build decision contexts for all recipients
   const decisionContexts: NotificationDecisionContext[] = recipients.map(
@@ -822,22 +802,17 @@ async function filterRecipientsByNotificationSettings(
       notificationType,
       jobId: context.metadata?.jobId,
       triggererUserId: context.sentBy,
-      isMention: rawEventType === "mention",
-      notificationCategory: "email",
-    })
+      isMention: rawEventType === 'mention',
+      notificationCategory: 'email',
+    }),
   );
 
   // Batch check preferences
   const decisions = await batchCheckNotifications(decisionContexts);
-  console.log(decisions, "→ notification send decisions");
 
   // Filter recipients
   const filteredRecipients = recipients.filter(
-    (recipient, index) => decisions[index]?.shouldSend
-  );
-
-  console.log(
-    `📧 Email filtering: ${recipients.length} → ${filteredRecipients.length} recipients for ${notificationType}`
+    (recipient, index) => decisions[index]?.shouldSend,
   );
 
   return filteredRecipients;

@@ -1,53 +1,51 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { useSelector } from "react-redux";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import ConfirmationDialog from "../../../jobs/[id]/components/Dialogs/ConfirmationDialog";
-import { JobAnalyticsModal } from "./../JobAnalyticsModal";
-import { User } from "@/lib/features/org/orgApi";
-import { Job } from "@/types/job";
-import { JobsTableProps, CustomFieldDef } from "./types";
-import { ColumnsSelector } from "./columns-selector";
-import { JobsTableHeader } from "./jobs-table-header";
-import { JobsTableRow } from "./jobs-table-row";
+import { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import {
+  Table, TableBody, TableCell, TableRow,
+} from '@/components/ui/table';
+import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { User } from '@/lib/features/org/orgApi';
+import { Job } from '@/types/job';
+import ConfirmationDialog from '../../../jobs/[id]/components/Dialogs/ConfirmationDialog';
+import { JobAnalyticsModal } from '../JobAnalyticsModal';
+import { JobsTableProps, CustomFieldDef } from './types';
+import { ColumnsSelector } from './columns-selector';
+import { JobsTableHeader } from './jobs-table-header';
+import { JobsTableRow } from './jobs-table-row';
 
 export function JobsTableView(props: JobsTableProps) {
   const { jobs, setSelectedJob, setDuplicate } = props;
 
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
 
-  const { formNameObject } = useCustomForm("Job Position");
+  const { formNameObject } = useCustomForm('Job Position');
 
   // Local state for modals
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
-  const [selectedJobForDuplicate, setSelectedJobForDuplicate] =
-    useState<Job | null>(null);
+  const [selectedJobForDuplicate, setSelectedJobForDuplicate] = useState<Job | null>(null);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [selectedJobForAnalytics, setSelectedJobForAnalytics] =
-    useState<Job | null>(null);
+  const [selectedJobForAnalytics, setSelectedJobForAnalytics] = useState<Job | null>(null);
 
   // Get all available custom fields
-  const availableCustomFields: CustomFieldDef[] = useMemo(() => {
-    return (
-      formNameObject?.fields
-        .filter((field) => field.showOnCard && !field.jobId)
-        .map((field) => ({
-          label: field.label,
-          showOnCard: field.showOnCard,
-          jobId: field.jobId,
-        })) || []
-    );
-  }, [formNameObject]);
+  const availableCustomFields: CustomFieldDef[] = useMemo(() => (
+    formNameObject?.fields
+      .filter((field) => field.showOnCard && !field.jobId)
+      .map((field) => ({
+        label: field.label,
+        showOnCard: field.showOnCard,
+        jobId: field.jobId,
+      })) || []
+  ), [formNameObject]);
 
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (visibleColumns.size === 0) {
-      const initialSet = new Set(["applications", "experience", "skills"]);
+      const initialSet = new Set(['applications', 'experience', 'skills']);
       availableCustomFields.slice(0, 2).forEach((f) => initialSet.add(f.label));
       setVisibleColumns(initialSet);
     }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,7 +15,7 @@ function getCookie(name: string): string | null {
   return null;
 }
 
-const AuthInitializer = () => {
+function AuthInitializer() {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated , user} = useSelector((state: any) => state.auth);
   console.log(user, "user");
@@ -30,6 +30,6 @@ const AuthInitializer = () => {
   }, [dispatch]);
 
   return null;
-};
+}
 
 export default AuthInitializer;

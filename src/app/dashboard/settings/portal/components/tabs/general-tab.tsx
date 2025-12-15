@@ -1,15 +1,15 @@
-import React from "react";
+import React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PortalSettings } from "../../types";
-import { User } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { PortalSettings } from '../../types';
 
 interface GeneralTabProps {
   settings: PortalSettings;
@@ -30,18 +30,16 @@ export function GeneralTab({ settings, setSettings, user }: GeneralTabProps) {
           <Input
             id="portalName"
             value={
-              settings.portalName &&
-              settings.portalName !== "" &&
-              settings.portalName.length > 0
+              settings.portalName
+              && settings.portalName !== ''
+              && settings.portalName.length > 0
                 ? settings.portalName
                 : user?.organizationInfo?.name
             }
-            onChange={(e) =>
-              setSettings((prev) => ({
-                ...prev,
-                portalName: e.target.value,
-              }))
-            }
+            onChange={(e) => setSettings((prev) => ({
+              ...prev,
+              portalName: e.target.value,
+            }))}
             placeholder="Enter your portal name"
           />
           <p className="text-xs text-muted-foreground">

@@ -1,24 +1,26 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { RefreshCcwIcon } from "lucide-react";
-import { useApplicationTrends } from "../../hooks/useAnalytics";
-import { AnalyticsFilters } from "../../hooks/useAnalytics";
-import { exportToCSV } from "../../utils/export";
-import ApplicationTrendsSkeleton from "../loading-skeletons/application-trends";
-import SummaryCards from "./summary-cards";
-import InsightsCards from "./insights-cards";
-import EmptyState from "../empty-state";
-import ApplicationTrendsTabs from "./application-trends-tabs";
-import ApplicationTrendsHeader from "./application-header";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { RefreshCcwIcon } from 'lucide-react';
+import {
+  useApplicationTrends,
+  AnalyticsFilters,
+} from '../../hooks/useAnalytics';
+import { exportToCSV } from '../../utils/export';
+import ApplicationTrendsSkeleton from '../loading-skeletons/application-trends';
+import SummaryCards from './summary-cards';
+import InsightsCards from './insights-cards';
+import EmptyState from '../empty-state';
+import ApplicationTrendsTabs from './application-trends-tabs';
+import ApplicationTrendsHeader from './application-header';
 
 interface ApplicationTrendsChartProps {
   filters?: AnalyticsFilters;
@@ -35,22 +37,22 @@ export interface TrendData {
   processingCount: number;
   acceptedCount: number;
   rejectedCount: number;
-  trend: "up" | "down" | "stable";
+  trend: 'up' | 'down' | 'stable';
   growthRate: number;
   jobDiversity: number;
-  periodType: "daily" | "weekly" | "monthly";
+  periodType: 'daily' | 'weekly' | 'monthly';
   conversionRate: number;
   rejectionRate: number;
   movingAverage?: number;
 }
 
-export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
+export function ApplicationTrendsChart({
   filters,
   organizationId,
-}) => {
+}: ApplicationTrendsChartProps) {
   const [granularity, setGranularity] = useState<
-    "daily" | "weekly" | "monthly"
-  >("daily");
+    'daily' | 'weekly' | 'monthly'
+  >('daily');
   const [showMovingAverage, setShowMovingAverage] = useState(true);
 
   // Memoize filters to prevent infinite re-renders
@@ -59,17 +61,19 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
       ...filters,
       granularity,
     }),
-    [filters, granularity]
+    [filters, granularity],
   );
 
   const { data, loading, error, refetch } = useApplicationTrends(
     enhancedFilters,
-    organizationId
+    organizationId,
   );
   const [trendData, setTrendData] = useState<TrendData[]>([]);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
   const [dataReady, setDataReady] = useState(false);
-  const [insights, setInsights] = useState<any>(null);
+  const [insights, setInsights] = useState<Record<string, unknown> | null>(
+    null,
+  );
 
   useEffect(() => {
     if (data) {
@@ -86,13 +90,13 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
 
   const handleExport = () => {
     if (!trendData || trendData.length === 0) {
-      console.warn("No application trends data to export");
+      // No application trends data to export
       return;
     }
 
     const csvData = trendData.map((trend) => ({
       Date: trend.date,
-      "Period Type": trend.periodType,
+      'Period Type': trend.periodType,
       Applications: trend.applications,
       Applied: trend.appliedCount,
       Screening: trend.screeningCount,
@@ -100,20 +104,20 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
       Processing: trend.processingCount,
       Accepted: trend.acceptedCount,
       Rejected: trend.rejectedCount,
-      "Growth Rate (%)": trend.growthRate.toFixed(2),
-      "Conversion Rate (%)": trend.conversionRate.toFixed(2),
-      "Rejection Rate (%)": trend.rejectionRate.toFixed(2),
-      "Job Diversity": trend.jobDiversity,
+      'Growth Rate (%)': trend.growthRate.toFixed(2),
+      'Conversion Rate (%)': trend.conversionRate.toFixed(2),
+      'Rejection Rate (%)': trend.rejectionRate.toFixed(2),
+      'Job Diversity': trend.jobDiversity,
       Trend: trend.trend,
-      "Moving Average": trend.movingAverage || "N/A",
+      'Moving Average': trend.movingAverage || 'N/A',
     }));
 
     // Add summary data as additional rows
     if (summary) {
       csvData.push(
         {
-          Date: "daily",
-          "Period Type": "daily",
+          Date: 'daily',
+          'Period Type': 'daily',
           Applications: 0,
           Applied: 0,
           Screening: 0,
@@ -121,16 +125,16 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
           Processing: 0,
           Accepted: 0,
           Rejected: 0,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": "",
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "up",
-          "Moving Average": "",
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': '',
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'up',
+          'Moving Average': '',
         },
         {
-          Date: "SUMMARY",
-          "Period Type": "daily",
+          Date: 'SUMMARY',
+          'Period Type': 'daily',
           Applications: 0,
           Applied: 0,
           Screening: 0,
@@ -138,98 +142,98 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
           Processing: 0,
           Accepted: 0,
           Rejected: 0,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": "",
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "up",
-          "Moving Average": "",
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': '',
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'up',
+          'Moving Average': '',
         },
         {
-          Date: "Total Applications",
-          "Period Type": "daily",
-          Applications: summary.totalApplications,
+          Date: 'Total Applications',
+          'Period Type': 'daily',
+          Applications: summary.totalApplications as number,
           Applied: 0,
           Screening: 0,
           Shortlisted: 0,
           Processing: 0,
           Accepted: 0,
           Rejected: 0,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": "",
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "up",
-          "Moving Average": "",
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': '',
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'up',
+          'Moving Average': '',
         },
         {
-          Date: "Total Accepted",
-          "Period Type": "daily",
+          Date: 'Total Accepted',
+          'Period Type': 'daily',
           Applications: 0,
           Applied: 0,
           Screening: 0,
           Shortlisted: 0,
           Processing: 0,
-          Accepted: summary.totalAccepted,
+          Accepted: summary.totalAccepted as number,
           Rejected: 0,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": "",
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "up",
-          "Moving Average": "",
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': '',
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'up',
+          'Moving Average': '',
         },
         {
-          Date: "Total Rejected",
-          "Period Type": "daily",
-          Applications: 0,
-          Applied: 0,
-          Screening: 0,
-          Shortlisted: 0,
-          Processing: 0,
-          Accepted: 0,
-          Rejected: summary.totalRejected,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": "",
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "down",
-          "Moving Average": "",
-        },
-        {
-          Date: "Average per Period",
-          "Period Type": "daily",
-          Applications: summary.avgApplicationsPerPeriod,
-          Applied: 0,
-          Screening: 0,
-          Shortlisted: 0,
-          Processing: 0,
-          Accepted: 0,
-          Rejected: 0,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": "",
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "up",
-          "Moving Average": "",
-        },
-        {
-          Date: "Overall Conversion Rate",
-          "Period Type": "daily",
+          Date: 'Total Rejected',
+          'Period Type': 'daily',
           Applications: 0,
           Applied: 0,
           Screening: 0,
           Shortlisted: 0,
           Processing: 0,
           Accepted: 0,
+          Rejected: summary.totalRejected as number,
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': '',
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'down',
+          'Moving Average': '',
+        },
+        {
+          Date: 'Average per Period',
+          'Period Type': 'daily',
+          Applications: summary.avgApplicationsPerPeriod as number,
+          Applied: 0,
+          Screening: 0,
+          Shortlisted: 0,
+          Processing: 0,
+          Accepted: 0,
           Rejected: 0,
-          "Growth Rate (%)": "",
-          "Conversion Rate (%)": `${summary.overallConversionRate}%`,
-          "Rejection Rate (%)": "",
-          "Job Diversity": 0,
-          Trend: "up",
-          "Moving Average": "",
-        }
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': '',
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'up',
+          'Moving Average': '',
+        },
+        {
+          Date: 'Overall Conversion Rate',
+          'Period Type': 'daily',
+          Applications: 0,
+          Applied: 0,
+          Screening: 0,
+          Shortlisted: 0,
+          Processing: 0,
+          Accepted: 0,
+          Rejected: 0,
+          'Growth Rate (%)': '',
+          'Conversion Rate (%)': `${summary.overallConversionRate}%`,
+          'Rejection Rate (%)': '',
+          'Job Diversity': 0,
+          Trend: 'up',
+          'Moving Average': '',
+        },
       );
     }
 
@@ -250,16 +254,16 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-red-500">
+          <div className="flex h-64 items-center justify-center text-red-500">
             <div className="text-center">
               <p>Error loading application trends data</p>
-              <p className="text-sm text-muted-foreground mt-2">{error}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{error}</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={handleRefresh}
               >
-                <RefreshCcwIcon className="h-4 w-4 mr-2" />
+                <RefreshCcwIcon className="mr-2 h-4 w-4" />
                 Retry
               </Button>
             </div>
@@ -311,4 +315,4 @@ export const ApplicationTrendsChart: React.FC<ApplicationTrendsChartProps> = ({
       </CardContent>
     </Card>
   );
-};
+}

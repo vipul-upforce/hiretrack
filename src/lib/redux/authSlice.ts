@@ -1,12 +1,17 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { EmailNotificationSettings, Organization, OrgInfo } from "@/lib/models/user";
+import {
+  EmailNotificationSettings,
+  Organization,
+  OrgInfo,
+} from "@/lib/models/user";
 import Cookies from "js-cookie";
+import logger from "../logger";
+
 export interface ILocalUser {
   id: string;
   _id?: string;
   tokenVersion?: number;
-  
-  organizationId?: Organization |string;
+  organizationId: Organization |string;
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
@@ -21,6 +26,7 @@ export interface ILocalUser {
   otp?: number;
   emailNotificationSettings?: EmailNotificationSettings;
   fileStorage?: string;
+
   
 }
 interface AuthState {
@@ -42,40 +48,58 @@ const initialState: AuthState = {
   error: null,
 };
 export const fetchUserFromToken = createAsyncThunk(
-  "auth/fetchUserFromToken",
+  'auth/fetchUserFromToken',
   async (_, { rejectWithValue }) => {
     try {
       localStorage.removeItem("persist:auth");
       localStorage.removeItem("persist:organization");
+      
+      const authState = Cookies.get("auth_state");
+      if (!authState || authState === "false") {
+        const user = {
+          id: "guest",
+          name: "Guest",
+          email: "",
+          role: "",
+          organizationId: "",
+          organizationInfo: null,
+          appliedApplications: [],
+          fileStorage: null,
+        };
+        return user;
+      }
+
       const response = await fetch("/api/auth/me");
+
       if (!response.ok) {
         const errorData = await response.json();
-        localStorage.removeItem("persist:auth");
-        localStorage.removeItem("persist:organization");
+        localStorage.removeItem('persist:auth');
+        localStorage.removeItem('persist:organization');
         return rejectWithValue(
-          errorData.message || "Failed to fetch user data"
+          errorData.message || 'Failed to fetch user data',
         );
       }
       const data = await response.json();
       return data.user;
-    } catch (error) {
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      return rejectWithValue("Failed to connect to authentication server");
+    } catch (e) {
+      logger.error('Error fetching user from token:', e);
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+      return rejectWithValue('Failed to connect to authentication server');
     }
-  }
+  },
 );
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      localStorage.removeItem("user");
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+      localStorage.removeItem('user');
     },
     updateUser: (state, action: PayloadAction<any>) => {
       if (state.user && (state.user.id || state.user.email)) {
@@ -85,7 +109,6 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
       }
-      console.log(state.user.name);
     },
   },
   extraReducers: (builder) => {
@@ -100,7 +123,7 @@ const authSlice = createSlice({
           state.loading = false;
           state.isAuthenticated = true;
           state.user = action.payload;
-        }
+        },
       )
       .addCase(fetchUserFromToken.rejected, (state, action) => {
         state.loading = false;

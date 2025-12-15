@@ -1,42 +1,42 @@
-import { baseApi } from "@/lib/api/baseApi";
-import { Job } from "@/types/job";
+import { baseApi } from '@/lib/api/baseApi';
+import { Job } from '@/types/job';
 
 export const jobApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchJobs: builder.query<Job[], void>({
-      query: () => "/jobs",
-      providesTags: ["Job"],
+      query: () => '/jobs',
+      providesTags: ['Job'],
     }),
     fetchOpenJobs: builder.query<Job[], void>({
-      query: () => "/jobs/open",
-      providesTags: ["Job"],
+      query: () => '/jobs/open',
+      providesTags: ['Job'],
     }),
     fetchOpenJob: builder.query<Job[], { orgName: string; title: string }>({
       query: ({ orgName, title }) => ({
-        url: `/jobs/open-jobs?o=${orgName}${title ? `&title=${title}` : ""}`,
-        method: "GET",
+        url: `/jobs/open-jobs?o=${orgName}${title ? `&title=${title}` : ''}`,
+        method: 'GET',
       }),
-      providesTags: ["Job"],
+      providesTags: ['Job'],
     }),
     createJob: builder.mutation<Job, Partial<Job>>({
       query: (newJob) => ({
-        url: "/jobs",
-        method: "POST",
+        url: '/jobs',
+        method: 'POST',
         body: newJob,
       }),
-      invalidatesTags: ["Job"],
+      invalidatesTags: ['Job'],
     }),
     updateJob: builder.mutation<Job, Partial<Job>>({
       query: (updatedJob) => ({
         url: `/jobs/${updatedJob._id}`,
-        method: "PUT",
+        method: 'PUT',
         body: updatedJob,
       }),
-      invalidatesTags: ["Job"],
+      invalidatesTags: ['Job'],
     }),
     fetchJobById: builder.query<Job, string>({
       query: (id) => `/jobs/${id}`,
-      providesTags: ["Job"],
+      providesTags: ['Job'],
     }),
     updateJobStatus: builder.mutation<
       Job,
@@ -44,10 +44,10 @@ export const jobApi = baseApi.injectEndpoints({
     >({
       query: ({ id, status, openJobCardsOrder }) => ({
         url: `/jobs/${id}/status`,
-        method: "PATCH",
+        method: 'PATCH',
         body: { status, openJobCardsOrder },
       }),
-      invalidatesTags: ["Job"],
+      invalidatesTags: ['Job'],
     }),
     // fetchAssignments: builder.query<Job[], void>({
     //   query: () => "/jobs/assignments",
@@ -56,14 +56,14 @@ export const jobApi = baseApi.injectEndpoints({
     deleteJob: builder.mutation<void, string>({
       query: (id) => ({
         url: `/jobs/${id}`,
-        method: "DELETE",
+        method: 'DELETE',
       }),
-      invalidatesTags: ["Job"],
+      invalidatesTags: ['Job'],
     }),
     assignJob: builder.mutation({
       query: (data) => ({
-        url: "/jobs/open",
-        method: "POST",
+        url: '/jobs/open',
+        method: 'POST',
         body: data,
       }),
     }),

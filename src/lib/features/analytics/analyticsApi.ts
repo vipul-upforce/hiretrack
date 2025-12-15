@@ -1,5 +1,5 @@
-import { baseApi } from "@/lib/api/baseApi";
-import { DateRange } from "react-day-picker";
+import { baseApi } from '@/lib/api/baseApi';
+import { DateRange } from 'react-day-picker';
 
 export interface AnalyticsFilters {
   dateRange?: DateRange;
@@ -7,7 +7,7 @@ export interface AnalyticsFilters {
   candidateStatuses?: string[];
   interviewerIds?: string[];
   locations?: string[];
-  granularity?: "daily" | "weekly" | "monthly";
+  granularity?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface SerializedAnalyticsFilters {
@@ -19,7 +19,7 @@ export interface SerializedAnalyticsFilters {
   candidateStatuses?: string[];
   interviewerIds?: string[];
   locations?: string[];
-  granularity?: "daily" | "weekly" | "monthly";
+  granularity?: 'daily' | 'weekly' | 'monthly';
 }
 
 export interface AnalyticsResponse<T> {
@@ -59,19 +59,19 @@ const buildQueryParams = ({ organizationId, filters }: AnalyticsQueryArgs) => {
   }
 
   if (filters?.jobIds?.length) {
-    params.jobIds = filters.jobIds.join(",");
+    params.jobIds = filters.jobIds.join(',');
   }
 
   if (filters?.candidateStatuses?.length) {
-    params.statuses = filters.candidateStatuses.join(",");
+    params.statuses = filters.candidateStatuses.join(',');
   }
 
   if (filters?.interviewerIds?.length) {
-    params.interviewerIds = filters.interviewerIds.join(",");
+    params.interviewerIds = filters.interviewerIds.join(',');
   }
 
   if (filters?.locations?.length) {
-    params.locations = filters.locations.join(",");
+    params.locations = filters.locations.join(',');
   }
 
   if (filters?.granularity) {
@@ -91,7 +91,7 @@ export const analyticsApi = baseApi.injectEndpoints({
       }),
       providesTags: (_result, _error, arg) => [
         {
-          type: "Analytics",
+          type: 'Analytics',
           id: `${arg.endpoint}`,
         },
       ],

@@ -1,59 +1,61 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import connectToDatabase, { CandidateAccount, Organization, User } from "@/lib/mongodb";
-import { validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString } from "@/lib/inputValidation";
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import connectToDatabase, { CandidateAccount, Organization, User } from '@/lib/mongodb';
+import {
+  validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString,
+} from '@/lib/inputValidation';
 
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     const requestData = await req.json();
-    
+
     // SECURITY FIX: Validate candidate signup input
     const validation = validateInput(requestData, {
       email: {
         required: true,
         type: 'email',
-        maxLength: MAX_LENGTHS.email
+        maxLength: MAX_LENGTHS.email,
       },
       password: {
         required: true,
         type: 'string',
         minLength: 8,
-        maxLength: 128
+        maxLength: 128,
       },
       name: {
         required: true,
         type: 'string',
         maxLength: MAX_LENGTHS.name,
         pattern: VALIDATION_PATTERNS.safeString,
-        sanitize: true
+        sanitize: true,
       },
       orgName: {
         type: 'string',
         maxLength: MAX_LENGTHS.name,
         pattern: VALIDATION_PATTERNS.safeString,
-        sanitize: true
-      }
+        sanitize: true,
+      },
     });
 
     if (!validation.isValid) {
       return NextResponse.json(
-        { 
-          error: 'Invalid candidate registration data', 
-          details: validation.errors 
+        {
+          error: 'Invalid candidate registration data',
+          details: validation.errors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
+
     // Sanitize inputs
     const { email, password, orgName } = requestData;
     const name = sanitizeString(requestData.name);
     const sanitizedOrgName = orgName ? sanitizeString(orgName) : undefined;
     if (!CandidateAccount || !Organization || !User) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
 
@@ -67,12 +69,12 @@ export async function POST(req: NextRequest) {
         {
           adminId: 0,
           lanes: 0,
-        }
+        },
       ).lean();
       if (!organizationInfo) {
         return NextResponse.json(
           { error: `Organization "${sanitizedOrgName}" not found` },
-          { status: 404 }
+          { status: 404 },
         );
       }
       organizationId = organizationInfo._id;
@@ -83,12 +85,12 @@ export async function POST(req: NextRequest) {
         {
           adminId: 0,
           lanes: 0,
-        }
+        },
       ).lean();
       if (!organizationInfo) {
         return NextResponse.json(
-          { error: "No organizations found in the database" },
-          { status: 404 }
+          { error: 'No organizations found in the database' },
+          { status: 404 },
         );
       }
       organizationId = organizationInfo._id;
@@ -97,8 +99,8 @@ export async function POST(req: NextRequest) {
     const existingCandidate = await CandidateAccount.findOne({ email });
     if (existingCandidate) {
       return NextResponse.json(
-        { error: "Candidate already exists in an organization" },
-        { status: 400 }
+        { error: 'Candidate already exists in an organization' },
+        { status: 400 },
       );
     }
     const existingUser = await User.findOne({ email, organizationId }).lean();
@@ -108,14 +110,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Candidate already exists in this organization, but is deactivated.",
+              'Candidate already exists in this organization, but is deactivated.',
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
       return NextResponse.json(
-        { error: "Candidate alredy exists in this organization as a Member." },
-        { status: 400 }
+        { error: 'Candidate alredy exists in this organization as a Member.' },
+        { status: 400 },
       );
     }
 
@@ -133,16 +135,16 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json(
       {
-        message: "Candidate created successfully",
+        message: 'Candidate created successfully',
         user: {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          role: "candidate",
-          organizationInfo: organizationInfo,
+          role: 'candidate',
+          organizationInfo,
         },
       },
-      { status: 201 }
+      { status: 201 },
     );
 
     return response;

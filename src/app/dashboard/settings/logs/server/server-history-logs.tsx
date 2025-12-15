@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { ServerHistoryLogsProps } from "./types";
-import { useServerLogsLogic } from "./hooks/use-server-logs-logic";
-import { FilterBar } from "./components/filter-bar";
-import { LogsLoadingState } from "./components/logs-loading-state";
-import { LogsEmptyState } from "./components/logs-empty-state";
-import { LogsMobileList } from "./components/logs-mobile-list";
-import { LogsDesktopTable } from "./components/logs-desktop-table";
-import { LogsPagination } from "./components/logs-pagination";
+import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
+import { ServerHistoryLogsProps } from './types';
+import { useServerLogsLogic } from './hooks/use-server-logs-logic';
+import { FilterBar } from './components/filter-bar';
+import { LogsLoadingState } from './components/logs-loading-state';
+import { LogsEmptyState } from './components/logs-empty-state';
+import { LogsMobileList } from './components/logs-mobile-list';
+import { LogsDesktopTable } from './components/logs-desktop-table';
+import { LogsPagination } from './components/logs-pagination';
 
 export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
   const {
@@ -29,8 +29,36 @@ export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
     closeCandidateModal,
   } = useServerLogsLogic(props);
 
+  const renderContent = () => {
+    if (historyBusy) {
+      return <LogsLoadingState />;
+    }
+
+    if (historyLogs.length === 0) {
+      return <LogsEmptyState />;
+    }
+
+    return (
+      <>
+        {/* Mobile View */}
+        <LogsMobileList
+          logs={historyLogs}
+          renderTitle={renderLogTitle}
+          onViewDetails={handleCandidateModalDetail}
+        />
+
+        {/* Desktop View */}
+        <LogsDesktopTable
+          logs={historyLogs}
+          renderTitle={renderLogTitle}
+          onViewDetails={handleCandidateModalDetail}
+        />
+      </>
+    );
+  };
+
   return (
-    <div className="flex-1 flex flex-col pb-8">
+    <div className="flex flex-1 flex-col pb-8">
       {/* Filter Bar */}
       <FilterBar
         searchTerm={rawSearch}
@@ -42,30 +70,8 @@ export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
       />
 
       {/* Data Container */}
-      <div className="flex-1 overflow-hidden border rounded-lg bg-card/50 shadow-sm">
-        <div className="max-h-[75vh] overflow-auto">
-          {historyBusy ? (
-            <LogsLoadingState />
-          ) : historyLogs.length === 0 ? (
-            <LogsEmptyState />
-          ) : (
-            <>
-              {/* Mobile View */}
-              <LogsMobileList
-                logs={historyLogs}
-                renderTitle={renderLogTitle}
-                onViewDetails={handleCandidateModalDetail}
-              />
-
-              {/* Desktop View */}
-              <LogsDesktopTable
-                logs={historyLogs}
-                renderTitle={renderLogTitle}
-                onViewDetails={handleCandidateModalDetail}
-              />
-            </>
-          )}
-        </div>
+      <div className="flex-1 overflow-hidden rounded-lg border bg-card/50 shadow-sm">
+        <div className="max-h-[75vh] overflow-auto">{renderContent()}</div>
 
         {/* Pagination */}
         <LogsPagination

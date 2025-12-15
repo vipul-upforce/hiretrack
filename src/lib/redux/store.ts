@@ -1,7 +1,7 @@
-import { configureStore } from "@reduxjs/toolkit";
-import resumeReducer from "@/lib/redux/resumeSlice";
-import settingsReducer from "@/lib/redux/settingsSlice";
-import authReducer from "@/lib/redux/authSlice";
+import { configureStore } from '@reduxjs/toolkit';
+import resumeReducer from '@/lib/redux/resumeSlice';
+import settingsReducer from '@/lib/redux/settingsSlice';
+import authReducer from '@/lib/redux/authSlice';
 
 export const store = configureStore({
   reducer: {

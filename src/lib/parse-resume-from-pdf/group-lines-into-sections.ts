@@ -1,16 +1,16 @@
-import type { ResumeKey } from "@/lib/redux/types";
+import type { ResumeKey } from '@/lib/redux/types';
 import type {
   Line,
   Lines,
   ResumeSectionToLines,
-} from "@/lib/parse-resume-from-pdf/types";
+} from '@/lib/parse-resume-from-pdf/types';
 import {
   hasLetterAndIsAllUpperCase,
   hasOnlyLettersSpacesAmpersands,
   isBold,
-} from "@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/common-features";
+} from '@/lib/parse-resume-from-pdf/extract-resume-from-sections/lib/common-features';
 
-export const PROFILE_SECTION: ResumeKey = "profile";
+export const PROFILE_SECTION: ResumeKey = 'profile';
 
 /**
  * Step 3. Group lines into sections
@@ -22,11 +22,11 @@ export const PROFILE_SECTION: ResumeKey = "profile";
  */
 export const groupLinesIntoSections = (lines: Lines) => {
   // debugger;
-  let sections: ResumeSectionToLines = {};
+  const sections: ResumeSectionToLines = {};
   let sectionName: string = PROFILE_SECTION;
   let sectionLines: Line[] = [];
 
-  if (lines)
+  if (lines) {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const text = line[0]?.text.trim();
@@ -39,6 +39,7 @@ export const groupLinesIntoSections = (lines: Lines) => {
         sectionLines.push(line);
       }
     }
+  }
 
   if (sectionLines.length > 0) {
     sections[sectionName] = [...sectionLines];
@@ -48,21 +49,21 @@ export const groupLinesIntoSections = (lines: Lines) => {
 };
 
 const SECTION_TITLE_PRIMARY_KEYWORDS = [
-  "experience",
-  "education",
-  "project",
-  "skill",
+  'experience',
+  'education',
+  'project',
+  'skill',
 ];
 
 const SECTION_TITLE_SECONDARY_KEYWORDS = [
-  "job",
-  "course",
-  "extracurricular",
-  "objective",
-  "summary", // LinkedIn generated resume has a summary section
-  "award",
-  "honor",
-  "project",
+  'job',
+  'course',
+  'extracurricular',
+  'objective',
+  'summary', // LinkedIn generated resume has a summary section
+  'award',
+  'honor',
+  'project',
 ];
 
 const SECTION_TITLE_KEYWORDS = [
@@ -90,17 +91,14 @@ const isSectionTitle = (line: Line, lineNumber: number) => {
   // The following is a fallback heuristic to detect section title if it includes a keyword match
   // (This heuristics is not well tested and may not work well)
   const text = textItem.text.trim();
-  const textHasAtMost2Words =
-    text.split(" ").filter((s) => s !== "&").length <= 2;
+  const textHasAtMost2Words = text.split(' ').filter((s) => s !== '&').length <= 2;
   const startsWithCapitalLetter = /[A-Z]/.test(text.slice(0, 1));
 
   if (
-    textHasAtMost2Words &&
-    hasOnlyLettersSpacesAmpersands(textItem) &&
-    startsWithCapitalLetter &&
-    SECTION_TITLE_KEYWORDS.some((keyword) =>
-      text.toLowerCase().includes(keyword)
-    )
+    textHasAtMost2Words
+    && hasOnlyLettersSpacesAmpersands(textItem)
+    && startsWithCapitalLetter
+    && SECTION_TITLE_KEYWORDS.some((keyword) => text.toLowerCase().includes(keyword))
   ) {
     return true;
   }

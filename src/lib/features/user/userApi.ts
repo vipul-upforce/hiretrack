@@ -1,5 +1,5 @@
-import { runIfCookiePresent } from "@/lib/utils/queryGuards";
-import { baseApi } from "@/lib/api/baseApi";
+import { runIfCookiePresent } from '@/lib/utils/queryGuards';
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface Interviewer {
   _id: string;
@@ -10,15 +10,14 @@ export interface Interviewer {
 export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchInterviewers: builder.query<Interviewer[], void>({
-      queryFn: (_arg, _api, _extraOptions, baseQuery) =>
-        runIfCookiePresent<Interviewer[]>(
-          baseQuery,
-          () => ({
-            url: `/users/interviewers`,
-            method: "GET",
-          }),
-          { emptyResponse: [] }
-        ),
+      queryFn: (_arg, _api, _extraOptions, baseQuery) => runIfCookiePresent<Interviewer[]>(
+        baseQuery,
+        () => ({
+          url: '/users/interviewers',
+          method: 'GET',
+        }),
+        { emptyResponse: [] },
+      ),
     }),
   }),
 });

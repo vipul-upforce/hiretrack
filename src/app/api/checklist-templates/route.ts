@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { ChecklistTemplate } from "@/lib/mongodb";
-import { IChecklistTemplate } from "@/lib/models/ChecklistTemplate";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { ChecklistTemplate } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 // GET - Get all checklist templates for the organization
 export async function GET(req: NextRequest) {
@@ -11,22 +11,20 @@ export async function GET(req: NextRequest) {
       connectToDatabase(),
     ]);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    
 
     // Check if model is initialized
     if (!ChecklistTemplate) {
       return NextResponse.json(
-        { error: "Database models not initialized" },
-        { status: 500 }
+        { error: 'Database models not initialized' },
+        { status: 500 },
       );
     }
 
     const { searchParams } = new URL(req.url);
-    const type = searchParams.get("type") as "incoming" | "outgoing" | null;
-    const isActive = searchParams.get("active") === "true";
+    const type = searchParams.get('type') as 'incoming' | 'outgoing' | null;
+    const isActive = searchParams.get('active') === 'true';
 
     // Build query
     const query: any = { organizationId: user.organizationId };
@@ -34,18 +32,23 @@ export async function GET(req: NextRequest) {
     if (isActive) query.isActive = true;
 
     const templates = await ChecklistTemplate.find(query)
-      .populate("createdBy", "name email")
-      .sort({ createdAt: -1 }).lean().exec();
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
 
     return NextResponse.json({
       success: true,
       data: templates,
     });
   } catch (error) {
-    console.error("Error fetching checklist templates:", error);
+    logger.error(
+      { error, url: req.url },
+      'Error fetching checklist templates.',
+    );
     return NextResponse.json(
-      { error: "Failed to fetch templates" },
-      { status: 500 }
+      { error: 'Failed to fetch templates' },
+      { status: 500 },
     );
   }
 }
@@ -53,22 +56,20 @@ export async function GET(req: NextRequest) {
 // POST - Create a new checklist template
 export async function POST(req: NextRequest) {
   try {
-    const [decoded,body] = await Promise.all([
-      getAuthenticatedUser(req,["admin", "hr"]),
+    const [decoded, body] = await Promise.all([
+      getAuthenticatedUser(req, ['admin', 'hr']),
       req.json(),
       connectToDatabase(),
     ]);
     if (!decoded) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
 
     // Check if model is initialized
     if (!ChecklistTemplate) {
-      console.error("ChecklistTemplate model not initialized");
       return NextResponse.json(
-        { error: "Database models not initialized" },
-        { status: 500 }
+        { error: 'Database models not initialized' },
+        { status: 500 },
       );
     }
 
@@ -77,23 +78,23 @@ export async function POST(req: NextRequest) {
     // Validate required fields
     if (!name || !type || !Array.isArray(fields)) {
       return NextResponse.json(
-        { error: "Name, type, and fields are required" },
-        { status: 400 }
+        { error: 'Name, type, and fields are required' },
+        { status: 400 },
       );
     }
 
     // Validate type
-    if (!["incoming", "outgoing"].includes(type)) {
+    if (!['incoming', 'outgoing'].includes(type)) {
       return NextResponse.json(
         { error: "Type must be 'incoming' or 'outgoing'" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check for existing templates with the same name or name with suffix
     const baseName = name.trim();
     const regex = new RegExp(
-      `^${baseName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&")}(\\s\\(\\d+\\))?$`
+      `^${baseName.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')}(\\s\\(\\d+\\))?$`,
     );
     const existingTemplates = await ChecklistTemplate.find({
       organizationId: decoded.organizationId,
@@ -127,17 +128,17 @@ export async function POST(req: NextRequest) {
     });
 
     await template.save();
-    await template.populate("createdBy", "name email");
+    await template.populate('createdBy', 'name email');
 
     return NextResponse.json({
       success: true,
       data: template,
     });
   } catch (error) {
-    console.error("Error creating checklist template:", error);
+    logger.error({ error, url: req.url }, 'Error creating checklist template');
     return NextResponse.json(
-      { error: "Failed to create template" },
-      { status: 500 }
+      { error: 'Failed to create template' },
+      { status: 500 },
     );
   }
 }

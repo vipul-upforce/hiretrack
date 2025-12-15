@@ -1,5 +1,7 @@
-import { JobPerformanceData } from "@/app/api/analytics/types";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { JobPerformanceData } from '@/app/api/analytics/types';
+import {
+  Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
 
 export const TopJobsChart: React.FC<{ data: JobPerformanceData[] }> = ({ data }) => {
   const topJobs = [...data]
@@ -19,7 +21,9 @@ export const TopJobsChart: React.FC<{ data: JobPerformanceData[] }> = ({ data })
     <ResponsiveContainer width="100%" height={450}>
       <BarChart
         data={topJobs}
-        margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+        margin={{
+          top: 20, right: 30, left: 20, bottom: 60,
+        }}
       >
         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
         <XAxis
@@ -38,9 +42,21 @@ export const TopJobsChart: React.FC<{ data: JobPerformanceData[] }> = ({ data })
               return (
                 <div className="bg-background border rounded-lg shadow-lg p-3">
                   <p className="font-semibold text-foreground">{label}</p>
-                  <p>Applications: <span className="font-bold">{data.applications}</span></p>
-                  <p>Accepted: <span className="font-bold text-green-600 dark:text-green-400">{data.accepted}</span></p>
-                  <p>Success Rate: <span className="font-bold">{data.successRate}%</span></p>
+                  <p>
+                    Applications:
+                    <span className="font-bold">{data.applications}</span>
+                  </p>
+                  <p>
+                    Accepted:
+                    <span className="font-bold text-green-600 dark:text-green-400">{data.accepted}</span>
+                  </p>
+                  <p>
+                    Success Rate:
+                    <span className="font-bold">
+                      {data.successRate}
+                      %
+                    </span>
+                  </p>
                 </div>
               );
             }

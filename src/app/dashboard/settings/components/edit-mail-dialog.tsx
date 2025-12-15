@@ -1,30 +1,26 @@
-"use client";
-import { useState, useEffect, useRef } from "react";
-import type React from "react";
+'use client';
 
-import { Mail, RotateCcw, AlertTriangle, Eye, EyeClosed } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Editor } from "@monaco-editor/react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Form, Formik } from "formik";
+import { useState, useEffect, useRef } from 'react';
+import type React from 'react';
+
+import {
+  Mail, RotateCcw, AlertTriangle, Eye, EyeClosed,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Editor } from '@monaco-editor/react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { Form, Formik } from 'formik';
 import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
-} from "@/lib/features/settings/settingsApi";
+} from '@/lib/features/settings/settingsApi';
 import {
-  assE,
   Data,
   editorOptions,
-  jobD,
-  MAD,
-  OTP,
-  RemA,
-  ResetP,
-  StatusU,
-} from "@/lib/constants";
+} from "@/app/dashboard/settings/templates/constants";
 import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
 import { useTheme } from "@/components/theme-provider";
 import {
@@ -34,7 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { defaultTemplatesFE as defaultTemplates } from "@/lib/constants";
+
+import { defaultTemplatesAsObject as defaultTemplates } from "@/app/dashboard/settings/templates/constants";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -44,11 +41,11 @@ export default function EmailTemplateEditor({
   const { toast } = useToast();
   const { theme } = useTheme();
   const [selectedTemplate, setSelectedTemplate] = useState(
-    "job-application-(hr)"
+    "job-application-hr"
   );
   const [previewData] = useState(Data);
-  const [activeEditor, setActiveEditor] = useState<"subject" | "html" | null>(
-    null
+  const [activeEditor, setActiveEditor] = useState<'subject' | 'html' | null>(
+    null,
   );
   const [isDemoEnabled, setIsDemoEnabled] = useState(false);
 
@@ -58,8 +55,7 @@ export default function EmailTemplateEditor({
   const subjectCursorPosition = useRef<number>(0);
 
   const { data, isLoading, refetch } = useGetMailTemplatesQuery(undefined);
-  const [updateEmailTemplates, { isLoading: isUpdating }] =
-    useUpdateMailTemplatesMutation();
+  const [updateEmailTemplates, { isLoading: isUpdating }] = useUpdateMailTemplatesMutation();
 
   useEffect(() => {
     refetch();
@@ -100,24 +96,21 @@ export default function EmailTemplateEditor({
     const currentTemplate = values.templates[selectedTemplate];
     if (!currentTemplate) return { used: [], unused: [], invalid: [] };
 
-    const availableVariables =
-      defaultTemplates[selectedTemplate]?.variables || [];
-    const subjectContent = currentTemplate.subject || "";
-    const htmlContent = currentTemplate.html || "";
-    const allContent = subjectContent + " " + htmlContent;
+    const availableVariables = defaultTemplates[selectedTemplate]?.variables || [];
+    const subjectContent = currentTemplate.subject || '';
+    const htmlContent = currentTemplate.html || '';
+    const allContent = `${subjectContent} ${htmlContent}`;
 
     // Extract all variables used in the template
     const usedVariables = extractVariablesFromContent(allContent);
 
     // Categorize variables
-    const used = availableVariables.filter((variable) =>
-      usedVariables.includes(variable)
-    );
+    const used = availableVariables.filter((variable) => usedVariables.includes(variable));
     const unused = availableVariables.filter(
-      (variable) => !usedVariables.includes(variable)
+      (variable) => !usedVariables.includes(variable),
     );
     const invalid = usedVariables.filter(
-      (variable) => !availableVariables.includes(variable)
+      (variable) => !availableVariables.includes(variable),
     );
 
     return { used, unused, invalid };
@@ -127,23 +120,23 @@ export default function EmailTemplateEditor({
     try {
       await updateEmailTemplates(values).unwrap();
       toast({
-        title: "Success",
-        description: "Email templates updated successfully",
+        title: 'Success',
+        description: 'Email templates updated successfully',
       });
       refetch();
       onClose();
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update email templates",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update email templates',
+        variant: 'destructive',
       });
     }
   };
 
   const handleResetTemplate = (
     setFieldValue: any,
-    values: IEmailTemplatesConfig
+    values: IEmailTemplatesConfig,
   ) => {
     const defaultTemplate = defaultTemplates[selectedTemplate];
     if (defaultTemplate) {
@@ -153,19 +146,19 @@ export default function EmailTemplateEditor({
           ...defaultTemplate,
         },
       };
-      setFieldValue("templates", updatedTemplates);
+      setFieldValue('templates', updatedTemplates);
     }
   };
 
   // Handle subject input events
   const handleSubjectFocus = () => {
-    setActiveEditor("subject");
+    setActiveEditor('subject');
   };
 
   const handleSubjectClick = (e: React.MouseEvent<HTMLInputElement>) => {
     const target = e.target as HTMLInputElement;
     subjectCursorPosition.current = target.selectionStart || 0;
-    setActiveEditor("subject");
+    setActiveEditor('subject');
   };
 
   const handleSubjectKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -176,9 +169,9 @@ export default function EmailTemplateEditor({
   const handleSubjectChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setFieldValue: any,
-    values: IEmailTemplatesConfig
+    values: IEmailTemplatesConfig,
   ) => {
-    const target = e.target;
+    const { target } = e;
     subjectCursorPosition.current = target.selectionStart || 0;
 
     const updatedTemplates = {
@@ -188,7 +181,7 @@ export default function EmailTemplateEditor({
         subject: e.target.value,
       },
     };
-    setFieldValue("templates", updatedTemplates);
+    setFieldValue('templates', updatedTemplates);
   };
 
   // Handle Monaco editor events
@@ -197,12 +190,12 @@ export default function EmailTemplateEditor({
 
     // Set active editor when Monaco editor is focused
     editor.onDidFocusEditorText(() => {
-      setActiveEditor("html");
+      setActiveEditor('html');
     });
 
     // Track cursor position changes
     editor.onDidChangeCursorPosition(() => {
-      setActiveEditor("html");
+      setActiveEditor('html');
     });
   };
 
@@ -210,28 +203,27 @@ export default function EmailTemplateEditor({
   const insertVariable = (
     variable: string,
     setFieldValue: any,
-    values: IEmailTemplatesConfig
+    values: IEmailTemplatesConfig,
   ) => {
     const variableText = `{{${variable}}}`;
 
-    if (activeEditor === "subject") {
+    if (activeEditor === 'subject') {
       // Handle subject input insertion
       const input = subjectInputRef.current;
       if (!input) {
         toast({
-          title: "Error",
-          description: "Subject input not found",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Subject input not found',
+          variant: 'destructive',
         });
         return;
       }
 
-      const currentValue = values.templates[selectedTemplate]?.subject || "";
+      const currentValue = values.templates[selectedTemplate]?.subject || '';
       const startPos = subjectCursorPosition.current;
-      const newValue =
-        currentValue.slice(0, startPos) +
-        variableText +
-        currentValue.slice(startPos);
+      const newValue = currentValue.slice(0, startPos)
+        + variableText
+        + currentValue.slice(startPos);
 
       // Update the value
       const updatedTemplates = {
@@ -241,7 +233,7 @@ export default function EmailTemplateEditor({
           subject: newValue,
         },
       };
-      setFieldValue("templates", updatedTemplates);
+      setFieldValue('templates', updatedTemplates);
 
       // Set cursor position after the inserted text
       setTimeout(() => {
@@ -250,14 +242,14 @@ export default function EmailTemplateEditor({
         input.setSelectionRange(newCursorPos, newCursorPos);
         subjectCursorPosition.current = newCursorPos;
       }, 0);
-    } else if (activeEditor === "html") {
+    } else if (activeEditor === 'html') {
       // Handle Monaco editor insertion
       const editor = editorRef.current;
       if (!editor) {
         toast({
-          title: "Error",
-          description: "HTML editor not found",
-          variant: "destructive",
+          title: 'Error',
+          description: 'HTML editor not found',
+          variant: 'destructive',
         });
         return;
       }
@@ -265,9 +257,9 @@ export default function EmailTemplateEditor({
       const position = editor.getPosition();
       if (!position) {
         toast({
-          title: "Error",
-          description: "Could not get cursor position",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Could not get cursor position',
+          variant: 'destructive',
         });
         return;
       }
@@ -280,9 +272,9 @@ export default function EmailTemplateEditor({
         endColumn: position.column,
       };
 
-      editor.executeEdits("insert-variable", [
+      editor.executeEdits('insert-variable', [
         {
-          range: range,
+          range,
           text: variableText,
         },
       ]);
@@ -296,10 +288,10 @@ export default function EmailTemplateEditor({
       editor.focus();
     } else {
       toast({
-        title: "No editor selected",
+        title: 'No editor selected',
         description:
-          "Please click in the subject field or HTML editor first, then try again",
-        variant: "destructive",
+          'Please click in the subject field or HTML editor first, then try again',
+        variant: 'destructive',
       });
     }
   };
@@ -308,7 +300,7 @@ export default function EmailTemplateEditor({
     if (!isDemoEnabled) return template;
     let processed = template;
     Object.entries(data).forEach(([key, value]) => {
-      const regex = new RegExp(`{{${key}}}`, "g");
+      const regex = new RegExp(`{{${key}}}`, 'g');
       processed = processed.replace(regex, value);
     });
     return processed;
@@ -323,7 +315,9 @@ export default function EmailTemplateEditor({
         onSubmit={handleSubmit}
         enableReinitialize
       >
-        {({ values, handleSubmit, setFieldValue, isSubmitting }) => {
+        {({
+          values, handleSubmit, setFieldValue, isSubmitting,
+        }) => {
           const variableAnalysis = analyzeVariableUsage(values);
 
           return (
@@ -348,7 +342,7 @@ export default function EmailTemplateEditor({
                               <SelectItem key={key} value={key}>
                                 {template.templateName}
                               </SelectItem>
-                            )
+                            ),
                           )}
                         </SelectContent>
                       </Select>
@@ -357,7 +351,7 @@ export default function EmailTemplateEditor({
                     <div className="space-y-2">
                       <Label htmlFor="subject">
                         Email Subject
-                        {activeEditor === "subject" && (
+                        {activeEditor === 'subject' && (
                           <span className="text-xs text-green-600 ml-2 font-medium">
                             ● Active
                           </span>
@@ -367,44 +361,42 @@ export default function EmailTemplateEditor({
                         ref={subjectInputRef}
                         id="subject"
                         value={
-                          values.templates[selectedTemplate]?.subject || ""
+                          values.templates[selectedTemplate]?.subject || ''
                         }
-                        onChange={(e) =>
-                          handleSubjectChange(e, setFieldValue, values)
-                        }
+                        onChange={(e) => handleSubjectChange(e, setFieldValue, values)}
                         onClick={handleSubjectClick}
                         onKeyUp={handleSubjectKeyUp}
                         onFocus={handleSubjectFocus}
                         placeholder="Enter email subject"
-                        className={activeEditor === "subject" ? "" : ""}
+                        className={activeEditor === 'subject' ? '' : ''}
                       />
                     </div>
 
                     <div className="space-y-2">
                       <Label>
                         HTML Content
-                        {activeEditor === "html" && (
+                        {activeEditor === 'html' && (
                           <span className="text-xs text-green-600 ml-2 font-medium">
                             ● Active
                           </span>
                         )}
                       </Label>
                       <div
-                        className={`border rounded-md ${activeEditor === "html" ? "" : ""}`}
+                        className={`border rounded-md ${activeEditor === 'html' ? '' : ''}`}
                       >
                         <Editor
                           height="400px"
                           defaultLanguage="html"
-                          value={values.templates[selectedTemplate]?.html || ""}
+                          value={values.templates[selectedTemplate]?.html || ''}
                           onChange={(value) => {
                             const updatedTemplates = {
                               ...values.templates,
                               [selectedTemplate]: {
                                 ...values.templates[selectedTemplate],
-                                html: value || "",
+                                html: value || '',
                               },
                             };
-                            setFieldValue("templates", updatedTemplates);
+                            setFieldValue('templates', updatedTemplates);
                           }}
                           onMount={handleEditorMount}
                           options={{
@@ -412,11 +404,11 @@ export default function EmailTemplateEditor({
                             selectOnLineNumbers: true,
                             roundedSelection: false,
                             readOnly: false,
-                            cursorStyle: "line",
+                            cursorStyle: 'line',
                             automaticLayout: true,
-                            theme: theme === "dark" ? "vs-dark" : "vs-light",
+                            theme: theme === 'dark' ? 'vs-dark' : 'vs-light',
                           }}
-                          theme={theme === "dark" ? "vs-dark" : "vs-light"}
+                          theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
                         />
                       </div>
                     </div>
@@ -428,10 +420,11 @@ export default function EmailTemplateEditor({
                           Available Variables:
                           {activeEditor && (
                             <span className="text-xs text-green-600 ml-2">
-                              (Click to insert into{" "}
-                              {activeEditor === "subject"
-                                ? "subject"
-                                : "HTML editor"}
+                              (Click to insert into
+                              {' '}
+                              {activeEditor === 'subject'
+                                ? 'subject'
+                                : 'HTML editor'}
                               )
                             </span>
                           )}
@@ -449,7 +442,8 @@ export default function EmailTemplateEditor({
                               <AlertTriangle className="h-4 w-4 text-red-500" />
                               <p className="font-medium text-red-700 dark:text-red-400">
                                 Invalid Variables Found (
-                                {variableAnalysis.invalid.length})
+                                {variableAnalysis.invalid.length}
+                                )
                               </p>
                             </div>
                             <div className="flex gap-2 text-xs flex-wrap">
@@ -474,30 +468,30 @@ export default function EmailTemplateEditor({
                         {variableAnalysis.used.length > 0 && (
                           <div className="mb-3">
                             <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
-                              ✓ Used Variables ({variableAnalysis.used.length})
+                              ✓ Used Variables (
+                              {variableAnalysis.used.length}
+                              )
                             </p>
                             <div className="flex gap-2 text-xs flex-wrap">
                               {variableAnalysis.used.map((variable) => (
                                 <button
                                   key={variable}
                                   type="button"
-                                  onClick={() =>
-                                    insertVariable(
-                                      variable,
-                                      setFieldValue,
-                                      values
-                                    )
-                                  }
+                                  onClick={() => insertVariable(
+                                    variable,
+                                    setFieldValue,
+                                    values,
+                                  )}
                                   className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
                                     activeEditor
-                                      ? "border-green-400 bg-green-100 text-green-800 hover:bg-green-200 hover:border-green-600 hover:shadow-sm cursor-pointer dark:border-green-600 dark:bg-green-950/20 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:border-green-600"
-                                      : "border-green-300 bg-green-100 text-green-600 opacity-50 cursor-not-allowed dark:border-green-700 dark:bg-green-950/20 dark:text-green-500"
+                                      ? 'border-green-400 bg-green-100 text-green-800 hover:bg-green-200 hover:border-green-600 hover:shadow-sm cursor-pointer dark:border-green-600 dark:bg-green-950/20 dark:text-green-400 dark:hover:bg-green-900/20 dark:hover:border-green-600'
+                                      : 'border-green-300 bg-green-100 text-green-600 opacity-50 cursor-not-allowed dark:border-green-700 dark:bg-green-950/20 dark:text-green-500'
                                   }`}
                                   disabled={!activeEditor}
                                   title={
                                     activeEditor
                                       ? `Click to insert {{${variable}}} at cursor position`
-                                      : "Select an editor first"
+                                      : 'Select an editor first'
                                   }
                                 >
                                   {`{{${variable}}}`}
@@ -512,30 +506,29 @@ export default function EmailTemplateEditor({
                           <div className="mb-3">
                             <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
                               ○ Unused Variables (
-                              {variableAnalysis.unused.length})
+                              {variableAnalysis.unused.length}
+                              )
                             </p>
                             <div className="flex gap-2 text-xs flex-wrap">
                               {variableAnalysis.unused.map((variable) => (
                                 <button
                                   key={variable}
                                   type="button"
-                                  onClick={() =>
-                                    insertVariable(
-                                      variable,
-                                      setFieldValue,
-                                      values
-                                    )
-                                  }
+                                  onClick={() => insertVariable(
+                                    variable,
+                                    setFieldValue,
+                                    values,
+                                  )}
                                   className={`border px-3 py-2 rounded-md transition-all duration-200 font-mono ${
                                     activeEditor
-                                      ? "border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600"
-                                      : "border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-black dark:text-gray-500"
+                                      ? 'border-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 hover:border-gray-500 hover:shadow-sm cursor-pointer dark:border-gray-600 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:border-gray-600'
+                                      : 'border-gray-300 bg-gray-100 text-gray-500 opacity-50 cursor-not-allowed dark:border-gray-700 dark:bg-black dark:text-gray-500'
                                   }`}
                                   disabled={!activeEditor}
                                   title={
                                     activeEditor
                                       ? `Click to insert {{${variable}}} at cursor position`
-                                      : "Select an editor first"
+                                      : 'Select an editor first'
                                   }
                                 >
                                   {`{{${variable}}}`}
@@ -551,27 +544,26 @@ export default function EmailTemplateEditor({
                   <div className="space-y-4 overflow-hidden">
                     <div className="text-sm text-muted-foreground mb-2 flex justify-between items-end">
                       <p>
-                        <strong>Template:</strong>{" "}
+                        <strong>Template:</strong>
+                        {' '}
                         {defaultTemplates[selectedTemplate]?.templateName}
                       </p>
                       <div className="flex gap-2">
                         <Button
                           type="button"
-                          variant={isDemoEnabled ? "default" : "outline"}
+                          variant={isDemoEnabled ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setIsDemoEnabled((prev) => !prev)}
                           className="flex items-center gap-1"
                         >
                           {!isDemoEnabled ? <EyeClosed /> : <Eye />}
-                          {"Preview"}
+                          Preview
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            handleResetTemplate(setFieldValue, values)
-                          }
+                          onClick={() => handleResetTemplate(setFieldValue, values)}
                           className="flex items-center gap-1"
                         >
                           <RotateCcw className="h-3 w-3" />
@@ -588,9 +580,9 @@ export default function EmailTemplateEditor({
                             <span className="font-medium">Subject:</span>
                             <span>
                               {processTemplate(
-                                values.templates[selectedTemplate]?.subject ||
-                                  "",
-                                previewData
+                                values.templates[selectedTemplate]?.subject
+                                  || '',
+                                previewData,
                               )}
                             </span>
                           </div>
@@ -598,8 +590,8 @@ export default function EmailTemplateEditor({
                         <div className="flex-1 overflow-y-auto">
                           <iframe
                             srcDoc={processTemplate(
-                              values.templates[selectedTemplate]?.html || "",
-                              previewData
+                              values.templates[selectedTemplate]?.html || '',
+                              previewData,
                             )}
                             className="w-full h-full border-none"
                             title="Email Preview"
@@ -626,12 +618,12 @@ export default function EmailTemplateEditor({
                       type="submit"
                       variant="primary"
                       disabled={
-                        isSubmitting ||
-                        isUpdating ||
-                        variableAnalysis.invalid.length > 0
+                        isSubmitting
+                        || isUpdating
+                        || variableAnalysis.invalid.length > 0
                       }
                     >
-                      {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                      {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
                     </Button>
                   </div>
                 </div>

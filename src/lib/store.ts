@@ -1,29 +1,28 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import { combineReducers } from '@reduxjs/toolkit';
-import { baseApi } from "./api/baseApi";
-import { organizationSlice } from "./features/org/orgSlice";
-import authReducer from "@/lib/redux/authSlice";
+import { baseApi } from './api/baseApi';
+import { organizationSlice } from './features/org/orgSlice';
+import authReducer from '@/lib/redux/authSlice';
 
 // Import APIs to ensure they inject their endpoints into baseApi
-import "./features/auth/authApi";
-import "./features/job/jobApi";
-import "./features/candidate/candidateApi";
-import "./features/user/userApi";
-import "./features/lane/laneApi";
-import "./features/org/orgApi";
-import "./features/settings/settingsApi";
-import "./features/checklist/checklistApi";
-import "./features/notifications/notificationsApi";
-import "./features/analytics/analyticsApi";
-import "./features/users/usersApi";
+import './features/auth/authApi';
+import './features/job/jobApi';
+import './features/candidate/candidateApi';
+import './features/user/userApi';
+import './features/lane/laneApi';
+import './features/org/orgApi';
+import './features/settings/settingsApi';
+import './features/checklist/checklistApi';
+import './features/notifications/notificationsApi';
+import './features/analytics/analyticsApi';
+import './features/users/usersApi';
 
 // Persist config for auth slice
 const authPersistConfig = {
   key: 'auth',
   storage,
-  whitelist: ['user', 'auth_token', 'token', 'isAuthenticated'] // only persist these fields
+  whitelist: ['user', 'auth_token', 'token', 'isAuthenticated'], // only persist these fields
 };
 
 // Persist config for organization slice

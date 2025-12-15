@@ -1,15 +1,16 @@
-import { NextResponse, NextRequest } from "next/server";
-import bcrypt from "bcryptjs";
-import connectToDatabase, { CandidateAccount, Settings,User, Organization  } from "@/lib/mongodb";
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
-import { IUser } from "@/lib/models/user";
-import { IUCandidateAccount } from "@/lib/models/candidateAccount";
-import { setSecureAuthTokens, setSecureOrgId } from "@/lib/secureTokens";
-import { emailLoginRateLimiter } from "@/lib/rateLimiter";
-import { signAccessToken } from "@/app/actions/auth";
-import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from "@/lib/refreshToken";
-import crypto from "crypto";
-import { UserWithoutCF } from "@/types/login";
+import { NextResponse, NextRequest } from 'next/server';
+import bcrypt from 'bcryptjs';
+import connectToDatabase, { CandidateAccount, Settings,User, Organization  } from '@/lib/mongodb';
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import { IUser } from '@/lib/models/user';
+import { IUCandidateAccount } from '@/lib/models/candidateAccount';
+import { setSecureAuthTokens, setSecureOrgId } from '@/lib/secureTokens';
+import { emailLoginRateLimiter } from '@/lib/rateLimiter';
+import { signAccessToken } from '@/app/actions/auth';
+import { UserWithoutCF } from '@/types/login';
+import { logger } from '@/lib/logger/logger.server';
+import { cleanupExpiredTokens, generateRefreshToken, hashRefreshToken, storeRefreshToken } from '@/lib/refreshToken';
+import { signToken } from '@/lib/jwt';
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -18,8 +19,8 @@ async function handleLogin(req: NextRequest) {
 
     if (!User || !Organization || !Settings || !CandidateAccount) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 500 }
+        { error: 'Database not connected' },
+        { status: 500 },
       );
     }
 
@@ -31,13 +32,10 @@ async function handleLogin(req: NextRequest) {
       },
     });
     const candidates = await CandidateAccount.find({ email }).lean();
-    // Log for debugging (remove console.log if using a logger)
-    // console.log(users, "users");
-    // console.log(candidates, "candidates");
 
     // Check if email exists in either collection
     if (users.length === 0 && candidates.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     if (users.length > 0 && candidates.length > 0) {
@@ -54,9 +52,9 @@ async function handleLogin(req: NextRequest) {
       return await candidateLogin(candidates, orgId, password, req);
     }
 
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   } catch (error) {
-    // console.log(error, "Err Of Login ");
+    logger.error({ error }, 'Error during login');
 
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -68,12 +66,12 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
   const user = users[0];
   if (orgId) {
     const userInOrg = users.find(
-      (user) => user.organizationId.toString() === orgId
+      (user) => user.organizationId.toString() === orgId,
     );
     if (!userInOrg) {
       return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 401 }
+        { error: 'Invalid organization ID' },
+        { status: 401 },
       );
     }
 
@@ -81,8 +79,8 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
     const isPasswordValid = await bcrypt.compare(password, userInOrg.password);
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
+        { error: 'Invalid credentials' },
+        { status: 401 },
       );
     }
 
@@ -91,22 +89,22 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       .lean();
     const orgSettings = await Settings!
       .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-      .select("fileStorage twoFA")
-      .lean();
+      .select('fileStorage twoFA')
+      .lean()
 
     if (orgSettings.twoFA.enable2FA) {
       const response = NextResponse.json({
-        message: "Continuing to next step for 2fa",
+        message: 'Continuing to next step for 2fa',
         twofa: true,
         organizationId: orgId,
       });
-      response.headers.set("X-Content-Type-Options", "nosniff");
-      // response.headers.set("X-Frame-Options", "DENY");
-      response.headers.set("X-Frame-Options", "SAMEORIGIN");
-      response.headers.set("X-XSS-Protection", "1; mode=block");
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      // response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
       response.headers.set(
-        "Referrer-Policy",
-        "strict-origin-when-cross-origin"
+        'Referrer-Policy',
+        'strict-origin-when-cross-origin',
       );
 
       return response;
@@ -144,22 +142,22 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       {
         organizations: orgs,
         message:
-          "User exists in multiple organizations. Please specify the organization to login.",
+          'User exists in multiple organizations. Please specify the organization to login.',
       },
-      { status: 200 }
+      { status: 200 },
     );
   }
 
   // If user exists in a single organization, proceed to check password
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
   const orgInfo = await Organization!.findById(user.organizationId).lean();
   const fileStorage = await Settings!
     .findOne({ organizationId: user.organizationId }, { _id: 0 })
-    .select("fileStorage")
+    .select('fileStorage')
     .lean();
 
   const tokenObj = {
@@ -185,28 +183,28 @@ const candidateLogin = async (
   const candidate = candidates[0];
   if (orgId) {
     const candidateInOrg = candidates.find(
-      (candidate) => candidate.organizationId.toString() === orgId
+      (candidate) => candidate.organizationId.toString() === orgId,
     );
     if (!candidateInOrg) {
       return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 401 }
+        { error: 'Invalid organization ID' },
+        { status: 401 },
       );
     }
     const fileStorage = await Settings!
       .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
-      .select("fileStorage")
+      .select('fileStorage')
       .lean();
 
     // Check password for the specified organization
     const isPasswordValid = await bcrypt.compare(
       password,
-      candidateInOrg.password
+      candidateInOrg.password,
     );
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
+        { error: 'Invalid credentials' },
+        { status: 401 },
       );
     }
 
@@ -221,7 +219,7 @@ const candidateLogin = async (
       name: candidateInOrg.name,
       email: candidateInOrg.email,
       appliedApplications: candidateInOrg.appliedApplications,
-      role: "candidate",
+      role: 'candidate',
       organizationId: candidateInOrg.organizationId,
       organizationInfo: orgInfo,
       fileStorage: fileStorage?.fileStorage?.storageType,
@@ -242,7 +240,7 @@ const candidateLogin = async (
   }
   const fileStorage = await Settings!
     .findOne({ organizationId: candidate.organizationId }, { _id: 0 })
-    .select("fileStorage")
+    .select('fileStorage')
     .lean();
 
   // If candidate exists in multiple organizations, return the organizations
@@ -251,16 +249,16 @@ const candidateLogin = async (
       {
         organizations: orgs,
         message:
-          "Candidate exists in multiple organizations. Please specify the organization for login.",
+          'Candidate exists in multiple organizations. Please specify the organization for login.',
       },
-      { status: 200 }
+      { status: 200 },
     );
   }
 
   // If candidate exists in a single organization, proceed to check password
   const isPasswordValid = await bcrypt.compare(password, candidate.password);
   if (!isPasswordValid) {
-    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
   const orgInfo = await Organization!
@@ -275,7 +273,7 @@ const candidateLogin = async (
     name: candidate.name,
     email: candidate.email,
     appliedApplications: candidate.appliedApplications,
-    role: "candidate",
+    role: 'candidate',
     organizationId: candidate.organizationId,
     organizationInfo: orgInfo,
     fileStorage: fileStorage?.fileStorage?.storageType,
@@ -294,17 +292,17 @@ const checkMultipleOrgs = async (
   if (orgId) {
     // Find user and candidate in the specified organization
     const userInOrg = users.find(
-      (user) => user.organizationId.toString() === orgId
+      (user) => user.organizationId.toString() === orgId,
     );
     const candidateInOrg = candidates.find(
-      (candidate) => candidate.organizationId.toString() === orgId
+      (candidate) => candidate.organizationId.toString() === orgId,
     );
 
     // Check if either account exists in the specified org
     if (!userInOrg && !candidateInOrg) {
       return NextResponse.json(
-        { error: "Invalid organization ID" },
-        { status: 401 }
+        { error: 'Invalid organization ID' },
+        { status: 401 },
       );
     }
 
@@ -316,20 +314,20 @@ const checkMultipleOrgs = async (
       // Verify password for user account
       const isUserPasswordValid = await bcrypt.compare(
         password,
-        userInOrg.password
+        userInOrg.password,
       );
 
       // Verify password for candidate account
       const isCandidatePasswordValid = await bcrypt.compare(
         password,
-        candidateInOrg.password
+        candidateInOrg.password,
       );
 
       // Return error if both passwords are invalid
       if (!isUserPasswordValid && !isCandidatePasswordValid) {
         return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
+          { error: 'Invalid credentials' },
+          { status: 401 },
         );
       }
 
@@ -340,7 +338,7 @@ const checkMultipleOrgs = async (
       if (isUserPasswordValid) {
         const fileStorage = await Settings!
           .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-          .select("fileStorage")
+          .select('fileStorage')
           .lean();
 
         accounts.push({
@@ -361,7 +359,7 @@ const checkMultipleOrgs = async (
           id: candidateInOrg._id.toString(),
           name: candidateInOrg.email,
           email: candidateInOrg.email,
-          role: "candidate",
+          role: 'candidate',
           organizationId: candidateInOrg.organizationId.toString(),
           isCandidate: true,
           appliedApplications: candidateInOrg.appliedApplications,
@@ -374,9 +372,9 @@ const checkMultipleOrgs = async (
         {
           accounts,
           message:
-            "This email has multiple account types. Please select which account to use.",
+            'This email has multiple account types. Please select which account to use.',
         },
-        { status: 200 }
+        { status: 200 },
       );
     }
 
@@ -384,13 +382,13 @@ const checkMultipleOrgs = async (
     if (userInOrg) {
       const isPasswordValid = await bcrypt.compare(
         password,
-        userInOrg.password
+        userInOrg.password,
       );
 
       if (!isPasswordValid) {
         return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
+          { error: 'Invalid credentials' },
+          { status: 401 },
         );
       }
 
@@ -399,7 +397,7 @@ const checkMultipleOrgs = async (
         .lean();
       const fileStorage = await Settings!
         .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-        .select("fileStorage")
+        .select('fileStorage')
         .lean();
 
       const tokenObj = {
@@ -421,17 +419,17 @@ const checkMultipleOrgs = async (
     if (candidateInOrg) {
       const isPasswordValid = await bcrypt.compare(
         password,
-        candidateInOrg.password
+        candidateInOrg.password,
       );
       const fileStorage = await Settings!
         .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
-        .select("fileStorage")
+        .select('fileStorage')
         .lean();
 
       if (!isPasswordValid) {
         return NextResponse.json(
-          { error: "Invalid credentials" },
-          { status: 401 }
+          { error: 'Invalid credentials' },
+          { status: 401 },
         );
       }
 
@@ -447,7 +445,7 @@ const checkMultipleOrgs = async (
         name: candidateInOrg.name,
         email: candidateInOrg.email,
         appliedApplications: candidateInOrg.appliedApplications,
-        role: "candidate",
+        role: 'candidate',
         organizationId: candidateInOrg.organizationId,
         organizationInfo: orgInfo,
         fileStorage: fileStorage?.fileStorage?.storageType,
@@ -472,12 +470,12 @@ const checkMultipleOrgs = async (
         orgId,
         name: orgInfo?.name,
         isCandidate: false,
-        accountTypes: ["user"],
+        accountTypes: ['user'],
       });
     } else {
       const org = orgMap.get(orgId);
-      if (!org.accountTypes.includes("user")) {
-        org.accountTypes.push("user");
+      if (!org.accountTypes.includes('user')) {
+        org.accountTypes.push('user');
       }
     }
   }
@@ -492,12 +490,12 @@ const checkMultipleOrgs = async (
         orgId,
         name: orgInfo?.name,
         isCandidate: true,
-        accountTypes: ["candidate"],
+        accountTypes: ['candidate'],
       });
     } else {
       const org = orgMap.get(orgId);
-      if (!org.accountTypes.includes("candidate")) {
-        org.accountTypes.push("candidate");
+      if (!org.accountTypes.includes('candidate')) {
+        org.accountTypes.push('candidate');
       }
     }
   }
@@ -512,9 +510,9 @@ const checkMultipleOrgs = async (
     {
       organizations: orgs,
       message:
-        "Account exists in multiple organizations. Please specify the organization for login.",
+        'Account exists in multiple organizations. Please specify the organization for login.',
     },
-    { status: 200 }
+    { status: 200 },
   );
 };
 
@@ -530,16 +528,16 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
   }
 
   // Generate short-lived access token (15 minutes)
-  const accessToken = await signAccessToken(
+  const accessToken = await signToken(
     userWithoutCustomFields,
     obj.organizationId.toString()
   );
-
+  console.log("accessToken-534",accessToken)
   // Generate device info
-  const deviceInfo = req?.headers.get("user-agent") || "Unknown Device";
+  const deviceInfo = req?.headers.get('user-agent') || 'Unknown Device';
   const userId = obj.id || obj._id.toString();
   const role = obj.role;
-  const isCandidate = role === "candidate";
+  const isCandidate = role === 'candidate';
   const orgId = obj.organizationId.toString();
   
   // Cleanup expired tokens before storing new one (keeps array clean)
@@ -572,48 +570,65 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     7 // 7 days
   );
 
+  
+  
+  
   const response = NextResponse.json({
-    message: "Logged In Successfully",
+    message: 'Logged In Successfully',
     user: accessToken,
     refreshToken: refreshToken, // Return JWT refresh token to client
     deviceId: deviceId,
   });
 
   // Set short-lived access token in cookie
-  let resp = setSecureAuthTokens(response, accessToken, {
-    maxAge: 15 * 60, // 15 minutes in seconds
-  });
+  // await setSecureAuthTokens(response, accessToken, {
+  //   maxAge: 15 * 60, // 15 minutes in seconds
+  // });
 
   // Set refresh token in httpOnly cookie
-  resp.cookies.set("refresh_token", refreshToken, {
+  await response.cookies.set('auth_token', accessToken, {
     httpOnly: true,
-    secure: process.env.ENVIRONMENT === "production",
-    sameSite: "strict",
+    secure: process.env.ENVIRONMENT === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60, // 15 minutes
+    path: '/',
+  });
+  await response.cookies.set('auth_state', "true", {
+    
+    secure: process.env.ENVIRONMENT === 'production',
+    sameSite: 'strict',
+    maxAge: 15 * 60, // 15 minutes
+    path: '/',
+  });
+  await response.cookies.set('refresh_token', refreshToken, {
+    httpOnly: true,
+    secure: process.env.ENVIRONMENT === 'production',
+    sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: "/",
+    path: '/',
   });
   
   // Set device_id cookie
-  resp.cookies.set("device_id", deviceId, {
+  await response.cookies.set('device_id', deviceId, {
     httpOnly: true,
-    secure: process.env.ENVIRONMENT === "production",
-    sameSite: "strict",
+    secure: process.env.ENVIRONMENT === 'production',
+    sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: "/",
+    path: '/',
   });
 
   // Set secure organization ID
-  resp = setSecureOrgId(resp, obj.organizationId, {
+  setSecureOrgId(response, obj.organizationId, {
     expires: 7,
     maxAge: 7 * 24 * 60 * 60,
-    path: "/",
+    path: '/',
   });
 
-  return resp;
+  return response;
 };
 
 // Export with email-based rate limiting
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   // SECURITY FIX: Apply email-based rate limiting to prevent brute force attacks
-  return emailLoginRateLimiter(req as NextRequest, handleLogin);
+  return await emailLoginRateLimiter(req, handleLogin);
 }

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useCallback } from "react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState, useCallback } from 'react';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import {
   Menu,
   KanbanSquare,
@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
 import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
-import { IUser } from "@/lib/models/user";
 import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
 import PortalHead from "@/components/layouts/PortalHead";
 import { useTheme } from "@/components/theme-provider";
@@ -39,10 +38,10 @@ import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
 import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
 import { useNotificationSSE } from "@/hooks/useNotificationSSE";
 import { NotificationsProvider } from "@/contexts/NotificationsContext";
+import logger from '@/lib/logger';
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
 import { ILocalUser } from "@/lib/redux/authSlice";
-
 interface SidebarItem {
   title: string;
   href: string;
@@ -52,50 +51,50 @@ interface SidebarItem {
 
 const sidebarItems: SidebarItem[] = [
   {
-    title: "Dashboard",
-    href: "/dashboard",
+    title: 'Dashboard',
+    href: '/dashboard',
     icon: <Home className="h-5 w-5" />,
   },
   {
-    title: "Search",
-    href: "/dashboard/search",
+    title: 'Search',
+    href: '/dashboard/search',
     icon: <SearchCheckIcon className="h-5 w-5" />,
-    role: "interviewer",
+    role: 'interviewer',
   },
   {
-    title: "Jobs",
-    href: "/dashboard/jobs-board",
+    title: 'Jobs',
+    href: '/dashboard/jobs-board',
     icon: <KanbanSquare className="h-5 w-5" />,
   },
   {
-    title: "Calendar",
-    href: "/dashboard/calendar",
+    title: 'Calendar',
+    href: '/dashboard/calendar',
     icon: <Calendar className="h-5 w-5" />,
   },
   {
-    title: "Analytics",
-    href: "/dashboard/analytics",
+    title: 'Analytics',
+    href: '/dashboard/analytics',
     icon: <BarChart3Icon className="h-5 w-5" />,
-    role: "admin", // HR and Admin users can access analytics
+    role: 'admin', // HR and Admin users can access analytics
   },
   {
-    title: "Users",
-    href: "/dashboard/users",
+    title: 'Users',
+    href: '/dashboard/users',
     icon: <Users className="h-5 w-5" />,
-    role: "admin",
+    role: 'admin',
   },
   {
-    title: "CV Upload",
-    href: "/dashboard/cv-upload",
+    title: 'CV Upload',
+    href: '/dashboard/cv-upload',
     icon: <UploadIcon className="h-5 w-5" />,
-    role: "interviewer",
+    role: 'interviewer',
   },
   {
-    title: "Settings",
-    href: "/dashboard/settings",
+    title: 'Settings',
+    href: '/dashboard/settings',
     icon: <Settings className="h-5 w-5" />,
-    role: "admin",
-  }
+    role: 'admin',
+  },
 ];
 
 export default function DashboardLayout({
@@ -112,31 +111,28 @@ export default function DashboardLayout({
   const { setUserLoggedIn } = useCustomFields();
   const {
     data: allowanceData,
-    isLoading: allowanceLoading,
-    error: allowanceError,
   } = useGetOrganizationAllowanceQuery();
 
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
   // Notification hooks
   const [notificationPage, setNotificationPage] = useState(1);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
-    useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
   const {
     data: notificationsData,
     isLoading: notificationsLoading,
     refetch: fetchNotifications,
   } = useGetNotificationsQuery(
     { page: notificationPage, limit: 10 },
-    { skip: !userData } // Skip query if no user data
+    { skip: !userData }, // Skip query if no user data
   );
   const { data: notificationCountData } = useGetNotificationCountQuery(
     undefined,
-    { skip: !userData }
+    { skip: !userData },
   );
   const { unreadCount, totalCount } = useNotificationSSE(
     notificationCountData?.unreadCount || 0,
-    notificationCountData?.totalCount || 0
+    notificationCountData?.totalCount || 0,
   );
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
@@ -153,11 +149,11 @@ export default function DashboardLayout({
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
       // userData?.role === "interviewer" &&
-      (notification.relatedEntity === "candidate" ||
-        notification.relatedEntity === "followup" ||
-        notification.relatedEntity === "checklist" ||
-        notification.relatedEntity === "meeting") &&
-      notification.relatedId
+      (notification.relatedEntity === 'candidate'
+        || notification.relatedEntity === 'followup'
+        || notification.relatedEntity === 'checklist'
+        || notification.relatedEntity === 'meeting')
+      && notification.relatedId
     ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
@@ -167,11 +163,11 @@ export default function DashboardLayout({
           return;
         }
       } catch (error) {
-        console.error("Failed to fetch candidate:", error);
+        logger.error('Failed to fetch candidate:', error);
         toast({
-          title: "Error",
-          description: "Failed to load candidate details",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to load candidate details',
+          variant: 'destructive',
         });
       }
     }
@@ -208,9 +204,9 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (
-      totalCount >= 0 &&
-      notificationCountData &&
-      totalCount !== notificationCountData.totalCount
+      totalCount >= 0
+      && notificationCountData
+      && totalCount !== notificationCountData.totalCount
     ) {
       // refetch notification when unread count changes to display latest notifications
       fetchNotifications();
@@ -227,7 +223,7 @@ export default function DashboardLayout({
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null
+    null,
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
   const router = useRouter();
@@ -237,18 +233,18 @@ export default function DashboardLayout({
   useEffect(() => {
     const handleResize = () => {
       const isSmallScreen = window.innerWidth < 1200;
-      const userPreference = sessionStorage.getItem("sidebar-user-preference");
+      const userPreference = sessionStorage.getItem('sidebar-user-preference');
 
       // On small screens, default to collapsed unless user has explicitly expanded
       if (isSmallScreen) {
-        if (userPreference === "expanded") {
+        if (userPreference === 'expanded') {
           setIsCollapsed(false);
         } else {
           setIsCollapsed(true);
         }
       } else {
         // On large screens, respect user preference or default to expanded
-        if (userPreference === "collapsed") {
+        if (userPreference === 'collapsed') {
           setIsCollapsed(true);
         } else {
           setIsCollapsed(false);
@@ -259,8 +255,8 @@ export default function DashboardLayout({
     // Initial check
     handleResize();
 
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []); // Remove isCollapsed dependency to avoid infinite loops
 
   const handleLogout = async () => {
@@ -268,20 +264,21 @@ export default function DashboardLayout({
       await triggerLogout().unwrap();
     } catch (error) {
       console.error("Logout failed", error);
+      logger.error("Logout failed", error);
     }
     setUserData(null);
     setUserLoggedIn(false);
     refetch();
     toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
+      title: 'Logged out',
+      description: 'You have been successfully logged out',
     });
-    window.location.href = "/auth/login";
+    window.location.href = '/auth/login';
   };
 
-  const generate_share_org = async (e: React.FormEvent) => {
+  const generateShareOrg = async (e: React.FormEvent) => {
     e.preventDefault();
-    let parsedUser = user;
+    const parsedUser = user;
     if (parsedUser) {
       let url;
       if (hasMultipleOrgs) {
@@ -293,16 +290,16 @@ export default function DashboardLayout({
         .writeText(url)
         .then(() => {
           toast({
-            title: "Success",
-            description: "Organization sharing URL is copied to your clipboard",
-            variant: "default",
+            title: 'Success',
+            description: 'Organization sharing URL is copied to your clipboard',
+            variant: 'default',
           });
         })
         .catch((err) => {
           toast({
-            title: "Error",
-            description: err.message || "Failed to get the org url.",
-            variant: "destructive",
+            title: 'Error',
+            description: err.message || 'Failed to get the org url.',
+            variant: 'destructive',
           });
         });
     }
@@ -314,10 +311,10 @@ export default function DashboardLayout({
   useEffect(() => {
     if (portalConfigData?.primaryColor && portalConfigData?.secondaryColor) {
       const root = document.documentElement;
-      root.style.setProperty("--portal-primary", portalConfigData.primaryColor);
+      root.style.setProperty('--portal-primary', portalConfigData.primaryColor);
       root.style.setProperty(
-        "--portal-secondary",
-        portalConfigData.secondaryColor
+        '--portal-secondary',
+        portalConfigData.secondaryColor,
       );
 
       // Create lighter and darker variants for hover states
@@ -326,41 +323,41 @@ export default function DashboardLayout({
 
       if (primaryRgb) {
         root.style.setProperty(
-          "--portal-primary-rgb",
-          `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`
+          '--portal-primary-rgb',
+          `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`,
         );
         root.style.setProperty(
-          "--portal-primary-hover",
-          darkenColor(portalConfigData.primaryColor, 10)
+          '--portal-primary-hover',
+          darkenColor(portalConfigData.primaryColor, 10),
         );
         root.style.setProperty(
-          "--portal-primary-light",
-          lightenColor(portalConfigData.primaryColor, 10)
+          '--portal-primary-light',
+          lightenColor(portalConfigData.primaryColor, 10),
         );
 
         // Update focus ring colors to use portal primary
         root.style.setProperty(
-          "--focus-ring-color",
-          `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.2)`
+          '--focus-ring-color',
+          `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.2)`,
         );
         root.style.setProperty(
-          "--input-border-focus",
-          portalConfigData.primaryColor
+          '--input-border-focus',
+          portalConfigData.primaryColor,
         );
       }
 
       if (secondaryRgb) {
         root.style.setProperty(
-          "--portal-secondary-rgb",
-          `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`
+          '--portal-secondary-rgb',
+          `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`,
         );
         root.style.setProperty(
-          "--portal-secondary-hover",
-          darkenColor(portalConfigData.secondaryColor, 10)
+          '--portal-secondary-hover',
+          darkenColor(portalConfigData.secondaryColor, 10),
         );
         root.style.setProperty(
-          "--portal-secondary-light",
-          lightenColor(portalConfigData.secondaryColor, 10)
+          '--portal-secondary-light',
+          lightenColor(portalConfigData.secondaryColor, 10),
         );
       }
     }
@@ -371,10 +368,10 @@ export default function DashboardLayout({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
       : null;
   };
 
@@ -388,7 +385,7 @@ export default function DashboardLayout({
     const b = Math.round(rgb.b * factor);
 
     // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
+    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
     return `#${result}`;
   };
 
@@ -402,7 +399,7 @@ export default function DashboardLayout({
     const b = Math.round(rgb.b + (255 - rgb.b) * factor);
 
     // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, "0");
+    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
     return `#${result}`;
   };
 
@@ -411,8 +408,8 @@ export default function DashboardLayout({
     setIsCollapsed((prev) => {
       const newState = !prev;
       sessionStorage.setItem(
-        "sidebar-user-preference",
-        newState ? "collapsed" : "expanded"
+        'sidebar-user-preference',
+        newState ? 'collapsed' : 'expanded',
       );
       return newState;
     });
@@ -423,37 +420,37 @@ export default function DashboardLayout({
       try {
         await markAsRead(id).unwrap();
       } catch (error) {
-        console.error("Failed to mark notification as read:", error);
+        logger.error('Failed to mark notification as read:', error);
       }
     },
-    [markAsRead]
+    [markAsRead],
   );
 
   const handleMarkAllAsReadCallback = useCallback(async () => {
     try {
       await markAllAsRead().unwrap();
       toast({
-        title: "Success",
-        description: "All notifications marked as read",
+        title: 'Success',
+        description: 'All notifications marked as read',
       });
     } catch (error) {
-      console.error("Failed to mark all notifications as read:", error);
+      logger.error('Failed to mark all notifications as read:', error);
       toast({
-        title: "Error",
-        description: "Failed to mark all notifications as read",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to mark all notifications as read',
+        variant: 'destructive',
       });
     }
   }, [markAllAsRead, toast]);
 
   return (
     <OnboardingProvider>
-      <div className="w-full max-w-full flex" style={{ overflowX: "hidden" }}>
-        <PortalHead isLoading={true} />
+      <div className="w-full max-w-full flex" style={{ overflowX: 'hidden' }}>
+        <PortalHead isLoading />
         <aside
           className={cn(
-            "hidden h-screen border-r bg-background md:block transition-all duration-300",
-            isCollapsed ? "w-[70px]" : "w-[240px]"
+            'hidden h-screen border-r bg-background md:block transition-all duration-300',
+            isCollapsed ? 'w-[70px]' : 'w-[240px]',
           )}
         >
           <SidebarContent
@@ -474,7 +471,7 @@ export default function DashboardLayout({
             onMarkAllAsRead={handleMarkAllAsReadCallback}
             onNotificationClick={handleNotificationClick}
             onPageChange={setNotificationPage}
-            onGenerateShareOrg={generate_share_org}
+            onGenerateShareOrg={generateShareOrg}
             onLogout={handleLogout}
             unreadCount={unreadCount}
             totalCount={totalCount}
@@ -509,7 +506,7 @@ export default function DashboardLayout({
               onMarkAllAsRead={handleMarkAllAsReadCallback}
               onNotificationClick={handleNotificationClick}
               onPageChange={setNotificationPage}
-              onGenerateShareOrg={generate_share_org}
+              onGenerateShareOrg={generateShareOrg}
               onLogout={handleLogout}
               unreadCount={unreadCount}
               totalCount={totalCount}
@@ -539,7 +536,7 @@ export default function DashboardLayout({
               fetchCandidateById(selectedCandidate._id);
             }
           }}
-          hideEditButton={userData?.role === "interviewer"}
+          hideEditButton={userData?.role === 'interviewer'}
           hideCloseButtons={false}
         />
 

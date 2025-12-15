@@ -1,10 +1,7 @@
-import connectToDatabase, { User } from "@/lib/mongodb";
-import {
-  extractMentions,
-  matchesUserName,
-  MentionPattern,
-} from "@/lib/utils/mentionParser";
-import mongoose from "mongoose";
+import connectToDatabase, { User } from '@/lib/mongodb';
+import { extractMentions, matchesUserName } from '@/lib/utils/mentionParser';
+import mongoose from 'mongoose';
+import logger from '../logger';
 
 export interface MentionedUser {
   _id: string;
@@ -31,96 +28,76 @@ export interface MentionMatchResult {
 export async function findMentionedUsers(
   text: string,
   organizationId: string,
-  validMentionUserIds?: string[]
+  validMentionUserIds?: string[],
 ): Promise<MentionMatchResult> {
   try {
-    console.log("🔍 FIND MENTIONED USERS DEBUG:");
-    console.log("  - Input text:", text);
-    console.log("  - Organization ID:", organizationId);
-
     // Validate inputs
     if (
       !text ||
-      typeof text !== "string" ||
+      typeof text !== 'string' ||
       !organizationId ||
-      typeof organizationId !== "string"
+      typeof organizationId !== 'string'
     ) {
-      console.log("  - Invalid input parameters");
+      logger.error('Invalid input parameters');
       return { mentionedUsers: [], unrecognizedMentions: [] };
     }
 
     await connectToDatabase();
 
     const mentions = extractMentions(text);
-    console.log("  - Extracted mentions:", JSON.stringify(mentions, null, 2));
 
     if (mentions.length === 0) {
-      console.log("  - No mentions found in text");
+      logger.log('  - No mentions found in text');
       return { mentionedUsers: [], unrecognizedMentions: [] };
     }
 
     // Get all users in the organization (exclude candidates)
-    const orgUsers = await User.find({
+    const orgUsers = await User?.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["admin", "hr", "interviewer"] },
+      role: { $in: ['admin', 'hr', 'interviewer'] },
       isDeleted: { $ne: true },
     })
-      .select("_id name email role")
+      .select('_id name email role')
       .lean();
-
-    console.log(
-      "  - Organization users:",
-      JSON.stringify(
-        orgUsers.map((u) => ({ _id: u._id, name: u.name, email: u.email })),
-        null,
-        2
-      )
-    );
 
     const mentionedUsers: MentionedUser[] = [];
     const unrecognizedMentions: string[] = [];
 
     for (const mention of mentions) {
       try {
-        console.log(`  - Processing mention: "${mention.cleanMatch}"`);
-        console.log("    - Patterns:", mention.patterns);
         let foundMatch = false;
 
         // Check each user against the mention patterns
         for (const user of orgUsers) {
           try {
-            if (!user.name || typeof user.name !== "string") {
-              console.log(`    - Skipping user with invalid name: ${user._id}`);
+            if (!user.name || typeof user.name !== 'string') {
               continue;
             }
 
             const nameParts = user.name.trim().split(/\s+/);
             const firstName = nameParts[0];
             const lastName =
-              nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
-
-            console.log(
-              `    - Checking user: "${user.name}" (${firstName}, ${lastName})`
-            );
+              nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
             if (matchesUserName(firstName, lastName, mention.patterns)) {
-              console.log(`    - ✅ MATCH FOUND for user: ${user.name}`);
-              
               // For interviewers: only include if they were selected from the mention picker
               // For HR and Admin: allow manually typed mentions
               const userRole = (user as any).role;
               const userIdStr = user._id.toString();
               const isValidMention = validMentionUserIds?.includes(userIdStr);
-              
-              if (userRole === "interviewer" && validMentionUserIds && !isValidMention) {
-                console.log(`    - ⚠️ Interviewer "${user.name}" mentioned manually, skipping notification`);
+
+              if (
+                userRole === 'interviewer' &&
+                validMentionUserIds &&
+                !isValidMention
+              ) {
                 foundMatch = true; // Mark as found to avoid adding to unrecognized
                 continue; // Skip adding to mentionedUsers
               }
-              
+
               // Check if user is already in the results (avoid duplicates)
               const alreadyAdded = mentionedUsers.some(
-                (mu) => mu._id === userIdStr
+                (mu) => mu._id === userIdStr,
               );
 
               if (!alreadyAdded) {
@@ -132,48 +109,25 @@ export async function findMentionedUsers(
                   lastName,
                   matchedPattern: mention.cleanMatch,
                 });
-                console.log(`    - Added user to results: ${user.name}`);
-              } else {
-                console.log(`    - User already in results: ${user.name}`);
               }
               foundMatch = true;
-            } else {
-              console.log(`    - ❌ No match for user: ${user.name}`);
             }
           } catch (userError) {
-            console.error(
-              `    - Error processing user ${user._id}:`,
-              userError
-            );
             continue;
           }
         }
 
         if (!foundMatch) {
-          console.log(
-            `    - No match found for mention: "${mention.cleanMatch}"`
-          );
           unrecognizedMentions.push(mention.cleanMatch);
         }
       } catch (mentionError) {
-        console.error(
-          `  - Error processing mention "${mention.cleanMatch}":`,
-          mentionError
-        );
         unrecognizedMentions.push(mention.cleanMatch);
       }
     }
 
-    console.log("  - Final results:");
-    console.log(
-      "    - Mentioned users:",
-      JSON.stringify(mentionedUsers, null, 2)
-    );
-    console.log("    - Unrecognized mentions:", unrecognizedMentions);
-
     return { mentionedUsers, unrecognizedMentions };
   } catch (error) {
-    console.error("❌ Error finding mentioned users:", error);
+    logger.error('❌ Error finding mentioned users:', error);
     return { mentionedUsers: [], unrecognizedMentions: [] };
   }
 }
@@ -183,7 +137,7 @@ export async function findMentionedUsers(
  */
 export async function getMentionedUserIds(
   text: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<string[]> {
   const result = await findMentionedUsers(text, organizationId);
   return result.mentionedUsers.map((user) => user._id);
@@ -195,7 +149,7 @@ export async function getMentionedUserIds(
 export async function isUserMentioned(
   text: string,
   userId: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<boolean> {
   const mentionedIds = await getMentionedUserIds(text, organizationId);
   return mentionedIds.includes(userId);
@@ -209,14 +163,14 @@ export function getMentionSummary(result: MentionMatchResult): string {
 
   if (result.mentionedUsers.length > 0) {
     const names = result.mentionedUsers.map((user) => user.name);
-    parts.push(`Found users: ${names.join(", ")}`);
+    parts.push(`Found users: ${names.join(', ')}`);
   }
 
   if (result.unrecognizedMentions.length > 0) {
-    parts.push(`Unrecognized: ${result.unrecognizedMentions.join(", ")}`);
+    parts.push(`Unrecognized: ${result.unrecognizedMentions.join(', ')}`);
   }
 
-  return parts.length > 0 ? parts.join(" | ") : "No mentions found";
+  return parts.length > 0 ? parts.join(' | ') : 'No mentions found';
 }
 
 /**
@@ -225,7 +179,7 @@ export function getMentionSummary(result: MentionMatchResult): string {
  */
 export async function validateAndSuggestMentions(
   text: string,
-  organizationId: string
+  organizationId: string,
 ): Promise<{
   valid: MentionedUser[];
   suggestions: {
@@ -239,10 +193,10 @@ export async function validateAndSuggestMentions(
     const mentions = extractMentions(text);
     const orgUsers = await User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["admin", "hr", "interviewer"] },
+      role: { $in: ['admin', 'hr', 'interviewer'] },
       isDeleted: { $ne: true },
     })
-      .select("_id name email")
+      .select('_id name email')
       .lean();
 
     const valid: MentionedUser[] = [];
@@ -259,7 +213,7 @@ export async function validateAndSuggestMentions(
         const nameParts = user.name.trim().split(/\s+/);
         const firstName = nameParts[0];
         const lastName =
-          nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+          nameParts.length > 1 ? nameParts.slice(1).join(' ') : undefined;
 
         if (matchesUserName(firstName, lastName, mention.patterns)) {
           exactMatches.push({
@@ -290,7 +244,7 @@ export async function validateAndSuggestMentions(
 
     return { valid, suggestions };
   } catch (error) {
-    console.error("Error validating mentions:", error);
+    logger.error('Error validating mentions:', error);
     return { valid: [], suggestions: [] };
   }
 }

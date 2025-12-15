@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
-import type { Candidate, Remark } from "@/types/candidate";
-import type { Job } from "@/types/job";
+import { useCallback } from 'react';
+import type { Candidate, Remark } from '@/types/candidate';
+import type { Job } from '@/types/job';
 
 export type LogEntry = {
   candidateId: string;
@@ -35,25 +35,24 @@ export type LogEntry = {
  */
 export function useRenderLogTitle() {
   const renderLogTitle = useCallback((log: LogEntry): string => {
-    const noteDescription =
-      typeof log?.note?.description === "string" ? log.note.description : "";
+    const noteDescription = typeof log?.note?.description === 'string' ? log.note.description : '';
 
     if (
-      (log.title !== "" || !log.title) &&
-      log.title !== "Assigned to Job" &&
-      !log.title?.includes("Followup") &&
-      !log.title?.startsWith("Direct Email") &&
-      !log.title?.startsWith("Email sent: ") &&
-      !noteDescription.startsWith("Email sent")
+      (log.title !== '' || !log.title)
+      && log.title !== 'Assigned to Job'
+      && !log.title?.includes('Followup')
+      && !log.title?.startsWith('Direct Email')
+      && !log.title?.startsWith('Email sent: ')
+      && !noteDescription.startsWith('Email sent')
     ) {
       // CASE 1: Assigned / Reassigned
       if (
-        Array.isArray(log.currentInterviewer) &&
-        log.currentInterviewer.length > 0
+        Array.isArray(log.currentInterviewer)
+        && log.currentInterviewer.length > 0
       ) {
         if (
-          Array.isArray(log.previousInterviewer) &&
-          log.previousInterviewer.length > 0
+          Array.isArray(log.previousInterviewer)
+          && log.previousInterviewer.length > 0
         ) {
           return `${log.previousInterviewer[0].name} → ${log.currentInterviewer[0].name}`;
         }
@@ -62,47 +61,47 @@ export function useRenderLogTitle() {
 
       // CASE 2: Remark Added
       if (log.remark && log.remark.description) {
-        return log.title || "Remark Added";
+        return log.title || 'Remark Added';
       }
 
       // CASE 3: Candidate Added
-      if (log.title === "Candidate Added" && log.assignmentBy) {
-        return `${log.candidateData?.name || "Candidate"} was added by ${
-          log.assignmentBy?.name || "someone"
+      if (log.title === 'Candidate Added' && log.assignmentBy) {
+        return `${log.candidateData?.name || 'Candidate'} was added by ${
+          log.assignmentBy?.name || log?.assignmentBy?.length > 0 ? log?.assignmentBy[0]?.name : 'someone'
         }`;
       }
 
       // CASE 4: Self Applied
-      if (log.title === "Self Applied") {
-        return `${log.candidateData?.name || "Candidate"} applied from portal`;
+      if (log.title === 'Self Applied') {
+        return `${log.candidateData?.name || 'Candidate'} applied from portal`;
       }
 
       // CASE 5: Updated
-      if (log.title?.includes("Updated")) {
+      if (log.title?.includes('Updated')) {
         return log.title;
       }
 
       // CASE 6: Archived / Unarchived
-      if (log.title === "Archived") {
-        return `${log.candidateData?.name || "Candidate"} was Archived`;
+      if (log.title === 'Archived') {
+        return `${log.candidateData?.name || 'Candidate'} was Archived`;
       }
-      if (log.title === "Unarchived") {
-        return `${log.candidateData?.name || "Candidate"} was Unarchived`;
+      if (log.title === 'Unarchived') {
+        return `${log.candidateData?.name || 'Candidate'} was Unarchived`;
       }
 
       // CASE 7: Unassigned
       if (
-        Array.isArray(log.previousInterviewer) &&
-        log.previousInterviewer.length > 0
+        Array.isArray(log.previousInterviewer)
+        && log.previousInterviewer.length > 0
       ) {
         return `Unassigned from ${log.previousInterviewer[0].name}`;
       }
 
       // Fallback
-      return log.title || "—";
+      return log.title || '—';
     }
 
-    return log.title || "—";
+    return log.title || '—';
   }, []);
 
   return { renderLogTitle };

@@ -3,14 +3,14 @@
  * Displays candidate history, status history, and interview assignment
  */
 
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import { ICandidateHistory } from "@/lib/models/history";
-import { candidateDetailsFields } from "../../Candidate/candidate-details-fields";
-import { HistoryTimelineSkeleton } from "../../Candidate/history-timeine-skeleton";
-import { MessageSquare } from "lucide-react";
-import { IEditRemark } from "../../../schemas/EditRemarkDialog";
-import { Dispatch, SetStateAction } from "react";
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import { ICandidateHistory } from '@/lib/models/history';
+import { MessageSquare } from 'lucide-react';
+import { Dispatch, SetStateAction } from 'react';
+import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
+import { HistoryTimelineSkeleton } from '../../Candidate/history-timeine-skeleton';
+import { IEditRemark } from '../../../schemas/EditRemarkDialog';
 
 interface CandidateHistoryTabProps {
   candidate: Candidate;
@@ -41,7 +41,7 @@ export function CandidateHistoryTab({
   return (
     <div className="space-y-6">
       {/* Candidate History */}
-      {user?.role !== "candidate" && (
+      {user?.role !== 'candidate' && (
         <div className="space-y-4 focus-visible:outline-none">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Candidate History
@@ -52,7 +52,7 @@ export function CandidateHistoryTab({
             </div>
           ) : candidateHistory && candidateHistory.length > 0 ? (
             candidateDetailsFields
-              .find((field) => field.id === "candidate-history")
+              .find((field) => field.id === 'candidate-history')
               ?.render(
                 { ...candidate, history: candidateHistory },
                 user,
@@ -60,7 +60,7 @@ export function CandidateHistoryTab({
                 handleRemarkUpdate,
                 setEditingRemark,
                 setIsEditRemarkDialogOpen,
-                false // showHeader = false
+                false, // showHeader = false
               )
           ) : candidateHistory && candidateHistory.length === 0 ? (
             <div className="bg-card border border-border rounded-lg p-6">
@@ -84,7 +84,7 @@ export function CandidateHistoryTab({
           Status History
         </h3>
         {candidateDetailsFields
-          .find((field) => field.id === "status-history")
+          .find((field) => field.id === 'status-history')
           ?.render(candidate, user)}
       </div>
 
@@ -94,10 +94,9 @@ export function CandidateHistoryTab({
           Interview Assignment
         </h3>
         {candidateDetailsFields
-          .find((field) => field.id === "interview-assignment")
+          .find((field) => field.id === 'interview-assignment')
           ?.render(candidate, user)}
       </div>
     </div>
   );
 }
-

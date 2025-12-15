@@ -3,8 +3,8 @@
  * Displays candidate name, job title, status, tags, action buttons, and dropdown menu
  */
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Star,
   Flag,
@@ -22,26 +22,26 @@ import {
   MessageSquare,
   ArchiveRestore,
   Trash2,
-} from "lucide-react";
+} from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Candidate } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
-import TagsList from "@/components/ui/tagsList";
-import RemarksPopover from "../Remarks/remarks-popover";
-import { formatDistanceToNow } from "date-fns";
-import { getTrackingDate } from "../../utils/candidateAccessors";
+} from '@/components/ui/dropdown-menu';
+import { Candidate } from '@/types/candidate';
+import { User } from '@/lib/features/users/usersApi';
+import TagsList from '@/components/ui/tagsList';
+import { formatDistanceToNow } from 'date-fns';
+import RemarksPopover from '../Remarks/remarks-popover';
+import { getTrackingDate } from '../../utils/candidateAccessors';
 
 // Extend the CandidateCardHeaderProps if jobTitle or status is not already on candidate
 interface CandidateCardHeaderProps {
@@ -85,45 +85,43 @@ export function CandidateCardHeader({
   handleAssignJob,
   handlePopoverContentClick,
 }: CandidateCardHeaderProps) {
-  const createdAt = getTrackingDate(candidate, "createdAt");
-  const updatedAt = getTrackingDate(candidate, "updatedAt");
+  const createdAt = getTrackingDate(candidate, 'createdAt');
+  const updatedAt = getTrackingDate(candidate, 'updatedAt');
 
   // Guess field names for job and status
   // If not present on Candidate, you'll need to adjust as per your model
-  const jobTitle: string =
-    candidate.jobId?.title ||
-    candidate.jobDetails?.title ||
-    "-";
-  const status: string =
-    (candidate.status as string) ||
-    (candidate ).currentStatus ||
-    (candidate ).state ||
-    "-";
+  const jobTitle: string = candidate.jobId?.title
+    || candidate.jobDetails?.title
+    || '-';
+  const status: string = (candidate.status as string)
+    || (candidate).currentStatus
+    || (candidate).state
+    || '-';
 
   const formatSmartDate = (date: Date | null | undefined) => {
-    if (!date) return "N/A";
+    if (!date) return 'N/A';
     const now = Date.now();
     const gap = now - date.getTime();
     const thirtyDays = 30 * 24 * 60 * 60 * 1000;
 
     if (gap < thirtyDays) {
       return formatDistanceToNow(date, { addSuffix: true });
-    } else {
-      return date.toLocaleDateString();
     }
+    return date.toLocaleDateString();
   };
 
   return (
     <div className="mb-2 pb-2 border-b border-gray-100 dark:border-gray-800">
       {/* Header row with job title and status */}
-      
-      
+
       {/* Main row with name, tags, actions */}
       <div className="flex justify-between items-center pb-2 mt-1">
-        <div className="flex flex-col justify-center items-center pr-3 h-full" style={{
-    height: "-webkit-fill-available"}}>
+        <div
+          className="flex flex-col justify-center items-center pr-3 h-full"
+          style={{ height: '-webkit-fill-available' }}
+        >
           <div className="flex flex-col h-full">
-          
+
             <div className="flex items-center gap-2 h-full">
               {showStar && (
                 <TooltipProvider>
@@ -158,76 +156,78 @@ export function CandidateCardHeader({
         </div>
 
         <div className="flex-col flex justify-center items-center">
-        {/* <div className="flex-shrink-0 ml-2"> */}
-         {/* {onDashboard && <Badge variant="outline" className="text-xs px-2 py-0.5 capitalize min-w-[72px] mb-2" data-testid="candidate-status">
+          {/* <div className="flex-shrink-0 ml-2"> */}
+          {/* {onDashboard && <Badge variant="outline" className="text-xs px-2 py-0.5 capitalize min-w-[72px] mb-2" data-testid="candidate-status">
             {status}
           </Badge>} */}
-          {onDashboard && <div className="text-xs absolute top-[-16px] right-[-16px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-tr-md rounded-bl-md rounded-tl-none rounded-br-none">
+          {onDashboard && (
+          <div className="text-xs absolute top-[-16px] right-[-16px] bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-tr-md rounded-bl-md rounded-tl-none rounded-br-none">
             <p className="font-bold text-xs capitalize">
-            {status}
+              {status}
             </p>
-          </div>}
-        {/* </div> */}
-        <div className="flex gap-1.5 mt-[1px] flex-shrink-0">
-          {/* Add Remarks Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 !py-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpenRemarksFor(candidate._id);
-              setIsAddRemarkOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+          </div>
+          )}
+          {/* </div> */}
+          <div className="flex gap-1.5 mt-[1px] flex-shrink-0">
+            {/* Add Remarks Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 !py-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenRemarksFor(candidate._id);
+                setIsAddRemarkOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
 
-          {/* Remark Popover */}
-          <RemarksPopover
-            candidate={candidate}
-            onMoreClick={() => onViewDetails(candidate)}
-          />
+            {/* Remark Popover */}
+            <RemarksPopover
+              candidate={candidate}
+              onMoreClick={() => onViewDetails(candidate)}
+            />
 
-          {/* View Details Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-            onClick={(e) => {
-              e.stopPropagation();
-              onViewDetails(candidate);
-            }}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
+            {/* View Details Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewDetails(candidate);
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
 
-          {/* 3-dot menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {/* View Details */}
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails(candidate);
-                }}
-              >
-                <Info className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
+            {/* 3-dot menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {/* View Details */}
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails(candidate);
+                  }}
+                >
+                  <Info className="h-4 w-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
 
-              {/* Edit */}
-              {user?.role !== "candidate" && !candidate.isDeleted && (
+                {/* Edit */}
+                {user?.role !== 'candidate' && !candidate.isDeleted && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -237,10 +237,10 @@ export function CandidateCardHeader({
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Email */}
-              {user?.role !== "candidate" && (
+                {/* Email */}
+                {user?.role !== 'candidate' && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -250,10 +250,10 @@ export function CandidateCardHeader({
                   <Mail className="h-4 w-4 mr-2" />
                   Send Email
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Download Profile */}
-              {(user?.role === "admin" || user?.role === "hr") && (
+                {/* Download Profile */}
+                {(user?.role === 'admin' || user?.role === 'hr') && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -263,10 +263,10 @@ export function CandidateCardHeader({
                   <Download className="h-4 w-4 mr-2" />
                   Download Profile
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Assign To */}
-              {user?.role !== "interviewer" && !candidate.isDeleted && (
+                {/* Assign To */}
+                {user?.role !== 'interviewer' && !candidate.isDeleted && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -276,16 +276,16 @@ export function CandidateCardHeader({
                   <UserPlus className="h-4 w-4 mr-2" />
                   Assign To
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Assign Job */}
-              <DropdownMenuItem onClick={(e) => handleAssignJob(candidate, e)}>
-                <Briefcase className="mr-2 h-4 w-4" />
-                {!candidate.jobId ? "Assign Job" : "Switch Job"}
-              </DropdownMenuItem>
+                {/* Assign Job */}
+                <DropdownMenuItem onClick={(e) => handleAssignJob(candidate, e)}>
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  {!candidate.jobId ? 'Assign Job' : 'Switch Job'}
+                </DropdownMenuItem>
 
-              {/* Tags */}
-              {user?.role !== "interviewer" && (
+                {/* Tags */}
+                {user?.role !== 'interviewer' && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -296,10 +296,10 @@ export function CandidateCardHeader({
                   <Tag className="h-4 w-4 mr-2" />
                   Tags
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Mark as Done */}
-              {candidate.assignment && !candidate.isDeleted && (
+                {/* Mark as Done */}
+                {candidate.assignment && !candidate.isDeleted && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -309,10 +309,10 @@ export function CandidateCardHeader({
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Mark as Done
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Add/Edit Follow Up */}
-              {user?.role !== "interviewer" && (
+                {/* Add/Edit Follow Up */}
+                {user?.role !== 'interviewer' && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -321,13 +321,13 @@ export function CandidateCardHeader({
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   {candidate?.followUp?.note || candidate?.followUp?.date
-                    ? "Edit Follow Up"
-                    : "Add Follow Up"}
+                    ? 'Edit Follow Up'
+                    : 'Add Follow Up'}
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Add Remark */}
-              {user?.role !== "candidate" && (
+                {/* Add Remark */}
+                {user?.role !== 'candidate' && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -338,13 +338,13 @@ export function CandidateCardHeader({
                   <Plus className="h-4 w-4 mr-2" />
                   Add Remark
                 </DropdownMenuItem>
-              )}
+                )}
 
-              {/* Separator before delete */}
-              {!onDashboard && <DropdownMenuSeparator />}
+                {/* Separator before delete */}
+                {!onDashboard && <DropdownMenuSeparator />}
 
-              {/* Delete/Archive */}
-              {!onDashboard && (
+                {/* Delete/Archive */}
+                {!onDashboard && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
@@ -352,8 +352,8 @@ export function CandidateCardHeader({
                   }}
                   className={
                     candidate.isDeleted
-                      ? "text-blue-600 dark:text-blue-400"
-                      : "text-red-600 dark:text-red-400"
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-red-600 dark:text-red-400'
                   }
                 >
                   {candidate.isDeleted ? (
@@ -361,37 +361,42 @@ export function CandidateCardHeader({
                   ) : (
                     <Trash2 className="h-4 w-4 mr-2" />
                   )}
-                  {candidate.isDeleted ? "Restore" : "Delete"}
+                  {candidate.isDeleted ? 'Restore' : 'Delete'}
                 </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
       {/* Dates row */}
       <div className="flex justify-between items-center">
         <div className="text-[11px] text-gray-500 capitalize justify-between">
           <p className="leading-tight truncate">
-            Applied: {createdAt ? formatSmartDate(createdAt) : "N/A"}
+            Applied:
+            {' '}
+            {createdAt ? formatSmartDate(createdAt) : 'N/A'}
           </p>
         </div>
         <div className="text-[11px] text-gray-500 capitalize leading-tight truncate flex justify-end">
           <p className="leading-tight truncate">
-            Last Updated: {updatedAt ? formatSmartDate(updatedAt) : "N/A"}
+            Last Updated:
+            {' '}
+            {updatedAt ? formatSmartDate(updatedAt) : 'N/A'}
           </p>
         </div>
       </div>
-      {onDashboard && <div className="flex-1 min-w-0">
-          <p
-            className="font-semibold text-xs text-gray-700 dark:text-gray-300 leading-snug truncate max-w-full"
-            title={jobTitle}
-            data-testid="job-title"
-          >
-            {jobTitle}
-          </p>
-        </div>}
+      {onDashboard && (
+      <div className="flex-1 min-w-0">
+        <p
+          className="font-semibold text-xs text-gray-700 dark:text-gray-300 leading-snug truncate max-w-full"
+          title={jobTitle}
+          data-testid="job-title"
+        >
+          {jobTitle}
+        </p>
+      </div>
+      )}
     </div>
   );
-
 }

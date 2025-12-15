@@ -1,15 +1,15 @@
 // Getting pdfjs to work is tricky. The following 3 lines would make it work
 // https://stackoverflow.com/a/63486898/7699841
-import * as pdfjs from "pdfjs-dist";
+import * as pdfjs from 'pdfjs-dist';
+
+import type { TextItem as PdfjsTextItem } from 'pdfjs-dist/types/src/display/api';
+import type { TextItem, TextItems } from '@/lib/parse-resume-from-pdf/types';
 
 // Fix for Next.js and newer pdfjs-dist versions
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   // Client-side only
   pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 }
-
-import type { TextItem as PdfjsTextItem } from "pdfjs-dist/types/src/display/api";
-import type { TextItem, TextItems } from "@/lib/parse-resume-from-pdf/types";
 
 /**
  * Step 1: Read pdf and output textItems by concatenating results from each page.
@@ -35,7 +35,7 @@ export const readPdf = async (fileUrl: string): Promise<TextItems> => {
 
     // Wait for font data to be loaded
     await page.getOperatorList();
-    const commonObjs = page.commonObjs;
+    const { commonObjs } = page;
 
     // Convert Pdfjs TextItem type to new TextItem type
     const pageTextItems = textContent.items.map((item) => {
@@ -61,7 +61,7 @@ export const readPdf = async (fileUrl: string): Promise<TextItems> => {
 
       // pdfjs reads a "-" as "-­‐" in the resume example. This is to revert it.
       // Note "-­‐" is "-&#x00AD;‐" with a soft hyphen in between. It is not the same as "--"
-      const newText = text.replace(/-­‐/g, "-");
+      const newText = text.replace(/-­‐/g, '-');
 
       const newItem = {
         ...otherProps,
@@ -84,8 +84,7 @@ export const readPdf = async (fileUrl: string): Promise<TextItems> => {
   }
 
   // Filter out empty space textItem noise
-  const isEmptySpace = (textItem: TextItem) =>
-    !textItem.hasEOL && textItem.text.trim() === "";
+  const isEmptySpace = (textItem: TextItem) => !textItem.hasEOL && textItem.text.trim() === '';
   textItems = textItems.filter((textItem) => !isEmptySpace(textItem));
 
   return textItems;

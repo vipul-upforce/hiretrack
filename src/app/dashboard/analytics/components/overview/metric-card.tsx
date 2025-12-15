@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import type React from "react";
+import type React from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   ChevronRightIcon,
   TrendingUpIcon,
   TrendingDownIcon,
-} from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+} from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MetricCardProps {
   title: string;
@@ -44,7 +44,7 @@ export function MetricCard({
   secondaryMetrics,
   onDetailsClick,
   isLoading,
-  detailsButtonLabel = "Show Details",
+  detailsButtonLabel = 'Show Details',
 }: MetricCardProps) {
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -79,7 +79,9 @@ export function MetricCard({
         <div className="text-xs text-muted-foreground space-y-1">
           {secondaryMetrics.map((metric, idx) => (
             <div key={idx}>
-              {metric.label}: {isLoading ? "-" : metric.value}
+              {metric.label}
+              :
+              {isLoading ? '-' : metric.value}
             </div>
           ))}
         </div>
@@ -90,7 +92,9 @@ export function MetricCard({
           className="w-full bg-transparent"
           onClick={onDetailsClick}
         >
-          {detailsButtonLabel} <ChevronRightIcon className="h-4 w-4 ml-1" />
+          {detailsButtonLabel}
+          {' '}
+          <ChevronRightIcon className="h-4 w-4 ml-1" />
         </Button>
       </CardContent>
     </Card>

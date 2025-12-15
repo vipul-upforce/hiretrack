@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { ErrorMessage, Form, Formik } from "formik";
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { ErrorMessage, Form, Formik } from 'formik';
 import {
   useGetTimeZoneQuery,
   useUpdateTimeZoneMutation,
-} from "@/lib/features/settings/settingsApi";
-import React, { useMemo } from "react";
-import { Combobox } from "@/components/ui/combobox";
-import { TIMEZONES } from "./timezone-utils";
-import { timeZoneValidationSchema } from "./timezone-schema";
-import TimezoneLoadingSkeleton from "./loading-skeleton";
+} from '@/lib/features/settings/settingsApi';
+import React, { useMemo } from 'react';
+import { Combobox } from '@/components/ui/combobox';
+import { TIMEZONES } from './timezone-utils';
+import { timeZoneValidationSchema } from './timezone-schema';
+import TimezoneLoadingSkeleton from './loading-skeleton';
 
 export interface TimeZoneValues {
   timeZone: string;
@@ -37,22 +37,22 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
   const handleSubmit = async (values: TimeZoneValues) => {
     try {
       const selectedTZ = TIMEZONES.find((tz) => tz.name === values.timeZone);
-      if (!selectedTZ) throw new Error("Timezone not found");
+      if (!selectedTZ) throw new Error('Timezone not found');
 
       await updateTimeZone({
         name: selectedTZ.name,
         offset: selectedTZ.offset,
       }).unwrap();
 
-      toast({ title: "Success", description: "Timezone updated successfully" });
+      toast({ title: 'Success', description: 'Timezone updated successfully' });
 
       refetch();
       onClose();
-    } catch (err) {
+    } catch {
       toast({
-        title: "Error",
-        description: "Failed to update timezone",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update timezone',
+        variant: 'destructive',
       });
     }
   };
@@ -66,12 +66,17 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
       onSubmit={handleSubmit}
       enableReinitialize
     >
-      {({ values, setFieldValue, handleSubmit, isSubmitting }) => {
+      {({
+        values,
+        setFieldValue,
+        handleSubmit: formikSubmit,
+        isSubmitting,
+      }) => {
         const isDirty = values.timeZone !== initialTimeZone;
         const isDisabled = !isDirty || isSubmitting || isUpdating;
 
         return (
-          <Form onSubmit={handleSubmit} className="flex flex-col h-full">
+          <Form onSubmit={formikSubmit} className="flex h-full flex-col">
             <div className="px-6 py-4">
               <Label htmlFor="timeZone">Timezone</Label>
 
@@ -82,18 +87,18 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
                 }))}
                 placeholder="Select a timezone..."
                 value={values.timeZone}
-                onValueChange={(value) => setFieldValue("timeZone", value)}
+                onValueChange={(value) => setFieldValue('timeZone', value)}
                 width="100%"
               />
 
               <ErrorMessage
                 name="timeZone"
                 component="div"
-                className="text-red-500 text-sm mt-1"
+                className="mt-1 text-sm text-red-500"
               />
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+            <div className="mt-auto flex justify-end gap-2 border-t border-border/10 px-6 py-4">
               <Button
                 type="button"
                 variant="outline"
@@ -104,7 +109,7 @@ export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
               </Button>
 
               <Button type="submit" disabled={isDisabled} variant="primary">
-                {isSubmitting || isUpdating ? "Saving..." : "Save"}
+                {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </Form>

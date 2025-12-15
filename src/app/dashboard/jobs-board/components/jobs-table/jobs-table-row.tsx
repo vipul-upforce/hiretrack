@@ -1,18 +1,18 @@
-import { Job } from "@/types/job";
-import { TableCell, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Job } from '@/types/job';
+import { TableCell, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { CustomFieldDef } from "./types";
-import { JobActionsCell } from "./jobs-actions-cell";
-import { User } from "@/lib/features/org/orgApi";
-import { formatReadableDate } from "@/lib/formate-redable-date";
+} from '@/components/ui/tooltip';
+import { User } from '@/lib/features/org/orgApi';
+import { formatReadableDate } from '@/lib/formate-redable-date';
+import { CustomFieldDef } from './types';
+import { JobActionsCell } from './jobs-actions-cell';
 
 interface JobsTableRowProps {
   job: Job;
@@ -48,7 +48,7 @@ export function JobsTableRow({
       <TableCell className="py-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            {!job.isPublished && job.status === "open" && (
+            {!job.isPublished && job.status === 'open' && (
               <TooltipProvider>
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
@@ -65,7 +65,7 @@ export function JobsTableRow({
                 <TooltipTrigger asChild>
                   <span className="font-medium text-gray-900 dark:text-gray-100">
                     {job.title.length > 40
-                      ? job.title.slice(0, 40) + "..."
+                      ? `${job.title.slice(0, 40)}...`
                       : job.title}
                   </span>
                 </TooltipTrigger>
@@ -77,7 +77,11 @@ export function JobsTableRow({
           </div>
           {job.experience !== undefined && (
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              {job.experience} {job.experience === 1 ? "year" : "years"} exp
+              {job.experience}
+              {' '}
+              {job.experience === 1 ? 'year' : 'years'}
+              {' '}
+              exp
               required
             </span>
           )}
@@ -88,11 +92,11 @@ export function JobsTableRow({
       <TableCell className="py-4">
         <Badge
           variant={
-            job.status === "open"
-              ? "default"
-              : job.status === "closed"
-                ? "secondary"
-                : "outline"
+            job.status === 'open'
+              ? 'default'
+              : job.status === 'closed'
+                ? 'secondary'
+                : 'outline'
           }
         >
           {job.status}
@@ -100,7 +104,7 @@ export function JobsTableRow({
       </TableCell>
 
       {/* Applications */}
-      {visibleColumns.has("applications") && (
+      {visibleColumns.has('applications') && (
         <TableCell className="py-4">
           <span className="text-gray-900 dark:text-gray-100 font-medium">
             {job.candidateCount || 0}
@@ -109,18 +113,18 @@ export function JobsTableRow({
       )}
 
       {/* Experience */}
-      {visibleColumns.has("experience") && (
+      {visibleColumns.has('experience') && (
         <TableCell className="py-4">
           <span className="text-gray-600 dark:text-gray-400">
             {job.experience || job.experience === 0
               ? `${job.experience} years`
-              : "-"}
+              : '-'}
           </span>
         </TableCell>
       )}
 
       {/* Skills */}
-      {visibleColumns.has("skills") && (
+      {visibleColumns.has('skills') && (
         <TableCell className="py-4">
           <div className="flex flex-wrap gap-1">
             {job.skills && job.skills.length > 0 ? (
@@ -136,7 +140,8 @@ export function JobsTableRow({
                 ))}
                 {job.skills.length > 2 && (
                   <Badge variant="secondary" className="text-xs font-normal">
-                    +{job.skills.length - 2}
+                    +
+                    {job.skills.length - 2}
                   </Badge>
                 )}
               </>
@@ -153,13 +158,15 @@ export function JobsTableRow({
         const value = job.customFields?.[field.label];
         return (
           <TableCell key={field.label} className="py-4">
-            {value && typeof value === "string" ? (
+            {value && typeof value === 'string' ? (
               <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
                 {value}
               </span>
             ) : Array.isArray(value) && value.length > 0 ? (
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                {value.length} files
+                {value.length}
+                {' '}
+                files
               </span>
             ) : (
               <span className="text-gray-400">-</span>
@@ -171,7 +178,7 @@ export function JobsTableRow({
       {/* Created */}
       <TableCell className="py-4">
         <span className="text-sm text-gray-500 dark:text-gray-400">
-          {formatReadableDate(job.tracking?.createdAt, "relative")}
+          {formatReadableDate(job.tracking?.createdAt, 'relative')}
         </span>
       </TableCell>
 

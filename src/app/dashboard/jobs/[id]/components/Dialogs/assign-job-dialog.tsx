@@ -1,23 +1,26 @@
-"use client";
-import { Formik, Form, Field, FormikHelpers } from "formik";
-import * as Yup from "yup";
+'use client';
+
+import {
+  Formik, Form, Field, FormikHelpers,
+} from 'formik';
+import * as Yup from 'yup';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Candidate } from "@/types/candidate";
-import { toast } from "@/hooks/use-toast";
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Candidate } from '@/types/candidate';
+import { toast } from '@/hooks/use-toast';
 import {
   useFetchOpenJobsQuery,
   useAssignJobMutation,
@@ -41,7 +44,7 @@ interface FormValues {
 
 // Validation schema
 const validationSchema = Yup.object({
-  jobId: Yup.string().required("Job is required"),
+  jobId: Yup.string().required('Job is required'),
 });
 
 export function AssignJobDialog({
@@ -64,17 +67,17 @@ export function AssignJobDialog({
     // jobId: "",
     jobId:
       !isMultiple && candidate.jobId
-        ? typeof candidate.jobId === "string"
+        ? typeof candidate.jobId === 'string'
           ? candidate.jobId
-          : typeof candidate.jobId === "object"
+          : typeof candidate.jobId === 'object'
             ? candidate.jobId._id
-            : ""
-        : "",
+            : ''
+        : '',
   };
 
   const handleSubmit = async (
     values: FormValues,
-    { setSubmitting }: FormikHelpers<FormValues>
+    { setSubmitting }: FormikHelpers<FormValues>,
   ) => {
     setLoading(true);
     try {
@@ -113,6 +116,10 @@ export function AssignJobDialog({
           });
         } catch (error) {
           toast({
+            title: 'Warning',
+            description:
+              'All selected candidates are already assigned to this job',
+            variant: 'destructive',
             title: "Error",
             description: "Bulk job assignment failed.",
             variant: "destructive",
@@ -120,10 +127,9 @@ export function AssignJobDialog({
         }
       } else {
         // Handle single candidate
-        const isAlreadyAssigned =
-          candidate.jobId &&
-          typeof candidate.jobId === "object" &&
-          (typeof candidate.jobId === "string"
+        const isAlreadyAssigned = candidate.jobId
+          && typeof candidate.jobId === 'object'
+          && (typeof candidate.jobId === 'string'
             ? candidate.jobId === values.jobId
             : candidate.jobId._id === values.jobId);
 
@@ -134,22 +140,22 @@ export function AssignJobDialog({
           }).unwrap();
           onJobAssignment?.(resp.updatedCandidate);
           toast({
-            title: "Success",
-            description: "Candidate assigned successfully",
+            title: 'Success',
+            description: 'Candidate assigned successfully',
           });
         } else {
           toast({
-            title: "Error",
-            description: "Candidate is already assigned to this job",
-            variant: "destructive",
+            title: 'Error',
+            description: 'Candidate is already assigned to this job',
+            variant: 'destructive',
           });
         }
       }
     } catch {
       toast({
-        title: "Error",
-        description: `Job assignment to ${isMultiple ? "candidates" : "candidate"} failed.`,
-        variant: "destructive",
+        title: 'Error',
+        description: `Job assignment to ${isMultiple ? 'candidates' : 'candidate'} failed.`,
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
@@ -164,7 +170,7 @@ export function AssignJobDialog({
           <DialogTitle className="flex justify-between align-center">
             {isMultiple
               ? `Assign Job to ${candidateCount} Candidates`
-              : "Assign Job"}
+              : 'Assign Job'}
           </DialogTitle>
         </DialogHeader>
 
@@ -203,7 +209,9 @@ export function AssignJobDialog({
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({ errors, touched, isSubmitting, setFieldValue }) => (
+            {({
+              errors, touched, isSubmitting, setFieldValue,
+            }) => (
               <Form className="flex-1 flex flex-col h-full overflow-y-auto">
                 <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                   <div className="grid gap-4 py-4">
@@ -212,16 +220,14 @@ export function AssignJobDialog({
                       <Field name="jobId">
                         {({ field }: { field: { value: string } }) => (
                           <Select
-                            value={field.value}
-                            onValueChange={(value) =>
-                              setFieldValue("jobId", value)
-                            }
-                          >
-                            <SelectTrigger className="w-[400px]">
-                              <SelectValue placeholder="Select Job" />
-                            </SelectTrigger>
-                            <SelectContent className="w-[500px]">
-                              {jobs?.length ? (
+                value={field.value}
+                onValueChange={(value) => setFieldValue('jobId', value)}
+              >
+                <SelectTrigger className="w-[400px]">
+                  <SelectValue placeholder="Select Job" />
+                </SelectTrigger>
+                <SelectContent className="w-[500px]">
+                  {jobs?.length ? (
                                 jobs.map((job) => (
                                   <SelectItem
                                     className="w-full hover:bg-gray-100 cursor-pointer"
@@ -236,14 +242,14 @@ export function AssignJobDialog({
                                   No open jobs available
                                 </div>
                               )}
-                            </SelectContent>
-                          </Select>
+                </SelectContent>
+              </Select>
                         )}
                       </Field>
                       {errors.jobId && touched.jobId && (
-                        <div className="text-red-500 text-sm">
-                          {errors.jobId}
-                        </div>
+                      <div className="text-red-500 text-sm">
+                        {errors.jobId}
+                      </div>
                       )}
                     </div>
                   </div>
@@ -258,7 +264,7 @@ export function AssignJobDialog({
                     {isSubmitting || loading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {isSubmitting || loading ? "Assigning" : "Assign"}
+                    {isSubmitting || loading ? 'Assigning' : 'Assign'}
                   </Button>
                 </div>
               </Form>

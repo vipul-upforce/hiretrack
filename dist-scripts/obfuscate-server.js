@@ -1,5 +1,5 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
+
+const __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const javascript_obfuscator_1 = __importDefault(require("javascript-obfuscator"));
+
 const root = path_1.default.resolve(__dirname, '..');
 const nextServerDirs = [
     path_1.default.join(root, '.next', 'server'),

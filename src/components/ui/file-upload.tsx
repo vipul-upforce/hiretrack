@@ -1,15 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { Upload, File as FileIcon, Pencil, X, Paperclip } from "lucide-react";
-import { RenameFileDialog } from "./rename-file-dialog";
-import { useSelector } from "react-redux";
-import { Button } from "./button";
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import {
+  Upload, File as FileIcon, Pencil, X, Paperclip,
+} from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { RenameFileDialog } from './rename-file-dialog';
+import { Button } from './button';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
-  colorScheme?: "blue" | "green";
+  colorScheme?: 'blue' | 'green';
   isResume?: boolean;
   dropZone?: boolean;
   onExistingFilesChange?: (
@@ -56,11 +58,11 @@ interface User {
 }
 
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return '0 Bytes';
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 };
 
 export function FileUpload({
@@ -70,41 +72,41 @@ export function FileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
-  id = "",
+  id = '',
   setter,
   isEdit = true,
-  colorScheme = "blue", // Default to blue
+  colorScheme = 'blue', // Default to blue
   isResume = false, // Default to false
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
   });
-  const getColorClasses = (scheme: "blue" | "green") => {
+  const getColorClasses = (scheme: 'blue' | 'green') => {
     switch (scheme) {
-      case "green":
+      case 'green':
         return {
-          bg: "bg-green-50 dark:bg-green-900/20",
-          border: "border-green-200 dark:border-green-800",
-          icon: "text-green-600 dark:text-green-400",
-          text: "text-green-700 dark:text-green-300",
-          hoverBg: "hover:bg-green-100 dark:hover:bg-green-800/50",
+          bg: 'bg-green-50 dark:bg-green-900/20',
+          border: 'border-green-200 dark:border-green-800',
+          icon: 'text-green-600 dark:text-green-400',
+          text: 'text-green-700 dark:text-green-300',
+          hoverBg: 'hover:bg-green-100 dark:hover:bg-green-800/50',
         };
-      case "blue":
+      case 'blue':
       default:
         return {
-          bg: "bg-blue-50 dark:bg-blue-900/20",
-          border: "border-blue-200 dark:border-blue-800",
-          icon: "text-blue-600 dark:text-blue-400",
-          text: "text-blue-700 dark:text-blue-300",
-          hoverBg: "hover:bg-blue-100 dark:hover:bg-blue-800/50",
+          bg: 'bg-blue-50 dark:bg-blue-900/20',
+          border: 'border-blue-200 dark:border-blue-800',
+          icon: 'text-blue-600 dark:text-blue-400',
+          text: 'text-blue-700 dark:text-blue-300',
+          hoverBg: 'hover:bg-blue-100 dark:hover:bg-blue-800/50',
         };
     }
   };
 
   const colors = getColorClasses(colorScheme);
   const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {}
+    (state: any) => state.auth || {},
   );
 
   const handleRename = (newName: string) => {
@@ -113,14 +115,10 @@ export function FileUpload({
         const newFile = new File([renameFile.file], newName, {
           type: renameFile.file.type,
         });
-        const updatedFiles = files.map((f) =>
-          f === renameFile.file ? newFile : f
-        );
+        const updatedFiles = files.map((f) => (f === renameFile.file ? newFile : f));
         setter?.(updatedFiles);
       } else {
-        const updatedFiles = files.map((f) =>
-          f === renameFile.file ? { ...f, name: newName } : f
-        );
+        const updatedFiles = files.map((f) => (f === renameFile.file ? { ...f, name: newName } : f));
         setter?.(updatedFiles);
       }
     }
@@ -128,7 +126,7 @@ export function FileUpload({
 
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
-      (file) => file?.name !== fileNameToRemove
+      (file) => file?.name !== fileNameToRemove,
     );
     setter(updatedFiles);
   };
@@ -137,10 +135,12 @@ export function FileUpload({
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
     },
-    [onFileSelect]
+    [onFileSelect],
   );
 
-  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+  const {
+    getRootProps, getInputProps, isDragActive, open,
+  } = useDropzone({
     onDrop,
     accept,
     maxFiles,
@@ -157,17 +157,17 @@ export function FileUpload({
         <div
           {...getRootProps()}
           className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-            ${isDragActive ? "border-primary bg-primary/10" : "border-border"}`}
+            ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}
         >
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
             {isDragActive
-              ? "Drop the files here..."
+              ? 'Drop the files here...'
               : "Drag 'n' drop files here, or click to select files"}
           </p>
-          {(user?.role === "candidate" || user?.role === "") && (
+          {(user?.role === 'candidate' || user?.role === '') && (
             <>
-              {!accept["application/pdf"] && (
+              {!accept['application/pdf'] && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   Maximum 2 files are allowed
                 </p>
@@ -187,11 +187,11 @@ export function FileUpload({
             className="flex items-center gap-2"
           >
             <Paperclip className="w-4 h-4" />
-            {isResume ? "Resume" : "Add Documents"}
+            {isResume ? 'Resume' : 'Add Documents'}
           </Button>
-          {(user?.role === "candidate" || user?.role === "") && (
+          {(user?.role === 'candidate' || user?.role === '') && (
             <div className="space-y-1 flex items-center gap-2">
-              {!accept["application/pdf"] && (
+              {!accept['application/pdf'] && (
                 <p className="text-sm text-muted-foreground mt-1">
                   Max 2 files
                 </p>
@@ -219,7 +219,9 @@ export function FileUpload({
                 {file.name}
               </span>
               <span className="text-xs text-gray-500">
-                ({formatFileSize(file.size)})
+                (
+                {formatFileSize(file.size)}
+                )
               </span>
               <button
                 type="button"
@@ -232,13 +234,11 @@ export function FileUpload({
             <button
               type="button"
               className="p-2 hover:bg-muted rounded-md"
-              onClick={() =>
-                setRenameFile({
-                  file: null,
-                  isExisting: true,
-                  existingFile: file,
-                })
-              }
+              onClick={() => setRenameFile({
+                file: null,
+                isExisting: true,
+                existingFile: file,
+              })}
             >
               <Pencil className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -256,7 +256,9 @@ export function FileUpload({
                 {file.name}
               </span>
               <span className={`text-xs ${colors.icon}`}>
-                ({formatFileSize(file.size)})
+                (
+                {formatFileSize(file.size)}
+                )
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -264,12 +266,10 @@ export function FileUpload({
                 <button
                   type="button"
                   className={`p-2 ${colors.hoverBg} rounded-md text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300`}
-                  onClick={() =>
-                    setRenameFile({
-                      file,
-                      isExisting: false,
-                    })
-                  }
+                  onClick={() => setRenameFile({
+                    file,
+                    isExisting: false,
+                  })}
                 >
                   <Pencil className="h-4 " />
                 </button>
@@ -289,7 +289,7 @@ export function FileUpload({
       <RenameFileDialog
         isOpen={!!renameFile.file || !!renameFile.existingFile}
         onClose={() => setRenameFile({ file: null, isExisting: false })}
-        fileName={renameFile.file?.name || renameFile.existingFile?.name || ""}
+        fileName={renameFile.file?.name || renameFile.existingFile?.name || ''}
         onRename={handleRename}
       />
     </div>

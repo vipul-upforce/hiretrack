@@ -1,7 +1,8 @@
-"use client";
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { Button } from "@/components/ui/button";
+'use client';
+
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Button } from '@/components/ui/button';
 
 interface FileUploaderProps {
   onSubmit: (files: File[]) => void;
@@ -17,11 +18,11 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/zip": [".zip"],
-      "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
+      'application/zip': ['.zip'],
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
     },
   });
 
@@ -35,7 +36,7 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
       <div
         {...getRootProps()}
         className={`border-2 border-dashed p-8 text-center cursor-pointer
-          ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
+          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
       >
         <input {...getInputProps()} />
         {isDragActive ? (

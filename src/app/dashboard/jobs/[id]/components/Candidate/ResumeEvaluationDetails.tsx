@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   RefreshCwIcon,
   ChevronDown,
@@ -9,15 +9,15 @@ import {
   CheckCircle2,
   XCircle,
   Award,
-} from "lucide-react";
-import { Candidate } from "@/types/candidate";
-import useRoles from "@/hooks/useRoles";
+} from 'lucide-react';
+import { Candidate } from '@/types/candidate';
+import useRoles from '@/hooks/useRoles';
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { AIReEvaluateTrigger } from "./AIReEvaluateTrigger";
+} from '@/components/ui/collapsible';
+import { AIReEvaluateTrigger } from './AIReEvaluateTrigger';
 
 interface ResumeEvaluationDetailsProps {
   labelClass: string;
@@ -38,7 +38,7 @@ export default function ResumeEvaluationDetails({
   const [showRedFlags, setShowRedFlags] = useState(false);
   const [showSkillsMatrix, setShowSkillsMatrix] = useState(false);
   const role = useRoles();
-  if (!localCandidate.scores)
+  if (!localCandidate.scores) {
     return (
       <AIReEvaluateTrigger
         labelClass={labelClass}
@@ -49,6 +49,7 @@ export default function ResumeEvaluationDetails({
         localCandidate={localCandidate}
       />
     );
+  }
 
   // if (
   //   !localCandidate.scores.strengths?.length &&
@@ -75,7 +76,7 @@ export default function ResumeEvaluationDetails({
           <div className="flex flex-row justify-between items-center">
             <div className="flex items-center gap-3">
               <Label className={labelClass}>AI Evaluation</Label>
-              {role !== "candidate" && (
+              {role !== 'candidate' && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -88,8 +89,8 @@ export default function ResumeEvaluationDetails({
                   }
                   className={
                     isReEvaluating && isEvaluatingFor === localCandidate._id
-                      ? "animate-spin text-gray-400 dark:text-gray-500"
-                      : "hover:text-gray-600 dark:hover:text-gray-300 transition duration-300 text-gray-500 dark:text-gray-400"
+                      ? 'animate-spin text-gray-400 dark:text-gray-500'
+                      : 'hover:text-gray-600 dark:hover:text-gray-300 transition duration-300 text-gray-500 dark:text-gray-400'
                   }
                 >
                   <RefreshCwIcon size={15} />
@@ -101,7 +102,7 @@ export default function ResumeEvaluationDetails({
                 className="text-gray-600 dark:text-gray-400 text-sm cursor-pointer hover:text-gray-800 dark:hover:text-gray-200"
                 onClick={() => setShowEvalDetails(!showEvalDetails)}
               >
-                {showEvalDetails ? "Hide details" : "Show details"}
+                {showEvalDetails ? 'Hide details' : 'Show details'}
               </p>
             )}
           </div>
@@ -115,43 +116,43 @@ export default function ResumeEvaluationDetails({
       </div>
 
       {/* AI Source Attribution - Evidence for Scores */}
-      {showEvalDetails &&
-        localCandidate.scores.evidenceLinks &&
-        ((localCandidate.scores.evidenceLinks.overall &&
-          localCandidate.scores.evidenceLinks.overall !== "N/A" &&
-          localCandidate.scores.evidenceLinks.overall.toLowerCase() !==
-            "n/a") ||
-          (localCandidate.scores.evidenceLinks.skills &&
-            localCandidate.scores.evidenceLinks.skills !== "N/A" &&
-            localCandidate.scores.evidenceLinks.skills.toLowerCase() !==
-              "n/a") ||
-          (localCandidate.scores.evidenceLinks.experience &&
-            localCandidate.scores.evidenceLinks.experience !== "N/A" &&
-            localCandidate.scores.evidenceLinks.experience.toLowerCase() !==
-              "n/a") ||
-          (role !== "interviewer" &&
-            localCandidate.scores.evidenceLinks.affordability &&
-            localCandidate.scores.evidenceLinks.affordability !== "N/A" &&
-            localCandidate.scores.evidenceLinks.affordability.toLowerCase() !==
-              "n/a")) && (
-          <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-900/50">
-            <div className="flex items-center gap-2 mb-2">
-              <Award className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <Label
-                className={`${labelClass} text-gray-700 dark:text-gray-300`}
-              >
-                AI Source Attribution
-              </Label>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-              Resume sections referenced by AI for each evaluation score
-            </p>
-            <div className="space-y-2">
-              {/* Overall */}
-              {localCandidate.scores.evidenceLinks.overall &&
-                localCandidate.scores.evidenceLinks.overall !== "N/A" &&
-                localCandidate.scores.evidenceLinks.overall.toLowerCase() !==
-                  "n/a" && (
+      {showEvalDetails
+        && localCandidate.scores.evidenceLinks
+        && ((localCandidate.scores.evidenceLinks.overall
+          && localCandidate.scores.evidenceLinks.overall !== 'N/A'
+          && localCandidate.scores.evidenceLinks.overall.toLowerCase()
+            !== 'n/a')
+          || (localCandidate.scores.evidenceLinks.skills
+            && localCandidate.scores.evidenceLinks.skills !== 'N/A'
+            && localCandidate.scores.evidenceLinks.skills.toLowerCase()
+              !== 'n/a')
+          || (localCandidate.scores.evidenceLinks.experience
+            && localCandidate.scores.evidenceLinks.experience !== 'N/A'
+            && localCandidate.scores.evidenceLinks.experience.toLowerCase()
+              !== 'n/a')
+          || (role !== 'interviewer'
+            && localCandidate.scores.evidenceLinks.affordability
+            && localCandidate.scores.evidenceLinks.affordability !== 'N/A'
+            && localCandidate.scores.evidenceLinks.affordability.toLowerCase()
+              !== 'n/a')) && (
+              <div className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-900/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Award className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+                  <Label
+                    className={`${labelClass} text-gray-700 dark:text-gray-300`}
+                  >
+                    AI Source Attribution
+                  </Label>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  Resume sections referenced by AI for each evaluation score
+                </p>
+                <div className="space-y-2">
+                  {/* Overall */}
+                  {localCandidate.scores.evidenceLinks.overall
+                && localCandidate.scores.evidenceLinks.overall !== 'N/A'
+                && localCandidate.scores.evidenceLinks.overall.toLowerCase()
+                  !== 'n/a' && (
                   <div className="bg-white dark:bg-transparent p-2 rounded border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start gap-2">
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px]">
@@ -162,13 +163,13 @@ export default function ResumeEvaluationDetails({
                       </span>
                     </div>
                   </div>
-                )}
+                  )}
 
-              {/* Skills */}
-              {localCandidate.scores.evidenceLinks.skills &&
-                localCandidate.scores.evidenceLinks.skills !== "N/A" &&
-                localCandidate.scores.evidenceLinks.skills.toLowerCase() !==
-                  "n/a" && (
+                  {/* Skills */}
+                  {localCandidate.scores.evidenceLinks.skills
+                && localCandidate.scores.evidenceLinks.skills !== 'N/A'
+                && localCandidate.scores.evidenceLinks.skills.toLowerCase()
+                  !== 'n/a' && (
                   <div className="bg-white dark:bg-transparent p-2 rounded border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start gap-2">
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px]">
@@ -179,13 +180,13 @@ export default function ResumeEvaluationDetails({
                       </span>
                     </div>
                   </div>
-                )}
+                  )}
 
-              {/* Experience */}
-              {localCandidate.scores.evidenceLinks.experience &&
-                localCandidate.scores.evidenceLinks.experience !== "N/A" &&
-                localCandidate.scores.evidenceLinks.experience.toLowerCase() !==
-                  "n/a" && (
+                  {/* Experience */}
+                  {localCandidate.scores.evidenceLinks.experience
+                && localCandidate.scores.evidenceLinks.experience !== 'N/A'
+                && localCandidate.scores.evidenceLinks.experience.toLowerCase()
+                  !== 'n/a' && (
                   <div className="bg-white dark:bg-transparent p-2 rounded border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start gap-2">
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px]">
@@ -196,14 +197,14 @@ export default function ResumeEvaluationDetails({
                       </span>
                     </div>
                   </div>
-                )}
+                  )}
 
-              {/* Affordability - Hidden from interviewers */}
-              {role !== "interviewer" &&
-                localCandidate.scores.evidenceLinks.affordability &&
-                localCandidate.scores.evidenceLinks.affordability !== "N/A" &&
-                localCandidate.scores.evidenceLinks.affordability.toLowerCase() !==
-                  "n/a" && (
+                  {/* Affordability - Hidden from interviewers */}
+                  {role !== 'interviewer'
+                && localCandidate.scores.evidenceLinks.affordability
+                && localCandidate.scores.evidenceLinks.affordability !== 'N/A'
+                && localCandidate.scores.evidenceLinks.affordability.toLowerCase()
+                  !== 'n/a' && (
                   <div className="bg-white dark:bg-transparent p-2 rounded border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start gap-2">
                       <span className="text-sm font-medium text-gray-500 dark:text-gray-400 min-w-[90px]">
@@ -214,13 +215,19 @@ export default function ResumeEvaluationDetails({
                       </span>
                     </div>
                   </div>
-                )}
-            </div>
-          </div>
-        )}
+                  )}
+                </div>
+              </div>
+      )}
 
       {/* Skills Verification Matrix */}
-      {showEvalDetails && localCandidate.scores.skillsMatrix && (
+      {showEvalDetails && localCandidate.scores.skillsMatrix && 
+      localCandidate.scores.skillsMatrix.requiredAndPresent &&
+      localCandidate.scores.skillsMatrix.requiredAndPresent.length > 0 &&
+      localCandidate.scores.skillsMatrix.requiredButMissing &&
+      localCandidate.scores.skillsMatrix.requiredButMissing.length > 0 &&
+      localCandidate.scores.skillsMatrix.presentButNotRequired &&
+      localCandidate.scores.skillsMatrix.presentButNotRequired.length > 0 && (
         <Collapsible
           open={showSkillsMatrix}
           onOpenChange={setShowSkillsMatrix}
@@ -245,9 +252,9 @@ export default function ResumeEvaluationDetails({
             </p>
 
             {/* Required and Present */}
-            {localCandidate.scores.skillsMatrix.requiredAndPresent &&
-              localCandidate.scores.skillsMatrix.requiredAndPresent.length >
-                0 && (
+            {localCandidate.scores.skillsMatrix.requiredAndPresent
+              && localCandidate.scores.skillsMatrix.requiredAndPresent.length
+                > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -279,23 +286,25 @@ export default function ResumeEvaluationDetails({
                           </div>
                           {skill.yearsOfExperience !== undefined && (
                             <p className="text-sm text-green-700 dark:text-green-300 mb-1">
-                              {skill.yearsOfExperience} years experience
+                              {skill.yearsOfExperience}
+                              {' '}
+                              years experience
                             </p>
                           )}
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {skill.evidence}
                           </p>
                         </div>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
-              )}
+            )}
 
             {/* Required but Missing */}
-            {localCandidate.scores.skillsMatrix.requiredButMissing &&
-              localCandidate.scores.skillsMatrix.requiredButMissing.length >
-                0 && (
+            {localCandidate.scores.skillsMatrix.requiredButMissing
+              && localCandidate.scores.skillsMatrix.requiredButMissing.length
+                > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -317,16 +326,16 @@ export default function ResumeEvaluationDetails({
                         >
                           {skill}
                         </span>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
-              )}
+            )}
 
             {/* Present but Not Required */}
-            {localCandidate.scores.skillsMatrix.presentButNotRequired &&
-              localCandidate.scores.skillsMatrix.presentButNotRequired.length >
-                0 && (
+            {localCandidate.scores.skillsMatrix.presentButNotRequired
+              && localCandidate.scores.skillsMatrix.presentButNotRequired.length
+                > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Award className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -348,11 +357,11 @@ export default function ResumeEvaluationDetails({
                         >
                           {skill}
                         </span>
-                      )
+                      ),
                     )}
                   </div>
                 </div>
-              )}
+            )}
           </CollapsibleContent>
         </Collapsible>
       )}
@@ -369,19 +378,19 @@ export default function ResumeEvaluationDetails({
         </div>
       )}
 
-      {showEvalDetails &&
-        localCandidate.scores.areas_for_improvement?.length > 0 && (
+      {showEvalDetails
+        && localCandidate.scores.areas_for_improvement?.length > 0 && (
           <div className="space-y-1">
             <Label className={labelClass}>Areas for Improvement</Label>
             <ul className="list-disc pl-5">
               {localCandidate.scores.areas_for_improvement.map(
                 (area, index) => (
                   <li key={index}>{area}</li>
-                )
+                ),
               )}
             </ul>
           </div>
-        )}
+      )}
 
       {showEvalDetails && localCandidate.scores.recommendation && (
         <div className="space-y-2">
@@ -398,9 +407,9 @@ export default function ResumeEvaluationDetails({
       )}
 
       {/* Red Flags Detection */}
-      {showEvalDetails &&
-        localCandidate.scores.redFlags &&
-        localCandidate.scores.redFlags.length > 0 && (
+      {showEvalDetails
+        && localCandidate.scores.redFlags
+        && localCandidate.scores.redFlags.length > 0 && (
           <Collapsible
             open={showRedFlags}
             onOpenChange={setShowRedFlags}
@@ -412,7 +421,9 @@ export default function ResumeEvaluationDetails({
                 <Label
                   className={`${labelClass} cursor-pointer text-red-700 dark:text-red-300`}
                 >
-                  Red Flags ({localCandidate.scores.redFlags.length})
+                  Red Flags (
+                  {localCandidate.scores.redFlags.length}
+                  )
                 </Label>
               </div>
               {showRedFlags ? (
@@ -429,11 +440,11 @@ export default function ResumeEvaluationDetails({
                 <div
                   key={index}
                   className={`p-3 rounded-lg border ${
-                    flag.severity === "high"
-                      ? "bg-red-100 dark:bg-red-950/40 border-red-300 dark:border-red-800"
-                      : flag.severity === "medium"
-                        ? "bg-orange-100 dark:bg-orange-950/40 border-orange-300 dark:border-orange-800"
-                        : "bg-yellow-100 dark:bg-yellow-950/40 border-yellow-300 dark:border-yellow-800"
+                    flag.severity === 'high'
+                      ? 'bg-red-100 dark:bg-red-950/40 border-red-300 dark:border-red-800'
+                      : flag.severity === 'medium'
+                        ? 'bg-orange-100 dark:bg-orange-950/40 border-orange-300 dark:border-orange-800'
+                        : 'bg-yellow-100 dark:bg-yellow-950/40 border-yellow-300 dark:border-yellow-800'
                   }`}
                 >
                   <div className="flex items-start gap-2">
@@ -441,17 +452,17 @@ export default function ResumeEvaluationDetails({
                       <div className="flex items-center gap-2 mb-1">
                         <span
                           className={`text-xs font-semibold uppercase px-2 py-0.5 rounded ${
-                            flag.severity === "high"
-                              ? "bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200"
-                              : flag.severity === "medium"
-                                ? "bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200"
-                                : "bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
+                            flag.severity === 'high'
+                              ? 'bg-red-200 dark:bg-red-900 text-red-800 dark:text-red-200'
+                              : flag.severity === 'medium'
+                                ? 'bg-orange-200 dark:bg-orange-900 text-orange-800 dark:text-orange-200'
+                                : 'bg-yellow-200 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
                           }`}
                         >
                           {flag.severity}
                         </span>
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {flag.type.replace(/_/g, " ")}
+                          {flag.type.replace(/_/g, ' ')}
                         </span>
                       </div>
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
@@ -466,7 +477,7 @@ export default function ResumeEvaluationDetails({
               ))}
             </CollapsibleContent>
           </Collapsible>
-        )}
+      )}
     </>
   );
 }

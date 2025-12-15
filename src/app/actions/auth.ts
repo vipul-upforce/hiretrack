@@ -1,3 +1,4 @@
+
 "use server";
 
 import jwt from "jsonwebtoken";
@@ -9,15 +10,18 @@ import { getUserRole } from "@/lib/utils/checklistVisibility";
 import type { UserRole } from "@/lib/models/JobLaneConfig";
 import connectToDatabase, { Settings, User } from "@/lib/mongodb";
 
+
 export async function verifyAndDecryptToken(token: string, orgId: string) {
   try {
     const JWT_SECRET = generateOrgJwtSecret(orgId);
 
-    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+
+    if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
+
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (!decoded || typeof decoded !== "object" || !decoded.user) {
-      throw new Error("Invalid token structure");
+    if (!decoded || typeof decoded !== 'object' || !decoded.user) {
+      throw new Error('Invalid token structure');
     }
 
     const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
@@ -89,7 +93,8 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Unknown Error Occurred",
+
+      error: error instanceof Error ? error.message : 'Unknown Error Occurred',
     };
   }
 }
@@ -131,10 +136,10 @@ export interface AuthenticatedUser {
 
 export async function getAuthenticatedUser(
   request: NextRequest,
-  requiredRole?: string | string[]
+  requiredRole?: string | string[],
 ): Promise<AuthenticatedUser | null> {
-  const token = request.cookies.get("auth_token")?.value;
-  const orgId = request.cookies.get("org_id")?.value;
+  const token = request.cookies.get('auth_token')?.value;
+  const orgId = request.cookies.get('org_id')?.value;
 
   if (!token || !orgId) return null;
 
@@ -157,7 +162,7 @@ export async function getAuthenticatedUser(
 
     // Validate each required role and check if user's role matches
     const validRequiredRoles = rolesToCheck
-      .map(role => getUserRole(role))
+      .map((role) => getUserRole(role))
       .filter((role): role is UserRole => role !== null);
 
     if (validRequiredRoles.length === 0 || !validRequiredRoles.includes(validatedRole)) {
@@ -172,7 +177,6 @@ export async function getAuthenticatedUser(
 export const signToken = async (
   payload: unknown, 
   orgId: string, 
-  expiresIn: string = "15m"
 ) => {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
   console.log("payload-263", payload);
@@ -181,15 +185,16 @@ export const signToken = async (
 
   const encryptedPayload = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    String(JWT_SECRET)
+    String(JWT_SECRET),
   ).toString();
 
-  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: expiresIn as any});
+  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "15m" as any});
 };
 
 
 
 // Helper function for access tokens (15 minutes)
 export const signAccessToken = async (payload: unknown, orgId: string) => {
-  return signToken(payload, orgId, "15m");
+  return signToken(payload, orgId);
+
 };

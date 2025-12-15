@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 export type EventType =
-  | "interviews"
-  | "screenings"
-  | "followups"
-  | "assignments"
-  | "assessments"
-  | "offers";
+  | 'interviews'
+  | 'screenings'
+  | 'followups'
+  | 'assignments'
+  | 'assessments'
+  | 'offers';
 
 interface EventFiltersProps {
   selectedFilters: EventType[];
@@ -17,12 +17,12 @@ interface EventFiltersProps {
 }
 
 const filterOptions: { value: EventType; label: string; color: string }[] = [
-  { value: "interviews", label: "Interviews", color: "bg-blue-500" },
-  { value: "screenings", label: "Screenings", color: "bg-green-500" },
-  { value: "followups", label: "Follow-ups", color: "bg-purple-500" },
-  { value: "assignments", label: "Assignments", color: "bg-teal-500" },
-  { value: "assessments", label: "Assessments", color: "bg-pink-500" },
-  { value: "offers", label: "Offers", color: "bg-orange-500" },
+  { value: 'interviews', label: 'Interviews', color: 'bg-blue-500' },
+  { value: 'screenings', label: 'Screenings', color: 'bg-green-500' },
+  { value: 'followups', label: 'Follow-ups', color: 'bg-purple-500' },
+  { value: 'assignments', label: 'Assignments', color: 'bg-teal-500' },
+  { value: 'assessments', label: 'Assessments', color: 'bg-pink-500' },
+  { value: 'offers', label: 'Offers', color: 'bg-orange-500' },
 ];
 
 export function EventFilters({ selectedFilters, onFilterChange }: EventFiltersProps) {

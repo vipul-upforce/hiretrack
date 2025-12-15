@@ -1,6 +1,6 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Check, X } from "lucide-react";
-import { TestResult } from "../types";
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Check, X } from 'lucide-react';
+import { TestResult } from '../types';
 
 interface TestConnectionAlertProps {
   result: TestResult;
@@ -11,8 +11,8 @@ export function TestConnectionAlert({ result }: TestConnectionAlertProps) {
     <Alert
       className={
         result.success
-          ? "border-green-200 bg-green-50 dark:bg-green-950/20"
-          : "border-red-200 bg-red-50 dark:bg-red-950/20"
+          ? 'border-green-200 bg-green-50 dark:bg-green-950/20'
+          : 'border-red-200 bg-red-50 dark:bg-red-950/20'
       }
     >
       {result.success ? (
@@ -23,17 +23,19 @@ export function TestConnectionAlert({ result }: TestConnectionAlertProps) {
       <AlertTitle
         className={
           result.success
-            ? "text-green-800 dark:text-green-300"
-            : "text-red-800 dark:text-red-300"
+            ? 'text-green-800 dark:text-green-300'
+            : 'text-red-800 dark:text-red-300'
         }
       >
-        Connection Test {result.success ? "Passed" : "Failed"}
+        Connection Test
+        {' '}
+        {result.success ? 'Passed' : 'Failed'}
       </AlertTitle>
       <AlertDescription
         className={
           result.success
-            ? "text-green-700 dark:text-green-400"
-            : "text-red-700 dark:text-red-400"
+            ? 'text-green-700 dark:text-green-400'
+            : 'text-red-700 dark:text-red-400'
         }
       >
         <div className="space-y-2">
@@ -55,25 +57,31 @@ export function TestConnectionAlert({ result }: TestConnectionAlertProps) {
           {result.success && result.data && (
             <div className="text-xs opacity-80 space-y-1 mt-2 p-2 bg-white/50 dark:bg-black/20 rounded border">
               <div>
-                <strong>Connected Account:</strong> {result.data.connectedEmail}
+                <strong>Connected Account:</strong>
+                {' '}
+                {result.data.connectedEmail}
               </div>
               <div>
-                <strong>Primary Calendar:</strong>{" "}
+                <strong>Primary Calendar:</strong>
+                {' '}
                 {result.data.primaryCalendarName}
               </div>
               <div>
-                <strong>Time Zone:</strong>{" "}
+                <strong>Time Zone:</strong>
+                {' '}
                 {result.data.primaryCalendarTimeZone}
               </div>
               <div>
-                <strong>Accessible Calendars:</strong>{" "}
+                <strong>Accessible Calendars:</strong>
+                {' '}
                 {result.data.calendarCount}
               </div>
               <div>
-                <strong>Last Tested:</strong>{" "}
+                <strong>Last Tested:</strong>
+                {' '}
                 {result.data.lastTestedAt
                   ? new Date(result.data.lastTestedAt).toLocaleString()
-                  : "N/A"}
+                  : 'N/A'}
               </div>
             </div>
           )}

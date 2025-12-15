@@ -1,10 +1,13 @@
-"use client";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import React from "react";
-import SettingDialog from "../setting-dialog";
-import { ExternalLink } from "lucide-react";
-import { SettingGroup } from "../../types";
+'use client';
+
+import { useRouter } from 'next/navigation';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import React from 'react';
+import { ExternalLink } from 'lucide-react';
+import SettingDialog from '../setting-dialog';
+import { SettingGroup } from '../../types';
 
 interface SettingsCardProps {
   group: SettingGroup;
@@ -13,12 +16,12 @@ interface SettingsCardProps {
   openDialog: string | null;
 }
 
-const SettingsCard = ({
+function SettingsCard({
   group,
   setOpenDialog,
   opensInNewPage,
   openDialog,
-}: SettingsCardProps) => {
+}: SettingsCardProps) {
   const router = useRouter();
   return (
     <div key={group.title} className="space-y-4">
@@ -44,14 +47,14 @@ const SettingsCard = ({
             <Card
               className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
               onClick={() => {
-                if (option.key === "users") {
-                  router.push("/dashboard/users");
-                } else if (option.key === "portal") {
-                  router.push("/dashboard/settings/portal");
-                } else if (option.key === "templates") {
-                  router.push("/dashboard/settings/templates");
-                } else if (option.key === "logs") {
-                  router.push("/dashboard/settings/logs");
+                if (option.key === 'users') {
+                  router.push('/dashboard/users');
+                } else if (option.key === 'portal') {
+                  router.push('/dashboard/settings/portal');
+                } else if (option.key === 'templates') {
+                  router.push('/dashboard/settings/templates');
+                } else if (option.key === 'logs') {
+                  router.push('/dashboard/settings/logs');
                 } else {
                   setOpenDialog(option.key);
                 }
@@ -82,21 +85,21 @@ const SettingsCard = ({
             </Card>
 
             {/* Dialog Component */}
-            {openDialog === option.key &&
-              option.key !== "portal" &&
-              option.key !== "templates" &&
-              option.key !== "logs" && (
+            {openDialog === option.key
+              && option.key !== 'portal'
+              && option.key !== 'templates'
+              && option.key !== 'logs' && (
                 <SettingDialog
                   isOpen={openDialog === option.key}
                   onClose={() => setOpenDialog(null)}
                   setting={option}
                 />
-              )}
+            )}
           </div>
         ))}
       </div>
     </div>
   );
-};
+}
 
 export default SettingsCard;

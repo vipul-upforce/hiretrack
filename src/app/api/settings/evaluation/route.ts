@@ -1,33 +1,37 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
     const [userData] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const organizationId = userData.organizationId || "";
+    const organizationId = userData.organizationId || '';
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
 
     const settings = await Settings.findOne({
-      organizationId: organizationId,
-    }).select("evaluationConfig").lean().exec();
+      organizationId,
+    })
+      .select('evaluationConfig')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
@@ -43,9 +47,9 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -53,33 +57,29 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const [userData, evaluationConfig] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       req.json(),
       connectToDatabase(),
     ]);
     if (!userData) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const organizationId = userData.organizationId || "";
+    const organizationId = userData.organizationId || '';
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
-
-    
-    console.log("🟢🟢 Evaluation config update: ", evaluationConfig);
-
     // Validate temperature range
     if (
       evaluationConfig.temperature !== undefined &&
       (evaluationConfig.temperature < 0 || evaluationConfig.temperature > 1)
     ) {
       return NextResponse.json(
-        { error: "Temperature must be between 0 and 1" },
-        { status: 400 }
+        { error: 'Temperature must be between 0 and 1' },
+        { status: 400 },
       );
     }
 
@@ -89,41 +89,42 @@ export async function PUT(req: NextRequest) {
       evaluationConfig.maxPdfPages < 0
     ) {
       return NextResponse.json(
-        { error: "Max PDF pages must be 0 or greater (0 = no limit)" },
-        { status: 400 }
+        { error: 'Max PDF pages must be 0 or greater (0 = no limit)' },
+        { status: 400 },
       );
     }
 
     const updatedSettings = await Settings.findOneAndUpdate(
       {
-        organizationId: organizationId,
+        organizationId,
       },
-      { evaluationConfig: evaluationConfig },
+      { evaluationConfig },
       {
         new: true,
         runValidators: true,
         upsert: true,
-        select: "evaluationConfig",
-      }
+        select: 'evaluationConfig',
+      },
     );
 
     if (!updatedSettings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
     return NextResponse.json({
-      message: "Evaluation settings updated successfully",
+      message: 'Evaluation settings updated successfully',
       evaluationConfig: updatedSettings.evaluationConfig,
     });
   } catch (error) {
+    logger.error({ error, url: req.url }, 'Error updating evaluation settings');
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

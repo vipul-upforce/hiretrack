@@ -2,23 +2,22 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Formik, FormikHelpers, FormikProps } from "formik";
-import { useEffect, useRef } from "react";
-import { SelectValue } from "@/components/ui/select";
-import React, { useState, useContext, memo, useCallback } from "react";
-import { CustomField } from "@/Custom_Fields/Types/CustomField";
-import CustomFieldDialog from "./Common/CustomFieldDialog";
-import { toast } from "@/Custom_Fields/hooks/use-toast";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { ChipInput } from "@/components/ui/chip-input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { fieldTypes } from "@/Custom_Fields/utils";
-import { validationSchema } from "@/Custom_Fields/utils/validations";
+  SelectValue, Select,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Formik, FormikHelpers, FormikProps } from 'formik';
+import React, {
+  useEffect, useRef, useState, useContext, memo, useCallback,
+} from 'react';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { toast } from '@/Custom_Fields/hooks/use-toast';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { Label } from '@/components/ui/label';
+import { ChipInput } from '@/components/ui/chip-input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { fieldTypes } from '@/Custom_Fields/utils';
+import { validationSchema } from '@/Custom_Fields/utils/validations';
 import {
   Type,
   FileText,
@@ -34,7 +33,8 @@ import {
   Upload,
   Check,
   Loader2,
-} from "lucide-react";
+} from 'lucide-react';
+import CustomFieldDialog from './Common/CustomFieldDialog';
 
 const fieldTypeIcons: Record<string, React.ElementType> = {
   text: Type,
@@ -70,12 +70,12 @@ export const AddSpecificCustomFieldForm = memo(
     handleClose,
     isEditMode = false,
     initialValues: initialValue = {
-      id: "",
-      label: "",
-      type: "text",
+      id: '',
+      label: '',
+      type: 'text',
       options: [],
-      persistance: "permanent",
-      defaultValue: "",
+      persistance: 'permanent',
+      defaultValue: '',
       required: false,
       private: false,
       privateInt: false,
@@ -97,12 +97,12 @@ export const AddSpecificCustomFieldForm = memo(
 
     const existingFieldsFromContext = selectedFormId?.fields || [];
     const [initialValues, setInitialValues] = useState<CustomField>({
-      id: "",
-      label: "",
-      type: "text",
+      id: '',
+      label: '',
+      type: 'text',
       options: [],
-      persistance: "permanent",
-      defaultValue: "",
+      persistance: 'permanent',
+      defaultValue: '',
       required: false,
       private: false,
       privateInt: false,
@@ -115,7 +115,7 @@ export const AddSpecificCustomFieldForm = memo(
       if (initialValue && initialValue.id) {
         setInitialValues({
           ...initialValue,
-          label: initialValue.label.split(" ||||||(")[0],
+          label: initialValue.label.split(' ||||||(')[0],
         });
       }
     }, [initialValue?.id, initialValue?.label]);
@@ -130,43 +130,42 @@ export const AddSpecificCustomFieldForm = memo(
       (label: string, excludeId?: string) => {
         const trimmedLabel = label.trim().toLowerCase();
         return existingFieldsFromContext?.some(
-          (field) =>
-            (field.label.toLowerCase() === trimmedLabel ||
-              field.label.toLowerCase() === trimmedLabel + " |||||(i)") &&
-            (jobId
+          (field) => (field.label.toLowerCase() === trimmedLabel
+              || field.label.toLowerCase() === `${trimmedLabel} |||||(i)`)
+            && (jobId
               ? field.jobId === jobId
-              : field.candidateId === candidateId) &&
-            field.id !== excludeId
+              : field.candidateId === candidateId)
+            && field.id !== excludeId,
         );
       },
-      [existingFieldsFromContext, jobId, candidateId]
+      [existingFieldsFromContext, jobId, candidateId],
     );
 
     const onSubmit = useCallback(
       async (
         values: CustomField,
-        { resetForm, setFieldError }: FormikHelpers<CustomField>
+        { resetForm, setFieldError }: FormikHelpers<CustomField>,
       ) => {
         setIsSubmitting(true);
         if (isEditMode && values.label === initialValue?.label) {
         } else {
           const isDuplicate = checkForDuplicate(
             values.label,
-            isEditMode ? initialValue?.id : undefined
+            isEditMode ? initialValue?.id : undefined,
           );
           if (isDuplicate) {
-            setFieldError("label", "");
+            setFieldError('label', '');
             setHasDuplicate(true);
             setIsSubmitting(false);
             return;
           }
 
-          selectedFormId &&
-            customFields[selectedFormId.formId].fields.some((field) => {
+          selectedFormId
+            && customFields[selectedFormId.formId].fields.some((field) => {
               if (
-                (field.jobId || field.candidateId) &&
-                field.label === values.label &&
-                (!isEditMode || field.id !== initialValue?.id)
+                (field.jobId || field.candidateId)
+                && field.label === values.label
+                && (!isEditMode || field.id !== initialValue?.id)
               ) {
                 values.label = `${values.label} |||||(i)`;
                 return true;
@@ -191,12 +190,13 @@ export const AddSpecificCustomFieldForm = memo(
           handleClose();
           resetForm();
         } catch (error: unknown) {
-          if (error instanceof Error)
+          if (error instanceof Error) {
             toast({
               title: `Error: ${error.message}`,
-              description: "Failed to save field",
-              variant: "destructive",
+              description: 'Failed to save field',
+              variant: 'destructive',
             });
+          }
         } finally {
           setIsSubmitting(false);
         }
@@ -211,7 +211,7 @@ export const AddSpecificCustomFieldForm = memo(
         candidateId,
         checkForDuplicate,
         customFields,
-      ]
+      ],
     );
 
     const onValuesChange = useCallback(
@@ -221,23 +221,23 @@ export const AddSpecificCustomFieldForm = memo(
         setFieldValue: (
           field: string,
           value: string | string[] | undefined
-        ) => void
+        ) => void,
       ) => {
         if (value !== values.type) {
-          if (["select", "multiSelect", "radio", "checkbox"].includes(value)) {
-            setFieldValue("options", values.options);
-            if (["select", "radio"].includes(value)) {
-              setFieldValue("defaultValue", "");
+          if (['select', 'multiSelect', 'radio', 'checkbox'].includes(value)) {
+            setFieldValue('options', values.options);
+            if (['select', 'radio'].includes(value)) {
+              setFieldValue('defaultValue', '');
             } else {
-              setFieldValue("defaultValue", []);
+              setFieldValue('defaultValue', []);
             }
           } else {
-            setFieldValue("defaultValue", "");
+            setFieldValue('defaultValue', '');
           }
         }
-        setFieldValue("type", value);
+        setFieldValue('type', value);
       },
-      []
+      [],
     );
 
     const handleNumberInputChange = (
@@ -245,11 +245,11 @@ export const AddSpecificCustomFieldForm = memo(
       setFieldValue: (
         field: string,
         value: string | string[] | undefined
-      ) => void
+      ) => void,
     ) => {
-      const value = e.target.value;
-      if (value === "" || /^[0-9]+$/.test(value)) {
-        setFieldValue("defaultValue", value);
+      const { value } = e.target;
+      if (value === '' || /^[0-9]+$/.test(value)) {
+        setFieldValue('defaultValue', value);
       }
     };
 
@@ -260,20 +260,20 @@ export const AddSpecificCustomFieldForm = memo(
           field: string,
           value: string | string[] | undefined
         ) => void,
-        setFieldError: (field: string, message: string | undefined) => void
+        setFieldError: (field: string, message: string | undefined) => void,
       ) => {
-        const value = e.target.value;
-        setFieldValue("label", value);
+        const { value } = e.target;
+        setFieldValue('label', value);
         const isDuplicate = checkForDuplicate(
           value,
-          isEditMode ? initialValue?.id : undefined
+          isEditMode ? initialValue?.id : undefined,
         );
         setHasDuplicate(isDuplicate);
         if (isDuplicate) {
-          setFieldError("label", "");
+          setFieldError('label', '');
         }
       },
-      [checkForDuplicate, isEditMode, initialValue]
+      [checkForDuplicate, isEditMode, initialValue],
     );
 
     return (
@@ -287,7 +287,7 @@ export const AddSpecificCustomFieldForm = memo(
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={onSubmit}
-          enableReinitialize={true}
+          enableReinitialize
         >
           {({
             values,
@@ -325,7 +325,7 @@ export const AddSpecificCustomFieldForm = memo(
                             Creating field for Job Position
                           </p>
                           <p className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                            {jobTitle || "Job Position"}
+                            {jobTitle || 'Job Position'}
                           </p>
                         </div>
                       </>
@@ -351,7 +351,7 @@ export const AddSpecificCustomFieldForm = memo(
                             Creating field for Candidate
                           </p>
                           <p className="text-lg font-semibold text-green-900 dark:text-green-100">
-                            {candidateName || "Candidate"}
+                            {candidateName || 'Candidate'}
                           </p>
                         </div>
                       </>
@@ -366,25 +366,28 @@ export const AddSpecificCustomFieldForm = memo(
                     htmlFor="label"
                     className="text-lg font-medium flex items-center gap-1 pb-3"
                   >
-                    Field Label<span className="text-red-500">*</span>
+                    Field Label
+                    <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="label"
-                    {...getFieldProps("label")}
-                    onChange={(e) =>
-                      handleLabelChange(e, setFieldValue, setFieldError)
-                    }
+                    {...getFieldProps('label')}
+                    onChange={(e) => handleLabelChange(e, setFieldValue, setFieldError)}
                     className="text-lg py-3 px-4"
                     placeholder="Enter field label..."
                   />
                   {errors.label && touched.label && (
                     <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                      <span>⚠️</span> {errors.label}
+                      <span>⚠️</span>
+                      {' '}
+                      {errors.label}
                     </div>
                   )}
                   {hasDuplicate && touched.label && (
                     <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                      <span>⚠️</span> Label already exists
+                      <span>⚠️</span>
+                      {' '}
+                      Label already exists
                     </div>
                   )}
                 </div>
@@ -402,28 +405,26 @@ export const AddSpecificCustomFieldForm = memo(
                           key={type.value}
                           className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                             isSelected
-                              ? "shadow-md"
-                              : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                              ? 'shadow-md'
+                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                           }`}
                           style={
                             isSelected
                               ? {
-                                  borderColor: "var(--portal-primary, #6366f1)",
-                                  backgroundColor:
-                                    "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                                }
+                                borderColor: 'var(--portal-primary, #6366f1)',
+                                backgroundColor:
+                                    'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                              }
                               : {}
                           }
-                          onClick={() =>
-                            onValuesChange(type.value, values, setFieldValue)
-                          }
+                          onClick={() => onValuesChange(type.value, values, setFieldValue)}
                         >
                           {isSelected && (
                             <div
                               className="absolute -top-2 -right-2 text-white rounded-full p-1"
                               style={{
                                 backgroundColor:
-                                  "var(--portal-primary, #6366f1)",
+                                  'var(--portal-primary, #6366f1)',
                               }}
                             >
                               <Check className="h-3 w-3" />
@@ -433,24 +434,24 @@ export const AddSpecificCustomFieldForm = memo(
                             <IconComponent
                               className={`h-6 w-6 ${
                                 isSelected
-                                  ? ""
-                                  : "text-gray-500 dark:text-gray-400"
+                                  ? ''
+                                  : 'text-gray-500 dark:text-gray-400'
                               }`}
                               style={
                                 isSelected
-                                  ? { color: "var(--portal-primary, #6366f1)" }
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
                                   : {}
                               }
                             />
                             <span
                               className={`text-sm font-medium ${
                                 isSelected
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
                               }`}
                               style={
                                 isSelected
-                                  ? { color: "var(--portal-primary, #6366f1)" }
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
                                   : {}
                               }
                             >
@@ -463,37 +464,38 @@ export const AddSpecificCustomFieldForm = memo(
                   </div>
                 </div>
 
-                {["select", "multiSelect", "radio", "checkbox"].includes(
-                  values.type
+                {['select', 'multiSelect', 'radio', 'checkbox'].includes(
+                  values.type,
                 ) && (
                   <div>
                     <Label
                       htmlFor="options"
                       className="text-lg font-medium block pb-3"
                     >
-                      Options{" "}
+                      Options
+                      {' '}
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         (Hit Enter to Add)
                       </span>
                     </Label>
                     <ChipInput
                       value={values.options}
-                      onChange={(newOptions) =>
-                        setFieldValue(
-                          "options",
-                          newOptions
-                            .map((option) => option.trim())
-                            .filter((option) => option !== "")
-                        )
-                      }
+                      onChange={(newOptions) => setFieldValue(
+                        'options',
+                        newOptions
+                          .map((option) => option.trim())
+                          .filter((option) => option !== ''),
+                      )}
                       placeholder="Type an option and press Enter..."
                       suggestions={[]}
-                      showAddButton={true}
+                      showAddButton
                       // className="text-lg"
                     />
                     {errors.options && touched.options && (
                       <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                        <span>⚠️</span> {errors.options}
+                        <span>⚠️</span>
+                        {' '}
+                        {errors.options}
                       </div>
                     )}
                   </div>
@@ -507,38 +509,36 @@ export const AddSpecificCustomFieldForm = memo(
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md${
                         values.required
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? 'shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.required
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: 'var(--portal-primary, #6366f1)',
+                            backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                          }
                           : {}
                       }
-                      onClick={() =>
-                        setFieldValue("required", !values.required)
-                      }
+                      onClick={() => setFieldValue('required', !values.required)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                               values.required
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
                             }`}
                             style={
                               values.required
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                }
                                 : {}
                             }
                           >
@@ -550,12 +550,12 @@ export const AddSpecificCustomFieldForm = memo(
                             <div
                               className={`font-medium ${
                                 values.required
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
                               }`}
                               style={
                                 values.required
-                                  ? { color: "var(--portal-primary, #6366f1)" }
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
                                   : {}
                               }
                             >
@@ -572,36 +572,36 @@ export const AddSpecificCustomFieldForm = memo(
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                         values.private
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? 'shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.private
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: 'var(--portal-primary, #6366f1)',
+                            backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                          }
                           : {}
                       }
-                      onClick={() => setFieldValue("private", !values.private)}
+                      onClick={() => setFieldValue('private', !values.private)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center${
                               values.private
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
                             }`}
                             style={
                               values.private
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                }
                                 : {}
                             }
                           >
@@ -613,12 +613,12 @@ export const AddSpecificCustomFieldForm = memo(
                             <div
                               className={`font-medium ${
                                 values.private
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
                               }`}
                               style={
                                 values.private
-                                  ? { color: "var(--portal-primary, #6366f1)" }
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
                                   : {}
                               }
                             >
@@ -635,38 +635,36 @@ export const AddSpecificCustomFieldForm = memo(
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                         values.privateInt
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? 'shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.privateInt
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: 'var(--portal-primary, #6366f1)',
+                            backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                          }
                           : {}
                       }
-                      onClick={() =>
-                        setFieldValue("privateInt", !values.privateInt)
-                      }
+                      onClick={() => setFieldValue('privateInt', !values.privateInt)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                               values.privateInt
-                                ? ""
-                                : "border-gray-300 dark:border-gray-600"
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
                             }`}
                             style={
                               values.privateInt
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                }
                                 : {}
                             }
                           >
@@ -683,7 +681,7 @@ export const AddSpecificCustomFieldForm = memo(
                               }`}
                               style={
                                 values.privateInt
-                                  ? { color: "var(--portal-primary, #6366f1)" }
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
                                   : {}
                               }
                             >
@@ -700,21 +698,19 @@ export const AddSpecificCustomFieldForm = memo(
                     <div
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
                         values.showOnCard
-                          ? "shadow-md"
-                          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                          ? 'shadow-md'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.showOnCard
                           ? {
-                              borderColor: "var(--portal-primary, #6366f1)",
-                              backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }
+                            borderColor: 'var(--portal-primary, #6366f1)',
+                            backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                          }
                           : {}
                       }
-                      onClick={() =>
-                        setFieldValue("showOnCard", !values.showOnCard)
-                      }
+                      onClick={() => setFieldValue('showOnCard', !values.showOnCard)}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -727,11 +723,11 @@ export const AddSpecificCustomFieldForm = memo(
                             style={
                               values.showOnCard
                                 ? {
-                                    backgroundColor:
-                                      "var(--portal-primary, #6366f1)",
-                                    borderColor:
-                                      "var(--portal-primary, #6366f1)",
-                                  }
+                                  backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                }
                                 : {}
                             }
                           >
@@ -743,12 +739,12 @@ export const AddSpecificCustomFieldForm = memo(
                             <div
                               className={`font-medium ${
                                 values.showOnCard
-                                  ? ""
-                                  : "text-gray-700 dark:text-gray-300"
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
                               }`}
                               style={
                                 values.showOnCard
-                                  ? { color: "var(--portal-primary, #6366f1)" }
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
                                   : {}
                               }
                             >
@@ -765,16 +761,16 @@ export const AddSpecificCustomFieldForm = memo(
                 </div>
 
                 {[
-                  "date",
-                  "datetime",
-                  "time",
-                  "file",
-                  "textarea",
-                  "password",
+                  'date',
+                  'datetime',
+                  'time',
+                  'file',
+                  'textarea',
+                  'password',
                 ].includes(values.type) ? null : (
                   <>
-                    {["select", "radio", "checkbox", "multiSelect"].includes(
-                      values.type
+                    {['select', 'radio', 'checkbox', 'multiSelect'].includes(
+                      values.type,
                     ) ? (
                       <div>
                         <Label
@@ -783,20 +779,18 @@ export const AddSpecificCustomFieldForm = memo(
                         >
                           Default Value
                         </Label>
-                        {values.type === "multiSelect" ||
-                        values.type === "checkbox" ? (
+                        {values.type === 'multiSelect'
+                        || values.type === 'checkbox' ? (
                           <ChipInput
                             value={values.defaultValue as string[]}
-                            onChange={(newOptions) =>
-                              setFieldValue(
-                                "defaultValue",
-                                newOptions
-                                  .map((option) => option.trim())
-                                  .filter((option) => option !== "")
-                              )
-                            }
+                            onChange={(newOptions) => setFieldValue(
+                              'defaultValue',
+                              newOptions
+                                .map((option) => option.trim())
+                                .filter((option) => option !== ''),
+                            )}
                             onSuggestionClick={(suggestion) => {
-                              setFieldValue("defaultValue", [
+                              setFieldValue('defaultValue', [
                                 ...(values.defaultValue as string[]),
                                 suggestion,
                               ]);
@@ -804,85 +798,82 @@ export const AddSpecificCustomFieldForm = memo(
                             suggestions={
                               values.options
                                 ?.filter(
-                                  (option) =>
-                                    !values.defaultValue?.includes(option)
+                                  (option) => !values.defaultValue?.includes(option),
                                 )
                                 .map((option) => option.trim())
-                                .filter((option) => option !== "") || []
+                                .filter((option) => option !== '') || []
                             }
-                            showAddButton={true}
+                            showAddButton
                           />
-                        ) : (
-                          <Select
-                            {...getFieldProps("defaultValue")}
-                            onValueChange={(value) => {
-                              if (value === "-1") {
-                                setFieldValue("defaultValue", "");
-                              } else {
-                                setFieldValue("defaultValue", value.trim());
-                              }
-                            }}
-                            value={String(values.defaultValue || "")}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select default value" />
-                            </SelectTrigger>
-                            <Button
-                              style={{
-                                marginLeft: "-10px",
-                                color: "#797979",
+                          ) : (
+                            <Select
+                              {...getFieldProps('defaultValue')}
+                              onValueChange={(value) => {
+                                if (value === '-1') {
+                                  setFieldValue('defaultValue', '');
+                                } else {
+                                  setFieldValue('defaultValue', value.trim());
+                                }
                               }}
-                              variant="link"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setFieldValue("defaultValue", "");
-                              }}
+                              value={String(values.defaultValue || '')}
                             >
-                              Clear
-                            </Button>
-                            <SelectContent>
-                              {values.options?.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select default value" />
+                              </SelectTrigger>
+                              <Button
+                                style={{
+                                  marginLeft: '-10px',
+                                  color: '#797979',
+                                }}
+                                variant="link"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setFieldValue('defaultValue', '');
+                                }}
+                              >
+                                Clear
+                              </Button>
+                              <SelectContent>
+                                {values.options?.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                       </div>
-                    ) : (
-                      <div>
-                        <Label
-                          htmlFor="defaultValue"
-                          className="text-lg font-medium block pb-3"
-                        >
-                          Default Value
-                        </Label>
-                        {values.type === "number" ? (
-                          <Input
-                            id="defaultValue"
-                            value={values.defaultValue || ""}
-                            onChange={(e) =>
-                              handleNumberInputChange(e, setFieldValue)
-                            }
-                            type="text"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            className="text-lg py-3 px-4"
-                            placeholder="Enter default number..."
-                          />
-                        ) : (
-                          <Input
-                            id="defaultValue"
-                            {...getFieldProps("defaultValue")}
-                            className="text-lg py-3 px-4"
-                            placeholder="Enter default value..."
-                          />
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div>
+                          <Label
+                            htmlFor="defaultValue"
+                            className="text-lg font-medium block pb-3"
+                          >
+                            Default Value
+                          </Label>
+                          {values.type === 'number' ? (
+                            <Input
+                              id="defaultValue"
+                              value={values.defaultValue || ''}
+                              onChange={(e) => handleNumberInputChange(e, setFieldValue)}
+                              type="text"
+                              inputMode="numeric"
+                              pattern="[0-9]*"
+                              className="text-lg py-3 px-4"
+                              placeholder="Enter default number..."
+                            />
+                          ) : (
+                            <Input
+                              id="defaultValue"
+                              {...getFieldProps('defaultValue')}
+                              className="text-lg py-3 px-4"
+                              placeholder="Enter default value..."
+                            />
+                          )}
+                        </div>
+                      )}
                   </>
-                )}
+                  )}
               </div>
 
               <div className="sticky bottom-0 pt-4 pb-4 border-t bg-background  border-gray-200 dark:border-gray-600 mt-4 px-4">
@@ -892,19 +883,19 @@ export const AddSpecificCustomFieldForm = memo(
                     variant="primary"
                     size="lg"
                     disabled={
-                      isSubmitting ||
-                      (!isEditMode &&
-                        (hasDuplicate || Object.keys(errors).length > 0))
+                      isSubmitting
+                      || (!isEditMode
+                        && (hasDuplicate || Object.keys(errors).length > 0))
                     }
                   >
                     {isSubmitting && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     {isSubmitting
-                      ? "Saving..."
+                      ? 'Saving...'
                       : isEditMode
-                        ? "Update Field"
-                        : "Create Field"}
+                        ? 'Update Field'
+                        : 'Create Field'}
                   </Button>
                 </div>
               </div>
@@ -913,7 +904,7 @@ export const AddSpecificCustomFieldForm = memo(
         </Formik>
       </CustomFieldDialog>
     );
-  }
+  },
 );
 
-AddSpecificCustomFieldForm.displayName = "AddSpecificCustomFieldForm";
+AddSpecificCustomFieldForm.displayName = 'AddSpecificCustomFieldForm';

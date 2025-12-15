@@ -1,33 +1,34 @@
-import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import logger from '@/lib/logger';
+import { Download } from 'lucide-react';
 
-export const RenderOtherFileType = ({
+export function RenderOtherFileType({
   file,
 }: {
   file: { id: string; name: string; url: string; type: string; size: number };
-}) => {
+}) {
   const downloadFile = async (url: string, filename: string) => {
     if (!url || !filename) {
-      console.error("Invalid URL or filename provided");
+      logger.error('Invalid URL or filename provided');
       return;
     }
 
     try {
       const response = await fetch(url, {
-        method: "GET",
-        mode: "cors",
-        credentials: "same-origin",
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'same-origin',
       });
 
       if (!response.ok) {
         throw new Error(
-          `Failed to fetch file: ${response.status} ${response.statusText}`
+          `Failed to fetch file: ${response.status} ${response.statusText}`,
         );
       }
 
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
 
@@ -37,7 +38,7 @@ export const RenderOtherFileType = ({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (error) {
-      console.error("Download failed:", error);
+      logger.error('Download failed:', error);
     }
   };
 
@@ -67,7 +68,8 @@ export const RenderOtherFileType = ({
           {file.name}
         </p>
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {Math.round(file.size / 1024)}KB
+          {Math.round(file.size / 1024)}
+          KB
         </p>
       </div>
       <Button
@@ -80,4 +82,4 @@ export const RenderOtherFileType = ({
       </Button>
     </div>
   );
-};
+}

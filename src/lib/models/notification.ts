@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
 export enum NotificationType {
   // Admin/HR notifications
@@ -35,14 +35,14 @@ export enum NotificationType {
 }
 
 export type RelatedEntityType =
-  | "candidate"
-  | "job"
-  | "user"
-  | "meeting"
-  | "followup"
-  | "checklist"
-  | "system"
-  | "cvBatch";
+  | 'candidate'
+  | 'job'
+  | 'user'
+  | 'meeting'
+  | 'followup'
+  | 'checklist'
+  | 'system'
+  | 'cvBatch';
 
 export interface INotification {
   _id: string;
@@ -52,7 +52,7 @@ export interface INotification {
   title: string; // Display title
   message: string; // Description text
   isRead: boolean;
-  priority: "high" | "medium" | "low";
+  priority: 'high' | 'medium' | 'low';
 
   // Related entity information
   relatedEntity: RelatedEntityType;
@@ -120,21 +120,21 @@ export const notificationSchema = new Schema<INotification>(
     },
     priority: {
       type: String,
-      enum: ["high", "medium", "low"],
-      default: "medium",
+      enum: ['high', 'medium', 'low'],
+      default: 'medium',
       index: true,
     },
     relatedEntity: {
       type: String,
       enum: [
-        "candidate",
-        "job",
-        "user",
-        "meeting",
-        "followup",
-        "checklist",
-        "system",
-        "cvBatch",
+        'candidate',
+        'job',
+        'user',
+        'meeting',
+        'followup',
+        'checklist',
+        'system',
+        'cvBatch',
       ],
       required: true,
       index: true,
@@ -164,7 +164,7 @@ export const notificationSchema = new Schema<INotification>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // TTL index for deleting notifications docs after 30 days
@@ -176,12 +176,12 @@ notificationSchema.index({ organizationId: 1, recipientId: 1, isRead: 1 }); // U
 notificationSchema.index({ organizationId: 1, relatedEntity: 1, relatedId: 1 }); // Related entity queries
 // 5. Notifications - Organization + Recipient + Read status
 notificationSchema.index(
-  { 
-    organizationId: 1, 
-    recipientId: 1, 
-    isRead: 1, 
-    createdAt: -1 
+  {
+    organizationId: 1,
+    recipientId: 1,
+    isRead: 1,
+    createdAt: -1,
   },
-  { name: "idx_notification_org_recipient_read", background: true }
+  { name: 'idx_notification_org_recipient_read', background: true },
 );
 export default notificationSchema;

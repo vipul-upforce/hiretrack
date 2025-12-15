@@ -1,16 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CandidateStatusBadge } from "../jobs/[id]/components/Utils/candidate-status-badge";
-import { Assignment } from "../page";
-import { CandidateStatus } from "@/types/candidate";
-import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { formatDate, formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { CandidateStatus } from '@/types/candidate';
+import {
+  BriefcaseIcon, CalendarIcon, ClockIcon, Zap,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Assignment } from '../page';
+import { CandidateStatusBadge } from '../jobs/[id]/components/Utils/candidate-status-badge';
+import { formatDate, formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
 
-export const RenderTodaysInterviews = ({
+export function RenderTodaysInterviews({
   todayAssignments,
 }: {
   todayAssignments: Assignment[];
-}) => {
+}) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {todayAssignments?.map((assignment) => (
@@ -35,7 +39,7 @@ export const RenderTodaysInterviews = ({
                 <div>
                   <p className="text-sm text-muted-foreground">Position</p>
                   <p className="font-medium">
-                    {assignment?.jobId?.title || "N/A"}
+                    {assignment?.jobId?.title || 'N/A'}
                   </p>
                 </div>
               </div>
@@ -46,9 +50,9 @@ export const RenderTodaysInterviews = ({
                 <div>
                   <p className="text-sm text-muted-foreground mb-1.5">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {assignment.skills.slice(0, 3).map((skill, skillIndex) => (
+                    {assignment.skills.slice(0, 3).map((skill) => (
                       <Badge
-                        key={`${assignment.id}-skill-${skillIndex}-${skill}`}
+                        key={`${assignment.id}-skill-${skill}`}
                         variant="secondary"
                         className="text-xs"
                       >
@@ -57,7 +61,8 @@ export const RenderTodaysInterviews = ({
                     ))}
                     {assignment.skills.length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +{assignment.skills.length - 3}
+                        +
+                        {assignment.skills.length - 3}
                       </Badge>
                     )}
                   </div>
@@ -73,9 +78,9 @@ export const RenderTodaysInterviews = ({
                     <p className="text-sm font-medium">
                       {assignment.assignment.time
                         ? formatDate(
-                            assignment.assignment.time.toLocaleString()
-                          )
-                        : "N/A"}
+                          assignment.assignment.time.toLocaleString(),
+                        )
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -87,9 +92,9 @@ export const RenderTodaysInterviews = ({
                     <p className="text-sm font-medium">
                       {assignment.assignment.time
                         ? formatTime(
-                            assignment.assignment.time.toLocaleString()
-                          )
-                        : "N/A"}
+                          assignment.assignment.time.toLocaleString(),
+                        )
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -100,4 +105,4 @@ export const RenderTodaysInterviews = ({
       ))}
     </div>
   );
-};
+}

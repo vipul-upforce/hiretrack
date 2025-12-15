@@ -1,4 +1,4 @@
-import { Job } from "./job";
+import { Job } from './job';
 
 export interface Assignment {
   interviewerId: string | { _id: string; name: string; email: string };

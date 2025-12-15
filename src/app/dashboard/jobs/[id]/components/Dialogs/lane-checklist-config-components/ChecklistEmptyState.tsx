@@ -1,13 +1,15 @@
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { ClipboardCheck, Plus, BookOpen } from "lucide-react";
-import { IChecklistTemplate } from "@/lib/models/ChecklistTemplate";
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { ClipboardCheck, Plus, BookOpen } from 'lucide-react';
+import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
 
 interface ChecklistEmptyStateProps {
-  activeTab: "incoming" | "outgoing";
+  activeTab: 'incoming' | 'outgoing';
   filteredTemplates: IChecklistTemplate[];
   onLoadFromTemplate: (templateId: string) => void;
   onCreateNew: () => void;
@@ -18,33 +20,39 @@ export const ChecklistEmptyState: React.FC<ChecklistEmptyStateProps> = ({
   filteredTemplates,
   onLoadFromTemplate,
   onCreateNew,
-}) => {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="text-center">
-          <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">
-            No {activeTab} checklist configured
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            Create a checklist that will be shown when candidates are moved{" "}
-            {activeTab === "incoming" ? "into" : "out of"} this lane.
-          </p>
+}) => (
+  <Card>
+    <CardContent className="pt-6">
+      <div className="text-center">
+        <ClipboardCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold mb-2">
+          No
+          {' '}
+          {activeTab}
+          {' '}
+          checklist configured
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Create a checklist that will be shown when candidates are moved
+          {' '}
+          {activeTab === 'incoming' ? 'into' : 'out of'}
+          {' '}
+          this lane.
+        </p>
 
-          <div className="space-y-4">
-            {/* Template Selection - Only show when templates exist */}
-            {filteredTemplates.length > 0 && (
-              <>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">
-                    Start from template
+        <div className="space-y-4">
+          {/* Template Selection - Only show when templates exist */}
+          {filteredTemplates.length > 0 && (
+          <>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Start from template
                   </Label>
-                  <Select onValueChange={onLoadFromTemplate}>
-                    <SelectTrigger className="w-full">
+              <Select onValueChange={onLoadFromTemplate}>
+                <SelectTrigger className="w-full">
                       <SelectValue placeholder="Choose a template..." />
                     </SelectTrigger>
-                    <SelectContent>
+                <SelectContent>
                       {filteredTemplates.map((template) => (
                         <SelectItem
                           key={template._id.toString()}
@@ -55,33 +63,33 @@ export const ChecklistEmptyState: React.FC<ChecklistEmptyStateProps> = ({
                             <span>{template.name}</span>
                             {template.description && (
                               <span className="text-xs text-muted-foreground">
-                                - {template.description}
+                                -
+                                {' '}
+                                {template.description}
                               </span>
                             )}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex-1 border-t border-muted"></div>
-                  <span className="px-2 text-xs text-muted-foreground">or</span>
-                  <div className="flex-1 border-t border-muted"></div>
-                </div>
-              </>
-            )}
+              </Select>
+            </div>
+            <div className="flex items-center">
+              <div className="flex-1 border-t border-muted" />
+              <span className="px-2 text-xs text-muted-foreground">or</span>
+              <div className="flex-1 border-t border-muted" />
+            </div>
+          </>
+          )}
 
-            <Button onClick={onCreateNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              {filteredTemplates.length > 0
-                ? "Create New Checklist"
-                : "Create Checklist"}
-            </Button>
-          </div>
+          <Button onClick={onCreateNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            {filteredTemplates.length > 0
+              ? 'Create New Checklist'
+              : 'Create Checklist'}
+          </Button>
         </div>
-      </CardContent>
-    </Card>
-  );
-};
-
+      </div>
+    </CardContent>
+  </Card>
+);

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import JobModal from "./JobModal";
@@ -19,7 +19,7 @@ import { JobGrid } from "./components/job-grid";
 import { ErrorState } from "./components/error-state";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
-
+import logger from '@/lib/logger';
 interface Job {
   _id: string;
   title: string;
@@ -36,9 +36,9 @@ interface Job {
 }
 
 function isFetchBaseQueryError(
-  error: FetchBaseQueryError | SerializedError | unknown
+  error: FetchBaseQueryError | SerializedError | unknown,
 ): error is FetchBaseQueryError {
-  return typeof error === "object" && error !== null && "status" in error;
+  return typeof error === 'object' && error !== null && 'status' in error;
 }
 
 export default function ApplyJobsContent({
@@ -48,47 +48,42 @@ export default function ApplyJobsContent({
 }) {
   const isIframe = useIsIframe();
   const searchParams = useSearchParams();
-  const [orgName, setOrgName] = useState<string>("");
+  const [orgName, setOrgName] = useState<string>('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
 
-  const { data: orgResponse, isLoading: isOrgLoading } =
-    useFetchOrgQuery(undefined);
+  const { data: orgResponse, isLoading: isOrgLoading } = useFetchOrgQuery(undefined);
 
-  const { data: portalResponse, isLoading: isPortalLoading } =
-    useGetPortalConfigsQuery(undefined);
+  const { data: portalResponse, isLoading: isPortalLoading } = useGetPortalConfigsQuery(undefined);
 
-  const hideHeaderParam = searchParams.get("hideHeader");
-  const hideFooterParam = searchParams.get("hideFooter");
-  const hideHeader = hideHeaderParam === "true";
-  const hideFooter = hideFooterParam === "true";
+  const hideHeaderParam = searchParams?.get('hideHeader');
+  const hideFooterParam = searchParams?.get('hideFooter');
+  const hideHeader = hideHeaderParam === 'true';
+  const hideFooter = hideFooterParam === 'true';
 
   const hasHeaderParam = hideHeaderParam !== null;
   const hasFooterParam = hideFooterParam !== null;
 
-  const shouldShowHeader =
-    showHeaderFooter && (hasHeaderParam ? !hideHeader : !isIframe);
-  const shouldShowFooter =
-    showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
+  const shouldShowHeader = showHeaderFooter && (hasHeaderParam ? !hideHeader : !isIframe);
+  const shouldShowFooter = showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
 
   const { data } = useFetchAppliedApplicationQuery(
     {},
-    { skip: orgName === "" }
+    { skip: orgName === '' },
   );
   const { user } = useAppSelector((state) => state.auth);
 
   const { toast } = useToast();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [queryTitle, setQueryTitle] = useState<string>("");
-  const [invalidPage, setInvalidPage] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [queryTitle, setQueryTitle] = useState<string>('');
   const [layoutState, setLayoutState] = useState<{
     headerHTML: string;
     footerHTML: string;
   }>({
-    headerHTML: "",
-    footerHTML: "",
+    headerHTML: '',
+    footerHTML: '',
   });
 
   const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
@@ -102,18 +97,18 @@ export default function ApplyJobsContent({
     isLoading,
     error,
   } = useFetchOpenJobQuery(
-    { orgName: orgName, title: queryTitle },
-    { skip: orgName === null }
+    { orgName, title: queryTitle },
+    { skip: orgName === null },
   ) as {
     data: Job[];
     isLoading: boolean;
     error: FetchBaseQueryError | SerializedError;
   };
 
-  const { formNameObject } = useCustomForm("Job Position");
+  const { formNameObject } = useCustomForm('Job Position');
 
   async function checkAllowance() {
-    const urlOrgName = searchParams?.get("o") || orgName;
+    const urlOrgName = searchParams?.get('o') || orgName;
 
     if (!orgResponse || !orgResponse.data) return;
 
@@ -122,10 +117,8 @@ export default function ApplyJobsContent({
       const portalData = portalResponse || null;
 
       if (urlOrgName) {
-        setInvalidPage(false);
-
         const config = allowance?.data?.find(
-          (org: any) => org?.portalConfigs?.portalName === urlOrgName
+          (org: any) => org?.portalConfigs?.portalName === urlOrgName,
         )?.portalConfigs;
 
         if (config?.primaryColor) setPrimaryColor(config.primaryColor);
@@ -135,13 +128,11 @@ export default function ApplyJobsContent({
 
         if (portalData) {
           if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
-          if (portalData.secondaryColor)
-            setSecondaryColor(portalData.secondaryColor);
+          if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
           if (portalData.portalLogo) {
-            const logoUrl =
-              typeof portalData.portalLogo === "string"
-                ? portalData.portalLogo
-                : portalData.portalLogo?.url;
+            const logoUrl = typeof portalData.portalLogo === 'string'
+              ? portalData.portalLogo
+              : portalData.portalLogo?.url;
             if (logoUrl) setLogoUrl(logoUrl);
           }
           if (portalData.portalName) setPortalName(portalData.portalName);
@@ -159,16 +150,12 @@ export default function ApplyJobsContent({
             ]);
             setLayoutState({ headerHTML, footerHTML });
           } catch (err) {
-            console.error("Failed to fetch header/footer:", err);
-            setLayoutState({ headerHTML: "", footerHTML: "" });
+            logger.error('Failed to fetch header/footer:', err);
+            setLayoutState({ headerHTML: '', footerHTML: '' });
           }
         }
 
         return;
-      }
-
-      if (allowance.allow) {
-        // setInvalidPage(true);
       }
 
       const config = allowance?.data?.[0]?.portalConfigs;
@@ -180,13 +167,11 @@ export default function ApplyJobsContent({
 
       if (portalData) {
         if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
-        if (portalData.secondaryColor)
-          setSecondaryColor(portalData.secondaryColor);
+        if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
         if (portalData.portalLogo) {
-          const logoUrl =
-            typeof portalData.portalLogo === "string"
-              ? portalData.portalLogo
-              : portalData.portalLogo?.url;
+          const logoUrl = typeof portalData.portalLogo === 'string'
+            ? portalData.portalLogo
+            : portalData.portalLogo?.url;
           if (logoUrl) setLogoUrl(logoUrl);
         }
         if (portalData.portalName) setPortalName(portalData.portalName);
@@ -203,27 +188,27 @@ export default function ApplyJobsContent({
         ]);
         setLayoutState({ headerHTML, footerHTML });
       }
-    } catch (error) {
-      console.error("Error processing portal settings:", error);
+    } catch (e) {
+      logger.error('Error processing portal settings:', e);
     }
   }
 
   useEffect(() => {
     document.documentElement.style.setProperty(
-      "--portal-primary",
-      primaryColor
+      '--portal-primary',
+      primaryColor,
     );
     document.documentElement.style.setProperty(
-      "--portal-secondary",
-      secondaryColor
+      '--portal-secondary',
+      secondaryColor,
     );
     document.documentElement.style.setProperty(
-      "--portal-logo",
-      logoUrl ? `url('${logoUrl}')` : "none"
+      '--portal-logo',
+      logoUrl ? `url('${logoUrl}')` : 'none',
     );
     document.documentElement.style.setProperty(
-      "--portal-name",
-      `"${portalName || "Your Portal Name"}"`
+      '--portal-name',
+      `"${portalName || 'Your Portal Name'}"`,
     );
   }, [primaryColor, secondaryColor, logoUrl, portalName]);
 
@@ -234,28 +219,27 @@ export default function ApplyJobsContent({
   }, [orgResponse, portalResponse, searchParams, orgName]);
 
   const pageInit = async () => {
-    const urlOrgName = searchParams?.get("o");
+    const urlOrgName = searchParams?.get('o');
     if (user) {
       try {
         if (user.organizationInfo && user.organizationInfo.name) {
           setOrgName(urlOrgName || user.organizationInfo.name);
           setUserLoggedIn(true);
         } else {
-          setOrgName(urlOrgName || "");
+          setOrgName(urlOrgName || '');
         }
       } catch {
-        setOrgName(urlOrgName || "");
+        setOrgName(urlOrgName || '');
         toast({
-          title: "Authentication Error",
-          description: "Please log in again",
-          variant: "destructive",
+          title: 'Authentication Error',
+          description: 'Please log in again',
+          variant: 'destructive',
         });
-        
         triggerLogout();
         window.location.href = "/auth/login";
       }
     } else {
-      setOrgName(urlOrgName || "");
+      setOrgName(urlOrgName || '');
     }
   };
 
@@ -274,8 +258,8 @@ export default function ApplyJobsContent({
   };
 
   const handleClearSearch = () => {
-    setSearchTerm("");
-    setQueryTitle("");
+    setSearchTerm('');
+    setQueryTitle('');
   };
 
   const handleLogout = async () => {
@@ -283,17 +267,14 @@ export default function ApplyJobsContent({
       await triggerLogout().unwrap();
     } catch (error) {
       console.error("Logout failed", error);
+      logger.error("Logout failed", error);
     }
     toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
+      title: 'Logged out',
+      description: 'You have been successfully logged out',
     });
-    window.location.href = "/auth/login";
+    window.location.href = '/auth/login';
   };
-
-  // if (invalidPage) {
-  //   return <InvalidPage message="Page Doesn't Exist" />;
-  // }
 
   if (error && !isLoading) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
@@ -301,32 +282,31 @@ export default function ApplyJobsContent({
         <ErrorState
           imageUrl="/error.webp"
           errorMessage={
-            isFetchBaseQueryError(error) &&
-            "data" in error &&
-            (error.data as { error: string })?.error
-          }
-        />
-      );
-    } else {
-      return (
-        <ErrorState
-          imageUrl="/notfound.jpg"
-          errorMessage={
-            isFetchBaseQueryError(error) &&
-            "data" in error &&
-            (error.data as { error: string })?.error
+            isFetchBaseQueryError(error)
+            && 'data' in error
+            && (error.data as { error: string })?.error
           }
         />
       );
     }
+    return (
+      <ErrorState
+        imageUrl="/notfound.jpg"
+        errorMessage={
+            isFetchBaseQueryError(error)
+            && 'data' in error
+            && (error.data as { error: string })?.error
+          }
+      />
+    );
   }
 
   return (
     <div
       className={
         shouldShowHeader || shouldShowFooter
-          ? "flex flex-col min-h-screen relative"
-          : "relative"
+          ? 'flex flex-col min-h-screen relative'
+          : 'relative'
       }
     >
       {/* Background pattern */}
@@ -348,14 +328,15 @@ export default function ApplyJobsContent({
       </div>
 
       {shouldShowHeader && (
+        // eslint-disable-next-line react/no-danger
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
 
       <main
         className={
           shouldShowHeader || shouldShowFooter
-            ? "flex-1 p-4 relative z-10"
-            : "relative z-10"
+            ? 'flex-1 p-4 relative z-10'
+            : 'relative z-10'
         }
       >
         <div className="container mx-auto p-2">
@@ -382,7 +363,7 @@ export default function ApplyJobsContent({
               setSelectedJob(job);
               setIsJobModalOpen(true);
             }}
-            hasSearch={queryTitle !== ""}
+            hasSearch={queryTitle !== ''}
             onClearSearch={handleClearSearch}
           />
         </div>
@@ -399,9 +380,9 @@ export default function ApplyJobsContent({
         orgName={orgName}
         readOnly={
           !!(
-            appliedApplications &&
-            selectedJob &&
-            appliedApplications.includes(selectedJob?._id)
+            appliedApplications
+            && selectedJob
+            && appliedApplications.includes(selectedJob?._id)
           )
         }
       />

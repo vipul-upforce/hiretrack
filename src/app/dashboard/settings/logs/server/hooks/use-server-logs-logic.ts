@@ -1,11 +1,11 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useGetServerLogsQuery } from "@/lib/features/settings/settingsApi";
-import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
-import { useRenderLogTitle } from "@/app/dashboard/hooks/useRenderLogTitle";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useToast } from "@/hooks/use-toast";
-import { Candidate } from "@/types/candidate";
-import { LogEntry } from "../types";
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useGetServerLogsQuery } from '@/lib/features/settings/settingsApi';
+import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
+import { useRenderLogTitle } from '@/app/dashboard/hooks/useRenderLogTitle';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useToast } from '@/hooks/use-toast';
+import { Candidate } from '@/types/candidate';
+import { LogEntry } from '../types';
 
 interface UseServerLogsLogicProps {
   searchQuery: string;
@@ -25,12 +25,12 @@ export function useServerLogsLogic({
   const [historyPageSize, setHistoryPageSize] = useState(20);
   const [rawSearch, setRawSearch] = useState(searchQuery);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null
+    null,
   );
 
   const historyOffset = useMemo(
     () => (historyPage - 1) * historyPageSize,
-    [historyPage, historyPageSize]
+    [historyPage, historyPageSize],
   );
 
   const debouncedSearchQuery = useDebounce(rawSearch, 500);
@@ -46,7 +46,7 @@ export function useServerLogsLogic({
     refetch,
   } = useGetServerLogsQuery(
     { offset: historyOffset, limit: historyPageSize, query: searchQuery },
-    { skip: false }
+    { skip: false },
   );
 
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
@@ -72,13 +72,13 @@ export function useServerLogsLogic({
         setSelectedCandidate(result.data);
         return;
       }
-      throw new Error("No candidate data returned");
-    } catch (err: any) {
+      throw new Error('No candidate data returned');
+    } catch {
       onError?.(null);
       toast({
-        title: "Error",
-        description: "Failed to load candidate details",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to load candidate details',
+        variant: 'destructive',
       });
     }
   };

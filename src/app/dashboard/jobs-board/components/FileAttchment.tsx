@@ -1,4 +1,4 @@
-import { Attachment } from "../../jobs/[id]/schemas/AssignCandidateSchema";
+import { Attachment } from '../../jobs/[id]/schemas/AssignCandidateSchema';
 
 interface FileAttachmentProps {
   file: Attachment;
@@ -27,7 +27,9 @@ export function FileAttachment({ file }: FileAttachmentProps) {
         <div className="flex flex-col">
           <span className="text-sm font-medium text-gray-700">{file.name}</span>
           <span className="text-xs text-gray-500">
-            {(file.size / 1024).toFixed(1)} KB
+            {(file.size / 1024).toFixed(1)}
+            {' '}
+            KB
           </span>
         </div>
       </div>

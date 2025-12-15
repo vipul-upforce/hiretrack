@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { FileWithPreview } from "./cv-batch-processor";
-import { FileText, X, Archive } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FileText, X, Archive } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import type { FileWithPreview } from './cv-batch-processor';
 
 interface FileListProps {
   files: FileWithPreview[];

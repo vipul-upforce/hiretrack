@@ -1,33 +1,34 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, Mail } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Loader2, Mail } from 'lucide-react';
 import {
   EmailNotificationToggle,
   EmailNotificationType,
-} from "@/components/ui/email-notification-toggle";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/email-notification-toggle';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   useJobEmailNotificationSettings,
   useOrganizationEmailNotificationSettings,
   useUpdateJobEmailNotificationSettings,
-} from "@/hooks/useEmailNotificationSettings";
-import { useSelector } from "react-redux";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+} from '@/hooks/useEmailNotificationSettings';
+import { useSelector } from 'react-redux';
 import {
   ALL_NOTIFICATION_TYPES,
   createDefaultNotificationSettings,
   isAdminOverrideDisabled,
   resolveNotificationSource,
-} from "@/lib/utils/notificationSettings";
+} from '@/lib/utils/notificationSettings';
+import logger from '@/lib/logger';
+import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 
 interface JobEmailNotificationSettingsDialogProps {
   isOpen: boolean;
@@ -53,29 +54,28 @@ export function JobEmailNotificationSettingsDialog({
     useUpdateJobEmailNotificationSettings();
 
   const [adminOverrides, setAdminOverrides] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
   const { settings: organizationSettings } =
     useOrganizationEmailNotificationSettings();
+  const fetchAdminOverrides = async () => {
+    try {
+      if (organizationSettings) {
+        setAdminOverrides(
+          organizationSettings.users.find((user) => user._id === currentUser.id)
+            ?.currentOverride || {},
+        );
+      }
+    } catch (err) {
+      logger.error('Error fetching admin overrides:', err);
+    }
+  };
   useEffect(() => {
     if (currentUser?.id && isOpen) {
       fetchAdminOverrides();
     }
   }, [currentUser?.id, isOpen]);
 
-  const fetchAdminOverrides = async () => {
-    try {
-      if (organizationSettings) {
-        setAdminOverrides(
-          organizationSettings.users.find((user) => user._id === currentUser.id)
-            ?.currentOverride || {}
-        );
-        return;
-      }
-    } catch (err) {
-      console.error("Error fetching admin overrides:", err);
-    }
-  };
   // ✅ NEW FIX — APPLY ADMIN OVERRIDE WHEN organizationSettings LOADS
   useEffect(() => {
     if (isOpen && organizationSettings && currentUser?.id) {
@@ -139,11 +139,11 @@ export function JobEmailNotificationSettingsDialog({
 
   // Filter out notification types that should be hidden in job-level settings
   const HIDDEN_NOTIFICATION_TYPES: EmailNotificationType[] = [
-    "userAdded",
-    "bulkImportCompleted",
+    'userAdded',
+    'bulkImportCompleted',
   ];
   const visibleNotificationTypes = ALL_NOTIFICATION_TYPES.filter(
-    (type) => !HIDDEN_NOTIFICATION_TYPES.includes(type)
+    (type) => !HIDDEN_NOTIFICATION_TYPES.includes(type),
   );
 
   const hasChanges = () => {
@@ -163,7 +163,7 @@ export function JobEmailNotificationSettingsDialog({
   // Calculate if all notifications are enabled (excluding admin-disabled ones)
   const getAllToggleState = () => {
     const toggleableTypes = visibleNotificationTypes.filter(
-      (type) => !isAdminOverrideDisabled(type, adminOverrides)
+      (type) => !isAdminOverrideDisabled(type, adminOverrides),
     );
     if (toggleableTypes.length === 0) return false;
     return toggleableTypes.every((type) => localSettings[type]);
@@ -182,18 +182,18 @@ export function JobEmailNotificationSettingsDialog({
 
   const allToggleEnabled = getAllToggleState();
   const hasAdminDisabled = visibleNotificationTypes.some((type) =>
-    isAdminOverrideDisabled(type, adminOverrides)
+    isAdminOverrideDisabled(type, adminOverrides),
   );
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
+      <DialogContent className="flex flex-col overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
             Job Email Notification Settings
           </DialogTitle>
-          <span className="block mt-1 text-sm text-muted-foreground">
+          <span className="mt-1 block text-sm text-muted-foreground">
             Configure email notification preferences for &ldquo;{jobTitle}
             &rdquo; These settings will override your global preferences for
             this job
@@ -204,58 +204,60 @@ export function JobEmailNotificationSettingsDialog({
           <EmailNotificationSettingsSkeleton />
         ) : error ? (
           <div className="flex items-center justify-center py-8 text-red-500">
-            <span>Error loading settings: {error}</span>
+            <span>
+              Error loading settings:
+              {error}
+            </span>
           </div>
         ) : (
-          <>
-            <div className="space-y-4 flex-1 overflow-y-auto px-6 py-4 max-h-[70vh] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              {/* All Toggle */}
-              <div className="flex items-center justify-between space-x-4 py-3 px-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-t-lg mb-2">
-                <div className="flex-1 space-y-1">
-                  <Label
-                    htmlFor="notification-all"
-                    className="text-sm font-semibold leading-none"
-                  >
-                    All Notifications
-                  </Label>
-                  {hasAdminDisabled && (
-                    <p className="text-xs text-muted-foreground">
-                      Some notifications are disabled by admin
-                    </p>
-                  )}
-                </div>
-                <Switch
-                  id="notification-all"
-                  checked={allToggleEnabled}
-                  onCheckedChange={handleAllToggle}
-                  disabled={updating}
-                />
+          <div className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent max-h-[70vh] flex-1 space-y-4 overflow-y-auto px-6 py-4">
+            {/* All Toggle */}
+            <div className="mb-2 flex items-center justify-between space-x-4 rounded-t-lg border-b border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+              <div className="flex-1 space-y-1">
+                <Label
+                  htmlFor="notification-all"
+                  className="text-sm font-semibold leading-none"
+                >
+                  All Notifications
+                </Label>
+                {hasAdminDisabled && (
+                  <p className="text-xs text-muted-foreground">
+                    Some notifications are disabled by admin
+                  </p>
+                )}
               </div>
-              {visibleNotificationTypes.map((type) => {
-                const isDisabled =
-                  isAdminOverrideDisabled(type, adminOverrides) || updating;
-                const source = resolveNotificationSource(
-                  type,
-                  adminOverrides,
-                  settings?.effectiveSettings,
-                  "job-level"
-                );
-
-                return (
-                  <EmailNotificationToggle
-                    key={type}
-                    type={type}
-                    enabled={localSettings[type]}
-                    source={source}
-                    onToggle={handleToggle}
-                    showSource={true}
-                    disabled={isDisabled}
-                  />
-                );
-              })}
+              <Switch
+                id="notification-all"
+                checked={allToggleEnabled}
+                onCheckedChange={handleAllToggle}
+                disabled={updating}
+              />
             </div>
+            {ALL_NOTIFICATION_TYPES.map((type) => {
+              const isDisabled =
+                isAdminOverrideDisabled(type, adminOverrides) || updating;
+              const source = resolveNotificationSource(
+                type,
+                adminOverrides,
+                settings?.effectiveSettings,
+                'job-level',
+              );
 
-            <div className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10 gap-4">
+              return (
+                <EmailNotificationToggle
+                  key={type}
+                  type={type}
+                  enabled={localSettings[type]}
+                  source={source}
+                  onToggle={handleToggle}
+                  showSource
+                  disabled={isDisabled}
+                />
+              );
+            })}
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between gap-4 border-t bg-background px-6 py-2">
               <Button
                 variant="outline"
                 onClick={handleReset}
@@ -277,13 +279,13 @@ export function JobEmailNotificationSettingsDialog({
                   disabled={updating || !hasChanges()}
                 >
                   {updating && (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   Save Changes
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </DialogContent>
     </Dialog>

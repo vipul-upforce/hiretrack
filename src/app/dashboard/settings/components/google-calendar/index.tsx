@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Sparkles } from "lucide-react";
-import Confetti from "react-confetti";
-import { useWindowSize } from "@/hooks/use-window-size";
-import { SetupInstructions } from "./components/setup-instructions";
-import { RedirectUriCard } from "./components/redirect-uri-card";
-import { CredentialsCard } from "./components/credentials-card";
-import { ConnectionStatusCard } from "./components/connection-status-card";
-import { TestConnectionAlert } from "./components/test-connection-alert";
-import { SettingsSkeleton } from "./components/settings-skeleton";
-import { useGoogleCalendarLogic } from "./hooks/useGoogleCalendarLogic";
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Sparkles } from 'lucide-react';
+import Confetti from 'react-confetti';
+import { useWindowSize } from '@/hooks/use-window-size';
+import { SetupInstructions } from './components/setup-instructions';
+import { RedirectUriCard } from './components/redirect-uri-card';
+import { CredentialsCard } from './components/credentials-card';
+import { ConnectionStatusCard } from './components/connection-status-card';
+import { TestConnectionAlert } from './components/test-connection-alert';
+import { SettingsSkeleton } from './components/settings-skeleton';
+import { useGoogleCalendarLogic } from './hooks/useGoogleCalendarLogic';
 
 export default function GoogleCalendarSettings({
   onClose,

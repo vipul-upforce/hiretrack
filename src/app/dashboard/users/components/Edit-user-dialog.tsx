@@ -1,29 +1,30 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@radix-ui/react-label";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Label } from '@radix-ui/react-label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Formik, Form, ErrorMessage, Field } from "formik";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { useUpdateUserMutation } from "@/lib/features/users/usersApi";
-import { userFormVaidationSchema } from "../schemas/userFormValidation.schema";
-import { useDispatch, useSelector } from "react-redux";
-import { updateUser as updateUserInState } from "@/lib/redux/authSlice";
-import { useState } from "react";
+} from '@/components/ui/select';
+import { Formik, Form, ErrorMessage, Field } from 'formik';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { useUpdateUserMutation } from '@/lib/features/users/usersApi';
+import { useDispatch } from 'react-redux';
+import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
+import { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { userFormVaidationSchema } from '../schemas/userFormValidation.schema';
 
 interface SelectedUser {
   id?: string;
@@ -48,7 +49,7 @@ export function EditUserDialog({
 }: EditUserDialogProps) {
   const { toast } = useToast();
   const dispatch = useDispatch();
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,27 +71,27 @@ export function EditUserDialog({
             ...values,
             email: values.email.toLowerCase().trim(),
             name: values.name.trim(),
-          })
+          }),
         );
       }
 
-      toast({ title: "Success", description: "User updated successfully" });
+      toast({ title: 'Success', description: 'User updated successfully' });
       onOpenChange(false);
       onSuccess();
     } catch (error: unknown) {
       toast({
-        title: "Error",
-        description:
-          "Error: " +
-          (typeof error === "object" &&
+        title: 'Error',
+        description: `Error: ${
+          typeof error === 'object' &&
           error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
+          'data' in error &&
+          typeof error.data === 'object' &&
           error.data &&
-          "error" in error.data
+          'error' in error.data
             ? (error.data as { error: string }).error
-            : "Unknown error"),
-        variant: "destructive",
+            : 'Unknown error'
+        }`,
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -101,7 +102,7 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden flex flex-col">
+      <DialogContent className="flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
@@ -122,7 +123,7 @@ export function EditUserDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+            <Form className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
               <div>
                 <Label>Name</Label>
                 <Field
@@ -135,7 +136,7 @@ export function EditUserDialog({
                 <ErrorMessage
                   name="name"
                   component="div"
-                  className="text-red-500 text-sm"
+                  className="text-sm text-red-500"
                 />
               </div>
               <div>
@@ -150,15 +151,15 @@ export function EditUserDialog({
                 <ErrorMessage
                   name="email"
                   component="div"
-                  className="text-red-500 text-sm"
+                  className="text-sm text-red-500"
                 />
               </div>
-              {values.role !== "system" && (
+              {values.role !== 'system' && (
                 <div>
                   <Label>Role</Label>
                   <Select
                     value={values.role}
-                    onValueChange={(value) => setFieldValue("role", value)}
+                    onValueChange={(value) => setFieldValue('role', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Role" />
@@ -172,19 +173,19 @@ export function EditUserDialog({
                   <ErrorMessage
                     name="role"
                     component="div"
-                    className="text-red-500 text-sm"
+                    className="text-sm text-red-500"
                   />
                 </div>
               )}
 
-              {values.role !== "system" && (
+              {values.role !== 'system' && (
                 <div>
                   <Label className="flex flex-row items-center">
                     <Checkbox
                       id="isDeleted"
                       checked={values.isDeleted}
                       onCheckedChange={(checked) => {
-                        setFieldValue("isDeleted", checked);
+                        setFieldValue('isDeleted', checked);
                       }}
                     />
                     <p className="ml-2">Deactivate user</p>
@@ -192,14 +193,14 @@ export function EditUserDialog({
                 </div>
               )}
 
-              <div className="flex justify-end border-t bg-background pt-4 sticky bottom-0 z-10">
+              <div className="sticky bottom-0 z-10 flex justify-end border-t bg-background pt-4">
                 <Button
                   type="submit"
                   disabled={isUpdating || isLoading}
                   onClick={() => handleSubmit()}
                   variant="primary"
                 >
-                  {isUpdating && isLoading ? "Updating..." : "Update User"}
+                  {isUpdating && isLoading ? 'Updating...' : 'Update User'}
                 </Button>
               </div>
             </Form>

@@ -4,9 +4,9 @@
  * Single source of truth for candidate UI state
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Candidate } from "@/types/candidate";
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Candidate } from '@/types/candidate';
 
 interface UseCandidateStateProps {
   jobId: string;
@@ -23,7 +23,7 @@ interface UseCandidateStateProps {
 export function useCandidateState({ jobId, candidates }: UseCandidateStateProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const candidateIdParam = searchParams.get("candidateId");
+  const candidateIdParam = searchParams.get('candidateId');
 
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -47,12 +47,12 @@ export function useCandidateState({ jobId, candidates }: UseCandidateStateProps)
       if (!open && candidateIdParam) {
         // Remove candidateId parameter from URL when dialog is closed
         const params = new URLSearchParams(searchParams.toString());
-        params.delete("candidateId");
-        const newUrl = params.toString() ? `?${params.toString()}` : "";
+        params.delete('candidateId');
+        const newUrl = params.toString() ? `?${params.toString()}` : '';
         router.replace(`/dashboard/jobs/${jobId}${newUrl}`, { scroll: false });
       }
     },
-    [candidateIdParam, searchParams, router, jobId]
+    [candidateIdParam, searchParams, router, jobId],
   );
 
   // Open candidate details dialog
@@ -78,4 +78,3 @@ export function useCandidateState({ jobId, candidates }: UseCandidateStateProps)
     closeCandidateDetails,
   };
 }
-

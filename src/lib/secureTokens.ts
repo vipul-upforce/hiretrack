@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 export interface SecureTokenOptions {
   maxAge?: number;
@@ -18,20 +18,20 @@ export interface SecureOrgIdOptions {
  * - Sets an httpOnly token for server-side operations (enhanced security)
  * - Adds proper security flags
  */
-export function setSecureAuthTokens(
+export async function setSecureAuthTokens(
   response: NextResponse,
   token: string,
-  options: SecureTokenOptions = {}
+  options: SecureTokenOptions = {},
 ) {
   const {
     maxAge = 15 * 60, // 15 minutes in seconds
     domain,
-    path = "/",
+    path = '/',
   } = options;
 
 
   // Common security flags
-  const isProduction = process.env.ENVIRONMENT === "production";
+  const isProduction = process.env.ENVIRONMENT === 'production';
   const secureFlag = isProduction; // Only use secure in production (requires HTTPS)
 
   // Set readable token for client-side (maintaining existing functionality)
@@ -46,29 +46,29 @@ export function setSecureAuthTokens(
   // });
 
   // Set httpOnly token for server-side operations (enhanced security)
-  response.cookies.set("auth_token", token, {
+  await response.cookies.set('auth_token', token, {
     httpOnly: true, // Not accessible by JavaScript
     secure: secureFlag,
-    sameSite: "strict",
-    maxAge: maxAge,
-    path: path,
-    domain: domain,
+    sameSite: 'strict',
+    maxAge,
+    // path,
+    // domain,
   });
 
-  response.cookies.set("auth_state", "true", {
+  await response.cookies.set('auth_state', 'true', {
     httpOnly: false,
     secure: secureFlag,
-    sameSite: "lax",
-    maxAge: maxAge,
+    sameSite: 'lax',
+    maxAge,
   });
   // Set additional security headers
-  response.headers.set("X-Content-Type-Options", "nosniff");
+  await response.headers.set('X-Content-Type-Options', 'nosniff');
   // response.headers.set("X-Frame-Options", "DENY");
-  response.headers.set("X-Frame-Options", "SAMEORIGIN");
-  response.headers.set("X-XSS-Protection", "1; mode=block");
-  response.headers.set("Referrer-Policy", "no-referrer-when-downgrade");
+  await response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  await response.headers.set('X-XSS-Protection', '1; mode=block');
+  await response.headers.set('Referrer-Policy', 'no-referrer-when-downgrade');
 
-  return response;
+  return await response;
 }
 
 /**
@@ -77,26 +77,26 @@ export function setSecureAuthTokens(
 export function clearAuthTokens(response: NextResponse) {
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.ENVIRONMENT === "production",
-    sameSite: "strict" as const,
+    secure: process.env.ENVIRONMENT === 'production',
+    sameSite: 'strict' as const,
     maxAge: 0,
     expires: new Date(0),
-    path: "/",
+    path: '/',
   };
   const authStateCoonkieOptions = {
     httpOnly: false,
-    secure: process.env.ENVIRONMENT === "production",
-    sameSite:"lax" as const,
+    secure: process.env.ENVIRONMENT === 'production',
+    sameSite: 'lax' as const,
     maxAge: 0,
     expires: new Date(0),
   };
   // Clear both tokens
   // response.cookies.set("token", "", cookieOptions);
-  response.cookies.set("auth_token", "", cookieOptions);
-  response.cookies.set("auth_state", "", authStateCoonkieOptions);
-  response.cookies.delete("auth_token");
-  response.cookies.delete("org_id");
-  response.cookies.delete("auth_state");
+  response.cookies.set('auth_token', '', cookieOptions);
+  response.cookies.set('auth_state', '', authStateCoonkieOptions);
+  response.cookies.delete('auth_token');
+  response.cookies.delete('org_id');
+  response.cookies.delete('auth_state');
   return response;
 }
 
@@ -105,20 +105,20 @@ export function clearAuthTokens(response: NextResponse) {
  * Prioritizes httpOnly token for security, falls back to readable token
  */
 export function getAuthToken(request: Request): string | undefined {
-  const cookies = request.headers.get("cookie");
+  const cookies = request.headers.get('cookie');
   if (!cookies) return undefined;
 
   // Parse cookies manually to handle both token types
   const cookieMap = new Map<string, string>();
-  cookies.split(";").forEach((cookie) => {
-    const [name, value] = cookie.trim().split("=");
+  cookies.split(';').forEach((cookie) => {
+    const [name, value] = cookie.trim().split('=');
     if (name && value) {
       cookieMap.set(name, value);
     }
   });
 
   // Prioritize httpOnly token for security
-  return cookieMap.get("auth_token") || cookieMap.get("token");
+  return cookieMap.get('auth_token') || cookieMap.get('token');
 }
 
 /**
@@ -129,13 +129,13 @@ export function getAuthToken(request: Request): string | undefined {
 export function setSecureOrgId(
   response: NextResponse,
   orgId: string,
-  options: SecureOrgIdOptions = {}
+  options: SecureOrgIdOptions = {},
 ) {
   const {
     maxAge = 7 * 24 * 60 * 60, // 7 days in seconds
     expires = 7, // 7 days (legacy format)
     domain,
-    path = "/",
+    path = '/',
   } = options;
 
   // Calculate expiration date
@@ -143,24 +143,24 @@ export function setSecureOrgId(
   expirationDate.setDate(expirationDate.getDate() + expires);
 
   // Common security flags
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV === 'production';
   const secureFlag = isProduction; // Only use secure in production (requires HTTPS)
 
   // Set httpOnly organization ID cookie for server-side operations
-  response.cookies.set("org_id", orgId, {
+  response.cookies.set('org_id', orgId, {
     httpOnly: false, // Not accessible by JavaScript
     secure: secureFlag,
-    sameSite: "strict",
-    maxAge: maxAge,
-    path: path,
-    domain: domain,
+    sameSite: 'strict',
+    maxAge,
+    path,
+    domain,
   });
 
   // Set additional security headers
-  response.headers.set("X-Content-Type-Options", "nosniff");
-  response.headers.set("X-Frame-Options", "SAMEORIGIN");
-  response.headers.set("X-XSS-Protection", "1; mode=block");
-  response.headers.set("Referrer-Policy", "no-referrer-when-downgrade");
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'no-referrer-when-downgrade');
 
   return response;
 }

@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { useLoginMutation } from "@/lib/features/auth/authApi";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useLoginMutation } from '@/lib/features/auth/authApi';
+import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 
-import { LoginFormValues, UserWithoutCF } from "@/types/login";
-import { useCallback } from "react";
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
-import { signToken } from "@/lib/jwt";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchUserFromToken } from "@/lib/redux/authSlice";
-import { AppDispatch } from "@/lib/redux/store";
+import { LoginFormValues } from '@/types/login';
+import { useCallback } from 'react';
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUserFromToken } from '@/lib/redux/authSlice';
+import { AppDispatch } from '@/lib/redux/store';
+import logger from '@/lib/logger';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -40,48 +40,49 @@ export const useHandleLoginSubmit = ({
 
   const getRedirectUrl = () => {
     const redirectTo =
-      searchParams?.get("redirect") || searchParams?.get("returnUrl");
+      searchParams?.get('redirect') || searchParams?.get('returnUrl');
 
     if (redirectTo) {
       try {
         const decodedUrl = decodeURIComponent(redirectTo);
-        if (decodedUrl.startsWith("/") && !decodedUrl.startsWith("//")) {
+        if (decodedUrl.startsWith('/') && !decodedUrl.startsWith('//')) {
           return decodedUrl;
         }
       } catch (error) {
-        console.warn("Invalid redirect URL:", redirectTo);
+        logger.warn('Invalid redirect URL:', redirectTo, error);
       }
     }
 
-    if (user?.role === "candidate") {
+    if (user?.role === 'candidate') {
       return isMultiple
         ? `/apply-jobs?o=${user.organizationInfo?.name}`
-        : "/apply-jobs";
-    } else if (
-      user?.role === "admin" ||
-      user?.role === "interviewer" ||
-      user?.role === "hr"
+        : '/apply-jobs';
+    }
+    if (
+      user?.role === 'admin' ||
+      user?.role === 'interviewer' ||
+      user?.role === 'hr'
     ) {
-      return "/dashboard";
+      return '/dashboard';
     }
 
-    return "/";
+    return '/';
   };
 
   const handleSubmit = useCallback(
     async (
       values: LoginFormValues,
-      setIsSubmitting: (isSubmitting: boolean) => void,
-      { setStatus }: { setStatus: (message: string) => void }
+      setIsSubmitting : (isSubmitting: boolean) => void,
+      { setStatus }: { setStatus: (message: string) => void },
     ) => {
       // debugger
       setLoginFormValues(values);
-      //firstly check the license
+      // firstly check the license
       try {
-        const response = await fetch("/api/license-validate", {
-          method: "GET",
+        const response = await fetch('/api/license-validate', {
+          method: 'GET',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         });
         const data = await response.json();
@@ -91,12 +92,12 @@ export const useHandleLoginSubmit = ({
         setIsSubmitting(false);
       } catch (e: unknown) {
         toast({
-          title: "Error",
+          title: 'Error',
           description:
             e instanceof Error
               ? e.message
-              : "License not verified. Please contact support or try re-installing the platform.",
-          variant: "destructive",
+              : 'License not verified. Please contact support or try re-installing the platform.',
+          variant: 'destructive',
         });
         setIsSubmitting(false);
         return;
@@ -107,7 +108,6 @@ export const useHandleLoginSubmit = ({
           email: values.email.toLowerCase().trim(),
           orgId: selectedOrg,
         }).unwrap();
-        console.log(response, "login response");
 
         if (
           response.organizations &&
@@ -118,123 +118,86 @@ export const useHandleLoginSubmit = ({
           setOrganizationDialogOpen(true);
           return;
         }
-        let is2FAEnabled = response.twofa;
-
-        // try {
-        //   const check2FA = await fetch(
-        //     `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
-        //   );
-        //   const data = await check2FA.json();
-        //   is2FAEnabled = data.twoFA.enable2FA;
-        //   if (!check2FA.ok) {
-        //     throw new Error("Failed to fetch 2FA info");
-        //   }
-        // } catch (error) {
-        //   console.error(error);
-        //   setStatus("Failed to fetch 2FA info");
-        //   toast({
-        //     title: "Error",
-        //     description: "Failed to fetch 2FA info",
-        //     variant: "destructive",
-        //   });
-        // }
-        // const { is2FAEnabled } = await check2FA(String(response.user));
-
+        const is2FAEnabled = response.twofa;
         if (is2FAEnabled) {
-          const organizationId = response.organizationId;
+          const { organizationId } = response;
           try {
-            const otpResponse = await fetch("/api/auth/2fa/send-otp", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
+            const otpResponse = await fetch('/api/auth/2fa/send-otp', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 email: values.email.toLowerCase().trim(),
                 organizationId,
               }),
             });
-            // const data = await otpResponse.json();
             if (!otpResponse.ok) {
               const errorData = await otpResponse.json();
-              throw new Error(errorData.message || "Failed to send OTP");
+              throw new Error(errorData.message || 'Failed to send OTP');
             }
 
             toast({
-              title: "Check your email",
-              description: "An OTP has been sent to your email address.",
-              variant: "default",
+              title: 'Check your email',
+              description: 'An OTP has been sent to your email address.',
+              variant: 'default',
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`,
             );
           } catch (error) {
-            console.error(error);
+            logger.error(error);
             const errorMessage =
               error instanceof Error
                 ? error.message
-                : "An unknown error occurred";
+                : 'An unknown error occurred';
             setStatus(errorMessage);
             toast({
-              title: "Error",
+              title: 'Error',
               description: errorMessage,
-              variant: "destructive",
+              variant: 'destructive',
             });
           }
           return;
         }
 
-        // const userWithoutCustomFields: UserWithoutCF = {
-        //   ...decryptedResponse.user,
-        // };
-        // if (userWithoutCustomFields.organizationInfo) {
-        //   userWithoutCustomFields.organizationInfo = {
-        //     ...userWithoutCustomFields.organizationInfo,
-        //   };
-        //   delete userWithoutCustomFields.organizationInfo.customFields;
-        // }
-        // const token = await signToken(userWithoutCustomFields);
-        // Cookies.set("token", String(token), { expires: 30 });
+
 
         // Store refresh token if provided in response
         // Note: The refresh token is also set in httpOnly cookie by the backend
         // But we store it in localStorage for the interceptor to use
         if ((response as any).refreshToken) {
-          localStorage.setItem("refresh_token", (response as any).refreshToken);
+          localStorage.setItem('refresh_token', (response as any).refreshToken);
         }
 
         const redirectUrl = getRedirectUrl();
-        // new Promise(()=>{})
-        // setTimeout(()=>{
-        // },4000)
         if (isAuthenticated) {
-          // router.refresh();
-          // router.push(redirectUrl);
-          if (redirectUrl !== "/") {
+          if (redirectUrl !== '/') {
             window.location.href = redirectUrl;
           }
 
           setUserLoggedIn(true);
 
           toast({
-            title: "Success",
-            description: "Login successful",
-            variant: "default",
+            title: 'Success',
+            description: 'Login successful',
+            variant: 'default',
           });
         }
 
         dispatch(fetchUserFromToken());
       } catch (err: unknown) {
-        console.log(err);
+        logger.error(err);
         const errorMessage =
           err &&
-          typeof err === "object" &&
-          "data" in err &&
+          typeof err === 'object' &&
+          'data' in err &&
           (err.data as { error: string }).error
             ? (err.data as { error: string }).error
-            : "An unknown error occurred";
+            : 'An unknown error occurred';
         setStatus(errorMessage);
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
@@ -248,8 +211,7 @@ export const useHandleLoginSubmit = ({
       router,
       toast,
       searchParams,
-      // check2FA,
-    ]
+    ],
   );
 
   return { handleSubmit, isLoading };

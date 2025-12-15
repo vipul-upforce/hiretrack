@@ -1,18 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings, Organization } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings, Organization } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 // Define step validation functions (SHOW ACTUAL STATUS BUT FORCE SIDEBAR VISIBLE)
 const stepValidators = {
   portal: (settings: any, organization: any) => {
-    const portalName =
-      settings?.portalConfigs?.portalName || organization?.name || "";
-    const isConfigured = portalName && portalName.toLowerCase() !== "hiretrack";
+    const portalName = settings?.portalConfigs?.portalName || organization?.name || '';
+    const isConfigured = portalName && portalName.toLowerCase() !== 'hiretrack';
     console.log(
-      "Portal validation - Portal name:",
+      'Portal validation - Portal name:',
       portalName,
-      "Configured:",
-      isConfigured
+      'Configured:',
+      isConfigured,
     );
     return isConfigured;
   },
@@ -21,70 +20,70 @@ const stepValidators = {
     const providers = settings?.aiProviders;
     if (!providers) return false;
     const hasAnyKey = !!(
-      providers?.gemini?.api_key ||
-      providers?.openai?.api_key ||
-      providers?.anthropic?.api_key ||
-      providers?.perplexity?.api_key
+      providers?.gemini?.api_key
+      || providers?.openai?.api_key
+      || providers?.anthropic?.api_key
+      || providers?.perplexity?.api_key
     );
-    console.log("AI Providers validation - Has any key:", hasAnyKey);
+    console.log('AI Providers validation - Has any key:', hasAnyKey);
     return hasAnyKey;
   },
 
   email: (settings: any) => {
     const mailConfig = settings?.mailConfig;
     const hasProvider = !!(
-      mailConfig?.mailProvider && mailConfig.mailProvider !== ""
+      mailConfig?.mailProvider && mailConfig.mailProvider !== ''
     );
     console.log(
-      "Email validation - Has provider:",
+      'Email validation - Has provider:',
       hasProvider,
-      "Provider:",
-      mailConfig?.mailProvider
+      'Provider:',
+      mailConfig?.mailProvider,
     );
     return hasProvider;
   },
 
   calendar: (settings: any) => {
     const hasCalendar = !!(
-      settings?.googleCalendar?.isConnected ||
-      settings?.googleCalendar?.refreshToken ||
-      settings?.googleCalendar?.accessToken
+      settings?.googleCalendar?.isConnected
+      || settings?.googleCalendar?.refreshToken
+      || settings?.googleCalendar?.accessToken
     );
-    console.log("Calendar validation - Has calendar:", hasCalendar);
+    console.log('Calendar validation - Has calendar:', hasCalendar);
     return hasCalendar;
   },
 
   timezone: (settings: any) => {
     const timezoneName = settings?.timeZone?.name;
-    const hasTimezone = !!(timezoneName && timezoneName !== "");
+    const hasTimezone = !!(timezoneName && timezoneName !== '');
     console.log(
-      "Timezone validation - Has timezone:",
+      'Timezone validation - Has timezone:',
       hasTimezone,
-      "Timezone:",
-      timezoneName
+      'Timezone:',
+      timezoneName,
     );
     return hasTimezone;
   },
 
   storage: (settings: any) => {
     console.log(
-      "Storage validation - Always configured (local storage available)"
+      'Storage validation - Always configured (local storage available)',
     );
     return true;
   },
 
   users: (settings: any, organization: any, userCount: number) => {
-    console.log("Users validation - Always configured for testing");
+    console.log('Users validation - Always configured for testing');
     return true;
   },
   captcha: (settings: any) => {
     const captchaConfig = settings?.captcha;
     const isEnabled = captchaConfig?.enableCaptcha === true;
     const hasSiteKey = !!(
-      captchaConfig?.siteKey && captchaConfig.siteKey !== ""
+      captchaConfig?.siteKey && captchaConfig.siteKey !== ''
     );
     const hasSecretKey = !!(
-      captchaConfig?.secretKey && captchaConfig.secretKey !== ""
+      captchaConfig?.secretKey && captchaConfig.secretKey !== ''
     );
     const hasCaptcha = isEnabled && hasSiteKey && hasSecretKey;
     return hasCaptcha;
@@ -93,23 +92,22 @@ const stepValidators = {
   // Removed customFields - it's not mandatory for onboarding
   customFields: (settings: any, organization: any) => {
     const customFields = organization?.customFields;
-    return customFields ? true : false;
+    return !!customFields;
   },
 };
 
 export async function GET(req: NextRequest) {
   try {
     const [user] = await Promise.all([
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       connectToDatabase(),
     ]);
     if (!user) {
       return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
+        { error: 'Admin access required' },
+        { status: 403 },
       );
     }
-
 
     // Try to find organizationId from various possible locations
     const orgId = user.organizationId;
@@ -148,6 +146,26 @@ export async function GET(req: NextRequest) {
       console.error("Database query error:", error);
     }
 
+    if (settings) {
+      // console.log("✅ Settings found!");
+      // console.log(
+      //   "Settings keys:",
+      //   Object.keys(settings.toObject ? settings.toObject() : settings)
+      // );
+
+      const settingsObj = settings.toObject ? settings.toObject() : settings;
+      // console.log("Portal configs:", settingsObj.portalConfigs);
+      // console.log("AI providers:", settingsObj.aiProviders);
+      // console.log("Mail config:", settingsObj.mailConfig);
+      // console.log("Google Calendar:", settingsObj.googleCalendar);
+      // console.log("Timezone:", settingsObj.timeZone);
+    }
+
+    if (organization) {
+      console.log("✅ Organization found!");
+      console.log("Organization name:", organization.name);
+    }
+
     // Count users in organization (would need actual user count query)
     const userCount = 1; // Placeholder - you'd want to implement actual user counting
 
@@ -184,9 +202,8 @@ export async function GET(req: NextRequest) {
         ](settings, organization, userCount);
       } catch (error) {
         console.error(`Error validating step ${stepKey}:`, error);
-        stepStatus[stepKey] = stepKey !== "customFields";
-        stepErrors[stepKey] =
-          error instanceof Error ? error.message : "Unknown error";
+        stepStatus[stepKey] = stepKey !== 'customFields';
+        stepErrors[stepKey] = error instanceof Error ? error.message : 'Unknown error';
       }
     });
 
@@ -205,10 +222,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error validating onboarding steps:", error);
+    console.error('Error validating onboarding steps:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }
@@ -219,23 +236,23 @@ export async function POST(req: NextRequest) {
 
     const [body, user] = await Promise.all([
       req.json(),
-      getAuthenticatedUser(req, "admin"),
+      getAuthenticatedUser(req, 'admin'),
       connectToDatabase(),
     ]);
     if (!user) {
       return NextResponse.json(
-        { error: "Admin access required" },
-        { status: 403 }
+        { error: 'Admin access required' },
+        { status: 403 },
       );
     }
 
     const { step } = body;
     if (!step || !stepValidators[step as keyof typeof stepValidators]) {
-      return NextResponse.json({ error: "Invalid step" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid step' }, { status: 400 });
     }
 
-    console.log("=== POST VALIDATION DEBUG ===");
-    console.log("Full user object:", JSON.stringify(user, null, 2));
+    console.log('=== POST VALIDATION DEBUG ===');
+    console.log('Full user object:', JSON.stringify(user, null, 2));
 
     // Try to find organizationId from various possible locations
     const orgId = user.organizationId;
@@ -254,8 +271,7 @@ export async function POST(req: NextRequest) {
         customFields: true,
       };
 
-      const isValid =
-        fallbackStatus[step as keyof typeof fallbackStatus] ?? false;
+      const isValid = fallbackStatus[step as keyof typeof fallbackStatus] ?? false;
       console.log(`Step ${step} fallback result:`, isValid);
 
       return NextResponse.json({ isValid, step });
@@ -279,14 +295,14 @@ export async function POST(req: NextRequest) {
         organization = await Organization.findOne({ _id: orgId.toString() });
       }
     } catch (dbError) {
-      console.error("Database query error in POST:", dbError);
+      console.error('Database query error in POST:', dbError);
     }
 
-    console.log("POST validation - Settings found:", !!settings);
-    console.log("POST validation - Organization found:", !!organization);
+    console.log('POST validation - Settings found:', !!settings);
+    console.log('POST validation - Organization found:', !!organization);
 
     if (!settings && !organization) {
-      console.log("No data found, using fallback validation for step:", step);
+      console.log('No data found, using fallback validation for step:', step);
       const fallbackStatus = {
         captcha: true,
         portal: true,
@@ -299,8 +315,7 @@ export async function POST(req: NextRequest) {
         customFields: true,
       };
 
-      const isValid =
-        fallbackStatus[step as keyof typeof fallbackStatus] ?? false;
+      const isValid = fallbackStatus[step as keyof typeof fallbackStatus] ?? false;
       return NextResponse.json({ isValid, step });
     }
 
@@ -312,21 +327,21 @@ export async function POST(req: NextRequest) {
       isValid = stepValidators[step as keyof typeof stepValidators](
         settings,
         organization,
-        userCount
+        userCount,
       );
     } catch (validationError) {
       console.error(`Validation error for step ${step}:`, validationError);
       // Fallback: assume configured except for customFields
-      isValid = step !== "customFields";
+      isValid = step !== 'customFields';
     }
 
     console.log(`Step ${step} validation result:`, isValid);
     return NextResponse.json({ isValid, step });
   } catch (error) {
-    console.error("Error validating specific step:", error);
+    console.error('Error validating specific step:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }

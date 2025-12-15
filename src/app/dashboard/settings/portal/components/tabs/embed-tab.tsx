@@ -1,19 +1,21 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Code, Check, Copy, ExternalLink } from "lucide-react";
-import { Editor } from "@monaco-editor/react";
-import { toast } from "sonner";
-import { useTheme } from "@/components/theme-provider";
-import { PortalSettings } from "../../types";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Code, Check, Copy, ExternalLink,
+} from 'lucide-react';
+import { Editor } from '@monaco-editor/react';
+import { toast } from 'sonner';
+import { useTheme } from '@/components/theme-provider';
+import { PortalSettings } from '../../types';
 
 interface EmbedTabProps {
   settings: PortalSettings;
@@ -49,8 +51,8 @@ export function EmbedTab({
 
   const getEmbedCode = () => {
     const queryParams = [];
-    if (embedHideHeader) queryParams.push("hideHeader=true");
-    if (embedHideFooter) queryParams.push("hideFooter=true");
+    if (embedHideHeader) queryParams.push('hideHeader=true');
+    if (embedHideFooter) queryParams.push('hideFooter=true');
 
     const embedUrl = generatePortalUrl(queryParams);
 
@@ -58,10 +60,10 @@ export function EmbedTab({
   src="${embedUrl}"
   width="${embedWidth}"
   height="${embedHeight}"
-  ${embedShowBorder ? "" : 'frameborder="0"'}
-  style="${embedShowBorder ? "border: 1px solid #e5e7eb;" : "border: none;"} border-radius: 8px;"
+  ${embedShowBorder ? '' : 'frameborder="0"'}
+  style="${embedShowBorder ? 'border: 1px solid #e5e7eb;' : 'border: none;'} border-radius: 8px;"
   allow="camera; microphone"
-  title="${settings.portalName || "Job Portal"}"
+  title="${settings.portalName || 'Job Portal'}"
 ></iframe>`;
   };
 
@@ -70,7 +72,7 @@ export function EmbedTab({
     navigator.clipboard.writeText(embedCode);
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
-    toast.success("Embed code copied to clipboard!");
+    toast.success('Embed code copied to clipboard!');
   };
 
   return (
@@ -176,14 +178,14 @@ export function EmbedTab({
             <Editor
               height="200px"
               language="html"
-              theme={theme === "dark" ? "vs-dark" : "vs"}
+              theme={theme === 'dark' ? 'vs-dark' : 'vs'}
               value={getEmbedCode()}
               options={{
                 fontSize: 14,
                 minimap: { enabled: false },
                 scrollBeyondLastLine: false,
-                wordWrap: "on",
-                lineNumbers: "on",
+                wordWrap: 'on',
+                lineNumbers: 'on',
                 folding: false,
                 readOnly: true,
                 automaticLayout: true,
@@ -199,20 +201,20 @@ export function EmbedTab({
             <div className="flex gap-2">
               <span className="font-semibold">1.</span>
               <p>
-                Copy the embed code above by clicking the "Copy Code" button.
+                Copy the embed code above by clicking the &quot;Copy Code&quot; button.
               </p>
             </div>
             <div className="flex gap-2">
               <span className="font-semibold">2.</span>
               <p>
-                Paste the code into your website's HTML where you want the
+                Paste the code into your website&apos;s HTML where you want the
                 portal to appear.
               </p>
             </div>
             <div className="flex gap-2">
               <span className="font-semibold">3.</span>
               <p>
-                Adjust the width and height settings to fit your website's
+                Adjust the width and height settings to fit your website&apos;s
                 design.
               </p>
             </div>
@@ -245,10 +247,10 @@ export function EmbedTab({
             variant="outline"
             onClick={() => {
               const queryParams = [];
-              if (embedHideHeader) queryParams.push("hideHeader=true");
-              if (embedHideFooter) queryParams.push("hideFooter=true");
+              if (embedHideHeader) queryParams.push('hideHeader=true');
+              if (embedHideFooter) queryParams.push('hideFooter=true');
               const url = generatePortalUrl(queryParams);
-              if (url) window.open(url, "_blank");
+              if (url) window.open(url, '_blank');
             }}
             className="w-full"
           >

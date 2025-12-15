@@ -1,16 +1,16 @@
-import React from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { EmailTemplate } from "../types";
+} from '@/components/ui/select';
+import { EmailTemplate } from '../types';
 
 interface TemplateSelectorProps {
   templates: EmailTemplate[];
@@ -20,13 +20,13 @@ interface TemplateSelectorProps {
   onDeleteClick: (templateId: string) => void;
 }
 
-export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
+export function TemplateSelector({
   templates,
   selectedTemplate,
   onSelectTemplate,
   onAddClick,
   onDeleteClick,
-}) => {
+}: TemplateSelectorProps) {
   const currentTemplate = templates.find((t) => t.id === selectedTemplate);
 
   return (
@@ -39,7 +39,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           </p>
         </div>
         <Button size="sm" onClick={onAddClick} variant="primary">
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add Custom
         </Button>
       </div>
@@ -49,7 +49,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           Template
         </Label>
         <Select value={selectedTemplate} onValueChange={onSelectTemplate}>
-          <SelectTrigger className="h-[60px] mt-2">
+          <SelectTrigger className="mt-2 h-[60px]">
             <SelectValue placeholder="Select a template" />
           </SelectTrigger>
           <SelectContent className="max-h-96">
@@ -59,8 +59,8 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                 value={template.id}
                 className="py-3"
               >
-                <div className="flex flex-col w-full">
-                  <div className="flex items-center gap-2 justify-between">
+                <div className="flex w-full flex-col">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{template.name}</span>
                     <div className="flex gap-1">
                       {template.isDefault && (
@@ -75,7 +75,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                       )}
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                  <p className="mt-1 text-xs leading-relaxed text-gray-500">
                     {template.subject}
                   </p>
                 </div>
@@ -92,13 +92,13 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
             variant="outline"
             size="sm"
             onClick={() => onDeleteClick(selectedTemplate)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-red-600 hover:bg-red-50 hover:text-red-700"
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="mr-2 h-4 w-4" />
             Delete Template
           </Button>
         </div>
       )}
     </div>
   );
-};
+}

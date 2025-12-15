@@ -1,4 +1,4 @@
-import { AIProviderType } from "@/lib/ai-providers";
+import { AIProviderType } from '@/lib/ai-providers';
 
 export interface AIProvidersValues {
   activeProvider: AIProviderType;
@@ -16,10 +16,10 @@ export interface AIProvidersValues {
   perplexity_custom_model: string;
 }
 
-export type FormFieldName = keyof Omit<AIProvidersValues, "activeProvider">;
+export type FormFieldName = keyof Omit<AIProvidersValues, 'activeProvider'>;
 
 export interface VerificationState {
-  status: Record<string, "idle" | "loading" | "success" | "error">;
+  status: Record<string, 'idle' | 'loading' | 'success' | 'error'>;
   messages: Record<string, string>;
 }
 

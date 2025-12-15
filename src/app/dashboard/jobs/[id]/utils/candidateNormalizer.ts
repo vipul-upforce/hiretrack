@@ -3,7 +3,7 @@
  * Normalizes inconsistent API/SSE data into consistent shapes
  */
 
-import { Candidate } from "@/types/candidate";
+import { Candidate } from '@/types/candidate';
 import {
   isPopulatedJobId,
   isPopulatedInterviewer,
@@ -11,7 +11,7 @@ import {
   isValidDate,
   JobObject,
   InterviewerObject,
-} from "./candidateTypeGuards";
+} from './candidateTypeGuards';
 
 /**
  * Normalized job ID (always a string)
@@ -53,7 +53,7 @@ export interface NormalizedAssignment {
     attendeeResponses?: Array<{
       email: string;
       name?: string;
-      responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
+      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
       comment?: string;
       lastUpdated: Date | string;
       notificationSent?: boolean;
@@ -76,7 +76,7 @@ export interface NormalizedTracking {
 /**
  * Normalized candidate (after normalization)
  */
-export interface NormalizedCandidate extends Omit<Candidate, "jobId" | "assignment" | "tracking"> {
+export interface NormalizedCandidate extends Omit<Candidate, 'jobId' | 'assignment' | 'tracking'> {
   jobId: JobObject | string;
   assignment: NormalizedAssignment | null;
   tracking: NormalizedTracking;
@@ -87,18 +87,18 @@ export interface NormalizedCandidate extends Omit<Candidate, "jobId" | "assignme
  */
 export function normalizeJobId(jobId: string | JobObject | undefined | null): string {
   if (!jobId) {
-    return "";
+    return '';
   }
 
   if (isPopulatedJobId(jobId)) {
     return jobId._id;
   }
 
-  if (typeof jobId === "string") {
+  if (typeof jobId === 'string') {
     return jobId;
   }
 
-  return "";
+  return '';
 }
 
 /**
@@ -106,10 +106,10 @@ export function normalizeJobId(jobId: string | JobObject | undefined | null): st
  * Returns object if populated, string ID otherwise
  */
 export function normalizeInterviewerId(
-  interviewerId: string | InterviewerObject | undefined | null
+  interviewerId: string | InterviewerObject | undefined | null,
 ): NormalizedInterviewer | string {
   if (!interviewerId) {
-    return "";
+    return '';
   }
 
   if (isPopulatedInterviewer(interviewerId)) {
@@ -121,35 +121,35 @@ export function normalizeInterviewerId(
     };
   }
 
-  if (typeof interviewerId === "string") {
+  if (typeof interviewerId === 'string') {
     return interviewerId;
   }
 
-  return "";
+  return '';
 }
 
 /**
  * Normalize assignment data
  */
 export function normalizeAssignment(
-  assignment: unknown
+  assignment: unknown,
 ): NormalizedAssignment | null {
-  if (!assignment || typeof assignment !== "object") {
+  if (!assignment || typeof assignment !== 'object') {
     return null;
   }
 
   const assignmentObj = assignment as Record<string, unknown>;
 
   const interviewerId = normalizeInterviewerId(
-    assignmentObj.interviewerId as string | InterviewerObject | undefined
+    assignmentObj.interviewerId as string | InterviewerObject | undefined,
   );
 
   // Normalize time - ensure it's a valid date string or Date
-  let time: string | Date = "";
+  let time: string | Date = '';
   if (assignmentObj.time) {
     if (isValidDate(assignmentObj.time)) {
       time = assignmentObj.time;
-    } else if (typeof assignmentObj.time === "string") {
+    } else if (typeof assignmentObj.time === 'string') {
       time = assignmentObj.time;
     }
   }
@@ -159,7 +159,7 @@ export function normalizeAssignment(
   if (assignmentObj.assignedAt) {
     if (isValidDate(assignmentObj.assignedAt)) {
       assignedAt = assignmentObj.assignedAt;
-    } else if (typeof assignmentObj.assignedAt === "string") {
+    } else if (typeof assignmentObj.assignedAt === 'string') {
       assignedAt = assignmentObj.assignedAt;
     }
   }
@@ -168,13 +168,13 @@ export function normalizeAssignment(
     interviewerId,
     time,
     duration:
-      typeof assignmentObj.duration === "string"
+      typeof assignmentObj.duration === 'string'
         ? assignmentObj.duration
         : undefined,
     assignedAt,
-    googleMeet: assignmentObj.googleMeet as NormalizedAssignment["googleMeet"],
+    googleMeet: assignmentObj.googleMeet as NormalizedAssignment['googleMeet'],
     status:
-      typeof assignmentObj.status === "string"
+      typeof assignmentObj.status === 'string'
         ? assignmentObj.status
         : undefined,
     jobId: assignmentObj.jobId as string | JobObject | undefined,
@@ -187,11 +187,11 @@ export function normalizeAssignment(
 export function normalizeTracking(
   tracking: unknown,
   fallbackCreatedAt?: string | Date,
-  fallbackUpdatedAt?: string | Date
+  fallbackUpdatedAt?: string | Date,
 ): NormalizedTracking {
   const now = new Date().toISOString();
 
-  if (!tracking || typeof tracking !== "object") {
+  if (!tracking || typeof tracking !== 'object') {
     return {
       createdAt:
         fallbackCreatedAt instanceof Date
@@ -232,7 +232,7 @@ export function normalizeTracking(
  * Normalize a candidate from API/SSE data
  */
 export function normalizeCandidate(candidate: unknown): NormalizedCandidate | null {
-  if (!candidate || typeof candidate !== "object") {
+  if (!candidate || typeof candidate !== 'object') {
     return null;
   }
 
@@ -240,10 +240,10 @@ export function normalizeCandidate(candidate: unknown): NormalizedCandidate | nu
 
   // Validate required fields
   if (
-    !candidateObj._id ||
-    typeof candidateObj._id !== "string" ||
-    !candidateObj.name ||
-    typeof candidateObj.name !== "string"
+    !candidateObj._id
+    || typeof candidateObj._id !== 'string'
+    || !candidateObj.name
+    || typeof candidateObj.name !== 'string'
   ) {
     return null;
   }
@@ -259,7 +259,7 @@ export function normalizeCandidate(candidate: unknown): NormalizedCandidate | nu
   const tracking = normalizeTracking(
     candidateObj.tracking,
     candidateObj.createdAt as string | Date | undefined,
-    candidateObj.updatedAt as string | Date | undefined
+    candidateObj.updatedAt as string | Date | undefined,
   );
 
   // Build normalized candidate
@@ -267,25 +267,25 @@ export function normalizeCandidate(candidate: unknown): NormalizedCandidate | nu
     _id: candidateObj._id as string,
     jobId: normalizedJobId,
     name: candidateObj.name as string,
-    email: (candidateObj.email as string) || "",
-    contact: (candidateObj.contact as string) || "",
-    location: (candidateObj.location as string) || "",
-    experience: typeof candidateObj.experience === "number" ? candidateObj.experience : 0,
+    email: (candidateObj.email as string) || '',
+    contact: (candidateObj.contact as string) || '',
+    location: (candidateObj.location as string) || '',
+    experience: typeof candidateObj.experience === 'number' ? candidateObj.experience : 0,
     relevantExperience:
-      typeof candidateObj.relevantExperience === "number"
+      typeof candidateObj.relevantExperience === 'number'
         ? candidateObj.relevantExperience
         : 0,
     skills: Array.isArray(candidateObj.skills) ? (candidateObj.skills as string[]) : [],
     expectedCTC:
-      typeof candidateObj.expectedCTC === "number"
+      typeof candidateObj.expectedCTC === 'number'
         ? candidateObj.expectedCTC
         : undefined,
     currentCTC:
-      typeof candidateObj.currentCTC === "number"
+      typeof candidateObj.currentCTC === 'number'
         ? candidateObj.currentCTC
         : undefined,
     noticePeriod:
-      typeof candidateObj.noticePeriod === "number"
+      typeof candidateObj.noticePeriod === 'number'
         ? candidateObj.noticePeriod
         : 0,
     tags: Array.isArray(candidateObj.tags) ? candidateObj.tags : undefined,
@@ -294,17 +294,16 @@ export function normalizeCandidate(candidate: unknown): NormalizedCandidate | nu
     attachments: Array.isArray(candidateObj.attachments)
       ? candidateObj.attachments
       : [],
-    status: (candidateObj.status as Candidate["status"]) || "applied",
+    status: (candidateObj.status as Candidate['status']) || 'applied',
     tracking,
     assignment,
-    customFields: candidateObj.customFields as Candidate["customFields"],
-    jobDetails: candidateObj.jobDetails as Candidate["jobDetails"],
+    customFields: candidateObj.customFields as Candidate['customFields'],
+    jobDetails: candidateObj.jobDetails as Candidate['jobDetails'],
     history: Array.isArray(candidateObj.history) ? candidateObj.history : undefined,
     isDeleted: candidateObj.isDeleted === true,
-    scores: candidateObj.scores as Candidate["scores"],
-    followUp: candidateObj.followUp as Candidate["followUp"],
+    scores: candidateObj.scores as Candidate['scores'],
+    followUp: candidateObj.followUp as Candidate['followUp'],
   };
 
   return normalized;
 }
-

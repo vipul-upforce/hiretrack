@@ -1,7 +1,7 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
-export const TableSkeleton = ({ customFieldColumns = [] }) => {
+export function TableSkeleton({ customFieldColumns = [] }) {
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full animate-pulse">
       {/* HEADER */}
@@ -123,4 +123,4 @@ export const TableSkeleton = ({ customFieldColumns = [] }) => {
       </div>
     </div>
   );
-};
+}

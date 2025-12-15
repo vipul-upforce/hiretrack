@@ -1,12 +1,13 @@
-"use client";
-import { useEffect, useState } from "react";
-import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
+'use client';
 
-import { useSelector } from "react-redux";
-import { usePathname } from "next/navigation";
+import React, { useEffect, useState } from 'react';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { usePathname } from 'next/navigation';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
   const pathname = usePathname();
@@ -24,8 +25,8 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const orgname = window.location.href.split("=")[1];
+    if (typeof window !== 'undefined') {
+      const orgname = window.location.href.split('=')[1];
       setOrgName(orgname);
     }
   }, []);
@@ -38,29 +39,31 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
       portalSettings?.portalName ||
       uriOrgName ||
       user?.organizationInfo?.name ||
-      "HireTrack";
+      'HireTrack';
     document.title = title;
 
-    const faviconUrl = portalSettings?.portalFavicon?.url || "/favicon.png";
-    let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    const faviconUrl = portalSettings?.portalFavicon?.url || '/favicon.png';
+    const favicon = document.querySelector(
+      'link[rel="icon"]',
+    ) as HTMLLinkElement;
 
     if (favicon) {
       favicon.href = faviconUrl;
     } else {
       // create a new favicon if it doesn't exist
-      const newFavicon = document.createElement("link");
-      newFavicon.rel = "icon";
+      const newFavicon = document.createElement('link');
+      newFavicon.rel = 'icon';
       newFavicon.href = faviconUrl;
       document.head.appendChild(newFavicon);
     }
 
     // Also update apple-touch-icon for iOS devices
     let touchIcon = document.querySelector(
-      "link[rel~='apple-touch-icon']"
+      "link[rel~='apple-touch-icon']",
     ) as HTMLLinkElement;
     if (!touchIcon) {
-      touchIcon = document.createElement("link");
-      touchIcon.rel = "apple-touch-icon";
+      touchIcon = document.createElement('link');
+      touchIcon.rel = 'apple-touch-icon';
       document.head.appendChild(touchIcon);
     }
     touchIcon.href = faviconUrl;
@@ -76,11 +79,11 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
     // Remove common browser extension attributes that cause hydration mismatches
     const extensionAttributes = [
-      "data-arp",
-      "data-new-gr-c-s-check-loaded",
-      "data-gr-ext-installed",
-      "data-grammarly-shadow-root",
-      "data-grammarly-shadow-root-version",
+      'data-arp',
+      'data-new-gr-c-s-check-loaded',
+      'data-gr-ext-installed',
+      'data-grammarly-shadow-root',
+      'data-grammarly-shadow-root-version',
     ];
 
     extensionAttributes.forEach((attr) => {
@@ -100,14 +103,14 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
 
   // if there is an error then fallback to default info.
   if (isError) {
-    console.log("Failed to fetch portal settings : ", error);
+    logger.error('Failed to fetch portal settings : ', error);
 
-    document.title = uriOrgName || user?.organizationInfo?.name || "HireTrack";
+    document.title = uriOrgName || user?.organizationInfo?.name || 'HireTrack';
     const favicon = document.querySelector(
-      'link[rel="icon"]'
+      'link[rel="icon"]',
     ) as HTMLLinkElement;
     if (favicon) {
-      favicon.href = "/favicon.png";
+      favicon.href = '/favicon.png';
     }
   }
 

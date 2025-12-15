@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { BaseDialog, ConfirmationDialog, FormDialog } from "./base-dialog";
-import { Trash2, AlertTriangle, Info } from "lucide-react";
+import * as React from 'react';
+import { Trash2, AlertTriangle, Info } from 'lucide-react';
+import { BaseDialog, ConfirmationDialog, FormDialog } from './base-dialog';
 
 // Delete Confirmation Dialog
 export interface DeleteDialogProps {
@@ -20,34 +20,32 @@ export const DeleteDialog = React.forwardRef<
   DeleteDialogProps
 >(({
   itemName,
-  itemType = "item",
+  itemType = 'item',
   additionalWarning,
   ...props
-}, ref) => {
-  return (
-    <ConfirmationDialog
-      ref={ref}
-      size="sm"
-      title={`Delete ${itemType}`}
-      description={
+}, ref) => (
+  <ConfirmationDialog
+    ref={ref}
+    size="sm"
+    title={`Delete ${itemType}`}
+    description={
         `Are you sure you want to delete "${itemName}"? This action cannot be undone.${
-          additionalWarning ? ` ${additionalWarning}` : ""
+          additionalWarning ? ` ${additionalWarning}` : ''
         }`
       }
-      confirmLabel="Delete"
-      confirmVariant="destructive"
-      {...props}
-    >
-      <div className="flex items-center justify-center py-4">
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20">
-          <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
-        </div>
+    confirmLabel="Delete"
+    confirmVariant="destructive"
+    {...props}
+  >
+    <div className="flex items-center justify-center py-4">
+      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/20">
+        <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
       </div>
-    </ConfirmationDialog>
-  );
-});
+    </div>
+  </ConfirmationDialog>
+));
 
-DeleteDialog.displayName = "DeleteDialog";
+DeleteDialog.displayName = 'DeleteDialog';
 
 // Warning Dialog
 export interface WarningDialogProps {
@@ -66,29 +64,27 @@ export const WarningDialog = React.forwardRef<
 >(({
   title,
   message,
-  confirmLabel = "Continue",
+  confirmLabel = 'Continue',
   ...props
-}, ref) => {
-  return (
-    <ConfirmationDialog
-      ref={ref}
-      size="sm"
-      title={title}
-      description={message}
-      confirmLabel={confirmLabel}
-      confirmVariant="warning"
-      {...props}
-    >
-      <div className="flex items-center justify-center py-4">
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20">
-          <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-        </div>
+}, ref) => (
+  <ConfirmationDialog
+    ref={ref}
+    size="sm"
+    title={title}
+    description={message}
+    confirmLabel={confirmLabel}
+    confirmVariant="warning"
+    {...props}
+  >
+    <div className="flex items-center justify-center py-4">
+      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/20">
+        <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
       </div>
-    </ConfirmationDialog>
-  );
-});
+    </div>
+  </ConfirmationDialog>
+));
 
-WarningDialog.displayName = "WarningDialog";
+WarningDialog.displayName = 'WarningDialog';
 
 // Info Dialog
 export interface InfoDialogProps {
@@ -105,33 +101,31 @@ export const InfoDialog = React.forwardRef<
 >(({
   title,
   message,
-  confirmLabel = "OK",
+  confirmLabel = 'OK',
   ...props
-}, ref) => {
-  return (
-    <BaseDialog
-      ref={ref}
-      size="sm"
-      title={title}
-      description={message}
-      primaryAction={{
-        label: confirmLabel,
-        onClick: props.onClose,
-        variant: "info",
-      }}
-      showFooter={true}
-      {...props}
-    >
-      <div className="flex items-center justify-center py-4">
-        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/20">
-          <Info className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-        </div>
+}, ref) => (
+  <BaseDialog
+    ref={ref}
+    size="sm"
+    title={title}
+    description={message}
+    primaryAction={{
+      label: confirmLabel,
+      onClick: props.onClose,
+      variant: 'info',
+    }}
+    showFooter
+    {...props}
+  >
+    <div className="flex items-center justify-center py-4">
+      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/20">
+        <Info className="w-6 h-6 text-blue-600 dark:text-blue-400" />
       </div>
-    </BaseDialog>
-  );
-});
+    </div>
+  </BaseDialog>
+));
 
-InfoDialog.displayName = "InfoDialog";
+InfoDialog.displayName = 'InfoDialog';
 
 // Quick Create Dialog (for simple forms)
 export interface QuickCreateDialogProps {
@@ -148,20 +142,18 @@ export interface QuickCreateDialogProps {
 export const QuickCreateDialog = React.forwardRef<
   React.ElementRef<typeof FormDialog>,
   QuickCreateDialogProps
->(({ 
+>(({
   title,
-  submitLabel = "Create",
-  ...props 
-}, ref) => {
-  return (
-    <FormDialog
-      ref={ref}
-      size="sm"
-      title={title}
-      submitLabel={submitLabel}
-      {...props}
-    />
-  );
-});
+  submitLabel = 'Create',
+  ...props
+}, ref) => (
+  <FormDialog
+    ref={ref}
+    size="sm"
+    title={title}
+    submitLabel={submitLabel}
+    {...props}
+  />
+));
 
-QuickCreateDialog.displayName = "QuickCreateDialog";
+QuickCreateDialog.displayName = 'QuickCreateDialog';

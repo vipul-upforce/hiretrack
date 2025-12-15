@@ -1,4 +1,4 @@
-import { OrgInfo } from "@/lib/models/user";
+import { OrgInfo } from '@/lib/models/user';
 
 export interface LoginFormValues {
   email: string;

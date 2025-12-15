@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import Image from "next/image";
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
 
 interface EmptyStateProps {
   title: string;
@@ -21,7 +21,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`flex flex-col items-center justify-center ${imageUrl ? "max-sm:pt-2 py-10" : "py-28"}`}
+      className={`flex flex-col items-center justify-center ${imageUrl ? 'max-sm:pt-2 py-10' : 'py-28'}`}
     >
       {imageUrl && (
         <Image

@@ -3,24 +3,24 @@
  * Removes [x: string]: any and provides strict typing
  */
 
-import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
-import { ICandidateHistory } from "@/lib/models/history";
-import { ITag } from "@/lib/models/organization";
-import { Attachment } from "@/app/api/candidates/route";
-import { JobObject } from "../utils/candidateTypeGuards";
-import { NormalizedInterviewer } from "../utils/candidateNormalizer";
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
+import { ICandidateHistory } from '@/lib/models/history';
+import { ITag } from '@/lib/models/organization';
+import { Attachment } from '@/app/api/candidates/route';
+import { JobObject } from '../utils/candidateTypeGuards';
+import { NormalizedInterviewer } from '../utils/candidateNormalizer';
 
 /**
  * Candidate status types
  */
 export type CandidateStatus =
-  | "applied"
-  | "screening"
-  | "shortlisted"
-  | "processing"
-  | "accepted"
-  | "rejected"
-  | "default";
+  | 'applied'
+  | 'screening'
+  | 'shortlisted'
+  | 'processing'
+  | 'accepted'
+  | 'rejected'
+  | 'default';
 
 /**
  * Job detail structure
@@ -107,7 +107,7 @@ export interface CandidateAssignment {
     attendeeResponses?: Array<{
       email: string;
       name?: string;
-      responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
+      responseStatus: 'needsAction' | 'accepted' | 'declined' | 'tentative';
       comment?: string;
       lastUpdated: Date | string;
       notificationSent?: boolean;
@@ -145,7 +145,7 @@ export interface CandidateScores {
   };
   redFlags?: Array<{
     type: string;
-    severity: "low" | "medium" | "high";
+    severity: 'low' | 'medium' | 'high';
     description: string;
     evidence: string;
   }>;
@@ -158,13 +158,13 @@ export interface CandidateScores {
     affordabilityPercentile: number;
     hasTie: boolean;
     tiedWithCount: number;
-    rankingBasedOn: "overall" | "weighted";
+    rankingBasedOn: 'overall' | 'weighted';
   };
   interviewQuestions?: Array<{
     category: string;
     question: string;
     reason: string;
-    priority: "high" | "medium" | "low";
+    priority: 'high' | 'medium' | 'low';
     suggestedAnswer?: string;
   }>;
   skillsMatrix?: {
@@ -259,4 +259,3 @@ export interface CandidateColumn {
   title: string;
   candidates: NormalizedCandidate[];
 }
-

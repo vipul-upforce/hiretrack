@@ -3,6 +3,6 @@ export interface SignupFormValues {
   password: string;
   name: string;
   confirmPassword: string;
-  role: "" | "hr" | "interviewer" | "admin";
+  role: '' | 'hr' | 'interviewer' | 'admin';
   organizationId: object | string | number;
 }

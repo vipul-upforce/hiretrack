@@ -1,12 +1,12 @@
-import { useField, useFormikContext } from "formik";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useField, useFormikContext } from 'formik';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export function CandidateExperienceSection() {
   const { submitCount } = useFormikContext();
-  const [experienceField, experienceMeta] = useField("experience");
+  const [experienceField, experienceMeta] = useField('experience');
   const [relevantExperienceField, relevantExperienceMeta] = useField(
-    "relevantExperience"
+    'relevantExperience',
   );
 
   return (
@@ -19,7 +19,9 @@ export function CandidateExperienceSection() {
           htmlFor="relevantExperience"
           className="text-sm font-semibold text-gray-900 dark:text-gray-100"
         >
-          Relevant Exp in Years <span className="text-red-500">*</span>
+          Relevant Exp in Years
+          {' '}
+          <span className="text-red-500">*</span>
         </Label>
         <Input
           id="relevantExperience"
@@ -29,13 +31,13 @@ export function CandidateExperienceSection() {
           {...relevantExperienceField}
           className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${
             relevantExperienceMeta.error && (relevantExperienceMeta.touched || submitCount > 0)
-              ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-              : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+              : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
           }`}
         />
         {(relevantExperienceMeta.touched || submitCount > 0) && relevantExperienceMeta.error && (
           <p className="text-sm text-red-500 flex items-center gap-1">
-            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+            <span className="w-1 h-1 bg-red-500 rounded-full" />
             {relevantExperienceMeta.error}
           </p>
         )}
@@ -46,7 +48,9 @@ export function CandidateExperienceSection() {
           htmlFor="experience"
           className="text-sm font-semibold text-gray-900 dark:text-gray-100"
         >
-          Total Exp in Years <span className="text-red-500">*</span>
+          Total Exp in Years
+          {' '}
+          <span className="text-red-500">*</span>
         </Label>
         <Input
           id="experience"
@@ -56,13 +60,13 @@ export function CandidateExperienceSection() {
           {...experienceField}
           className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${
             experienceMeta.error && (experienceMeta.touched || submitCount > 0)
-              ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-              : "border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20"
+              ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+              : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
           }`}
         />
         {(experienceMeta.touched || submitCount > 0) && experienceMeta.error && (
           <p className="text-sm text-red-500 flex items-center gap-1">
-            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+            <span className="w-1 h-1 bg-red-500 rounded-full" />
             {experienceMeta.error}
           </p>
         )}
@@ -70,4 +74,3 @@ export function CandidateExperienceSection() {
     </div>
   );
 }
-

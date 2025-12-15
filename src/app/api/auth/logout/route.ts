@@ -3,7 +3,7 @@ import { clearAuthTokens } from "@/lib/secureTokens";
 import { verifyAndDecryptToken } from "@/app/actions/auth";
 import { clearRefreshToken, verifyRefreshToken, verifyAndDecryptRefreshToken } from "@/lib/refreshToken";
 import connectToDatabase from "@/lib/mongodb";
-
+import { logger } from '@/lib/logger/logger.server';
 export async function GET(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.json({
-      message: "Logged out successfully"
+      message: 'Logged out successfully',
     });
 
     // SECURITY FIX: Clear both authentication tokens securely
@@ -53,12 +53,8 @@ export async function GET(request: NextRequest) {
     response.cookies.delete("device_id");
 
     return response;
-  } catch {
-    // Log error for debugging (remove console.error if using a logger)
-    // console.error("Logout error:", error);
-    return NextResponse.json(
-      { error: "Logout failed" },
-      { status: 500 }
-    );
+  } catch (error) {
+    logger.error({ error }, 'Logout error');
+    return NextResponse.json({ error: 'Logout failed' }, { status: 500 });
   }
 }

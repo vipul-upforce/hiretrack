@@ -1,63 +1,77 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   Globe,
   ExternalLink,
   Settings,
   CheckCircle2,
   XCircle,
-} from "lucide-react";
-import { useOnboarding } from "../OnboardingProvider";
+} from 'lucide-react';
+import logger from '@/lib/logger';
+import { useOnboarding } from '../OnboardingProvider';
 
-const PortalConfigStep: React.FC = () => {
+function PortalConfigStep() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const { validateStep } = useOnboarding();
 
-  useEffect(() => {
-    checkConfiguration();
-  }, []);
-
   const checkConfiguration = async () => {
     try {
       setIsChecking(true);
-      const isValid = await validateStep("portal");
+      const isValid = await validateStep('portal');
       setIsConfigured(isValid);
     } catch (error) {
-      console.error("Error checking portal configuration:", error);
+      logger.error('Error checking portal configuration:', error);
       setIsConfigured(false);
     } finally {
       setIsChecking(false);
     }
   };
+  useEffect(() => {
+    checkConfiguration();
+  }, []);
 
   const handleConfigurePortal = () => {
-    window.open("/dashboard/settings/portal", "_blank");
+    window.open('/dashboard/settings/portal', '_blank');
   };
 
   const configurationItems = [
-    "Company/Portal name",
-    "Custom logo and favicon",
-    "Brand colors and theme",
-    "Custom header/footer content",
+    'Company/Portal name',
+    'Custom logo and favicon',
+    'Brand colors and theme',
+    'Custom header/footer content',
   ];
+
+  const getStatusIcon = () => {
+    if (isChecking) {
+      return (
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-muted-foreground border-t-primary" />
+      );
+    }
+    if (isConfigured) {
+      return (
+        <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400" />
+      );
+    }
+    return <XCircle className="h-5 w-5 text-muted-foreground" />;
+  };
 
   return (
     <div className="space-y-4">
-      <div className="text-center space-y-2">
-        <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30 rounded-full flex items-center justify-center mx-auto border border-border/50">
-          <Globe className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+      <div className="space-y-2 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-border/50 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30">
+          <Globe className="h-6 w-6 text-purple-600 dark:text-purple-400" />
         </div>
 
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-1">
+          <h2 className="mb-1 text-xl font-bold text-foreground">
             Portal Configuration
           </h2>
-          <p className="text-sm text-muted-foreground max-w-xl mx-auto">
+          <p className="mx-auto max-w-xl text-sm text-muted-foreground">
             Customize your job portal with company branding for candidates.
           </p>
         </div>
@@ -65,45 +79,39 @@ const PortalConfigStep: React.FC = () => {
 
       {/* Status Card */}
       <Card
-        className={`border-2 ${isConfigured ? "border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10" : "border-border"}`}
+        className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}
       >
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2 text-foreground">
+            <CardTitle className="flex items-center gap-2 text-lg text-foreground">
               Portal Branding Status
-              {isChecking ? (
-                <div className="w-4 h-4 border-2 border-muted-foreground border-t-primary rounded-full animate-spin" />
-              ) : isConfigured ? (
-                <CheckCircle2 className="w-5 h-5 text-green-500 dark:text-green-400" />
-              ) : (
-                <XCircle className="w-5 h-5 text-muted-foreground" />
-              )}
+              {getStatusIcon()}
             </CardTitle>
             <Badge
-              variant={isConfigured ? "default" : "secondary"}
+              variant={isConfigured ? 'default' : 'secondary'}
               className={
                 isConfigured
-                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                  : ""
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : ''
               }
             >
-              {isConfigured ? "Configured" : "Not Set"}
+              {isConfigured ? 'Configured' : 'Not Set'}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div>
-              <h4 className="font-medium text-foreground mb-2">
+              <h4 className="mb-2 font-medium text-foreground">
                 What you can customize:
               </h4>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {configurationItems.map((item, index) => (
+              <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {configurationItems.map((item) => (
                   <li
-                    key={index}
+                    key={item}
                     className="flex items-center space-x-2 text-sm text-muted-foreground"
                   >
-                    <div className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-purple-500 dark:bg-purple-400" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -116,9 +124,9 @@ const PortalConfigStep: React.FC = () => {
                 onClick={handleConfigurePortal}
                 className="flex items-center gap-2"
               >
-                <Settings className="w-4 h-4" />
+                <Settings className="h-4 w-4" />
                 Configure Portal
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="h-3 w-3" />
               </Button>
 
               <Button
@@ -126,7 +134,7 @@ const PortalConfigStep: React.FC = () => {
                 onClick={checkConfiguration}
                 disabled={isChecking}
               >
-                {isChecking ? "Checking..." : "Refresh Status"}
+                {isChecking ? 'Checking...' : 'Refresh Status'}
               </Button>
             </div>
           </div>
@@ -137,14 +145,14 @@ const PortalConfigStep: React.FC = () => {
       <Card className="border-blue-500/30 bg-blue-50/50 dark:border-blue-500/20 dark:bg-blue-900/10">
         <CardContent className="p-4">
           <div className="flex items-start space-x-3">
-            <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900/40 rounded-full flex items-center justify-center mt-0.5 border border-blue-200 dark:border-blue-800">
-              <Globe className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+            <div className="mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-blue-200 bg-blue-100 dark:border-blue-800 dark:bg-blue-900/40">
+              <Globe className="h-3 w-3 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h4 className="font-medium text-blue-900 dark:text-blue-100 text-sm">
+              <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">
                 Portal Branding Benefits
               </h4>
-              <p className="text-blue-700 dark:text-blue-200 text-xs mt-1">
+              <p className="mt-1 text-xs text-blue-700 dark:text-blue-200">
                 A branded portal creates a professional impression for
                 candidates and helps maintain consistent company identity
                 throughout the application process. You can always update these
@@ -157,8 +165,8 @@ const PortalConfigStep: React.FC = () => {
 
       {isConfigured && (
         <div className="text-center">
-          <div className="inline-flex items-center space-x-2 text-green-600 dark:text-green-400 bg-green-50/50 dark:bg-green-900/20 px-4 py-2 rounded-lg border border-green-200 dark:border-green-800">
-            <CheckCircle2 className="w-4 h-4" />
+          <div className="inline-flex items-center space-x-2 rounded-lg border border-green-200 bg-green-50/50 px-4 py-2 text-green-600 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+            <CheckCircle2 className="h-4 w-4" />
             <span className="text-sm font-medium">
               Portal configuration completed!
             </span>
@@ -167,6 +175,6 @@ const PortalConfigStep: React.FC = () => {
       )}
     </div>
   );
-};
+}
 
 export default PortalConfigStep;

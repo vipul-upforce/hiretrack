@@ -1,8 +1,6 @@
-// import { Candidate } from "@/lib/mongodb";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { NextRequest, NextResponse } from "next/server";
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { NextRequest, NextResponse } from 'next/server';
 
-// Define types for SSE client management
 interface SSEClient {
   id: number;
   orgId: string; // Added to track organization
@@ -15,14 +13,13 @@ declare global {
 }
 
 // Initialize global sseClients
-global.sseClients =
-  global.sseClients || new Map<string, Map<number, SSEClient>>();
+global.sseClients = global.sseClients || new Map<string, Map<number, SSEClient>>();
 
 export async function GET(req: NextRequest) {
   // Authenticate user and get organization info
   const user = await getAuthenticatedUser(req);
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const orgId = user.organizationId;
 
@@ -39,16 +36,16 @@ export async function GET(req: NextRequest) {
       // Send connection confirmation
       controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "connected", orgId })}\n\n`
-        )
+          `data: ${JSON.stringify({ type: 'connected', orgId })}\n\n`,
+        ),
       );
 
       // Send current client count for this organization
       const clientsCount = orgClients.size;
       controller.enqueue(
         encoder.encode(
-          `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
-        )
+          `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`,
+        ),
       );
 
       const clientId = Date.now();
@@ -59,13 +56,13 @@ export async function GET(req: NextRequest) {
         const clientsCount = orgClients.size;
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: "clients", clients: clientsCount, orgId })}\n\n`
-          )
+            `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`,
+          ),
         );
       }, 20000);
 
       // Handle disconnect
-      req.signal.addEventListener("abort", () => {
+      req.signal.addEventListener('abort', () => {
         orgClients.delete(clientId);
         if (orgClients.size === 0) {
           global.sseClients.delete(orgId); // Clean up empty organization maps
@@ -73,8 +70,8 @@ export async function GET(req: NextRequest) {
         clearInterval(heartbeat);
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: "clients", clients: orgClients.size, orgId })}\n\n`
-          )
+            `data: ${JSON.stringify({ type: 'clients', clients: orgClients.size, orgId })}\n\n`,
+          ),
         );
         controller.close();
       });
@@ -83,81 +80,9 @@ export async function GET(req: NextRequest) {
 
   return new NextResponse(stream, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
     },
   });
 }
-
-// // import { Candidate } from "@/lib/mongodb";
-// import { NextRequest, NextResponse } from "next/server";
-// // import { Candidate } from "../../../server"; // From server.ts
-
-// // Define types for SSE client management
-// interface SSEClient {
-//   id: number;
-//   controller: ReadableStreamDefaultController;
-// }
-
-// // Global store for SSE clients
-// declare global {
-//   var sseClients: Map<number, any>;
-// }
-
-// // Initialize global sseClients
-// global.sseClients = global.sseClients || new Map<number, SSEClient>();
-
-// export async function GET(req: NextRequest) {
-//   // const user = await auth(req);
-
-//   const stream = new ReadableStream({
-//     start(controller) {
-//       const encoder = new TextEncoder();
-//       controller.enqueue(
-//         encoder.encode(`data: ${JSON.stringify({ type: "connected" })}\n\n`)
-//       );
-//       const clientsCount = Array.from(global.sseClients.entries()).length;
-//       controller.enqueue(
-//         encoder.encode(
-//           `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-//         )
-//       );
-
-//       const clientId = Date.now();
-//       global.sseClients.set(clientId, { id: clientId, controller });
-
-//       // Send heartbeat every 3 seconds
-//       //   const clients = setInterval(() => {
-//       //     const clientsCount = Array.from(global.sseClients.entries()).length;
-//       //     controller.enqueue(
-//       //       encoder.encode(
-//       //         `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-//       //       )
-//       //     );
-//       //   }, 3000);
-
-//       // Handle disconnect
-//       req.signal.addEventListener("abort", () => {
-//         global.sseClients.delete(clientId);
-//         // clearInterval(clients);
-//         controller.enqueue(
-//           encoder.encode(
-//             `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-//           )
-//         );
-//         controller.close();
-//       });
-//     },
-//   });
-
-//   return new NextResponse(stream, {
-//     headers: {
-//       "Content-Type": "text/event-stream",
-//       "Cache-Control": "no-cache",
-//       Connection: "keep-alive",
-//       "Access-Control-Allow-Origin": "*",
-//       "Access-Control-Allow-Headers": "Cache-Control",
-//     },
-//   });
-// }

@@ -1,13 +1,13 @@
-import React from "react";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { PortalSettings } from "../../types";
+import React from 'react';
+import Image from 'next/image';
+import { cn } from '@/lib/utils';
+import { PortalSettings } from '../../types';
 
 interface LivePreviewProps {
   settings: PortalSettings;
   headerHtml: string;
   footerHtml: string;
-  theme: "light" | "dark";
+  theme: 'light' | 'dark';
 }
 
 export function LivePreview({
@@ -19,19 +19,20 @@ export function LivePreview({
   return (
     <div
       className={cn(
-        "rounded-lg overflow-hidden border",
-        theme === "dark" ? "bg-slate-900" : "bg-white"
+        'overflow-hidden rounded-lg border',
+        theme === 'dark' ? 'bg-slate-900' : 'bg-white',
       )}
       style={
         {
-          "--portal-primary": settings.primaryColor,
-          "--portal-secondary": settings.secondaryColor,
+          '--portal-primary': settings.primaryColor,
+          '--portal-secondary': settings.secondaryColor,
         } as React.CSSProperties
       }
     >
       {/* Custom Header Preview */}
       {headerHtml && (
         <div className="border-b">
+          {/* eslint-disable-next-line react/no-danger */}
           <div dangerouslySetInnerHTML={{ __html: headerHtml }} />
         </div>
       )}
@@ -46,15 +47,15 @@ export function LivePreview({
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {(theme === "dark"
+              {(theme === 'dark'
                 ? settings.portalLogoDark
                 : settings.portalLogo) && (
-                <div className="h-10 w-32 relative bg-white/10 rounded">
+                <div className="relative h-10 w-32 rounded bg-white/10">
                   <Image
                     src={
-                      theme === "dark"
-                        ? settings.portalLogoDark?.url || ""
-                        : settings.portalLogo?.url || ""
+                      theme === 'dark'
+                        ? settings.portalLogoDark?.url || ''
+                        : settings.portalLogo?.url || ''
                     }
                     alt="Logo"
                     fill
@@ -62,8 +63,8 @@ export function LivePreview({
                   />
                 </div>
               )}
-              <h3 className="text-white font-semibold">
-                {settings.portalName || "Portal Name"}
+              <h3 className="font-semibold text-white">
+                {settings.portalName || 'Portal Name'}
               </h3>
             </div>
           </div>
@@ -71,17 +72,17 @@ export function LivePreview({
       )}
 
       {/* Candidate Portal Preview Content */}
-      <div className="p-6 space-y-6">
+      <div className="space-y-6 p-6">
         <div
           className={cn(
-            "space-y-4",
-            theme === "dark" ? "text-white" : "text-gray-900"
+            'space-y-4',
+            theme === 'dark' ? 'text-white' : 'text-gray-900',
           )}
         >
           {/* Job Application Header */}
           <div className="border-b pb-4">
             <h1 className="text-2xl font-bold">Senior Frontend Developer</h1>
-            <p className="text-sm opacity-70 mt-1">
+            <p className="mt-1 text-sm opacity-70">
               Technology • Full-time • Remote
             </p>
           </div>
@@ -89,7 +90,7 @@ export function LivePreview({
           {/* Job Details */}
           <div className="space-y-3">
             <h3 className="font-semibold">Job Description</h3>
-            <p className="text-sm opacity-80 leading-relaxed">
+            <p className="text-sm leading-relaxed opacity-80">
               We are seeking a talented Senior Frontend Developer to join our
               dynamic team. You will be responsible for creating exceptional
               user experiences using modern web technologies.
@@ -97,7 +98,7 @@ export function LivePreview({
           </div>
 
           {/* Application Form Preview */}
-          <div className="space-y-3 pt-4 border-t">
+          <div className="space-y-3 border-t pt-4">
             <h3 className="font-semibold">Apply for this position</h3>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -106,16 +107,16 @@ export function LivePreview({
                     First Name
                   </label>
                   <div
-                    className="h-9 border rounded"
+                    className="h-9 rounded border"
                     style={{
                       backgroundColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.1)"
-                          : "rgba(0,0,0,0.05)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'rgba(0,0,0,0.05)',
                       borderColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.2)"
-                          : "rgba(0,0,0,0.15)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.2)'
+                          : 'rgba(0,0,0,0.15)',
                     }}
                   />
                 </div>
@@ -124,16 +125,16 @@ export function LivePreview({
                     Last Name
                   </label>
                   <div
-                    className="h-9 border rounded"
+                    className="h-9 rounded border"
                     style={{
                       backgroundColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.1)"
-                          : "rgba(0,0,0,0.05)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.1)'
+                          : 'rgba(0,0,0,0.05)',
                       borderColor:
-                        theme === "dark"
-                          ? "rgba(255,255,255,0.2)"
-                          : "rgba(0,0,0,0.15)",
+                        theme === 'dark'
+                          ? 'rgba(255,255,255,0.2)'
+                          : 'rgba(0,0,0,0.15)',
                     }}
                   />
                 </div>
@@ -143,16 +144,16 @@ export function LivePreview({
                   Email Address
                 </label>
                 <div
-                  className="h-9 border rounded"
+                  className="h-9 rounded border"
                   style={{
                     backgroundColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.1)"
-                        : "rgba(0,0,0,0.05)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.1)'
+                        : 'rgba(0,0,0,0.05)',
                     borderColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.2)"
-                        : "rgba(0,0,0,0.15)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'rgba(0,0,0,0.15)',
                   }}
                 />
               </div>
@@ -161,16 +162,16 @@ export function LivePreview({
                   Upload Resume
                 </label>
                 <div
-                  className="h-20 border-2 border-dashed rounded flex items-center justify-center"
+                  className="flex h-20 items-center justify-center rounded border-2 border-dashed"
                   style={{
                     backgroundColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.1)"
-                        : "rgba(0,0,0,0.05)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.1)'
+                        : 'rgba(0,0,0,0.05)',
                     borderColor:
-                      theme === "dark"
-                        ? "rgba(255,255,255,0.2)"
-                        : "rgba(0,0,0,0.15)",
+                      theme === 'dark'
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'rgba(0,0,0,0.15)',
                   }}
                 >
                   <span className="text-xs opacity-60">
@@ -184,12 +185,16 @@ export function LivePreview({
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <button
-              className="px-6 py-2 rounded-lg text-white font-medium text-sm flex-1"
+              type="button"
+              className="flex-1 rounded-lg px-6 py-2 text-sm font-medium text-white"
               style={{ backgroundColor: settings.primaryColor }}
             >
               Submit Application
             </button>
-            <button className="px-6 py-2 rounded-lg border border-white/20 text-current font-medium text-sm">
+            <button
+              type="button"
+              className="rounded-lg border border-white/20 px-6 py-2 text-sm font-medium text-current"
+            >
               Save as Draft
             </button>
           </div>
@@ -199,6 +204,7 @@ export function LivePreview({
       {/* Custom Footer Preview */}
       {footerHtml && (
         <div className="border-t">
+          {/* eslint-disable-next-line react/no-danger */}
           <div dangerouslySetInnerHTML={{ __html: footerHtml }} />
         </div>
       )}

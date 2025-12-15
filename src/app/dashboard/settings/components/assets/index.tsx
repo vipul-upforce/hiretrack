@@ -1,16 +1,17 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
-import { formatFileSize } from "@/components/ui/file-upload";
-import { toast } from "@/hooks/use-toast";
-import { FolderIcon, Loader, LucideDownload } from "lucide-react";
-import { useFetchAssetsMetadataQuery } from "@/lib/features/settings/settingsApi";
-import { useState } from "react";
-import AssetsLoadingSkeleton from "./loading-skeleton";
+import { Button } from '@/components/ui/button';
+import { formatFileSize } from '@/components/ui/file-upload';
+import { toast } from '@/hooks/use-toast';
+import { FolderIcon, Loader, LucideDownload } from 'lucide-react';
+import { useFetchAssetsMetadataQuery } from '@/lib/features/settings/settingsApi';
+import { useState } from 'react';
+import logger from '@/lib/logger';
+import AssetsLoadingSkeleton from './loading-skeleton';
 
 interface AssetMetadata {
   name: string;
-  type: "directory";
+  type: 'directory';
   path: string;
   size: number;
   lastArchivedAt: string | null;
@@ -26,13 +27,13 @@ export default function AssetsDialog() {
   const archiveAssets = async () => {
     setDownloading(true);
     try {
-      const res = await fetch("/api/download/assets");
+      const res = await fetch('/api/download/assets');
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to create assets archive");
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to create assets archive');
       }
 
-      const contentDisposition = res.headers.get("Content-Disposition");
+      const contentDisposition = res.headers.get('Content-Disposition');
       const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
       const fileName = fileNameMatch
         ? fileNameMatch[1]
@@ -40,7 +41,7 @@ export default function AssetsDialog() {
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
       document.body.appendChild(a);
@@ -49,17 +50,17 @@ export default function AssetsDialog() {
       window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Assets archived successfully",
-        description: "Assets archive has been downloaded.",
+        title: 'Assets archived successfully',
+        description: 'Assets archive has been downloaded.',
       });
 
       refetch();
     } catch (err) {
-      console.error("Failed to archive assets:", err);
+      logger.error('Failed to archive assets:', err);
       toast({
-        title: "Error",
-        description: `Failed to create assets archive`,
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create assets archive',
+        variant: 'destructive',
       });
     } finally {
       setDownloading(false);
@@ -70,9 +71,9 @@ export default function AssetsDialog() {
 
   if (isError) {
     return (
-      <div className="text-center text-red-500 py-6">
-        Failed to load assets metadata:{" "}
-        {(error as any)?.data?.message || "Unknown error"}
+      <div className="py-6 text-center text-red-500">
+        Failed to load assets metadata:{' '}
+        {(error as any)?.data?.message || 'Unknown error'}
       </div>
     );
   }
@@ -83,27 +84,27 @@ export default function AssetsDialog() {
         <div className="mb-4">
           <div className="flex items-center space-x-2">
             <FolderIcon className="h-4 w-4" />
-            <div className="w-full flex items-center justify-between pr-4">
+            <div className="flex w-full items-center justify-between pr-4">
               <div className="flex flex-col">
                 <span className="text-sm">{assetsMetadata.name}</span>
                 <span className="text-xs text-gray-500">
                   Size: {formatFileSize(assetsMetadata.size)}
                 </span>
                 <span className="text-xs text-gray-500">
-                  Last Archived: {assetsMetadata.lastArchivedAt ?? "Never"}
+                  Last Archived: {assetsMetadata.lastArchivedAt ?? 'Never'}
                 </span>
               </div>
 
               <Button
                 variant="ghost"
                 onClick={archiveAssets}
-                className="text-xs text-portal-primary hover:underline"
+                className="text-portal-primary text-xs hover:underline"
                 disabled={downloading}
               >
                 {downloading ? (
-                  <Loader className="w-4 h-4 animate-spin" />
+                  <Loader className="h-4 w-4 animate-spin" />
                 ) : (
-                  <LucideDownload className="w-4 h-4" />
+                  <LucideDownload className="h-4 w-4" />
                 )}
               </Button>
             </div>

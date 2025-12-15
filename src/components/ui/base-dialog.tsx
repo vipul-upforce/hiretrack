@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -9,11 +10,10 @@ import {
   DialogTitle,
   DialogDescription,
   type DialogContentProps,
-} from "./dialog";
-import { Button } from "./button";
-import { cn } from "@/lib/utils";
+} from './dialog';
+import { Button } from './button';
 
-export interface BaseDialogProps extends Omit<DialogContentProps, "children"> {
+export interface BaseDialogProps extends Omit<DialogContentProps, 'children'> {
   isOpen: boolean;
   onClose: () => void;
   title: string;
@@ -25,14 +25,14 @@ export interface BaseDialogProps extends Omit<DialogContentProps, "children"> {
   primaryAction?: {
     label: string;
     onClick: () => void;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "warning" | "info";
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'success' | 'warning' | 'info';
     loading?: boolean;
     disabled?: boolean;
   };
   secondaryAction?: {
     label: string;
     onClick: () => void;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link" | "success" | "warning" | "info";
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'success' | 'warning' | 'info';
   };
 
   // Additional footer content
@@ -43,7 +43,7 @@ export interface BaseDialogProps extends Omit<DialogContentProps, "children"> {
   footerClassName?: string;
 
   // Accessibility
-  "aria-describedby"?: string;
+  'aria-describedby'?: string;
 }
 
 export const BaseDialog = React.forwardRef<
@@ -55,7 +55,7 @@ export const BaseDialog = React.forwardRef<
   title,
   description,
   children,
-  size = "md",
+  size = 'md',
   showFooter = true,
   primaryAction,
   secondaryAction,
@@ -63,7 +63,7 @@ export const BaseDialog = React.forwardRef<
   headerClassName,
   footerClassName,
   className,
-  "aria-describedby": ariaDescribedBy,
+  'aria-describedby': ariaDescribedBy,
   ...props
 }, ref) => {
   const handleClose = () => {
@@ -79,7 +79,7 @@ export const BaseDialog = React.forwardRef<
         aria-describedby={ariaDescribedBy}
         {...props}
       >
-        <DialogHeader className={cn("flex-shrink-0", headerClassName)}>
+        <DialogHeader className={cn('flex-shrink-0', headerClassName)}>
           <DialogTitle>{title}</DialogTitle>
           {description && (
             <DialogDescription>{description}</DialogDescription>
@@ -93,12 +93,12 @@ export const BaseDialog = React.forwardRef<
         </div>
 
         {showFooter && (primaryAction || secondaryAction || footerContent) && (
-          <DialogFooter className={cn("flex-shrink-0", footerClassName)}>
+          <DialogFooter className={cn('flex-shrink-0', footerClassName)}>
             {footerContent}
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2 w-full sm:w-auto">
               {secondaryAction && (
                 <Button
-                  variant={secondaryAction.variant || "outline"}
+                  variant={secondaryAction.variant || 'outline'}
                   onClick={secondaryAction.onClick}
                   className="w-full sm:w-auto"
                 >
@@ -113,7 +113,7 @@ export const BaseDialog = React.forwardRef<
                   disabled={primaryAction.disabled || primaryAction.loading}
                   className="w-full sm:w-auto"
                 >
-                  {primaryAction.loading ? "Loading..." : primaryAction.label}
+                  {primaryAction.loading ? 'Loading...' : primaryAction.label}
                 </Button>
               )}
             </div>
@@ -124,16 +124,16 @@ export const BaseDialog = React.forwardRef<
   );
 });
 
-BaseDialog.displayName = "BaseDialog";
+BaseDialog.displayName = 'BaseDialog';
 
 // Specialized dialog variants for common use cases
 
-export interface ConfirmationDialogProps extends Omit<BaseDialogProps, "primaryAction" | "secondaryAction"> {
+export interface ConfirmationDialogProps extends Omit<BaseDialogProps, 'primaryAction' | 'secondaryAction'> {
   onConfirm: () => void;
   onCancel?: () => void;
   confirmLabel?: string;
   cancelLabel?: string;
-  confirmVariant?: "default" | "destructive" | "success" | "warning";
+  confirmVariant?: 'default' | 'destructive' | 'success' | 'warning';
   isLoading?: boolean;
 }
 
@@ -143,35 +143,33 @@ export const ConfirmationDialog = React.forwardRef<
 >(({
   onConfirm,
   onCancel,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
-  confirmVariant = "default",
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  confirmVariant = 'default',
   isLoading = false,
   ...props
-}, ref) => {
-  return (
-    <BaseDialog
-      ref={ref}
-      size="sm"
-      primaryAction={{
-        label: confirmLabel,
-        onClick: onConfirm,
-        variant: confirmVariant,
-        loading: isLoading,
-      }}
-      secondaryAction={{
-        label: cancelLabel,
-        onClick: onCancel || props.onClose,
-        variant: "outline",
-      }}
-      {...props}
-    />
-  );
-});
+}, ref) => (
+  <BaseDialog
+    ref={ref}
+    size="sm"
+    primaryAction={{
+      label: confirmLabel,
+      onClick: onConfirm,
+      variant: confirmVariant,
+      loading: isLoading,
+    }}
+    secondaryAction={{
+      label: cancelLabel,
+      onClick: onCancel || props.onClose,
+      variant: 'outline',
+    }}
+    {...props}
+  />
+));
 
-ConfirmationDialog.displayName = "ConfirmationDialog";
+ConfirmationDialog.displayName = 'ConfirmationDialog';
 
-export interface FormDialogProps extends Omit<BaseDialogProps, "primaryAction" | "secondaryAction"> {
+export interface FormDialogProps extends Omit<BaseDialogProps, 'primaryAction' | 'secondaryAction'> {
   onSubmit: () => void;
   onCancel?: () => void;
   submitLabel?: string;
@@ -186,30 +184,28 @@ export const FormDialog = React.forwardRef<
 >(({
   onSubmit,
   onCancel,
-  submitLabel = "Save",
-  cancelLabel = "Cancel",
+  submitLabel = 'Save',
+  cancelLabel = 'Cancel',
   isSubmitting = false,
   isValid = true,
   ...props
-}, ref) => {
-  return (
-    <BaseDialog
-      ref={ref}
-      primaryAction={{
-        label: submitLabel,
-        onClick: onSubmit,
-        variant: "success",
-        loading: isSubmitting,
-        disabled: !isValid || isSubmitting,
-      }}
-      secondaryAction={{
-        label: cancelLabel,
-        onClick: onCancel || props.onClose,
-        variant: "outline",
-      }}
-      {...props}
-    />
-  );
-});
+}, ref) => (
+  <BaseDialog
+    ref={ref}
+    primaryAction={{
+      label: submitLabel,
+      onClick: onSubmit,
+      variant: 'success',
+      loading: isSubmitting,
+      disabled: !isValid || isSubmitting,
+    }}
+    secondaryAction={{
+      label: cancelLabel,
+      onClick: onCancel || props.onClose,
+      variant: 'outline',
+    }}
+    {...props}
+  />
+));
 
-FormDialog.displayName = "FormDialog";
+FormDialog.displayName = 'FormDialog';

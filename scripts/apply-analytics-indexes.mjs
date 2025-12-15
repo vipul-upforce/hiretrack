@@ -142,7 +142,7 @@ async function createAnalyticsIndexes() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
     
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     const results = [];
     
     console.log('🔄 Creating analytics indexes...');
@@ -222,7 +222,7 @@ async function validateIndexes() {
   try {
     console.log('\n🔍 Validating indexes...');
     await mongoose.connect(MONGODB_URI);
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     
     for (const indexDef of ANALYTICS_INDEXES) {
       const collection = db.collection(indexDef.collection);
@@ -247,7 +247,7 @@ async function runPerformanceTest() {
   try {
     console.log('\n⚡ Running performance tests...');
     await mongoose.connect(MONGODB_URI);
-    const db = mongoose.connection.db;
+    const {db} = mongoose.connection;
     
     // Test queries that analytics endpoints use
     const testQueries = [

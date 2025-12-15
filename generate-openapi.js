@@ -17,7 +17,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Try to import parser libraries
-let parser, traverse;
+let parser; let traverse;
 let hasBabel = false;
 
 try {
@@ -67,7 +67,7 @@ function pathToEndpoint(filePath) {
   endpoint = endpoint.replace(/\[([^\]]+)\]/g, '{$1}');
   
   // Remove leading/trailing slashes and ensure it starts with /
-  endpoint = '/' + endpoint.split('/').filter(Boolean).join('/');
+  endpoint = `/${  endpoint.split('/').filter(Boolean).join('/')}`;
   
   return endpoint || '/';
 }
@@ -119,7 +119,7 @@ function parseWithBabel(code, filePath) {
     traverse(ast, {
       // Find exported HTTP method functions
       ExportNamedDeclaration(path) {
-        const declaration = path.node.declaration;
+        const {declaration} = path.node;
         if (declaration && declaration.type === 'FunctionDeclaration') {
           const funcName = declaration.id?.name;
           if (['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(funcName)) {
@@ -137,7 +137,7 @@ function parseWithBabel(code, filePath) {
       // Handle export async function GET/POST etc.
       FunctionDeclaration(path) {
         if (path.node.id && ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(path.node.id.name)) {
-          const parent = path.parent;
+          const {parent} = path;
           if (parent && parent.type === 'ExportNamedDeclaration') {
             const funcName = path.node.id.name;
             if (!processedMethods.has(funcName)) {
@@ -196,12 +196,12 @@ function analyzeFunctionBody(body, routeInfo) {
     
     // Check for req.cookies.get() or cookies().get()
     if (node.type === 'CallExpression') {
-      const callee = node.callee;
+      const {callee} = node;
       if (callee) {
         // Pattern: req.cookies.get("auth_token") or request.cookies.get("auth_token")
         if (callee.type === 'MemberExpression' && 
             callee.property?.name === 'get') {
-          const object = callee.object;
+          const {object} = callee;
           if (object && object.type === 'MemberExpression' &&
               object.property?.name === 'cookies') {
             const arg = node.arguments?.[0];
@@ -238,11 +238,11 @@ function analyzeFunctionBody(body, routeInfo) {
     
     // Check for searchParams.get() - query params
     if (node.type === 'CallExpression') {
-      const callee = node.callee;
+      const {callee} = node;
       if (callee && callee.type === 'MemberExpression' && 
           callee.property?.name === 'get') {
         // Check if it's searchParams.get()
-        const object = callee.object;
+        const {object} = callee;
         if (object && object.type === 'MemberExpression' &&
             object.property?.name === 'searchParams') {
           // Extract parameter name from arguments
@@ -437,7 +437,7 @@ function generateOpenAPISpec(routes) {
       const methodLower = method.toLowerCase();
       const operation = {
         summary: `${method} ${endpoint}`,
-        tags: tags,
+        tags,
         operationId: `${methodLower}${endpoint.replace(/[^a-zA-Z0-9]/g, '_')}`,
         responses: {
           '200': {

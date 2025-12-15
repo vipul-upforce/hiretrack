@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import { Table, TableBody } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
-import { useCallback, useState, useEffect } from "react";
-import type { Candidate } from "@/types/candidate";
-import { CandidateDetailsDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { JobDetailsDialog } from "@/app/dashboard/jobs-board/components/job-details-dialog";
-import { EditCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/edit-candidate-dialog";
-import { AssignCandidateDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-dialog";
-import { AssignJobDialog } from "@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog";
-import AddRemarksDialog from "@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog";
-import ConfirmationDialog from "../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog";
-import { toast } from "@/hooks/use-toast";
+import { Table, TableBody } from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
+import { useCallback, useState, useEffect } from 'react';
+import type { Candidate } from '@/types/candidate';
+import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
+import { JobDetailsDialog } from '@/app/dashboard/jobs-board/components/job-details-dialog';
+import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/edit-candidate-dialog';
+import { AssignCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-dialog';
+import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
+import AddRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog';
+import { toast } from '@/hooks/use-toast';
 import {
   useDeleteCandidateMutation,
   useBulkArchiveCandidatesMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { SearchResultsSkeletonLoader } from "./search-results/skeleton-loader";
-import { ResultsHeader } from "./search-results/results-header";
-import { ResultsInfo } from "./search-results/results-info";
-import { TableHeaderRow } from "./search-results/table-header-row";
-import { TableBodyRows } from "./search-results/table-body-rows";
-import { ResultsFooter } from "./search-results/results-footer";
+} from '@/lib/features/candidate/candidateApi';
+import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
+import { SearchResultsSkeletonLoader } from './search-results/skeleton-loader';
+import { ResultsHeader } from './search-results/results-header';
+import { ResultsInfo } from './search-results/results-info';
+import { TableHeaderRow } from './search-results/table-header-row';
+import { TableBodyRows } from './search-results/table-body-rows';
+import { ResultsFooter } from './search-results/results-footer';
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -32,7 +32,7 @@ interface SearchResultsProps {
   onLimitChange: (page: number) => void;
   currentPageLimit: number;
   sortField: string | null;
-  sortDirection: "asc" | "desc";
+  sortDirection: 'asc' | 'desc';
   onSort: (field: string) => void;
   refetch: () => Promise<void>;
   totalResultsCount?: number;
@@ -55,14 +55,14 @@ export function SearchResults({
   onCandidateUpdate,
 }: SearchResultsProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null
+    null,
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [candidateToEdit, setCandidateToEdit] = useState<Candidate | null>(
-    null
+    null,
   );
   const [isAssignInterviewerOpen, setIsAssignInterviewerOpen] = useState(false);
   const [candidateToAssignInterviewer, setCandidateToAssignInterviewer] =
@@ -79,7 +79,9 @@ export function SearchResults({
   const [selectAll, setSelectAll] = useState(false);
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [filteredResults, setFilteredResults] = useState<Candidate[]>(results);
-  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
+    null,
+  );
 
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -106,55 +108,54 @@ export function SearchResults({
       createdAt: true,
       actions: true,
       archived: false,
-    }
+    },
   );
 
   const [deleteCandidate] = useDeleteCandidateMutation();
-  const [bulkArchiveCandidates, { isLoading: isBulkArchiving }] =
-    useBulkArchiveCandidatesMutation();
+  const [bulkArchiveCandidates] = useBulkArchiveCandidatesMutation();
 
   const applyFilters = useCallback(
     (candidates: Candidate[], filters: string[]) => {
       if (filters.length === 0) return candidates;
 
-      return candidates.filter((candidate) => {
-        return filters.every((filter) => {
+      return candidates.filter((candidate) =>
+        filters.every((filter) => {
           switch (filter) {
-            case "top-scorer":
+            case 'top-scorer':
               return candidate.scores?.overall >= 7;
-            case "unassigned":
-              return !candidate.jobId || typeof candidate.jobId !== "object";
-            case "interview-scheduled":
+            case 'unassigned':
+              return !candidate.jobId || typeof candidate.jobId !== 'object';
+            case 'interview-scheduled':
               const hasValidInterviewer =
                 candidate.assignment &&
                 candidate.assignment.interviewerId &&
-                typeof candidate.assignment.interviewerId === "object" &&
+                typeof candidate.assignment.interviewerId === 'object' &&
                 candidate.assignment.interviewerId._id &&
                 candidate.assignment.interviewerId.name;
               return hasValidInterviewer;
-            case "exp-1+":
+            case 'exp-1+':
               return candidate.experience >= 1;
-            case "exp-3+":
+            case 'exp-3+':
               return candidate.experience >= 3;
-            case "exp-5+":
+            case 'exp-5+':
               return candidate.experience >= 5;
-            case "applied-this-week":
+            case 'applied-this-week':
               const oneWeekAgo = new Date();
               oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
               return new Date(candidate.createdAt) >= oneWeekAgo;
-            case "applied-this-month":
+            case 'applied-this-month':
               const oneMonthAgo = new Date();
               oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
               return new Date(candidate.createdAt) >= oneMonthAgo;
-            case "archived":
+            case 'archived':
               return candidate.isDeleted === true;
             default:
               return true;
           }
-        });
-      });
+        }),
+      );
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -168,7 +169,7 @@ export function SearchResults({
     setActiveFilters((prev) =>
       prev.includes(filter)
         ? prev.filter((f) => f !== filter)
-        : [...prev, filter]
+        : [...prev, filter],
     );
   }, []);
 
@@ -186,7 +187,7 @@ export function SearchResults({
   const handleSelectCandidate = useCallback(
     (candidateId: string, shiftKey: boolean = false) => {
       const candidateIndex = filteredResults.findIndex(
-        (c) => c._id === candidateId
+        (c) => c._id === candidateId,
       );
 
       if (shiftKey && lastSelectedIndex !== null && candidateIndex !== -1) {
@@ -216,34 +217,33 @@ export function SearchResults({
         setSelectedCandidates((prev) => {
           if (prev.includes(candidateId)) {
             return prev.filter((id) => id !== candidateId);
-          } else {
-            return [...prev, candidateId];
           }
+          return [...prev, candidateId];
         });
         setLastSelectedIndex(candidateIndex !== -1 ? candidateIndex : null);
       }
     },
-    [filteredResults, lastSelectedIndex]
+    [filteredResults, lastSelectedIndex],
   );
 
   const handleSelectAll = useCallback(
-    (checked: boolean | "indeterminate") => {
-      if (!checked || checked === "indeterminate") {
+    (checked: boolean | 'indeterminate') => {
+      if (!checked || checked === 'indeterminate') {
         setSelectedCandidates([]);
         setSelectAll(false);
       } else {
         setSelectedCandidates(
-          filteredResults.map((candidate) => candidate._id)
+          filteredResults.map((candidate) => candidate._id),
         );
         setSelectAll(true);
       }
     },
-    [filteredResults]
+    [filteredResults],
   );
 
   const handleBulkAssignJob = useCallback(() => {
     const candidatesToAssign = filteredResults.filter((candidate) =>
-      selectedCandidates.includes(candidate._id)
+      selectedCandidates.includes(candidate._id),
     );
     setCandidateToAssignJob(candidatesToAssign);
     setIsAssignJobOpen(true);
@@ -251,33 +251,33 @@ export function SearchResults({
 
   const handleBulkArchive = useCallback(() => {
     const candidatesToArchive = filteredResults.filter((candidate) =>
-      selectedCandidates.includes(candidate._id)
+      selectedCandidates.includes(candidate._id),
     );
 
     if (candidatesToArchive.length === 0) {
       toast({
-        title: "Info",
-        description: "No candidates selected",
+        title: 'Info',
+        description: 'No candidates selected',
       });
       return;
     }
 
     setConfirmDialogConfig({
-      title: "Confirm Archive",
+      title: 'Confirm Archive',
       message: `Are you sure you want to archive ${candidatesToArchive.length} candidate(s)?`,
-      buttonName: "Archive",
-      loadingText: "Archiving...",
+      buttonName: 'Archive',
+      loadingText: 'Archiving...',
       onConfirm: async () => {
         setIsDeleting(true);
         try {
           const result = await bulkArchiveCandidates({
             candidateIds: candidatesToArchive.map((c) => c._id),
-            action: "archive",
+            action: 'archive',
           }).unwrap();
 
           if (result.updatedCount > 0) {
             toast({
-              title: "Success",
+              title: 'Success',
               description: `Successfully archived ${result.updatedCount} candidate(s)`,
             });
 
@@ -288,20 +288,20 @@ export function SearchResults({
 
           if (result.skippedCount > 0) {
             toast({
-              title: "Info",
+              title: 'Info',
               description: `${result.skippedCount} candidate(s) were already archived`,
             });
           }
         } catch (error: unknown) {
           const errorMessage =
-            error && typeof error === "object" && "data" in error
+            error && typeof error === 'object' && 'data' in error
               ? (error.data as { error?: string })?.error
-              : "Failed to archive candidates";
+              : 'Failed to archive candidates';
 
           toast({
-            title: "Error",
-            description: errorMessage || "Failed to archive candidates",
-            variant: "destructive",
+            title: 'Error',
+            description: errorMessage || 'Failed to archive candidates',
+            variant: 'destructive',
           });
         } finally {
           setIsDeleting(false);
@@ -316,33 +316,33 @@ export function SearchResults({
 
   const handleBulkUnarchive = useCallback(() => {
     const candidatesToUnarchive = filteredResults.filter((candidate) =>
-      selectedCandidates.includes(candidate._id)
+      selectedCandidates.includes(candidate._id),
     );
 
     if (candidatesToUnarchive.length === 0) {
       toast({
-        title: "Info",
-        description: "No candidates selected",
+        title: 'Info',
+        description: 'No candidates selected',
       });
       return;
     }
 
     setConfirmDialogConfig({
-      title: "Confirm Unarchive",
+      title: 'Confirm Unarchive',
       message: `Are you sure you want to unarchive ${candidatesToUnarchive.length} candidate(s)?`,
-      buttonName: "Unarchive",
-      loadingText: "Unarchiving...",
+      buttonName: 'Unarchive',
+      loadingText: 'Unarchiving...',
       onConfirm: async () => {
         setIsDeleting(true);
         try {
           const result = await bulkArchiveCandidates({
             candidateIds: candidatesToUnarchive.map((c) => c._id),
-            action: "unarchive",
+            action: 'unarchive',
           }).unwrap();
 
           if (result.updatedCount > 0) {
             toast({
-              title: "Success",
+              title: 'Success',
               description: `Successfully unarchived ${result.updatedCount} candidate(s)`,
             });
 
@@ -353,20 +353,20 @@ export function SearchResults({
 
           if (result.skippedCount > 0) {
             toast({
-              title: "Info",
+              title: 'Info',
               description: `${result.skippedCount} candidate(s) were already unarchived`,
             });
           }
         } catch (error: unknown) {
           const errorMessage =
-            error && typeof error === "object" && "data" in error
+            error && typeof error === 'object' && 'data' in error
               ? (error.data as { error?: string })?.error
-              : "Failed to unarchive candidates";
+              : 'Failed to unarchive candidates';
 
           toast({
-            title: "Error",
-            description: errorMessage || "Failed to unarchive candidates",
-            variant: "destructive",
+            title: 'Error',
+            description: errorMessage || 'Failed to unarchive candidates',
+            variant: 'destructive',
           });
         } finally {
           setIsDeleting(false);
@@ -378,7 +378,6 @@ export function SearchResults({
 
     setIsConfirmDialogOpen(true);
   }, [filteredResults, selectedCandidates, bulkArchiveCandidates, refetch]);
-
 
   const handleViewDetails = useCallback((candidate: Candidate) => {
     setSelectedCandidate(candidate);
@@ -405,12 +404,12 @@ export function SearchResults({
       const isRestore = candidate.isDeleted === true;
 
       setConfirmDialogConfig({
-        title: isRestore ? "Restore Candidate" : "Confirm Delete",
+        title: isRestore ? 'Restore Candidate' : 'Confirm Delete',
         message: isRestore
           ? `Are you sure you want to restore ${candidate.name}?`
           : `Are you sure you want to delete ${candidate.name}? This action cannot be undone.`,
-        buttonName: isRestore ? "Restore" : "Archive",
-        loadingText: isRestore ? "Restoring..." : "Deleting...",
+        buttonName: isRestore ? 'Restore' : 'Archive',
+        loadingText: isRestore ? 'Restoring...' : 'Deleting...',
         onConfirm: async () => {
           setIsDeleting(true);
           try {
@@ -424,18 +423,21 @@ export function SearchResults({
             if (onCandidateUpdate) onCandidateUpdate(updatedCandidate);
 
             toast({
-              title: "Success",
+              title: 'Success',
               description: isRestore
                 ? `Candidate ${candidate.name} restored successfully`
                 : `Candidate ${candidate.name} deleted successfully`,
             });
           } catch (error: unknown) {
             toast({
-              title: "Error",
+              title: 'Error',
               description:
-                typeof error === "object" && error !== null && "data" in error && (error.data as { error?: string })?.error ||
-                `Failed to ${isRestore ? "restore" : "delete"} candidate ${candidate.name}`,
-              variant: "destructive",
+                (typeof error === 'object' &&
+                  error !== null &&
+                  'data' in error &&
+                  (error.data as { error?: string })?.error) ||
+                `Failed to ${isRestore ? 'restore' : 'delete'} candidate ${candidate.name}`,
+              variant: 'destructive',
             });
           } finally {
             setIsDeleting(false);
@@ -447,7 +449,7 @@ export function SearchResults({
 
       setIsConfirmDialogOpen(true);
     },
-    [deleteCandidate, onCandidateUpdate]
+    [deleteCandidate, onCandidateUpdate],
   );
 
   const handleAddRemark = useCallback((candidate: Candidate) => {
@@ -466,7 +468,7 @@ export function SearchResults({
         onCandidateUpdate(updatedCandidate);
       }
     },
-    [onCandidateUpdate]
+    [onCandidateUpdate],
   );
 
   if (isLoading) {
@@ -476,7 +478,7 @@ export function SearchResults({
   if (results.length === 0) {
     return (
       <Card className="p-6">
-        <div className="text-center py-8">
+        <div className="py-8 text-center">
           <p>No results found. Try adjusting your search criteria.</p>
         </div>
       </Card>
@@ -504,7 +506,7 @@ export function SearchResults({
           activeFilters={activeFilters}
         />
 
-        <div className="overflow-x-auto w-full px-2">
+        <div className="w-full overflow-x-auto px-2">
           <Table>
             <TableHeaderRow
               visibleColumns={visibleColumns}
@@ -549,7 +551,7 @@ export function SearchResults({
         <CandidateDetailsDialog
           candidate={selectedCandidate}
           isOpen={isDialogOpen}
-          fromFilter={true}
+          fromFilter
           onOpenChange={setIsDialogOpen}
           refetchCandidates={refetch}
         />
@@ -593,7 +595,7 @@ export function SearchResults({
             if (updatedCandidates && onCandidateUpdate) {
               if (Array.isArray(updatedCandidates)) {
                 updatedCandidates.forEach((candidate) =>
-                  onCandidateUpdate(candidate)
+                  onCandidateUpdate(candidate),
                 );
               } else {
                 onCandidateUpdate(updatedCandidates);
@@ -626,7 +628,7 @@ export function SearchResults({
           onOpenChange={setIsJobDialogOpen}
           userRole="admin"
           onJobUpdate={() => {
-            console.log("Job updated:", selectedJob);
+            // Handle job update if needed
           }}
         />
       )}

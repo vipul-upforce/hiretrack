@@ -1,9 +1,9 @@
-import { AssignmentData } from "@/app/api/analytics/types";
-import { Badge } from "@/components/ui/badge";
-import { AlertTriangleIcon } from "lucide-react";
-import React from "react";
+import { AssignmentData } from '@/app/api/analytics/types';
+import { Badge } from '@/components/ui/badge';
+import { AlertTriangleIcon } from 'lucide-react';
+import React from 'react';
 
-const InsightsCards = ({ insights }) => {
+function InsightsCards({ insights }) {
   return (
     <div className="grid md:grid-cols-2 gap-4 mb-6">
       <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
@@ -18,10 +18,15 @@ const InsightsCards = ({ insights }) => {
               .map((interviewer: AssignmentData, index: number) => (
                 <div key={interviewer.interviewerId} className="text-sm">
                   <span className="font-medium text-foreground">
-                    {index + 1}. {interviewer.interviewerName.split(" ")[0]}
+                    {index + 1}
+                    .
+                    {interviewer.interviewerName.split(' ')[0]}
                   </span>
                   <span className="text-red-600 dark:text-red-400 ml-2">
-                    ({interviewer.assignments} assignments)
+                    (
+                    {interviewer.assignments}
+                    {' '}
+                    assignments)
                   </span>
                 </div>
               ))
@@ -58,6 +63,6 @@ const InsightsCards = ({ insights }) => {
       </div>
     </div>
   );
-};
+}
 
 export default InsightsCards;

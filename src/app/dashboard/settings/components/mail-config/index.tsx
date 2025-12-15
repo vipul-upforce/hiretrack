@@ -1,29 +1,28 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { Form, Formik } from "formik";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect } from 'react';
+import { Form, Formik } from 'formik';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
   useGetSMTPConfigsQuery,
   useUpdateSMTPConfigsMutation,
-} from "@/lib/features/settings/settingsApi";
-import { useTestConnection } from "@/hooks/use-test-connection";
+} from '@/lib/features/settings/settingsApi';
+import { useTestConnection } from '@/hooks/use-test-connection';
 
-import { SMTPFormValues } from "./types";
-import { DEFAULT_INITIAL_VALUES } from "./constants";
-import { smtpValidationSchema } from "./schema";
+import { SMTPFormValues } from './types';
+import { DEFAULT_INITIAL_VALUES } from './constants';
+import { smtpValidationSchema } from './schema';
 
-import { LoadingState } from "./components/loading-skeleton";
-import { ProviderSelect } from "./components/provider-select";
-import { DynamicInputs } from "./components/dynamic-inputs";
-import { SmtpPasswordField } from "./components/smtp-password-field";
-import { ActionFooter } from "./components/action-footer";
+import { LoadingState } from './components/loading-skeleton';
+import { ProviderSelect } from './components/provider-select';
+import { DynamicInputs } from './components/dynamic-inputs';
+import { SmtpPasswordField } from './components/smtp-password-field';
+import { ActionFooter } from './components/action-footer';
 
 export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
-  const { testConnection, isConnectionSuccessful, isTesting } =
-    useTestConnection();
+  const { testConnection, isConnectionSuccessful, isTesting } = useTestConnection();
 
   const { data, isLoading, refetch } = useGetSMTPConfigsQuery(undefined);
 
@@ -31,8 +30,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     refetch();
   }, [refetch]);
 
-  const [updateSMTPConfigs, { isLoading: isUpdating }] =
-    useUpdateSMTPConfigsMutation();
+  const [updateSMTPConfigs, { isLoading: isUpdating }] = useUpdateSMTPConfigsMutation();
 
   const initialValues: SMTPFormValues = data ?? DEFAULT_INITIAL_VALUES;
 
@@ -40,16 +38,16 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     try {
       await updateSMTPConfigs(values).unwrap();
       toast({
-        title: "Success",
-        description: "SMTP settings updated successfully",
+        title: 'Success',
+        description: 'SMTP settings updated successfully',
       });
       refetch();
       onClose();
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update SMTP settings",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update SMTP settings',
+        variant: 'destructive',
       });
     }
   };
@@ -58,13 +56,13 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     // Construct credentials based on provider
     let credentials;
 
-    if (values.mailProvider === "resend") {
+    if (values.mailProvider === 'resend') {
       credentials = {
         resend_api_key: values.resend_api_key,
         resend_from: values.resend_from,
         reply_to: values.resend_reply_to,
       };
-    } else if (values.mailProvider === "brevo") {
+    } else if (values.mailProvider === 'brevo') {
       credentials = {
         brevo_api_key: values.brevo_api_key,
         brevo_from: values.brevo_from,
@@ -109,7 +107,7 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
                   onClick={() => handleTestConnection(values)}
                   disabled={isTesting}
                 >
-                  {isTesting ? "Testing..." : "Test Connection"}
+                  {isTesting ? 'Testing...' : 'Test Connection'}
                 </Button>
               </div>
             )}

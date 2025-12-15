@@ -1,12 +1,16 @@
-"use client";
+'use client';
 
-import CustomFieldDialog from "./Common/CustomFieldDialog";
-import React, { useContext, useEffect, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
-import Stepper from "./Stepper";
-import { CustomFieldsContext } from "../Context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FolderOpen } from "lucide-react";
+import React, {
+  useContext, useEffect, useState, useCallback,
+} from 'react';
+import { useSearchParams } from 'next/navigation';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import { FolderOpen } from 'lucide-react';
+import Stepper from './Stepper';
+import { CustomFieldsContext } from '../Context';
+import CustomFieldDialog from './Common/CustomFieldDialog';
 
 function AddCustomFields() {
   const { setStepName } = useContext(CustomFieldsContext);
@@ -20,21 +24,19 @@ function AddCustomFields() {
   };
 
   useEffect(() => {
-    const config = searchParams.get("config");
-    if (config === "cf") {
+    const config = searchParams.get('config');
+    if (config === 'cf') {
       setIsOpen(true);
     }
   }, [searchParams]);
 
   const handleClose = useCallback(() => {
-    setStepName("FormList");
+    setStepName('FormList');
     setIsOpen(false);
   }, [setStepName]);
 
-  useEffect(() => {
-    return () => {
-      handleClose();
-    };
+  useEffect(() => () => {
+    handleClose();
   }, [handleClose]);
 
   return (

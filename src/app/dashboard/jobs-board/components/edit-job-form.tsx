@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { Formik, Form, FormikErrors } from "formik";
-import { jobSchema } from "../schemas/job-schema";
-import { JobForm } from "./job-form";
-import { Button } from "@/components/ui/button";
-import { useUpdateJobMutation } from "@/lib/features/job/jobApi";
-import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
+import { Formik, Form, FormikErrors } from 'formik';
+import { Button } from '@/components/ui/button';
+import { useUpdateJobMutation } from '@/lib/features/job/jobApi';
+import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 import useCustomForm, {
   CustomFieldValues,
-} from "@/Custom_Fields/hooks/useCustomForm";
-import CustomFields from "@/Custom_Fields/Components/CustomFields";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { useContext, useEffect } from "react";
-import { scrollToError } from "@/lib/formUtils";
+} from '@/Custom_Fields/hooks/useCustomForm';
+import CustomFields from '@/Custom_Fields/Components/CustomFields';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { useContext, useEffect } from 'react';
+import { scrollToError } from '@/lib/formUtils';
+import { JobForm } from './job-form';
+import { jobSchema } from '../schemas/job-schema';
 
 interface Job {
   _id: string;
@@ -33,21 +33,21 @@ interface Job {
     inText: string;
     isPrivate: boolean;
   };
-  status: "open" | "closed" | "draft";
+  status: 'open' | 'closed' | 'draft';
   candidateCount?: number;
   attachments: {
     files: Array<{
       id: string;
       name: string;
       url: string; // Base64 string
-      type: "pdf";
+      type: 'pdf';
       size: number;
     }>;
     images: Array<{
       id: string;
       name: string;
       url: string; // Base64 string
-      type: "image";
+      type: 'image';
       size: number;
     }>;
   };
@@ -72,19 +72,19 @@ interface EditJobFormProps {
   onCancel: () => void;
 }
 
-interface JobFormValues extends Omit<Job, "attachments"> {
+interface JobFormValues extends Omit<Job, 'attachments'> {
   files: {
     id: string;
     name: string;
     url: string;
-    type: "pdf";
+    type: 'pdf';
     size: number;
   }[];
   images: {
     id: string;
     name: string;
     url: string;
-    type: "image";
+    type: 'image';
     size: number;
   }[];
   removedFiles: string[];
@@ -98,7 +98,7 @@ type FileOrAttachment =
       id: string;
       name: string;
       url: string;
-      type: "pdf" | "image";
+      type: 'pdf' | 'image';
       size: number;
     };
 
@@ -115,10 +115,10 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
 };
 
 export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
-  const formName = "Job Position";
+  const formName = 'Job Position';
   const { validationSchema, getDefaultValues } = useCustomForm(
     formName,
-    job._id
+    job._id,
   );
   const [updateJob] = useUpdateJobMutation();
   const { toast } = useToast();
@@ -148,16 +148,16 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   useEffect(() => {
     if (customFields) {
       const jobForm = Object.entries(customFields).find(
-        ([, form]) => form.formName === formName
+        ([, form]) => form.formName === formName,
       );
 
       if (jobForm) {
         const [formId, form] = jobForm;
         const formFields = form.fields.filter(
-          (field) => field.jobId && field.jobId === job._id
+          (field) => field.jobId && field.jobId === job._id,
         );
         setSelectedFormId({
-          formId: formId,
+          formId,
           formName: form.formName,
           fields: formFields,
         });
@@ -175,10 +175,10 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
 
     if (hasDuplicates) {
       toast({
-        title: "Alert",
+        title: 'Alert',
         description:
-          "Duplicate file names found! Please rename before submitting.",
-        variant: "destructive",
+          'Duplicate file names found! Please rename before submitting.',
+        variant: 'destructive',
       });
       return;
     }
@@ -194,10 +194,10 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 id: uuidv4(),
                 name: file.name,
                 url: base64,
-                type: "pdf" as const,
+                type: 'pdf' as const,
                 size: file.size,
               };
-            })
+            }),
           )) || []),
         ],
         images: [
@@ -208,10 +208,10 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 id: uuidv4(),
                 name: image.name,
                 url: base64,
-                type: "image" as const,
+                type: 'image' as const,
                 size: image.size,
               };
-            })
+            }),
           )) || []),
         ],
       },
@@ -225,27 +225,27 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       await updateJob({ ...updatedJob, _id: job._id }).unwrap();
       onSave(updatedJob);
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
+      if (typeof error === 'object' && error !== null && 'data' in error) {
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === "object" &&
-          errorData !== null &&
-          "error" in errorData
+          typeof errorData === 'object'
+          && errorData !== null
+          && 'error' in errorData
         ) {
           toast({
-            title: "Error",
-            description: errorData.error || "Failed to update job",
-            variant: "destructive",
+            title: 'Error',
+            description: errorData.error || 'Failed to update job',
+            variant: 'destructive',
           });
           return;
         }
       }
 
       toast({
-        title: "Error",
-        description: "Failed to update job due to an unexpected error.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update job due to an unexpected error.',
+        variant: 'destructive',
       });
     }
   };
@@ -256,19 +256,21 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       validationSchema={jobSchema(validationSchema)}
       onSubmit={onSubmit}
     >
-      {({ isSubmitting, setFieldValue, values, errors }) => (
+      {({
+        isSubmitting, setFieldValue, values, errors,
+      }) => (
         <Form className="flex flex-col border-t pt-4 mb-[70px] overflow-y-hidden sticky top-0">
           <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
             <JobForm
               job={job}
               onRemoveExistingFile={(fileId) => {
-                setFieldValue("removedFiles", [
+                setFieldValue('removedFiles', [
                   ...(values.removedFiles ?? []),
                   fileId,
                 ]);
               }}
               onRemoveExistingImage={(imageId) => {
-                setFieldValue("removedImages", [
+                setFieldValue('removedImages', [
                   ...(values.removedImages || []),
                   imageId,
                 ]);
@@ -284,7 +286,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 jobId={job._id}
                 jobTitle={job.title}
                 onSave={(newField) => {
-                  handleAddCustomField(newField, selectedFormId?.formId || "");
+                  handleAddCustomField(newField, selectedFormId?.formId || '');
                 }}
               />
             </div>
@@ -294,16 +296,14 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                   id="publish"
                   name="publish"
                   checked={values?.isPublished}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("isPublished", checked)
-                  }
+                  onCheckedChange={(checked) => setFieldValue('isPublished', checked)}
                 />
                 <div className="grid gap-1.5 leading-none ">
                   <label
                     htmlFor="publish"
                     className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    Publish
+              Publish
                   </label>
                 </div>
               </div>
@@ -320,7 +320,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 disabled={isSubmitting}
                 variant="primary"
               >
-                {isSubmitting ? "Saving..." : "Save"}
+                {isSubmitting ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>

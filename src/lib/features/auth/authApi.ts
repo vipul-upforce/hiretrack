@@ -1,8 +1,8 @@
-import { baseApi } from "@/lib/api/baseApi";
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
-import { OrgInfo } from "@/lib/models/user";
-import { NextResponse } from "next/server";
-import { logout } from "@/lib/redux/authSlice";
+import { baseApi } from '@/lib/api/baseApi';
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import { OrgInfo } from '@/lib/models/user';
+import { NextResponse } from 'next/server';
+import { logout } from '@/lib/redux/authSlice';
 
 interface AuthRequest {
   email: string;
@@ -33,26 +33,26 @@ export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
-        url: "/auth/login",
-        method: "POST",
+        url: '/auth/login',
+        method: 'POST',
         body: credentials,
       }),
     }),
     signup: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
-        url: "/auth/signup",
-        method: "POST",
+        url: '/auth/signup',
+        method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'], // Ensure correct format
     }),
     resetPasswordbyAdmin: builder.mutation<
       NextResponse,
       { password: string; candidateId: string }
     >({
       query: (creds) => ({
-        url: "/auth/reset-password",
-        method: "PUT",
+        url: '/auth/reset-password',
+        method: 'PUT',
         body: creds,
       }),
     }),
@@ -61,8 +61,8 @@ export const authApi = baseApi.injectEndpoints({
       { password: string; token: string }
     >({
       query: (creds) => ({
-        url: "/auth/reset-password",
-        method: "POST",
+        url: '/auth/reset-password',
+        method: 'POST',
         body: creds,
       }),
     }),
@@ -71,15 +71,15 @@ export const authApi = baseApi.injectEndpoints({
       void // No body needed - uses httpOnly cookie
     >({
       query: () => ({
-        url: "/auth/refresh",
-        method: "POST",
+        url: '/auth/refresh',
+        method: 'POST',
         // No body - refresh token is in httpOnly cookie
       }),
     }),
     logoutUser: builder.mutation<{ message?: string }, void>({
       query: () => ({
-        url: "/auth/logout",
-        method: "GET",
+        url: '/auth/logout',
+        method: 'GET',
       }),
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {

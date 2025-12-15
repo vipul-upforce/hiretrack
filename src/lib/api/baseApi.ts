@@ -53,9 +53,7 @@ function isPublicEndpoint(url: string): boolean {
  * with credentials: "include"
  */
 async function refreshAccessToken(): Promise<void> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-
-  const response = await fetch(`${baseUrl}/api/auth/refresh`, {
+  const response = await fetch(`/api/auth/refresh`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -100,7 +98,7 @@ const baseQueryWithReauth: BaseQueryFn<
   FetchBaseQueryError
 > = async (args, api, extraOptions) => {
   const baseQuery = fetchBaseQuery({
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || "/api",
+    baseUrl:  "/api",
     credentials: "include", // Send httpOnly cookies with every request
   });
 

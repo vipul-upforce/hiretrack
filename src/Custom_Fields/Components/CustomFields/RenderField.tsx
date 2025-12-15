@@ -1,26 +1,26 @@
-"use client";
-// import { useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import dayjs, { Dayjs } from "dayjs";
-import { FileDropZone } from "@/components/ui/file-drop-zone";
-import { ChipInput } from "@/components/ui/chip-input";
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import dayjs, { Dayjs } from 'dayjs';
+import { FileDropZone } from '@/components/ui/file-drop-zone';
+import { ChipInput } from '@/components/ui/chip-input';
 import {
   SelectValue,
   Select,
   SelectTrigger,
   SelectItem,
   SelectContent,
-} from "@/components/ui/select";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import PasswordField from "@/components/ui/PasswordField";
-import TimePicker from "@/components/ui/time-picker";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Button } from "@/components/ui/button";
-import { wierdFileNamePattern } from "@/lib/constants";
+} from '@/components/ui/select';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import PasswordField from '@/components/ui/PasswordField';
+import TimePicker from '@/components/ui/time-picker';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@/components/ui/button';
+import { wierdFileNamePattern } from '@/lib/constants';
 
 interface FileData {
   base64: string;
@@ -62,46 +62,41 @@ interface RenderFieldProps {
   };
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-};
+const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.onload = () => resolve(reader.result as string);
+  reader.onerror = (error) => reject(error);
+});
 
-const sanitizeFiles = (files: any[]): any[] => {
-  return files.map((file) => {
-    // debugger;
-    // Handle standard File objects
-    if (file instanceof File) {
-      const sanitizedBaseName = file.name
-        .replace(wierdFileNamePattern, "")
-        .replace("/ /", "_");
-      return new File([file], sanitizedBaseName, {
-        type: file.type,
-        lastModified: file.lastModified,
-      });
-    }
+const sanitizeFiles = (files: any[]): any[] => files.map((file) => {
+  // Handle standard File objects
+  if (file instanceof File) {
+    const sanitizedBaseName = file.name
+      .replace(wierdFileNamePattern, '')
+      .replace('/ /', '_');
+    return new File([file], sanitizedBaseName, {
+      type: file.type,
+      lastModified: file.lastModified,
+    });
+  }
 
-    // Handle custom file objects with URL - while renaming
-    if (file && typeof file === "object" && "name" in file) {
-      const sanitizedBaseName = file.name
-        .replace(wierdFileNamePattern, "")
-        .replace("/ /", "_");
-      return {
-        ...file,
-        name: sanitizedBaseName,
-      };
-    }
+  // Handle custom file objects with URL - while renaming
+  if (file && typeof file === 'object' && 'name' in file) {
+    const sanitizedBaseName = file.name
+      .replace(wierdFileNamePattern, '')
+      .replace('/ /', '_');
+    return {
+      ...file,
+      name: sanitizedBaseName,
+    };
+  }
 
-    // Fallback: return unchanged if neither type matches
-    return file;
-  });
-};
+  // Fallback: return unchanged if neither type matches
+  return file;
+});
 
-export const RenderField = ({
+export function RenderField({
   label,
   type,
   values,
@@ -111,96 +106,87 @@ export const RenderField = ({
   setFieldError,
   fieldHook,
   isEditMode = false,
-}: RenderFieldProps) => {
-  // useEffect(() => {
-  //   if (isEditMode) {
-  //     setFieldTouched("customFields." + label, true);
-  //   }
-  // }, []);
-
-  // console.log("🙇🙇🙇 ", values.customFields[label], fieldHook);
+}: RenderFieldProps) {
 
   const commonProps = {
     id: `customFields.${label}`,
-    "data-field-name": label,
+    'data-field-name': label,
     autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
     className:
-      fieldHook?.fieldMeta.touched &&
-      fieldHook?.fieldMeta.error &&
-      "border-2 border-red-500",
+      fieldHook?.fieldMeta.touched
+      && fieldHook?.fieldMeta.error
+      && 'border-2 border-red-500',
   };
 
   switch (type) {
-    case "text":
+    case 'text':
       return (
         <Input
           {...commonProps}
-          name={"customFields." + label}
+          name={`customFields.${label}`}
           value={values.customFields[label] as string}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setFieldValue("customFields." + label, e.target.value);
+            setFieldValue(`customFields.${label}`, e.target.value);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label.split(" |||||(")[0]}`}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+          placeholder={`Enter ${label.split(' |||||(')[0]}`}
         />
       );
 
-    case "password":
+    case 'password':
       return (
         <div>
           <PasswordField
             {...commonProps}
-            name={"customFields." + label}
+            name={`customFields.${label}`}
             value={values.customFields[label] as string}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setFieldValue("customFields." + label, e.target.value);
+              setFieldValue(`customFields.${label}`, e.target.value);
             }}
             onBlur={() => {
-              setFieldTouched("customFields." + label, true);
+              setFieldTouched(`customFields.${label}`, true);
             }}
           />
         </div>
       );
 
-    case "number":
+    case 'number':
       return (
         <Input
           {...commonProps}
           type="number"
-          name={"customFields." + label}
+          name={`customFields.${label}`}
           value={values.customFields[label] as string}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setFieldValue("customFields." + label, e.target.value);
+            setFieldValue(`customFields.${label}`, e.target.value);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label.split(" |||||(")[0]} in numbers`}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+          placeholder={`Enter ${label.split(' |||||(')[0]} in numbers`}
         />
       );
 
-    case "textarea":
+    case 'textarea':
       return (
         <Textarea
           {...commonProps}
-          name={"customFields." + label}
+          name={`customFields.${label}`}
           value={values.customFields[label] as string}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-            setFieldValue("customFields." + label, e.target.value);
+            setFieldValue(`customFields.${label}`, e.target.value);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label.split(" |||||(")[0]}`}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+          placeholder={`Enter ${label.split(' |||||(')[0]}`}
         />
       );
 
-    case "select":
+    case 'select':
       return (
         <Select
           value={values.customFields[label] as string}
-          onValueChange={(value: string) =>
-            setFieldValue("customFields." + label, value)
-          }
+          onValueChange={(value: string) => setFieldValue(`customFields.${label}`, value)}
         >
           <SelectTrigger {...commonProps}>
-            <SelectValue placeholder={`Select ${label.split(" |||||(")[0]}`} />
+            <SelectValue placeholder={`Select ${label.split(' |||||(')[0]}`} />
           </SelectTrigger>
           <SelectContent>
             {options?.map((option) => (
@@ -212,14 +198,14 @@ export const RenderField = ({
           {fieldHook?.fieldProps.required && (
             <Button
               style={{
-                marginLeft: "-10px",
-                color: "rgb(121, 121, 121)",
-                display: "contents",
+                marginLeft: '-10px',
+                color: 'rgb(121, 121, 121)',
+                display: 'contents',
               }}
               variant="link"
               onClick={(e) => {
                 e.preventDefault();
-                setFieldValue("customFields." + label, "");
+                setFieldValue(`customFields.${label}`, '');
               }}
             >
               Clear
@@ -228,7 +214,7 @@ export const RenderField = ({
         </Select>
       );
 
-    case "checkbox":
+    case 'checkbox':
       return (
         <div className="flex flex-col gap-2 md:flex-row md:gap-4">
           {options?.map((option) => (
@@ -237,12 +223,12 @@ export const RenderField = ({
                 id={`${label}-${option}`}
                 className="capitalize"
                 checked={(values.customFields[label] as string[])?.includes(
-                  option
+                  option,
                 )}
                 onCheckedChange={(checked) => {
                   if (values.customFields[label] === undefined) {
-                    setFieldValue("customFields." + label, [option]);
-                    setFieldError("customFields." + label, "");
+                    setFieldValue(`customFields.${label}`, [option]);
+                    setFieldError(`customFields.${label}`, '');
                   } else {
                     const currentValues = values.customFields[
                       label
@@ -251,18 +237,18 @@ export const RenderField = ({
                       ? [...currentValues, option]
                       : currentValues.filter((value) => value !== option);
 
-                    setFieldValue("customFields." + label, newValues);
+                    setFieldValue(`customFields.${label}`, newValues);
                     if (newValues.length > 0) {
-                      setFieldError("customFields." + label, "");
+                      setFieldError(`customFields.${label}`, '');
                     }
                   }
-                  setFieldTouched("customFields." + label, true);
+                  setFieldTouched(`customFields.${label}`, true);
                 }}
                 onBlur={() => {
                   if (values.customFields[label] === undefined) {
-                    setFieldError("customFields." + label, "");
+                    setFieldError(`customFields.${label}`, '');
                   }
-                  setFieldTouched("customFields." + label, true);
+                  setFieldTouched(`customFields.${label}`, true);
                 }}
               />
               <Label
@@ -276,27 +262,26 @@ export const RenderField = ({
         </div>
       );
 
-    // case "date":
-    //   return (
-    //     <DatePicker
-    //       value={new Date(values.customFields[label] as string)}
-    //       onChange={(e) =>
-    //         setFieldValue(
-    //           "customFields." + label,
-    //           e && e instanceof Date ? e.toISOString() : ""
-    //         )
-    //       }
-    //       onClose={() => setFieldTouched("customFields." + label, true)}
-    //     />
-    //   );
+      // case "date":
+      //   return (
+      //     <DatePicker
+      //       value={new Date(values.customFields[label] as string)}
+      //       onChange={(e) =>
+      //         setFieldValue(
+      //           "customFields." + label,
+      //           e && e instanceof Date ? e.toISOString() : ""
+      //         )
+      //       }
+      //       onClose={() => setFieldTouched("customFields." + label, true)}
+      //     />
+      //   );
 
-    case "date":
+    case 'date':
       const NewValue = values.customFields[label]
         ? dayjs(values.customFields[label] as string)
         : null;
 
-      const dateValue =
-        NewValue && NewValue.isValid() ? NewValue.toDate() : null;
+      const dateValue = NewValue && NewValue.isValid() ? NewValue.toDate() : null;
 
       return (
         <DatePicker
@@ -304,19 +289,18 @@ export const RenderField = ({
           onChange={(e) => {
             let selectedDate: string | null = null;
 
-            if (e && typeof e === "object" && "toDate" in e) {
+            if (e && typeof e === 'object' && 'toDate' in e) {
               const date = e.toDate();
-              selectedDate =
-                date && !isNaN(date.getTime())
-                  ? dayjs(date).format("MM/DD/YYYY")
-                  : null;
+              selectedDate = date && !isNaN(date.getTime())
+                ? dayjs(date).format('MM/DD/YYYY')
+                : null;
             } else if (e && e instanceof Date && !isNaN(e.getTime())) {
-              selectedDate = dayjs(e).format("MM/DD/YYYY");
+              selectedDate = dayjs(e).format('MM/DD/YYYY');
             }
 
-            setFieldValue("customFields." + label, selectedDate);
+            setFieldValue(`customFields.${label}`, selectedDate);
           }}
-          onClose={() => setFieldTouched("customFields." + label, true)}
+          onClose={() => setFieldTouched(`customFields.${label}`, true)}
           format="MM/DD/YYYY"
           placeholder="MM/DD/YYYY"
           showTimePicker={false}
@@ -324,7 +308,7 @@ export const RenderField = ({
         />
       );
 
-    case "datetime":
+    case 'datetime':
       return (
         <DateTimePicker
           value={
@@ -334,37 +318,34 @@ export const RenderField = ({
           }
           onChange={(e) => {
             if (e) {
-              const formatted = e.format("MM/DD/YYYY hh:mm A");
-              // console.log("Selected datetime:", formatted); // Debug
-              setFieldValue("customFields." + label, formatted);
+              const formatted = e.format('MM/DD/YYYY hh:mm A');
+              setFieldValue(`customFields.${label}`, formatted);
             } else {
-              setFieldValue("customFields." + label, "");
+              setFieldValue(`customFields.${label}`, '');
             }
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
         />
       );
 
-    case "time":
+    case 'time':
       return (
         <TimePicker
           {...commonProps}
-          name={"customFields." + label}
+          name={`customFields.${label}`}
           value={values.customFields[label] as string}
           onChange={(e) => {
-            setFieldValue("customFields." + label, e);
+            setFieldValue(`customFields.${label}`, e);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
         />
       );
-    case "radio":
+    case 'radio':
       return (
         <div className="flex items-center gap-4">
           <RadioGroup
             value={values.customFields[label] as string}
-            onValueChange={(value) =>
-              setFieldValue("customFields." + label, value)
-            }
+            onValueChange={(value) => setFieldValue(`customFields.${label}`, value)}
             className="flex flex-col gap-2 md:flex-row md:gap-4"
           >
             {options?.map((option) => (
@@ -383,7 +364,7 @@ export const RenderField = ({
             variant="link"
             onClick={(e) => {
               e.preventDefault();
-              setFieldValue("customFields." + label, "");
+              setFieldValue(`customFields.${label}`, '');
             }}
             className="text-muted-foreground"
           >
@@ -392,7 +373,7 @@ export const RenderField = ({
         </div>
       );
 
-    case "file":
+    case 'file':
       return (
         <div>
           <FileDropZone
@@ -406,12 +387,10 @@ export const RenderField = ({
                     let fileurl;
                     if ((file as FileData).base64) {
                       fileurl = (file as FileData).base64;
+                    } else if ((file as FileData).base64 === '') {
+                      fileurl = '';
                     } else {
-                      if ((file as FileData).base64 === "") {
-                        fileurl = "";
-                      } else {
-                        fileurl = await fileToBase64(file as File);
-                      }
+                      fileurl = await fileToBase64(file as File);
                     }
                     return {
                       base64: fileurl,
@@ -419,49 +398,37 @@ export const RenderField = ({
                       type: file.type,
                       size: file.size,
                     };
-                  })
+                  }),
                 );
                 const fileNames = base64Files.map((file) => file.name);
-                const hasDuplicates =
-                  new Set(fileNames).size !== fileNames.length;
+                const hasDuplicates = new Set(fileNames).size !== fileNames.length;
                 if (hasDuplicates) {
                   return;
                 }
-                setFieldValue("customFields." + label, base64Files);
+                setFieldValue(`customFields.${label}`, base64Files);
               } catch {
                 // Handle error
               }
             }}
-            // existingFiles={
-            //   Array.isArray(values.customFields[label])
-            //     ? (() => {})() &&
-            //       (values.customFields[label] as FileData[]).map((file) => ({
-            //         name: file.name,
-            //         type: file.type,
-            //         size: file.size,
-            //         preview: file.base64,
-            //       }))
-            //     : []
-            // }
+           
             existingFiles={
               Array.isArray(values.customFields[label])
                 ? sanitizeFiles(
-                    (values.customFields[label] as FileData[]).map((file) => ({
-                      // id: file.id || crypto.randomUUID(), // Add unique ID
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                      url: file.base64 || "", // Map base64 to url
-                      preview: file.base64,
-                    }))
-                  )
+                  (values.customFields[label] as FileData[]).map((file) => ({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    url: file.base64 || '', // Map base64 to url
+                    preview: file.base64,
+                  })),
+                )
                 : []
             }
           />
         </div>
       );
 
-    case "multiSelect":
+    case 'multiSelect':
       return (
         <div className="space-y-2">
           <ChipInput
@@ -469,19 +436,18 @@ export const RenderField = ({
             value={(values.customFields[label] as string[]) || []}
             onChange={(newOptions) => {
               setFieldValue(
-                "customFields." + label,
+                `customFields.${label}`,
                 newOptions
                   .map((option) => option.trim())
-                  .filter((option) => option.length > 0)
+                  .filter((option) => option.length > 0),
               );
             }}
-            onBlur={() => setFieldTouched("customFields." + label, true)}
-            placeholder={`Enter ${label.split(" |||||(")[0]}`}
+            onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+            placeholder={`Enter ${label.split(' |||||(')[0]}`}
             onSuggestionClick={(suggestion) => {
-              const currentValues =
-                (values.customFields[label] as string[]) || [];
+              const currentValues = (values.customFields[label] as string[]) || [];
               if (suggestion.trim() && !currentValues.includes(suggestion)) {
-                setFieldValue("customFields." + label, [
+                setFieldValue(`customFields.${label}`, [
                   ...currentValues,
                   suggestion,
                 ]);
@@ -489,8 +455,7 @@ export const RenderField = ({
             }}
             suggestions={
               options?.filter(
-                (option) =>
-                  !(values.customFields[label] as string[])?.includes(option)
+                (option) => !(values.customFields[label] as string[])?.includes(option),
               ) || []
             }
           />
@@ -500,4 +465,4 @@ export const RenderField = ({
     default:
       return null;
   }
-};
+}

@@ -1,13 +1,13 @@
-import * as React from "react";
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface RenameFileDialogProps {
   isOpen: boolean;
@@ -36,8 +36,8 @@ export function RenameFileDialog({
     const hasExtension = /\.[^/.]+$/.test(newName);
 
     // If original filename has an extension and new name doesn't, copy the extension
-    if (!hasExtension && fileName.includes(".")) {
-      const originalExt = fileName.split(".").pop();
+    if (!hasExtension && fileName.includes('.')) {
+      const originalExt = fileName.split('.').pop();
       const nameWithExt = `${newName}.${originalExt}`;
       onRename(nameWithExt);
     } else {

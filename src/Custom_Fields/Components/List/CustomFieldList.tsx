@@ -1,9 +1,9 @@
-import React, { useCallback, useContext, useState } from "react";
-import { CustomFieldsContext } from "../../Context";
-import { CustomField } from "../../Types/CustomField";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import React, { useCallback, useContext, useState } from 'react';
+import {
+  Card, CardHeader, CardTitle, CardContent,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Edit,
   Trash,
@@ -26,10 +26,9 @@ import {
   Users,
   Star,
   CreditCard,
-  Settings
-} from "lucide-react";
-import CustomFieldForm from "../Form/CustomFieldForm";
-import { DeleteDialog } from "@/components/ui/specialized-dialogs";
+  Settings,
+} from 'lucide-react';
+import { DeleteDialog } from '@/components/ui/specialized-dialogs';
 import {
   DragDropContext,
   Droppable,
@@ -39,8 +38,11 @@ import {
   DraggableProvided,
   DraggableStateSnapshot,
   DraggableProvidedDragHandleProps,
-} from "@hello-pangea/dnd";
-import { createPortal } from "react-dom";
+} from '@hello-pangea/dnd';
+import { createPortal } from 'react-dom';
+import CustomFieldForm from '../Form/CustomFieldForm';
+import { CustomField } from '../../Types/CustomField';
+import { CustomFieldsContext } from '../../Context';
 
 const fieldTypeIcons: Record<string, React.ElementType> = {
   text: Type,
@@ -58,18 +60,18 @@ const fieldTypeIcons: Record<string, React.ElementType> = {
 };
 
 const fieldTypeLabels: Record<string, string> = {
-  text: "Text Input",
-  textarea: "Text Area",
-  number: "Number Input",
-  select: "Select Dropdown",
-  multiSelect: "Multi-Select",
-  radio: "Radio Buttons",
-  checkbox: "Checkbox",
-  date: "Date Picker",
-  time: "Time Picker",
-  datetime: "Date & Time",
-  password: "Password",
-  file: "File Upload",
+  text: 'Text Input',
+  textarea: 'Text Area',
+  number: 'Number Input',
+  select: 'Select Dropdown',
+  multiSelect: 'Multi-Select',
+  radio: 'Radio Buttons',
+  checkbox: 'Checkbox',
+  date: 'Date Picker',
+  time: 'Time Picker',
+  datetime: 'Date & Time',
+  password: 'Password',
+  file: 'File Upload',
 };
 
 function CustomFieldList() {
@@ -86,11 +88,11 @@ function CustomFieldList() {
 
     return {
       ...draggableStyle,
-      position: "fixed" as const,
+      position: 'fixed' as const,
       top: draggableStyle?.top,
       left: draggableStyle?.left,
       zIndex: 9999,
-      outline: "none",
+      outline: 'none',
     };
   };
 
@@ -112,7 +114,7 @@ function CustomFieldList() {
   React.useEffect(() => {
     if (selectedFormId?.fields) {
       const filteredFields = selectedFormId.fields.filter(
-        (field) => !field.candidateId && !field.jobId
+        (field) => !field.candidateId && !field.jobId,
       );
       setOrderedFields(filteredFields);
     } else {
@@ -130,7 +132,7 @@ function CustomFieldList() {
     if (selectedFormId) {
       const allFields = selectedFormId.fields;
       const otherFields = allFields.filter(
-        (field) => field.candidateId || field.jobId
+        (field) => field.candidateId || field.jobId,
       );
       const reorderedFields = [...items, ...otherFields];
 
@@ -156,8 +158,8 @@ function CustomFieldList() {
               ref={provided.innerRef}
               className="w-full space-y-2 mt-2"
               style={{
-                minHeight: "100px",
-                position: "relative",
+                minHeight: '100px',
+                position: 'relative',
               }}
             >
               {orderedFields.length === 0 ? (
@@ -173,7 +175,7 @@ function CustomFieldList() {
                   >
                     {(
                       provided: DraggableProvided,
-                      snapshot: DraggableStateSnapshot
+                      snapshot: DraggableStateSnapshot,
                     ) => {
                       const child = (
                         <div
@@ -182,7 +184,7 @@ function CustomFieldList() {
                           className="w-full"
                           style={getDraggableStyle(
                             snapshot.isDragging,
-                            provided.draggableProps.style
+                            provided.draggableProps.style,
                           )}
                         >
                           <CustomFieldItem
@@ -198,7 +200,7 @@ function CustomFieldList() {
                               if (selectedFormId?.formId) {
                                 handleDeleteCustomField(
                                   field.id,
-                                  selectedFormId.formId
+                                  selectedFormId.formId,
                                 );
                               }
                             }}
@@ -207,8 +209,8 @@ function CustomFieldList() {
                       );
 
                       if (
-                        snapshot.isDragging &&
-                        typeof window !== "undefined"
+                        snapshot.isDragging
+                        && typeof window !== 'undefined'
                       ) {
                         return createPortal(child, document.body);
                       }
@@ -265,8 +267,8 @@ export const CustomFieldItem = React.memo(
             className={`
               w-full transition-all duration-200 border-l-4 border-l-blue-500 dark:border-l-blue-400 !bg-white dark:!bg-gray-900 !border !border-gray-200 dark:!border-gray-700/50 backdrop-blur-sm
               ${isDragging
-                ? "!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300"
-                : "hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-white dark:hover:!bg-gray-800"
+              ? '!shadow-2xl ring-2 ring-blue-500 dark:ring-blue-400 ring-offset-2 dark:ring-offset-gray-900 scale-105 border-l-blue-600 dark:border-l-blue-300'
+              : 'hover:!shadow-xl hover:border-l-blue-600 dark:hover:border-l-blue-300 hover:-translate-y-0.5 hover:!bg-white dark:hover:!bg-gray-800'
               }
             `}
           >
@@ -283,22 +285,25 @@ export const CustomFieldItem = React.memo(
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="p-3 bg-gradient-to-br rounded-xl shadow-sm"
+                        <div
+                          className="p-3 bg-gradient-to-br rounded-xl shadow-sm"
                           style={
                             {
                               backgroundColor:
-                                "rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)",
-                            }}
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                            }
+}
                         >
-                          <IconComponent className="h-5 w-5"
+                          <IconComponent
+                            className="h-5 w-5"
                             style={
-                              { color: "var(--portal-primary, #6366f1)" }
+                              { color: 'var(--portal-primary, #6366f1)' }
                             }
                           />
                         </div>
                         <div className="flex-1">
                           <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                            {field.label.split(" |||||(")[0]}
+                            {field.label.split(' |||||(')[0]}
                           </CardTitle>
                           <p className="text-sm text-gray-500 dark:text-gray-400">
                             {fieldTypeLabels[field.type] || field.type}
@@ -317,37 +322,42 @@ export const CustomFieldItem = React.memo(
                           </span>
                         </div>
 
-                        {field.defaultValue &&
-                          field.defaultValue !== '' &&
-                          !(Array.isArray(field.defaultValue) && field.defaultValue.length === 0) && (
+                        {field.defaultValue
+                          && field.defaultValue !== ''
+                          && !(Array.isArray(field.defaultValue) && field.defaultValue.length === 0) && (
                             <div className="flex items-center gap-2 text-sm">
                               <Settings className="h-3 w-3 text-blue-500" />
                               <span className="text-gray-600 dark:text-gray-300 truncate">
-                                Default: <span className="font-medium text-blue-600 dark:text-blue-400">
-                                  {Array.isArray(field.defaultValue) ?
-                                    field.defaultValue.slice(0, 2).join(', ') + (field.defaultValue.length > 2 ? '...' : '') :
-                                    field.defaultValue
-                                  }
+                                Default:
+                                {' '}
+                                <span className="font-medium text-blue-600 dark:text-blue-400">
+                                  {Array.isArray(field.defaultValue)
+                                    ? field.defaultValue.slice(0, 2).join(', ') + (field.defaultValue.length > 2 ? '...' : '')
+                                    : field.defaultValue}
                                 </span>
                               </span>
                             </div>
-                          )}
+                        )}
 
                         {field.options && field.options.length > 0 && (
                           <div className="flex items-center gap-2 text-sm">
                             <List className="h-3 w-3 text-indigo-500" />
                             <span className="text-gray-600 dark:text-gray-300">
-                              <span className="font-medium text-indigo-600 dark:text-indigo-400">{field.options.length}</span> option{field.options.length !== 1 ? 's' : ''}
+                              <span className="font-medium text-indigo-600 dark:text-indigo-400">{field.options.length}</span>
+                              {' '}
+                              option
+                              {field.options.length !== 1 ? 's' : ''}
                             </span>
                             <div className="flex items-center gap-1 ml-2">
                               {field.options.slice(0, 3).map((option, idx) => (
                                 <span key={idx} className="px-2 py-0.5 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-700 dark:text-indigo-300 text-xs rounded-md font-medium">
-                                  {option.length > 8 ? option.substring(0, 8) + '...' : option}
+                                  {option.length > 8 ? `${option.substring(0, 8)}...` : option}
                                 </span>
                               ))}
                               {field.options.length > 3 && (
                                 <span className="px-2 py-0.5 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 text-xs rounded-md font-medium border border-gray-300 dark:border-gray-500">
-                                  +{field.options.length - 3}
+                                  +
+                                  {field.options.length - 3}
                                 </span>
                               )}
                             </div>
@@ -413,7 +423,7 @@ export const CustomFieldItem = React.memo(
               </div>
             </CardHeader>
           </Card>
-        </div >
+        </div>
         <DeleteDialog
           isOpen={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
@@ -421,12 +431,12 @@ export const CustomFieldItem = React.memo(
             handleDeleteCustomField();
             setShowDeleteDialog(false);
           }}
-          itemName={field.label.split(" |||||(")[0]}
+          itemName={field.label.split(' |||||(')[0]}
           itemType="Meta Field"
         />
       </>
     );
-  }
+  },
 );
 
-CustomFieldItem.displayName = "CustomFieldItem";
+CustomFieldItem.displayName = 'CustomFieldItem';

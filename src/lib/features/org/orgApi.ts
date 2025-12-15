@@ -1,5 +1,5 @@
-import { ITag } from "@/lib/models/organization";
-import { runIfCookiePresent } from "@/lib/utils/queryGuards";
+import { ITag } from '@/lib/models/organization';
+import { runIfCookiePresent } from '@/lib/utils/queryGuards';
 import { baseApi } from "@/lib/api/baseApi";
 
 export interface CreateAdminRequest {
@@ -77,7 +77,7 @@ export interface CreateOrgResponse {
 export interface ProcessedItem {
   filename: string;
   candidateId: string;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   message: string;
   processedAt: string;
   _id: string;
@@ -89,7 +89,7 @@ export interface Batch {
   totalFiles: number;
   successCount: number;
   failureCount: number;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   items: ProcessedItem[];
   startedAt: string;
   completedAt?: string;
@@ -101,61 +101,60 @@ export const orgApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createAdmin: builder.mutation<CreateAdminResponse, CreateAdminRequest>({
       query: (credentials) => ({
-        url: "/auth/signup",
-        method: "POST",
+        url: '/auth/signup',
+        method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'],
     }),
     updateAdmin: builder.mutation<UpdateAdminResponse, UpdateAdminRequest>({
       query: (data) => ({
-        url: "/users",
-        method: "PUT",
+        url: '/users',
+        method: 'PUT',
         body: data,
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'],
     }),
     createOrg: builder.mutation<CreateOrgResponse, CreateOrgRequest>({
       query: (data) => ({
-        url: "/organization",
-        method: "POST",
+        url: '/organization',
+        method: 'POST',
         body: data,
       }),
     }),
     fetchOrg: builder.query({
       query: () => ({
-        url: "/organization",
-        method: "GET",
+        url: '/organization',
+        method: 'GET',
       }),
     }),
     updateCustomFields: builder.mutation({
-      queryFn: (data, _api, _extraOptions, baseQuery) =>
-        runIfCookiePresent(
-          baseQuery,
-          () => ({
-            url: "/organization/cs",
-            method: "POST",
-            body: data,
-          
-          })
-        ),
+      queryFn: (data, _api, _extraOptions, baseQuery) => runIfCookiePresent(
+        baseQuery,
+        () => ({
+          url: '/organization/cs',
+          method: 'POST',
+          body: data,
+
+        }),
+      ),
     }),
     getCustomFields: builder.query({
       query: (orgId) => ({
         url: `/organization/cs/${orgId}`,
-        method: "GET",
+        method: 'GET',
       }),
     }),
     getCustomFieldsByOrgName: builder.query({
       query: (orgName) => ({
-        url: orgName ? `/organization/cf/${orgName}` : "/organization/cf",
-        method: "GET",
+        url: orgName ? `/organization/cf/${orgName}` : '/organization/cf',
+        method: 'GET',
       }),
     }),
     sendMail: builder.mutation<{ message: string }, IScheduledMailRequest>({
       query: (data) => ({
-        url: `/event-mail`,
-        method: "POST",
+        url: '/event-mail',
+        method: 'POST',
         body: data,
       }),
     }),
@@ -164,34 +163,34 @@ export const orgApi = baseApi.injectEndpoints({
       IScheduledStatusMailRequest
     >({
       query: (data) => ({
-        url: `/status-mail`,
-        method: "POST",
+        url: '/status-mail',
+        method: 'POST',
         body: data,
       }),
     }),
     sendUnassignMail: builder.mutation<{ message: string }, Record<string, unknown>>({
       query: (data) => ({
-        url: `/event-mail`,
-        method: "PUT",
+        url: '/event-mail',
+        method: 'PUT',
         body: data,
       }),
     }),
     getOrganizationAllowance: builder.query<{ allow: boolean }, void>({
       query: () => ({
-        url: "/organization",
-        method: "GET",
+        url: '/organization',
+        method: 'GET',
       }),
     }),
     checkOrg: builder.query<{ exists: boolean }, string>({
       query: (organizationId) => ({
         url: `/checkorg?organizationId=${organizationId}`,
-        method: "GET",
+        method: 'GET',
       }),
     }),
     // New endpoint to fetch batches
     fetchBatches: builder.query<Batch[], string>({
       query: (organizationId) => `/process-cv?organizationId=${organizationId}`,
-      providesTags: ["Batches"], // Tag for refetching
+      providesTags: ['Batches'], // Tag for refetching
     }),
     // New endpoint to post a batch
     postBatch: builder.mutation<
@@ -200,17 +199,17 @@ export const orgApi = baseApi.injectEndpoints({
     >({
       query: ({ formData, organizationId }) => ({
         url: `/process-cv?organizationId=${organizationId}`,
-        method: "POST",
+        method: 'POST',
         body: formData,
       }),
-      invalidatesTags: ["Batches"], // Invalidate Batches tag to refetch
+      invalidatesTags: ['Batches'], // Invalidate Batches tag to refetch
     }),
     fetchOrgTags: builder.query<{ tags: ITag[] }, { organizationId: string }>({
       query: ({ organizationId }) => ({
         url: `/organization/tags?organizationId=${organizationId}`,
-        method: "GET",
+        method: 'GET',
       }),
-      providesTags: ["Tags"],
+      providesTags: ['Tags'],
     }),
     updateOrgTags: builder.mutation<
       { tags: ITag[] },
@@ -218,10 +217,10 @@ export const orgApi = baseApi.injectEndpoints({
     >({
       query: ({ tags, organizationId }) => ({
         url: `/organization/tags?organizationId=${organizationId}`,
-        method: "PUT",
+        method: 'PUT',
         body: tags,
       }),
-      invalidatesTags: ["Tags"],
+      invalidatesTags: ['Tags'],
     }),
   }),
 });
@@ -244,6 +243,6 @@ export const {
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
   useGetOrganizationAllowanceQuery,
-  useCheckOrgQuery
+  useCheckOrgQuery,
 } = orgApi;
 // export const { useCreateAdminMutation } = orgApi;
