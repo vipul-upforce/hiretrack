@@ -64,8 +64,7 @@ export class OpenAIProvider extends BaseAIProvider {
 
     const resumeText = await BaseAIProvider.extractTextFromPdf(resumeBase64);
     const finalPrompt = `${prompt}
-
-Resume Text:
+ Resume Text:
 ${resumeText}`;
     const response = await openai.chat.completions.create({
       model: selectedModel,

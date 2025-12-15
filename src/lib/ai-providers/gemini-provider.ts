@@ -24,9 +24,7 @@ export class GeminiProvider extends BaseAIProvider {
       });
 
       const prompt = `
-You are an expert resume parser. 
-Return ONLY valid JSON according to the required format.
-No explanations, no markdown, no extra text.
+You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.
 `;
 
       const result = await model.generateContent({

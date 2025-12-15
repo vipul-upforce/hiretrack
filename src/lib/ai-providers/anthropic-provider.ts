@@ -64,7 +64,7 @@ ${resumeText}`;
     const resumeText = await BaseAIProvider.extractTextFromPdf(resumeBase64);
     const finalPrompt = `${prompt
     }Resume Text: ${resumeText}`
-      + 'IMPORTANT: Return ONLY the JSON object, no additional text or explanation.';
+      + 'You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.';
 
     const response = await anthropic.messages.create({
       model: selectedModel,

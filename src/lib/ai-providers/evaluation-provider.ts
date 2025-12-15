@@ -18,6 +18,7 @@ import {
   buildPromptWithCustomTemplate,
 } from "./evaluation-prompts";
 import { getEvaluationMetadata } from "./evaluation-metadata";
+import logger from "../logger";
 
 /**
  * Service for AI-powered candidate resume evaluation
@@ -42,6 +43,8 @@ export class AIEvaluationService {
     candidate: ICandidate,
   ): Promise<EvaluationResult> {
     try {
+      console.log('jobData in evaluation-provider', jobData);
+      console.log('candidate in evaluation-provider', candidate);
       const aiProviders = this.getAIProviders(settings);
       const activeProvider = aiProviders.activeProvider as AIProviderType;
       const apiKey = this.validateAndGetApiKey(aiProviders, activeProvider);
@@ -57,7 +60,7 @@ export class AIEvaluationService {
         selectedModel,
         evaluationConfig.temperature,
       );
-
+ console.log('response in evaluation-provider', prompt);
       let evaluationResult = parseEvaluationResponse(response);
       evaluationResult = this.filterEvaluationBySettings(
         evaluationResult,
@@ -289,7 +292,7 @@ export class AIEvaluationService {
       numericScores.affordability * normalizedWeights.affordability;
 
     if (!isValidNumber(weightedScore)) {
-      console.error(
+      logger.error(
         "Invalid weighted score calculated, returning 0. Scores:",
         numericScores,
         "Weights:",

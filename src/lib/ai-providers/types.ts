@@ -1,5 +1,3 @@
-import { EvaluationResult } from './evaluation-provider';
-
 export interface ProcessedResumeData {
   name: string;
   email?: string;
@@ -28,18 +26,18 @@ export interface AIProvider {
   processResume(
     base64Resume: string,
     apiKey: string,
-    model?: string
+    model?: string,
   ): Promise<ProcessedResumeData>;
   evaluateResume(
     resumeBase64: string,
     apiKey: string,
     prompt: string,
     model?: string,
-    temperature?: number
+    temperature?: number,
   ): Promise<string>;
   validateApiKey(
     apiKey: string,
-    model?: string
+    model?: string,
   ): Promise<{ isValid: boolean; error?: string }>;
 }
 

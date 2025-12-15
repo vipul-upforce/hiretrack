@@ -30,6 +30,10 @@ ${resumeText}`;
             model: selectedModel,
             messages: [
               {
+                role: 'system',
+                content: 'You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.',
+              },
+              {
                 role: 'user',
                 content: prompt,
               },
