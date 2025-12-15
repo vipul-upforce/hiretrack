@@ -9,13 +9,20 @@ import { logger } from '@/lib/logger/logger.server';
 async function handleSignup(req: NextRequest) {
   try {
     await connectToDatabase();
-    const { email, password, name, role, triggerUserId, triggerUserName } =
-      await req.json();
+    const {
+      email,
+      password,
+      name,
+      role,
+      triggerUserId,
+      triggerUserName,
+      organizationId,
+    } = await req.json();
 
-    let { organizationId } = await req.json();
+    let orgId = organizationId;
 
     if (!(organizationId instanceof mongoose.Types.ObjectId)) {
-      organizationId = new mongoose.Types.ObjectId(organizationId);
+      orgId = new mongoose.Types.ObjectId(organizationId);
     }
     if (!User || !Lane) {
       return NextResponse.json(
@@ -25,8 +32,8 @@ async function handleSignup(req: NextRequest) {
     }
     // Check if user already exists in the same organization
     const existingUser =
-      (await User.findOne({ email, organizationId })) ||
-      (await CandidateAccount?.findOne({ email, organizationId }));
+      (await User.findOne({ email, orgId })) ||
+      (await CandidateAccount?.findOne({ email, orgId }));
 
     if (existingUser) {
       if (existingUser.isDeleted) {
@@ -50,14 +57,14 @@ async function handleSignup(req: NextRequest) {
       password: hashedPassword,
       name,
       role,
-      organizationId,
+      orgId,
     });
 
     // Send user creation notification (only if triggerUser is provided, indicating this is an admin action)
     if (triggerUserId && triggerUserName && role !== 'candidate') {
       try {
         await NotificationService.notifyUserAdded({
-          organizationId: organizationId.toString(),
+          organizationId: orgId.toString(),
           newUserId: user._id.toString(),
           newUserName: user.name,
           newUserEmail: user.email,
