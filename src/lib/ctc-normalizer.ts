@@ -19,7 +19,7 @@ export function normalizeCTCToLPA(value: string | number): number {
   // Convert to number
   const numericValue = parseFloat(cleanValue);
 
-  if (isNaN(numericValue)) {
+  if (Number.isNaN(numericValue)) {
     return 0;
   }
 
@@ -60,7 +60,7 @@ export function normalizeCTCToLPA(value: string | number): number {
  * @returns Formatted string in LPA format
  */
 export function formatCTCAsLPA(lpaValue: number): string {
-  if (isNaN(lpaValue) || lpaValue === null || lpaValue === undefined) {
+  if (Number.isNaN(lpaValue) || lpaValue === null || lpaValue === undefined) {
     return '0 LPA';
   }
 
