@@ -83,10 +83,6 @@ export const AI_PROVIDER_MODELS: ProviderModels = {
       },
       isDeprecated: true,
     },
-        costTier: "high",
-        description: "Most capable model with best reasoning abilities"
-      }
-    }
   ],
   
   openai: [
