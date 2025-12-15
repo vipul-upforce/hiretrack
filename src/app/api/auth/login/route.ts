@@ -11,6 +11,7 @@ import { UserWithoutCF } from '@/types/login';
 import { logger } from '@/lib/logger/logger.server';
 import { cleanupExpiredTokens, generateRefreshToken, hashRefreshToken, storeRefreshToken } from '@/lib/refreshToken';
 import { signToken } from '@/lib/jwt';
+import { setAuthCookies } from "@/lib/authCookies";
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -532,7 +533,7 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     userWithoutCustomFields,
     obj.organizationId.toString()
   );
-  console.log("accessToken-534",accessToken)
+  console.log("accessToken-534", accessToken);
   // Generate device info
   const deviceInfo = req?.headers.get('user-agent') || 'Unknown Device';
   const userId = obj.id || obj._id.toString();
@@ -580,48 +581,13 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     deviceId: deviceId,
   });
 
-  // Set short-lived access token in cookie
-  // await setSecureAuthTokens(response, accessToken, {
-  //   maxAge: 15 * 60, // 15 minutes in seconds
-  // });
-
-  // Set refresh token in httpOnly cookie
-  await response.cookies.set('auth_token', accessToken, {
-    httpOnly: true,
-    secure: process.env.ENVIRONMENT === 'production',
-    sameSite: 'strict',
-    maxAge: 15 * 60, // 15 minutes
-    path: '/',
-  });
-  await response.cookies.set('auth_state', "true", {
-    
-    secure: process.env.ENVIRONMENT === 'production',
-    sameSite: 'strict',
-    maxAge: 15 * 60, // 15 minutes
-    path: '/',
-  });
-  await response.cookies.set('refresh_token', refreshToken, {
-    httpOnly: true,
-    secure: process.env.ENVIRONMENT === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/',
-  });
-  
-  // Set device_id cookie
-  await response.cookies.set('device_id', deviceId, {
-    httpOnly: true,
-    secure: process.env.ENVIRONMENT === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/',
-  });
-
-  // Set secure organization ID
-  setSecureOrgId(response, obj.organizationId, {
-    expires: 7,
-    maxAge: 7 * 24 * 60 * 60,
-    path: '/',
+  // Centralized auth cookie handling
+  setAuthCookies({
+    response,
+    accessToken,
+    refreshToken,
+    deviceId,
+    orgId: obj.organizationId.toString(),
   });
 
   return response;

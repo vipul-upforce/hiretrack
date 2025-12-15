@@ -17,6 +17,7 @@ import { setSecureAuthTokens } from "@/lib/secureTokens";
 import { validateLicense } from "@/lib/licenseUtils";
 import { UserRole } from "@/lib/models/JobLaneConfig";
 import { IUser } from "@/lib/models/user";
+import { setAuthCookies } from "@/lib/authCookies";
 
 async function handleRefreshToken(req: NextRequest) {
   try {
@@ -214,49 +215,21 @@ async function handleRefreshToken(req: NextRequest) {
       isCandidate
     );
 
-    // STEP 7: Set new tokens in httpOnly cookies
+    // STEP 7: Set new tokens and related cookies using shared utility
     const response = NextResponse.json({
       message: "Token refreshed successfully",
       licenseValid: true,
     });
 
-    // Set new access token in httpOnly cookie
-    await setSecureAuthTokens(response, newAccessToken, {
-      maxAge: 15 * 60, // 15 minutes in seconds
+    const nextDeviceId = verification.deviceId || deviceId!;
+
+    setAuthCookies({
+      response,
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      deviceId: nextDeviceId,
+      orgId,
     });
-
-    // Set new refresh token in httpOnly cookie (token rotation)
-    const isProduction = process.env.ENVIRONMENT === "production";
-    response.cookies.set("refresh_token", newRefreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
-    });
-
-    // Refresh device_id cookie to keep device tracking aligned with rotated token
-    const nextDeviceId = verification.deviceId || deviceId;
-    if (nextDeviceId) {
-      response.cookies.set("device_id", nextDeviceId, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-        path: "/",
-      });
-    }
-
-    // Refresh org_id cookie to keep org context consistent
-    if (orgId) {
-      response.cookies.set("org_id", orgId, {
-        httpOnly: true,
-        secure: isProduction,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-        path: "/",
-      });
-    }
 
     return response;
   } catch {

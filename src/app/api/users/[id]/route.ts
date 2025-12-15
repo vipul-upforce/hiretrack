@@ -168,7 +168,8 @@ const refreshAndReAssignToken = async (data: unknown, orgId: string) => {
 
   const response = NextResponse.json({ message: 'User updated successfully' });
 
-  setSecureAuthTokens(response, newToken, {
+  // Reuse secure token helper to update auth_token/auth_state
+  await setSecureAuthTokens(response, newToken, {
     maxAge: 15 * 60, // 15 minutes in seconds
   });
 

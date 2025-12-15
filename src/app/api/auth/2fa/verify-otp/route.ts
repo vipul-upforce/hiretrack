@@ -6,6 +6,7 @@ import { loginRateLimiter } from '@/lib/rateLimiter';
 import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from '@/lib/refreshToken';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger/logger.server';
+import { setAuthCookies } from "@/lib/authCookies";
 async function handleVerifyOtp(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -151,37 +152,15 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
     deviceId: deviceId,
   });
 
-  // Set short-lived access token in cookie
-  let resp = setSecureAuthTokens(response, accessToken, {
-    maxAge: 15 * 60, // 15 minutes in seconds
+  setAuthCookies({
+    response,
+    accessToken,
+    refreshToken,
+    deviceId,
+    orgId,
   });
 
-  // Set refresh token in httpOnly cookie
-  resp.cookies.set('refresh_token', refreshToken, {
-    httpOnly: true,
-    secure: process.env.ENVIRONMENT === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/',
-  });
-  
-  // Set device_id cookie
-  resp.cookies.set('device_id', deviceId, {
-    httpOnly: true,
-    secure: process.env.ENVIRONMENT === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: '/',
-  });
-
-  // Set secure organization ID
-  resp = setSecureOrgId(resp, orgId, {
-    expires: 7,
-    maxAge: 7 * 24 * 60 * 60,
-    path: '/',
-  });
-
-  return resp;
+  return response;
 };
 
 // Export with rate limiting
