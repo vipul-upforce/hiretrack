@@ -1,13 +1,12 @@
 'use client';
 
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, MapPin } from 'lucide-react';
-import { CustomCalendarEvent, Job } from '../page';
+import { Clock, UserRound } from 'lucide-react';
+
 import { MiniCalendar } from './mini-calendar';
 import { formatTime } from '../../jobs/[id]/hooks/dateTimeFormatting';
+import { CustomCalendarEvent, Job } from '../types';
 
 interface CalendarSidebarProps {
   events: CustomCalendarEvent[];
@@ -61,27 +60,27 @@ export function CalendarSidebar({
 
     return (
       <button
-      type='button'
+        type="button"
         key={index}
         onClick={() => onEventClick(event)}
-        className="p-2 border w-full text-left rounded-md hover:bg-accent/50 cursor-pointer transition-colors"
+        className="w-full cursor-pointer rounded-md border p-2 text-left transition-colors hover:bg-accent/50"
       >
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-sm line-clamp-1">
+        <div className="mb-1 flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <h4 className="line-clamp-1 text-sm font-semibold">
               {candidate.name}
             </h4>
-            {typeof candidate.jobId !== 'string'
-              && (candidate.jobId as Job)?.title && (
-                <p className="text-xs text-muted-foreground capitalize line-clamp-1">
+            {typeof candidate.jobId !== 'string' &&
+              (candidate.jobId as Job)?.title && (
+                <p className="line-clamp-1 text-xs capitalize text-muted-foreground">
                   {(candidate.jobId as Job).title}
                 </p>
-            )}
+              )}
           </div>
           {candidate.status && (
             <Badge
               variant="secondary"
-              className="text-[10px] px-2 py-0.5 shrink-0"
+              className="shrink-0 px-2 py-0.5 text-[10px]"
             >
               {candidate.status}
             </Badge>
@@ -97,14 +96,14 @@ export function CalendarSidebar({
           )}
           {interviewer.name && interviewer.name !== 'Unknown' && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span className="capitalize line-clamp-1">
+              <UserRound className="h-3 w-3" />
+              <span className="line-clamp-1 capitalize">
                 {interviewer.name}
               </span>
             </div>
           )}
           {showDate && event.start && (
-            <div className="text-xs text-muted-foreground pt-1 border-t mt-1">
+            <div className="mt-1 border-t pt-1 text-xs text-muted-foreground">
               {new Date(event.start).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -118,10 +117,8 @@ export function CalendarSidebar({
   };
 
   return (
-    <aside
-      className=" w-full h-full space-y-3 md:w-full lg:w-[260px] xl:w-[300px] overflow-hidden"
-    >
-      <div className="flex flex-col gap-3 h-full overflow-auto p-3 border rounded-lg">
+    <aside className="h-full w-full space-y-3 overflow-hidden md:w-full lg:w-[260px] xl:w-[300px]">
+      <div className="flex h-full flex-col gap-3 overflow-auto rounded-lg border p-3">
         {/* Today's Schedule */}
         <Card className="max-h-[300px] flex-shrink-0 overflow-y-auto">
           <CardHeader className="p-3 pb-2">
@@ -132,10 +129,12 @@ export function CalendarSidebar({
           <CardContent className="p-3 pt-0">
             {todaysEvents.length > 0 ? (
               <div className="space-y-1.5">
-                {todaysEvents.map((event, index) => renderEventCard(event, index))}
+                {todaysEvents.map((event, index) =>
+                  renderEventCard(event, index),
+                )}
               </div>
             ) : (
-              <div className="text-center py-3">
+              <div className="py-3 text-center">
                 <p className="text-xs text-muted-foreground">
                   No events scheduled for today
                 </p>
@@ -145,7 +144,7 @@ export function CalendarSidebar({
         </Card>
 
         {/* Upcoming Events */}
-        <Card className=" max-h-[370px] flex-shrink-0 overflow-y-auto">
+        <Card className="max-h-[370px] flex-shrink-0 overflow-y-auto">
           <CardHeader className="p-3 pb-2">
             <CardTitle className="text-sm font-semibold">
               Upcoming Events
@@ -154,10 +153,12 @@ export function CalendarSidebar({
           <CardContent className="p-3 pt-0">
             {upcomingEvents.length > 0 ? (
               <div className="space-y-1.5">
-                {upcomingEvents.map((event, index) => renderEventCard(event, index, true))}
+                {upcomingEvents.map((event, index) =>
+                  renderEventCard(event, index, true),
+                )}
               </div>
             ) : (
-              <div className="text-center py-3">
+              <div className="py-3 text-center">
                 <p className="text-xs text-muted-foreground">
                   No upcoming events
                 </p>
@@ -176,10 +177,12 @@ export function CalendarSidebar({
           <CardContent className="p-3 pt-0">
             {notScheduledEvents.length > 0 ? (
               <div className="space-y-1.5">
-                {notScheduledEvents.map((event, index) => renderEventCard(event, index))}
+                {notScheduledEvents.map((event, index) =>
+                  renderEventCard(event, index),
+                )}
               </div>
             ) : (
-              <div className="text-center py-3">
+              <div className="py-3 text-center">
                 <p className="text-xs text-muted-foreground">
                   All candidates are scheduled
                 </p>
@@ -189,7 +192,7 @@ export function CalendarSidebar({
         </Card>
 
         {/* Mini Calendar */}
-        <Card className=" max-h-full flex-shrink-0">
+        <Card className="max-h-full flex-shrink-0">
           <CardHeader className="p-3 pb-2">
             <CardTitle className="text-sm font-semibold">
               Quick Navigation

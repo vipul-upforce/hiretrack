@@ -3,7 +3,8 @@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Video, Copy, ExternalLink } from 'lucide-react';
-import { CustomCalendarEvent, CandidateAssignment, Job } from '../page'; // Import types from parent
+import { randomUUID } from 'crypto';
+import { CustomCalendarEvent, CandidateAssignment, Job } from '../types'; // Import types from parent
 
 interface EventDetailsProps {
   event: CustomCalendarEvent;
@@ -151,20 +152,20 @@ export function RenderEvent({
               </div>
 
               {typeof event.extendedProps.candidate.jobId !== 'string' &&
-                (event.extendedProps.candidate.jobId as Job)?.skills?.length >
-                  0 && (
+                ((event.extendedProps.candidate.jobId as Job)?.skills || [])
+                  .length > 0 && (
                   <div>
-                    {(event.extendedProps.candidate.jobId as Job).skills.map(
-                      (skill: string, skillIndex: number) => (
-                        <Badge
-                          key={`${event.extendedProps.candidate._id}-job-skill-${skillIndex}-${skill}`}
-                          variant="secondary"
-                          className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                        >
-                          {skill}
-                        </Badge>
-                      ),
-                    )}
+                    {(
+                      (event.extendedProps.candidate.jobId as Job)?.skills || []
+                    ).map((skill: string, _: number) => (
+                      <Badge
+                        key={`${event.extendedProps.candidate._id}-job-skill-${randomUUID()}-${skill}`}
+                        variant="secondary"
+                        className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      >
+                        {skill}
+                      </Badge>
+                    ))}
                   </div>
                 )}
             </button>
