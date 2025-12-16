@@ -4,8 +4,6 @@ import { OpenAIProvider } from './openai-provider';
 import { AnthropicProvider } from './anthropic-provider';
 import { PerplexityProvider } from './perplexity-provider';
 
-export type { AIProviderType } from './types';
-
 export class AIProviderFactory {
   private static providers: Map<AIProviderType, AIProvider> = new Map([
     ['gemini', new GeminiProvider()],
@@ -33,6 +31,6 @@ export class AIProviderFactory {
       anthropic: 'Anthropic Claude',
       perplexity: 'Perplexity AI',
     };
-    return displayNames[type];
+    return displayNames[type as keyof typeof displayNames];
   }
 }
