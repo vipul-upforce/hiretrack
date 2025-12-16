@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase ,{ User } from '@/lib/mongodb';
 import { signAccessToken } from '@/app/actions/auth';
-import { setSecureAuthTokens, setSecureOrgId } from '@/lib/secureTokens';
 import { loginRateLimiter } from '@/lib/rateLimiter';
 import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from '@/lib/refreshToken';
 import crypto from 'crypto';
 import { logger } from '@/lib/logger/logger.server';
 import { setAuthCookies } from "@/lib/authCookies";
+
 async function handleVerifyOtp(req: NextRequest) {
   try {
     await connectToDatabase();

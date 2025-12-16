@@ -1,8 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase,{ User } from "@/lib/mongodb";
-import { getAuthenticatedUser, signToken, type AuthenticatedUser } from "@/app/actions/auth";
-import { setSecureAuthTokens } from "@/lib/secureTokens";
-import { UserDocument } from "@/lib/models/user";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { User } from '@/lib/mongodb';
+import {
+  getAuthenticatedUser,
+  signToken,
+  type AuthenticatedUser,
+} from '@/app/actions/auth';
+import { updateAccessToken } from '@/lib/authCookies';
+import { UserDocument } from '@/lib/models/user';
 
 export async function DELETE(
   req: NextRequest,
@@ -30,7 +34,10 @@ export async function DELETE(
       );
     }
 
-    const isUserExisted = await User.findById(id).select('role organizationId _id').lean().exec();
+    const isUserExisted = await User.findById(id)
+      .select('role organizationId _id')
+      .lean()
+      .exec();
 
     const isAdmin = isUserExisted?.role === 'admin';
     if (isAdmin) {
@@ -56,10 +63,26 @@ export async function DELETE(
     }
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+
+const refreshAndReAssignToken = async (
+  data: unknown,
+  orgId: string,
+  request: NextRequest,
+) => {
+  const newToken = await signToken(data, orgId);
+
+  const response = NextResponse.json({ message: 'User updated successfully' });
+
+  // Use centralized helper that preserves existing cookies
+  updateAccessToken(response, request, newToken);
+
+  return response;
+};
 
 export async function PUT(
   req: NextRequest,
@@ -152,26 +175,13 @@ export async function PUT(
         role: user.role,
         tokenVersion: user.tokenVersion,
       };
-      const newToken = await refreshAndReAssignToken(updatedData, session.organizationId);
-      return newToken;
+      return refreshAndReAssignToken(updatedData, session.organizationId, req);
     }
 
     return NextResponse.json({ message: 'User updated successfully' });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
-const refreshAndReAssignToken = async (data: unknown, orgId: string) => {
-  const newToken = await signToken(data, orgId);
-
-  const response = NextResponse.json({ message: 'User updated successfully' });
-
-  // Reuse secure token helper to update auth_token/auth_state
-  await setSecureAuthTokens(response, newToken, {
-    maxAge: 15 * 60, // 15 minutes in seconds
-  });
-
-  return response;
-};

@@ -4,9 +4,7 @@ import connectToDatabase, { CandidateAccount, Settings,User, Organization  } fro
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { IUser } from '@/lib/models/user';
 import { IUCandidateAccount } from '@/lib/models/candidateAccount';
-import { setSecureAuthTokens, setSecureOrgId } from '@/lib/secureTokens';
 import { emailLoginRateLimiter } from '@/lib/rateLimiter';
-import { signAccessToken } from '@/app/actions/auth';
 import { UserWithoutCF } from '@/types/login';
 import { logger } from '@/lib/logger/logger.server';
 import { cleanupExpiredTokens, generateRefreshToken, hashRefreshToken, storeRefreshToken } from '@/lib/refreshToken';

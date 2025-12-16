@@ -13,7 +13,6 @@ import connectToDatabase, {
   CandidateAccount,
   Settings,
 } from "@/lib/mongodb";
-import { setSecureAuthTokens } from "@/lib/secureTokens";
 import { validateLicense } from "@/lib/licenseUtils";
 import { UserRole } from "@/lib/models/JobLaneConfig";
 import { IUser } from "@/lib/models/user";
