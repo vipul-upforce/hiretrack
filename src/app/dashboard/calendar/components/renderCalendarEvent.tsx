@@ -3,7 +3,7 @@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Video, Copy, ExternalLink } from 'lucide-react';
-import { randomUUID } from 'crypto';
+import { getRandom } from '@/lib/utils/getRandom';
 import { CustomCalendarEvent, CandidateAssignment, Job } from '../types'; // Import types from parent
 
 interface EventDetailsProps {
@@ -159,7 +159,7 @@ export function RenderEvent({
                       (event.extendedProps.candidate.jobId as Job)?.skills || []
                     ).map((skill: string, _: number) => (
                       <Badge
-                        key={`${event.extendedProps.candidate._id}-job-skill-${randomUUID()}-${skill}`}
+                        key={`${event.extendedProps.candidate._id}-job-skill-${getRandom(0, 1000000).toString()}-${skill}`}
                         variant="secondary"
                         className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                       >

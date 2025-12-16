@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
+import { getRandom } from '@/lib/utils/getRandom';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { CompletedBatches } from './completed-batches';
 import { FileList } from './file-list';
@@ -77,7 +78,7 @@ export function CVBatchProcessor() {
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
     const processedFiles = newFiles.map((file) => ({
-      id: crypto.randomUUID(),
+      id: getRandom(0, 1000000).toString(),
       file,
       isZip: file.type === 'application/zip' || file.name.endsWith('.zip'),
     }));

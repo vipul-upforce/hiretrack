@@ -217,7 +217,7 @@ export interface ICandidateHistory {
         fieldId: string;
         fieldLabel: string;
         fieldType: string;
-        value: any;
+        value: Schema.Types.Mixed;
         files?: CustomFieldFile[];
         visibleInHistory?: string[]; // Define visibleInHistory as string[] or undefined
       }

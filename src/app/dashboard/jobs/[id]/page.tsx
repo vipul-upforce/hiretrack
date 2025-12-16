@@ -18,9 +18,10 @@ import {
 } from '@/lib/features/lane/laneApi';
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { Checkbox } from '@/components/ui/checkbox';
-import NoDataFound from '@/app/not-found';
+import { NoDataFound } from '@/app/not-found';
 import { useSSE } from '@/hooks/useSSE';
 import { mergeRefs } from 'react-merge-refs';
+import { RootState } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Settings2, BarChart3, MoreHorizontal, Mail } from 'lucide-react';
 import {
@@ -52,6 +53,7 @@ import { LaneChecklistConfigDialog } from './components/Dialogs/lane-checklist-c
 import { MigrationDialog } from './components/Dialogs/MigrationDialog';
 import CandidateCustomFieldsDialog from './components/customFields/candidateCustomFieldsDialog';
 import { GlobalRemarksDialog } from './components/Dialogs/global-remarks-dialog';
+import { Interviewer } from '../../calendar/types';
 
 interface FilterState {
   search: string;
@@ -106,7 +108,7 @@ export default function JobProgressPage() {
   const [filterConditions, setFilterConditions] = useState<FilterState | null>(
     null,
   );
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useSelector((state: RootState) => state.auth || {});
 
   const {
     ref: scrollRef,
@@ -171,7 +173,7 @@ export default function JobProgressPage() {
   const {
     data: jobLanes,
     isLoading: isJobLanesLoading,
-    error: jobLanesError,
+    // error: jobLanesError,
   } = useGetJobLanesQuery(id as string, { skip: !id });
   const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
     { userId: user?.id, jobId: id as string },
@@ -270,7 +272,7 @@ export default function JobProgressPage() {
                 skill.toLowerCase().includes(searchLower),
               ) ||
               candidate.experience.toString().includes(searchLower) ||
-              (candidate.assignment?.interviewerId as any)?.name
+              (candidate.assignment?.interviewerId as Interviewer)?.name
                 ?.toLowerCase()
                 .includes(searchLower) ||
               candidate.location.toLowerCase().includes(searchLower);
@@ -281,63 +283,60 @@ export default function JobProgressPage() {
           const activeFilters = [
             {
               key: 'topCandidates',
-              filter: (candidate: Candidate) =>
-                candidate.scores?.overall && candidate.scores.overall >= 7,
+              filter: (c: Candidate) =>
+                c.scores?.overall && c.scores.overall >= 7,
             },
             {
               key: 'appliedThisWeek',
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                return new Date(candidate.tracking.createdAt) >= oneWeekAgo;
+                return new Date(c.tracking.createdAt) >= oneWeekAgo;
               },
             },
             {
               key: 'appliedToday',
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 return (
-                  new Date(candidate.tracking.createdAt) >= today &&
-                  new Date(candidate.tracking.createdAt) < tomorrow
+                  new Date(c.tracking.createdAt) >= today &&
+                  new Date(c.tracking.createdAt) < tomorrow
                 );
               },
             },
             {
               key: 'appliedIn15Days',
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const fifteenDaysAgo = new Date();
                 fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-                return new Date(candidate.tracking.createdAt) >= fifteenDaysAgo;
+                return new Date(c.tracking.createdAt) >= fifteenDaysAgo;
               },
             },
             {
               key: 'toFollowUp',
-              filter: (candidate: Candidate) =>
-                candidate.followUp && candidate.followUp.note,
+              filter: (c: Candidate) => c.followUp && c.followUp.note,
             },
             {
               key: 'assigned',
-              filter: (candidate: Candidate) => candidate.assignment,
+              filter: (c: Candidate) => c.assignment,
             },
             {
               key: 'notAssigned',
-              filter: (candidate: Candidate) => !candidate.assignment,
+              filter: (c: Candidate) => !c.assignment,
             },
             {
               key: 'withRemarks',
-              filter: (candidate: Candidate) =>
-                candidate.remarks && candidate.remarks.length > 0,
+              filter: (c: Candidate) => c.remarks && c.remarks.length > 0,
             },
             {
               key: 'withoutRemarks',
-              filter: (candidate: Candidate) =>
-                !candidate.remarks || candidate.remarks.length === 0,
+              filter: (c: Candidate) => !c.remarks || c.remarks.length === 0,
             },
           ].filter(
             (filter) =>
@@ -346,9 +345,9 @@ export default function JobProgressPage() {
 
           if (activeFilters.length > 0) {
             if (filterConditions.logicalOperator === 'AND') {
-              return activeFilters.every(({ filter }) => filter(candidate));
+              return activeFilters.every(({ filter }) => filter(c));
             }
-            return activeFilters.some(({ filter }) => filter(candidate));
+            return activeFilters.some(({ filter }) => filter(c));
           }
 
           return true;
@@ -356,7 +355,7 @@ export default function JobProgressPage() {
       }
       // Apply archived filter
       currentCandidates = currentCandidates.filter(
-        (candidate) => showArchived || !candidate.isDeleted,
+        (c) => showArchived || !c.isDeleted,
       );
 
       // Handle different lane data structures
@@ -391,9 +390,8 @@ export default function JobProgressPage() {
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
         const candidates = currentCandidates.filter(
-          (candidate) =>
-            candidate.status === lane &&
-            (showArchived ? candidate.isDeleted : !candidate.isDeleted),
+          (c) =>
+            c.status === lane && (showArchived ? c.isDeleted : !c.isDeleted),
         );
 
         return {

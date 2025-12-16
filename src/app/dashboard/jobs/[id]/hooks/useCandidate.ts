@@ -1,23 +1,27 @@
 import { DropResult } from '@hello-pangea/dnd';
 import { toast } from '@/hooks/use-toast';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import { useState } from 'react';
 import {
   useUpdateCandidateMutation,
   useDeleteCandidateMutation,
+  useFetchCandidatesQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { useUpdateLanesMutation } from '@/lib/features/lane/laneApi';
 import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
 import { sentStatusMailHandler } from '@/lib/utils';
 import { Job } from '@/types/job';
 import logger from '@/lib/logger';
+import { ILocalUser } from '@/lib/redux/authSlice';
+import { IJobLaneConfig } from '@/lib/models/JobLaneConfig';
 import { useClientSideChecklistValidation } from './useClientSideChecklistValidation';
+
+type CandidateHookResult = ReturnType<typeof useFetchCandidatesQuery>;
 
 interface UseCandidateProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
-  user: User | null;
+  user: ILocalUser | null;
   setOpenRemarksFor: (id: string | null) => void;
   setIsDialogOpen: (open: boolean) => void;
   setDroppedFileData: (file: File | null) => void;
@@ -25,9 +29,9 @@ interface UseCandidateProps {
   setIsDeleteDialogOpen: (open: boolean) => void;
   setSelectedCandidate: (candidate: Candidate | null) => void;
   selectedCandidate: Candidate | null;
-  refetch: () => Promise<any>;
+  refetch: CandidateHookResult['refetch'];
   candidateToDelete: string | null;
-  jobLaneConfig?: any;
+  jobLaneConfig?: IJobLaneConfig;
   job?: Job;
 }
 
@@ -144,7 +148,7 @@ export const useCandidate = ({
 
       // Refetch to ensure consistency
       await refetch();
-    } catch (error) {
+    } catch {
       // If database update fails, don't move the card
       toast({
         title: 'Error',

@@ -16,7 +16,7 @@ import { useState } from 'react';
 import CustomFields from '@/Custom_Fields/Components/CustomFields';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { scrollToError } from '@/lib/formUtils';
-import { JobForm } from './job-form';
+import { JobForm } from './job-form/index';
 import { JobFormValues, jobSchema } from '../schemas/job-schema';
 
 interface CreateJobDialogProps {
@@ -45,7 +45,7 @@ interface CreateJobDialogProps {
         updatedAt: Date;
       };
       candidateCount: number;
-    }
+    },
   ) => void;
   userRole?: string;
 }
@@ -103,6 +103,14 @@ export function CreateJobDialog({
   ) => {
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+
+    const convertFileToBase64 = (file: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+      });
 
     if (hasDuplicates) {
       toast({
@@ -166,26 +174,19 @@ export function CreateJobDialog({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
-
   const validationSchemas = jobSchema(validationSchema);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="primary">
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Create Job
         </Button>
       </DialogTrigger>
       <DialogContent
         size="2xl"
-        className="max-h-[90vh] p-0 overflow-hidden flex flex-col"
+        className="flex max-h-[90vh] flex-col overflow-hidden p-0"
       >
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Create New Job Position</DialogTitle>
@@ -198,13 +199,13 @@ export function CreateJobDialog({
           validationSchema={validationSchemas}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting, errors, touched }) => (
-            <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden ">
-              <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 sticky top-0">
+          {({ isSubmitting, errors }) => (
+            <Form className="flex h-[calc(90vh-80px)] flex-col overflow-hidden">
+              <div className="sticky top-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
                 <JobForm />
                 <CustomFields formName={formName} />
               </div>
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 mt-auto">
+              <div className="sticky bottom-0 z-10 mt-auto flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   type="button"
                   variant="outline"

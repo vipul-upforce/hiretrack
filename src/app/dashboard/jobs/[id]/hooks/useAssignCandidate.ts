@@ -14,6 +14,8 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { usePathname } from 'next/navigation';
 import { Interviewer } from '@/lib/features/user/userApi';
 import { Candidate } from '@/types/candidate';
+import { ILocalUser } from '@/lib/redux/authSlice';
+import { Schema } from 'mongoose';
 import {
   FormValues,
   User,
@@ -41,7 +43,7 @@ export const useAssignCandidate = ({
   const handleSubmit = async (
     values: FormValues,
     { setSubmitting }: FormikHelpers<FormValues>,
-    user: User | null,
+    user: ILocalUser | null,
     interviewers: Interviewer[] | undefined,
   ) => {
     if (!user) {
@@ -103,13 +105,15 @@ export const useAssignCandidate = ({
         attachments: uniqueAttachments,
       };
 
-      const previousInterviewer = typeof candidate.assignment?.interviewerId === 'object'
-        ? candidate.assignment.interviewerId.name
-        : '';
-      const previousInterviewerId = typeof candidate.assignment?.interviewerId === 'object'
-          && Object.keys(candidate.assignment?.interviewerId).length > 0
-        ? Object(candidate.assignment.interviewerId._id)
-        : null;
+      const previousInterviewer =
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? candidate.assignment.interviewerId.name
+          : '';
+      const previousInterviewerId =
+        typeof candidate.assignment?.interviewerId === 'object' &&
+        Object.keys(candidate.assignment?.interviewerId).length > 0
+          ? Object(candidate.assignment.interviewerId._id)
+          : null;
 
       let nextInterviewer = 'No Next interviewer';
       let nextInterviewerId = null;
@@ -123,13 +127,14 @@ export const useAssignCandidate = ({
         }
       }
 
-      const title = !previousInterviewer || previousInterviewer === ''
-        ? `Assigned to ${nextInterviewer} : Assigned by ${user.name}`
-        : `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
+      const title =
+        !previousInterviewer || previousInterviewer === ''
+          ? `Assigned to ${nextInterviewer} : Assigned by ${user.name}`
+          : `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
 
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
-        currentInterviewer: nextInterviewerId,
+        currentInterviewer: nextInterviewerId as Schema.Types.ObjectId | null,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user.id,
         title,
@@ -173,9 +178,9 @@ export const useAssignCandidate = ({
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === 'object'
-          && errorData !== null
-          && 'error' in errorData
+          typeof errorData === 'object' &&
+          errorData !== null &&
+          'error' in errorData
         ) {
           toast({
             title: 'Error',
@@ -228,9 +233,10 @@ export const useAssignCandidate = ({
       }
       onSuccess();
 
-      const previousInterviewerId = typeof candidate.assignment?.interviewerId === 'object'
-        ? Object(candidate.assignment.interviewerId._id)
-        : null;
+      const previousInterviewerId =
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? Object(candidate.assignment.interviewerId._id)
+          : null;
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
@@ -267,9 +273,9 @@ export const useAssignCandidate = ({
       });
     } catch (error: unknown) {
       toast({
-        title:
-          `Error: ${
-            error instanceof Error ? error.message : 'Unknown error'}`,
+        title: `Error: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
         description: 'Failed to unassign interviewer',
         variant: 'destructive',
       });

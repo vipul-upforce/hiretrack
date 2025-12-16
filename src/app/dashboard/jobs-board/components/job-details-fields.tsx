@@ -7,8 +7,8 @@ import { ImageGallery } from '@/components/ui/image-gallery';
 import { PDFViewer } from '@/components/ui/pdf-viewer';
 import { Job } from '@/types/job';
 import React from 'react';
+import { getRandom } from '@/lib/utils/getRandom';
 import { FileAttachment } from './FileAttchment';
-import ExpandableDescription from '../../jobs/[id]/components/Utils/expand-collapse-desc';
 import CustomFieldsData from '../../../../Custom_Fields/Components/CustomFields/customFields-details';
 
 interface FieldConfig {
@@ -20,7 +20,7 @@ interface FieldConfig {
 export const jobDetailsFields: FieldConfig[] = [
   {
     label: 'Job Title',
-    render: (job) => <div className="text-sm break-words">{job.title}</div>,
+    render: (job) => <div className="break-words text-sm">{job.title}</div>,
   },
   {
     label: 'Job Description',
@@ -31,23 +31,22 @@ export const jobDetailsFields: FieldConfig[] = [
 
         </div> */}
         <div
-          className="text-sm break-words whitespace-pre-wrap"
+          className="whitespace-pre-wrap break-words text-sm"
+          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: job?.description || 'No description found',
           }}
         />
-
       </>
-
     ),
   },
   {
     label: 'Required Skills',
     render: (job) => (
       <div className="flex flex-wrap gap-2">
-        {job.skills.map((skill, skillIndex) => (
+        {job.skills.map((skill, _) => (
           <Badge
-            key={`${job._id}-skill-${skillIndex}-${skill}`}
+            key={`${job._id}-skill-${getRandom(0, 1000000).toString()}-${skill}`}
             variant="secondary"
           >
             {skill}
@@ -60,16 +59,16 @@ export const jobDetailsFields: FieldConfig[] = [
     label: 'Job Links',
     render: (job) => (
       <div className="space-y-2">
-        {job.links.map((link, index) => (
+        {job.links.map((link, _) => (
           <a
-            key={index}
+            key={link}
             href={link}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm flex items-center gap-2 text-blue-500 hover:underline group"
+            className="group flex items-center gap-2 text-sm text-blue-500 hover:underline"
             title={link}
           >
-            <Link className="h-4 w-4 flex-shrink-0" />
+            <Link className="h-4 w-4 flex-shrink-0" href={link} />
             <span className="truncate group-hover:whitespace-normal">
               {link}
             </span>
@@ -90,22 +89,18 @@ export const jobDetailsFields: FieldConfig[] = [
             <>
               {job.salary?.min && job.salary.min !== 0 && (
                 <span className="text-sm font-medium">
-                  {job.salary.min}
-                  {' '}
-                  LPA
+                  {job.salary.min} LPA
                 </span>
               )}
-              {job.salary?.min
-                && job.salary.min !== 0
-                && job.salary?.max
-                && job.salary.max !== 0 && (
+              {job.salary?.min &&
+                job.salary.min !== 0 &&
+                job.salary?.max &&
+                job.salary.max !== 0 && (
                   <span className="mx-1 text-muted-foreground">-</span>
-              )}
+                )}
               {job.salary?.max && job.salary.max !== 0 && (
                 <span className="text-sm font-medium">
-                  {job.salary.max}
-                  {' '}
-                  LPA
+                  {job.salary.max} LPA
                 </span>
               )}
             </>
@@ -117,15 +112,14 @@ export const jobDetailsFields: FieldConfig[] = [
         )}
       </div>
     ),
-    shouldRender: (job) => (!!(job.salary && job.salary.inText && job.salary.inText !== '')),
+    shouldRender: (job) =>
+      !!(job.salary && job.salary.inText && job.salary.inText !== ''),
   },
   {
     label: 'Experience Required',
     render: (job) => (
       <div className="text-sm">
-        {job.experience}
-        {' '}
-        {job.experience === 1 ? 'year' : 'years'}
+        {job.experience} {job.experience === 1 ? 'year' : 'years'}
       </div>
     ),
   },
@@ -142,7 +136,7 @@ export const jobDetailsFields: FieldConfig[] = [
     label: 'Attachments',
     render: (job) => (
       <>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           <ImageGallery
             images={job.attachments.files.filter((file) => {
               const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -177,12 +171,11 @@ export const jobDetailsFields: FieldConfig[] = [
   {
     label: 'Tracking',
     render: (job) => (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 flex-shrink-0" />
           <div className="text-sm">
-            <span className="text-muted-foreground">Created:</span>
-            {' '}
+            <span className="text-muted-foreground">Created:</span>{' '}
             {format(new Date(job.tracking.createdAt), 'PPP')}
           </div>
         </div>
@@ -190,8 +183,7 @@ export const jobDetailsFields: FieldConfig[] = [
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 flex-shrink-0" />
             <div className="text-sm">
-              <span className="text-muted-foreground">Opened:</span>
-              {' '}
+              <span className="text-muted-foreground">Opened:</span>{' '}
               {format(new Date(job.tracking.openedAt), 'PPP')}
             </div>
           </div>
@@ -200,8 +192,7 @@ export const jobDetailsFields: FieldConfig[] = [
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 flex-shrink-0" />
             <div className="text-sm">
-              <span className="text-muted-foreground">Closed:</span>
-              {' '}
+              <span className="text-muted-foreground">Closed:</span>{' '}
               {format(new Date(job.tracking.closedAt), 'PPP')}
             </div>
           </div>
@@ -211,7 +202,8 @@ export const jobDetailsFields: FieldConfig[] = [
   },
   {
     label: '',
-    shouldRender: (job) => (!!(job.customFields && Object.keys(job.customFields).length > 0)),
+    shouldRender: (job) =>
+      !!(job.customFields && Object.keys(job.customFields).length > 0),
     render: (job) => <CustomFieldsData customFields={job.customFields || {}} />,
   },
 ];

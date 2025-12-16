@@ -1,6 +1,5 @@
 import { toast } from '@/hooks/use-toast';
 import { CandidateColumn, CandidateStatus } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import {
   useUpdateLanesMutation,
   useDeleteLaneMutation,
@@ -9,15 +8,19 @@ import {
   useRenameJobLaneMutation,
 } from '@/lib/features/lane/laneApi';
 import { useState } from 'react';
+import { ILocalUser } from '@/lib/redux/authSlice';
+import { useFetchCandidatesQuery } from '@/lib/features/candidate/candidateApi';
+
+type CandidateHookResult = ReturnType<typeof useFetchCandidatesQuery>;
 
 interface UseKanbanBoardProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
-  user: User | null;
+  user: ILocalUser | null;
   jobId?: string; // NEW: Add jobId for job-specific operations
   setIsConfirmLaneDeleteOpen: (open: boolean) => void;
   setIsLaneEditOpen: (open: boolean) => void;
-  refetch: () => Promise<any>;
+  refetch: CandidateHookResult['refetch'];
 }
 
 export const useKanbanBoard = ({
@@ -42,7 +45,7 @@ export const useKanbanBoard = ({
     const lansArray = newColumns.map((column) => column.id);
     try {
       // NEW: Use job-specific lanes if jobId is provided
-      const updateData: any = {
+      const updateData: { userId: string; lanes: string[]; jobId?: string } = {
         userId: user?.id || '',
         lanes: lansArray,
       };
@@ -74,9 +77,11 @@ export const useKanbanBoard = ({
     const newLaneId = title.toLowerCase().replace(/\s+/g, '-');
     const isDuplicate = columns.some((column) => column.id === newLaneId);
     if (isDuplicate) {
+      // eslint-disable-next-line no-useless-escape
+      const errorMessage = `Lane with title \"${title}\" already exists.`;
       toast({
         title: 'Error',
-        description: `Lane with title \"${title}\" already exists.`, // Corrected escaping for consistency
+        description: errorMessage,
         variant: 'destructive',
       });
       return;
@@ -127,13 +132,19 @@ export const useKanbanBoard = ({
 
       const newColumns = columns.filter((col) => col.id !== laneId);
       setColumns(newColumns);
-    } catch (err: any) {
-      if (err.data?.migrationNeeded) {
+    } catch (err: unknown) {
+      if (
+        err instanceof Error &&
+        'data' in err &&
+        (err.data as { migrationNeeded: boolean }).migrationNeeded
+      ) {
         setLaneToDelete(laneId);
-        setMigrationLanes(err.data.lanes);
+        setMigrationLanes((err.data as { lanes: string[] }).lanes);
         setIsMigrationDialogOpen(true);
       } else {
-        const errorMessage = (err.data as { error: string }).error || 'Failed to delete the lane';
+        const errorMessage =
+          (err as { data: { error: string } }).data.error ||
+          'Failed to delete the lane';
         toast({
           title: 'Error',
           description: errorMessage,
@@ -163,8 +174,10 @@ export const useKanbanBoard = ({
       }
       const newColumns = columns.filter((col) => col.id !== laneToDelete);
       setColumns(newColumns);
-    } catch (err: any) {
-      const errorMessage = (err.data as { error: string }).error || 'Failed to delete the lane';
+    } catch (err) {
+      const errorMessage =
+        (err as { data: { error: string } }).data.error ||
+        'Failed to delete the lane';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -206,7 +219,8 @@ export const useKanbanBoard = ({
       }
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'data' in err) {
-        const errorMessage = (err.data as { error: string }).error || 'Failed to edit the lane';
+        const errorMessage =
+          (err.data as { error: string }).error || 'Failed to edit the lane';
         toast({
           title: 'Error',
           description: errorMessage,

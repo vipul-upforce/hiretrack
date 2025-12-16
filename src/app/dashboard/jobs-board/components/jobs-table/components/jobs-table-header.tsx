@@ -1,6 +1,6 @@
 import { TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
-import { CustomFieldDef } from './types';
+import { CustomFieldDef } from '../types';
 
 interface JobsTableHeaderProps {
   sortField: string | null;
@@ -39,7 +39,7 @@ export function JobsTableHeader({
   }) {
     return (
       <TableHead
-        className={`font-medium text-xs uppercase tracking-wider text-gray-600 dark:text-gray-400 h-12 ${
+        className={`h-12 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-400 ${
           sortable ? 'cursor-pointer' : ''
         } ${className}`}
         onClick={() => (sortable && field ? onSort(field) : undefined)}
@@ -56,7 +56,7 @@ export function JobsTableHeader({
 
   return (
     <TableHeader>
-      <TableRow className="bg-gray-50 dark:bg-black/30 hover:bg-gray-50 dark:hover:bg-black/30 border-b border-gray-200 dark:border-gray-700">
+      <TableRow className="border-b border-gray-200 bg-gray-50 hover:bg-gray-50 dark:border-gray-700 dark:bg-black/30 dark:hover:bg-black/30">
         {/* Mandatory Column: Title */}
         <HeaderCell field="title" label="Job Title" sortable />
 

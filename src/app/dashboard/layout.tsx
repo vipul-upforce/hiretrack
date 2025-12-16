@@ -22,7 +22,7 @@ import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
 import { IUser } from '@/lib/models/user';
 import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
-import { logout } from '@/lib/redux/authSlice';
+import { ILocalUser, logout } from '@/lib/redux/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import PortalHead from '@/components/layouts/PortalHead';
 import { useTheme } from '@/components/theme-provider';
@@ -37,10 +37,14 @@ import { Candidate } from '@/types/candidate';
 import { OnboardingProvider } from '@/components/onboarding/OnboardingProvider';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import SidebarContent from '@/components/layouts/SidebarContent';
-import { useGetOrganizationAllowanceQuery, useCheckOrgQuery } from '@/lib/features/org/orgApi';
+import {
+  useGetOrganizationAllowanceQuery,
+  useCheckOrgQuery,
+} from '@/lib/features/org/orgApi';
 import { useNotificationSSE } from '@/hooks/useNotificationSSE';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import logger from '@/lib/logger';
+import { RootState } from '@/lib/store';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 
 interface SidebarItem {
@@ -103,22 +107,79 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userData, setUserData] = useState<IUser | null>(null);
+  const [userData, setUserData] = useState<ILocalUser | null>(null);
   const {
     data: portalConfigData,
     isLoading,
     refetch,
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
-  const {
-    data: allowanceData,
-  } = useGetOrganizationAllowanceQuery();
+  const { data: allowanceData } = useGetOrganizationAllowanceQuery();
 
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
 
   // Notification hooks
   const [notificationPage, setNotificationPage] = useState(1);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
+    useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null,
+  );
+  const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
+  };
+
+  const darkenColor = (hex: string, percent: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+
+    const factor = (100 - percent) / 100;
+    const r = Math.round(rgb.r * factor);
+    const g = Math.round(rgb.g * factor);
+    const b = Math.round(rgb.b * factor);
+
+    // Ensure we always return a valid 6-digit hex
+    const result = (r * 16 + g * 8 + b).toString(16).padStart(6, '0');
+    return `#${result}`;
+  };
+
+  const lightenColor = (hex: string, percent: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+
+    const factor = percent / 100;
+    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
+    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
+    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
+
+    // Ensure we always return a valid 6-digit hex
+    const result = (r * 16 + g * 8 + b).toString(16).padStart(6, '0');
+    return `#${result}`;
+  };
+
+  // Memoized handlers to prevent re-renders
+  const handleToggleCollapse = useCallback(() => {
+    setIsCollapsed((prev) => {
+      const newState = !prev;
+      sessionStorage.setItem(
+        'sidebar-user-preference',
+        newState ? 'collapsed' : 'expanded',
+      );
+      return newState;
+    });
+  }, []);
+
   const {
     data: notificationsData,
     isLoading: notificationsLoading,
@@ -138,6 +199,33 @@ export default function DashboardLayout({
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
+  const handleMarkAsReadCallback = useCallback(
+    async (id: string) => {
+      try {
+        await markAsRead(id).unwrap();
+      } catch (error) {
+        logger.error('Failed to mark notification as read:', error);
+      }
+    },
+    [markAsRead],
+  );
+
+  const handleMarkAllAsReadCallback = useCallback(async () => {
+    try {
+      await markAllAsRead().unwrap();
+      toast({
+        title: 'Success',
+        description: 'All notifications marked as read',
+      });
+    } catch (error) {
+      logger.error('Failed to mark all notifications as read:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to mark all notifications as read',
+        variant: 'destructive',
+      });
+    }
+  }, [markAllAsRead, toast]);
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
   // Notification handlers
@@ -150,11 +238,11 @@ export default function DashboardLayout({
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
       // userData?.role === "interviewer" &&
-      (notification.relatedEntity === 'candidate'
-        || notification.relatedEntity === 'followup'
-        || notification.relatedEntity === 'checklist'
-        || notification.relatedEntity === 'meeting')
-      && notification.relatedId
+      (notification.relatedEntity === 'candidate' ||
+        notification.relatedEntity === 'followup' ||
+        notification.relatedEntity === 'checklist' ||
+        notification.relatedEntity === 'meeting') &&
+      notification.relatedId
     ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
@@ -178,11 +266,14 @@ export default function DashboardLayout({
     }
   };
 
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useSelector((state: RootState) => state.auth || {});
 
-  const {
-    data: orgCheckData,
-  } = useCheckOrgQuery(user?.organizationId, { skip: !user });
+  const { data: orgCheckData } = useCheckOrgQuery(
+    user?.organizationId as string,
+    {
+      skip: !user,
+    },
+  );
 
   const dispatch = useDispatch();
 
@@ -206,9 +297,9 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (
-      totalCount >= 0
-      && notificationCountData
-      && totalCount !== notificationCountData.totalCount
+      totalCount >= 0 &&
+      notificationCountData &&
+      totalCount !== notificationCountData.totalCount
     ) {
       // refetch notification when unread count changes to display latest notifications
       fetchNotifications();
@@ -223,14 +314,6 @@ export default function DashboardLayout({
     }
   }, [user]);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null,
-  );
-  const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-
   // Handle responsive sidebar behavior
   useEffect(() => {
     const handleResize = () => {
@@ -244,13 +327,11 @@ export default function DashboardLayout({
         } else {
           setIsCollapsed(true);
         }
-      } else {
+      } else if (userPreference === 'collapsed') {
         // On large screens, respect user preference or default to expanded
-        if (userPreference === 'collapsed') {
-          setIsCollapsed(true);
-        } else {
-          setIsCollapsed(false);
-        }
+        setIsCollapsed(true);
+      } else {
+        setIsCollapsed(false);
       }
     };
 
@@ -364,92 +445,14 @@ export default function DashboardLayout({
   }, [portalConfigData]);
 
   // Helper functions for color manipulation
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-      : null;
-  };
-
-  const darkenColor = (hex: string, percent: number) => {
-    const rgb = hexToRgb(hex);
-    if (!rgb) return hex;
-
-    const factor = (100 - percent) / 100;
-    const r = Math.round(rgb.r * factor);
-    const g = Math.round(rgb.g * factor);
-    const b = Math.round(rgb.b * factor);
-
-    // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
-    return `#${result}`;
-  };
-
-  const lightenColor = (hex: string, percent: number) => {
-    const rgb = hexToRgb(hex);
-    if (!rgb) return hex;
-
-    const factor = percent / 100;
-    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
-    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
-    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
-
-    // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
-    return `#${result}`;
-  };
-
-  // Memoized handlers to prevent re-renders
-  const handleToggleCollapse = useCallback(() => {
-    setIsCollapsed((prev) => {
-      const newState = !prev;
-      sessionStorage.setItem(
-        'sidebar-user-preference',
-        newState ? 'collapsed' : 'expanded',
-      );
-      return newState;
-    });
-  }, []);
-
-  const handleMarkAsReadCallback = useCallback(
-    async (id: string) => {
-      try {
-        await markAsRead(id).unwrap();
-      } catch (error) {
-        logger.error('Failed to mark notification as read:', error);
-      }
-    },
-    [markAsRead],
-  );
-
-  const handleMarkAllAsReadCallback = useCallback(async () => {
-    try {
-      await markAllAsRead().unwrap();
-      toast({
-        title: 'Success',
-        description: 'All notifications marked as read',
-      });
-    } catch (error) {
-      logger.error('Failed to mark all notifications as read:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to mark all notifications as read',
-        variant: 'destructive',
-      });
-    }
-  }, [markAllAsRead, toast]);
 
   return (
     <OnboardingProvider>
-      <div className="w-full max-w-full flex" style={{ overflowX: 'hidden' }}>
+      <div className="flex w-full max-w-full" style={{ overflowX: 'hidden' }}>
         <PortalHead isLoading />
         <aside
           className={cn(
-            'hidden h-screen border-r bg-background md:block transition-all duration-300',
+            'hidden h-screen border-r bg-background transition-all duration-300 md:block',
             isCollapsed ? 'w-[70px]' : 'w-[240px]',
           )}
         >
@@ -482,7 +485,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden fixed left-4 top-4 z-40"
+              className="fixed left-4 top-4 z-40 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -513,8 +516,8 @@ export default function DashboardLayout({
             />
           </SheetContent>
         </Sheet>
-        <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
-          <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
+        <main className="h-[100dvh] w-full overflow-x-hidden overflow-y-hidden">
+          <div className="mx-auto max-w-[100%] overflow-x-hidden overflow-y-hidden">
             <NotificationsProvider
               notifications={notificationsData?.notifications || []}
               isLoading={notificationsLoading}

@@ -4,7 +4,8 @@ import { CalendarView } from '../types';
 
 export function useCalendarView() {
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<CalendarView>('dayGridMonth');
+  const [calendarView, setCalendarView] =
+    useState<CalendarView>('dayGridMonth');
   const calendarRef = useRef<FullCalendar>(null);
 
   const handleDateSelect = (date: Date) => {
@@ -33,4 +34,3 @@ export function useCalendarView() {
     handleToday,
   };
 }
-

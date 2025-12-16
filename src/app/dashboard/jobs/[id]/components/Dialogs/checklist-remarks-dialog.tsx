@@ -6,27 +6,56 @@ import {
   useSubmitCandidateChecklistMutation,
   useGetJobLaneConfigQuery,
 } from '@/lib/features/checklist/checklistApi';
-import logger from '@/lib/logger';
 import { Candidate, CandidateStatus } from '@/types/candidate';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo } from 'react';
+import Cookies from 'js-cookie';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogFooter,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Rating } from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { verifyAndDecryptJWTToken } from '@/lib/auth';
 import { sentStatusMailHandler } from '@/lib/utils';
 import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
-import { ClipboardCheck } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import {
+  Eye,
+  EyeOff,
+  ClipboardCheck,
+  AlertCircle,
+  BookOpenCheck,
+} from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Formik, Form } from 'formik';
 import { IChecklistField } from '@/lib/models/JobLaneConfig';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea as UITextarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ChipInput } from '@/components/ui/chip-input';
+import { FileDropZone } from '@/components/ui/file-drop-zone';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { DatePicker } from '@/components/ui/date-picker';
+import TimePicker from '@/components/ui/time-picker';
+import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import { getJobId } from '../../utils/candidateAccessors';
-import { ChecklistForm } from './checklist-remarks-components/ChecklistForm';
-import { ChecklistRemarksSection } from './checklist-remarks-components/ChecklistRemarksSection';
-import { ChecklistDialogFooter } from './checklist-remarks-components/ChecklistDialogFooter';
 
 interface ChecklistInfo {
   candidateId: string;
@@ -53,6 +82,353 @@ interface ChecklistRemarksDialogProps {
   onChecklistSuccess?: (candidateId: string) => void;
   onChecklistCancel?: (candidateId: string) => void;
 }
+
+// Simple field renderer that works directly without context manipulation
+const ChecklistFieldRenderer: React.FC<{
+  field: IChecklistField;
+  value: any;
+  onChange: (value: any) => void;
+  error?: string;
+  touched?: boolean;
+}> = ({ field, value, onChange, error, touched }) => {
+  const fieldId = `checklist-field-${field.id}`;
+
+  const renderField = () => {
+    const showError = touched && error;
+    const errorClass = showError ? 'border-red-500 focus:border-red-500' : '';
+
+    switch (field.type) {
+      case 'text':
+      case 'email':
+        return (
+          <Input
+            id={fieldId}
+            type={field.type}
+            placeholder={field.placeholder}
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className={errorClass}
+          />
+        );
+
+      case 'number':
+        return (
+          <Input
+            id={fieldId}
+            type="number"
+            placeholder={field.placeholder}
+            value={value || ''}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className={errorClass}
+          />
+        );
+
+      case 'textarea':
+        return (
+          <UITextarea
+            id={fieldId}
+            placeholder={field.placeholder}
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className={errorClass}
+          />
+        );
+
+      case 'checkbox':
+        if (field.options && field.options.length > 0) {
+          // Multiple checkboxes
+          const selectedValues = Array.isArray(value) ? value : [];
+          return (
+            <div className="space-y-2">
+              {field.options.map((option, idx) => (
+                <div key={idx} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${fieldId}-${idx}`}
+                    checked={selectedValues.includes(option)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        onChange([...selectedValues, option]);
+                      } else {
+                        onChange(selectedValues.filter((v) => v !== option));
+                      }
+                    }}
+                  />
+                  <Label htmlFor={`${fieldId}-${idx}`}>{option}</Label>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        // Single checkbox
+        return (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={fieldId}
+              checked={Boolean(value)}
+              onCheckedChange={onChange}
+            />
+            <Label htmlFor={fieldId}>{field.label}</Label>
+          </div>
+        );
+
+      case 'radio':
+        return (
+          <RadioGroup value={value || ''} onValueChange={onChange}>
+            {field.options?.map((option, idx) => (
+              <div key={idx} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${fieldId}-${idx}`} />
+                <Label htmlFor={`${fieldId}-${idx}`}>{option}</Label>
+              </div>
+            ))}
+          </RadioGroup>
+        );
+
+      case 'select':
+        return (
+          <Select value={value || ''} onValueChange={onChange}>
+            <SelectTrigger>
+              <SelectValue
+                placeholder={field.placeholder || 'Select an option'}
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {field.options?.map((option, idx) => (
+                <SelectItem key={idx} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+
+      case 'multiSelect':
+        const selectedValues = Array.isArray(value) ? value : [];
+        // return (
+        //   <ChipInput
+        //     value={selectedValues}
+        //     onChange={(value) => {
+        //       debugger;
+        //       onChange(value);
+        //     }}
+        //     placeholder="Type an option and press Enter..."
+        //     suggestions={[]}
+        //   />
+        // );
+        return (
+          <ChipInput
+            value={selectedValues}
+            onChange={(value) => {
+              onChange(value);
+            }}
+            placeholder={field.placeholder || 'Select options'}
+            suggestions={field.options || []}
+            onSuggestionClick={(suggestion) => {
+              const updatedValues = [
+                ...(selectedValues || []),
+                suggestion,
+              ].filter(
+                (v, index, self) => v && self.indexOf(v) === index, // Remove duplicates
+              );
+              onChange(updatedValues);
+            }}
+          />
+        );
+
+      case 'date':
+        return (
+          <DatePicker
+            value={value ? new Date(value) : undefined}
+            onChange={(date) => {
+              // DatePicker may return different object types, handle multiple cases
+              let isoString = '';
+              if (date) {
+                if (date instanceof Date) {
+                  isoString = date.toISOString();
+                } else if (typeof date.toISOString === 'function') {
+                  // Handle other date-like objects with toISOString method
+                  isoString = date.toISOString();
+                } else if (typeof date === 'string') {
+                  // Handle string dates
+                  try {
+                    isoString = new Date(date).toISOString();
+                  } catch {
+                    isoString = '';
+                  }
+                } else if (date && typeof date === 'object') {
+                  // Handle other date-like objects
+                  try {
+                    isoString = new Date(date).toISOString();
+                  } catch {
+                    isoString = '';
+                  }
+                }
+              }
+              onChange(isoString || '');
+            }}
+            showTimePicker={false}
+            format="MM/DD/YYYY"
+            placeholder="Select date"
+            showNowButton={false}
+          />
+        );
+
+      case 'time':
+        return (
+          <TimePicker
+            name={fieldId}
+            value={value || ''}
+            onChange={(time) => onChange(time)}
+            onBlur={() => {}}
+          />
+        );
+
+      case 'datetime':
+        return (
+          <DateTimePicker
+            value={value ? dayjs(value) : null}
+            onChange={(date) => {
+              // DateTimePicker may return Dayjs or Date object, handle both
+              let isoString = '';
+              if (date) {
+                if (date instanceof Date) {
+                  isoString = date.toISOString();
+                } else if (typeof date.toISOString === 'function') {
+                  // Dayjs object has toISOString method
+                  isoString = date.toISOString();
+                }
+              }
+              onChange(isoString);
+            }}
+          />
+        );
+
+      case 'password':
+        return (
+          <Input
+            id={fieldId}
+            type="password"
+            placeholder={field.placeholder}
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className={errorClass}
+          />
+        );
+
+      case 'file':
+        const fileValue = Array.isArray(value) ? value : [];
+        return (
+          <FileDropZone
+            value={fileValue}
+            onFilesChange={async (files: File[]) => {
+              try {
+                const fileData = await Promise.all(
+                  files.map(async (file) => {
+                    // Check file size (50MB limit)
+                    if (file.size > 50 * 1024 * 1024) {
+                      toast({
+                        title: 'File too large',
+                        description: `${file.name} exceeds 50MB limit`,
+                        variant: 'destructive',
+                      });
+                      return null;
+                    }
+
+                    const base64 = await new Promise<string>(
+                      (resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(file);
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                      },
+                    );
+
+                    return {
+                      name: file.name,
+                      type: file.type,
+                      size: file.size,
+                      base64,
+                    };
+                  }),
+                );
+
+                const validFiles = fileData.filter(Boolean);
+                onChange(validFiles);
+              } catch (error) {
+                toast({
+                  title: 'Upload failed',
+                  description: 'Failed to process files',
+                  variant: 'destructive',
+                });
+              }
+            }}
+            existingFiles={fileValue.map((file: any) => ({
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              url: file.base64,
+              preview: file.base64,
+            }))}
+            maxSize={50 * 1024 * 1024} // 50MB
+          />
+        );
+
+      default:
+        return (
+          <Input
+            id={fieldId}
+            placeholder={field.placeholder}
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        );
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={fieldId} className="text-sm font-medium">
+        {field.label}
+        {field.required && <span className="ml-1 text-red-500">*</span>}
+      </Label>
+      {renderField()}
+      {touched && error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+    </div>
+  );
+};
+
+// Simple form that renders checklist fields directly
+const ChecklistForm: React.FC<{
+  checklist: {
+    id: string;
+    name: string;
+    description?: string;
+    fields: IChecklistField[];
+    isMandatory: boolean;
+  };
+  responses: Record<string, any>;
+  onResponseChange: (fieldId: string, value: any) => void;
+  errors?: Record<string, string>;
+  touched?: Record<string, boolean>;
+}> = ({
+  checklist,
+  responses,
+  onResponseChange,
+  errors = {},
+  touched = {},
+}) => (
+  <div className="space-y-4">
+    {checklist.fields.map((field) => (
+      <ChecklistFieldRenderer
+        key={field.id}
+        field={field}
+        value={responses[field.id]?.value}
+        onChange={(value) => onResponseChange(field.id, value)}
+        error={errors[field.id]}
+        touched={touched[field.id]}
+      />
+    ))}
+  </div>
+);
 
 function ChecklistRemarksDialog({
   candidate,
@@ -95,7 +471,7 @@ function ChecklistRemarksDialog({
     try {
       return JSON.parse(checklistInfo);
     } catch (e) {
-      logger.error(
+      console.error(
         'ChecklistRemarksDialog: Failed to parse checklistInfo:',
         checklistInfo,
         e,
@@ -141,24 +517,25 @@ function ChecklistRemarksDialog({
         // Check if this field is now valid
         let isValid = false;
         if (
-          response
-          && response.value !== undefined
-          && response.value !== null
+          response &&
+          response.value !== undefined &&
+          response.value !== null
         ) {
           switch (field.type) {
             case 'date':
             case 'datetime':
               // Date/datetime fields store ISO strings, check if it's a valid date string
               if (
-                response.value
-                && response.value !== ''
-                && response.value !== null
+                response.value &&
+                response.value !== '' &&
+                response.value !== null
               ) {
                 try {
                   // Handle both string and Date object values
-                  const dateObj = response.value instanceof Date
-                    ? response.value
-                    : new Date(response.value);
+                  const dateObj =
+                    response.value instanceof Date
+                      ? response.value
+                      : new Date(response.value);
                   isValid = !isNaN(dateObj.getTime()) && dateObj.getTime() > 0;
                 } catch (error) {
                   isValid = false;
@@ -167,9 +544,10 @@ function ChecklistRemarksDialog({
               break;
             case 'time':
               // Time fields store time strings
-              isValid = response.value
-                && response.value !== ''
-                && response.value.trim() !== '';
+              isValid =
+                response.value &&
+                response.value !== '' &&
+                response.value.trim() !== '';
               break;
             case 'text':
             case 'email':
@@ -182,10 +560,12 @@ function ChecklistRemarksDialog({
               break;
             case 'multiSelect':
             case 'checkbox':
-              isValid = Array.isArray(response.value) && response.value.length > 0;
+              isValid =
+                Array.isArray(response.value) && response.value.length > 0;
               break;
             case 'file':
-              isValid = Array.isArray(response.value) && response.value.length > 0;
+              isValid =
+                Array.isArray(response.value) && response.value.length > 0;
               break;
             default:
               isValid = !!response.value;
@@ -240,6 +620,7 @@ function ChecklistRemarksDialog({
 
   const validateChecklist = () => {
     if (!hasChecklist) return true;
+
     const checklist = parsedChecklistInfo!.checklist!;
     const errors: Record<string, string> = {};
     let hasErrors = false;
@@ -250,9 +631,9 @@ function ChecklistRemarksDialog({
         let isEmpty = false;
 
         if (
-          !response
-          || response.value === undefined
-          || response.value === null
+          !response ||
+          response.value === undefined ||
+          response.value === null
         ) {
           isEmpty = true;
         } else {
@@ -271,17 +652,18 @@ function ChecklistRemarksDialog({
             case 'datetime':
               // Date/datetime fields store ISO strings, check if it's a valid date
               if (
-                !response.value
-                || response.value === ''
-                || response.value === null
+                !response.value ||
+                response.value === '' ||
+                response.value === null
               ) {
                 isEmpty = true;
               } else {
                 try {
                   // Handle both string and Date object values
-                  const dateObj = response.value instanceof Date
-                    ? response.value
-                    : new Date(response.value);
+                  const dateObj =
+                    response.value instanceof Date
+                      ? response.value
+                      : new Date(response.value);
                   isEmpty = isNaN(dateObj.getTime()) || dateObj.getTime() <= 0;
                 } catch (error) {
                   isEmpty = true;
@@ -290,9 +672,10 @@ function ChecklistRemarksDialog({
               break;
             case 'time':
               // Time fields store time strings
-              isEmpty = !response.value
-                || response.value === ''
-                || response.value.trim() === '';
+              isEmpty =
+                !response.value ||
+                response.value === '' ||
+                response.value.trim() === '';
               break;
             case 'select':
             case 'radio':
@@ -300,10 +683,12 @@ function ChecklistRemarksDialog({
               break;
             case 'multiSelect':
             case 'checkbox':
-              isEmpty = !Array.isArray(response.value) || response.value.length === 0;
+              isEmpty =
+                !Array.isArray(response.value) || response.value.length === 0;
               break;
             case 'file':
-              isEmpty = !Array.isArray(response.value) || response.value.length === 0;
+              isEmpty =
+                !Array.isArray(response.value) || response.value.length === 0;
               break;
             default:
               isEmpty = !response.value;
@@ -327,6 +712,7 @@ function ChecklistRemarksDialog({
       }
       setFieldTouched((prev) => ({ ...prev, ...touchedState }));
     }
+
     setFieldErrors(errors);
     return !hasErrors;
   };
@@ -334,8 +720,39 @@ function ChecklistRemarksDialog({
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
-    if (!validateChecklist()) return;
+    // Validate checklist if mandatory
+    if (isChecklistMandatory && !validateChecklist()) {
+      return;
+    }
 
+    // const token = Cookies.get("auth_token");
+    // if (!token) {
+    //   toast({
+    //     title: "Error",
+    //     description: "Authentication required",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
+
+    // const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'Invalid authentication',
+        variant: 'destructive',
+      });
+      return;
+    }
+    // if (!newRemark.trim() || !user?.id) {
+    //   toast({
+    //     title: "Error",
+    //     description: "Please add remarks",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
+    // const user = decryptedResponse.user;
     setIsSubmitting(true);
 
     try {
@@ -344,8 +761,9 @@ function ChecklistRemarksDialog({
         const checklist = parsedChecklistInfo.checklist!;
 
         const laneConfig = jobLaneConfig?.laneConfigs.find(
-          (lc) => lc.laneId
-            === (parsedChecklistInfo.checklistType === 'incoming'
+          (lc) =>
+            lc.laneId ===
+            (parsedChecklistInfo.checklistType === 'incoming'
               ? parsedChecklistInfo.targetLane
               : parsedChecklistInfo.currentLane),
         );
@@ -364,10 +782,10 @@ function ChecklistRemarksDialog({
             responses: checklistResponses,
             remark: newRemark.trim()
               ? {
-                description: newRemark.trim(),
-                isPrivate: isSubRemarkPrivate,
-                rating: remarkRating || undefined,
-              }
+                  description: newRemark.trim(),
+                  isPrivate: isSubRemarkPrivate,
+                  rating: remarkRating || undefined,
+                }
               : undefined,
           },
         }).unwrap();
@@ -385,10 +803,6 @@ function ChecklistRemarksDialog({
             prev_status: parsedChecklistInfo.currentLane,
           },
           sendStatusMail,
-          {
-            remark: newRemark.trim(),
-            rating: remarkRating,
-          }
         );
       } else if (newRemark.trim()) {
         // Only submit remark if no checklist
@@ -444,10 +858,7 @@ function ChecklistRemarksDialog({
         }).unwrap();
 
         const updatedCandidate = await updateCandidate(updateData).unwrap();
-        await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
-          remark: newRemark.trim(),
-          rating: remarkRating,
-        });
+        await sentStatusMailHandler(updatedCandidate, sendStatusMail);
       }
 
       onOpenChange(false);
@@ -492,10 +903,11 @@ function ChecklistRemarksDialog({
 
     onOpenChange(false);
   };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent size="2xl" className="p-0  flex flex-col max-h-[90vh]">
-        <DialogHeader className="px-6 py-4 pr-12 border-b">
+      <DialogContent size="2xl" className="flex max-h-[90vh] flex-col p-0">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             {hasChecklist && <ClipboardCheck className="h-5 w-5" />}
             {hasChecklist
@@ -504,61 +916,136 @@ function ChecklistRemarksDialog({
           </DialogTitle>
           <DialogDescription>
             {hasChecklist
-              ? parsedChecklistInfo?.checklist?.description
-                || 'Please complete the checklist before proceeding.'
+              ? parsedChecklistInfo?.checklist?.description ||
+                'Please complete the checklist before proceeding.'
               : 'Add your observations and feedback for this candidate.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto px-6 py-4">
-            {hasChecklist && parsedChecklistInfo?.checklist ? (
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold">
-                  {parsedChecklistInfo.checklistType === 'incoming'
-                    ? 'Incoming'
-                    : 'Outgoing'}
-                  {' '}
-                  Checklist
-                </h3>
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="space-y-6 pb-6">
+            {/* Checklist Section */}
+            {hasChecklist && parsedChecklistInfo?.checklist && (
+              <>
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold">
+                    {parsedChecklistInfo.checklistType === 'incoming'
+                      ? 'Incoming'
+                      : 'Outgoing'}{' '}
+                    Checklist
+                  </h3>
 
-                <ChecklistForm
-                  checklist={parsedChecklistInfo.checklist}
-                  responses={checklistResponses}
-                  onResponseChange={handleChecklistFieldChange}
-                  errors={fieldErrors}
-                  touched={fieldTouched}
-                />
-                <Separator className="mt-4" />
-              </div>
-            ) : (
-              <div className="h-2" />
+                  <ChecklistForm
+                    checklist={parsedChecklistInfo.checklist}
+                    responses={checklistResponses}
+                    onResponseChange={handleChecklistFieldChange}
+                    errors={fieldErrors}
+                    touched={fieldTouched}
+                  />
+                </div>
+
+                <Separator />
+              </>
             )}
-          </div>
 
-          <div className="px-6 py-4 bg-background z-20">
-            <ChecklistRemarksSection
-              newRemark={newRemark}
-              setNewRemark={setNewRemark}
-              remarkRating={remarkRating}
-              setRemarkRating={setRemarkRating}
-              setRemarkRatingHistory={setRemarkRatingHistory}
-              isSubRemarkPrivate={isSubRemarkPrivate}
-              setIsSubRemarkPrivate={setIsSubRemarkPrivate}
-              handleSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-              user={user}
-            />
+            {/* Remarks Section */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Remarks (Optional)</h3>
+              <MentionTextarea
+                placeholder="Add a remark... (Alt+Enter to submit)"
+                className="min-h-[100px]"
+                value={newRemark}
+                onChange={setNewRemark}
+                onKeyDown={(e) => {
+                  if (e.altKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!isSubmitting && user?.id) {
+                      handleSubmit();
+                    }
+                  }
+                }}
+                organizationId={user?.organizationId || ''}
+                currentUserRole={user?.role || ''}
+                rows={4}
+              />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="rating">Rating:</Label>
+                  <Rating
+                    name="half-rating"
+                    onChange={(e, value) => {
+                      setRemarkRating(value);
+                      setRemarkRatingHistory(value);
+                    }}
+                    value={remarkRating}
+                    precision={0.5}
+                    sx={{
+                      '& .MuiRating-iconEmpty': {
+                        color: 'rgba(255, 255, 255, 0.3)',
+                      },
+                      '& .MuiRating-iconFilled': {
+                        color: '#fbbf24',
+                      },
+                      '& .MuiRating-iconHover': {
+                        color: '#f59e0b',
+                      },
+                    }}
+                  />
+                </div>
+                <div className="flex flex-row items-center justify-evenly">
+                  <div className="flex items-center space-x-2">
+                    {isSubRemarkPrivate ? (
+                      <EyeOff className="h-4 w-4 text-gray-500" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-500" />
+                    )}
+                    <Label htmlFor="privacy-toggle" className="text-sm">
+                      {isSubRemarkPrivate ? 'Private' : 'Public'}
+                    </Label>
+                  </div>
+                  <Switch
+                    id="privacy-toggle-submit"
+                    checked={isSubRemarkPrivate}
+                    onCheckedChange={() =>
+                      setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                    }
+                    className="border-1 ml-2 h-4 w-8 border border-solid drop-shadow-lg"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <ChecklistDialogFooter
-          isChecklistMandatory={isChecklistMandatory}
-          isSubmitting={isSubmitting}
-          user={user}
-          handleCancel={handleCancel}
-          handleSubmit={handleSubmit}
-        />
+        <DialogFooter className="sticky bottom-[-50%] z-10 border-t bg-background px-6 py-4">
+          {isChecklistMandatory && (
+            // <Alert className="text-orange-400 flex flex-row  items-center">
+            //   <AlertCircle className="h-4 w-4 p-0" color="orange" />
+            //   <AlertDescription className="pt-0">
+            <div className="flex flex-row items-center text-orange-400">
+              <AlertCircle className="mr-2 h-4 w-4 p-0" color="orange" />
+              This checklist is mandatory and must be completed before moving
+              the candidate.
+            </div>
+          )}
+          <Button
+            variant="secondary"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
+            {isChecklistMandatory ? 'Cancel' : 'Skip'}
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="info"
+            disabled={
+              isSubmitting || !user?.id
+              // (parsedChecklistInfo.isMandatory)
+            }
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { Draggable } from '@hello-pangea/dnd';
+import { Draggable, DraggableProvided } from '@hello-pangea/dnd';
 import { Job } from '@/types/job';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +34,7 @@ import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { formatDistanceToNow } from 'date-fns';
 import logger from '@/lib/logger';
 import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
+import { RootState } from '@/lib/redux/store';
 import ConfirmationDialog from '../../jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { JobAnalyticsModal } from './JobAnalyticsModal';
 import AttachmentsPopover from '../../jobs/[id]/components/Remarks/attachments-popover';
@@ -65,16 +65,14 @@ function JobCard({
   const [organizationId, setOrganizationId] = useState<string>('');
   const { formNameObject } = useCustomForm('Job Position');
   const router = useRouter();
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useSelector((state: RootState) => state.auth || {});
 
   // Get user's organization ID
   useEffect(() => {
     const getUserOrganization = async () => {
       try {
         if (user) {
-          setOrganizationId(user.organizationId);
+          setOrganizationId(user.organizationId as string);
         }
       } catch (error) {
         logger.error('Error getting user organization:', error);
@@ -87,11 +85,19 @@ function JobCard({
   return (
     <>
       <Draggable key={job._id} draggableId={job._id} index={index}>
-        {(provided: any) => (
+        {(provided: DraggableProvided) => (
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                router.push(`/dashboard/jobs/${job._id}`);
+              }
+            }}
             className="relative w-full min-w-0 max-w-full cursor-pointer rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-lg dark:border-gray-700 dark:bg-black"
             onClick={(e) => {
               // Only trigger on actual click, not on drag

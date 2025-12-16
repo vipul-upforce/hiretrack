@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Columns } from 'lucide-react';
-import { CustomFieldDef } from './types';
+import { CustomFieldDef } from '../types';
 
 interface ColumnsSelectorProps {
   visibleColumns: Set<string>;
@@ -41,7 +41,7 @@ export function ColumnsSelector({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-[200px] max-h-[400px] overflow-y-auto"
+        className="max-h-[400px] w-[200px] overflow-y-auto"
       >
         <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -81,7 +81,9 @@ export function ColumnsSelector({
                 className="cursor-pointer"
                 key={field.label}
                 checked={visibleColumns.has(field.label)}
-                onCheckedChange={(checked) => toggleColumn(field.label, checked)}
+                onCheckedChange={(checked) =>
+                  toggleColumn(field.label, checked)
+                }
               >
                 {field.label.split(' |||||(')[0]}
               </DropdownMenuCheckboxItem>

@@ -20,7 +20,7 @@ export interface Job {
   links: string[];
   salary?: ISalary;
   // validTill?: Date;
-  status: 'open' | 'closed' | 'draft';
+  status: string;
   candidateCount?: number;
   attachments: {
     files: Array<{

@@ -45,12 +45,18 @@ export function JobAnalyticsModal({
   organizationId,
 }: JobAnalyticsModalProps) {
   // Helper function to safely convert date values to Date objects
-  const toDate = (dateValue: any): Date | null => {
+  const toDate = (
+    dateValue:
+      | Date
+      | string
+      | number
+      | { toDate: () => Date; toISOString: () => string },
+  ): Date | null => {
     if (!dateValue) return null;
     if (dateValue instanceof Date) return dateValue;
     if (typeof dateValue === 'string' || typeof dateValue === 'number') {
       const date = new Date(dateValue);
-      return isNaN(date.getTime()) ? null : date;
+      return Number.isNaN(date.getTime()) ? null : date;
     }
     if (dateValue.toDate && typeof dateValue.toDate === 'function') {
       return dateValue.toDate();
@@ -121,7 +127,7 @@ export function JobAnalyticsModal({
 
   const handleExport = () => {
     try {
-      const exportData: any[] = [];
+      const exportData: { [key: string]: string | number }[] = [];
 
       // Add header with job information
       exportData.push({

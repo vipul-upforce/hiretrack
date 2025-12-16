@@ -1,12 +1,9 @@
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CandidateStatus } from '@/types/candidate';
-import {
-  BriefcaseIcon, CalendarIcon, ClockIcon, Zap,
-} from 'lucide-react';
+import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { getRandom } from '@/lib/utils/getRandom';
 import { CandidateStatusBadge } from '../jobs/[id]/components/Utils/candidate-status-badge';
 import { Assignment } from '../page';
 import { formatDate, formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
@@ -20,12 +17,12 @@ export function RenderInterviewerAssignments({
   const { formNameObject } = useCustomForm('Candidate');
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {interviewerAssignments?.map((assignment) => (
         <Card key={assignment.id || Math.random().toString()}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg capitalize">
-              <div className="flex pb-2 w-full flex-row items-center justify-between">
+              <div className="flex w-full flex-row items-center justify-between pb-2">
                 <p className="w-[70%] break-words">{assignment.name}</p>
                 <div>
                   <CandidateStatusBadge
@@ -39,7 +36,7 @@ export function RenderInterviewerAssignments({
             <div className="space-y-4">
               {/* Position */}
               <div className="flex items-start gap-2">
-                <BriefcaseIcon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <BriefcaseIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Position</p>
                   <p className="font-medium">
@@ -50,13 +47,13 @@ export function RenderInterviewerAssignments({
 
               {/* Skills */}
               <div className="flex items-start gap-2">
-                <Zap className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <Zap className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1.5">Skills</p>
+                  <p className="mb-1.5 text-sm text-muted-foreground">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {assignment.skills.slice(0, 3).map((skill, skillIndex) => (
+                    {assignment.skills.slice(0, 3).map((skill) => (
                       <Badge
-                        key={`${assignment.id}-skill-${skillIndex}-${skill}`}
+                        key={`${assignment.id}-skill-${getRandom(0, 1000000).toString()}-${skill}`}
                         variant="secondary"
                         className="text-xs"
                       >
@@ -65,8 +62,7 @@ export function RenderInterviewerAssignments({
                     ))}
                     {assignment.skills.length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +
-                        {assignment.skills.length - 3}
+                        +{assignment.skills.length - 3}
                       </Badge>
                     )}
                   </div>
@@ -82,8 +78,8 @@ export function RenderInterviewerAssignments({
                     <p className="text-sm font-medium">
                       {assignment?.assignment?.time
                         ? formatDate(
-                          assignment?.assignment?.time.toLocaleString(),
-                        )
+                            assignment?.assignment?.time.toLocaleString(),
+                          )
                         : 'N/A'}
                     </p>
                   </div>
@@ -96,35 +92,36 @@ export function RenderInterviewerAssignments({
                     <p className="text-sm font-medium">
                       {assignment?.assignment?.time
                         ? formatTime(
-                          assignment?.assignment?.time.toLocaleString(),
-                        )
+                            assignment?.assignment?.time.toLocaleString(),
+                          )
                         : 'N/A'}
                     </p>
                   </div>
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">
-                {assignment.customFields
-                  && Object.entries(assignment.customFields)
+                {assignment.customFields &&
+                  Object.entries(assignment.customFields)
                     .filter(([key, value]) => {
                       const field = formNameObject?.fields.find(
                         (f) => f.label === key,
                       );
                       if (
-                        field?.candidateId
-                        && field.candidateId !== assignment._id
-                      ) return false;
+                        field?.candidateId &&
+                        field.candidateId !== assignment._id
+                      )
+                        return false;
                       if (
-                        (typeof value === 'string' && value === '')
-                        || (typeof value === 'object'
-                          && Object.keys(value).length === 0)
+                        (typeof value === 'string' && value === '') ||
+                        (typeof value === 'object' &&
+                          Object.keys(value).length === 0)
                       ) {
                         return false;
                       }
                       return field?.showOnCard;
                     })
-                    .map(([key, value], i) => (
-                      <div key={i}>
+                    .map(([key, value]) => (
+                      <div key={getRandom(0, 1000000).toString()}>
                         <CustomFieldBadge kii={key} value={value} />
                       </div>
                     ))}

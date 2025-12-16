@@ -23,6 +23,10 @@ import {
   Droppable,
   Draggable,
   DropResult,
+  DroppableProps,
+  DroppableStateSnapshot,
+  DraggableStateSnapshot,
+  DraggableProvided,
 } from '@hello-pangea/dnd';
 import {
   Plus,
@@ -60,26 +64,23 @@ interface LaneRestrictions {
   nonDeletable: string[];
 }
 
-const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
+export default function DefaultLanesButton({
   userRole,
-}) => {
+}: DefaultLanesButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [defaultLanes, setDefaultLanes] = useState<string[]>([]);
   const [laneRestrictions, setLaneRestrictions] = useState<LaneRestrictions>({
     nonEditable: ['applied', 'accepted', 'rejected'],
     nonDeletable: ['applied', 'accepted', 'rejected'],
   });
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
     null,
   );
 
   // RTK query hooks and states
-  const {
-    data, isLoading, isError, error,
-  } = useGetDefaultLanesQuery(undefined);
-  const [updateDefaultLanes, { isLoading: isSaving }] = useUpdateDefaultLanesMutation();
+  const { data } = useGetDefaultLanesQuery(undefined);
+  const [updateDefaultLanes] = useUpdateDefaultLanesMutation();
   const [addDefaultLane] = useAddDefaultLaneMutation();
   const [deleteDefaultLane] = useDeleteDefaultLaneMutation();
 
@@ -151,8 +152,8 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
     }
 
     if (
-      editValue.trim() !== editingLane
-      && defaultLanes.includes(editValue.trim())
+      editValue.trim() !== editingLane &&
+      defaultLanes.includes(editValue.trim())
     ) {
       toast({
         title: 'Duplicate Name',
@@ -162,7 +163,9 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       return;
     }
 
-    const newLanes = defaultLanes.map((lane) => (lane === editingLane ? editValue.trim() : lane));
+    const newLanes = defaultLanes.map((lane) =>
+      lane === editingLane ? editValue.trim() : lane,
+    );
     setDefaultLanes(newLanes);
     setEditingLane(null);
     setEditValue('');
@@ -198,11 +201,12 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       toast({
         title: 'Error',
         description:
-          typeof err === 'object'
-          && err !== null
-          && 'data' in err
-          && typeof (err as any).data?.message === 'string'
-            ? (err as any).data.message
+          typeof err === 'object' &&
+          err !== null &&
+          'data' in err &&
+          typeof (err as unknown as { data?: { message: string } }).data
+            ?.message === 'string'
+            ? (err as unknown as { data?: { message: string } }).data?.message
             : 'Failed to save default lanes',
         variant: 'destructive',
       });
@@ -221,11 +225,12 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       toast({
         title: 'Error',
         description:
-          typeof err === 'object'
-          && err !== null
-          && 'data' in err
-          && typeof (err as any).data?.message === 'string'
-            ? (err as any).data.message
+          typeof err === 'object' &&
+          err !== null &&
+          'data' in err &&
+          typeof (err as unknown as { data?: { message: string } }).data
+            ?.message === 'string'
+            ? (err as unknown as { data?: { message: string } }).data?.message
             : 'Failed to add lane',
         variant: 'destructive',
       });
@@ -241,20 +246,22 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       toast({
         title: 'Error',
         description:
-          typeof err === 'object'
-          && err !== null
-          && 'data' in err
-          && typeof (err as any).data?.message === 'string'
-            ? (err as any).data.message
+          typeof err === 'object' &&
+          err !== null &&
+          'data' in err &&
+          typeof (err as unknown as { data?: { message: string } }).data
+            ?.message === 'string'
+            ? (err as unknown as { data?: { message: string } }).data?.message
             : 'Failed to delete lane',
         variant: 'destructive',
       });
     }
   };
 
-  const isRestricted = (lane: string, type: 'edit' | 'delete') => (type === 'edit'
-    ? laneRestrictions.nonEditable.includes(lane)
-    : laneRestrictions.nonDeletable.includes(lane));
+  const isRestricted = (lane: string, type: 'edit' | 'delete') =>
+    type === 'edit'
+      ? laneRestrictions.nonEditable.includes(lane)
+      : laneRestrictions.nonDeletable.includes(lane);
 
   if (!canManage) {
     return null; // Don't show button if user doesn't have permission
@@ -273,7 +280,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
-          className="max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-visible"
+          className="max-h-[95vh] max-w-4xl overflow-y-auto overflow-x-visible"
           onEscapeKeyDown={(e) => {
             // Prevent dialog from closing if we're editing
             if (editingLane || showAddForm) {
@@ -293,23 +300,22 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
             </p>
           </DialogHeader>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-            </div>
-          ) : (
+          {
             <TooltipProvider delayDuration={0}>
-              <div className="space-y-4 h-[500px] overflow-y-auto">
+              <div className="h-[500px] space-y-4 overflow-y-auto">
                 {/* Lanes List */}
                 <DragDropContext onDragEnd={handleDragEnd}>
                   <Droppable droppableId="default-lanes">
-                    {(provided, snapshot) => (
+                    {(
+                      provided: DraggableProvided,
+                      snapshot: DroppableStateSnapshot,
+                    ) => (
                       <div
                         {...provided.droppableProps}
                         ref={provided.innerRef}
                         className={`space-y-2 px-2 ${
                           snapshot.isDraggingOver
-                            ? 'bg-muted/20 rounded-lg p-2 max-h-[300px] overflow-y-scroll'
+                            ? 'max-h-[300px] overflow-y-scroll rounded-lg bg-muted/20 p-2'
                             : `${showAddForm ? 'max-h-[282px]' : 'max-h-[305px]'} overflow-y-scroll`
                         }`}
                       >
@@ -319,31 +325,34 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                             draggableId={lane}
                             index={index}
                           >
-                            {(provided, snapshot) => {
+                            {(
+                              draggableProvided: DraggableProvided,
+                              draggableSnapshot: DraggableStateSnapshot,
+                            ) => {
                               const draggingComponent = (
                                 <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
+                                  ref={draggableProvided.innerRef}
+                                  {...draggableProvided.draggableProps}
                                   style={{
-                                    ...provided.draggableProps.style,
-                                    ...(snapshot.isDragging && {
+                                    ...draggableProvided.draggableProps.style,
+                                    ...(draggableSnapshot.isDragging && {
                                       position: 'fixed',
                                       zIndex: 9999,
                                       pointerEvents: 'none',
                                       transform:
-                                        provided.draggableProps.style
+                                        draggableProvided.draggableProps.style
                                           ?.transform || 'none',
                                     }),
                                   }}
                                 >
                                   <div
-                                    className={`bg-card border rounded-none transition-all ${
-                                      snapshot.isDragging
-                                        ? 'shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105'
+                                    className={`rounded-none border bg-card transition-all ${
+                                      draggableSnapshot.isDragging
+                                        ? 'scale-105 border-2 border-primary bg-white opacity-95 shadow-2xl dark:bg-black'
                                         : 'shadow-sm hover:shadow-md'
                                     }`}
                                     style={{
-                                      ...(snapshot.isDragging && {
+                                      ...(draggableSnapshot.isDragging && {
                                         width: '320px',
                                         minWidth: '320px',
                                       }),
@@ -352,8 +361,8 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                     <div className="p-3">
                                       <div className="flex items-center gap-2">
                                         <div
-                                          {...provided.dragHandleProps}
-                                          className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted/50"
+                                          {...draggableProvided.dragHandleProps}
+                                          className="cursor-grab rounded p-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground active:cursor-grabbing"
                                         >
                                           <GripVertical className="h-4 w-4" />
                                         </div>
@@ -363,7 +372,9 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                             <div className="flex items-center gap-2">
                                               <Input
                                                 value={editValue}
-                                                onChange={(e) => setEditValue(e.target.value)}
+                                                onChange={(e) =>
+                                                  setEditValue(e.target.value)
+                                                }
                                                 onKeyDown={(e) => {
                                                   if (e.key === 'Enter') {
                                                     e.preventDefault();
@@ -398,13 +409,15 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                           ) : (
                                             <div className="flex items-center gap-2">
                                               <span
-                                                className={`capitalize font-medium text-foreground select-none ${
+                                                className={`select-none font-medium capitalize text-foreground ${
                                                   !isRestricted(lane, 'edit')
                                                     ? 'cursor-pointer'
                                                     : 'cursor-default'
                                                 }`}
-                                                onDoubleClick={() => !isRestricted(lane, 'edit')
-                                                  && startEdit(lane)}
+                                                onDoubleClick={() =>
+                                                  !isRestricted(lane, 'edit') &&
+                                                  startEdit(lane)
+                                                }
                                                 title={
                                                   !isRestricted(lane, 'edit')
                                                     ? 'Double-click to edit'
@@ -416,7 +429,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                               {isRestricted(lane, 'edit') && (
                                                 <Tooltip>
                                                   <TooltipTrigger asChild>
-                                                    <AlertCircle className="h-3 w-3 text-muted-foreground cursor-help" />
+                                                    <AlertCircle className="h-3 w-3 cursor-help text-muted-foreground" />
                                                   </TooltipTrigger>
                                                   <TooltipContent>
                                                     <p>
@@ -445,7 +458,9 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                                             <Button
                                               size="sm"
                                               variant="ghost"
-                                              onClick={() => confirmDelete(lane)}
+                                              onClick={() =>
+                                                confirmDelete(lane)
+                                              }
                                               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                                             >
                                               <X className="h-3 w-3" />
@@ -459,7 +474,10 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                               );
 
                               // Use portal for dragging items to ensure visibility
-                              if (snapshot.isDragging && portalContainer) {
+                              if (
+                                draggableSnapshot.isDragging &&
+                                portalContainer
+                              ) {
                                 return createPortal(
                                   draggingComponent,
                                   portalContainer,
@@ -478,7 +496,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
 
                 {/* Add New Lane */}
                 {showAddForm ? (
-                  <div className="bg-card border rounded-none">
+                  <div className="rounded-none border bg-card">
                     <div className="p-3">
                       <div className="flex items-center gap-2">
                         <Label htmlFor="newLane" className="sr-only">
@@ -504,7 +522,11 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                           className="flex-1"
                           autoFocus
                         />
-                        <Button onClick={addNewLane} size="sm" variant="primary">
+                        <Button
+                          onClick={addNewLane}
+                          size="sm"
+                          variant="primary"
+                        >
                           Add
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -522,24 +544,24 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full flex justify-center items-center">
+                  <div className="flex w-full items-center justify-center">
                     <Button
                       variant="primary"
                       onClick={() => setShowAddForm(true)}
                       className="w-[96%] border-dashed"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="mr-2 h-4 w-4" />
                       Add New Lane
                     </Button>
                   </div>
                 )}
 
                 {/* Info */}
-                <div className="bg-muted/50 p-3 rounded-none">
+                <div className="rounded-none bg-muted/50 p-3">
                   <div className="flex items-start gap-2">
-                    <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <AlertCircle className="mt-0.5 h-4 w-4 text-muted-foreground" />
                     <div className="text-sm text-muted-foreground">
-                      <p className="font-medium mb-1">Important Notes:</p>
+                      <p className="mb-1 font-medium">Important Notes:</p>
                       <ul className="space-y-1 text-xs">
                         <li>
                           These default lanes will be applied to all new jobs
@@ -560,7 +582,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
                 </div>
               </div>
             </TooltipProvider>
-          )}
+          }
 
           <DialogFooter>
             <Button
@@ -572,7 +594,7 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
             </Button>
             <Button
               onClick={saveDefaultLanes}
-              disabled={saving || loading}
+              disabled={saving}
               variant="primary"
             >
               {saving ? 'Saving...' : 'Save Changes'}
@@ -584,15 +606,15 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={deleteConfirm.show}
-        onOpenChange={(open) => setDeleteConfirm((prev) => ({ ...prev, show: open }))}
+        onOpenChange={(open) =>
+          setDeleteConfirm((prev) => ({ ...prev, show: open }))
+        }
       >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Lane</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the "
-              {deleteConfirm.lane}
-              " lane?
+              Are you sure you want to delete the "{deleteConfirm.lane}" lane?
               This will remove it from the default lanes for new jobs.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -609,6 +631,4 @@ const DefaultLanesButton: React.FC<DefaultLanesButtonProps> = ({
       </AlertDialog>
     </>
   );
-};
-
-export default DefaultLanesButton;
+}

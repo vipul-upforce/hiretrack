@@ -43,18 +43,18 @@ export function JobDetailsDialog({
   };
 
   const header = (
-    <DialogHeader className="px-6 pt-6 pb-4">
+    <DialogHeader className="px-6 pb-4 pt-6">
       <DialogTitle className="text-2xl font-bold tracking-tight">
         Job Details
       </DialogTitle>
-      <p className="text-sm text-muted-foreground mt-1">
+      <p className="mt-1 text-sm text-muted-foreground">
         View and manage job information
       </p>
     </DialogHeader>
   );
 
   const body = isEditing ? (
-    <div className="flex-1 overflow-y-auto px-0 space-y-6">
+    <div className="flex-1 space-y-6 overflow-y-auto px-0">
       <EditJobForm
         job={job}
         onSave={(updatedJob) => {
@@ -75,16 +75,16 @@ export function JobDetailsDialog({
       />
     </div>
   ) : (
-    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+    <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
       <div className="space-y-6">
-        {jobDetailsFields.map((field, index) => {
+        {jobDetailsFields.map((field, _) => {
           if (field.shouldRender && !field.shouldRender(job)) return null;
           return (
-            <div key={index} className="group">
-              <Label className="text-sm font-semibold text-foreground uppercase tracking-wide block mb-3">
+            <div key={field.label} className="group">
+              <Label className="mb-3 block text-sm font-semibold uppercase tracking-wide text-foreground">
                 {field.label.split(' |||||(')[0]}
               </Label>
-              <div className="bg-muted/30 rounded-lg p-4 border border-border/50 hover:border-border/80 transition-colors">
+              <div className="rounded-lg border border-border/50 bg-muted/30 p-4 transition-colors hover:border-border/80">
                 {field.render(job)}
               </div>
             </div>
@@ -99,7 +99,7 @@ export function JobDetailsDialog({
       <Button
         variant="outline"
         onClick={handleClose}
-        className="font-medium bg-transparent"
+        className="bg-transparent font-medium"
       >
         Close
       </Button>
