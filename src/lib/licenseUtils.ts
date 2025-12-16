@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import logger from "./logger";
 
 // License file path (same as license-validate route)
 export const LICENSE_PATH = path.join(process.cwd(), "..", "license.json");
@@ -54,7 +55,7 @@ export function generateMachineCode(): string {
 
     return id;
   } catch (err) {
-    console.error("Failed to get machine ID:", err);
+    logger.error("Failed to get machine ID:", err);
     return "unknown-machine-id";
   }
 }
@@ -73,7 +74,7 @@ export function readLicenseData(): LicenseData | null {
 
     return licenseData;
   } catch (error) {
-    console.error("Error reading license data:", error);
+    logger.error("Error reading license data:", error);
     return null;
   }
 }
@@ -91,7 +92,7 @@ export function readCofigData(): ConfigData | null {
 
     return configData;
   } catch (error) {
-    console.error("Error reading config data:", error);
+    logger.error("Error reading config data:", error);
     return null;
   }
 }
@@ -141,7 +142,7 @@ async function validateLicenseWithAPI(
       error: data.error,
     };
   } catch (error) {
-    console.error("License validation API error:", error);
+    logger.error("License validation API error:", error);
     return {
       valid: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -173,14 +174,14 @@ export async function validateLicense(): Promise<{
 
     if (validationResult.valid) {
       return { valid: true };
-    } else {
+    } 
       return {
         valid: false,
         error: validationResult.error || "License validation failed",
       };
-    }
+    
   } catch (error) {
-    console.error("License validation error:", error);
+    logger.error("License validation error:", error);
     return {
       valid: false,
       error: "Internal server error during license validation",
