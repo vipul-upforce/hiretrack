@@ -1,4 +1,3 @@
-// import { VersionListResponse } from "@/app/dashboard/settings/components/about-version/types";
 import { baseApi } from '@/lib/api/baseApi';
 import { VersionListResponse } from '@/app/dashboard/settings/components/about/types';
 
@@ -30,7 +29,7 @@ export interface DiskFolder {
   name: string;
   path: string;
   size: string;
-  type: "folder";
+  type: 'folder';
 }
 
 export interface DiskStats {
@@ -62,6 +61,10 @@ export interface DiskFolderDetailResponse {
 interface TestConnectionResponse {
   success: boolean;
   message: string;
+  data?: any;
+  details?: any;
+  error?: any;
+  connectionStatusUpdated?: boolean;
 }
 
 interface AutoUpdateResponse {
@@ -103,7 +106,7 @@ type SystemLogsResponse = {
   path: string;
   files: string[];
   sizeBytes: number;
-  size: string; // e.g. "33.3 MB"
+  size: string;
 };
 
 // Interface for EmailHistoryRecord
@@ -120,6 +123,67 @@ export interface EmailHistoryRecord {
   cc?: string[];
   bcc?: string[];
   attachments?: { fileName: string; fileSize: number; shareUrl: string }[];
+}
+
+export interface EvaluationConfigItem {
+  temperature: number;
+  customPrompt?: string | null;
+  autoEvaluateAllCandidates: boolean;
+  maxPdfPages: number;
+  enableConfidenceScores: boolean;
+  enableRedFlagsDetection: boolean;
+  enableSkillsMatrix: boolean;
+  enableComparativeRanking: boolean;
+}
+
+export interface GetEvaluationConfigsResponse {
+  evaluationConfig: EvaluationConfigItem;
+}
+
+export interface UpdateEvaluationConfigsRequest {
+  temperature: number;
+  customPrompt: string | null;
+  autoEvaluateAllCandidates: boolean;
+  maxPdfPages: number;
+  enableConfidenceScores: boolean;
+  enableRedFlagsDetection: boolean;
+  enableSkillsMatrix: boolean;
+  enableComparativeRanking: boolean;
+}
+
+export interface UpdateEvaluationConfigsResponse {
+  success: boolean;
+  message?: string;
+  evaluationConfig?: EvaluationConfigItem;
+  error?: string;
+}
+
+export interface ValidateAiProviderRequest {
+  provider: string;
+  apiKey: string;
+  model: string;
+}
+
+export interface ValidateAiProviderResponse {
+  isValid: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface GoogleCalendarConfig {
+  clientId?: string;
+  clientSecret?: string;
+  connected?: boolean;
+  redirectUri?: string;
+}
+
+export interface GoogleCalendarConfigResponse {
+  googleCalendar: GoogleCalendarConfig;
+}
+
+export interface GoogleCalendarCredentialsRequest {
+  clientId: string;
+  clientSecret: string;
 }
 
 export const settingsApi = baseApi.injectEndpoints({
@@ -324,6 +388,16 @@ export const settingsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Settings'],
     }),
+    testGoogleCalendarConnection: builder.mutation<
+      TestConnectionResponse,
+      void
+    >({
+      query: () => ({
+        url: '/google-calendar/test-connection',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Settings'],
+    }),
     createResetToken: builder.mutation({
       query: ({ email, selectedOrgId }) => ({
         url: '/auth/forgot-password',
@@ -357,7 +431,7 @@ export const settingsApi = baseApi.injectEndpoints({
       { content: string[]; totalLines: number; start: number; end: number },
       {
         file: string;
-        mode?: "tail" | "range";
+        mode?: 'tail' | 'range';
         start?: number;
         end?: number;
         limit?: number;
@@ -366,11 +440,11 @@ export const settingsApi = baseApi.injectEndpoints({
     >({
       query: ({ file, mode, start, end, limit, query }) => {
         const params = new URLSearchParams();
-        if (mode) params.append("mode", mode);
-        if (start !== undefined) params.append("start", start.toString());
-        if (end !== undefined) params.append("end", end.toString());
-        if (limit) params.append("limit", limit.toString());
-        if (query) params.append("query", query || "");
+        if (mode) params.append('mode', mode);
+        if (start !== undefined) params.append('start', start.toString());
+        if (end !== undefined) params.append('end', end.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (query) params.append('query', query || '');
         return `/pm2-logs/${file}?${params.toString()}`;
       },
       keepUnusedDataFor: 300,
@@ -393,7 +467,7 @@ export const settingsApi = baseApi.injectEndpoints({
       { content: string[]; totalLines: number; start: number; end: number },
       {
         file: string;
-        mode?: "tail" | "range";
+        mode?: 'tail' | 'range';
         start?: number;
         end?: number;
         limit?: number;
@@ -402,11 +476,11 @@ export const settingsApi = baseApi.injectEndpoints({
     >({
       query: ({ file, mode, start, end, limit, query }) => {
         const params = new URLSearchParams();
-        if (mode) params.append("mode", mode);
-        if (start !== undefined) params.append("start", start.toString());
-        if (end !== undefined) params.append("end", end.toString());
-        if (limit) params.append("limit", limit.toString());
-        if (query) params.append("query", query || "");
+        if (mode) params.append('mode', mode);
+        if (start !== undefined) params.append('start', start.toString());
+        if (end !== undefined) params.append('end', end.toString());
+        if (limit) params.append('limit', limit.toString());
+        if (query) params.append('query', query || '');
         return `/nginx-logs/${file}?${params.toString()}`;
       },
       keepUnusedDataFor: 300,
@@ -415,9 +489,7 @@ export const settingsApi = baseApi.injectEndpoints({
       { emails: EmailHistoryRecord[]; pagination: { total: number } },
       { page: number; limit: number; search?: string; status?: string }
     >({
-      query: ({
-        page, limit, search = '', status = '',
-      }) => {
+      query: ({ page, limit, search = '', status = '' }) => {
         const params = new URLSearchParams({
           page: page.toString(),
           limit: limit.toString(),
@@ -454,7 +526,8 @@ export const settingsApi = baseApi.injectEndpoints({
       DiskFolderDetailResponse,
       { root: string; path?: string }
     >({
-      query: ({ root, path = '' }) => `/disk-space?root=${root}&path=${encodeURIComponent(path)}`,
+      query: ({ root, path = '' }) =>
+        `/disk-space?root=${root}&path=${encodeURIComponent(path)}`,
       providesTags: (result, error, arg) => [
         { type: 'DiskSpace', id: `${arg.root}-${arg.path}` },
       ],
@@ -466,6 +539,36 @@ export const settingsApi = baseApi.injectEndpoints({
         method: 'POST',
       }),
       invalidatesTags: ['SystemUpdate', 'VersionList'],
+    }),
+
+    validateAiProvider: builder.mutation<
+      ValidateAiProviderResponse,
+      ValidateAiProviderRequest
+    >({
+      query: (body) => ({
+        url: '/settings/ai-providers/validate',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    getEvaluationConfigs: builder.query<GetEvaluationConfigsResponse, void>({
+      query: () => ({
+        url: '/settings/evaluation',
+        method: 'GET',
+      }),
+      providesTags: ['Settings'],
+    }),
+    updateEvaluationConfigs: builder.mutation<
+      UpdateEvaluationConfigsResponse,
+      UpdateEvaluationConfigsRequest
+    >({
+      query: (config) => ({
+        url: '/settings/evaluation',
+        method: 'PUT',
+        body: config,
+      }),
+      invalidatesTags: ['Settings'],
     }),
   }),
 });
@@ -515,6 +618,10 @@ export const {
   useGetDiskFolderDetailsQuery,
   useLazyGetPm2LogFileContentQuery,
   useGetPm2LogFilesQuery,
+  useGetEvaluationConfigsQuery,
+  useUpdateEvaluationConfigsMutation,
+  useValidateAiProviderMutation,
+  useTestGoogleCalendarConnectionMutation,
 } = settingsApi;
 
 export type { TestConnectionRequest, TestConnectionResponse };

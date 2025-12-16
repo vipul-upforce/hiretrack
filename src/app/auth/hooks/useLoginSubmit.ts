@@ -2,16 +2,21 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { useLoginMutation } from '@/lib/features/auth/authApi';
+import {
+  useLoginMutation,
+  useSendOtpMutation,
+  useLazyValidateLicenseQuery,
+} from '@/lib/features/auth/authApi';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 
 import { LoginFormValues } from '@/types/login';
 import { useCallback } from 'react';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { fetchUserFromToken } from '@/lib/redux/authSlice';
 import { AppDispatch } from '@/lib/redux/store';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -31,12 +36,16 @@ export const useHandleLoginSubmit = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [login, { isLoading }] = useLoginMutation();
+
+  const [login, { isLoading: isLoggingIn }] = useLoginMutation();
+  const [sendOtp, { isLoading: isSendingOtp }] = useSendOtpMutation();
+  const [triggerLicenseCheck, { isLoading: isCheckingLicense }] =
+    useLazyValidateLicenseQuery();
+
   const { setUserLoggedIn } = useCustomFields();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user, isAuthenticated } = useSelector((state: any) => state.auth);
-  // debugger
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const getRedirectUrl = () => {
     const redirectTo =
@@ -72,36 +81,39 @@ export const useHandleLoginSubmit = ({
   const handleSubmit = useCallback(
     async (
       values: LoginFormValues,
-      setIsSubmitting : (isSubmitting: boolean) => void,
+      setIsSubmitting: (isSubmitting: boolean) => void,
       { setStatus }: { setStatus: (message: string) => void },
     ) => {
-      // debugger
       setLoginFormValues(values);
+
       // firstly check the license
       try {
-        const response = await fetch('/api/license-validate', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
+        const data = await triggerLicenseCheck().unwrap();
+
         if (!data.valid) {
-          throw new Error(data.error);
+          throw new Error(data.error || 'License validation failed');
         }
+
         setIsSubmitting(false);
       } catch (e: unknown) {
+        // Handle license check failure
+        const errorMessage =
+          e && typeof e === 'object' && 'data' in e
+            ? (e as any).data?.message || 'License check failed'
+            : e instanceof Error
+              ? e.message
+              : 'License not verified. Please contact support or try re-installing the platform.';
+
         toast({
           title: 'Error',
-          description:
-            e instanceof Error
-              ? e.message
-              : 'License not verified. Please contact support or try re-installing the platform.',
+          description: errorMessage,
           variant: 'destructive',
         });
         setIsSubmitting(false);
         return;
       }
+
+      // Login
       try {
         const response = await login({
           ...values,
@@ -109,6 +121,7 @@ export const useHandleLoginSubmit = ({
           orgId: selectedOrg,
         }).unwrap();
 
+        // Handle Multiple Organizations
         if (
           response.organizations &&
           response.organizations.length > 1 &&
@@ -118,22 +131,16 @@ export const useHandleLoginSubmit = ({
           setOrganizationDialogOpen(true);
           return;
         }
+
+        // Handle 2FA
         const is2FAEnabled = response.twofa;
         if (is2FAEnabled) {
           const { organizationId } = response;
           try {
-            const otpResponse = await fetch('/api/auth/2fa/send-otp', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: values.email.toLowerCase().trim(),
-                organizationId,
-              }),
-            });
-            if (!otpResponse.ok) {
-              const errorData = await otpResponse.json();
-              throw new Error(errorData.message || 'Failed to send OTP');
-            }
+            await sendOtp({
+              email: values.email.toLowerCase().trim(),
+              organizationId,
+            }).unwrap();
 
             toast({
               title: 'Check your email',
@@ -146,9 +153,9 @@ export const useHandleLoginSubmit = ({
           } catch (error) {
             logger.error(error);
             const errorMessage =
-              error instanceof Error
-                ? error.message
-                : 'An unknown error occurred';
+              error?.data?.message ||
+              (error instanceof Error ? error.message : 'Failed to send OTP');
+
             setStatus(errorMessage);
             toast({
               title: 'Error',
@@ -159,8 +166,6 @@ export const useHandleLoginSubmit = ({
           return;
         }
 
-
-
         // Store refresh token if provided in response
         // Note: The refresh token is also set in httpOnly cookie by the backend
         // But we store it in localStorage for the interceptor to use
@@ -168,14 +173,14 @@ export const useHandleLoginSubmit = ({
           localStorage.setItem('refresh_token', (response as any).refreshToken);
         }
 
+        // Handle Redirects & Redux State
         const redirectUrl = getRedirectUrl();
+
         if (isAuthenticated) {
           if (redirectUrl !== '/') {
             window.location.href = redirectUrl;
           }
-
           setUserLoggedIn(true);
-
           toast({
             title: 'Success',
             description: 'Login successful',
@@ -203,6 +208,8 @@ export const useHandleLoginSubmit = ({
     },
     [
       login,
+      sendOtp,
+      triggerLicenseCheck,
       selectedOrg,
       isMultiple,
       setOrganizations,
@@ -214,5 +221,8 @@ export const useHandleLoginSubmit = ({
     ],
   );
 
-  return { handleSubmit, isLoading };
+  return {
+    handleSubmit,
+    isLoading: isLoggingIn || isSendingOtp || isCheckingLicense,
+  };
 };

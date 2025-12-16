@@ -29,6 +29,23 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
+interface VerifyOtpRequest {
+  email: string;
+  otp: string;
+}
+
+interface SendOtpRequest {
+  email: string;
+  organizationId?: string | null;
+}
+
+interface LicenseResponse {
+  valid: boolean;
+  error?: string;
+  apiError?: boolean;
+  hasLicenseFile?: boolean;
+}
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
@@ -44,7 +61,27 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ['Users'], // Ensure correct format
+      invalidatesTags: ['Users'],
+    }),
+    verifyOtp: builder.mutation<AuthResponse, VerifyOtpRequest>({
+      query: (data) => ({
+        url: '/auth/2fa/verify-otp',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    sendOtp: builder.mutation<{ message: string }, SendOtpRequest>({
+      query: (data) => ({
+        url: '/auth/2fa/send-otp',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    validateLicense: builder.query<LicenseResponse, void>({
+      query: () => ({
+        url: '/license-validate',
+        method: 'GET',
+      }),
     }),
     resetPasswordbyAdmin: builder.mutation<
       NextResponse,
@@ -99,4 +136,7 @@ export const {
   useResetPasswordbyUserMutation,
   useRefreshTokenMutation,
   useLogoutUserMutation,
+  useVerifyOtpMutation,
+  useSendOtpMutation,
+  useLazyValidateLicenseQuery,
 } = authApi;

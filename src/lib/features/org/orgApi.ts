@@ -1,6 +1,6 @@
 import { ITag } from '@/lib/models/organization';
 import { runIfCookiePresent } from '@/lib/utils/queryGuards';
-import { baseApi } from "@/lib/api/baseApi";
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface CreateAdminRequest {
   email: string;
@@ -66,6 +66,10 @@ export interface IScheduledStatusMailRequest {
   endTime?: string;
   jobId?: string;
 }
+export interface OrgAllowanceResponse {
+  allow: boolean;
+  data?: { organizationId: string }[];
+}
 
 export interface CreateOrgResponse {
   message: string;
@@ -129,15 +133,12 @@ export const orgApi = baseApi.injectEndpoints({
       }),
     }),
     updateCustomFields: builder.mutation({
-      queryFn: (data, _api, _extraOptions, baseQuery) => runIfCookiePresent(
-        baseQuery,
-        () => ({
+      queryFn: (data, _api, _extraOptions, baseQuery) =>
+        runIfCookiePresent(baseQuery, () => ({
           url: '/organization/cs',
           method: 'POST',
           body: data,
-
-        }),
-      ),
+        })),
     }),
     getCustomFields: builder.query({
       query: (orgId) => ({
@@ -168,16 +169,24 @@ export const orgApi = baseApi.injectEndpoints({
         body: data,
       }),
     }),
-    sendUnassignMail: builder.mutation<{ message: string }, Record<string, unknown>>({
+    sendUnassignMail: builder.mutation<
+      { message: string },
+      Record<string, unknown>
+    >({
       query: (data) => ({
         url: '/event-mail',
         method: 'PUT',
         body: data,
       }),
     }),
-    getOrganizationAllowance: builder.query<{ allow: boolean }, void>({
-      query: () => ({
-        url: '/organization',
+    getOrganizationAllowance: builder.query<
+      OrgAllowanceResponse,
+      { limit?: number } | void
+    >({
+      query: (params) => ({
+        url: params?.limit
+          ? `/organization?limit=${params.limit}`
+          : '/organization',
         method: 'GET',
       }),
     }),
@@ -245,4 +254,3 @@ export const {
   useGetOrganizationAllowanceQuery,
   useCheckOrgQuery,
 } = orgApi;
-// export const { useCreateAdminMutation } = orgApi;
