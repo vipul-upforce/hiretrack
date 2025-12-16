@@ -11,7 +11,7 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { Attachment } from '../route';
-/* eslint-disable*/
+
 interface UpdateObject {
   $set: Record<string, unknown>;
   $currentDate: { 'tracking.updatedAt': boolean };
@@ -629,7 +629,6 @@ export async function PUT(
         if ('assignment' in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-
           if (newAssignment) {
             if (
               !oldAssignment

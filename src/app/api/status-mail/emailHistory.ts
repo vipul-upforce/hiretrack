@@ -34,19 +34,15 @@ export async function createPendingEmailHistory(
     hrContactInfo,
   } = data;
 
-  const settings = await Settings?.findOne({
-    organizationId: new mongoose.Types.ObjectId(organizationId),
-  })
-    .select('mailConfig')
-    .lean()
-    .exec();
-
-  const provider = settings?.mailConfig?.mailProvider || 'unknown';
-  const historyIds: string[] = [];
-
-  try {
-    // Get email content for history (using placeholder values that will be updated)
-    const { emailContent, emailSubject } = await getMappedEmailTemplate(
+  // Optimize: Fetch settings and template in parallel
+  const [settings, { emailContent, emailSubject }] = await Promise.all([
+    Settings?.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    })
+      .select('mailConfig')
+      .lean()
+      .exec(),
+    getMappedEmailTemplate(
       'status-update',
       {
         eventTitle,
@@ -64,17 +60,34 @@ export async function createPendingEmailHistory(
         hrContactInfo,
       },
       organizationId,
+    ),
+  ]);
+
+  const provider = settings?.mailConfig?.mailProvider || 'unknown';
+  const historyIds: string[] = [];
+
+  try {
+    // Optimize: Batch fetch all recipients in a single query (fixes N+1 problem)
+    const recipients =
+      emailList.length > 0
+        ? await User?.find({
+            email: { $in: emailList },
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+          })
+            .select('_id name email')
+            .lean()
+            .exec()
+        : [];
+
+    // Create a map for fast lookup
+    const recipientMap = new Map(
+      recipients?.map((user) => [user.email, user]) || [],
     );
 
-    // Create history records for all recipients (HR/Admins) - PENDING
+    // Create history records for all recipients (HR/Admins) - PENDING (batched)
     const historyPromises = emailList.map(async (recipientEmail: string) => {
       try {
-        const recipient = await User?.findOne({
-          email: recipientEmail,
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        })
-          .select('_id name')
-          .lean();
+        const recipient = recipientMap.get(recipientEmail);
 
         const history = await EmailHistory?.create({
           organizationId: new mongoose.Types.ObjectId(organizationId),

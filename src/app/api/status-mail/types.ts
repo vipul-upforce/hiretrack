@@ -1,7 +1,3 @@
-
-/**
- * Status update email queue data
- */
 export interface StatusUpdateQueueData {
   organizationId: string;
   eventTitle: string;
@@ -75,20 +71,5 @@ export interface QueueStatusResponse {
   queue: QueueStatusItem[];
 }
 
-/**
- * Email content with subject and body
- */
-export interface EmailContent {
-  subject: string;
-  body: string;
-}
-
-/**
- * Update email history parameters
- */
-export interface UpdateHistoryParams {
-  historyIds: string[];
-  status: 'sent' | 'failed';
-  error?: string;
-  updatedContent?: EmailContent;
-}
+// Re-export shared types for backward compatibility
+export type { EmailContent, UpdateHistoryParams } from '@/lib/utils/emailTypes';
