@@ -213,11 +213,10 @@ export function buildPromptWithCustomTemplate(
   const ctcRange = jobData.salary || "Not specified";
   const experience = jobData.experience
     ? `${jobData.experience} years`
-    : "Not specified";
-
+    : "Not specified";  
   const replacements: Record<string, string> = {
     "{{JOB_TITLE}}": jobTitle,
-    "{{JOB_DESCRIPTION}}": jobDescription,
+    "{{JOB_DESCRIPTION}}": jobDescription,  
     "{{JOB_SALARY}}": ctcRange,
     "{{CTC_RANGE}}": ctcRange,
     "{{EXPERIENCE}}": experience,
@@ -227,11 +226,9 @@ export function buildPromptWithCustomTemplate(
   };
 
   let prompt = customPrompt;
+  // Use replaceAll to avoid dynamic RegExp construction
   for (const [placeholder, value] of Object.entries(replacements)) {
-    prompt = prompt.replace(
-      new RegExp(placeholder.replace(/[{}]/g, "\\$&"), "g"),
-      value
-    );
+    prompt = prompt.replaceAll(placeholder, value);
   }
 
   if (!prompt.includes("Return your evaluation in this JSON format")) {

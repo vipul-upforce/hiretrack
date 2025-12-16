@@ -11,8 +11,8 @@ export class PerplexityProvider extends BaseAIProvider {
     modelName?: string,
   ): Promise<ProcessedResumeData> {
     try {
-      const resumeText = await this.extractTextFromPdf(base64Resume);
-      const prompt = `${this.getStandardPrompt()}
+      const resumeText = await BaseAIProvider.extractTextFromPdf(base64Resume);
+      const prompt = `${BaseAIProvider.getStandardPrompt()}
 
 Resume Text:
 ${resumeText}`;
@@ -30,6 +30,10 @@ ${resumeText}`;
             model: selectedModel,
             messages: [
               {
+                role: 'system',
+                content: 'You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.',
+              },
+              {
                 role: 'user',
                 content: prompt,
               },
@@ -42,7 +46,7 @@ ${resumeText}`;
 
       if (!response.ok) {
         throw new Error(
-          `Perplexity API error: ${response.status} ${response.statusText}`,
+          `${this.name} API error: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -50,16 +54,16 @@ ${resumeText}`;
       const content = data.choices?.[0]?.message?.content;
 
       if (!content) {
-        throw new Error('No valid response from Perplexity');
+        throw new Error(`No valid response from ${this.name}`);
       }
 
-      const jsonString = this.cleanJsonResponse(String(content));
-      return this.parseJsonResponse(jsonString);
+      const jsonString = BaseAIProvider.cleanJsonResponse(String(content));
+      return BaseAIProvider.parseJsonResponse(jsonString);
     } catch (error) {
       throw new Error(
         error instanceof Error
           ? error.message
-          : 'Failed to process resume with Perplexity',
+          : `Failed to process resume with ${this.name}`,
       );
     }
   }
@@ -73,7 +77,7 @@ ${resumeText}`;
   ): Promise<string> {
     const selectedModel = modelName || getDefaultModel('perplexity');
 
-    const resumeText = await this.extractTextFromPdf(resumeBase64);
+    const resumeText = await BaseAIProvider.extractTextFromPdf(resumeBase64); 
     const finalPrompt = `${prompt}
 
 Resume Text:
@@ -109,7 +113,7 @@ ${resumeText}`;
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
-        `Perplexity API error: ${response.status} ${response.statusText} ${errorText}`,
+        `${this.name} API error: ${response.status} ${response.statusText} ${errorText}`,
       );
     }
 
@@ -117,7 +121,7 @@ ${resumeText}`;
     const content = data.choices?.[0]?.message?.content;
 
     if (!content) {
-      throw new Error('No valid response from Perplexity');
+      throw new Error(`No valid response from ${this.name}`);
     }
 
     return content;
@@ -128,7 +132,7 @@ ${resumeText}`;
     modelName?: string,
   ): Promise<{ isValid: boolean; error?: string }> {
     try {
-      const selectedModel = modelName || getDefaultModel('perplexity');
+      const selectedModel = modelName || getDefaultModel(this.name);
 
       const response = await fetch(
         'https://api.perplexity.ai/chat/completions',

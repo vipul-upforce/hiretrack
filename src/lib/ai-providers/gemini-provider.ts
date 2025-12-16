@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { BaseAIProvider } from './base-provider';
 import { ProcessedResumeData } from './types';
 import { getDefaultModel } from './models-config';
@@ -24,9 +24,7 @@ export class GeminiProvider extends BaseAIProvider {
       });
 
       const prompt = `
-You are an expert resume parser. 
-Return ONLY valid JSON according to the required format.
-No explanations, no markdown, no extra text.
+You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.
 `;
 
       const result = await model.generateContent({
@@ -34,7 +32,7 @@ No explanations, no markdown, no extra text.
           {
             role: 'user',
             parts: [
-              { text: `${prompt}\n\n${this.getStandardPrompt()}` },
+              { text: `${prompt}\n\n${BaseAIProvider.getStandardPrompt()}` },
               {
                 inlineData: {
                   mimeType: 'application/pdf',
@@ -48,15 +46,14 @@ No explanations, no markdown, no extra text.
 
       const raw = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!raw) throw new Error('No valid JSON response from Gemini');
+      if (!raw) throw new Error(`No valid JSON response from ${this.name}`);
 
-      const cleaned = this.cleanJsonResponse(raw);
-      return this.parseJsonResponse(cleaned);
+      return BaseAIProvider.parseJsonResponse(raw);
     } catch (error) {
       throw new Error(
         error instanceof Error
           ? error.message
-          : 'Failed to process resume with Gemini',
+          : `Failed to process resume with ${this.name}`,
       );
     }
   }
@@ -105,14 +102,14 @@ Never include explanations, markdown, or commentary.
 
       const text = result?.response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!text) throw new Error('No valid JSON response from Gemini');
+      if (!text) throw new Error(`No valid JSON response from ${this.name}`);
 
       return text;
     } catch (error) {
       throw new Error(
         error instanceof Error
           ? error.message
-          : 'Failed to evaluate resume with Gemini',
+          : `Failed to evaluate resume with ${this.name}`,
       );
     }
   }
@@ -139,14 +136,19 @@ Never include explanations, markdown, or commentary.
       });
 
       if (!result?.response) {
-        return { isValid: false, error: 'No response received from Gemini' };
+        return {
+          isValid: false,
+          error: `No response received from ${this.name}`,
+        };
       }
 
       return { isValid: true };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
 
-      if (errorMessage.includes('API_KEY_INVALID')) return { isValid: false, error: 'Invalid API key' };
+      if (errorMessage.includes('API_KEY_INVALID'))
+        return { isValid: false, error: 'Invalid API key' };
 
       if (errorMessage.includes('model')) {
         return {

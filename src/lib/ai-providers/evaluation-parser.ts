@@ -1,14 +1,12 @@
 import {
   EvaluationResult,
   ParsedEvaluationObject,
-  ScoreObject,
 } from "./evaluation-types";
 import {
   extractNumericScore,
-  isValidNumber,
-  isScoreObject,
 } from "./evaluation-utils";
 import { EVALUATION_CONSTANTS } from "./evaluation-constants";
+import logger from "../logger";
 
 /**
  * Cleans JSON response by removing markdown code blocks and extracting JSON
@@ -16,7 +14,7 @@ import { EVALUATION_CONSTANTS } from "./evaluation-constants";
  * @returns Cleaned JSON string
  */
 export function cleanJsonResponse(response: string): string {
-  let jsonString = response
+  const jsonString = response
     .replace(/```json\n?/g, "")
     .replace(/```\n?/g, "")
     .trim();
@@ -34,12 +32,12 @@ export function parseJsonSafely(jsonString: string): ParsedEvaluationObject {
   try {
     return JSON.parse(jsonString) as ParsedEvaluationObject;
   } catch (parseError) {
-    console.error("JSON Parse Error:", parseError);
-    console.error(
+    logger.error("JSON Parse Error:", parseError);
+    logger.error(
       "Failed JSON string (first 1000 chars):",
       jsonString.substring(0, 1000)
     );
-    console.error(
+    logger.error(
       "Failed JSON string (last 500 chars):",
       jsonString.substring(Math.max(0, jsonString.length - 500))
     );
