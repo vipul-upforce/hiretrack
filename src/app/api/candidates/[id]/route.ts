@@ -11,7 +11,7 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { Attachment } from '../route';
-
+/* eslint-disable*/
 interface UpdateObject {
   $set: Record<string, unknown>;
   $currentDate: { 'tracking.updatedAt': boolean };
@@ -755,13 +755,22 @@ export async function PUT(
           const jobInfo = existingCandidate.jobId as any;
           const oldFollowUp = existingCandidate.followUp;
           const newFollowUp = data?.followUp;
-          console.log(oldFollowUp, 'oldFollowUp');
-          console.log(newFollowUp, 'newFollowUp');
-  
+          const hadNoOldFollowUp =
+          oldFollowUp?.note == null &&
+          oldFollowUp?.date == null;
+        
+        const hasNewNote =
+          typeof newFollowUp?.note === 'string' &&
+          newFollowUp.note.trim() !== '';
+        
+        const hasNewDate =
+          typeof newFollowUp?.date === 'string' &&
+          newFollowUp.date.trim() !== '';
+        
           // Follow-up notifications
           if ('followUp' in data) {
             // Case 1: Follow-up Added
-            if (!oldFollowUp && newFollowUp && newFollowUp.note !== null ) {
+           if (hadNoOldFollowUp && (hasNewNote || hasNewDate))  {
               await NotificationService.notifyFollowUpAdded({
                 organizationId,
                 candidateId: existingCandidate._id?.toString() || '',
