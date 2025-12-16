@@ -323,12 +323,6 @@ export async function PUT(request: NextRequest) {
     }
 
     const candidateId = new Types.ObjectId(data.candidateId);
-    const jobId = new Types.ObjectId(
-      typeof data.jobId === 'object' && '_id' in data.jobId
-        ? data.jobId._id
-        : data.jobId || '',
-    );
-
     const populateHistoryFields = [
       { path: 'history.currentInterviewer', select: '_id name email' },
       { path: 'history.previousInterviewer', select: '_id name email' },
