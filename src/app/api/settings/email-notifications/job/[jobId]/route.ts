@@ -4,6 +4,35 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
 import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
 import { logger } from '@/lib/logger/logger.server';
+import { VALID_NOTIFICATION_KEYS } from '@/lib/constants/notificationDefaults';
+
+// Valid notification setting keys (using Set for O(1) lookup)
+const VALID_NOTIFICATION_KEYS_SET = new Set(VALID_NOTIFICATION_KEYS);
+
+/**
+ * Safely validates notification settings object
+ * Prevents Object Injection Sink vulnerabilities
+ */
+function validateNotificationSettings(
+  settings: Record<string, unknown>,
+  validKeys: Set<string>,
+): string | null {
+  // Iterate only over existing properties (more efficient)
+  for (const key of Object.keys(settings)) {
+    // O(1) lookup - only validate keys in whitelist
+    // Safe property access using hasOwnProperty + getOwnPropertyDescriptor
+    if (
+      validKeys.has(key) &&
+      Object.prototype.hasOwnProperty.call(settings, key)
+    ) {
+      const value = Object.getOwnPropertyDescriptor(settings, key)?.value;
+      if (value !== undefined && typeof value !== 'boolean') {
+        return key;
+      }
+    }
+  }
+  return null;
+}
 
 /**
  * GET /api/settings/email-notifications/job/[jobId]
@@ -60,8 +89,12 @@ export async function GET(
       .select('emailNotificationSettings')
       .lean();
 
+    // Safe property access - jobId is validated as ObjectId above
+    const jobLevel = user?.emailNotificationSettings?.jobLevel;
     const jobLevelSettings =
-      user?.emailNotificationSettings?.jobLevel?.[jobId] || null;
+      jobLevel && typeof jobLevel === 'object' && Object.prototype.hasOwnProperty.call(jobLevel, jobId)
+        ? Object.getOwnPropertyDescriptor(jobLevel, jobId)?.value || null
+        : null;
 
     // Get effective settings (resolved through priority chain)
 
@@ -140,38 +173,16 @@ export async function PUT(
       );
     }
 
-    const validKeys = [
-      'mentions',
-      'newApplications',
-      'statusUpdates',
-      'detailsUpdated',
-      'interviewAssignments',
-      'stepCompleted',
-      'newRemarks',
-      'meetingScheduled',
-      'meetingUpdated',
-      'meetingCancelled',
-      'meetingInviteAccepted',
-      'meetingInviteDeclined',
-      'meetingInviteTentative',
-      'followupAdded',
-      'followupUpdated',
-      'followupRemoved',
-      'jobCreated',
-      'jobUpdated',
-      'userAdded',
-      'bulkImportCompleted',
-      'candidateRejected',
-      'interviewCompleted',
-      'candidateMoved',
-    ];
-    for (const key of validKeys) {
-      if (settings[key] !== undefined && typeof settings[key] !== 'boolean') {
-        return NextResponse.json(
-          { error: `Invalid value for ${key}` },
-          { status: 400 },
-        );
-      }
+    // Validate settings using safe property access (prevents Object Injection Sink)
+    const invalidKey = validateNotificationSettings(
+      settings as Record<string, unknown>,
+      VALID_NOTIFICATION_KEYS_SET,
+    );
+    if (invalidKey) {
+      return NextResponse.json(
+        { error: `Invalid value for ${invalidKey}` },
+        { status: 400 },
+      );
     }
 
     // Update job-level settings

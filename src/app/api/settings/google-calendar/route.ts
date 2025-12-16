@@ -91,7 +91,7 @@ export async function PUT(req: NextRequest) {
     const { clientId, clientSecret } = await req.json();
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: Record<string, string> = {
       'googleCalendar.clientId': clientId,
     };
 
