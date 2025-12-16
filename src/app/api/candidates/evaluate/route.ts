@@ -1,174 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { Candidate, History, Settings } from '@/lib/mongodb';
-import { promises as fs } from 'fs';
-import path from 'path';
+import connectToDatabase, {
+  Candidate,
+  History,
+  Settings,
+} from '@/lib/mongodb';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
-import { decryptProviderKeys } from '@/lib/encryption';
-import { logger } from '@/lib/logger/logger.server';
+import { ISettings, IEvaluationConfig } from '@/lib/models/settings';
+import { IHistory } from '@/lib/models/history';
+import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
+import mongoose from 'mongoose';
+import logger from '@/lib/logger';
+import { EvaluateCandidateRequest, PopulatedJob } from './types';
+import {
+  isPopulatedJob,
+  extractJobDataForEvaluation,
+  extractOrganizationId,
+  extractJobIdForHistory,
+} from './utils/candidate-utils';
+import {
+  generateBase64,
+  fetchResumeAsBase64,
+  normalizeResumeUrl,
+} from './utils/resume-utils';
+import { calculateComparativeRanking } from './utils/ranking-utils';
+import { getDecryptedAIProviders, getActiveProviderApiKey } from './utils/settings-utils';
+import { validatePdfPageCount } from './utils/pdf-utils';
 
-const generateBase64 = async (url: string) => {
-  const pathName = url.split('files?pathName=')[1];
-  if (!pathName) {
-    return '';
-  }
-  const safePath = path.normalize(pathName);
-  const filePath = safePath;
-  const fileBuffer = await fs.readFile(filePath);
-  const base64Resume = fileBuffer.toString('base64');
-  return base64Resume;
-};
-// Calculate comparative ranking for a candidate within their job's candidate pool
-async function calculateComparativeRanking(
-  candidateId: any,
-  jobId: any,
-  currentScores: any,
-) {
-  try {
-    // Get all candidates for this job with scores
-    const candidates = await Candidate?.find({
-      jobId,
-      scores: { $exists: true },
-      isDeleted: { $ne: true },
-    }).select('_id scores');
-
-    if (!candidates || candidates.length === 0) {
-      return {
-        overallRank: 1,
-        totalCandidates: 1,
-        percentile: 100,
-        skillsPercentile: 100,
-        experiencePercentile: 100,
-        affordabilityPercentile: 100,
-        hasTie: false,
-        tiedWithCount: 0,
-        rankingBasedOn: 'overall' as const,
-      };
-    }
-
-    const totalCandidates = candidates.length;
-
-    // Determine which score to use for ranking (weighted score if available, otherwise overall)
-    const useWeightedScore = currentScores.weightedScore != null;
-    const rankingBasedOn: 'overall' | 'weighted' = useWeightedScore
-      ? 'weighted'
-      : 'overall';
-    const currentRankingScore = useWeightedScore
-      ? currentScores.weightedScore
-      : currentScores.overall;
-
-    // Calculate percentiles for each dimension (including ties)
-    const calculatePercentile = (value: number, allValues: number[]) => {
-      const sorted = allValues.filter((v) => v != null).sort((a, b) => a - b);
-      if (sorted.length <= 1) return 100;
-
-      const countBelow = sorted.filter((v) => v < value).length;
-      const countEqual = sorted.filter((v) => v === value).length;
-
-      // Midpoint method for ties
-      const adjustedCount = countBelow + (countEqual - 1) * 0.5;
-
-      return Math.round((adjustedCount / (sorted.length - 1)) * 100);
-    };
-
-    const allSkillsScores = candidates
-      .map((c) => c.scores?.skills)
-      .filter((s) => s != null);
-    const allExperienceScores = candidates
-      .map((c) => c.scores?.experience)
-      .filter((s) => s != null);
-    const allAffordabilityScores = candidates
-      .map((c) => c.scores?.affordability)
-      .filter((s) => s != null);
-
-    // Sort candidates by ranking score (weighted if available, otherwise overall)
-    const sortedCandidates = candidates
-      .filter((c) => {
-        if (useWeightedScore) {
-          return c.scores?.weightedScore != null;
-        }
-        return c.scores?.overall != null;
-      })
-      .sort((a, b) => {
-        const scoreA = useWeightedScore
-          ? a.scores?.weightedScore || 0
-          : a.scores?.overall || 0;
-        const scoreB = useWeightedScore
-          ? b.scores?.weightedScore || 0
-          : b.scores?.overall || 0;
-        return scoreB - scoreA; // Highest first
-      });
-    const index = sortedCandidates.findIndex(
-      (c) => c._id.toString() === candidateId.toString(),
-    );
-
-    const currentCandidateRank =
-      index === -1 ? sortedCandidates.length : index + 1;
-
-    // Check for ties at the same ranking score
-    const candidatesWithSameScore = sortedCandidates.filter((c) => {
-      const score = useWeightedScore
-        ? c.scores?.weightedScore
-        : c.scores?.overall;
-      return score === currentRankingScore;
-    });
-    const hasTie = candidatesWithSameScore.length > 1;
-    let tiedWithCount = 0;
-    if (hasTie) {
-      tiedWithCount = candidatesWithSameScore.length - 1; // Excluding current candidate
-    }
-    // Get all ranking scores for percentile calculation
-    const allRankingScores = sortedCandidates.map((c) =>
-      useWeightedScore ? c.scores?.weightedScore || 0 : c.scores?.overall || 0,
-    );
-
-    return {
-      overallRank: currentCandidateRank || 1,
-      totalCandidates,
-      percentile: calculatePercentile(currentRankingScore, allRankingScores),
-      skillsPercentile: calculatePercentile(
-        currentScores.skills,
-        allSkillsScores,
-      ),
-      experiencePercentile: calculatePercentile(
-        currentScores.experience,
-        allExperienceScores,
-      ),
-      affordabilityPercentile: calculatePercentile(
-        currentScores.affordability || 0,
-        allAffordabilityScores,
-      ),
-      hasTie,
-      tiedWithCount: tiedWithCount || 0,
-      rankingBasedOn,
-    };
-  } catch (error) {
-    logger.error({ error }, 'Error calculating comparative ranking');
-    return {
-      overallRank: 1,
-      totalCandidates: 1,
-      percentile: 0,
-      skillsPercentile: 0,
-      experiencePercentile: 0,
-      affordabilityPercentile: 0,
-      hasTie: false,
-      tiedWithCount: 0,
-      rankingBasedOn: 'overall' as const,
-    };
-  }
-}
-
-// This function is now replaced by AIEvaluationService
-// Kept for backward compatibility if needed
-
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
     message: 'SUCESSSS',
   });
 }
 
-export async function PUT(request: NextRequest) {
+export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
     await connectToDatabase();
 
@@ -179,7 +45,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const data = await request.json();
+    const data = await request.json() as EvaluateCandidateRequest;
     if (!data || !data.candidateId) {
       return NextResponse.json(
         { error: 'Candidate ID is required' },
@@ -202,19 +68,16 @@ export async function PUT(request: NextRequest) {
         { status: 404 },
       );
     }
-    const organizationId =
-      candidate.jobId &&
-      typeof candidate.jobId === 'object' &&
-      'organizationId' in candidate.jobId
-        ? String(candidate.jobId.organizationId)
-        : '';
+
+    const candidateJobIdForOrg = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+    const organizationId = extractOrganizationId(candidateJobIdForOrg);
 
     const settingsData = await Settings.findOne({
       organizationId,
     })
       .select('aiProviders evaluationConfig fileStorage gemini timeZone')
       .lean()
-      .exec();
+      .exec() as Pick<ISettings, 'aiProviders' | 'evaluationConfig' | 'fileStorage' | 'gemini' | 'timeZone'> | null;
 
     if (!settingsData) {
       return NextResponse.json(
@@ -223,44 +86,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check if AI providers are configured with backward compatibility
-    let { aiProviders } = settingsData;
-
-    // Handle backward compatibility for legacy Gemini-only installations
-    if (!aiProviders) {
-      // Check if there's a legacy gemini configuration
-      const legacyGeminiKey = settingsData.gemini?.gemini_key || '';
-
-      aiProviders = {
-        activeProvider: 'gemini',
-        gemini: {
-          api_key: legacyGeminiKey,
-          model: 'gemini-1.5-flash',
-          customModel: '',
-        },
-        openai: {
-          api_key: '',
-          model: 'gpt-4o-mini',
-          customModel: '',
-        },
-        anthropic: {
-          api_key: '',
-          model: 'claude-3-5-sonnet-20241022',
-          customModel: '',
-        },
-        perplexity: {
-          api_key: '',
-          model: 'sonar-pro',
-          customModel: '',
-        },
-      };
-    }
-
-    // Decrypt API keys from database
-    aiProviders = decryptProviderKeys(aiProviders, organizationId);
-
+    // Get decrypted AI providers with backward compatibility
+    const aiProviders = getDecryptedAIProviders(settingsData, organizationId);
     const { activeProvider } = aiProviders;
-    const apiKey = aiProviders[activeProvider]?.api_key;
+    const apiKey = getActiveProviderApiKey(aiProviders);
 
     if (!apiKey) {
       return NextResponse.json(
@@ -268,10 +97,12 @@ export async function PUT(request: NextRequest) {
         { status: 404 },
       );
     }
-    let resumeUrl = candidate.resume.url;
-    if (!resumeUrl.startsWith('http')) {
-      resumeUrl = `${request.headers.get('origin')}${resumeUrl}`.trim();
-    }
+
+    // Process resume URL and convert to base64
+    let resumeUrl: string = candidate?.resume?.url || '';
+    const origin = request.headers.get('origin') || '';
+    resumeUrl = normalizeResumeUrl(resumeUrl, origin);
+
     if (!resumeUrl) {
       return NextResponse.json(
         { error: 'Resume URL not found' },
@@ -279,102 +110,47 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    let base64Resume;
-    const fileStorage = settingsData.fileStorage.storageType || 'local';
+    let base64Resume: string;
+    const fileStorage = settingsData.fileStorage?.storageType || 'local';
     if (fileStorage === 'local') {
       base64Resume = await generateBase64(resumeUrl);
     } else {
-      if (!resumeUrl.startsWith('http')) {
-        resumeUrl = request.headers.get('origin') + resumeUrl;
-      }
-      const response = await fetch(resumeUrl.trim());
-      if (!response.ok) {
-        return NextResponse.json(
-          { error: 'Failed to fetch resume file' },
-          { status: 500 },
-        );
-      }
-      const arrayBuffer = await response.arrayBuffer();
-      const resumeBuffer = Buffer.from(arrayBuffer);
-      base64Resume = resumeBuffer.toString('base64');
+      const normalizedUrl = normalizeResumeUrl(resumeUrl, origin);
+      base64Resume = await fetchResumeAsBase64(normalizedUrl);
     }
 
-    // Check PDF page count if autoEvaluateAllCandidates is false
-    const evaluationConfig = settingsData.evaluationConfig || {
+    // Validate PDF page count if needed
+    const evaluationConfig: IEvaluationConfig = settingsData.evaluationConfig || {
       autoEvaluateAllCandidates: false,
       maxPdfPages: 4,
       temperature: 0.1,
       customPrompt: null,
     };
 
-    if (!evaluationConfig.autoEvaluateAllCandidates) {
-      // Check page count
-      try {
-        const pdfBuffer = Buffer.from(base64Resume, 'base64');
-        const uint8Array = new Uint8Array(pdfBuffer);
-
-        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.js');
-        const pdf = await pdfjs.getDocument({ data: uint8Array }).promise;
-
-        const pageCount = pdf.numPages;
-
-        if (
-          evaluationConfig.maxPdfPages > 0 &&
-          pageCount > evaluationConfig.maxPdfPages
-        ) {
-          return NextResponse.json(
-            {
-              error: `Resume has ${pageCount} pages. Auto-evaluation is limited to ${evaluationConfig.maxPdfPages} pages. Please evaluate manually or update settings.`,
-            },
-            { status: 400 },
-          );
-        }
-      } catch (pdfError) {
-        logger.error(
-          { error: pdfError, url: request.url },
-          'PDF page count check failed',
+    try {
+      await validatePdfPageCount(base64Resume, evaluationConfig);
+    } catch (pdfError) {
+      if (pdfError instanceof Error) {
+        return NextResponse.json(
+          { error: pdfError.message },
+          { status: 400 },
         );
       }
     }
 
-    const jobDescription =
-      candidate.jobId &&
-      typeof candidate.jobId === 'object' &&
-      'description' in candidate.jobId
-        ? String(candidate.jobId.description)
-        : '';
-    const jobData = {
-      description: jobDescription,
-      salary:
-        candidate.jobId &&
-        typeof candidate.jobId === 'object' &&
-        'salary' in candidate.jobId
-          ? (candidate.jobId.salary as { inText: string }).inText
-          : undefined,
-      title:
-        typeof candidate.jobId === 'object' && 'title' in candidate.jobId
-          ? String(candidate.jobId.title)
-          : '',
-      skills:
-        typeof candidate.jobId === 'object' && 'skills' in candidate.jobId
-          ? (candidate.jobId.skills as string[])
-          : [],
-      experience:
-        candidate.jobId &&
-        typeof candidate.jobId === 'object' &&
-        'experience' in candidate.jobId
-          ? (candidate.jobId.experience as number)
-          : undefined,
-    };
+    // Extract job data for evaluation
+    const candidateJobIdForData = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+    const jobData = extractJobDataForEvaluation(candidateJobIdForData);
 
     // Create settings object with decrypted aiProviders
-    const settingsForEvaluation = {
-      ...settingsData,
+    const settingsForEvaluation: Partial<ISettings> = {
+      ...settingsData || {},
       aiProviders, // Override with decrypted version
     };
 
-    // Pass the settings with decrypted aiProviders
-    const scores = await AIEvaluationService.evaluateResume(
+    // Convert candidate to ICandidate format for AIEvaluationService
+    const candidateJobIdForEval = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+    const scores: EvaluationResult = await AIEvaluationService.evaluateResume(
       base64Resume,
       settingsForEvaluation,
       jobData,
@@ -382,11 +158,8 @@ export async function PUT(request: NextRequest) {
     );
 
     // Calculate weighted score if job has custom weights
-    if (
-      candidate.jobId &&
-      typeof candidate.jobId === 'object' &&
-      'evaluationWeights' in candidate.jobId
-    ) {
+    if (isPopulatedJob(candidateJobIdForEval) && candidateJobIdForEval.evaluationWeights) {
+      const { evaluationWeights } = candidateJobIdForEval;
       const weightedScore = AIEvaluationService.calculateWeightedScore(
         {
           overall: scores.overall,
@@ -394,31 +167,53 @@ export async function PUT(request: NextRequest) {
           experience: scores.experience,
           affordability: scores.affordability || 0,
         },
-        candidate.jobId.evaluationWeights as {
-          overall: number;
-          skills: number;
-          experience: number;
-          affordability: number;
-        },
+        evaluationWeights,
       );
       scores.weightedScore = weightedScore;
     }
 
     // Calculate comparative ranking if enabled
     if (evaluationConfig.enableComparativeRanking) {
+      const candidateJobIdForRanking = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+      let jobIdForRanking: mongoose.Types.ObjectId | string;
+      
+      if (isPopulatedJob(candidateJobIdForRanking)) {
+        const jobIdValue = candidateJobIdForRanking._id;
+        jobIdForRanking = typeof jobIdValue === 'string'
+          ? jobIdValue
+          : jobIdValue;
+      } else {
+        jobIdForRanking = candidateJobIdForRanking as mongoose.Types.ObjectId | string;
+      }
+
       const comparativeRanking = await calculateComparativeRanking(
-        candidate._id,
-        candidate.jobId,
-        scores,
+        candidate?._id,
+        jobIdForRanking,
+        {
+          overall: scores.overall,
+          skills: scores.skills,
+          experience: scores.experience,
+          affordability: scores.affordability,
+          weightedScore: scores.weightedScore,
+        },
       );
       scores.comparativeRanking = comparativeRanking;
     }
+    console.log('scores in evaluate route', scores);
+    // Update candidate scores
+    const candidateDocument = await Candidate?.findById(candidate?._id);
+    if (!candidateDocument) {
+      return NextResponse.json(
+        { error: 'Candidate not found for update' },
+        { status: 404 },
+      );
+    }
 
-    candidate.scores = scores;
-    candidate.contact = candidate.contact;
-    await candidate.save();
+    candidateDocument.scores = scores;
+    await candidateDocument.save();
 
-    const fullCandidate = (await Candidate.findById(candidate._id)
+    // Fetch full candidate with populated fields
+    const fullCandidate = (await Candidate?.findById(candidate?._id)
       .populate([
         {
           path: 'assignment.interviewerId',
@@ -426,36 +221,45 @@ export async function PUT(request: NextRequest) {
         },
         {
           path: 'remarks.userId',
-          select: 'name email',
+          select: '_id name email',
         },
         {
           path: 'jobId',
           select: '_id description title',
         },
       ])
-      .lean()) as ICandidate;
+      .lean()) as ICandidate | null;
 
+    if (!fullCandidate) {
+      return NextResponse.json(
+        { error: 'Failed to fetch updated candidate' },
+        { status: 500 },
+      );
+    }
+
+    // Fetch and populate candidate history
+    const jobIdForHistory = extractJobIdForHistory(fullCandidate.jobId);
     const candidateHistory = await History?.findOne({
-      candidateId: candidate._id,
-      jobId:
-        typeof fullCandidate.jobId === 'object' &&
-        '_id' in fullCandidate.jobId &&
-        fullCandidate.jobId?._id,
+      candidateId: candidate?._id,
+      jobId: jobIdForHistory,
     });
-    const candidateHistoryPopulated = await candidateHistory?.populate([
-      { path: 'history.assignmentBy', select: '_id name email' },
-      { path: 'history.currentInterviewer', select: '_id name email' },
-      { path: 'history.previousInterviewer', select: '_id name email' },
-      { path: 'history.note.userId', select: '_id name email' },
-    ]);
-    // Debug: Check what's being broadcast
-    const dataTobroadcast = {
+
+    const candidateHistoryPopulated = candidateHistory
+      ? await candidateHistory.populate([
+          { path: 'history.assignmentBy', select: '_id name email' },
+          { path: 'history.currentInterviewer', select: '_id name email' },
+          { path: 'history.previousInterviewer', select: '_id name email' },
+          { path: 'history.note.userId', select: '_id name email' },
+        ])
+      : null;
+
+    // Broadcast candidate update
+    const dataTobroadcast: ICandidate & { history?: IHistory['history'] } = {
       ...fullCandidate,
       history: candidateHistoryPopulated?.history,
     };
 
     broadcastCandidateUpdate(dataTobroadcast);
-
     return NextResponse.json(
       {
         message: 'Candidate scores updated successfully',
@@ -464,7 +268,7 @@ export async function PUT(request: NextRequest) {
       { status: 200 },
     );
   } catch (error) {
-    logger.error({ error, url: request.url }, 'Error evaluating candidate.');
+    logger.error({ error, url: request?.url }, 'Error evaluating candidate.');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

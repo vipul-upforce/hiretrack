@@ -4,6 +4,58 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
 import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
 
+// Valid notification setting keys (using Set for O(1) lookup)
+const VALID_NOTIFICATION_KEYS = new Set([
+  "mentions",
+  "newApplications",
+  "statusUpdates",
+  "detailsUpdated",
+  "interviewAssignments",
+  "stepCompleted",
+  "newRemarks",
+  "meetingScheduled",
+  "meetingUpdated",
+  "meetingCancelled",
+  "meetingInviteAccepted",
+  "meetingInviteDeclined",
+  "meetingInviteTentative",
+  "followupAdded",
+  "followupUpdated",
+  "followupRemoved",
+  "jobCreated",
+  "jobUpdated",
+  "userAdded",
+  "bulkImportCompleted",
+  "candidateRejected",
+  "interviewCompleted",
+  "candidateMoved",
+]);
+
+/**
+ * Safely validates notification settings object
+ * Prevents Object Injection Sink vulnerabilities
+ */
+function validateNotificationSettings(
+  settings: Record<string, unknown>,
+  validKeys: Set<string>,
+): string | null {
+  // Iterate only over existing properties (more efficient)
+  for (const key of Object.keys(settings)) {
+    // O(1) lookup - only validate keys in whitelist
+    // Safe property access using hasOwnProperty + getOwnPropertyDescriptor
+    if (
+      validKeys.has(key) &&
+      Object.prototype.hasOwnProperty.call(settings, key)
+    ) {
+      const value = Object.getOwnPropertyDescriptor(settings, key)?.value;
+      if (value !== undefined && typeof value !== 'boolean') {
+        return key;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * GET /api/settings/email-notifications/[userId]
  * Get individual user email notification settings
@@ -105,39 +157,16 @@ export async function PUT(
     const { global, jobLevel } = body;
 
     // Validate global settings
-    if (global) {
-      const validKeys = [
-        "mentions",
-        "newApplications",
-        "statusUpdates",
-        "detailsUpdated",
-        "interviewAssignments",
-        "stepCompleted",
-        "newRemarks",
-        "meetingScheduled",
-        "meetingUpdated",
-        "meetingCancelled",
-        "meetingInviteAccepted",
-        "meetingInviteDeclined",
-        "meetingInviteTentative",
-        "followupAdded",
-        "followupUpdated",
-        "followupRemoved",
-        "jobCreated",
-        "jobUpdated",
-        "userAdded",
-        "bulkImportCompleted",
-        "candidateRejected",
-        "interviewCompleted",
-        "candidateMoved",
-      ];
-      for (const key of validKeys) {
-        if (global[key] !== undefined && typeof global[key] !== 'boolean') {
-          return NextResponse.json(
-            { error: `Invalid value for global.${key}` },
-            { status: 400 },
-          );
-        }
+    if (global && typeof global === 'object') {
+      const invalidKey = validateNotificationSettings(
+        global as Record<string, unknown>,
+        VALID_NOTIFICATION_KEYS,
+      );
+      if (invalidKey) {
+        return NextResponse.json(
+          { error: `Invalid value for global.${invalidKey}` },
+          { status: 400 },
+        );
       }
     }
 
@@ -152,40 +181,22 @@ export async function PUT(
         }
 
         if (jobSettings && typeof jobSettings === 'object') {
-          const validKeys = [
-            "mentions",
-            "newApplications",
-            "statusUpdates",
-            "detailsUpdated",
-            "interviewAssignments",
-            "stepCompleted",
-            "newRemarks",
-            "meetingScheduled",
-            "meetingUpdated",
-            "meetingCancelled",
-            "meetingInviteAccepted",
-            "meetingInviteDeclined",
-            "meetingInviteTentative",
-            "followupAdded",
-            "followupUpdated",
-            "followupRemoved",
-            "jobCreated",
-            "jobUpdated",
-            "userAdded",
-            "bulkImportCompleted",
-            "candidateRejected",
-            "interviewCompleted",
-          ];
-          for (const key of validKeys) {
-            if (
-              (jobSettings as Record<string, unknown>)[key] !== undefined
-              && typeof (jobSettings as Record<string, unknown>)[key] !== 'boolean'
-            ) {
-              return NextResponse.json(
-                { error: `Invalid job-level value for ${key} in job ${jobId}` },
-                { status: 400 },
-              );
-            }
+          // Job-level settings exclude "candidateMoved" (only valid at global level)
+          const jobLevelValidKeys = new Set(
+            Array.from(VALID_NOTIFICATION_KEYS).filter(
+              (key) => key !== 'candidateMoved',
+            ),
+          );
+          
+          const invalidKey = validateNotificationSettings(
+            jobSettings as Record<string, unknown>,
+            jobLevelValidKeys,
+          );
+          if (invalidKey) {
+            return NextResponse.json(
+              { error: `Invalid job-level value for ${invalidKey} in job ${jobId}` },
+              { status: 400 },
+            );
           }
         }
       }

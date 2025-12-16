@@ -14,13 +14,13 @@ export class AnthropicProvider extends BaseAIProvider {
     try {
       const anthropic = new Anthropic({ apiKey });
 
-      const resumeText = await this.extractTextFromPdf(base64Resume);
-      const prompt = `${this.getStandardPrompt()
+      const resumeText = await BaseAIProvider.extractTextFromPdf(base64Resume);
+      const prompt = `${BaseAIProvider.getStandardPrompt()
       }
 
 Resume Text:
 ${resumeText}`;
-      const selectedModel = modelName || getDefaultModel('anthropic');
+      const selectedModel = modelName || getDefaultModel(this.name);
 
       const response = await anthropic.messages.create({
         model: selectedModel,
@@ -36,16 +36,16 @@ ${resumeText}`;
 
       const content = response.content[0];
       if (content.type !== 'text' || !content.text) {
-        throw new Error('No valid response from Anthropic');
+        throw new Error(`No valid response from ${this.name}`);
       }
 
-      const jsonString = this.cleanJsonResponse(content.text);
-      return this.parseJsonResponse(jsonString);
+      const jsonString = BaseAIProvider.cleanJsonResponse(content.text);
+      return BaseAIProvider.parseJsonResponse(jsonString);
     } catch (error) {
       throw new Error(
         error instanceof Error
           ? error.message
-          : 'Failed to process resume with Anthropic',
+          : `Failed to process resume with ${this.name}`,
       );
     }
   }
@@ -59,12 +59,12 @@ ${resumeText}`;
   ): Promise<string> {
     const anthropic = new Anthropic({ apiKey });
 
-    const selectedModel = modelName || getDefaultModel('anthropic');
+    const selectedModel = modelName || getDefaultModel(this.name);
 
-    const resumeText = await this.extractTextFromPdf(resumeBase64);
+    const resumeText = await BaseAIProvider.extractTextFromPdf(resumeBase64);
     const finalPrompt = `${prompt
     }Resume Text: ${resumeText}`
-      + 'IMPORTANT: Return ONLY the JSON object, no additional text or explanation.';
+      + 'You are an expert technical recruiter evaluating candidates. Provide honest, detailed evaluations.';
 
     const response = await anthropic.messages.create({
       model: selectedModel,
@@ -75,7 +75,7 @@ ${resumeText}`;
           role: 'user',
           content: [{ type: 'text', text: finalPrompt }],
         },
-      ],
+      ]
     });
 
     const content = response.content[0];
@@ -90,7 +90,7 @@ ${resumeText}`;
     apiKey: string,
     modelName?: string,
   ): Promise<{ isValid: boolean; error?: string }> {
-    const selectedModel = modelName || getDefaultModel('anthropic');
+    const selectedModel = modelName || getDefaultModel(this.name);
 
     try {
       const anthropic = new Anthropic({ apiKey });
@@ -103,7 +103,7 @@ ${resumeText}`;
       });
 
       if (!response.content || response.content.length === 0) {
-        return { isValid: false, error: 'No response received from Anthropic' };
+        return { isValid: false, error: `No response received from ${this.name}` };
       }
 
       return { isValid: true };

@@ -1,6 +1,6 @@
-import { defaultTemplates } from '@/lib/constants';
-import connectToDatabase, { Settings } from '@/lib/mongodb';
-import { loadTemplate, MapTemplate } from '@/lib/templateLoader';
+import { defaultTemplates } from "@/app/dashboard/settings/templates/constants";
+import connectToDatabase, { Settings } from "@/lib/mongodb";
+import { loadTemplate, MapTemplate } from "@/lib/templateLoader";
 
 export async function getMappedEmailTemplate(
   templateKey: string,
