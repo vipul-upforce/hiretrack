@@ -18,6 +18,7 @@ import {
   buildPromptWithCustomTemplate,
 } from "./evaluation-prompts";
 import { getEvaluationMetadata } from "./evaluation-metadata";
+import logger from "../logger";
 
 /**
  * Service for AI-powered candidate resume evaluation
@@ -42,6 +43,8 @@ export class AIEvaluationService {
     candidate: ICandidate,
   ): Promise<EvaluationResult> {
     try {
+      console.log('jobData in evaluation-provider', jobData);
+      console.log('candidate in evaluation-provider', candidate);
       const aiProviders = this.getAIProviders(settings);
       const activeProvider = aiProviders.activeProvider as AIProviderType;
       const apiKey = this.validateAndGetApiKey(aiProviders, activeProvider);
@@ -57,7 +60,7 @@ export class AIEvaluationService {
         selectedModel,
         evaluationConfig.temperature,
       );
-
+ console.log('response in evaluation-provider', prompt);
       let evaluationResult = parseEvaluationResponse(response);
       evaluationResult = this.filterEvaluationBySettings(
         evaluationResult,
@@ -90,7 +93,7 @@ export class AIEvaluationService {
   private static getAIProviders(
     settings: ISettings | Partial<ISettings>
   ): IAIProviders {
-    let aiProviders = settings.aiProviders;
+    let { aiProviders } = settings;
 
     if (!aiProviders) {
       const legacyGeminiKey = settings.gemini?.gemini_key || "";
@@ -210,18 +213,19 @@ export class AIEvaluationService {
     evaluation: EvaluationResult,
     config: IEvaluationConfig | Partial<IEvaluationConfig>
   ): EvaluationResult {
+    const filtered = { ...evaluation };
+    
     if (config.enableConfidenceScores === false) {
-      delete evaluation.confidenceScores;
-      delete evaluation.evidenceLinks;
+      delete filtered.evidenceLinks;
     }
     if (config.enableRedFlagsDetection === false) {
-      delete evaluation.redFlags;
+      delete filtered.redFlags;
     }
     if (config.enableSkillsMatrix === false) {
-      delete evaluation.skillsMatrix;
+      delete filtered.skillsMatrix;
     }
 
-    return evaluation;
+    return filtered;
   }
 
   /**
@@ -288,7 +292,7 @@ export class AIEvaluationService {
       numericScores.affordability * normalizedWeights.affordability;
 
     if (!isValidNumber(weightedScore)) {
-      console.error(
+      logger.error(
         "Invalid weighted score calculated, returning 0. Scores:",
         numericScores,
         "Weights:",

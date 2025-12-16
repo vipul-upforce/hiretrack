@@ -21,11 +21,14 @@ import {
 } from '@/hooks/useGlobalEmailNotificationSettings';
 import { useSelector } from 'react-redux';
 import { useOrganizationEmailNotificationSettings } from '@/hooks/useEmailNotificationSettings';
+import { RootState } from '@/lib/store';
 import {
   ALL_NOTIFICATION_TYPES,
   createDefaultNotificationSettings,
   resolveNotificationSource,
   isAdminOverrideDisabled,
+  safeGetNotificationValue,
+  safeSetNotificationValue,
 } from '@/lib/utils/notificationSettings';
 import logger from '@/lib/logger';
 import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
@@ -41,7 +44,7 @@ export function GlobalEmailNotificationSettingsDialog({
     Record<EmailNotificationType, boolean>
   >(() => createDefaultNotificationSettings());
 
-  const { user: currentUser } = useSelector((state: any) => state.auth || {});
+  const { user: currentUser } = useSelector((state: RootState) => state.auth || {});
   const { settings, effectiveSettingsWithSource, loading, error, refetch } =
     useGlobalEmailNotificationSettings();
   const { updateSettings, loading: updating } =
@@ -57,7 +60,7 @@ export function GlobalEmailNotificationSettingsDialog({
     try {
       if (organizationSettings) {
         setAdminOverrides(
-          organizationSettings.users.find((user) => user._id === currentUser.id)
+          organizationSettings.users.find((user) => user._id === currentUser?.id)
             ?.currentOverride || {},
         );
       }
@@ -111,9 +114,11 @@ export function GlobalEmailNotificationSettingsDialog({
 
   const hasChanges = () => {
     if (!settings) return false;
-    return ALL_NOTIFICATION_TYPES.some(
-      (key) => localSettings[key] !== (settings[key] ?? true),
-    );
+    return ALL_NOTIFICATION_TYPES.some((key) => {
+      const localValue = safeGetNotificationValue(localSettings, key);
+      const settingsValue = safeGetNotificationValue(settings, key) ?? true;
+      return localValue !== settingsValue;
+    });
   };
 
   // Calculate if all notifications are enabled (excluding admin-disabled ones)
@@ -122,7 +127,7 @@ export function GlobalEmailNotificationSettingsDialog({
       (type) => !isAdminOverrideDisabled(type, adminOverrides),
     );
     if (toggleableTypes.length === 0) return false;
-    return toggleableTypes.every((type) => localSettings[type]);
+    return toggleableTypes.every((type) => safeGetNotificationValue(localSettings, type) === true);
   };
 
   const handleAllToggle = (enabled: boolean) => {
@@ -130,7 +135,7 @@ export function GlobalEmailNotificationSettingsDialog({
     ALL_NOTIFICATION_TYPES.forEach((type) => {
       // Only toggle types that aren't disabled by admin override
       if (!isAdminOverrideDisabled(type, adminOverrides)) {
-        newSettings[type] = enabled;
+        safeSetNotificationValue(newSettings, type, enabled);
       }
     });
     setLocalSettings(newSettings);
@@ -202,7 +207,7 @@ export function GlobalEmailNotificationSettingsDialog({
                 <EmailNotificationToggle
                   key={type}
                   type={type}
-                  enabled={localSettings[type]}
+                  enabled={safeGetNotificationValue(localSettings, type) ?? false}
                   source={source}
                   onToggle={handleToggle}
                   showSource

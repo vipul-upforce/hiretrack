@@ -68,16 +68,21 @@ const eslintConfig = [
       'jsx-a11y/no-noninteractive-element-interactions': 'off',
       'jsx-a11y/click-events-have-key-events': 'off',
       'react-hooks/exhaustive-deps': 'off',
+      // --- ENFORSED INGORING JS SPECIFIC RULES - CONFLICTING WITH THE TS RULES ---
+      'no-unused-vars': 'off',
 
       // --- STRICT SENIOR REQUIREMENTS ---
 
       // Requirement: "Any is not allowed"
       '@typescript-eslint/no-explicit-any': 'error',
-
       // Requirement: "No unused variable"
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_' },
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
 
       // Requirement: "Max loc 300 lines"
