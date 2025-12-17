@@ -186,6 +186,11 @@ export interface GoogleCalendarCredentialsRequest {
   clientSecret: string;
 }
 
+export interface DownloadAssetsResponse {
+  blob: Blob;
+  filename: string;
+}
+
 export const settingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
@@ -551,6 +556,25 @@ export const settingsApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    downloadAssets: builder.mutation<DownloadAssetsResponse, void>({
+      query: () => ({
+        url: '/download/assets',
+        method: 'GET',
+        responseHandler: async (response) => {
+          const blob = await response.blob();
+          const contentDisposition = response.headers.get(
+            'Content-Disposition',
+          );
+          const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
+          const filename = fileNameMatch
+            ? fileNameMatch[1]
+            : `assets-${Date.now()}.tar.gz`;
+
+          return { blob, filename };
+        },
+      }),
+      invalidatesTags: ['Assets'],
+    }),
 
     getEvaluationConfigs: builder.query<GetEvaluationConfigsResponse, void>({
       query: () => ({
@@ -622,6 +646,7 @@ export const {
   useUpdateEvaluationConfigsMutation,
   useValidateAiProviderMutation,
   useTestGoogleCalendarConnectionMutation,
+  useDownloadAssetsMutation,
 } = settingsApi;
 
 export type { TestConnectionRequest, TestConnectionResponse };

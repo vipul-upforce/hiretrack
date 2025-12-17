@@ -3,6 +3,7 @@ import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
 import { NextResponse } from 'next/server';
 import { logout } from '@/lib/redux/authSlice';
+import logger from '@/lib/logger';
 
 interface AuthRequest {
   email: string;
@@ -121,6 +122,8 @@ export const authApi = baseApi.injectEndpoints({
       async onQueryStarted(_, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
+        } catch (err) {
+          logger.error('Logout API failed', err);
         } finally {
           dispatch(logout());
         }

@@ -281,9 +281,8 @@ export default function ApplyJobsContent({
     try {
       await triggerLogout().unwrap();
       router.push('/auth/login');
-    } catch (error) {
-      console.error('Logout failed', error);
-      logger.error('Logout failed', error);
+    } catch (e) {
+      logger.error('Logout failed', e);
     }
     toast({
       title: 'Logged out',
