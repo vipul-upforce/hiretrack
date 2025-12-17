@@ -1,30 +1,35 @@
-"use client";
-import { useCallback, useEffect, useState, useRef } from "react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import DashboardLoader from "./components/dashboard-loader";
-import ActionItems from "@/components/actionitems";
-import { Button } from "@/components/ui/button";
-import { Search, Bell } from "lucide-react";
-import { RenderTodaysInterviews } from "./components/RenderTodaysInterviews";
-import { RenderInterviewerAssignments } from "./components/RenderInterviewerAssignments";
-import { MultiSelect } from "@/components/ui/multi-select";
-import useRoles from "@/hooks/useRoles";
-import { useSSE } from "@/hooks/useSSE";
-import { Candidate } from "@/types/candidate";
-import { ITag } from "@/lib/models/organization";
-import { useSelector } from "react-redux";
-import RecentActivities from "./components/RecentActivities";
-import { useMarkNotificationAsReadMutation } from "@/lib/features/notifications/notificationsApi";
-import { useNotificationsContext } from "@/contexts/NotificationsContext";
-import { useLazyFetchAssignmentsQuery, useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
-import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import DashboardCards from "./components/DashboardCards";
-import { DashboardSkeleton } from "@/components/skeletons/dashboard-skeleton";
+'use client';
+
+import { useCallback, useEffect, useState, useRef } from 'react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import ActionItems from '@/components/actionitems';
+import { Button } from '@/components/ui/button';
+import { Search, Bell } from 'lucide-react';
+import { MultiSelect } from '@/components/ui/multi-select';
+import useRoles from '@/hooks/useRoles';
+import { useSSE } from '@/hooks/useSSE';
+import { Candidate } from '@/types/candidate';
+import { ITag } from '@/lib/models/organization';
+import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
+import { useNotificationsContext } from '@/contexts/NotificationsContext';
+import { useAppSelector } from '@/lib/redux/hooks';
+import {
+  useLazyFetchAssignmentsQuery,
+  useLazyFetchCandidateByIdQuery,
+} from '@/lib/features/candidate/candidateApi';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { DashboardSkeleton } from '@/components/skeletons/dashboard-skeleton';
 import logger from '@/lib/logger';
+import DashboardCards from './components/DashboardCards';
+import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
+import RecentActivities from './components/RecentActivities';
+import { RenderInterviewerAssignments } from './components/RenderInterviewerAssignments';
+import { RenderTodaysInterviews } from './components/RenderTodaysInterviews';
+// import DashboardLoader from './components/dashboard-loader';
+
 export interface Assignment {
   id: string;
   _id?: string;
@@ -122,7 +127,7 @@ export default function DashboardPage() {
     thisWeek: 0,
     today: 0,
   });
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
     null,
   );
@@ -226,7 +231,7 @@ export default function DashboardPage() {
       }
     },
 
-    [filterText, selectedAssignedTo, itemsPerPage, triggerFetchAssignments]
+    [filterText, selectedAssignedTo, itemsPerPage, triggerFetchAssignments],
   );
 
   const loadMoreData = useCallback(() => {
@@ -741,4 +746,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
