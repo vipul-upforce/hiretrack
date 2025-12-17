@@ -109,7 +109,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       return response;
     }
 
-    const user = {
+    const userTokenObj = {
       id: userInOrg._id.toString(),
       name: userInOrg.name,
       email: userInOrg.email,
@@ -120,16 +120,16 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       fileStorage: orgSettings?.fileStorage?.storageType,
     };
 
-    const response = await returnTokenBasedResponse(user, req);
+    const response = await returnTokenBasedResponse(userTokenObj, req);
     return response;
   }
 
   // Collect organization info
   const orgs = [];
-  for (const user of users) {
-    const orgInfo = await Organization!.findById(user.organizationId);
+  for (const user1 of users) {
+    const orgInfo = await Organization!.findById(user1.organizationId).select("name _id").lean();
     orgs.push({
-      orgId: user.organizationId,
+      orgId: user1.organizationId,
       name: orgInfo?.name,
       isCandidate: false,
     });
@@ -145,6 +145,9 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       },
       { status: 200 },
     );
+  }
+  if(orgs.length === 1 && users.length === 1) {
+    return  userLogin(users, orgs[0].orgId.toString(), password, req);
   }
 
   // If user exists in a single organization, proceed to check password
