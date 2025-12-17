@@ -5,10 +5,10 @@ import {
   useGetAIProvidersConfigsQuery,
   useGetPortalConfigsQuery,
 } from '@/lib/features/settings/settingsApi';
-import AIProvidersForm from './partials/ai-providers-form';
+import AIProvidersForm from './components/ai-providers-form';
 import { AIProvidersValues } from './types';
 import { getModelDisplayValue } from './utils';
-import AiProviderSkeleton from './partials/ai-provider-loading-skeleton';
+import AiProviderSkeleton from './components/ai-provider-loading-skeleton';
 
 export default function AIProvidersConfigs({
   onClose,
