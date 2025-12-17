@@ -145,7 +145,6 @@ export interface GetUserEmailNotificationSettingsQueryArg {
   userId: string;
   jobId?: string;
 }
-
 export const emailNotificationSettingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUserEmailNotificationSettings: builder.query<
@@ -156,7 +155,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
         const params = new URLSearchParams();
         if (jobId) params.append('jobId', jobId);
         const suffix = params.toString() ? `?${params.toString()}` : '';
-        return `/${userId}${suffix}`;
+        return `/settings/email-notifications/${userId}${suffix}`;
       },
       providesTags: (_result, _error, arg) => [
         { type: 'EmailNotificationUser', id: arg.userId },
@@ -168,7 +167,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       UpdateUserEmailNotificationSettingsRequest
     >({
       query: ({ userId, updates }) => ({
-        url: `/${userId}`,
+        url: `/settings/email-notifications/${userId}`,
         method: 'PUT',
         body: updates,
       }),
@@ -183,7 +182,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       ApiSuccessResponse<GetJobEmailNotificationSettingsResponse>,
       { jobId: string }
     >({
-      query: ({ jobId }) => `/job/${jobId}`,
+      query: ({ jobId }) => `/settings/email-notifications/job/${jobId}`,
       providesTags: (_result, _error, arg) => [
         { type: 'EmailNotificationJob', id: arg.jobId },
       ],
@@ -194,7 +193,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       UpdateJobEmailNotificationSettingsRequest
     >({
       query: ({ jobId, settings }) => ({
-        url: `/job/${jobId}`,
+        url: `/settings/email-notifications/job/${jobId}`,
         method: 'PUT',
         body: { settings },
       }),
@@ -207,7 +206,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       ApiSuccessResponse<OrganizationSettingsResponse>,
       void
     >({
-      query: () => '',
+      query: () => '/settings/email-notifications',
       providesTags: [{ type: 'EmailNotificationOrganization', id: 'ORG' }],
     }),
 
@@ -227,7 +226,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       }
     >({
       query: ({ updates }) => ({
-        url: '',
+        url: '/settings/email-notifications',
         method: 'PUT',
         body: updates,
       }),
@@ -238,7 +237,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       ApiSuccessResponse<GetGlobalEmailNotificationSettingsResponse>,
       void
     >({
-      query: () => '/global',
+      query: () => '/settings/email-notifications/global',
       providesTags: [{ type: 'EmailNotificationGlobal', id: 'GLOBAL' }],
     }),
 
@@ -247,7 +246,7 @@ export const emailNotificationSettingsApi = baseApi.injectEndpoints({
       UpdateGlobalEmailNotificationSettingsRequest
     >({
       query: (body) => ({
-        url: '/global',
+        url: '/settings/email-notifications/global',
         method: 'PUT',
         body,
       }),
