@@ -14,6 +14,8 @@ import { organizationSlice } from './features/org/orgSlice';
 import { checklistApi } from './features/checklist/checklistApi';
 import { notificationsApi } from './features/notifications/notificationsApi';
 import { analyticsApi } from './features/analytics/analyticsApi';
+import { emailNotificationSettingsApi } from './features/notifications/emailNotificationSettingsApi';
+import { onboardingApi } from './features/onboarding/onboardingApi';
 
 // Persist config for auth slice
 const authPersistConfig = {
@@ -43,28 +45,34 @@ const rootReducer = combineReducers({
   [checklistApi.reducerPath]: checklistApi.reducer,
   [notificationsApi.reducerPath]: notificationsApi.reducer,
   [analyticsApi.reducerPath]: analyticsApi.reducer,
+  [emailNotificationSettingsApi.reducerPath]:
+    emailNotificationSettingsApi.reducer,
+  [onboardingApi.reducerPath]: onboardingApi.reducer,
 });
 
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
-    serializableCheck: {
-      ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-    },
-  }).concat(
-    authApi.middleware,
-    orgApi.middleware,
-    settingsApi.middleware,
-    jobApi.middleware,
-    candidateApi.middleware,
-    userApi.middleware,
-    laneApi.middleware,
-    apiSlice.middleware,
-    checklistApi.middleware,
-    notificationsApi.middleware,
-    defaultLanesApi.middleware,
-    analyticsApi.middleware,
-  ),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+      },
+    }).concat(
+      authApi.middleware,
+      orgApi.middleware,
+      settingsApi.middleware,
+      jobApi.middleware,
+      candidateApi.middleware,
+      userApi.middleware,
+      laneApi.middleware,
+      apiSlice.middleware,
+      checklistApi.middleware,
+      notificationsApi.middleware,
+      defaultLanesApi.middleware,
+      analyticsApi.middleware,
+      emailNotificationSettingsApi.middleware,
+      onboardingApi.middleware,
+    ),
 });
 
 export const persistor = persistStore(store);

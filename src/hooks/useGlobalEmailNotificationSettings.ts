@@ -1,7 +1,12 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useEffect, useMemo } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import {
+  useGetGlobalEmailNotificationSettingsQuery,
+  useUpdateGlobalEmailNotificationSettingsMutation,
+} from '@/lib/features/notifications/emailNotificationSettingsApi';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 // Define the type for global settings to match the schema
 export interface GlobalEmailNotificationSettings {
@@ -30,95 +35,93 @@ export interface GlobalEmailNotificationSettings {
   candidateMoved: boolean;
 }
 
+function getRtkQueryErrorMessage(error: unknown): string {
+  if (!error) return 'Unknown error';
+
+  const fbq = error as FetchBaseQueryError;
+  if (typeof fbq === 'object' && fbq && 'status' in fbq) {
+    const maybeData = (fbq as { data?: unknown }).data;
+    if (
+      maybeData &&
+      typeof maybeData === 'object' &&
+      'error' in (maybeData as Record<string, unknown>)
+    ) {
+      const msg = (maybeData as Record<string, unknown>).error;
+      if (typeof msg === 'string' && msg.trim()) return msg;
+    }
+    if (typeof maybeData === 'string' && maybeData.trim()) return maybeData;
+    return 'Request failed';
+  }
+
+  const se = error as { message?: unknown };
+  if (se?.message && typeof se.message === 'string') return se.message;
+
+  return 'Unknown error';
+}
+
 // Hook for getting global email notification settings for the current user
 export function useGlobalEmailNotificationSettings() {
-  const [settings, setSettings] =
-    useState<GlobalEmailNotificationSettings | null>(null);
-  const [effectiveSettings, setEffectiveSettings] =
-    useState<GlobalEmailNotificationSettings | null>(null);
-  const [effectiveSettingsWithSource, setEffectiveSettingsWithSource] =
-    useState<Record<string, { enabled: boolean; source: string }> | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    setError(null);
+  const {
+    data,
+    error: queryError,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetGlobalEmailNotificationSettingsQuery();
 
-    try {
-      const response = await fetch('/api/settings/email-notifications/global');
+  const settings = useMemo(
+    () => (data?.success ? data.globalSettings : null),
+    [data],
+  );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error
-            || 'Failed to fetch global email notification settings',
-        );
-      }
+  // This hook historically exposed `effectiveSettings` as a plain boolean map,
+  // but the API returns `effectiveSettings.email` as { enabled, source }.
+  // Keep backward-compat by returning the raw `effectiveSettings` object here.
+  const effectiveSettings = useMemo(
+    () =>
+      data?.success
+        ? (data.effectiveSettings as unknown as GlobalEmailNotificationSettings)
+        : null,
+    [data],
+  );
 
-      const data = await response.json();
-      setSettings(data.globalSettings);
-      setEffectiveSettings(data.effectiveSettings);
-      
-      // Extract email settings with source information
-      if (data.effectiveSettings?.email) {
-        setEffectiveSettingsWithSource(data.effectiveSettings.email);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const effectiveSettingsWithSource = useMemo(() => {
+    if (!data?.success) return null;
+    return data.effectiveSettings?.email ?? null;
+  }, [data]);
+
+  const error = queryError ? getRtkQueryErrorMessage(queryError) : null;
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (!queryError) return;
+    toast({
+      title: 'Error',
+      description: error ?? 'Failed to load global email notification settings',
+      variant: 'destructive',
+    });
+  }, [error, queryError, toast]);
 
   return {
     settings,
     effectiveSettings,
     effectiveSettingsWithSource,
-    loading,
+    loading: isLoading || isFetching,
     error,
-    refetch: fetchSettings,
+    refetch,
   };
 }
 
 // Hook for updating global email notification settings for the current user
 export function useUpdateGlobalEmailNotificationSettings() {
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [mutate, { isLoading }] =
+    useUpdateGlobalEmailNotificationSettingsMutation();
 
   const updateSettings = async (settings: GlobalEmailNotificationSettings) => {
-    setLoading(true);
-
     try {
-      const response = await fetch('/api/settings/email-notifications/global', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ settings }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error
-            || 'Failed to update global email notification settings',
-        );
-      }
-
-      const data = await response.json();
-
+      const data = await mutate({ settings }).unwrap();
       toast({
         title: 'Success',
         description: 'Global email notification settings updated successfully',
@@ -126,17 +129,15 @@ export function useUpdateGlobalEmailNotificationSettings() {
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = getRtkQueryErrorMessage(err);
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive',
       });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { updateSettings, loading };
+  return { updateSettings, loading: isLoading };
 }

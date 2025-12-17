@@ -6,6 +6,7 @@ import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import { Job } from '@/types/job';
 import {
   useCreateJobMutation,
+  useDeleteJobMutation,
   useFetchJobsQuery,
   useUpdateJobStatusMutation,
 } from '@/lib/features/job/jobApi';
@@ -143,6 +144,7 @@ function KanbanPage() {
   const [updateJobStatus] = useUpdateJobStatusMutation();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [jobToDelete, setJobToDelete] = useState<string | null>(null);
+  const [deleteJob] = useDeleteJobMutation();
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [duplicate, setDuplicate] = useState(false);
   const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);

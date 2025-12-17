@@ -138,7 +138,7 @@ export async function PUT(request: NextRequest) {
     ];
 
     for (const key of validKeys) {
-      if (settings[key] !== undefined && typeof settings[key] !== 'boolean') {
+      if (settings[key as keyof GlobalEmailNotificationSettings] !== undefined && typeof settings[key as keyof GlobalEmailNotificationSettings] !== 'boolean') {
         return NextResponse.json(
           { error: `Invalid value for ${key}` },
           { status: 400 },

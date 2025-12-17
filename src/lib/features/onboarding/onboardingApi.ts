@@ -1,4 +1,4 @@
-import logger from '@/lib/logger';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface OnboardingStatus {
   isCompleted: boolean;
@@ -29,88 +29,74 @@ export interface StatusResponse {
   onboardingStatus: OnboardingStatus;
 }
 
-// API Functions
-export const onboardingApi = {
-  // Get onboarding status
-  async getStatus(): Promise<OnboardingStatus | null> {
-    try {
-      const response = await fetch('/api/onboarding/status', {
-        credentials: 'include',
-      });
-      if (!response.ok) return null;
-      const data: StatusResponse = await response.json();
-      return data.onboardingStatus;
-    } catch (error) {
-      logger.error('Error fetching onboarding status:', error);
-      return null;
-    }
-  },
+type ApiSuccess<T> = T;
 
-  // Update onboarding status
-  async updateStatus(
-    updates: Partial<OnboardingStatus>,
-  ): Promise<OnboardingStatus | null> {
-    try {
-      const response = await fetch('/api/onboarding/status', {
+export interface ValidateStepResponse {
+  isValid: boolean;
+}
+
+export interface AuthMeResponse {
+  user: unknown;
+}
+
+export const onboardingApi = createApi({
+  reducerPath: 'onboardingApi',
+  baseQuery: fetchBaseQuery({
+    baseUrl: '/api',
+    credentials: 'include',
+  }),
+  tagTypes: ['OnboardingStatus', 'OnboardingValidation'],
+  endpoints: (builder) => ({
+    getOnboardingStatus: builder.query<ApiSuccess<StatusResponse>, void>({
+      query: () => '/onboarding/status',
+      providesTags: [{ type: 'OnboardingStatus', id: 'STATUS' }],
+    }),
+
+    updateOnboardingStatus: builder.mutation<
+      ApiSuccess<StatusResponse>,
+      Partial<OnboardingStatus>
+    >({
+      query: (updates) => ({
+        url: '/onboarding/status',
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(updates),
-      });
-      if (!response.ok) return null;
-      const data: StatusResponse = await response.json();
-      return data.onboardingStatus;
-    } catch (error) {
-      logger.error('Error updating onboarding status:', error);
-      return null;
-    }
-  },
+        body: updates,
+      }),
+      invalidatesTags: [
+        { type: 'OnboardingStatus', id: 'STATUS' },
+        { type: 'OnboardingValidation', id: 'VALIDATE' },
+      ],
+    }),
 
-  // Validate onboarding steps
-  async validate(): Promise<ValidateResponse | null> {
-    try {
-      const response = await fetch('/api/onboarding/validate', {
-        credentials: 'include',
-      });
-      if (!response.ok) return null;
-      const data: ValidateResponse = await response.json();
-      return data;
-    } catch (error) {
-      logger.error('Error validating onboarding:', error);
-      return null;
-    }
-  },
+    validateOnboarding: builder.query<ApiSuccess<ValidateResponse>, void>({
+      query: () => '/onboarding/validate',
+      providesTags: [{ type: 'OnboardingValidation', id: 'VALIDATE' }],
+    }),
 
-  // Validate specific step
-  async validateStep(stepId: string): Promise<boolean> {
-    try {
-      const response = await fetch('/api/onboarding/validate', {
+    validateOnboardingStep: builder.mutation<
+      ApiSuccess<ValidateStepResponse>,
+      { stepId: string }
+    >({
+      query: ({ stepId }) => ({
+        url: '/onboarding/validate',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ step: stepId }),
-      });
-      if (!response.ok) return false;
-      const data: { isValid: boolean } = await response.json();
-      return data.isValid;
-    } catch (error) {
-      logger.error('Error validating step:', error);
-      return false;
-    }
-  },
+        body: { step: stepId },
+      }),
+      invalidatesTags: [{ type: 'OnboardingValidation', id: 'VALIDATE' }],
+    }),
 
-  // Get current user
-  async getCurrentUser(): Promise<{ user: any } | null> {
-    try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      logger.error('Error fetching current user:', error);
-      return null;
-    }
-  },
-};
+    getCurrentUser: builder.query<ApiSuccess<AuthMeResponse>, void>({
+      query: () => '/auth/me',
+    }),
+  }),
+});
+
+export const {
+  useGetOnboardingStatusQuery,
+  useLazyGetOnboardingStatusQuery,
+  useUpdateOnboardingStatusMutation,
+  useValidateOnboardingQuery,
+  useLazyValidateOnboardingQuery,
+  useValidateOnboardingStepMutation,
+  useGetCurrentUserQuery,
+  useLazyGetCurrentUserQuery,
+} = onboardingApi;

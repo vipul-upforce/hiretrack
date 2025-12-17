@@ -47,8 +47,20 @@ export const AI_PROVIDER_MODELS: ProviderModels = {
       },
     },
     {
-      id: 'gemini-1.5-pro',
-      name: 'Gemini 1.5 Pro',
+      id: "gemini-2.5-flash-lite",
+      name: "Gemini 2.5 Flash Lite",
+      capabilities: {
+        supportsPDF: true,
+        supportsVision: true,
+        supportsJSON: true,
+        maxTokens: 1000000,
+        costTier: "low",
+        description: "Ultra-fast and lightweight 2.5 Flash Lite model"
+      }
+    },
+    {
+      id: "gemini-1.5-pro",
+      name: "Gemini 1.5 Pro",
       capabilities: {
         supportsPDF: true,
         supportsVision: true,
@@ -72,6 +84,7 @@ export const AI_PROVIDER_MODELS: ProviderModels = {
       isDeprecated: true,
     },
   ],
+  
   openai: [
     {
       id: 'gpt-4o-mini',

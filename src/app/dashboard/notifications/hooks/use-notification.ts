@@ -8,6 +8,7 @@ import {
   useMarkAllNotificationsAsReadMutation,
 } from '@/lib/features/notifications/notificationsApi';
 import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
+import { INotification } from '@/lib/models/notification';
 import { Candidate } from '@/types/candidate';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { getNotificationTypesForRole } from '../utils';
@@ -94,7 +95,7 @@ export const useNotificationsPage = () => {
     }
   };
 
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: INotification) => {
     // Optimistic read status update
     if (!notification.isRead) {
       markAsRead(notification._id);

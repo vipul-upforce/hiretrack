@@ -14,8 +14,8 @@ export class OpenAIProvider extends BaseAIProvider {
     try {
       const openai = new OpenAI({ apiKey });
 
-      const resumeText = await this.extractTextFromPdf(base64Resume);
-      const prompt = `${this.getStandardPrompt()}Resume Text: ${resumeText}`;
+      const resumeText = await BaseAIProvider.extractTextFromPdf(base64Resume);
+      const prompt = `${BaseAIProvider.getStandardPrompt()}Resume Text: ${resumeText}`;
 
       const selectedModel = modelName || getDefaultModel('openai');
       const response = await openai.chat.completions.create({
@@ -41,12 +41,12 @@ export class OpenAIProvider extends BaseAIProvider {
         throw new Error('No valid response from OpenAI');
       }
 
-      return this.parseJsonResponse(content);
+      return BaseAIProvider.parseJsonResponse(content);
     } catch (error) {
       throw new Error(
         error instanceof Error
           ? error.message
-          : 'Failed to process resume with OpenAI',
+          : `Failed to process resume with ${this.name}`,
       );
     }
   }
@@ -62,10 +62,9 @@ export class OpenAIProvider extends BaseAIProvider {
 
     const selectedModel = modelName || getDefaultModel('openai');
 
-    const resumeText = await this.extractTextFromPdf(resumeBase64);
+    const resumeText = await BaseAIProvider.extractTextFromPdf(resumeBase64);
     const finalPrompt = `${prompt}
-
-Resume Text:
+ Resume Text:
 ${resumeText}`;
     const response = await openai.chat.completions.create({
       model: selectedModel,
@@ -86,7 +85,7 @@ ${resumeText}`;
     });
 
     if (!response.choices[0]?.message?.content) {
-      throw new Error('No valid response from OpenAI');
+      throw new Error(`No valid response from ${this.name}`);
     }
 
     return response.choices[0].message.content;
@@ -113,7 +112,7 @@ ${resumeText}`;
       });
 
       if (!response.id) {
-        return { isValid: false, error: 'No response received from OpenAI' };
+        return { isValid: false, error: `No response received from ${this.name}` };
       }
 
       return { isValid: true };

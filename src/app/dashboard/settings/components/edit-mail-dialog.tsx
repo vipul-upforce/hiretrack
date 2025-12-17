@@ -18,26 +18,20 @@ import {
   useUpdateMailTemplatesMutation,
 } from '@/lib/features/settings/settingsApi';
 import {
-  assE,
   Data,
   editorOptions,
-  jobD,
-  MAD,
-  OTP,
-  RemA,
-  ResetP,
-  StatusU,
-  defaultTemplatesFE as defaultTemplates,
-} from '@/lib/constants';
-import { useTheme } from '@/components/theme-provider';
+} from "@/app/dashboard/settings/templates/constants";
+import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
+import { useTheme } from "@/components/theme-provider";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { IEmailTemplate, IEmailTemplatesConfig } from './types';
+} from "@/components/ui/select";
+
+import { defaultTemplatesAsObject as defaultTemplates } from "@/app/dashboard/settings/templates/constants";
 
 export default function EmailTemplateEditor({
   onClose,
@@ -47,7 +41,7 @@ export default function EmailTemplateEditor({
   const { toast } = useToast();
   const { theme } = useTheme();
   const [selectedTemplate, setSelectedTemplate] = useState(
-    'job-application-(hr)',
+    "job-application-hr"
   );
   const [previewData] = useState(Data);
   const [activeEditor, setActiveEditor] = useState<'subject' | 'html' | null>(

@@ -106,8 +106,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Find all HR users in the organization
-    const hrEmails: string[] = hrUsers.map((user) => user.email);
-    const hrUserIds: string[] = hrUsers.map((user) => user._id.toString());
+    const hrEmails: string[] = hrUsers.map((hrUser) => hrUser.email);
+    const hrUserIds: string[] = hrUsers.map((hrUser) => hrUser._id.toString());
 
     const applicationDate = (await getFormattedDate(
       req,
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
     });
 
     const hrHistoryPayload = hrEmails.map((hrEmail) => {
-      const hrUser = hrUsers.find((user) => user.email === hrEmail);
+      const hrUser = hrUsers.find((u) => u.email === hrEmail);
       return {
         organizationId: organizationObjectId,
         sentBy: systemUser._id,
