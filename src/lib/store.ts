@@ -15,6 +15,7 @@ import { checklistApi } from './features/checklist/checklistApi';
 import { notificationsApi } from './features/notifications/notificationsApi';
 import { analyticsApi } from './features/analytics/analyticsApi';
 import { emailNotificationSettingsApi } from './features/notifications/emailNotificationSettingsApi';
+import { onboardingApi } from './features/onboarding/onboardingApi';
 
 // Persist config for auth slice
 const authPersistConfig = {
@@ -46,6 +47,7 @@ const rootReducer = combineReducers({
   [analyticsApi.reducerPath]: analyticsApi.reducer,
   [emailNotificationSettingsApi.reducerPath]:
     emailNotificationSettingsApi.reducer,
+  [onboardingApi.reducerPath]: onboardingApi.reducer,
 });
 
 export const store = configureStore({
@@ -69,6 +71,7 @@ export const store = configureStore({
       defaultLanesApi.middleware,
       analyticsApi.middleware,
       emailNotificationSettingsApi.middleware,
+      onboardingApi.middleware,
     ),
 });
 
