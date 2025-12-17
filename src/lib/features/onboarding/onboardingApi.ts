@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface OnboardingStatus {
   isCompleted: boolean;
@@ -39,17 +39,11 @@ export interface AuthMeResponse {
   user: unknown;
 }
 
-export const onboardingApi = createApi({
-  reducerPath: 'onboardingApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
-    credentials: 'include',
-  }),
-  tagTypes: ['OnboardingStatus', 'OnboardingValidation'],
+export const onboardingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getOnboardingStatus: builder.query<ApiSuccess<StatusResponse>, void>({
       query: () => '/onboarding/status',
-      providesTags: [{ type: 'OnboardingStatus', id: 'STATUS' }],
+      providesTags: ['Onboarding'],
     }),
 
     updateOnboardingStatus: builder.mutation<
@@ -61,15 +55,12 @@ export const onboardingApi = createApi({
         method: 'PUT',
         body: updates,
       }),
-      invalidatesTags: [
-        { type: 'OnboardingStatus', id: 'STATUS' },
-        { type: 'OnboardingValidation', id: 'VALIDATE' },
-      ],
+      invalidatesTags: ['Onboarding'],
     }),
 
     validateOnboarding: builder.query<ApiSuccess<ValidateResponse>, void>({
       query: () => '/onboarding/validate',
-      providesTags: [{ type: 'OnboardingValidation', id: 'VALIDATE' }],
+      providesTags: ['Onboarding'],
     }),
 
     validateOnboardingStep: builder.mutation<
@@ -81,7 +72,7 @@ export const onboardingApi = createApi({
         method: 'POST',
         body: { step: stepId },
       }),
-      invalidatesTags: [{ type: 'OnboardingValidation', id: 'VALIDATE' }],
+      invalidatesTags: ['Onboarding'],
     }),
 
     getCurrentUser: builder.query<ApiSuccess<AuthMeResponse>, void>({
