@@ -149,11 +149,8 @@ export function generateMachineCode(): string {
 
     return id;
   } catch (err) {
-    logger.error(
-      { error: err, platform: process.platform },
-      'Failed to generate machine code',
-    );
-    return 'unknown-machine-id';
+    logger.error("Failed to get machine ID:", err);
+    return "unknown-machine-id";
   }
 }
 
@@ -173,7 +170,7 @@ export function readLicenseData(): LicenseData | null {
 
     return licenseData;
   } catch (error) {
-    logger.error({ error, path: LICENSE_PATH }, 'Error reading license data');
+    logger.error("Error reading license data:", error);
     return null;
   }
 }
@@ -191,7 +188,7 @@ export function readConfigData(): ConfigData | null {
 
     return configData;
   } catch (error) {
-    logger.error({ error, path: CONFIG_PATH }, 'Error reading config data');
+    logger.error("Error reading config data:", error);
     return null;
   }
 }
@@ -262,10 +259,7 @@ async function validateLicenseWithAPI(
       error: data.error,
     };
   } catch (error) {
-    logger.error(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      'License validation API error',
-    );
+    logger.error("License validation API error:", error);
     return {
       valid: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -292,13 +286,9 @@ export async function validateLicenseComprehensive(): Promise<LicenseValidationR
     );
 
     if (validationResult.valid) {
-      // Return validation result without modifying license file
-      return {
-        valid: true,
-        hasLicenseFile: true,
-        apiError: false,
-      };
-    }
+      return { valid: true, hasLicenseFile: true, apiError: false };
+    } 
+  
 
     // Return invalid result without modifying license file
 
@@ -309,10 +299,7 @@ export async function validateLicenseComprehensive(): Promise<LicenseValidationR
       apiError: true,
     };
   } catch (error) {
-    logger.error(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      'License validation error',
-    );
+    logger.error("License validation error:", error);
     return {
       valid: false,
       error: 'Internal server error during license validation',

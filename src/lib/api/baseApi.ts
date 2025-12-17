@@ -44,6 +44,7 @@ const PUBLIC_API_PATTERNS = [
  */
 function isPublicEndpoint(url: string): boolean {
   if (typeof url !== "string") return false;
+  console.log("url", url);
   return PUBLIC_API_PATTERNS.some((pattern) => url.includes(pattern));
 }
 
@@ -71,7 +72,7 @@ async function refreshAccessToken(): Promise<void> {
         errorData.licenseError || "License validation failed";
       if (typeof window !== "undefined") {
         window.location.href =
-          "/auth/login?error=license_invalid&message=" +
+          `/auth/login?error=license_invalid&message=${encodeURIComponent(errorMessage)}`
           encodeURIComponent(errorMessage);
       }
       throw new Error("License validation failed");
@@ -101,11 +102,8 @@ const baseQueryWithReauth: BaseQueryFn<
     baseUrl:  "/api",
     credentials: "include", // Send httpOnly cookies with every request
   });
-
-  // Determine if this is a public endpoint
-  const url = typeof args === "string" ? args : args.url;
-  const isPublic = isPublicEndpoint(url);
-
+  const fullUrl = (typeof args === "string" ? `/api ${args}` : `/api ${args.url}`);
+  const isPublic = isPublicEndpoint(fullUrl);
   // Execute the original request
   let result = await baseQuery(args, api, extraOptions);
 
@@ -115,7 +113,7 @@ const baseQueryWithReauth: BaseQueryFn<
     "status" in result.error &&
     result.error.status === 401 &&
     !isPublic &&
-    !url.includes("/auth/refresh")
+    !fullUrl.includes("/auth/refresh")
   ) {
     try {
       // Attempt to refresh the token using httpOnly cookie

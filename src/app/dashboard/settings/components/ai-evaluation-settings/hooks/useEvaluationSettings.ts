@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import logger from '@/lib/logger';
+import {
+  useGetEvaluationConfigsQuery,
+  useUpdateEvaluationConfigsMutation,
+} from '@/lib/features/settings/settingsApi';
 import { EvaluationConfig, EvaluationConfigKey } from '../types';
 import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PAGES } from '../constants';
 
 export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
   const { toast } = useToast();
-  const [isFetching, setIsFetching] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   const [config, setConfig] = useState<EvaluationConfig>({
     temperature: DEFAULT_TEMPERATURE,
@@ -21,6 +22,47 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
     enableComparativeRanking: false,
   });
 
+  const {
+    data,
+    isLoading: isFetching,
+    isError: isFetchError,
+  } = useGetEvaluationConfigsQuery(undefined, {
+    skip: !isOpen,
+    refetchOnMountOrArgChange: true,
+  });
+
+  const [updateSettings, { isLoading: isSaving }] =
+    useUpdateEvaluationConfigsMutation();
+
+  useEffect(() => {
+    if (data && data.evaluationConfig) {
+      const apiConfig = data.evaluationConfig;
+
+      setConfig({
+        temperature: apiConfig.temperature || DEFAULT_TEMPERATURE,
+        customPrompt: apiConfig.customPrompt || '',
+        autoEvaluateAllCandidates: apiConfig.autoEvaluateAllCandidates || false,
+        maxPdfPages: apiConfig.maxPdfPages || DEFAULT_MAX_PAGES,
+        useCustomPrompt: !!apiConfig.customPrompt,
+        enableConfidenceScores: apiConfig.enableConfidenceScores !== false,
+        enableRedFlagsDetection: apiConfig.enableRedFlagsDetection !== false,
+        enableSkillsMatrix: apiConfig.enableSkillsMatrix !== false,
+        enableComparativeRanking: apiConfig.enableComparativeRanking || false,
+      });
+    }
+  }, [data]);
+
+  // Handle Fetch Error
+  useEffect(() => {
+    if (isFetchError) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load settings. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, [isFetchError, toast]);
+
   const updateConfig = useCallback(
     <K extends EvaluationConfigKey>(key: K, value: EvaluationConfig[K]) => {
       setConfig((prev) => ({ ...prev, [key]: value }));
@@ -28,85 +70,33 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
     [],
   );
 
-  const fetchSettings = useCallback(async () => {
-    setIsFetching(true);
-    try {
-      const response = await fetch('/api/settings/evaluation');
-      if (response.ok) {
-        const data = await response.json();
-        const apiConfig = data.evaluationConfig;
-
-        setConfig({
-          temperature: apiConfig.temperature || DEFAULT_TEMPERATURE,
-          customPrompt: apiConfig.customPrompt || '',
-          autoEvaluateAllCandidates:
-            apiConfig.autoEvaluateAllCandidates || false,
-          maxPdfPages: apiConfig.maxPdfPages || DEFAULT_MAX_PAGES,
-          useCustomPrompt: !!apiConfig.customPrompt,
-          enableConfidenceScores: apiConfig.enableConfidenceScores !== false,
-          enableRedFlagsDetection: apiConfig.enableRedFlagsDetection !== false,
-          enableSkillsMatrix: apiConfig.enableSkillsMatrix !== false,
-          enableComparativeRanking: apiConfig.enableComparativeRanking || false,
-        });
-      }
-    } catch (error) {
-      logger.error('Failed to fetch evaluation settings:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load settings. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsFetching(false);
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchSettings();
-    }
-  }, [isOpen, fetchSettings]);
-
   const saveSettings = async () => {
-    setIsSaving(true);
     try {
-      const response = await fetch('/api/settings/evaluation', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          temperature: config.temperature,
-          customPrompt: config.useCustomPrompt ? config.customPrompt : null,
-          autoEvaluateAllCandidates: config.autoEvaluateAllCandidates,
-          maxPdfPages: config.maxPdfPages,
-          enableConfidenceScores: config.enableConfidenceScores,
-          enableRedFlagsDetection: config.enableRedFlagsDetection,
-          enableSkillsMatrix: config.enableSkillsMatrix,
-          enableComparativeRanking: config.enableComparativeRanking,
-        }),
-      });
+      const payload = {
+        temperature: config.temperature,
+        customPrompt: config.useCustomPrompt ? config.customPrompt : null,
+        autoEvaluateAllCandidates: config.autoEvaluateAllCandidates,
+        maxPdfPages: config.maxPdfPages,
+        enableConfidenceScores: config.enableConfidenceScores,
+        enableRedFlagsDetection: config.enableRedFlagsDetection,
+        enableSkillsMatrix: config.enableSkillsMatrix,
+        enableComparativeRanking: config.enableComparativeRanking,
+      };
 
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Evaluation settings updated successfully',
-        });
-        onClose();
-      } else {
-        const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'Failed to update settings',
-          variant: 'destructive',
-        });
-      }
-    } catch {
+      await updateSettings(payload).unwrap();
+
+      toast({
+        title: 'Success',
+        description: 'Evaluation settings updated successfully',
+      });
+      onClose();
+    } catch (error) {
+      const errorMessage = error?.data?.error || 'Failed to update settings';
       toast({
         title: 'Error',
-        description: 'Failed to update settings',
+        description: errorMessage,
         variant: 'destructive',
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
