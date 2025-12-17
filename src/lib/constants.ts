@@ -117,18 +117,6 @@ export const scoreColors: Record<
   },
 };
 
-
-export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/auth/signup',
-    '/api/:path*',
-    '/:orgName/:path*',
-    '/backups',
-    '/take-snapshot',
-  ],
-};
-
 export const unauthorizedInterviewerPages = [
   '/jobs-board',
   '/jobs',
