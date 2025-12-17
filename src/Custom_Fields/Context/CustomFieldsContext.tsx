@@ -1,18 +1,19 @@
+/* eslint-disable max-lines */
 import React, {
   useState,
   ReactNode,
   memo,
   useEffect,
   useCallback,
+  useMemo,
 } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import {
   useLazyGetCustomFieldsQuery,
   useUpdateCustomFieldsMutation,
   useLazyGetCustomFieldsByOrgNameQuery,
-  User,
 } from '@/lib/features/org/orgApi';
 import { usePathname } from 'next/navigation';
-import { useSelector } from 'react-redux';
 import logger from '@/lib/logger';
 import { CustomFieldsContext } from '.';
 import {
@@ -30,7 +31,7 @@ const getOrgParamFromUrl = (): string | null => {
 
 // Create a provider component
 export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
-  ({ children }) => {
+  ({ children }: { children: ReactNode }) => {
     const [customFields, setCustomFields] = useState<CustomFields>({});
     const [stepName, setStepName] = useState<string>('FormList');
     const [selectedFormId, setSelectedFormId] =
@@ -40,9 +41,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     const [getCustomFieldsByOrgName] = useLazyGetCustomFieldsByOrgNameQuery();
     const [userLoggedIn, setUserLoggedIn] = useState<boolean>(false);
     const pathname = usePathname();
-    const { user }: { user: User } = useSelector(
-      (state: any) => state.auth || {},
-    );
+    const { user } = useAppSelector((state) => state.auth || {});
 
     const postCustomFields = useCallback(async () => {
       if (
@@ -281,25 +280,46 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
 
     return (
       <CustomFieldsContext.Provider
-        value={{
-          customFields,
-          setCustomFields,
-          handleAddFormId,
-          handleEditFormId,
-          handleDeleteFormId,
-          stepName,
-          setStepName,
-          selecteFormIdTarget,
-          selectedFormId,
-          handleAddCustomField,
-          handleEditCustomField,
-          handleDeleteCustomField,
-          deleteFormIDAllCustomFields,
-          userLoggedIn,
-          setUserLoggedIn,
-          setSelectedFormId,
-          deleteFormIDAllIndCustomFields,
-        }}
+        value={useMemo(
+          () => ({
+            customFields,
+            setCustomFields,
+            handleAddFormId,
+            handleEditFormId,
+            handleDeleteFormId,
+            stepName,
+            setStepName,
+            selecteFormIdTarget,
+            selectedFormId,
+            handleAddCustomField,
+            handleEditCustomField,
+            handleDeleteCustomField,
+            deleteFormIDAllCustomFields,
+            userLoggedIn,
+            setUserLoggedIn,
+            setSelectedFormId,
+            deleteFormIDAllIndCustomFields,
+          }),
+          [
+            customFields,
+            setCustomFields,
+            handleAddFormId,
+            handleEditFormId,
+            handleDeleteFormId,
+            stepName,
+            setStepName,
+            selecteFormIdTarget,
+            selectedFormId,
+            handleAddCustomField,
+            handleEditCustomField,
+            handleDeleteCustomField,
+            deleteFormIDAllCustomFields,
+            userLoggedIn,
+            setUserLoggedIn,
+            setSelectedFormId,
+            deleteFormIDAllIndCustomFields,
+          ],
+        )}
       >
         {children}
       </CustomFieldsContext.Provider>
