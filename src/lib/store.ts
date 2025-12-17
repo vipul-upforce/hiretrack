@@ -3,6 +3,11 @@ import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { baseApi } from './api/baseApi';
 import { organizationSlice } from './features/org/orgSlice';
+import { checklistApi } from './features/checklist/checklistApi';
+import { notificationsApi } from './features/notifications/notificationsApi';
+import { analyticsApi } from './features/analytics/analyticsApi';
+import { emailNotificationSettingsApi } from './features/notifications/emailNotificationSettingsApi';
+import { onboardingApi } from './features/onboarding/onboardingApi';
 import authReducer from '@/lib/redux/authSlice';
 
 // Import APIs to ensure they inject their endpoints into baseApi
