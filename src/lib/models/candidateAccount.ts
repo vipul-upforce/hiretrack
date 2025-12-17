@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import { OrgInfo } from './user';
+import { OrgInfo, RefreshTokenEntry } from './user';
 
 export interface IUCandidateAccount {
   _id: string;
@@ -13,6 +13,7 @@ export interface IUCandidateAccount {
   updatedAt: Date;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  refreshTokens?: RefreshTokenEntry[];
   isDeleted?: boolean;
   appliedApplications: [string];
 }
@@ -50,6 +51,13 @@ export const candidateAccountSchema = new Schema<IUCandidateAccount>(
       type: Date,
       required: false,
     },
+    refreshTokens: [{
+      token: { type: String, required: true },
+      expiry: { type: Date, required: true },
+      deviceId: { type: String },
+      deviceInfo: { type: String },
+      createdAt: { type: Date, default: Date.now }
+    }],
     isDeleted: {
       type: Boolean,
       required: false,

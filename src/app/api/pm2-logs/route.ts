@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logsRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 
 function getFolderSizeWin(folderPath: string): number {
@@ -22,7 +24,11 @@ function getFolderSizeWin(folderPath: string): number {
   return total;
 }
 
-export async function GET() {
+async function getPM2Logs(req: NextRequest) {
+  const user = await getAuthenticatedUser(req, 'admin');
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const isLinux = process.platform === 'linux';
 
   const logDir = isLinux
@@ -41,7 +47,7 @@ export async function GET() {
 
     if (isLinux) {
       try {
-        const result = execSync(`du -sb "${logDir}"`).toString();
+        const result = execSync(`du -sb '${logDir}'`).toString();
         sizeBytes = parseInt(result.split('\t')[0], 10) || 0;
       } catch (err) {
         logger.error({ err }, 'du command failed for PM2 Logs');
@@ -65,4 +71,8 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  return logsRateLimiter(req, getPM2Logs);
 }

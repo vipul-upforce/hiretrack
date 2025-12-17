@@ -1,19 +1,22 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import authReducer from '@/lib/redux/authSlice';
-import { authApi } from './features/auth/authApi';
-import { jobApi } from './features/job/jobApi';
-import { candidateApi } from './features/candidate/candidateApi';
-import { userApi } from './features/user/userApi';
-import { defaultLanesApi, laneApi } from './features/lane/laneApi';
-import { apiSlice } from './features/api/apiSlice';
-import { orgApi } from './features/org/orgApi';
-import { settingsApi } from './features/settings/settingsApi';
+import { baseApi } from './api/baseApi';
 import { organizationSlice } from './features/org/orgSlice';
-import { checklistApi } from './features/checklist/checklistApi';
-import { notificationsApi } from './features/notifications/notificationsApi';
-import { analyticsApi } from './features/analytics/analyticsApi';
+import authReducer from '@/lib/redux/authSlice';
+
+// Import APIs to ensure they inject their endpoints into baseApi
+import './features/auth/authApi';
+import './features/job/jobApi';
+import './features/candidate/candidateApi';
+import './features/user/userApi';
+import './features/lane/laneApi';
+import './features/org/orgApi';
+import './features/settings/settingsApi';
+import './features/checklist/checklistApi';
+import './features/notifications/notificationsApi';
+import './features/analytics/analyticsApi';
+import './features/users/usersApi';
 
 // Persist config for auth slice
 const authPersistConfig = {
@@ -27,44 +30,24 @@ const orgPersistConfig = {
   key: 'organization',
   storage,
 };
-
 const rootReducer = combineReducers({
   organization: persistReducer(orgPersistConfig, organizationSlice.reducer),
-  auth: persistReducer(authPersistConfig, authReducer),
-  [authApi.reducerPath]: authApi.reducer,
-  [orgApi.reducerPath]: orgApi.reducer,
-  [settingsApi.reducerPath]: settingsApi.reducer,
-  [jobApi.reducerPath]: jobApi.reducer,
-  [candidateApi.reducerPath]: candidateApi.reducer,
-  [userApi.reducerPath]: userApi.reducer,
-  [laneApi.reducerPath]: laneApi.reducer,
-  [defaultLanesApi.reducerPath]: defaultLanesApi.reducer,
-  [apiSlice.reducerPath]: apiSlice.reducer,
-  [checklistApi.reducerPath]: checklistApi.reducer,
-  [notificationsApi.reducerPath]: notificationsApi.reducer,
-  [analyticsApi.reducerPath]: analyticsApi.reducer,
+  auth: authReducer,
+  // All APIs extend from baseApi, so only need baseApi reducer
+  [baseApi.reducerPath]: baseApi.reducer,
 });
 
 export const store = configureStore({
   reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
-    serializableCheck: {
-      ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-    },
-  }).concat(
-    authApi.middleware,
-    orgApi.middleware,
-    settingsApi.middleware,
-    jobApi.middleware,
-    candidateApi.middleware,
-    userApi.middleware,
-    laneApi.middleware,
-    apiSlice.middleware,
-    checklistApi.middleware,
-    notificationsApi.middleware,
-    defaultLanesApi.middleware,
-    analyticsApi.middleware,
-  ),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+      },
+    }).concat(
+      // All APIs extend from baseApi, so only need baseApi middleware
+      baseApi.middleware,
+    ),
 });
 
 export const persistor = persistStore(store);

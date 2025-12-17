@@ -50,7 +50,7 @@ export default function FileStorageOptions({
       const jwt = await new jose.SignJWT({ user: encryptedPayload })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
-        .setExpirationTime('30d')
+        .setExpirationTime('7d')
         .sign(secretKey);
 
       return jwt;

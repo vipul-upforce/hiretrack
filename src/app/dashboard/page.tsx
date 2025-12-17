@@ -12,10 +12,13 @@ import useRoles from '@/hooks/useRoles';
 import { useSSE } from '@/hooks/useSSE';
 import { Candidate } from '@/types/candidate';
 import { ITag } from '@/lib/models/organization';
-import { useSelector } from 'react-redux';
 import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
 import { useNotificationsContext } from '@/contexts/NotificationsContext';
-import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
+import { useAppSelector } from '@/lib/redux/hooks';
+import {
+  useLazyFetchAssignmentsQuery,
+  useLazyFetchCandidateByIdQuery,
+} from '@/lib/features/candidate/candidateApi';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DashboardSkeleton } from '@/components/skeletons/dashboard-skeleton';
@@ -25,6 +28,7 @@ import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate
 import RecentActivities from './components/RecentActivities';
 import { RenderInterviewerAssignments } from './components/RenderInterviewerAssignments';
 import { RenderTodaysInterviews } from './components/RenderTodaysInterviews';
+// import DashboardLoader from './components/dashboard-loader';
 
 export interface Assignment {
   id: string;
@@ -123,12 +127,13 @@ export default function DashboardPage() {
     thisWeek: 0,
     today: 0,
   });
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
     null,
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
+  const [triggerFetchAssignments] = useLazyFetchAssignmentsQuery();
   const [isActivitiesSidebarOpen, setIsActivitiesSidebarOpen] = useState(() => {
     // Load preference from localStorage on initial render
     if (typeof window !== 'undefined') {
@@ -191,18 +196,14 @@ export default function DashboardPage() {
       }
 
       try {
-        const params = new URLSearchParams({
-          isPagination: 'true',
-          page: page.toString(),
-          limit: itemsPerPage.toString(),
+        const data = await triggerFetchAssignments({
+          isPagination: true,
+          page,
+          limit: itemsPerPage,
           filterValue: filterText.toString(),
           assignedTo: selectedAssignedTo,
-        });
+        }).unwrap();
 
-        const response = await fetch(
-          `/api/candidates/assignments?${params.toString()}`,
-        );
-        const data = await response.json();
         setAssignmentsCounts((prev) => ({
           ...prev,
           totalInterviews: data[0]?.totalInterviews || 0,
@@ -230,7 +231,7 @@ export default function DashboardPage() {
       }
     },
 
-    [filterText, selectedAssignedTo, itemsPerPage],
+    [filterText, selectedAssignedTo, itemsPerPage, triggerFetchAssignments],
   );
 
   const loadMoreData = useCallback(() => {
@@ -281,7 +282,7 @@ export default function DashboardPage() {
     setHasMoreData(true);
     setAssignments([]);
     fetchAssignments(1, false);
-  }, [selectedAssignedTo, filterText]);
+  }, [selectedAssignedTo, filterText, fetchAssignments]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;

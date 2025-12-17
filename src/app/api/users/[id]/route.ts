@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { User } from '@/lib/mongodb';
-import { getAuthenticatedUser, signToken } from '@/app/actions/auth';
-import { setSecureAuthTokens } from '@/lib/secureTokens';
+import {
+  getAuthenticatedUser,
+  signToken,
+  type AuthenticatedUser,
+} from '@/app/actions/auth';
+import { updateAccessToken } from '@/lib/authCookies';
+import { UserDocument } from '@/lib/models/user';
 
 export async function DELETE(
   req: NextRequest,
@@ -29,7 +34,10 @@ export async function DELETE(
       );
     }
 
-    const isUserExisted = await User.findById(id).select('role organizationId _id').lean().exec();
+    const isUserExisted = await User.findById(id)
+      .select('role organizationId _id')
+      .lean()
+      .exec();
 
     const isAdmin = isUserExisted?.role === 'admin';
     if (isAdmin) {
@@ -55,10 +63,26 @@ export async function DELETE(
     }
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+
+const refreshAndReAssignToken = async (
+  data: unknown,
+  orgId: string,
+  request: NextRequest,
+) => {
+  const newToken = await signToken(data, orgId);
+
+  const response = NextResponse.json({ message: 'User updated successfully' });
+
+  // Use centralized helper that preserves existing cookies
+  updateAccessToken(response, request, newToken);
+
+  return response;
+};
 
 export async function PUT(
   req: NextRequest,
@@ -83,7 +107,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await User.findById(id).lean().exec();
+    const user = await User.findById(id);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -137,34 +161,27 @@ export async function PUT(
       }
     }
 
-    await User.findByIdAndUpdate(id, userData);
+    const sanitizedUserData = { ...userData };
+    delete sanitizedUserData.tokenVersion;
 
-    if (session?.email === userData?.email) {
-      const updatedData = {
+    user.set(sanitizedUserData);
+    await (user as unknown as UserDocument).incrementTokenVersion();
+
+    if (session && session.id === id) {
+      const updatedData: AuthenticatedUser = {
         ...session,
-        name: userData?.name,
-        email: userData?.email,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        tokenVersion: user.tokenVersion,
       };
-      const newToken = await refreshAndReAssignToken(updatedData, session.organizationId);
-      return newToken;
+      return refreshAndReAssignToken(updatedData, session.organizationId, req);
     }
 
     return NextResponse.json({ message: 'User updated successfully' });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
-const refreshAndReAssignToken = async (data: unknown, orgId: string) => {
-  const newToken = await signToken(data, orgId);
-
-  const response = NextResponse.json({ message: 'User updated successfully' });
-
-  setSecureAuthTokens(response, newToken, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-  });
-
-  return response;
-};

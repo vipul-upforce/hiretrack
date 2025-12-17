@@ -19,18 +19,20 @@ const handleMeRoute = async(req: NextRequest) => {
       fileStorage: null as string | null,
     };
 
-    const result = await getAuthenticatedUser(req);
-    // if (!result) {
-    //   return NextResponse.json(
-    //     { message: "Unauthorised Access" },
-    //     { status: 401 }
-    //   );
-    // }
-    if (result) {
-      return NextResponse.json({ user: result }, { status: 200 });
+    const result = await getAuthenticatedUser(req)
+    if (!result) {
+      return NextResponse.json(
+        { message: "Unauthorised Access" },
+        { status: 401 }
+      );
     }
-    // Treat invalid/missing auth as guest candidate
-    return NextResponse.json({ user: defaultCandidateUser }, { status: 200 });
+    return NextResponse.json({ user: result }, { status: 200 });
+    // if (result) {
+    //   return NextResponse.json({ user: result }, { status: 200 });
+    // } else {
+    //   // Treat invalid/missing auth as guest candidate
+    //   return NextResponse.json({ user: defaultCandidateUser }, { status: 200 });
+    // }
   } catch (error) {
     console.error('Error in /api/auth/me:', error);
     return NextResponse.json(

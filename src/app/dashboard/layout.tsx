@@ -17,13 +17,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import Cookies from 'js-cookie';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
-import { IUser } from '@/lib/models/user';
 import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
-import { ILocalUser, logout } from '@/lib/redux/authSlice';
-import { useDispatch, useSelector } from 'react-redux';
 import PortalHead from '@/components/layouts/PortalHead';
 import { useTheme } from '@/components/theme-provider';
 import {
@@ -44,7 +40,10 @@ import {
 import { useNotificationSSE } from '@/hooks/useNotificationSSE';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import logger from '@/lib/logger';
-import { RootState } from '@/lib/store';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
+import { ILocalUser } from '@/lib/redux/authSlice';
+import { INotification } from '@/lib/models/notification';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 
 interface SidebarItem {
@@ -229,7 +228,7 @@ export default function DashboardLayout({
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
   // Notification handlers
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: INotification) => {
     // Mark as read if not already read
     if (!notification.isRead) {
       markAsRead(notification._id);
@@ -266,16 +265,15 @@ export default function DashboardLayout({
     }
   };
 
-  const { user } = useSelector((state: RootState) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth);
 
   const { data: orgCheckData } = useCheckOrgQuery(
     user?.organizationId as string,
-    {
-      skip: !user,
-    },
+    { skip: !user },
   );
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const [triggerLogout] = useLogoutUserMutation();
 
   useEffect(() => {
     if (allowanceData) {
@@ -286,14 +284,10 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (orgCheckData && !orgCheckData.exists) {
-      Cookies.remove('token');
-      dispatch(logout());
-      localStorage.removeItem('persist:auth');
-      localStorage.removeItem('persist:organization');
-      fetch('/api/auth/logout');
+      triggerLogout();
       window.location.href = '/auth/login';
     }
-  }, [orgCheckData, dispatch]);
+  }, [orgCheckData, triggerLogout, dispatch]);
 
   useEffect(() => {
     if (
@@ -343,10 +337,12 @@ export default function DashboardLayout({
   }, []); // Remove isCollapsed dependency to avoid infinite loops
 
   const handleLogout = async () => {
-    dispatch(logout());
-    localStorage.removeItem('persist:auth');
-    localStorage.removeItem('persist:organization');
-    await fetch('/api/auth/logout');
+    try {
+      await triggerLogout().unwrap();
+    } catch (error) {
+      console.error('Logout failed', error);
+      logger.error('Logout failed', error);
+    }
     setUserData(null);
     setUserLoggedIn(false);
     refetch();

@@ -1,4 +1,4 @@
-import { apiSlice } from '../api/apiSlice';
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface User {
   organizationId: string | object;
@@ -18,7 +18,7 @@ export interface UserEdit {
   role?: string;
 }
 
-export const usersApi = apiSlice.injectEndpoints({
+export const usersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUsers: builder.query<User[], void>({
       query: () => '/api/users',

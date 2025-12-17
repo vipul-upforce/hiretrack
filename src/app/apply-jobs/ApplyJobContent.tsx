@@ -1,26 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useFetchOpenJobQuery } from '@/lib/features/job/jobApi';
-import { useToast } from '@/hooks/use-toast';
-import { useSearchParams } from 'next/navigation';
-import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
-import { useFetchAppliedApplicationQuery } from '@/lib/features/candidate/candidateApi';
-import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
-import type { SerializedError } from '@reduxjs/toolkit';
-import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
-import { useDispatch, useSelector } from 'react-redux';
-import { logout } from '@/lib/redux/authSlice';
-import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useEffect, useState } from "react";
+import JobModal from "./JobModal";
+import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
+import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "next/navigation";
+import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
+import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import type { SerializedError } from "@reduxjs/toolkit";
+import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
+import { useIsIframe } from "./IframeDetector";
+import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
+import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
+import { HeaderSection } from "./components/header-section";
+import { SearchBar } from "./components/search-bar";
+import { JobGrid } from "./components/job-grid";
+import { ErrorState } from "./components/error-state";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
 import logger from '@/lib/logger';
-import { useIsIframe } from './IframeDetector';
-import JobModal from './JobModal';
-import { HeaderSection } from './components/header-section';
-import { SearchBar } from './components/search-bar';
-import { JobGrid } from './components/job-grid';
-import { ErrorState } from './components/error-state';
-
 interface Job {
   _id: string;
   title: string;
@@ -73,7 +72,7 @@ export default function ApplyJobsContent({
     {},
     { skip: orgName === '' },
   );
-  const { user } = useSelector((state: any) => state.auth || null);
+  const { user } = useAppSelector((state) => state.auth);
 
   const { toast } = useToast();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
@@ -87,11 +86,11 @@ export default function ApplyJobsContent({
     footerHTML: '',
   });
 
-  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
-  const [secondaryColor, setSecondaryColor] = useState<string>('#8b5cf6');
-  const [logoUrl, setLogoUrl] = useState<string>('');
-  const [portalName, setPortalName] = useState<string>('');
-  const dispatch = useDispatch();
+  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
+  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
+  const [logoUrl, setLogoUrl] = useState<string>("");
+  const [portalName, setPortalName] = useState<string>("");
+  const [triggerLogout] = useLogoutUserMutation();
 
   const {
     data: jobs,
@@ -236,11 +235,8 @@ export default function ApplyJobsContent({
           description: 'Please log in again',
           variant: 'destructive',
         });
-        dispatch(logout());
-        localStorage.removeItem('persist:auth');
-        localStorage.removeItem('persist:organization');
-        await fetch('/api/auth/logout');
-        window.location.href = '/auth/login';
+        triggerLogout();
+        window.location.href = "/auth/login";
       }
     } else {
       setOrgName(urlOrgName || '');
@@ -267,10 +263,12 @@ export default function ApplyJobsContent({
   };
 
   const handleLogout = async () => {
-    dispatch(logout());
-    localStorage.removeItem('persist:auth');
-    localStorage.removeItem('persist:organization');
-    await fetch('/api/auth/logout');
+    try {
+      await triggerLogout().unwrap();
+    } catch (error) {
+      console.error("Logout failed", error);
+      logger.error("Logout failed", error);
+    }
     toast({
       title: 'Logged out',
       description: 'You have been successfully logged out',

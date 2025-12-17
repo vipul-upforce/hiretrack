@@ -1,7 +1,8 @@
+import { baseApi } from '@/lib/api/baseApi';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { NextResponse } from 'next/server';
+import { logout } from '@/lib/redux/authSlice';
 
 interface AuthRequest {
   email: string;
@@ -28,13 +29,24 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
-export const authApi = createApi({
-  reducerPath: 'authApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
-    credentials: 'include', // Important for cookies
-  }),
-  tagTypes: ['Users'],
+interface VerifyOtpRequest {
+  email: string;
+  otp: string;
+}
+
+interface SendOtpRequest {
+  email: string;
+  organizationId?: string | null;
+}
+
+interface LicenseResponse {
+  valid: boolean;
+  error?: string;
+  apiError?: boolean;
+  hasLicenseFile?: boolean;
+}
+
+export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
@@ -49,7 +61,27 @@ export const authApi = createApi({
         method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ['Users'], // Ensure correct format
+      invalidatesTags: ['Users'],
+    }),
+    verifyOtp: builder.mutation<AuthResponse, VerifyOtpRequest>({
+      query: (data) => ({
+        url: '/auth/2fa/verify-otp',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    sendOtp: builder.mutation<{ message: string }, SendOtpRequest>({
+      query: (data) => ({
+        url: '/auth/2fa/send-otp',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    validateLicense: builder.query<LicenseResponse, void>({
+      query: () => ({
+        url: '/license-validate',
+        method: 'GET',
+      }),
     }),
     resetPasswordbyAdmin: builder.mutation<
       NextResponse,
@@ -71,6 +103,29 @@ export const authApi = createApi({
         body: creds,
       }),
     }),
+    refreshToken: builder.mutation<
+      { message: string; refreshToken: string; licenseValid: boolean },
+      void // No body needed - uses httpOnly cookie
+    >({
+      query: () => ({
+        url: '/auth/refresh',
+        method: 'POST',
+        // No body - refresh token is in httpOnly cookie
+      }),
+    }),
+    logoutUser: builder.mutation<{ message?: string }, void>({
+      query: () => ({
+        url: '/auth/logout',
+        method: 'GET',
+      }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } finally {
+          dispatch(logout());
+        }
+      },
+    }),
   }),
 });
 
@@ -79,4 +134,9 @@ export const {
   useSignupMutation,
   useResetPasswordbyAdminMutation,
   useResetPasswordbyUserMutation,
+  useRefreshTokenMutation,
+  useLogoutUserMutation,
+  useVerifyOtpMutation,
+  useSendOtpMutation,
+  useLazyValidateLicenseQuery,
 } = authApi;

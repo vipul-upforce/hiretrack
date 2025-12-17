@@ -318,12 +318,6 @@ async function handleLicenseValidation(request: NextRequest) {
 
       return NextResponse.json({
         valid: true,
-        license: {
-          email: licenseData.email,
-          // version: licenseData.version,
-          lastValidated: licenseData.lastValidated,
-        },
-        asset: validationResult.asset,
       });
     }
     // Update license as invalid

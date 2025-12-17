@@ -99,18 +99,18 @@ export const onboardingApi = {
     }
   },
 
-  // Get current user
-  async getCurrentUser(): Promise<{ user: any } | null> {
-    try {
-      const response = await fetch('/api/auth/me', {
-        credentials: 'include',
-      });
-      if (!response.ok) return null;
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      logger.error('Error fetching current user:', error);
-      return null;
-    }
-  },
+  // // Get current user
+  // async getCurrentUser(): Promise<{ user: any } | null> {
+  //   try {
+  //     const response = await fetch("/api/auth/me", {
+  //       credentials: "include",
+  //     });
+  //     if (!response.ok) return null;
+  //     const data = await response.json();
+  //     return data;
+  //   } catch (error) {
+  //     console.error("Error fetching current user:", error);
+  //     return null;
+  //   }
+  // },
 };

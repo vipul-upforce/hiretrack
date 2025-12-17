@@ -1,18 +1,23 @@
 import { useState } from 'react';
 import { AIProviderType } from '@/lib/ai-providers';
 import { getDefaultModel } from '@/lib/ai-providers/models-config';
+import { useValidateAiProviderMutation } from '@/lib/features/settings/settingsApi';
 
 export const useAiVerification = () => {
   const [verificationStatus, setVerificationStatus] = useState<
     Record<string, 'idle' | 'loading' | 'success' | 'error'>
   >({});
+
   const [verificationMessages, setVerificationMessages] = useState<
     Record<string, string>
   >({});
+
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
 
+  const [validateProvider] = useValidateAiProviderMutation();
+
   const toggleApiKeyVisibility = (provider: string) => {
-    setShowApiKeys((prev) => ({ ...prev, [provider]: !prev.provider }));
+    setShowApiKeys((prev) => ({ ...prev, [provider]: !prev[provider] }));
   };
 
   const verifyApiKey = async (
@@ -36,23 +41,14 @@ export const useAiVerification = () => {
     }));
 
     try {
-      const response = await fetch('/api/settings/ai-providers/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider,
-          apiKey: apiKey.trim(),
-          model: model || getDefaultModel(provider),
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Validation failed');
-      }
+      const result = await validateProvider({
+        provider,
+        apiKey: apiKey.trim(),
+        model: model || getDefaultModel(provider),
+      }).unwrap();
 
       const { isValid } = result;
+
       setVerificationStatus((prev) => ({
         ...prev,
         [provider]: isValid ? 'success' : 'error',
@@ -66,11 +62,17 @@ export const useAiVerification = () => {
         ...prev,
         [provider]: message,
       }));
-    } catch (error) {
+    } catch (error: any) {
       setVerificationStatus((prev) => ({ ...prev, [provider]: 'error' }));
+
+      const errorMessage =
+        error?.data?.error ||
+        error?.data?.message ||
+        (error instanceof Error ? error.message : 'Unknown error');
+
       setVerificationMessages((prev) => ({
         ...prev,
-        [provider]: `❌ Verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        [provider]: `❌ Verification failed: ${errorMessage}`,
       }));
     }
   };

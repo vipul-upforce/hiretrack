@@ -11,4 +11,5 @@ export interface UserWithoutCF {
   role: string;
   organizationId?: string;
   organizationInfo?: OrgInfo;
+  tokenVersion?: number;
 }
