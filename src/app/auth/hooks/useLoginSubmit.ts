@@ -165,20 +165,12 @@ export const useHandleLoginSubmit = ({
           }
           return;
         }
-
-        // Store refresh token if provided in response
-        // Note: The refresh token is also set in httpOnly cookie by the backend
-        // But we store it in localStorage for the interceptor to use
-        if ((response as any).refreshToken) {
-          localStorage.setItem('refresh_token', (response as any).refreshToken);
-        }
-
         // Handle Redirects & Redux State
         const redirectUrl = getRedirectUrl();
 
         if (isAuthenticated) {
           if (redirectUrl !== '/') {
-            window.location.href = redirectUrl;
+            router.push(redirectUrl);
           }
           setUserLoggedIn(true);
           toast({

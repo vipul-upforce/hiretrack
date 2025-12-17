@@ -1,9 +1,9 @@
-import crypto from "crypto";
-import jwt from "jsonwebtoken";
-import CryptoJS from "crypto-js";
-import { generateOrgJwtSecret } from "./jwtSecretGenerator";
-import { User, CandidateAccount } from "@/lib/mongodb";
-import { UserRole } from "./models/JobLaneConfig";
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+import CryptoJS from 'crypto-js';
+import { User, CandidateAccount } from '@/lib/mongodb';
+import { generateOrgJwtSecret } from './jwtSecretGenerator';
+import { UserRole } from './models/JobLaneConfig';
 
 export interface RefreshTokenPayload {
   userId: string;
@@ -23,19 +23,21 @@ export interface RefreshTokenPayload {
  */
 export function generateRefreshToken(
   payload: RefreshTokenPayload,
-  orgId: string
+  orgId: string,
 ): string {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+  if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 
   // Encrypt payload with AES (same as access token)
   const encryptedPayload = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    JWT_SECRET
+    JWT_SECRET,
   ).toString();
 
   // Sign with JWT (7 days expiration)
-  return jwt.sign({ refresh: encryptedPayload }, JWT_SECRET, { expiresIn: "7d" });
+  return jwt.sign({ refresh: encryptedPayload }, JWT_SECRET, {
+    expiresIn: '7d',
+  });
 }
 
 /**
@@ -43,28 +45,41 @@ export function generateRefreshToken(
  */
 export function verifyAndDecryptRefreshToken(
   token: string,
-  orgId: string
-): { success: boolean; payload?: RefreshTokenPayload; error?: string; isExpired?: boolean } {
+  orgId: string,
+): {
+  success: boolean;
+  payload?: RefreshTokenPayload;
+  error?: string;
+  isExpired?: boolean;
+} {
   try {
     const JWT_SECRET = generateOrgJwtSecret(orgId);
-    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
+    if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 
     // Verify JWT signature
     const decoded = jwt.verify(token, JWT_SECRET);
-    
-    if (!decoded || typeof decoded !== "object" || !(decoded as { refresh?: string }).refresh) {
-      throw new Error("Invalid token structure");
+
+    if (
+      !decoded ||
+      typeof decoded !== 'object' ||
+      !(decoded as { refresh?: string }).refresh
+    ) {
+      throw new Error('Invalid token structure');
     }
 
     // Decrypt payload with AES
-    const bytes = CryptoJS.AES.decrypt((decoded as { refresh: string }).refresh, JWT_SECRET);
+    const bytes = CryptoJS.AES.decrypt(
+      (decoded as { refresh: string }).refresh,
+      JWT_SECRET,
+    );
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
     // Check expiration
-    const exp = typeof decoded === "object" && "exp" in decoded 
-      ? (decoded.exp as number) * 1000 // Convert to milliseconds
-      : null;
-    
+    const exp =
+      typeof decoded === 'object' && 'exp' in decoded
+        ? (decoded.exp as number) * 1000 // Convert to milliseconds
+        : null;
+
     const isExpired = exp ? exp < Date.now() : false;
 
     return {
@@ -77,14 +92,14 @@ export function verifyAndDecryptRefreshToken(
     if (err instanceof jwt.TokenExpiredError) {
       return {
         success: false,
-        error: "Token expired",
+        error: 'Token expired',
         isExpired: true,
       };
     }
-    
+
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+      error: err instanceof Error ? err.message : 'Unknown Error Occurred',
       isExpired: false,
     };
   }
@@ -94,7 +109,7 @@ export function verifyAndDecryptRefreshToken(
  * Hash refresh token before storing in database
  */
 export function hashRefreshToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 /**
@@ -106,32 +121,30 @@ export async function storeRefreshToken(
   isCandidate: boolean = false,
   deviceId?: string,
   deviceInfo?: string,
-  expiryDays: number = 7
+  expiryDays: number = 7,
 ): Promise<string> {
   const expiry = new Date();
   expiry.setDate(expiry.getDate() + expiryDays);
-  
+
   const deviceIdToUse = deviceId || crypto.randomUUID();
   const tokenEntry = {
     token: tokenHash,
     expiry,
     deviceId: deviceIdToUse,
-    deviceInfo: deviceInfo || "Unknown Device",
+    deviceInfo: deviceInfo || 'Unknown Device',
     createdAt: new Date(),
   };
 
   if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(
-      userId,
-      { $push: { refreshTokens: tokenEntry } }
-    );
+    await CandidateAccount.findByIdAndUpdate(userId, {
+      $push: { refreshTokens: tokenEntry },
+    });
   } else {
-    await User.findByIdAndUpdate(
-      userId,
-      { $push: { refreshTokens: tokenEntry } }
-    );
+    await User.findByIdAndUpdate(userId, {
+      $push: { refreshTokens: tokenEntry },
+    });
   }
-  
+
   return deviceIdToUse;
 }
 
@@ -143,16 +156,20 @@ export async function verifyRefreshToken(
   token: string,
   userId: string,
   orgId: string,
-  isCandidate: boolean = false
-): Promise<{ valid: boolean; deviceId?: string; payload?: RefreshTokenPayload }> {
+  isCandidate: boolean = false,
+): Promise<{
+  valid: boolean;
+  deviceId?: string;
+  payload?: RefreshTokenPayload;
+}> {
   // First, verify and decrypt the JWT token
   const tokenVerification = verifyAndDecryptRefreshToken(token, orgId);
-  
+
   if (!tokenVerification.success || !tokenVerification.payload) {
     return { valid: false };
   }
 
-  const payload = tokenVerification.payload;
+  const { payload } = tokenVerification;
 
   // Verify the token belongs to the correct user
   if (payload.userId !== userId) {
@@ -161,10 +178,10 @@ export async function verifyRefreshToken(
 
   // Hash the token for database lookup
   const tokenHash = hashRefreshToken(token);
-  
+
   const user = isCandidate
-    ? await CandidateAccount.findById(userId).select("+refreshTokens")
-    : await User.findById(userId).select("+refreshTokens");
+    ? await CandidateAccount.findById(userId).select('+refreshTokens')
+    : await User.findById(userId).select('+refreshTokens');
 
   if (!user || !user.refreshTokens || user.refreshTokens.length === 0) {
     return { valid: false };
@@ -172,25 +189,23 @@ export async function verifyRefreshToken(
 
   // Cleanup expired tokens before verification
   const now = new Date();
-  const validTokens = user.refreshTokens.filter(rt => rt.expiry > now);
-  
+  const validTokens = user.refreshTokens.filter((rt) => rt.expiry > now);
+
   if (validTokens.length < user.refreshTokens.length) {
     await cleanupExpiredTokens(userId, isCandidate);
   }
 
   // Find matching token from valid tokens
-  const tokenEntry = validTokens.find(
-    (rt) => rt.token === tokenHash
-  );
+  const tokenEntry = validTokens.find((rt) => rt.token === tokenHash);
 
   if (!tokenEntry) {
     return { valid: false };
   }
 
-  return { 
-    valid: true, 
+  return {
+    valid: true,
     deviceId: tokenEntry.deviceId,
-    payload: payload
+    payload,
   };
 }
 
@@ -202,34 +217,26 @@ export async function verifyRefreshToken(
 export async function clearRefreshToken(
   userId: string,
   deviceId?: string,
-  isCandidate: boolean = false
+  isCandidate: boolean = false,
 ): Promise<void> {
   if (isCandidate) {
     if (deviceId) {
       // Clear specific device token
-      await CandidateAccount.findByIdAndUpdate(
-        userId,
-        { $pull: { refreshTokens: { deviceId } } }
-      );
+      await CandidateAccount.findByIdAndUpdate(userId, {
+        $pull: { refreshTokens: { deviceId } },
+      });
     } else {
       // Clear all tokens
-      await CandidateAccount.findByIdAndUpdate(
-        userId,
-        { $set: { refreshTokens: [] } }
-      );
+      await CandidateAccount.findByIdAndUpdate(userId, {
+        $set: { refreshTokens: [] },
+      });
     }
+  } else if (deviceId) {
+    await User.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { deviceId } },
+    });
   } else {
-    if (deviceId) {
-      await User.findByIdAndUpdate(
-        userId,
-        { $pull: { refreshTokens: { deviceId } } }
-      );
-    } else {
-      await User.findByIdAndUpdate(
-        userId,
-        { $set: { refreshTokens: [] } }
-      );
-    }
+    await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
   }
 }
 
@@ -238,20 +245,18 @@ export async function clearRefreshToken(
  */
 export async function cleanupExpiredTokens(
   userId: string,
-  isCandidate: boolean = false
+  isCandidate: boolean = false,
 ): Promise<void> {
   const now = new Date();
-  
+
   if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(
-      userId,
-      { $pull: { refreshTokens: { expiry: { $lt: now } } } }
-    );
+    await CandidateAccount.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { expiry: { $lt: now } } },
+    });
   } else {
-    await User.findByIdAndUpdate(
-      userId,
-      { $pull: { refreshTokens: { expiry: { $lt: now } } } }
-    );
+    await User.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { expiry: { $lt: now } } },
+    });
   }
 }
 
@@ -262,7 +267,7 @@ export async function updateRefreshToken(
   userId: string,
   oldTokenHash: string,
   newTokenHash: string,
-  isCandidate: boolean = false
+  isCandidate: boolean = false,
 ): Promise<void> {
   const newExpiry = new Date();
   newExpiry.setDate(newExpiry.getDate() + 7); // 7 days
@@ -272,26 +277,26 @@ export async function updateRefreshToken(
       userId,
       {
         $set: {
-          "refreshTokens.$[elem].token": newTokenHash,
-          "refreshTokens.$[elem].expiry": newExpiry,
-        }
+          'refreshTokens.$[elem].token': newTokenHash,
+          'refreshTokens.$[elem].expiry': newExpiry,
+        },
       },
       {
-        arrayFilters: [{ "elem.token": oldTokenHash }]
-      }
+        arrayFilters: [{ 'elem.token': oldTokenHash }],
+      },
     );
   } else {
     await User.findByIdAndUpdate(
       userId,
       {
         $set: {
-          "refreshTokens.$[elem].token": newTokenHash,
-          "refreshTokens.$[elem].expiry": newExpiry,
-        }
+          'refreshTokens.$[elem].token': newTokenHash,
+          'refreshTokens.$[elem].expiry': newExpiry,
+        },
       },
       {
-        arrayFilters: [{ "elem.token": oldTokenHash }]
-      }
+        arrayFilters: [{ 'elem.token': oldTokenHash }],
+      },
     );
   }
 }

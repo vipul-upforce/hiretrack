@@ -20,6 +20,7 @@ import { ErrorState } from "./components/error-state";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
 import logger from '@/lib/logger';
+import { useRouter } from "next/navigation";
 interface Job {
   _id: string;
   title: string;
@@ -46,6 +47,7 @@ export default function ApplyJobsContent({
 }: {
   showHeaderFooter?: boolean;
 }) {
+  const router = useRouter();
   const isIframe = useIsIframe();
   const searchParams = useSearchParams();
   const [orgName, setOrgName] = useState<string>('');
@@ -235,8 +237,9 @@ export default function ApplyJobsContent({
           description: 'Please log in again',
           variant: 'destructive',
         });
-        triggerLogout();
-        window.location.href = "/auth/login";
+        triggerLogout().then(() => {
+          router.push("/auth/login");
+        });
       }
     } else {
       setOrgName(urlOrgName || '');
@@ -265,6 +268,7 @@ export default function ApplyJobsContent({
   const handleLogout = async () => {
     try {
       await triggerLogout().unwrap();
+      router.push('/auth/login');
     } catch (error) {
       console.error("Logout failed", error);
       logger.error("Logout failed", error);
@@ -273,7 +277,7 @@ export default function ApplyJobsContent({
       title: 'Logged out',
       description: 'You have been successfully logged out',
     });
-    window.location.href = '/auth/login';
+    router.push('/auth/login');
   };
 
   if (error && !isLoading) {

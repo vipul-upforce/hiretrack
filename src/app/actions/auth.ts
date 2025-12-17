@@ -194,7 +194,7 @@ export const signToken = async (
 
 
 // Helper function for access tokens (15 minutes)
-export const signAccessToken = async (payload: unknown, orgId: string) => {
+export async function signAccessToken(payload: unknown, orgId: string) {
   return signToken(payload, orgId);
 
 };

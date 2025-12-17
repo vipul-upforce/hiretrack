@@ -114,7 +114,7 @@ export default function DashboardLayout({
   } = useGetOrganizationAllowanceQuery();
 
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
-
+  const router = useRouter();
   // Notification hooks
   const [notificationPage, setNotificationPage] = useState(1);
   const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
@@ -197,10 +197,11 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (orgCheckData && !orgCheckData.exists) {
-      triggerLogout();
-      window.location.href = "/auth/login";
+      triggerLogout().then(() => {
+        router.push("/auth/login");
+      });
     }
-  }, [orgCheckData, triggerLogout, dispatch]);
+  }, [orgCheckData, triggerLogout, dispatch, router]);
 
   useEffect(() => {
     if (
@@ -226,7 +227,6 @@ export default function DashboardLayout({
     null,
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
 
   // Handle responsive sidebar behavior
@@ -273,7 +273,7 @@ export default function DashboardLayout({
       title: 'Logged out',
       description: 'You have been successfully logged out',
     });
-    window.location.href = '/auth/login';
+    router.push('/auth/login');
   };
 
   const generateShareOrg = async (e: React.FormEvent) => {

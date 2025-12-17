@@ -532,7 +532,7 @@ export async function middleware(request: NextRequest) {
   const orgId = request.cookies.get('org_id')?.value;
   if (token && orgId) {
     const decryptedResponse = await verifyAndDecryptTokenMiddleware(String(token), orgId);
-    console.log(decryptedResponse, "decryptedResponse-543");
+    // console.log(decryptedResponse, "decryptedResponse-543");
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {
         role: string;
@@ -540,9 +540,9 @@ export async function middleware(request: NextRequest) {
     }
   }
    // ✅ ADD THIS: Redirect authenticated users away from /auth/login
-   console.log("in middleware ", pathname, "pathname-550")
+  //  console.log("in middleware ", pathname, "pathname-550")
   if (userData && pathname.startsWith("/auth/login")) {
-    console.log("in middleware ", pathname, "pathname-551")
+    // console.log("in middleware ", pathname, "pathname-551")
     const userRole = userData.role;
     if (userRole 
       === "candidate") {
