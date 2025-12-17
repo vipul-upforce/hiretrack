@@ -43,19 +43,23 @@ export const notificationsApi = createApi({
   }),
   tagTypes: ['Notification', 'NotificationCount'],
   endpoints: (builder) => ({
-    getNotifications: builder.query<NotificationsResponse, GetNotificationsParams>({
+    getNotifications: builder.query<
+      NotificationsResponse,
+      GetNotificationsParams
+    >({
       query: (params = {}) => {
         const searchParams = new URLSearchParams();
 
         if (params.page) searchParams.append('page', params.page.toString());
         if (params.limit) searchParams.append('limit', params.limit.toString());
-        if (params.isRead !== undefined) searchParams.append('isRead', params.isRead.toString());
+        if (params.isRead !== undefined)
+          searchParams.append('isRead', params.isRead.toString());
         if (params.type) searchParams.append('type', params.type);
         if (params.priority) searchParams.append('priority', params.priority);
 
         return `?${searchParams.toString()}`;
       },
-      providesTags: (result, error, params) => [
+      providesTags: (result, _error, _params) => [
         { type: 'Notification', id: 'LIST' },
         ...(result?.notifications || []).map((notification) => ({
           type: 'Notification' as const,
@@ -74,7 +78,7 @@ export const notificationsApi = createApi({
         url: `/${id}/read`,
         method: 'PUT',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_result, _error, id) => [
         { type: 'Notification', id },
         { type: 'Notification', id: 'LIST' },
         { type: 'NotificationCount', id: 'COUNT' },
@@ -87,7 +91,9 @@ export const notificationsApi = createApi({
             'getNotifications',
             {},
             (draft) => {
-              const notification = draft.notifications.find((n) => n._id === id);
+              const notification = draft.notifications.find(
+                (n) => n._id === id,
+              );
               if (notification) {
                 notification.isRead = true;
               }
@@ -100,11 +106,10 @@ export const notificationsApi = createApi({
           notificationsApi.util.updateQueryData(
             'getNotificationCount',
             undefined,
-            (draft) => {
-              if (draft.unreadCount > 0) {
-                draft.unreadCount -= 1;
-              }
-            },
+            (draft) => ({
+              ...draft,
+              unreadCount: Math.max(0, draft.unreadCount - 1),
+            }),
           ),
         );
 
@@ -135,9 +140,9 @@ export const notificationsApi = createApi({
             'getNotifications',
             {},
             (draft) => {
-              draft.notifications.forEach((notification) => {
+              for (const notification of draft.notifications) {
                 notification.isRead = true;
-              });
+              }
             },
           ),
         );
@@ -147,9 +152,7 @@ export const notificationsApi = createApi({
           notificationsApi.util.updateQueryData(
             'getNotificationCount',
             undefined,
-            (draft) => {
-              draft.unreadCount = 0;
-            },
+            (draft) => ({ ...draft, unreadCount: 0 }),
           ),
         );
 
