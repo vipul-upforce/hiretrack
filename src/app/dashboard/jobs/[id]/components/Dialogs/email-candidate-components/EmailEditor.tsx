@@ -1,12 +1,12 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Code, Edit, FileText } from "lucide-react";
-import { Editor } from "@monaco-editor/react";
-import RichTextEditor from "@/components/ui/rte/RichTextEditor";
-import { EmailTemplate } from "./types";
-import { TemplateVisualEditor } from "./TemplateVisualEditor";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Code, Edit, FileText } from 'lucide-react';
+import { Editor } from '@monaco-editor/react';
+import RichTextEditor from '@/components/ui/rte/RichTextEditor';
+import { EmailTemplate } from './types';
+import { TemplateVisualEditor } from './TemplateVisualEditor';
 
 interface EmailEditorProps {
   subject: string;
@@ -21,7 +21,7 @@ interface EmailEditorProps {
   theme: string | undefined;
 }
 
-export const EmailEditor: React.FC<EmailEditorProps> = ({
+export function EmailEditor({
   subject,
   setSubject,
   body,
@@ -32,54 +32,57 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
   setSelectedTemplate,
   templates,
   theme,
-}) => (
-  <div className="space-y-4">
-    <div className="space-y-2">
-      <Label htmlFor="subject">Subject *</Label>
-      <Input
-        id="subject"
-        value={subject}
-        onChange={(e) => setSubject(e.target.value)}
-        placeholder="Enter email subject"
-      />
-    </div>
-
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor="body">Message *</Label>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setContentMode(contentMode === 'rich' ? 'html' : 'rich')}
-          >
-            {contentMode === 'rich' ? (
-              <>
-                <Code className="h-4 w-4 mr-2" />
-                Advanced HTML
-              </>
-            ) : (
-              <>
-                <Edit className="h-4 w-4 mr-2" />
-                Simple Editor
-                </>
-            )}
-          </Button>
-        </div>
+}: EmailEditorProps) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="subject">Subject *</Label>
+        <Input
+          id="subject"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="Enter email subject"
+        />
       </div>
 
-        {contentMode === "rich" ? (
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="body">Message *</Label>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setContentMode(contentMode === 'rich' ? 'html' : 'rich')
+              }
+            >
+              {contentMode === 'rich' ? (
+                <>
+                  <Code className="mr-2 h-4 w-4" />
+                  Advanced HTML
+                </>
+              ) : (
+                <>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Simple Editor
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {contentMode === 'rich' ? (
           <div className="space-y-3">
             {/* Check if using a template */}
-            {selectedTemplate !== "none" ? (
+            {selectedTemplate !== 'none' ? (
               <>
                 {/* Template Visual Editor */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <FileText className="h-4 w-4" />
-                      Using template:{" "}
+                      Using template:{' '}
                       <span className="font-semibold">
                         {templates.find((t) => t.id === selectedTemplate)?.name}
                       </span>
@@ -89,8 +92,8 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedTemplate("none");
-                        setBody("");
+                        setSelectedTemplate('none');
+                        setBody('');
                       }}
                       className="text-xs"
                     >
@@ -108,43 +111,44 @@ export const EmailEditor: React.FC<EmailEditorProps> = ({
             ) : (
               <>
                 {/* Rich Text Editor for non-template emails */}
-                <div className="border rounded-lg">
-                  <div className="bg-white dark:bg-black p-3 border-b border-gray-200 dark:border-gray-700">
+                <div className="rounded-lg border">
+                  <div className="border-b border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-black">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Edit className="h-4 w-4" />
                       Compose Your Email
                     </div>
                   </div>
-                <RichTextEditor
+                  <RichTextEditor
                     value={body}
                     onChange={(value) => setBody(value)}
                     placeholder="Type your email message here... Use the formatting toolbar above to style your text."
                     className="min-h-[300px]"
                   />
-              </div>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Editor
-            height="300px"
-            language="html"
-            theme={theme === 'dark' ? 'vs-dark' : 'vs'}
-            value={body}
-            onChange={(value) => setBody(value || '')}
-            options={{
-              fontSize: 14,
-              minimap: { enabled: false },
-              scrollBeyondLastLine: false,
-              wordWrap: 'on',
-              lineNumbers: 'on',
-              folding: true,
-              automaticLayout: true,
-            }}
-          />
-        </div>
-      )}
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border">
+            <Editor
+              height="300px"
+              language="html"
+              theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+              value={body}
+              onChange={(value) => setBody(value || '')}
+              options={{
+                fontSize: 14,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                lineNumbers: 'on',
+                folding: true,
+                automaticLayout: true,
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+}

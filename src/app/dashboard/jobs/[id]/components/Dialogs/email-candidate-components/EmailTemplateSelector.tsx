@@ -21,7 +21,7 @@ interface EmailTemplateSelectorProps {
   contentMode: 'rich' | 'html';
 }
 
-export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
+export function EmailTemplateSelector({
   templates,
   selectedTemplate,
   onTemplateSelect,
@@ -29,7 +29,7 @@ export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
   candidateName,
   organizationName,
   contentMode,
-}) => {
+}: EmailTemplateSelectorProps) {
   if (templates.length === 0) return null;
 
   return (
@@ -49,7 +49,7 @@ export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
             </SelectItem>
             {templates.map((template) => (
               <SelectItem key={template.id} value={template.id}>
-                <div className="flex items-center justify-between w-full">
+                <div className="flex w-full items-center justify-between">
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     {template.name}
@@ -67,36 +67,29 @@ export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
       </div>
       {selectedTemplate !== 'none' && (
         <div className="text-xs text-muted-foreground">
-          Variables will be automatically replaced: SenderName →
-          {' '}
-          {userName}
-          ,
-          ReceiverName →
-          {' '}
-          {candidateName}
-          , PortalName →
-          {' '}
-          {organizationName}
+          Variables will be automatically replaced: SenderName → {userName},
+          ReceiverName → {candidateName}, PortalName → {organizationName}
         </div>
       )}
       {selectedTemplate === 'none' && contentMode === 'html' && (
         <div className="text-xs text-muted-foreground">
-          💡 Tip: Use "Preview & Edit" mode to see how your email will look
-          while writing, or stay in "Advanced HTML" mode for full control
+          💡 Tip: Use &quot;Preview &amp; Edit&quot; mode to see how your email
+          will look while writing, or stay in &quot;Advanced HTML&quot; mode for
+          full control
         </div>
       )}
       {contentMode === 'rich' && selectedTemplate === 'none' && (
         <div className="text-xs text-muted-foreground">
-          💡 Use the formatting toolbar to style your text - bold, italic, lists,
-          and more. No HTML knowledge needed!
+          💡 Use the formatting toolbar to style your text - bold, italic,
+          lists, and more. No HTML knowledge needed!
         </div>
       )}
       {contentMode === 'rich' && selectedTemplate !== 'none' && (
         <div className="text-xs text-muted-foreground">
-          💡 You're using a pre-designed template. To customize the content,
-          switch to "Advanced HTML" mode.
+          💡 You&apos;re using a pre-designed template. To customize the
+          content, switch to &quot;Advanced HTML&quot; mode.
         </div>
       )}
     </div>
   );
-};
+}

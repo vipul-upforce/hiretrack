@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
-import { Code, RotateCcw, Edit2, Eye } from 'lucide-react';
+// import type { Dispatch, SetStateAction } from 'react';
+import { Code, RotateCcw, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ interface TemplateEditorProps {
   ) => void;
   resetToDefault: (id: string) => void;
   previewMode: boolean;
-  setPreviewMode: Dispatch<SetStateAction<boolean>>;
+  // setPreviewMode: Dispatch<SetStateAction<boolean>>;
   renderPreview: (content: string, variables: string[]) => string;
   theme: string | undefined;
 }
@@ -29,12 +29,15 @@ export function TemplateEditor(props: TemplateEditorProps) {
     updateTemplate,
     resetToDefault,
     previewMode,
-    setPreviewMode,
+    // setPreviewMode,
     renderPreview,
     theme,
   } = props;
   const [editorMode, setEditorMode] = useState<'code' | 'visual'>('visual');
 
+  // console.log('editorMode', editorMode);
+  // console.log('previewMode', previewMode);
+  // console.log('currentTemplate', currentTemplate);
   let editorContent;
 
   if (previewMode) {
@@ -107,7 +110,7 @@ export function TemplateEditor(props: TemplateEditorProps) {
                   Reset to Default
                 </Button>
               )}
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 className="h-8"
@@ -124,7 +127,7 @@ export function TemplateEditor(props: TemplateEditorProps) {
                     Preview Email
                   </>
                 )}
-              </Button>
+              </Button> */}
               {!previewMode && (
                 <>
                   <Button
@@ -160,7 +163,7 @@ export function TemplateEditor(props: TemplateEditorProps) {
               onChange={(e) =>
                 updateTemplate(currentTemplate.id, 'subject', e.target.value)
               }
-              placeholder="Email subject line"
+              placeholder="Email sditubject line"
             />
           </div>
 
