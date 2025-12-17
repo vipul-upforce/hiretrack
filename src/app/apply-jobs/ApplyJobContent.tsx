@@ -277,9 +277,8 @@ export default function ApplyJobsContent({
   const handleLogout = async () => {
     try {
       await triggerLogout().unwrap();
-    } catch (error) {
-      console.error('Logout failed', error);
-      logger.error('Logout failed', error);
+    } catch (e) {
+      logger.error('Logout failed', e);
     }
     toast({
       title: 'Logged out',

@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { EmailNotificationType } from '@/components/ui/email-notification-toggle';
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface EmailNotificationSettings {
   global: Record<EmailNotificationType, { enabled: boolean; source: string }>;
@@ -146,18 +146,7 @@ export interface GetUserEmailNotificationSettingsQueryArg {
   jobId?: string;
 }
 
-export const emailNotificationSettingsApi = createApi({
-  reducerPath: 'emailNotificationSettingsApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: '/api/settings/email-notifications',
-    credentials: 'include',
-  }),
-  tagTypes: [
-    'EmailNotificationUser',
-    'EmailNotificationJob',
-    'EmailNotificationOrganization',
-    'EmailNotificationGlobal',
-  ],
+export const emailNotificationSettingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUserEmailNotificationSettings: builder.query<
       ApiSuccessResponse<GetUserEmailNotificationSettingsResponse>,

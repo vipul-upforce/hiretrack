@@ -180,6 +180,11 @@ export const baseApi = createApi({
     'ChecklistTemplate',
     'CandidateChecklist',
     'Onboarding',
+    'EmailNotificationGlobal',
+    'EmailNotificationOrganization',
+    'organizationSettings',
+    'EmailNotificationJob',
+    'EmailNotificationUser',
   ],
   endpoints: () => ({}),
 });
