@@ -247,10 +247,11 @@ export const {
   useGetCustomFieldsQuery,
   useLazyGetCustomFieldsQuery,
   useLazyGetCustomFieldsByOrgNameQuery,
-  useFetchBatchesQuery, // Hook for fetching batches
-  usePostBatchMutation, // Hook for posting a batch,,
+  useFetchBatchesQuery,
+  usePostBatchMutation,
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
   useGetOrganizationAllowanceQuery,
+  useLazyGetOrganizationAllowanceQuery,
   useCheckOrgQuery,
 } = orgApi;
