@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Code, RotateCcw, Edit2 } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
+import { Code, RotateCcw, Edit2, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,20 +18,21 @@ interface TemplateEditorProps {
   ) => void;
   resetToDefault: (id: string) => void;
   previewMode: boolean;
-  setPreviewMode: (mode: boolean) => void;
+  setPreviewMode: Dispatch<SetStateAction<boolean>>;
   renderPreview: (content: string, variables: string[]) => string;
   theme: string | undefined;
 }
 
-export function TemplateEditor({
-  currentTemplate,
-  updateTemplate,
-  resetToDefault,
-  previewMode,
-  setPreviewMode,
-  renderPreview,
-  theme,
-}: TemplateEditorProps) {
+export function TemplateEditor(props: TemplateEditorProps) {
+  const {
+    currentTemplate,
+    updateTemplate,
+    resetToDefault,
+    previewMode,
+    setPreviewMode,
+    renderPreview,
+    theme,
+  } = props;
   const [editorMode, setEditorMode] = useState<'code' | 'visual'>('visual');
 
   let editorContent;
@@ -105,6 +107,24 @@ export function TemplateEditor({
                   Reset to Default
                 </Button>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => setPreviewMode(!previewMode)}
+              >
+                {previewMode ? (
+                  <>
+                    <Edit2 className="mr-1 h-3 w-3" />
+                    Back to Editor
+                  </>
+                ) : (
+                  <>
+                    <Eye className="mr-1 h-4 w-4" />
+                    Preview Email
+                  </>
+                )}
+              </Button>
               {!previewMode && (
                 <>
                   <Button

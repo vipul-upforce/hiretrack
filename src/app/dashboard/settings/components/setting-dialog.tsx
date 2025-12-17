@@ -10,7 +10,6 @@ import {
 import React from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import GeminiConfigs from './gemini';
-import EmailTemplateEditor from './edit-mail-dialog';
 import ManageTagsDialog from '../../jobs/[id]/components/Dialogs/manage-tags-dialog';
 import AssetsDialog from './assets';
 import GoogleCalendarSettings from './google-calendar';
@@ -24,6 +23,7 @@ import twoFASettings from './two-fa';
 import MultipleOrgsConfigs from './multiple-org';
 import TimeZoneSelect from './time-zone';
 import CaptchaSettings from './captcha';
+import { EmailTemplateEditor } from '../templates/components/email-template-editor/EmailTemplateEditor';
 
 export interface SettingComponentProps {
   onClose: () => void;
@@ -64,7 +64,13 @@ function SettingDialog({
   const orgId = user?.organizationId;
 
   if (setting.key === 'tags')
-    return <ManageTagsDialog onClose={onClose} isOpen={isOpen} orgId={orgId as string} />;
+    return (
+      <ManageTagsDialog
+        onClose={onClose}
+        isOpen={isOpen}
+        orgId={orgId as string}
+      />
+    );
 
   if (setting.key === 'evaluation')
     return <EvaluationSettings onClose={onClose} isOpen={isOpen} />;
