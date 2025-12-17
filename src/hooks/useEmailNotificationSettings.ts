@@ -1,8 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { EmailNotificationType } from '@/components/ui/email-notification-toggle';
+import {
+  useGetJobEmailNotificationSettingsQuery,
+  useGetOrganizationEmailNotificationSettingsQuery,
+  useGetUserEmailNotificationSettingsQuery,
+  useUpdateJobEmailNotificationSettingsMutation,
+  useUpdateOrganizationEmailNotificationSettingsMutation,
+  useUpdateUserEmailNotificationSettingsMutation,
+} from '@/lib/features/notifications/emailNotificationSettingsApi';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 export interface EmailNotificationSettings {
   global: Record<EmailNotificationType, { enabled: boolean; source: string }>;
@@ -41,88 +50,99 @@ export interface OrganizationSettingsResponse {
   }>;
 }
 
+function getRtkQueryErrorMessage(error: unknown): string {
+  if (!error) return 'Unknown error';
+
+  // fetchBaseQuery error shape
+  const fbq = error as FetchBaseQueryError;
+  if (typeof fbq === 'object' && fbq && 'status' in fbq) {
+    const maybeData = (fbq as { data?: unknown }).data;
+    if (
+      maybeData &&
+      typeof maybeData === 'object' &&
+      'error' in (maybeData as Record<string, unknown>)
+    ) {
+      const msg = (maybeData as Record<string, unknown>).error;
+      if (typeof msg === 'string' && msg.trim()) return msg;
+    }
+    if (typeof maybeData === 'string' && maybeData.trim()) return maybeData;
+    return 'Request failed';
+  }
+
+  // serialized error shape
+  const se = error as { message?: unknown };
+  if (se?.message && typeof se.message === 'string') return se.message;
+
+  return 'Unknown error';
+}
+
 // ... (rest of hooks unchanged, but add safety to fetchSettings in useUserEmailNotificationSettings)
 export function useUserEmailNotificationSettings(
   userId: string,
   jobId?: string,
 ) {
-  const [settings, setSettings] = useState<EmailNotificationSettings | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchSettings = async () => {
-    if (!userId) return;
+  const {
+    data,
+    error: queryError,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetUserEmailNotificationSettingsQuery(
+    { userId, jobId },
+    { skip: !userId },
+  );
 
-    setLoading(true);
-    setError(null);
+  const settings = useMemo<EmailNotificationSettings | null>(() => {
+    if (!data?.success) return null;
 
-    try {
-      const url = jobId
-        ? `/api/settings/email-notifications/${userId}?jobId=${jobId}`
-        : `/api/settings/email-notifications/${userId}`;
-
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch email notification settings');
-      }
-
-      const data = await response.json();
-
-      // ✅ Normalize response: API returns { email: {...}, inApp: {...}, jobLevel?: { email: {...}, inApp: {...} } }
-      // We use common EmailNotificationSettings, so use 'email' property
-      // Convert NotificationType enum keys to EmailNotificationType string keys
-      const normalizeTypeRecord = <
-        T extends Record<string, { enabled: boolean; source: string }>,
-      >(
-        record: T | undefined
-      ): Record<
-        EmailNotificationType,
-        { enabled: boolean; source: string }
-      > => {
-        if (!record)
-          return {} as Record<
-            EmailNotificationType,
-            { enabled: boolean; source: string }
-          >;
-        // NotificationType enum values are strings, so they're compatible with EmailNotificationType
-        return record as unknown as Record<
+    // ✅ Normalize response: API returns { email: {...}, inApp: {...}, jobLevel?: { email: {...}, inApp: {...} } }
+    // We use common EmailNotificationSettings, so use 'email' property
+    const normalizeTypeRecord = <
+      T extends Record<string, { enabled: boolean; source: string }>,
+    >(
+      record: T | undefined,
+    ): Record<EmailNotificationType, { enabled: boolean; source: string }> => {
+      if (!record) {
+        return {} as Record<
           EmailNotificationType,
           { enabled: boolean; source: string }
         >;
-      };
+      }
+      return record as unknown as Record<
+        EmailNotificationType,
+        { enabled: boolean; source: string }
+      >;
+    };
 
-      const normalizedSettings: EmailNotificationSettings = {
-        global: normalizeTypeRecord(data.settings?.email),
-        jobLevel:
-          jobId && data.settings?.jobLevel?.email
-            ? { [jobId]: normalizeTypeRecord(data.settings.jobLevel.email) }
-            : undefined,
-      };
+    const normalizedSettings: EmailNotificationSettings = {
+      global: normalizeTypeRecord(data.settings?.email),
+      jobLevel:
+        jobId && data.settings?.jobLevel?.email
+          ? { [jobId]: normalizeTypeRecord(data.settings.jobLevel.email) }
+          : undefined,
+    };
 
-      setSettings(normalizedSettings);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      toast({
-        title: 'Error',
-        description: 'Failed to load email notification settings',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    return normalizedSettings;
+  }, [data, jobId]);
+
+  const error = queryError ? getRtkQueryErrorMessage(queryError) : null;
 
   useEffect(() => {
-    fetchSettings();
-  }, [userId, jobId]);
+    if (!queryError) return;
+    toast({
+      title: 'Error',
+      description: 'Failed to load email notification settings',
+      variant: 'destructive',
+    });
+  }, [queryError, toast]);
 
   return {
-    settings, loading, error, refetch: fetchSettings,
+    settings,
+    loading: isLoading || isFetching,
+    error,
+    refetch,
   };
 }
 
@@ -130,8 +150,9 @@ export function useUserEmailNotificationSettings(
 
 // Hook for updating user's email notification settings
 export function useUpdateUserEmailNotificationSettings() {
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [mutate, { isLoading }] =
+    useUpdateUserEmailNotificationSettingsMutation();
 
   const updateSettings = async (
     userId: string,
@@ -140,29 +161,8 @@ export function useUpdateUserEmailNotificationSettings() {
       jobLevel?: Record<string, Record<EmailNotificationType, boolean>>;
     },
   ) => {
-    setLoading(true);
-
     try {
-      const response = await fetch(
-        `/api/settings/email-notifications/${userId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(updates),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || 'Failed to update email notification settings',
-        );
-      }
-
-      const data = await response.json();
-
+      const data = await mutate({ userId, updates }).unwrap();
       toast({
         title: 'Success',
         description: 'Email notification settings updated successfully',
@@ -170,108 +170,70 @@ export function useUpdateUserEmailNotificationSettings() {
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = getRtkQueryErrorMessage(err);
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive',
       });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { updateSettings, loading };
+  return { updateSettings, loading: isLoading };
 }
 
 // Hook for getting job-specific email notification settings
 export function useJobEmailNotificationSettings(jobId: string) {
-  const [settings, setSettings] = useState<{
-    currentJobSettings: Record<EmailNotificationType, boolean> | null;
-    effectiveSettings: Record<
-      EmailNotificationType,
-      { enabled: boolean; source: string }
-    >;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchSettings = async () => {
-    if (!jobId) return;
+  const {
+    data,
+    error: queryError,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetJobEmailNotificationSettingsQuery({ jobId }, { skip: !jobId });
 
-    setLoading(true);
-    setError(null);
+  const settings = useMemo(() => {
+    if (!data?.success) return null;
+    return {
+      currentJobSettings: data.currentJobSettings,
+      effectiveSettings: data.effectiveSettings,
+    };
+  }, [data]);
 
-    try {
-      const response = await fetch(
-        `/api/settings/email-notifications/job/${jobId}`,
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch job email notification settings');
-      }
-
-      const data = await response.json();
-      setSettings({
-        currentJobSettings: data.currentJobSettings,
-        effectiveSettings: data.effectiveSettings,
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      toast({
-        title: 'Error',
-        description: 'Failed to load job email notification settings',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const error = queryError ? getRtkQueryErrorMessage(queryError) : null;
 
   useEffect(() => {
-    fetchSettings();
-  }, [jobId]);
+    if (!queryError) return;
+    toast({
+      title: 'Error',
+      description: 'Failed to load job email notification settings',
+      variant: 'destructive',
+    });
+  }, [queryError, toast]);
 
   return {
-    settings, loading, error, refetch: fetchSettings,
+    settings,
+    loading: isLoading || isFetching,
+    error,
+    refetch,
   };
 }
 
 // Hook for updating job-specific email notification settings
 export function useUpdateJobEmailNotificationSettings() {
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [mutate, { isLoading }] =
+    useUpdateJobEmailNotificationSettingsMutation();
 
   const updateSettings = async (
     jobId: string,
     settings: Record<EmailNotificationType, boolean>,
   ) => {
-    setLoading(true);
-
     try {
-      const response = await fetch(
-        `/api/settings/email-notifications/job/${jobId}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ settings }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || 'Failed to update job email notification settings',
-        );
-      }
-
-      const data = await response.json();
-
+      const data = await mutate({ jobId, settings }).unwrap();
       toast({
         title: 'Success',
         description: 'Job email notification settings updated successfully',
@@ -279,125 +241,81 @@ export function useUpdateJobEmailNotificationSettings() {
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = getRtkQueryErrorMessage(err);
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive',
       });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { updateSettings, loading };
+  return { updateSettings, loading: isLoading };
 }
 
 // Hook for getting organization email notification settings (admin only)
 export function useOrganizationEmailNotificationSettings() {
-  const [settings, setSettings] = useState<OrganizationSettingsResponse | null>(
-    null
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    setError(null);
+  const {
+    data,
+    error: queryError,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useGetOrganizationEmailNotificationSettingsQuery();
 
-    try {
-      const response = await fetch("/api/settings/email-notifications");
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error("Admin access required");
-        }
-        throw new Error(
-          "Failed to fetch organization email notification settings"
-        );
-      }
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Failed to fetch settings");
-      }
-
-      setSettings(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const settings: OrganizationSettingsResponse | null = useMemo(() => {
+    if (!data?.success) return null;
+    return {
+      organizationSettings: data.organizationSettings,
+      users: data.users,
+    };
+  }, [data]);
+  const error = queryError ? getRtkQueryErrorMessage(queryError) : null;
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (!queryError) return;
+    toast({
+      title: 'Error',
+      description: error ?? 'Failed to load settings',
+      variant: 'destructive',
+    });
+  }, [error, queryError, toast]);
 
-  return { settings, loading, error, refetch: fetchSettings };
+  return { settings, loading: isLoading || isFetching, error, refetch };
 }
 
 // Hook for updating organization email notification settings (admin only)
 export function useUpdateOrganizationEmailNotificationSettings() {
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [mutate, { isLoading }] =
+    useUpdateOrganizationEmailNotificationSettingsMutation();
 
   const updateSettings = async (updates: {
     defaultSettings?: Record<EmailNotificationType, boolean>;
     adminOverrides?: Record<string, Record<EmailNotificationType, boolean>>;
   }) => {
-    setLoading(true);
-
     try {
-      const response = await fetch("/api/settings/email-notifications", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error("Admin access required");
-        }
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error ||
-            "Failed to update organization email notification settings"
-        );
-      }
-
-      const data = await response.json();
-
+      const data = await mutate({ updates }).unwrap();
       toast({
-        title: "Success",
+        title: 'Success',
         description:
-          "Organization email notification settings updated successfully",
+          'Organization email notification settings updated successfully',
       });
 
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      const errorMessage = getRtkQueryErrorMessage(err);
       toast({
-        title: "Error",
+        title: 'Error',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { updateSettings, loading };
+  return { updateSettings, loading: isLoading };
 }

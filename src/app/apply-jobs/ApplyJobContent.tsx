@@ -1,25 +1,27 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import JobModal from "./JobModal";
-import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
-import { useToast } from "@/hooks/use-toast";
-import { useSearchParams } from "next/navigation";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
-import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
-import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import type { SerializedError } from "@reduxjs/toolkit";
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import { useIsIframe } from "./IframeDetector";
-import { useFetchOrgQuery } from "@/lib/features/org/orgApi";
-import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
-import { HeaderSection } from "./components/header-section";
-import { SearchBar } from "./components/search-bar";
-import { JobGrid } from "./components/job-grid";
-import { ErrorState } from "./components/error-state";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
+import { useEffect, useState } from 'react';
+import { useFetchOpenJobQuery } from '@/lib/features/job/jobApi';
+import { useToast } from '@/hooks/use-toast';
+import { useSearchParams } from 'next/navigation';
+import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
+import { useFetchAppliedApplicationQuery } from '@/lib/features/candidate/candidateApi';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import type { SerializedError } from '@reduxjs/toolkit';
+import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
 import logger from '@/lib/logger';
+import Cookies from 'js-cookie';
+import { useIsIframe } from './IframeDetector';
+import { HeaderSection } from './components/header-section';
+import { SearchBar } from './components/search-bar';
+import { JobGrid } from './components/job-grid';
+import { ErrorState } from './components/error-state';
+import JobModal from './JobModal';
+
 import { useRouter } from "next/navigation";
 interface Job {
   _id: string;
@@ -55,9 +57,11 @@ export default function ApplyJobsContent({
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
 
-  const { data: orgResponse, isLoading: isOrgLoading } = useFetchOrgQuery(undefined);
+  const { data: orgResponse, isLoading: isOrgLoading } =
+    useFetchOrgQuery(undefined);
 
-  const { data: portalResponse, isLoading: isPortalLoading } = useGetPortalConfigsQuery(undefined);
+  const { data: portalResponse, isLoading: isPortalLoading } =
+    useGetPortalConfigsQuery(undefined);
 
   const hideHeaderParam = searchParams?.get('hideHeader');
   const hideFooterParam = searchParams?.get('hideFooter');
@@ -66,13 +70,17 @@ export default function ApplyJobsContent({
 
   const hasHeaderParam = hideHeaderParam !== null;
   const hasFooterParam = hideFooterParam !== null;
+  const authState = Cookies.get('auth_state');
+  const shouldShowHeader =
+    showHeaderFooter && (hasHeaderParam ? !hideHeader : !isIframe);
+  const shouldShowFooter =
+    showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
 
-  const shouldShowHeader = showHeaderFooter && (hasHeaderParam ? !hideHeader : !isIframe);
-  const shouldShowFooter = showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
+  const shouldSkipQuery = orgName === '' || authState !== 'true';
 
   const { data } = useFetchAppliedApplicationQuery(
     {},
-    { skip: orgName === '' },
+    { skip: shouldSkipQuery },
   );
   const { user } = useAppSelector((state) => state.auth);
 
@@ -88,10 +96,10 @@ export default function ApplyJobsContent({
     footerHTML: '',
   });
 
-  const [primaryColor, setPrimaryColor] = useState<string>("#6366f1");
-  const [secondaryColor, setSecondaryColor] = useState<string>("#8b5cf6");
-  const [logoUrl, setLogoUrl] = useState<string>("");
-  const [portalName, setPortalName] = useState<string>("");
+  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
+  const [secondaryColor, setSecondaryColor] = useState<string>('#8b5cf6');
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [portalName, setPortalName] = useState<string>('');
   const [triggerLogout] = useLogoutUserMutation();
 
   const {
@@ -130,11 +138,13 @@ export default function ApplyJobsContent({
 
         if (portalData) {
           if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
-          if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
+          if (portalData.secondaryColor)
+            setSecondaryColor(portalData.secondaryColor);
           if (portalData.portalLogo) {
-            const logoUrl = typeof portalData.portalLogo === 'string'
-              ? portalData.portalLogo
-              : portalData.portalLogo?.url;
+            const logoUrl =
+              typeof portalData.portalLogo === 'string'
+                ? portalData.portalLogo
+                : portalData.portalLogo?.url;
             if (logoUrl) setLogoUrl(logoUrl);
           }
           if (portalData.portalName) setPortalName(portalData.portalName);
@@ -169,11 +179,13 @@ export default function ApplyJobsContent({
 
       if (portalData) {
         if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
-        if (portalData.secondaryColor) setSecondaryColor(portalData.secondaryColor);
+        if (portalData.secondaryColor)
+          setSecondaryColor(portalData.secondaryColor);
         if (portalData.portalLogo) {
-          const logoUrl = typeof portalData.portalLogo === 'string'
-            ? portalData.portalLogo
-            : portalData.portalLogo?.url;
+          const logoUrl =
+            typeof portalData.portalLogo === 'string'
+              ? portalData.portalLogo
+              : portalData.portalLogo?.url;
           if (logoUrl) setLogoUrl(logoUrl);
         }
         if (portalData.portalName) setPortalName(portalData.portalName);
@@ -270,8 +282,8 @@ export default function ApplyJobsContent({
       await triggerLogout().unwrap();
       router.push('/auth/login');
     } catch (error) {
-      console.error("Logout failed", error);
-      logger.error("Logout failed", error);
+      console.error('Logout failed', error);
+      logger.error('Logout failed', error);
     }
     toast({
       title: 'Logged out',
@@ -286,9 +298,9 @@ export default function ApplyJobsContent({
         <ErrorState
           imageUrl="/error.webp"
           errorMessage={
-            isFetchBaseQueryError(error)
-            && 'data' in error
-            && (error.data as { error: string })?.error
+            isFetchBaseQueryError(error) &&
+            'data' in error &&
+            (error.data as { error: string })?.error
           }
         />
       );
@@ -297,10 +309,10 @@ export default function ApplyJobsContent({
       <ErrorState
         imageUrl="/notfound.jpg"
         errorMessage={
-            isFetchBaseQueryError(error)
-            && 'data' in error
-            && (error.data as { error: string })?.error
-          }
+          isFetchBaseQueryError(error) &&
+          'data' in error &&
+          (error.data as { error: string })?.error
+        }
       />
     );
   }
@@ -309,7 +321,7 @@ export default function ApplyJobsContent({
     <div
       className={
         shouldShowHeader || shouldShowFooter
-          ? 'flex flex-col min-h-screen relative'
+          ? 'relative flex min-h-screen flex-col'
           : 'relative'
       }
     >
@@ -339,7 +351,7 @@ export default function ApplyJobsContent({
       <main
         className={
           shouldShowHeader || shouldShowFooter
-            ? 'flex-1 p-4 relative z-10'
+            ? 'relative z-10 flex-1 p-4'
             : 'relative z-10'
         }
       >
@@ -384,9 +396,9 @@ export default function ApplyJobsContent({
         orgName={orgName}
         readOnly={
           !!(
-            appliedApplications
-            && selectedJob
-            && appliedApplications.includes(selectedJob?._id)
+            appliedApplications &&
+            selectedJob &&
+            appliedApplications.includes(selectedJob?._id)
           )
         }
       />

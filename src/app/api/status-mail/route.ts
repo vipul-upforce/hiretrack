@@ -7,9 +7,9 @@ import {
   scheduleEmail,
   getEmailQueue,
   updateQueueItemHistoryIds,
-} from './emailQueue';
-import { createPendingEmailHistory } from './emailHistory';
-import { sendQueuedEmail } from './emailSender';
+} from './statusEmailQueue';
+import { createPendingEmailHistory } from './statusEmailHistory';
+import { sendQueuedEmail } from './statusEmailSender';
 import type {
   StatusUpdateEmailRequest,
   StatusUpdateQueueData,

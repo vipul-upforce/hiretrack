@@ -6,62 +6,23 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useMemo,
 } from 'react';
-import { onboardingApi } from '@/lib/features/onboarding/onboardingApi';
-import { useSelector } from 'react-redux';
-
 import {
-  Globe,
-  Bot,
-  Mail,
-  Calendar,
-  Clock,
-  HardDrive,
-  Users,
-  Palette,
-  ShieldCheck,
-} from 'lucide-react';
+  useLazyGetOnboardingStatusQuery,
+  useLazyValidateOnboardingQuery,
+  useUpdateOnboardingStatusMutation,
+  useValidateOnboardingStepMutation,
+} from '@/lib/features/onboarding/onboardingApi';
+
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
-
-export interface OnboardingStep {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-  isCompleted: boolean;
-  isSkipped: boolean;
-  isRequired: boolean;
-}
-
-export interface OnboardingStatus {
-  isCompleted: boolean;
-  completedSteps: string[];
-  skippedSteps: string[];
-  doNotShowAgain: boolean;
-  currentStep: number;
-  lastUpdated: Date;
-}
-
-export interface OnboardingProgress {
-  completed: number;
-  total: number;
-  percentage: number;
-}
-
-export interface StepStatus {
-  [stepId: string]: boolean;
-}
-
-export interface ValidateResponse {
-  isValid: boolean;
-  progress: OnboardingProgress;
-  stepStatus: StepStatus;
-}
-
-export interface StatusResponse {
-  onboardingStatus: OnboardingStatus;
-}
+import type {
+  OnboardingProgress,
+  OnboardingStatus,
+  OnboardingStep,
+} from './onboarding.constants';
+import { getDefaultSteps } from './onboarding.constants';
 
 interface OnboardingContextType {
   isOpen: boolean;
@@ -87,90 +48,6 @@ interface OnboardingProviderProps {
   children: ReactNode;
 }
 
-const getDefaultSteps = (): OnboardingStep[] => [
-  {
-    id: 'portal',
-    title: 'Portal Configuration',
-    description: 'Customize your portal branding and appearance',
-    icon: Globe,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'captcha',
-    title: 'Captcha Verification',
-    description: 'Enable captcha for verifying user interactions',
-    icon: ShieldCheck,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'aiProviders',
-    title: 'AI Providers',
-    description: 'Configure AI providers for resume processing',
-    icon: Bot,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'email',
-    title: 'Email Configuration',
-    description: 'Set up email delivery for notifications',
-    icon: Mail,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'calendar',
-    title: 'Google Calendar',
-    description: 'Connect Google Calendar for interview scheduling',
-    icon: Calendar,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'timezone',
-    title: 'Timezone',
-    description: 'Set your organization timezone',
-    icon: Clock,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'storage',
-    title: 'File Storage',
-    description: 'Configure cloud storage for files',
-    icon: HardDrive,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'users',
-    title: 'Add Users',
-    description: 'Invite team members to your organization',
-    icon: Users,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-  {
-    id: 'customFields',
-    title: 'Custom Fields',
-    description: 'Create custom form fields for jobs and candidates',
-    icon: Palette,
-    isCompleted: false,
-    isSkipped: false,
-    isRequired: false,
-  },
-];
-
 export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -183,10 +60,14 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const { user } = useAppSelector((state) => state.auth || {});
 
+  const [fetchStatus] = useLazyGetOnboardingStatusQuery();
+  const [fetchValidate] = useLazyValidateOnboardingQuery();
+  const [updateStatusMutation] = useUpdateOnboardingStatusMutation();
+  const [validateStepMutation] = useValidateOnboardingStepMutation();
+
   const refreshProgress = async (status: OnboardingStatus | null) => {
     try {
-      const data = await onboardingApi.validate();
-      if (!data) return;
+      const data = await fetchValidate().unwrap();
 
       setProgress(data.progress);
 
@@ -208,10 +89,11 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       setIsLoading(true);
 
       // 1) Load STATUS first
-      const status = await onboardingApi.getStatus();
+      const statusResponse = await fetchStatus().unwrap();
+      const status = statusResponse.onboardingStatus;
       if (status) {
         setOnboardingStatus(status);
-        setCurrentStepIndex(status.currentStep || 0);
+        setCurrentStepIndex(status.currentStep ?? 0);
 
         // 2) Always refresh using the latest status
         await refreshProgress(status);
@@ -248,7 +130,9 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
 
   const updateOnboardingStatus = async (updates: Partial<OnboardingStatus>) => {
     try {
-      const updatedStatus = await onboardingApi.updateStatus(updates);
+      const updatedStatusResponse =
+        await updateStatusMutation(updates).unwrap();
+      const updatedStatus = updatedStatusResponse.onboardingStatus;
       if (!updatedStatus) return;
 
       setOnboardingStatus(updatedStatus);
@@ -291,29 +175,45 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   };
 
   const validateStep = async (stepId: string): Promise<boolean> =>
-    await onboardingApi.validateStep(stepId);
+    (await validateStepMutation({ stepId }).unwrap()).isValid;
 
   const doNotShowAgain = async () => {
     await updateOnboardingStatus({ doNotShowAgain: true });
     setIsOpen(false);
   };
 
-  const contextValue: OnboardingContextType = {
-    isOpen,
-    setIsOpen,
-    currentStepIndex,
-    setCurrentStepIndex,
-    steps,
-    onboardingStatus,
-    progress,
-    isLoading,
-    updateOnboardingStatus,
-    completeStep,
-    skipStep,
-    validateStep,
-    refreshProgress,
-    doNotShowAgain,
-  };
+  const contextValue: OnboardingContextType = useMemo(
+    () => ({
+      isOpen,
+      setIsOpen,
+      currentStepIndex,
+      setCurrentStepIndex,
+      steps,
+      onboardingStatus,
+      progress,
+      isLoading,
+      updateOnboardingStatus,
+      completeStep,
+      skipStep,
+      validateStep,
+      refreshProgress,
+      doNotShowAgain,
+    }),
+    [
+      isOpen,
+      currentStepIndex,
+      steps,
+      onboardingStatus,
+      progress,
+      isLoading,
+      updateOnboardingStatus,
+      completeStep,
+      skipStep,
+      validateStep,
+      refreshProgress,
+      doNotShowAgain,
+    ],
+  );
 
   return (
     <OnboardingContext.Provider value={contextValue}>

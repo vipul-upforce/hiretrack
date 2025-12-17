@@ -13,35 +13,39 @@ import {
   SearchCheckIcon,
   UploadIcon,
   BarChart3Icon,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
-import { useGetPortalConfigsQuery } from "@/lib/features/settings/settingsApi";
-import { setAllowMultipleOrgs } from "@/lib/features/org/orgSlice";
-import PortalHead from "@/components/layouts/PortalHead";
-import { useTheme } from "@/components/theme-provider";
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
+import PortalHead from '@/components/layouts/PortalHead';
+import { useTheme } from '@/components/theme-provider';
 import {
   useGetNotificationsQuery,
   useGetNotificationCountQuery,
   useMarkNotificationAsReadMutation,
   useMarkAllNotificationsAsReadMutation,
-} from "@/lib/features/notifications/notificationsApi";
-import { CandidateDetailsDialog } from "./jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { useLazyFetchCandidateByIdQuery } from "@/lib/features/candidate/candidateApi";
-import { Candidate } from "@/types/candidate";
-import { OnboardingProvider } from "@/components/onboarding/OnboardingProvider";
-import OnboardingModal from "@/components/onboarding/OnboardingModal";
-import SidebarContent from "@/components/layouts/SidebarContent";
-import { useGetOrganizationAllowanceQuery } from "@/lib/features/org/orgApi";
-import { useCheckOrgQuery } from "@/lib/features/org/orgApi";
-import { useNotificationSSE } from "@/hooks/useNotificationSSE";
-import { NotificationsProvider } from "@/contexts/NotificationsContext";
+} from '@/lib/features/notifications/notificationsApi';
+import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
+import { Candidate } from '@/types/candidate';
+import { OnboardingProvider } from '@/components/onboarding/OnboardingProvider';
+import OnboardingModal from '@/components/onboarding/OnboardingModal';
+import SidebarContent from '@/components/layouts/SidebarContent';
+import {
+  useGetOrganizationAllowanceQuery,
+  useCheckOrgQuery,
+} from '@/lib/features/org/orgApi';
+import { useNotificationSSE } from '@/hooks/useNotificationSSE';
+import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import logger from '@/lib/logger';
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { useLogoutUserMutation } from "@/lib/features/auth/authApi";
-import { ILocalUser } from "@/lib/redux/authSlice";
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
+import { ILocalUser } from '@/lib/redux/authSlice';
+import { INotification } from '@/lib/models/notification';
+import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
+
 interface SidebarItem {
   title: string;
   href: string;
@@ -140,7 +144,7 @@ export default function DashboardLayout({
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
   // Notification handlers
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: INotification) => {
     // Mark as read if not already read
     if (!notification.isRead) {
       markAsRead(notification._id);
@@ -179,11 +183,10 @@ export default function DashboardLayout({
 
   const { user } = useAppSelector((state) => state.auth);
 
-  const {
-    data: orgCheckData,
-    error: orgCheckError,
-    isLoading: orgCheckLoading,
-  } = useCheckOrgQuery(user?.organizationId as string, { skip: !user });
+  const { data: orgCheckData } = useCheckOrgQuery(
+    user?.organizationId as string,
+    { skip: !user },
+  );
 
   const dispatch = useAppDispatch();
   const [triggerLogout] = useLogoutUserMutation();
@@ -263,8 +266,8 @@ export default function DashboardLayout({
     try {
       await triggerLogout().unwrap();
     } catch (error) {
-      console.error("Logout failed", error);
-      logger.error("Logout failed", error);
+      console.error('Logout failed', error);
+      logger.error('Logout failed', error);
     }
     setUserData(null);
     setUserLoggedIn(false);

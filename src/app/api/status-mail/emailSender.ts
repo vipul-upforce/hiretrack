@@ -49,12 +49,23 @@ export async function sendQueuedEmail(
     hrContactInfo,
   } = data;
 
-  const settings = await Settings?.findOne({
-    organizationId: new mongoose.Types.ObjectId(organizationId),
-  })
-    .select('mailConfig')
-    .lean()
-    .exec();
+  // Optimize: Fetch settings and organization in parallel
+  const [settings, organization] = await Promise.all([
+    Settings?.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    })
+      .select('mailConfig')
+      .lean()
+      .exec(),
+    User?.findOne({
+      organizationId,
+    })
+      .populate({
+        path: 'organizationId',
+        select: 'name defaultLanes',
+      })
+      .lean(),
+  ]);
 
   if (!settings || !settings.mailConfig) {
     throw new Error('Mail configuration not found');
@@ -65,15 +76,6 @@ export async function sendQueuedEmail(
     settings.mailConfig.brevo_from ||
     settings.mailConfig.smtp_from ||
     'system@hiretrack.com';
-
-  const organization = await User?.findOne({
-    organizationId,
-  })
-    .populate({
-      path: 'organizationId',
-      select: 'name defaultLanes', // populate only organization name
-    })
-    .lean();
 
   const orgData =
     organization &&
@@ -94,38 +96,40 @@ export async function sendQueuedEmail(
       ? organization.organizationId.name
       : '';
 
-  const { emailContent, emailSubject } = await getMappedEmailTemplate(
-    'status-update',
-    {
-      eventTitle,
-      jobTitle: jobName,
-      candidateName,
-      newStatus: status,
-      statusMessage: remark,
-      rating,
-      actionBy,
-      nextSteps,
-      prev_status: prevStatus,
-      eventSubTitle,
-      candidateDetails,
-      organizationName,
-      hrContactInfo,
-    },
-    organizationId,
-  );
-
-  const systemUser = await User?.findOneAndUpdate(
-    { email: fromEmail, organizationId },
-    {
-      $setOnInsert: {
-        name: 'HireTrack System',
-        email: fromEmail,
-        role: 'system',
-        organizationId,
+  // Optimize: Fetch template and system user in parallel
+  const [{ emailContent, emailSubject }, systemUser] = await Promise.all([
+    getMappedEmailTemplate(
+      'status-update',
+      {
+        eventTitle,
+        jobTitle: jobName,
+        candidateName,
+        newStatus: status,
+        statusMessage: remark,
+        rating,
+        actionBy,
+        nextSteps,
+        prev_status: prevStatus,
+        eventSubTitle,
+        candidateDetails,
+        organizationName,
+        hrContactInfo,
       },
-    },
-    { upsert: true, new: true },
-  );
+      organizationId,
+    ),
+    User?.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: 'HireTrack System',
+          email: fromEmail,
+          role: 'system',
+          organizationId,
+        },
+      },
+      { upsert: true, new: true },
+    ),
+  ]);
 
   const emailStatus = await sendSmartNotification(
     organizationId,

@@ -46,103 +46,6 @@ interface ISmtpObj {
   eventTitle: string;
 }
 
-export const sendMail = async (
-  orgID: string,
-  email: string[],
-  eventTitle: string,
-  htmlContent: string,
-  bcc?: string[],
-  triggererEmail?: string,
-): Promise<{ status: number; message: string }> => {
-  try {
-    await connectToDatabase();
-    if (!Settings) {
-      return { status: 404, message: 'Database not connected' };
-    }
-
-    const settingInfo = (await Settings?.find({
-      organizationId: orgID,
-    })) as ISettings[];
-
-    // Check if settingInfo is not empty
-    if (!settingInfo || settingInfo.length === 0) {
-      return { status: 404, message: 'Database not connected' };
-    }
-
-    // Access the first document in the array
-    const settings: ISettings = settingInfo[0];
-
-    const { mailConfig } = settings; // Now credentials should be recognized
-
-    // Check if smtpConfig is defined and has the required properties
-    if (!mailConfig || !mailConfig.mailProvider) {
-      return {
-        status: 400,
-        message: 'SMTP configuration is missing or invalid',
-      };
-    }
-    let mailTo = email;
-    if (email[0]) {
-      mailTo = [email[0]];
-      if (email.length > 1) {
-        bcc = [...email].slice(1);
-      }
-    }
-    // Filter out the triggerer's email if provided
-    if (triggererEmail) {
-      mailTo = mailTo.filter((mailId) => mailId && mailId !== triggererEmail);
-      if (bcc) {
-        bcc = bcc.filter((mailId) => mailId && mailId !== triggererEmail);
-      }
-    } else {
-      // Just filter out empty emails if no triggerer email provided
-      mailTo = mailTo.filter((mailId) => !!mailId);
-      if (bcc) {
-        bcc = bcc.filter((mailId) => !!mailId);
-      }
-    }
-
-    if (mailConfig.mailProvider === 'smtp') {
-      const result = await sendSmtpMail({
-        settings: mailConfig,
-        mailTo,
-        bcc,
-        htmlContent,
-        eventTitle,
-      });
-      return result || { status: 500, message: 'Failed to send email' };
-    }
-    if (mailConfig.mailProvider === 'resend') {
-      const result = await sendReSendMail({
-        settings: mailConfig,
-        mailTo,
-        bcc,
-        htmlContent,
-        eventTitle,
-      });
-      return result || { status: 500, message: 'Failed to resend email' };
-    }
-    if (mailConfig.mailProvider === 'brevo') {
-      const result = await sendBrevoMail({
-        settings: mailConfig,
-        mailTo,
-        bcc,
-        htmlContent,
-        eventTitle,
-      });
-      return result || { status: 500, message: 'Failed to resend email' };
-    }
-
-    // Add a default return statement for unexpected mail types
-    return { status: 400, message: 'Invalid mail type specified' };
-  } catch (err: unknown) {
-    return {
-      status: 500,
-      message: err instanceof Error ? err.message : 'Unknown error occurred',
-    };
-  }
-};
-
 const sendSmtpMail = async (smtpObJ: ISmtpObj) => {
   try {
     // Configure email transporter
@@ -209,6 +112,7 @@ const sendReSendMail = async (mailObj: IResendObj) => {
     };
   }
 };
+
 const sendBrevoMail = async (mailObj: IBrevoObj) => {
   try {
     // Validate API key
@@ -222,7 +126,7 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
     }
 
     // Validate emails
-    const emailRegex = /^[\w\.\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[\w.-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/; // eslint-disable-line no-useless-escape
     if (
       !mailObj.settings.brevo_from ||
       !emailRegex.test(mailObj.settings.brevo_from.trim())
@@ -310,5 +214,103 @@ const sendBrevoMail = async (mailObj: IBrevoObj) => {
       statusCode = 408;
     }
     return { status: statusCode, message: errorMessage };
+  }
+};
+
+export const sendMail = async (
+  orgID: string,
+  email: string[],
+  eventTitle: string,
+  htmlContent: string,
+  bcc?: string[],
+  triggererEmail?: string,
+): Promise<{ status: number; message: string }> => {
+  try {
+    await connectToDatabase();
+    if (!Settings) {
+      return { status: 404, message: 'Database not connected' };
+    }
+
+    const settingInfo = (await Settings?.find({
+      organizationId: orgID,
+    })) as ISettings[];
+
+    // Check if settingInfo is not empty
+    if (!settingInfo || settingInfo.length === 0) {
+      return { status: 404, message: 'Database not connected' };
+    }
+
+    // Access the first document in the array
+    const settings: ISettings = settingInfo[0];
+
+    const { mailConfig } = settings; // Now credentials should be recognized
+
+    // Check if smtpConfig is defined and has the required properties
+    if (!mailConfig || !mailConfig.mailProvider) {
+      return {
+        status: 400,
+        message: 'SMTP configuration is missing or invalid',
+      };
+    }
+    let mailTo = email;
+    let filteredBcc = bcc;
+    if (email[0]) {
+      mailTo = [email[0]];
+      if (email.length > 1) {
+        filteredBcc = [...email].slice(1);
+      }
+    }
+    // Filter out the triggerer's email if provided
+    if (triggererEmail) {
+      mailTo = mailTo.filter((mailId) => mailId && mailId !== triggererEmail);
+      if (filteredBcc) {
+        filteredBcc = filteredBcc.filter((mailId) => mailId && mailId !== triggererEmail);
+      }
+    } else {
+      // Just filter out empty emails if no triggerer email provided
+      mailTo = mailTo.filter((mailId) => !!mailId);
+      if (filteredBcc) {
+        filteredBcc = filteredBcc.filter((mailId) => !!mailId);
+      }
+    }
+
+    if (mailConfig.mailProvider === 'smtp') {
+      const result = await sendSmtpMail({
+        settings: mailConfig,
+        mailTo,
+        bcc: filteredBcc,
+        htmlContent,
+        eventTitle,
+      });
+      return result || { status: 500, message: 'Failed to send email' };
+    }
+    if (mailConfig.mailProvider === 'resend') {
+      const result = await sendReSendMail({
+        settings: mailConfig,
+        mailTo,
+        bcc: filteredBcc,
+        htmlContent,
+        eventTitle,
+      });
+      return result || { status: 500, message: 'Failed to resend email' };
+    }
+    if (mailConfig.mailProvider === 'brevo') {
+      const result = await sendBrevoMail({
+        settings: mailConfig,
+        mailTo,
+        bcc: filteredBcc,
+        htmlContent,
+        eventTitle,
+      });
+      return result || { status: 500, message: 'Failed to resend email' };
+    }
+
+    // Add a default return statement for unexpected mail types
+    return { status: 400, message: 'Invalid mail type specified' };
+  } catch (err: unknown) {
+    return {
+      status: 500,
+      message: err instanceof Error ? err.message : 'Unknown error occurred',
+    };
   }
 };
