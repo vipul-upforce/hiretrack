@@ -11,6 +11,7 @@ interface NotificationSSEClient {
 }
 
 declare global {
+  // eslint-disable-next-line no-var, vars-on-top
   var sseNotificationClients: Map<string, Map<number, NotificationSSEClient>>;
 }
 
@@ -23,7 +24,7 @@ export function broadcastCandidateUpdate(
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
-  orgClients?.forEach(async (client: any) => {
+  orgClients?.forEach(async (client: NotificationSSEClient) => {
     try {
       const encodedSSE = await signToken(candidate, orgId);
       const data = `data: ${JSON.stringify({ type: 'candidateUpdate', candidate: encodedSSE })}\n\n`;
@@ -47,7 +48,7 @@ export function broadcastMultipleCandidateUpdate(
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
-  orgClients?.forEach(async (client: any) => {
+  orgClients?.forEach(async (client: NotificationSSEClient) => {
     try {
       const encodedSSE = await signToken(candidates, orgId);
       const data = `data: ${JSON.stringify({ type: 'multipleCandidateUpdate', candidates: encodedSSE })}\n\n`;
@@ -66,9 +67,9 @@ export function broadcastLaneUpdate(
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
-  orgClients?.forEach((client: any) => {
+  orgClients?.forEach((client: NotificationSSEClient) => {
     try {
-      const data = `data: ${JSON.stringify({ type: 'lanesUpdate', lanes })}\n\n`;
+      const data = `data: ${JSON.stringify({ type: 'lanesUpdate', lanes, jobId })}\n\n`;
       const clientsCount = orgClients.size;
 
       client.controller.enqueue(encoder.encode(data));

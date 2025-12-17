@@ -177,6 +177,7 @@ export const useCandidate = ({
       await updateLanes({
         userId: user?.id || '',
         lanes: lansArray,
+        jobId: job?._id,
       }).unwrap();
     } catch (error: unknown) {
       if (error instanceof Error) {

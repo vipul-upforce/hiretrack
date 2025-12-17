@@ -3,6 +3,7 @@ import { Candidate } from '@/types/candidate';
 import logger from '@/lib/logger';
 import { getDecodedSSE } from './useSSE';
 
+// Singleton SSE connection manager
 type Subscriber = {
   id: string;
   onNotificationCountUpdated?: (count: number) => void;
@@ -10,7 +11,11 @@ type Subscriber = {
   onNotifications?: (notifications: string[]) => void;
   onCandidateUpdate?: (candidate: Candidate) => void;
   onMultipleCandidateUpdate?: (candidates: Candidate[]) => void;
-  onLanesUpdate?: (lanes: string[], jobId: string) => void;
+  onLanesUpdate?: (
+    lanes: string[],
+    jobIdData: string,
+    laneRenamedData: boolean,
+  ) => void;
   onClientsUpdate?: (clients: number) => void;
   onConnectionChange?: (connected: boolean) => void;
 };
@@ -21,6 +26,8 @@ class SSEManager {
   private subscribers: Map<string, Subscriber> = new Map();
 
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  private reconnectAttempts: number | null = null;
 
   private isConnecting = false;
 
@@ -35,6 +42,7 @@ class SSEManager {
     // Return unsubscribe function
     return () => {
       this.subscribers.delete(subscriber.id);
+      // If no more subscribers, close the connection
       if (this.subscribers.size === 0) {
         this.disconnect();
       }
@@ -69,50 +77,44 @@ class SSEManager {
       }
       this.isConnecting = false;
 
-      if (this.subscribers.size > 0 && !this.reconnectTimeout) {
+      // Reconnect if we still have subscribers
+      if (!this.reconnectAttempts) this.reconnectAttempts = 0;
+      if (
+        this.subscribers.size > 0 &&
+        !this.reconnectTimeout &&
+        this.reconnectAttempts < 50
+      ) {
         this.reconnectTimeout = setTimeout(() => {
           this.reconnectTimeout = null;
+          this.reconnectAttempts! += 1;
           this.connect();
-        }, 100);
+        }, 1000);
       }
+      // If successful connection occurs, elsewhere in `onopen` remember to reset `this.reconnectAttempts = 0`
     };
   }
 
-  private async handleMessage(data: unknown) {
-    type EventData =
-      | { type: 'notificationCountUpdated'; count: number }
-      | { type: 'notification'; notification: string }
-      | { type: 'notifications'; notifications: string[] }
-      | { type: 'candidateUpdate'; candidate: unknown }
-      | { type: 'multipleCandidateUpdate'; candidates: unknown }
-      | { type: 'lanesUpdate'; lanes: string[]; jobId: string }
-      | { type: 'clients'; clients: number }
-      | Record<string, unknown>;
-
-    const typed = data as EventData;
-
+  private async handleMessage(data: any) {
     if (
-      typed.type === 'notificationCountUpdated' &&
-      typeof typed.count === 'number'
+      data?.type === 'notificationCountUpdated' &&
+      typeof data.count === 'number'
     ) {
       this.subscribers.forEach((sub) => {
-        sub.onNotificationCountUpdated?.(typed.count as number);
+        sub.onNotificationCountUpdated?.(data.count);
       });
-      return;
     }
 
     if (
-      typed.type === 'notification' &&
-      typeof typed.notification === 'string'
+      data?.type === 'notification' &&
+      typeof data.notification === 'string'
     ) {
       this.subscribers.forEach((sub) => {
-        sub.onNotification?.(typed.notification as string);
+        sub.onNotification?.(data.notification);
       });
-      return;
     }
 
-    if (typed.type === 'notifications' && Array.isArray(typed.notifications)) {
-      const tokens: string[] = typed.notifications.filter(
+    if (data?.type === 'notifications' && Array.isArray(data.notifications)) {
+      const tokens: string[] = data.notifications.filter(
         (t: unknown) => typeof t === 'string',
       );
       if (tokens.length) {
@@ -120,22 +122,20 @@ class SSEManager {
           sub.onNotifications?.(tokens);
         });
       }
-      return;
     }
 
-    if (typed.type === 'candidateUpdate') {
-      const encodedCandidate = typed.candidate;
-      const updatedCandidate = await getDecodedSSE(encodedCandidate as string);
+    if (data.type === 'candidateUpdate') {
+      const encodedCandidate = data.candidate;
+      const updatedCandidate = await getDecodedSSE(encodedCandidate);
       if (updatedCandidate && updatedCandidate._id) {
         this.subscribers.forEach((sub) => {
           sub.onCandidateUpdate?.(updatedCandidate);
         });
       }
-      return;
     }
 
-    if (typed.type === 'multipleCandidateUpdate') {
-      const decodedCandidates = await getDecodedSSE(typed.candidates as string);
+    if (data.type === 'multipleCandidateUpdate') {
+      const decodedCandidates = await getDecodedSSE(data.candidates);
       if (decodedCandidates) {
         const updatedCandidates = Object.values(
           decodedCandidates,
@@ -144,25 +144,17 @@ class SSEManager {
           sub.onMultipleCandidateUpdate?.(updatedCandidates);
         });
       }
-      return;
     }
 
-    if (
-      typed.type === 'lanesUpdate' &&
-      Array.isArray(typed.lanes) &&
-      typeof typed.jobId === 'string'
-    ) {
-      const lanes = typed.lanes as string[];
-      const jobId = typed.jobId as string;
+    if (data.type === 'lanesUpdate') {
       this.subscribers.forEach((sub) => {
-        sub.onLanesUpdate?.(lanes, jobId);
+        sub.onLanesUpdate?.(data.lanes, data.jobId, data.laneRenamed);
       });
-      return;
     }
 
-    if (typed.type === 'clients' && typeof typed.clients === 'number') {
+    if (data.type === 'clients') {
       this.subscribers.forEach((sub) => {
-        sub.onClientsUpdate?.(typed.clients as number);
+        sub.onClientsUpdate?.(data.clients);
       });
     }
   }
@@ -193,13 +185,6 @@ class SSEManager {
 // Singleton instance
 const sseManager = new SSEManager();
 
-/**
- * Main notification SSE hook.
- * Returns jobId along with lanes so consuming hooks/components can determine scoping.
- *
- * @param initialUnreadCount - Initial unread notification count.
- * @param initialTotalCount - Initial total notification count.
- */
 export function useNotificationSSE(
   initialUnreadCount: number = 0,
   initialTotalCount: number = 0,
@@ -208,12 +193,13 @@ export function useNotificationSSE(
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [notification, setNotification] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<string[]>([]);
+  // Candidate update state
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [lanes, setLanes] = useState<string[] | undefined>(undefined);
-  const [lanesJobId, setLanesJobId] = useState<string | null>(null);
+  const [lanes, setLanes] = useState<string[]>();
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [laneRenamed, setLaneRenamed] = useState<boolean>(false);
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
-
   const subscriberIdRef = useRef<string>(
     `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
   );
@@ -261,11 +247,11 @@ export function useNotificationSSE(
     [],
   );
 
-  // This now gets both lanes and the jobId (from the SSE payload)
   const handleLanesUpdate = useCallback(
-    (lanesData: string[], jobId: string) => {
+    (lanesData: string[], jobIdData: string, laneRenamedData: boolean) => {
       setLanes(lanesData);
-      setLanesJobId(jobId);
+      setJobId(jobIdData);
+      setLaneRenamed(laneRenamedData);
     },
     [],
   );
@@ -324,6 +310,7 @@ export function useNotificationSSE(
     lanes,
     clients,
     isConnected,
-    jobId: lanesJobId,
+    jobId,
+    laneRenamed,
   };
 }

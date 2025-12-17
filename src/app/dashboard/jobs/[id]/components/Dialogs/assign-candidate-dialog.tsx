@@ -19,15 +19,14 @@ import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings/setting
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import dayjs from 'dayjs';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store';
 import { Interviewer } from '@/app/dashboard/calendar/types';
 import { FileAttachment } from '@/lib/fileUtils';
+import { useAppSelector } from '@/lib/redux/hooks';
 import {
   validationSchema,
   FormValues,
-  User,
   AssignCandidateDialogProps,
+  User,
 } from '../../schemas/AssignCandidateSchema';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
@@ -51,7 +50,7 @@ export function AssignCandidateDialog({
   const [cancelNotes, setCancelNotes] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const { user } = useSelector((state: RootState) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery();
   const { data: googleCalendarData } =
@@ -312,7 +311,7 @@ export function AssignCandidateDialog({
                       />
 
                       <AssignmentDetailsSection
-                        user={user}
+                        user={user as User}
                         candidate={candidate}
                         getOnAltEnterSubmit={getOnAltEnterSubmit}
                         isSubmitting={isSubmitting}

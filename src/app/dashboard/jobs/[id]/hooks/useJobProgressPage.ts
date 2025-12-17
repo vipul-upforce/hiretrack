@@ -1,26 +1,30 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import {
   useFetchJobByIdQuery,
   useUpdateJobMutation,
-} from "@/lib/features/job/jobApi";
-import { useFetchCandidatesQuery } from "@/lib/features/candidate/candidateApi";
+} from '@/lib/features/job/jobApi';
+import { useFetchCandidatesQuery } from '@/lib/features/candidate/candidateApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 import {
   useGetLanesQuery,
   useGetJobLanesQuery,
-} from "@/lib/features/lane/laneApi";
-import { useGetJobLaneConfigQuery } from "@/lib/features/checklist/checklistApi";
-import { Candidate, CandidateColumn, CandidateStatus } from "@/types/candidate";
-import { initialCandidateColumns } from "../data/initial-data";
-import { useSSE } from "@/hooks/useSSE";
-import { useKanbanBoard } from "./useKanbanBoard";
-import { useDragToScroll } from "./useDragToScroll";
-import { useCandidate } from "./useCandidate";
+} from '@/lib/features/lane/laneApi';
+import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
+import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
+import { useSSE } from '@/hooks/useSSE';
+import {
+  CustomCalendarEvent,
+  Interviewer,
+} from '@/app/dashboard/calendar/types';
+import { initialCandidateColumns } from '../data/initial-data';
+import { useKanbanBoard } from './useKanbanBoard';
+import { useDragToScroll } from './useDragToScroll';
+import { useCandidate } from './useCandidate';
 
 export interface FilterState {
   search: string;
-  logicalOperator: "AND" | "OR";
+  logicalOperator: 'AND' | 'OR';
   topCandidates: boolean;
   appliedThisWeek: boolean;
   appliedToday: boolean;
@@ -36,36 +40,36 @@ export const useJobProgressPage = () => {
   const id = useParams()?.id as string;
   const searchParams = useSearchParams();
   const router = useRouter();
-  const candidateIdParam = searchParams.get("candidateId");
-  const { user } = useSelector((state: any) => state.auth || {});
+  const candidateIdParam = searchParams?.get('candidateId');
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // State management
   const [columns, setColumns] = useState<CandidateColumn[]>(
-    initialCandidateColumns
+    initialCandidateColumns,
   );
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null
+    null,
   );
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [candidateToDelete, setCandidateToDelete] = useState<string | null>(
-    null
+    null,
   );
   const [isConfirmLaneDeleteOpen, setIsConfirmLaneDeleteOpen] = useState(false);
   const [laneToEdit, setLaneToEdit] = useState<string | null>(null);
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
-    null
+    null,
   );
   const [isChecklistConfigOpen, setIsChecklistConfigOpen] = useState(false);
   const [checklistConfigLane, setChecklistConfigLane] = useState<{
     laneId: string;
     laneName: string;
-    initialTab?: "incoming" | "outgoing";
+    initialTab?: 'incoming' | 'outgoing';
   } | null>(null);
   const [filterConditions, setFilterConditions] = useState<FilterState | null>(
-    null
+    null,
   );
   const [droppedFileData, setDroppedFileData] = useState<File | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -86,10 +90,12 @@ export const useJobProgressPage = () => {
 
   // SSE for real-time updates
   const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
-    user?.role || "",
-    setSelectedCandidate,
+    user?.role || '',
+    setSelectedCandidate as (
+      candidate: Candidate | CustomCalendarEvent | null,
+    ) => void,
     selectedCandidate,
-    id
+    id,
   );
 
   // API queries
@@ -110,15 +116,14 @@ export const useJobProgressPage = () => {
 
   const [updateJob, { isLoading }] = useUpdateJobMutation();
 
-  const {
-    data: jobLanes,
-    isLoading: isJobLanesLoading,
-    error: jobLanesError,
-  } = useGetJobLanesQuery(id as string, { skip: !id });
+  const { data: jobLanes, isLoading: isJobLanesLoading } = useGetJobLanesQuery(
+    id as string,
+    { skip: !id },
+  );
 
   const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
     { userId: user?.id, jobId: id as string },
-    { skip: !user?.id || !id }
+    { skip: !user?.id || !id },
   );
 
   const lanes = jobLanes || userLanes;
@@ -181,7 +186,7 @@ export const useJobProgressPage = () => {
   // Merge candidates from query and SSE
   const mergedCandidates = useMemo(() => {
     const candidateMap = new Map<string, Candidate>(
-      candidatesFromQuery?.map((c) => [c._id, c]) || []
+      candidatesFromQuery?.map((c) => [c._id, c]) || [],
     );
 
     sseCandidates.forEach((sseCandidate) => {
@@ -196,12 +201,12 @@ export const useJobProgressPage = () => {
     (
       laneId: string,
       laneName: string,
-      initialTab?: "incoming" | "outgoing"
+      initialTab?: 'incoming' | 'outgoing',
     ) => {
       setChecklistConfigLane({ laneId, laneName, initialTab });
       setIsChecklistConfigOpen(true);
     },
-    []
+    [],
   );
 
   // Handle candidate details dialog close - clean up URL parameter
@@ -209,13 +214,13 @@ export const useJobProgressPage = () => {
     (open: boolean) => {
       setIsDetailsOpen(open);
       if (!open && candidateIdParam) {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("candidateId");
-        const newUrl = params.toString() ? `?${params.toString()}` : "";
+        const params = new URLSearchParams(searchParams?.toString());
+        params.delete('candidateId');
+        const newUrl = params.toString() ? `?${params.toString()}` : '';
         router.replace(`/dashboard/jobs/${id}${newUrl}`, { scroll: false });
       }
     },
-    [candidateIdParam, searchParams, router, id]
+    [candidateIdParam, searchParams, router, id],
   );
 
   // Handle prompt confirmation
@@ -226,8 +231,7 @@ export const useJobProgressPage = () => {
         ...job,
         promptForStatusChangeReason: pendingPromptValue,
       });
-    } catch (error) {
-      console.error("Failed to update job:", error);
+    } catch {
       setPromptForStatusChangeReason(!pendingPromptValue);
     }
     setIsPromptConfirmOpen(false);
@@ -244,7 +248,7 @@ export const useJobProgressPage = () => {
   useEffect(() => {
     if (candidateIdParam && candidatesFromQuery && !selectedCandidate) {
       const candidate = candidatesFromQuery.find(
-        (c) => c._id === candidateIdParam
+        (c) => c._id === candidateIdParam,
       );
       if (candidate) {
         setSelectedCandidate(candidate);
@@ -267,10 +271,10 @@ export const useJobProgressPage = () => {
             const matchesSearch =
               candidate.name.toLowerCase().includes(searchLower) ||
               candidate.skills.some((skill) =>
-                skill.toLowerCase().includes(searchLower)
+                skill.toLowerCase().includes(searchLower),
               ) ||
               candidate.experience.toString().includes(searchLower) ||
-              (candidate.assignment?.interviewerId as any)?.name
+              (candidate.assignment?.interviewerId as Interviewer)?.name
                 ?.toLowerCase()
                 .includes(searchLower) ||
               candidate.location.toLowerCase().includes(searchLower);
@@ -280,76 +284,72 @@ export const useJobProgressPage = () => {
           // Apply other filters
           const activeFilters = [
             {
-              key: "topCandidates",
-              filter: (candidate: Candidate) =>
-                candidate.scores?.overall && candidate.scores.overall >= 7,
+              key: 'topCandidates',
+              filter: (c: Candidate) =>
+                c.scores?.overall && c.scores.overall >= 7,
             },
             {
-              key: "appliedThisWeek",
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              key: 'appliedThisWeek',
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                return new Date(candidate.tracking.createdAt) >= oneWeekAgo;
+                return new Date(c.tracking.createdAt) >= oneWeekAgo;
               },
             },
             {
-              key: "appliedToday",
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              key: 'appliedToday',
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 return (
-                  new Date(candidate.tracking.createdAt) >= today &&
-                  new Date(candidate.tracking.createdAt) < tomorrow
+                  new Date(c.tracking.createdAt) >= today &&
+                  new Date(c.tracking.createdAt) < tomorrow
                 );
               },
             },
             {
-              key: "appliedIn15Days",
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              key: 'appliedIn15Days',
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const fifteenDaysAgo = new Date();
                 fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-                return new Date(candidate.tracking.createdAt) >= fifteenDaysAgo;
+                return new Date(c.tracking.createdAt) >= fifteenDaysAgo;
               },
             },
             {
-              key: "toFollowUp",
-              filter: (candidate: Candidate) =>
-                candidate.followUp && candidate.followUp.note,
+              key: 'toFollowUp',
+              filter: (c: Candidate) => c.followUp && c.followUp.note,
             },
             {
-              key: "assigned",
-              filter: (candidate: Candidate) => candidate.assignment,
+              key: 'assigned',
+              filter: (c: Candidate) => c.assignment,
             },
             {
-              key: "notAssigned",
-              filter: (candidate: Candidate) => !candidate.assignment,
+              key: 'notAssigned',
+              filter: (c: Candidate) => !c.assignment,
             },
             {
-              key: "withRemarks",
-              filter: (candidate: Candidate) =>
-                candidate.remarks && candidate.remarks.length > 0,
+              key: 'withRemarks',
+              filter: (c: Candidate) => c.remarks && c.remarks.length > 0,
             },
             {
-              key: "withoutRemarks",
-              filter: (candidate: Candidate) =>
-                !candidate.remarks || candidate.remarks.length === 0,
+              key: 'withoutRemarks',
+              filter: (c: Candidate) => !c.remarks || c.remarks.length === 0,
             },
           ].filter(
             (filter) =>
-              filterConditions[filter.key as keyof FilterState] === true
+              filterConditions[filter.key as keyof FilterState] === true,
           );
 
           if (activeFilters.length > 0) {
-            if (filterConditions.logicalOperator === "AND") {
+            if (filterConditions.logicalOperator === 'AND') {
               return activeFilters.every(({ filter }) => filter(candidate));
-            } else {
-              return activeFilters.some(({ filter }) => filter(candidate));
             }
+            return activeFilters.some(({ filter }) => filter(candidate));
           }
 
           return true;
@@ -358,7 +358,7 @@ export const useJobProgressPage = () => {
 
       // Apply archived filter
       currentCandidates = currentCandidates.filter(
-        (candidate) => showArchived || !candidate.isDeleted
+        (candidate) => showArchived || !candidate.isDeleted,
       );
 
       // Handle different lane data structures
@@ -371,12 +371,12 @@ export const useJobProgressPage = () => {
         lanesArray = [...userLanes.lanes];
       } else {
         lanesArray = [
-          "applied",
-          "screening",
-          "shortlisted",
-          "processing",
-          "accepted",
-          "rejected",
+          'applied',
+          'screening',
+          'shortlisted',
+          'processing',
+          'accepted',
+          'rejected',
         ];
       }
 
@@ -395,19 +395,28 @@ export const useJobProgressPage = () => {
         const candidates = currentCandidates.filter(
           (candidate) =>
             candidate.status === lane &&
-            (showArchived ? candidate.isDeleted : !candidate.isDeleted)
+            (showArchived ? candidate.isDeleted : !candidate.isDeleted),
         );
 
         return {
           id: lane as CandidateStatus,
           title: column?.title || lane,
-          candidates: candidates,
+          candidates,
         } as CandidateColumn;
       });
 
       setColumns(updatedColumns);
     }
-  }, [mergedCandidates, lanes, updatedLanes, showArchived, filterConditions, candidatesFromQuery, jobLanes, userLanes]);
+  }, [
+    mergedCandidates,
+    lanes,
+    updatedLanes,
+    showArchived,
+    filterConditions,
+    candidatesFromQuery,
+    jobLanes,
+    userLanes,
+  ]);
 
   // Effect: Track initial lane to edit
   useEffect(() => {
@@ -532,4 +541,3 @@ export const useJobProgressPage = () => {
     cancelPendingMove,
   };
 };
-

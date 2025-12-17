@@ -113,7 +113,7 @@ export function GoogleMeetIntegration({
 
   const hasExistingMeet = !!candidate.assignment?.googleMeet?.eventId;
 
-  if (!googleCalendarData?.googleCalendar?.isConnected) {
+  if (!googleCalendarData?.isConnected) {
     return null;
   }
 
@@ -158,15 +158,15 @@ export function GoogleMeetIntegration({
           <div className="space-y-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-gray-800 dark:bg-black">
             <div className="text-sm text-blue-900 dark:text-blue-500">
               <p className="font-medium">
-                {candidate.assignment?.googleMeet.summary}
+                {candidate.assignment?.googleMeet?.summary}
               </p>
               <p className="mt-1 text-xs text-blue-700 dark:text-blue-600">
-                {candidate.assignment?.googleMeet.description?.split('\n')[0]}
+                {candidate.assignment?.googleMeet?.description?.split('\n')[0]}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <a
-                href={candidate.assignment?.googleMeet.meetingLink}
+                href={candidate.assignment?.googleMeet?.meetingLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs text-blue-600 underline hover:text-blue-700 dark:text-blue-200"
