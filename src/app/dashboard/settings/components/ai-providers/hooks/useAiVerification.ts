@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AIProviderType } from '@/lib/ai-providers';
 import { getDefaultModel } from '@/lib/ai-providers/models-config';
-import { useValidateAiProviderMutation } from '@/lib/features/settings/settingsApi';
+import { useValidateAiProviderMutation } from '@/lib/features/settings';
 
 export const useAiVerification = () => {
   const [verificationStatus, setVerificationStatus] = useState<

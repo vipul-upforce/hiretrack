@@ -1,19 +1,17 @@
 'use client';
 
-import React, {
-  useState, useEffect, useRef, useCallback,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Eye, EyeOff, Mail, Lock, Building2, Sparkles,
-} from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Building2, Sparkles } from 'lucide-react';
 import { cx } from '@/lib/cx';
 import { useRouter } from 'next/navigation';
 import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
 import { useTheme } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import Image from 'next/image';
-import OrganizationDialog, { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import OrganizationDialog, {
+  OneOfMulOrganization,
+} from '@/components/auth/OrganizationDialog';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import { LoginFormValues } from '@/types/login';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -22,7 +20,7 @@ import { useSelector } from 'react-redux';
 import {
   useGetCaptchaConfigsQuery,
   useGetPortalConfigsQuery,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import LoadingScreen from '@/app/loading-screen';
@@ -76,12 +74,16 @@ export function AnimatedGridPattern({
   }
 
   const updateSquarePosition = (id: number) => {
-    setSquares((currentSquares) => currentSquares.map((sq) => (sq.id === id
-      ? {
-        ...sq,
-        pos: getPos(),
-      }
-      : sq)));
+    setSquares((currentSquares) =>
+      currentSquares.map((sq) =>
+        sq.id === id
+          ? {
+              ...sq,
+              pos: getPos(),
+            }
+          : sq,
+      ),
+    );
   };
 
   useEffect(() => {
@@ -224,7 +226,10 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
       }
 
       return {
-        cols, rows, squares, dpr,
+        cols,
+        rows,
+        squares,
+        dpr,
       };
     },
     [squareSize, gridGap, maxOpacity],
@@ -338,7 +343,7 @@ export const FlickeringGrid: React.FC<FlickeringGridProps> = ({
   }, [setupCanvas, updateSquares, drawGrid, width, height, isInView]);
 
   return (
-    <div ref={containerRef} className={`w-full h-full ${className}`}>
+    <div ref={containerRef} className={`h-full w-full ${className}`}>
       <canvas
         ref={canvasRef}
         className="pointer-events-none"
@@ -463,8 +468,10 @@ export default function LoginFormContent({
     if (!portalConfig) return;
 
     try {
-      if (portalConfig.portalLogo?.url) setPortalLogo(portalConfig.portalLogo.url);
-      if (portalConfig.portalLogoDark?.url) setPortalLogoDark(portalConfig.portalLogoDark.url);
+      if (portalConfig.portalLogo?.url)
+        setPortalLogo(portalConfig.portalLogo.url);
+      if (portalConfig.portalLogoDark?.url)
+        setPortalLogoDark(portalConfig.portalLogoDark.url);
       if (portalConfig.portalFavicon?.url) {
         setPortalFavicon(portalConfig.portalFavicon.url);
         const favicon = document.querySelector(
@@ -480,7 +487,8 @@ export default function LoginFormContent({
         }
       }
       if (portalConfig.primaryColor) setPrimaryColor(portalConfig.primaryColor);
-      if (portalConfig.secondaryColor) setSecondaryColor(portalConfig.secondaryColor);
+      if (portalConfig.secondaryColor)
+        setSecondaryColor(portalConfig.secondaryColor);
       if (portalConfig.portalName) {
         setPortalName(portalConfig.portalName);
         document.title = portalConfig.portalName;
@@ -495,7 +503,8 @@ export default function LoginFormContent({
   }, [portalConfig]);
 
   // Get default logo based on theme
-  const getDefaultLogo = () => (theme === 'dark' ? '/logo_dark.png' : '/logo.png');
+  const getDefaultLogo = () =>
+    theme === 'dark' ? '/logo_dark.png' : '/logo.png';
 
   // Get logo URL with fallback
   const getLogoUrl = () => {
@@ -507,7 +516,8 @@ export default function LoginFormContent({
     // Use appropriate logo based on theme
     if (theme === 'dark' && portalLogoDark) {
       return portalLogoDark;
-    } if (portalLogo) {
+    }
+    if (portalLogo) {
       return portalLogo;
     }
 
@@ -561,7 +571,7 @@ export default function LoginFormContent({
   const appVersion = packageJson.version;
 
   return (
-    <div className="min-h-screen w-full bg-background relative overflow-hidden flex items-center justify-center p-4">
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-4">
       {/* Animated Background */}
       <div className="absolute inset-0">
         <AnimatedGridPattern
@@ -586,13 +596,13 @@ export default function LoginFormContent({
 
       {/* Gradient Orbs */}
       <div
-        className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full blur-3xl animate-pulse"
+        className="absolute left-1/4 top-1/4 h-72 w-72 animate-pulse rounded-full blur-3xl"
         style={{
           background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20)`,
         }}
       />
       <div
-        className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse delay-1000"
+        className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full blur-3xl delay-1000"
         style={{
           background: `linear-gradient(225deg, ${secondaryColor}15, ${primaryColor}15)`,
         }}
@@ -600,7 +610,7 @@ export default function LoginFormContent({
 
       {/* Theme Toggle in top right corner */}
       <div
-        className="absolute top-4 right-4"
+        className="absolute right-4 top-4"
         style={{
           zIndex: 999,
         }}
@@ -608,23 +618,23 @@ export default function LoginFormContent({
         <ThemeToggle
           variant="ghost"
           size="icon"
-          className="h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-sm hover:bg-background/90"
+          className="h-10 w-10 rounded-full border border-border bg-background/80 shadow-sm backdrop-blur-sm hover:bg-background/90"
         />
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto lg:grid lg:grid-cols-2 gap-8 items-center">
+      <div className="relative z-10 mx-auto w-full max-w-6xl items-center gap-8 lg:grid lg:grid-cols-2">
         {/* Left Side - Branding */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center lg:text-left space-y-6 lg:mb-0 mb-6 max-sm:-mt-4"
+          className="mb-6 space-y-6 text-center max-sm:-mt-4 lg:mb-0 lg:text-left"
         >
           <div className="space-y-6 max-sm:space-y-0">
             {/* Logo Section */}
-            <div className="flex justify-center lg:justify-start max-sm:pt-8">
-              <div className="relative w-72 max-sm:w-64 h-36">
+            <div className="flex justify-center max-sm:pt-8 lg:justify-start">
+              <div className="relative h-36 w-72 max-sm:w-64">
                 <Image
                   src={getLogoUrl()}
                   alt={portalName || (portalError ? 'HireTrack' : '')}
@@ -635,7 +645,7 @@ export default function LoginFormContent({
               </div>
             </div>
 
-            <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            <h1 className="bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-4xl font-bold text-transparent lg:text-6xl">
               Smart Hiring
               <br />
               <span
@@ -653,13 +663,13 @@ export default function LoginFormContent({
               </span>
             </h1>
 
-            <p className="text-lg text-muted-foreground max-w-md mx-auto lg:mx-0 max-sm:pt-4">
+            <p className="mx-auto max-w-md text-lg text-muted-foreground max-sm:pt-4 lg:mx-0">
               Revolutionize your recruitment process with AI-powered candidate
               matching and intelligent screening.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
+          <div className="flex flex-wrap justify-center gap-4 lg:justify-start">
             {['AI Matching', 'Smart Screening', 'Analytics'].map(
               (feature, index) => (
                 <motion.div
@@ -667,10 +677,10 @@ export default function LoginFormContent({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-2 px-3 py-1 bg-background/50 backdrop-blur-sm rounded-full border border-border/50"
+                  className="flex items-center gap-2 rounded-full border border-border/50 bg-background/50 px-3 py-1 backdrop-blur-sm"
                 >
                   <Sparkles
-                    className="w-4 h-4"
+                    className="h-4 w-4"
                     style={{ color: primaryColor }}
                   />
                   <span className="text-sm">{feature}</span>
@@ -693,7 +703,7 @@ export default function LoginFormContent({
           {/* Hover Effect */}
           {isHovering && (
             <motion.div
-              className="absolute pointer-events-none w-96 h-96 rounded-full blur-3xl"
+              className="pointer-events-none absolute h-96 w-96 rounded-full blur-3xl"
               style={{
                 background: `linear-gradient(135deg, ${primaryColor}20, ${secondaryColor}20, ${primaryColor}15)`,
                 transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
@@ -702,14 +712,14 @@ export default function LoginFormContent({
             />
           )}
 
-          <div className="relative bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl p-8 shadow-2xl max-lg:w-[60vw] w-full justify-self-center max-md:w-full">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">Welcome </h2>
+          <div className="relative w-full justify-self-center rounded-2xl border border-border/50 bg-card/80 p-8 shadow-2xl backdrop-blur-xl max-lg:w-[60vw] max-md:w-full">
+            <div className="mb-8 text-center">
+              <h2 className="mb-2 text-2xl font-bold">Welcome </h2>
 
               {selectedOrg && (
                 <div className="mt-2">
                   <span
-                    className="text-lg font-medium cursor-pointer"
+                    className="cursor-pointer text-lg font-medium"
                     style={{
                       color: primaryColor,
                       animation: selectedOrg
@@ -735,19 +745,23 @@ export default function LoginFormContent({
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Company Name</label>
                   <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Building2 className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-muted-foreground" />
                     <input
                       type="text"
                       value={formData.companyName}
-                      onChange={(e) => handleInputChange('companyName', e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
+                      onChange={(e) =>
+                        handleInputChange('companyName', e.target.value)
+                      }
+                      className="w-full rounded-lg border border-border bg-background/50 py-3 pl-10 pr-4 transition-all focus:border-current focus:outline-none focus:ring-2"
                       style={
                         {
                           '--tw-ring-color': `${primaryColor}50`,
                           '--tw-border-opacity': '1',
                         } as React.CSSProperties
                       }
-                      onFocus={(e) => (e.target.style.borderColor = primaryColor)}
+                      onFocus={(e) =>
+                        (e.target.style.borderColor = primaryColor)
+                      }
                       onBlur={(e) => (e.target.style.borderColor = '')}
                       placeholder="Enter your company name"
                     />
@@ -758,12 +772,12 @@ export default function LoginFormContent({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-muted-foreground" />
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
+                    className="w-full rounded-lg border border-border bg-background/50 py-3 pl-10 pr-4 transition-all focus:border-current focus:outline-none focus:ring-2"
                     style={
                       {
                         '--tw-ring-color': `${primaryColor}50`,
@@ -781,12 +795,14 @@ export default function LoginFormContent({
               <div className="space-y-2">
                 <label className="text-sm font-medium">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-muted-foreground" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={formData.password}
-                    onChange={(e) => handleInputChange('password', e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 bg-background/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:border-current transition-all"
+                    onChange={(e) =>
+                      handleInputChange('password', e.target.value)
+                    }
+                    className="w-full rounded-lg border border-border bg-background/50 py-3 pl-10 pr-12 transition-all focus:border-current focus:outline-none focus:ring-2"
                     style={
                       {
                         '--tw-ring-color': `${primaryColor}50`,
@@ -801,12 +817,12 @@ export default function LoginFormContent({
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transform text-muted-foreground transition-colors hover:text-foreground"
                   >
                     {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
+                      <EyeOff className="h-5 w-5" />
                     ) : (
-                      <Eye className="w-5 h-5" />
+                      <Eye className="h-5 w-5" />
                     )}
                   </button>
                 </div>
@@ -825,7 +841,7 @@ export default function LoginFormContent({
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 cursor-pointer">
+                <label className="flex cursor-pointer items-center space-x-2">
                   <input type="checkbox" className="rounded border-border" />
                   <span className="text-sm text-muted-foreground">
                     Remember me
@@ -844,21 +860,21 @@ export default function LoginFormContent({
               <motion.button
                 type="submit"
                 disabled={
-                  isLoading
-                  || isSubmitting
-                  || (captchaConfig?.captcha?.enableCaptcha && !captcha)
+                  isLoading ||
+                  isSubmitting ||
+                  (captchaConfig?.captcha?.enableCaptcha && !captcha)
                 }
-                className="w-full text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
+                className="group relative w-full overflow-hidden rounded-lg py-3 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{
                   background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`,
                 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-1000 group-hover:translate-x-[100%]" />
                 {isLoading || isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Signing in...
                   </div>
                 ) : (
@@ -885,11 +901,10 @@ export default function LoginFormContent({
       )}
       {/* App version in bottom right corner */}
       <div
-        className="fixed bottom-2 right-4 text-xs text-gray-400 select-none pointer-events-none z-50"
+        className="pointer-events-none fixed bottom-2 right-4 z-50 select-none text-xs text-gray-400"
         aria-label="App Version"
       >
-        v
-        {appVersion}
+        v{appVersion}
       </div>
     </div>
   );

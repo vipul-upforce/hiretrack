@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
 import PortalHead from '@/components/layouts/PortalHead';
 import { useTheme } from '@/components/theme-provider';
@@ -113,15 +113,14 @@ export default function DashboardLayout({
     refetch,
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
-  const {
-    data: allowanceData,
-  } = useGetOrganizationAllowanceQuery();
+  const { data: allowanceData } = useGetOrganizationAllowanceQuery();
 
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
   const router = useRouter();
   // Notification hooks
   const [notificationPage, setNotificationPage] = useState(1);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
+    useState(false);
   const {
     data: notificationsData,
     isLoading: notificationsLoading,
@@ -153,11 +152,11 @@ export default function DashboardLayout({
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
       // userData?.role === "interviewer" &&
-      (notification.relatedEntity === 'candidate'
-        || notification.relatedEntity === 'followup'
-        || notification.relatedEntity === 'checklist'
-        || notification.relatedEntity === 'meeting')
-      && notification.relatedId
+      (notification.relatedEntity === 'candidate' ||
+        notification.relatedEntity === 'followup' ||
+        notification.relatedEntity === 'checklist' ||
+        notification.relatedEntity === 'meeting') &&
+      notification.relatedId
     ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
@@ -201,16 +200,16 @@ export default function DashboardLayout({
   useEffect(() => {
     if (orgCheckData && !orgCheckData.exists) {
       triggerLogout().then(() => {
-        router.push("/auth/login");
+        router.push('/auth/login');
       });
     }
   }, [orgCheckData, triggerLogout, dispatch, router]);
 
   useEffect(() => {
     if (
-      totalCount >= 0
-      && notificationCountData
-      && totalCount !== notificationCountData.totalCount
+      totalCount >= 0 &&
+      notificationCountData &&
+      totalCount !== notificationCountData.totalCount
     ) {
       // refetch notification when unread count changes to display latest notifications
       fetchNotifications();
@@ -266,7 +265,6 @@ export default function DashboardLayout({
     try {
       await triggerLogout().unwrap();
     } catch (error) {
-      console.error('Logout failed', error);
       logger.error('Logout failed', error);
     }
     setUserData(null);
@@ -371,10 +369,10 @@ export default function DashboardLayout({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
       : null;
   };
 
@@ -448,11 +446,11 @@ export default function DashboardLayout({
 
   return (
     <OnboardingProvider>
-      <div className="w-full max-w-full flex" style={{ overflowX: 'hidden' }}>
+      <div className="flex w-full max-w-full" style={{ overflowX: 'hidden' }}>
         <PortalHead isLoading />
         <aside
           className={cn(
-            'hidden h-screen border-r bg-background md:block transition-all duration-300',
+            'hidden h-screen border-r bg-background transition-all duration-300 md:block',
             isCollapsed ? 'w-[70px]' : 'w-[240px]',
           )}
         >
@@ -485,7 +483,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden fixed left-4 top-4 z-40"
+              className="fixed left-4 top-4 z-40 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -516,8 +514,8 @@ export default function DashboardLayout({
             />
           </SheetContent>
         </Sheet>
-        <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
-          <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
+        <main className="h-[100dvh] w-full overflow-x-hidden overflow-y-hidden">
+          <div className="mx-auto max-w-[100%] overflow-x-hidden overflow-y-hidden">
             <NotificationsProvider
               notifications={notificationsData?.notifications || []}
               isLoading={notificationsLoading}

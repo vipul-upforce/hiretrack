@@ -9,7 +9,7 @@ import * as Yup from 'yup';
 import {
   useGetGeminiConfigsQuery,
   useUpdateGeminiMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import React from 'react';
 
 export interface PortalLogo {

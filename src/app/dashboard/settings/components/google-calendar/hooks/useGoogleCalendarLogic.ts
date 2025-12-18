@@ -5,7 +5,7 @@ import {
   useUpdateGoogleCalendarMutation,
   useDisconnectGoogleCalendarMutation,
   useTestGoogleCalendarConnectionMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { CredentialsFormData, TestResult } from '../types';
 
 export function useGoogleCalendarLogic() {

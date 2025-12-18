@@ -32,8 +32,8 @@ async function handleSignup(req: NextRequest) {
     }
     // Check if user already exists in the same organization
     const existingUser =
-      (await User.findOne({ email, organizationId:orgId })) ||
-      (await CandidateAccount?.findOne({ email, orgId }));
+      (await User.findOne({ email, organizationId: orgId })) ||
+      (await CandidateAccount?.findOne({ email, organizationId: orgId }));
 
     if (existingUser) {
       if (existingUser.isDeleted) {

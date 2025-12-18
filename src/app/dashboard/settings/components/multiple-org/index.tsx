@@ -7,7 +7,7 @@ import logger from '@/lib/logger';
 import {
   useGetMultipleOrgConfigsQuery,
   useUpdateMultipleOrgMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
 import MultipleOrgLoadingSkeleton from './loading-skeleton';
 import MultipleOrgForm from './multiple-org-form';

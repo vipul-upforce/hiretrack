@@ -7,7 +7,7 @@ import { FolderIcon, Loader, LucideDownload } from 'lucide-react';
 import {
   useFetchAssetsMetadataQuery,
   useDownloadAssetsMutation, // Import the new hook
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import logger from '@/lib/logger';
 import AssetsLoadingSkeleton from './loading-skeleton';
 

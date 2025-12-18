@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useFetchOpenJobQuery } from '@/lib/features/job/jobApi';
 import { useToast } from '@/hooks/use-toast';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import { useFetchAppliedApplicationQuery } from '@/lib/features/candidate/candidateApi';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import type { SerializedError } from '@reduxjs/toolkit';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
 import logger from '@/lib/logger';
@@ -22,7 +22,6 @@ import { JobGrid } from './components/job-grid';
 import { ErrorState } from './components/error-state';
 import JobModal from './JobModal';
 
-import { useRouter } from "next/navigation";
 interface Job {
   _id: string;
   title: string;
@@ -250,7 +249,7 @@ export default function ApplyJobsContent({
           variant: 'destructive',
         });
         triggerLogout().then(() => {
-          router.push("/auth/login");
+          router.push('/auth/login');
         });
       }
     } else {

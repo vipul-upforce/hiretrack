@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import {
   useGetAIProvidersConfigsQuery,
   useGetPortalConfigsQuery,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import AIProvidersForm from './components/ai-providers-form';
 import { AIProvidersValues } from './types';
 import { getModelDisplayValue } from './utils';

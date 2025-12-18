@@ -3,7 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   useGetEvaluationConfigsQuery,
   useUpdateEvaluationConfigsMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { EvaluationConfig, EvaluationConfigKey } from '../types';
 import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PAGES } from '../constants';
 

@@ -5,7 +5,7 @@ import logger from '@/lib/logger';
 import {
   useGetCaptchaConfigsQuery,
   useUpdateCaptchaMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
 import { CaptchaValues } from './types';
 

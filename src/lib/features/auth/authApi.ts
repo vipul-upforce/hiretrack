@@ -2,7 +2,7 @@ import { baseApi } from '@/lib/api/baseApi';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
 import { NextResponse } from 'next/server';
-import { ILocalUser, logout } from '@/lib/redux/authSlice';
+import { fetchUserFromToken, ILocalUser, logout } from '@/lib/redux/authSlice';
 import logger from '@/lib/logger';
 
 interface AuthRequest {
@@ -115,13 +115,20 @@ export const authApi = baseApi.injectEndpoints({
     }),
     refreshToken: builder.mutation<
       { message: string; refreshToken: string; licenseValid: boolean },
-      void // No body needed - uses httpOnly cookie
+      void
     >({
       query: () => ({
         url: '/auth/refresh',
         method: 'POST',
-        // No body - refresh token is in httpOnly cookie
       }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(fetchUserFromToken());
+        } catch (error) {
+          logger.error('Error fetching user from token : ', error);
+        }
+      },
     }),
     logoutUser: builder.mutation<{ message?: string }, void>({
       query: () => ({

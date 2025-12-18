@@ -16,7 +16,7 @@ import { Form, Formik } from 'formik';
 import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import {
   Data,
   editorOptions,

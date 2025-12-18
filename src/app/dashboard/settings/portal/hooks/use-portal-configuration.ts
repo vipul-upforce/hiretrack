@@ -1,23 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
+import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
+import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 import {
   useGetPortalConfigsQuery,
   useUpdatePortalConfigsMutation,
-} from '@/lib/features/settings/settingsApi';
-import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
-import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
-import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
-import logger from '@/lib/logger';
+} from '@/lib/features/settings';
 import { PortalSettings, FileUpload } from '../types';
 
 export function usePortalConfiguration() {
   const dispatch = useDispatch();
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
 
   const {
     data: portalData,
@@ -25,6 +23,7 @@ export function usePortalConfiguration() {
     isFetching: fetching,
     refetch,
   } = useGetPortalConfigsQuery(undefined);
+
   const { data: allowanceData } = useGetOrganizationAllowanceQuery();
 
   const [updatePortalConfigs, { isLoading: saving }] =
@@ -45,8 +44,9 @@ export function usePortalConfiguration() {
   const [footerHtml, setFooterHtml] = useState<string>('');
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState<boolean>(false);
 
-  // Helpers
   const loadPortalData = (data: any) => {
+    if (!data) return;
+
     setSettings({
       portalName: data.portalName || '',
       portalLogo: data.portalLogo || null,
@@ -64,6 +64,7 @@ export function usePortalConfiguration() {
         .then((html) => setHeaderHtml(html))
         .catch((err) => logger.error('Failed to load header HTML:', err));
     }
+
     if (data.portalFooter?.url) {
       fetch(data.portalFooter.url)
         .then((res) => res.text())
@@ -117,7 +118,11 @@ export function usePortalConfiguration() {
         portalFooterHtml: footerHtml,
       };
 
-      await updatePortalConfigs(payload).unwrap();
+      const response = await updatePortalConfigs(payload).unwrap();
+
+      if (response && response.portalConfigs) {
+        loadPortalData(response.portalConfigs);
+      }
 
       const updatedUser = {
         ...user,
@@ -129,9 +134,10 @@ export function usePortalConfiguration() {
       if (user) {
         dispatch(updateUserInState(updatedUser));
       }
+
       toast.success('Portal settings saved successfully');
-    } catch {
-      toast.error('Failed to save portal settings');
+    } catch (error: any) {
+      toast.error(error?.data?.message || 'Failed to save portal settings');
     }
   };
 
