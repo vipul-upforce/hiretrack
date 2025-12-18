@@ -1,17 +1,18 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import {
   EmailNotificationSettings,
   Organization,
   OrgInfo,
-} from "@/lib/models/user";
-import Cookies from "js-cookie";
-import logger from "../logger";
+} from '@/lib/models/user';
+import Cookies from 'js-cookie';
+import logger from '../logger';
+import { authApi } from '../features/auth/authApi';
 
 export interface ILocalUser {
   id: string;
   _id?: string;
   tokenVersion?: number;
-  organizationId: Organization |string;
+  organizationId: Organization | string;
   organizationInfo?: OrgInfo;
   name: string;
   email: string;
@@ -26,9 +27,8 @@ export interface ILocalUser {
   otp?: number;
   emailNotificationSettings?: EmailNotificationSettings;
   fileStorage?: string;
-
-  
 }
+
 interface AuthState {
   user: ILocalUser | null;
   isAuthenticated: boolean;
@@ -37,8 +37,8 @@ interface AuthState {
 }
 
 const getIsAuthenticated = () => {
-  const authState = Cookies.get("auth_state");
-  return authState ? true : false;
+  const authState = Cookies.get('auth_state');
+  return !!authState;
 };
 
 const initialState: AuthState = {
@@ -47,21 +47,23 @@ const initialState: AuthState = {
   loading: false,
   error: null,
 };
+
 export const fetchUserFromToken = createAsyncThunk(
   'auth/fetchUserFromToken',
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      
-      const authState = Cookies.get("auth_state");
-      if (!authState || authState === "false") {
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+
+      const authState = Cookies.get('auth_state');
+
+      if (!authState || authState === 'false') {
         const user = {
-          id: "guest",
-          name: "Guest",
-          email: "",
-          role: "",
-          organizationId: "",
+          id: 'guest',
+          name: 'Guest',
+          email: '',
+          role: '',
+          organizationId: '',
           organizationInfo: null,
           appliedApplications: [],
           fileStorage: null,
@@ -69,23 +71,21 @@ export const fetchUserFromToken = createAsyncThunk(
         return user;
       }
 
-      const response = await fetch("/api/auth/me");
+      const result = await dispatch(
+        authApi.endpoints.getMe.initiate(undefined, { forceRefetch: true }),
+      ).unwrap();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        localStorage.removeItem('persist:auth');
-        localStorage.removeItem('persist:organization');
-        return rejectWithValue(
-          errorData.message || 'Failed to fetch user data',
-        );
-      }
-      const data = await response.json();
-      return data.user;
-    } catch (e) {
+      return result.user;
+    } catch (e: any) {
       logger.error('Error fetching user from token:', e);
       localStorage.removeItem('persist:auth');
       localStorage.removeItem('persist:organization');
-      return rejectWithValue('Failed to connect to authentication server');
+
+      const errorMessage =
+        e?.data?.message ||
+        e?.message ||
+        'Failed to connect to authentication server';
+      return rejectWithValue(errorMessage);
     }
   },
 );
