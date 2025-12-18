@@ -1,7 +1,6 @@
-
 import type { StatusUpdateQueueData, EmailQueueItem } from './types';
 import { sendQueuedEmail } from './emailSender';
-import { updateEmailHistoryStatus } from './emailHistory';
+import { updateEmailHistoryStatus } from './statusEmailHistory';
 
 /**
  * Email queue to track pending emails

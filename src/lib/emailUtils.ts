@@ -1,210 +1,95 @@
-import { createTransport, TransportOptions } from 'nodemailer';
-import { Resend } from 'resend';
-import { Ismtp } from '@/lib/models/settings';
-import connectToDatabase, { EmailHistory } from '@/lib/mongodb';
+import type { Ismtp } from '@/lib/models/settings';
 import logger from './logger';
+import { sendSMTPMail, sendResendMail, sendBrevoMail } from './email/providers';
+import {
+  isValidEmail,
+  filterEmailArray,
+  getTriggererEmail,
+} from './email/validators';
+import { updateEmailHistory } from './email/history';
+import type { EmailOptions, EmailResult, EmailContext } from './email/types';
 
-interface EmailOptions {
-  to: string;
-  subject: string;
-  text?: string;
-  html?: string;
-  cc?: string[];
-  bcc?: string[];
-  replyTo?: string;
-  from?: string;
-}
+/**
+ * Gets the from email address based on the mail provider configuration
+ */
+function getFromEmail(
+  mailConfig: Ismtp,
+  from?: string,
+): { email: string; error?: string } {
+  let fromEmail: string;
 
-interface EmailContextBase {
-  // any shared fields between the two can go here (optional)
-}
-
-interface EmailHistoryContext extends EmailContextBase {
-  emailHistoryId: string;
-}
-
-interface EmailMetadataContext extends EmailContextBase {
-  organizationId: string;
-  sentBy: string;
-  sentByEmail: string;
-  sentByName: string;
-  recipientType: string;
-  recipientId: string;
-  recipientName: string;
-  metadata: {
-    jobId?: string;
-    candidateId?: string;
-    templateUsed?: string;
-    eventType?: string;
-  };
-  attachments: {
-    fileName: string;
-    fileSize: number;
-    shareId: string;
-    shareUrl: string;
-  }[];
-}
-
-type EmailContext = EmailHistoryContext | EmailMetadataContext;
-
-async function sendSMTPMail(
-  config: Ismtp,
-  options: EmailOptions,
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    // Validate SMTP config
-    if (
-      !config.smtp_host ||
-      !config.smtp_port ||
-      !config.smtp_user ||
-      !config.smtp_password
-    ) {
-      return { success: false, error: 'SMTP configuration incomplete' };
-    }
-
-    const transporter = createTransport({
-      host: config.smtp_host,
-      port: parseInt(config.smtp_port, 10),
-      secure: parseInt(config.smtp_port, 10) === 465,
-      auth: {
-        user: config.smtp_user,
-        pass: config.smtp_password,
-      },
-    } as TransportOptions);
-
-    const mailOptions: any = {
-      from: options.from,
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html,
-      replyTo: options.replyTo,
-    };
-
-    // Only include CC/BCC if they have values
-    if (options.cc && options.cc.length > 0) {
-      mailOptions.cc = options.cc.join(', ');
-    }
-    if (options.bcc && options.bcc.length > 0) {
-      mailOptions.bcc = options.bcc.join(', ');
-    }
-
-    const result = await transporter.sendMail(mailOptions);
-    return { success: true, messageId: result.messageId };
-  } catch (error: unknown) {
-    logger.error('SMTP error:', error);
-    return {
-      success: false,
-      error: `SMTP error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
-  }
-}
-
-async function sendResendMail(
-  config: Ismtp,
-  options: EmailOptions,
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    // Validate Resend config
-    if (!config.resend_api_key) {
-      return { success: false, error: 'Resend API key not configured' };
-    }
-
-    const resend = new Resend(config.resend_api_key);
-
-    const emailPayload: any = {
-      from: options.from,
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html,
-      replyTo: options.replyTo || config.resend_reply_to,
-    };
-
-    // Only include CC/BCC if they have values
-    if (options.cc && options.cc.length > 0) {
-      emailPayload.cc = options.cc;
-    }
-    if (options.bcc && options.bcc.length > 0) {
-      emailPayload.bcc = options.bcc;
-    }
-
-    const result = await resend.emails.send(emailPayload);
-
-    if (result.error) {
-      logger.error('Resend API error:', result.error);
-      return { success: false, error: `Resend error: ${result.error.message}` };
-    }
-
-    return { success: true, messageId: result.data?.id };
-  } catch (error: unknown) {
-    logger.error('Resend unexpected error:', error);
-    return {
-      success: false,
-      error: `Resend error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
-  }
-}
-
-async function sendBrevoMail(
-  config: Ismtp,
-  options: EmailOptions,
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  try {
-    // Validate Brevo config
-    if (!config.brevo_api_key) {
-      return { success: false, error: 'Brevo API key not configured' };
-    }
-
-    const emailPayload: any = {
-      sender: {
-        email: options.from,
-      },
-      to: [{ email: options.to }],
-      subject: options.subject,
-      textContent: options.text,
-      htmlContent: options.html,
-      replyTo: {
-        email: options.replyTo || config.brevo_reply_to,
-      },
-    };
-
-    // Only include CC/BCC if they have values
-    if (options.cc && options.cc.length > 0) {
-      emailPayload.cc = options.cc.map((email) => ({ email }));
-    }
-    if (options.bcc && options.bcc.length > 0) {
-      emailPayload.bcc = options.bcc.map((email) => ({ email }));
-    }
-
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': config.brevo_api_key,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailPayload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      logger.error('Brevo API error:', errorData);
+  switch (mailConfig.mailProvider) {
+    case 'smtp':
+      fromEmail = from || mailConfig.smtp_from;
+      if (!fromEmail) {
+        return { email: '', error: 'SMTP from email not configured' };
+      }
+      break;
+    case 'resend':
+      fromEmail = from || mailConfig.resend_from;
+      if (!fromEmail) {
+        return { email: '', error: 'Resend from email not configured' };
+      }
+      break;
+    case 'brevo':
+      fromEmail = from || mailConfig.brevo_from;
+      if (!fromEmail) {
+        return { email: '', error: 'Brevo from email not configured' };
+      }
+      break;
+    default:
       return {
-        success: false,
-        error: `Brevo error: ${errorData.message || (errorData as { error?: string })?.error || (errorData instanceof Error ? errorData.message : 'Unknown error')}`,
+        email: '',
+        error: `Unsupported mail provider: ${mailConfig.mailProvider}`,
       };
-    }
-    const result = await response.json();
-    return { success: true, messageId: result.messageId };
-  } catch (error: unknown) {
-    logger.error('Brevo unexpected error:', error);
+  }
+
+  return { email: fromEmail };
+}
+
+/**
+ * Validates email addresses
+ */
+function validateEmails(
+  fromEmail: string,
+  to: string,
+): { valid: boolean; error?: string } {
+  if (!isValidEmail(fromEmail)) {
     return {
-      success: false,
-      error: `Brevo error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      valid: false,
+      error: `Invalid from email format: ${fromEmail}`,
     };
+  }
+  if (!isValidEmail(to)) {
+    return { valid: false, error: `Invalid to email format: ${to}` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Sends email using the configured provider
+ */
+async function sendEmailWithProvider(
+  mailConfig: Ismtp,
+  emailOptions: EmailOptions,
+): Promise<EmailResult> {
+  switch (mailConfig.mailProvider) {
+    case 'smtp':
+      return sendSMTPMail(mailConfig, emailOptions);
+    case 'resend':
+      return sendResendMail(mailConfig, emailOptions);
+    case 'brevo':
+      return sendBrevoMail(mailConfig, emailOptions);
+    default:
+      return { success: false, error: 'Unsupported mail provider' };
   }
 }
 
+/**
+ * Main email sending function
+ * Supports multiple email providers (SMTP, Resend, Brevo)
+ * and optional email history tracking
+ */
 export async function sendMail(
   mailConfig: Ismtp,
   to: string,
@@ -217,64 +102,33 @@ export async function sendMail(
   from?: string,
   context?: EmailContext,
   triggererEmail?: string,
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<EmailResult> {
   try {
     // Validate mail configuration
     if (!mailConfig.mailProvider) {
       return { success: false, error: 'Mail provider not configured' };
     }
 
-    // Determine the correct from email based on provider
-    let fromEmail: string;
-    switch (mailConfig.mailProvider) {
-      case 'smtp':
-        fromEmail = from || mailConfig.smtp_from;
-        if (!fromEmail) {
-          return { success: false, error: 'SMTP from email not configured' };
-        }
-        break;
-      case 'resend':
-        fromEmail = from || mailConfig.resend_from;
-        if (!fromEmail) {
-          return { success: false, error: 'Resend from email not configured' };
-        }
-        break;
-      case 'brevo':
-        fromEmail = from || mailConfig.brevo_from;
-        if (!fromEmail) {
-          return { success: false, error: 'Brevo from email not configured' };
-        }
-        break;
-      default:
-        return {
-          success: false,
-          error: `Unsupported mail provider: ${mailConfig.mailProvider}`,
-        };
+    // Get from email based on provider
+    const fromEmailResult = getFromEmail(mailConfig, from);
+    if (fromEmailResult.error) {
+      return { success: false, error: fromEmailResult.error };
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(fromEmail)) {
-      return {
-        success: false,
-        error: `Invalid from email format: ${fromEmail}`,
-      };
-    }
-    if (!emailRegex.test(to)) {
-      return { success: false, error: `Invalid to email format: ${to}` };
+    // Validate email addresses
+    const emailValidation = validateEmails(fromEmailResult.email, to);
+    if (!emailValidation.valid) {
+      return { success: false, error: emailValidation.error };
     }
 
-    const triggerer =
-      ('sentByEmail' in context! ? context.sentByEmail : triggererEmail) ||
-      triggererEmail;
+    // Get triggerer email for filtering CC/BCC
+    const triggerer = getTriggererEmail(context, triggererEmail);
 
     // Filter and validate CC/BCC arrays
-    const validCc = (cc || []).filter(
-      (email) => email.trim() !== '' && email.trim() !== triggerer,
-    );
-    const validBcc = (bcc || []).filter(
-      (email) => email.trim() !== '' && email.trim() !== triggerer,
-    );
+    const validCc = filterEmailArray(cc, triggerer);
+    const validBcc = filterEmailArray(bcc, triggerer);
+
+    // Build email options
     const emailOptions: EmailOptions = {
       to,
       subject,
@@ -283,46 +137,15 @@ export async function sendMail(
       ...(validCc.length > 0 && { cc: validCc }),
       ...(validBcc.length > 0 && { bcc: validBcc }),
       replyTo,
-      from: fromEmail,
+      from: fromEmailResult.email,
     };
 
-    let result: { success: boolean; messageId?: string; error?: string };
+    // Send email using configured provider
+    const result = await sendEmailWithProvider(mailConfig, emailOptions);
 
-    switch (mailConfig.mailProvider) {
-      case 'smtp':
-        result = await sendSMTPMail(mailConfig, emailOptions);
-        break;
-      case 'resend':
-        result = await sendResendMail(mailConfig, emailOptions);
-        break;
-      case 'brevo':
-        result = await sendBrevoMail(mailConfig, emailOptions);
-        break;
-      default:
-        return { success: false, error: 'Unsupported mail provider' };
-    }
-
-    // If context with emailHistoryId is provided, update the history record
+    // Update email history if context with emailHistoryId is provided
     if (context && 'emailHistoryId' in context) {
-      try {
-        await connectToDatabase();
-        const history = await EmailHistory?.findById(context.emailHistoryId);
-
-        if (history) {
-          history.status = result.success ? 'sent' : 'failed';
-          history.providerMessageId = result.messageId;
-          history.error = result.error;
-          history.sentAt = new Date();
-          await history.save();
-        } else {
-          logger.warn(
-            `Email history not found for ID: ${context.emailHistoryId}`,
-          );
-        }
-      } catch (historyError) {
-        logger.error('Failed to update email history:', historyError);
-        // Do not fail the email send if history update fails
-      }
+      await updateEmailHistory(context.emailHistoryId, result);
     }
 
     return result;

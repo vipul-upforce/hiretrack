@@ -3,6 +3,14 @@ import connectToDatabase, { Notification } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
 
+type NotificationQuery = {
+  organizationId: string;
+  recipientId: string;
+  isRead?: boolean;
+  type?: string;
+  priority?: 'high' | 'medium' | 'low';
+};
+
 export async function GET(request: NextRequest) {
   try {
     const [user] = await Promise.all([
@@ -10,9 +18,13 @@ export async function GET(request: NextRequest) {
       connectToDatabase(),
     ]);
 
-    if (!user) {
+    if (!user || !user.id || !user.organizationId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { organizationId } = user;
+    const recipientId = user.id;
+
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
@@ -30,21 +42,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
-    const query: any = {
-      organizationId: user.organizationId,
-      recipientId: user.id,
+    const query: NotificationQuery = {
+      organizationId,
+      recipientId,
     };
 
     if (isRead !== null && isRead !== undefined) {
       query.isRead = isRead === 'true';
     }
 
-    if (type) {
+    if (type !== null && type !== undefined) {
       query.type = type;
     }
 
-    if (priority) {
-      query.priority = priority;
+    if (priority !== null && priority !== undefined) {
+      const validPriority = priority as 'high' | 'medium' | 'low';
+      if (['high', 'medium', 'low'].includes(validPriority)) {
+        query.priority = validPriority;
+      }
     }
 
     // Calculate pagination
