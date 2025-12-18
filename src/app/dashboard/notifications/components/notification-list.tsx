@@ -2,13 +2,14 @@ import React from 'react';
 import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
 import { NotificationItem } from '@/components/ui/notifications/NotificationItem';
 import { BellOff } from 'lucide-react';
+import { INotification } from '@/lib/models/notification';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NotificationSkeleton } from './notification-skeleton';
 
 interface NotificationsListProps {
-  notifications: any[];
+  notifications: INotification[];
   isLoading: boolean;
-  onItemClick: (notification: any) => void;
+  onItemClick: (notification: INotification) => void;
   onMarkRead: (id: string) => void;
   pagination?: {
     totalCount: number;

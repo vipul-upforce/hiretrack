@@ -11,8 +11,6 @@ import {
   Calendar,
   MessageSquare,
   UserPlus,
-  AlertCircle,
-  CheckCircle,
   Clock,
   FileText,
   Check,
@@ -99,6 +97,13 @@ export function NotificationItem({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick();
+    }
+  };
+
   const handleMarkAsRead = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onMarkAsRead) {
@@ -112,19 +117,27 @@ export function NotificationItem({
 
   return (
     <div
+      {...(onClick && {
+        role: 'button',
+        tabIndex: 0,
+        onClick: handleClick,
+        onKeyDown: handleKeyDown,
+        'aria-label': `${notification.title}. ${notification.message}`,
+      })}
       className={cn(
-        'flex items-start gap-3 p-3 hover:bg-accent/50 transition-colors cursor-pointer border-l-2',
+        'flex items-start gap-3 border-l-2 p-3 transition-colors',
+        onClick &&
+          'cursor-pointer hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
         notification.isRead
           ? 'border-l-transparent opacity-75'
           : 'border-l-primary bg-accent/20',
         className,
       )}
-      onClick={handleClick}
     >
       {/* Icon */}
       <div
         className={cn(
-          'flex-shrink-0 mt-0.5',
+          'mt-0.5 flex-shrink-0',
           getPriorityColor(notification.priority),
         )}
       >
@@ -132,21 +145,23 @@ export function NotificationItem({
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0 space-y-1">
+      <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start justify-between gap-2">
           <h4
             className={cn(
               'text-sm font-medium leading-tight',
-              !disableReadStyling && notification.isRead ? 'text-muted-foreground' : 'text-foreground',
+              !disableReadStyling && notification.isRead
+                ? 'text-muted-foreground'
+                : 'text-foreground',
             )}
           >
             {notification.title}
           </h4>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center gap-1">
             {notification.priority !== 'medium' && (
               <Badge
                 variant={getPriorityBadgeVariant(notification.priority)}
-                className="text-xs px-1.5 py-0.5"
+                className="px-1.5 py-0.5 text-xs"
               >
                 {notification.priority}
               </Badge>
@@ -163,7 +178,7 @@ export function NotificationItem({
               </Button>
             )}
             {!notification.isRead && (
-              <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
+              <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />
             )}
           </div>
         </div>
@@ -171,7 +186,9 @@ export function NotificationItem({
         <p
           className={cn(
             'text-sm leading-relaxed',
-            !disableReadStyling && notification.isRead ? 'text-muted-foreground' : 'text-foreground',
+            !disableReadStyling && notification.isRead
+              ? 'text-muted-foreground'
+              : 'text-foreground',
           )}
         >
           {notification.message}
@@ -180,9 +197,7 @@ export function NotificationItem({
         {/* Metadata */}
         {notification.triggerUserName && (
           <p className="text-xs text-muted-foreground">
-            by
-            {' '}
-            {notification.triggerUserName}
+            by {notification.triggerUserName}
           </p>
         )}
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 import { INotification } from '@/lib/models/notification';
 
 interface NotificationsContextType {
@@ -9,9 +9,9 @@ interface NotificationsContextType {
   refetch: () => void;
 }
 
-const NotificationsContext = createContext<NotificationsContextType | undefined>(
-  undefined,
-);
+const NotificationsContext = createContext<
+  NotificationsContextType | undefined
+>(undefined);
 
 export function NotificationsProvider({
   children,
@@ -26,7 +26,10 @@ export function NotificationsProvider({
 }) {
   return (
     <NotificationsContext.Provider
-      value={{ notifications, isLoading, refetch }}
+      value={useMemo(
+        () => ({ notifications, isLoading, refetch }),
+        [notifications, isLoading, refetch],
+      )}
     >
       {children}
     </NotificationsContext.Provider>
