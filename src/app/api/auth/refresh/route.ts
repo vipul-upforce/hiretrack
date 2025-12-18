@@ -16,7 +16,7 @@ import connectToDatabase, {
 import { validateLicense } from '@/lib/licenseUtils';
 import { UserRole } from '@/lib/models/JobLaneConfig';
 import { IUser } from '@/lib/models/user';
-import { setAuthCookies } from '@/lib/authCookies';
+import { clearAuthTokens, setAuthCookies } from '@/lib/authCookies';
 
 async function handleRefreshToken(req: NextRequest) {
   try {
@@ -80,11 +80,12 @@ async function handleRefreshToken(req: NextRequest) {
       console.log(user, 'user-77');
 
       if (!user) {
-        
-        return NextResponse.json(
+        const response = NextResponse.json(
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
         );
+        clearAuthTokens(response);
+        return response;
       }
 
       // Now try to decrypt with correct orgId
