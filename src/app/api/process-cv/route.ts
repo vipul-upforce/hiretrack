@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const settings = await Settings.findOne({ organizationId: organizationId })
+    const settings = await Settings.findOne({ organizationId })
       .select("aiProviders gemini fileStorage")
       .lean()
       .exec() as Pick<ISettings, "aiProviders" | "gemini" | "fileStorage"> | null;
@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
     // Note: decryptProviderKeys returns the same structure but with decrypted keys
     const decryptedAiProviders = decryptProviderKeys(aiProvider, organizationId) as AIProviders;
 
-    const activeProvider = decryptedAiProviders.activeProvider;
+    const {activeProvider} = decryptedAiProviders;
     const apiKey = decryptedAiProviders[activeProvider]?.api_key;
 
     // Add debug logging similar to evaluate API

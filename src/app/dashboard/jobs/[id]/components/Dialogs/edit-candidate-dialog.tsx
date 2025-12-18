@@ -10,14 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Maximize, Minimize } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Formik, Form } from "formik";
-import { candidateSchema } from "../../schemas/candidate-schema";
-import { CandidateForm } from "../Candidate/candidate-form";
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
 } from "@/lib/features/candidate/candidateApi";
 import { Candidate } from "@/types/candidate";
-import { getJobId } from "../../utils/candidateAccessors";
 import { v4 as uuidv4 } from "uuid";
 import { useParams, usePathname } from "next/navigation";
 import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
@@ -25,7 +22,6 @@ import { ICandidateHistory } from "@/lib/models/history";
 import { useContext, useEffect, useState } from "react";
 import { Resume } from "@/lib/redux/types";
 import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
-import FormUpdater from "../Utils/FormUpdater";
 import Cookies from "js-cookie";
 import { useSendMailMutation } from "@/lib/features/org/orgApi";
 import { sentAssignmentMail } from "@/lib/utils";
@@ -35,6 +31,10 @@ import { useApplyHandler } from "@/app/apply-jobs/useApplyHandler";
 import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
 import { CustomFieldsContext } from "@/Custom_Fields/Context";
 import { useSelector } from "react-redux";
+import FormUpdater from "../Utils/FormUpdater";
+import { getJobId } from "../../utils/candidateAccessors";
+import { CandidateForm } from "../Candidate/candidate-form";
+import { candidateSchema } from "../../schemas/candidate-schema";
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -60,7 +60,7 @@ const handleFileParse = async (
     const reader = new FileReader();
 
     reader.onload = async () => {
-      const result = reader.result;
+      const {result} = reader;
 
       if (result && typeof result === "string") {
         try {
@@ -80,8 +80,7 @@ const handleFileParse = async (
 
 const isFetchBaseQueryError = (
   error: unknown
-): error is FetchBaseQueryError & { data: { error: string } } => {
-  return (
+): error is FetchBaseQueryError & { data: { error: string } } => (
     typeof error === "object" &&
     error !== null &&
     "data" in error &&
@@ -90,7 +89,6 @@ const isFetchBaseQueryError = (
     "error" in error.data &&
     typeof error.data.error === "string"
   );
-};
 
 // export const scrollToErrorMassage = async (errors: FormikErrors<any>) => {
 //   // const formik = formikRef.current;
@@ -174,7 +172,7 @@ export function EditCandidateDialog({
       if (candidateForm) {
         const [formId, form] = candidateForm;
         setSelectedFormId({
-          formId: formId,
+          formId,
           formName: form.formName,
           fields: form.fields,
         });
@@ -363,7 +361,7 @@ export function EditCandidateDialog({
 
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString() || "",
-        title: title,
+        title,
         currentInterviewer: nextInterviewerId,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user ? user.id : null,
@@ -427,14 +425,12 @@ export function EditCandidateDialog({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const convertFileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = (error) => reject(error);
     });
-  };
   let interviewerId = null;
   if (candidate?.assignment?.interviewerId) {
     // debugger;
@@ -556,7 +552,7 @@ export function EditCandidateDialog({
                     setFieldValue("resume", file);
                     await handleFileParse(file, setParsedResume);
                   }}
-                  isEditMode={true}
+                  isEditMode
                 />
               </div>
               <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">

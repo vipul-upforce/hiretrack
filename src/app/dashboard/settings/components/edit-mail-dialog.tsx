@@ -20,8 +20,7 @@ import {
 import {
   Data,
   editorOptions,
-} from "@/app/dashboard/settings/templates/constants";
-import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
+ defaultTemplatesAsObject as defaultTemplates } from "@/app/dashboard/settings/templates/constants";
 import { useTheme } from "@/components/theme-provider";
 import {
   Select,
@@ -30,8 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
 
-import { defaultTemplatesAsObject as defaultTemplates } from "@/app/dashboard/settings/templates/constants";
 
 export default function EmailTemplateEditor({
   onClose,

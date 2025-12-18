@@ -361,9 +361,9 @@ export default function JobProgressPage() {
 
           if (activeFilters.length > 0) {
             if (filterConditions.logicalOperator === 'AND') {
-              return activeFilters.every(({ filter }) => filter(c));
+              return activeFilters.every(({ filter }) => filter(candidate));
             }
-            return activeFilters.some(({ filter }) => filter(c));
+            return activeFilters.some(({ filter }) => filter(candidate));
           }
 
           return true;
