@@ -24,6 +24,28 @@ export const portalApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: configs,
       }),
+      async onQueryStarted(_portalConfigs, { dispatch, queryFulfilled }) {
+        // Update the cache with the response data without invalidating
+        try {
+          const { data } = await queryFulfilled;
+          // The API returns { message, portalConfigs }
+          if (data?.portalConfigs) {
+            dispatch(
+              portalApi.util.updateQueryData(
+                'getPortalConfigs',
+                undefined,
+                (draft: PortalConfigData) => {
+                  // Update the cache with the response data
+                  Object.assign(draft, data.portalConfigs);
+                },
+              ),
+            );
+          }
+        } catch {
+          // If the mutation fails, the cache remains unchanged
+          // No need to revert since we're not doing optimistic updates
+        }
+      },
     }),
     fetchAssetsMetadata: builder.query({
       query: () => ({ url: '/download/assets', method: 'POST', body: {} }),

@@ -220,7 +220,7 @@ export default function DashboardLayout({
     if (user) {
       setUserLoggedIn(true);
       setUserData(user);
-      refetch();
+      // refetch();
     }
   }, [user]);
 

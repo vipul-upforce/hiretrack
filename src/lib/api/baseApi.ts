@@ -5,6 +5,7 @@ import {
   FetchArgs,
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
+import type { Dispatch, AnyAction } from '@reduxjs/toolkit';
 
 /**
  * Configuration for public API endpoints that don't require authentication
@@ -50,8 +51,11 @@ function isPublicEndpoint(url: string): boolean {
  * Refresh access token using httpOnly cookie
  * The refresh token is stored in httpOnly cookie and sent automatically
  * with credentials: "include"
+ * @param dispatch - Optional Redux dispatch function to trigger fetchUserFromToken after refresh
  */
-async function refreshAccessToken(): Promise<void> {
+async function refreshAccessToken(
+  dispatch?: Dispatch<AnyAction>,
+): Promise<void> {
   const response = await fetch(`/api/auth/refresh`, {
     method: 'POST',
     headers: {
@@ -84,7 +88,21 @@ async function refreshAccessToken(): Promise<void> {
   }
 
   // Token refresh successful - new tokens are set in httpOnly cookies by the server
-  // No need to store anything client-side
+  // Dispatch fetchUserFromToken to update user state
+  if (dispatch && typeof window !== 'undefined') {
+    // Use dynamic import to avoid circular dependency
+    import('@/lib/redux/authSlice')
+      .then(({ fetchUserFromToken }) => {
+        dispatch(fetchUserFromToken());
+      })
+      .catch((error) => {
+        // Log error but don't throw - token refresh was successful
+        console.error(
+          'Failed to dispatch fetchUserFromToken after token refresh:',
+          error,
+        );
+      });
+  }
 }
 
 /**
@@ -115,7 +133,8 @@ const baseQueryWithReauth: BaseQueryFn<
   ) {
     try {
       // Attempt to refresh the token using httpOnly cookie
-      await refreshAccessToken();
+      // Pass dispatch to trigger fetchUserFromToken after successful refresh
+      await refreshAccessToken(api.dispatch);
       result = await baseQuery(args, api, extraOptions);
     } catch {
       // Refresh failed - redirect to login (already handled in refreshAccessToken)
