@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
 import PortalHead from '@/components/layouts/PortalHead';
 import { useTheme } from '@/components/theme-provider';
@@ -220,6 +220,7 @@ export default function DashboardLayout({
     if (user) {
       setUserLoggedIn(true);
       setUserData(user);
+      refetch();
     }
   }, [user]);
 

@@ -22,7 +22,7 @@ export function LogsMobileList({
     <div className="space-y-3 p-3 md:hidden">
       {logs.map((log) => (
         <div
-          key={`${log.dateTime}`}
+          key={`${log.dateTime}+${log.title}+${log.candidateId}`}
           role="button"
           tabIndex={0}
           onClick={() => onViewDetails(log.candidateId)}

@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useFetchInterviewersQuery } from '@/lib/features/user/userApi';
 import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Loader2 } from 'lucide-react';
-import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings/settingsApi';
+import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
@@ -54,15 +54,17 @@ export function AssignCandidateDialog({
   // Cast Redux user to schema User type
   const user: User | null = reduxUser
     ? {
-      id: reduxUser.id || reduxUser._id || '',
-      name: reduxUser.name || '',
-      email: reduxUser.email || '',
-      role: reduxUser.role || '',
-      organizationInfo: reduxUser.organizationInfo || undefined,
-    }
+        id: reduxUser.id || reduxUser._id || '',
+        name: reduxUser.name || '',
+        email: reduxUser.email || '',
+        role: reduxUser.role || '',
+        organizationInfo: reduxUser.organizationInfo || undefined,
+      }
     : null;
-  const { data: interviewers, refetch: refetchInterviewers } = useFetchInterviewersQuery();
-  const { data: googleCalendarData } = useGetGoogleCalendarConfigQuery(undefined);
+  const { data: interviewers, refetch: refetchInterviewers } =
+    useFetchInterviewersQuery();
+  const { data: googleCalendarData } =
+    useGetGoogleCalendarConfigQuery(undefined);
   const {
     confirmUnassignOpen,
     setConfirmUnassignOpen,
@@ -88,7 +90,8 @@ export function AssignCandidateDialog({
 
   const getDefaultGuests = (selectedInterviewer: any) => {
     const defaultGuests = [];
-    if (selectedInterviewer?.email) defaultGuests.push(selectedInterviewer.email);
+    if (selectedInterviewer?.email)
+      defaultGuests.push(selectedInterviewer.email);
     if (candidate.email) defaultGuests.push(candidate.email);
     if (user?.email && user.email !== selectedInterviewer?.email) {
       defaultGuests.push(user.email);
@@ -186,26 +189,26 @@ export function AssignCandidateDialog({
 
         const requestBody = isUpdating
           ? {
-            eventId: candidate.assignment?.googleMeet.eventId,
-            candidateId: candidate._id,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-          }
+              eventId: candidate.assignment?.googleMeet.eventId,
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: allGuests,
+            }
           : {
-            candidateId: candidate._id,
-            candidateName: candidate.name,
-            candidateEmail: candidate.email,
-            interviewerId: selectedInterviewer._id,
-            interviewerName: selectedInterviewer.name,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-            jobTitle: candidate.jobId?.title || 'Position',
-            organizationName: user?.organizationInfo?.name || 'Company',
-            meetingNotes: values.meetingNotes || '',
-            meetingAttachments: processedMeetingAttachments,
-          };
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: allGuests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.meetingNotes || '',
+              meetingAttachments: processedMeetingAttachments,
+            };
 
         const response = await fetch(apiUrl, {
           method,
@@ -269,13 +272,10 @@ export function AssignCandidateDialog({
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent
           size="lg"
-          className="overflow-hidden flex flex-col justify-start"
+          className="flex flex-col justify-start overflow-hidden"
         >
           <DialogHeader>
-            <DialogTitle>
-              Assign Candidate -
-              {candidate.name}
-            </DialogTitle>
+            <DialogTitle>Assign Candidate -{candidate.name}</DialogTitle>
           </DialogHeader>
 
           <Formik
@@ -287,11 +287,11 @@ export function AssignCandidateDialog({
             {(formikProps) => {
               const { values, isSubmitting } = formikProps;
               return (
-                <Form className="flex-1 flex flex-col h-full overflow-hidden">
+                <Form className="flex h-full flex-1 flex-col overflow-hidden">
                   <div
-                    className={`flex-1 px-6 py-4 space-y-6 ${
-                      !candidate.assignment?.googleMeet?.eventId
-                      && !values.scheduleGoogleMeet
+                    className={`flex-1 space-y-6 px-6 py-4 ${
+                      !candidate.assignment?.googleMeet?.eventId &&
+                      !values.scheduleGoogleMeet
                         ? ''
                         : 'overflow-y-auto'
                     }`}
@@ -322,7 +322,7 @@ export function AssignCandidateDialog({
                     </div>
                   </div>
 
-                  <div className="flex justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+                  <div className="sticky bottom-0 z-10 flex w-full justify-between space-x-2 border-t bg-background px-6 py-4">
                     <div>
                       {candidate.assignment && (
                         <Button
@@ -379,8 +379,8 @@ export function AssignCandidateDialog({
           open={showCancelMeetDialog}
           onOpenChange={setShowCancelMeetDialog}
         >
-          <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden flex flex-col gap-0">
-            <DialogHeader className="p-6 pb-4 flex flex-col gap-2 border-b">
+          <DialogContent className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]">
+            <DialogHeader className="flex flex-col gap-2 border-b p-6 pb-4">
               <DialogTitle className="flex items-center gap-2 text-destructive">
                 <Trash2 className="h-5 w-5" />
                 Cancel Google Meet
@@ -391,15 +391,14 @@ export function AssignCandidateDialog({
               </DialogDescription>
             </DialogHeader>
 
-            <div className="p-6 space-y-4">
+            <div className="space-y-4 p-6">
               <div className="space-y-2">
                 <Label
                   htmlFor="cancelNotes"
                   className="text-sm font-semibold text-foreground"
                 >
-                  Cancellation Notes
-                  {' '}
-                  <span className="text-muted-foreground font-normal">
+                  Cancellation Notes{' '}
+                  <span className="font-normal text-muted-foreground">
                     (Optional)
                   </span>
                 </Label>
@@ -414,7 +413,7 @@ export function AssignCandidateDialog({
               </div>
             </div>
 
-            <DialogFooter className="p-6 pt-0 flex gap-3 sm:justify-end bg-background">
+            <DialogFooter className="flex gap-3 bg-background p-6 pt-0 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -467,7 +466,7 @@ export function AssignCandidateDialog({
                   </>
                 ) : (
                   <>
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Cancel Meeting
                   </>
                 )}

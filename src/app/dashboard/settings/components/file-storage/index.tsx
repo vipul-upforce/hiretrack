@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   useGetFSConfigsQuery,
   useUpdateFSConfigsMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import logger from '@/lib/logger';
 import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
 import { useTestConnection } from '@/hooks/use-test-connection';

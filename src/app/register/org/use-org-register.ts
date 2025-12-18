@@ -6,7 +6,7 @@ import {
   useCreateOrgMutation,
   useGetOrganizationAllowanceQuery,
 } from '@/lib/features/org/orgApi';
-import { useGetCaptchaConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetCaptchaConfigsQuery } from '@/lib/features/settings';
 import { useLazyValidateLicenseQuery } from '@/lib/features/auth/authApi';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
 import { OrgFormValues } from './schema';

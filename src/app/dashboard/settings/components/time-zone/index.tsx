@@ -7,7 +7,7 @@ import { ErrorMessage, Form, Formik } from 'formik';
 import {
   useGetTimeZoneQuery,
   useUpdateTimeZoneMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import React, { useMemo } from 'react';
 import { Combobox } from '@/components/ui/combobox';
 import { TIMEZONES } from './timezone-utils';

@@ -12,7 +12,7 @@ import './features/candidate/candidateApi';
 import './features/user/userApi';
 import './features/lane/laneApi';
 import './features/org/orgApi';
-import './features/settings/settingsApi';
+import './features/settings';
 import './features/checklist/checklistApi';
 import './features/notifications/notificationsApi';
 import './features/analytics/analyticsApi';

@@ -8,7 +8,7 @@ import { useCandidateSignupMutation } from '@/lib/features/candidate/candidateAp
 import {
   useGetCaptchaConfigsQuery,
   useGetPortalConfigsQuery,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
 import { SignupFormValues, PortalSettings } from '../types';

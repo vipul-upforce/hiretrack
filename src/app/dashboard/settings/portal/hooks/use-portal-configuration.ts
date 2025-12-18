@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
-import {
-  useGetPortalConfigsQuery,
-  useUpdatePortalConfigsMutation,
-} from '@/lib/features/settings/settingsApi';
 import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
 import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import {
+  useGetPortalConfigsQuery,
+  useUpdatePortalConfigsMutation,
+} from '@/lib/features/settings';
 import { PortalSettings, FileUpload } from '../types';
 
 export function usePortalConfiguration() {
