@@ -28,7 +28,7 @@ export async function getDecodedCaptcha(encodedData: string, orgId: string) {
   }
 }
 export const useSSE = (
-  role: string,
+  // role: string,
   setSelectedCandidate: (
     candidate: Candidate | CustomCalendarEvent | null,
   ) => void,

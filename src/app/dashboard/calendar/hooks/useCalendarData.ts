@@ -3,7 +3,8 @@ import { useFetchAssignedCandidatesQuery } from '@/lib/features/candidate/candid
 import { useSSE } from '@/hooks/useSSE';
 import useRoles from '@/hooks/useRoles';
 import { useSelector } from 'react-redux';
-import { CandidateAssignment } from '../types';
+import { Candidate } from '@/types/candidate';
+import { CandidateAssignment, CustomCalendarEvent } from '../types';
 
 export function useCalendarData(
   setSelectedEvent: () => void,
@@ -20,9 +21,10 @@ export function useCalendarData(
   );
   const role = useRoles();
   const { candidates: sseCandidates } = useSSE(
-    role || '',
-    setSelectedEvent,
-    selectedEvent,
+    setSelectedEvent as (
+      candidate: Candidate | CustomCalendarEvent | null,
+    ) => void,
+    selectedEvent as Candidate | CustomCalendarEvent | null,
   );
 
   useEffect(() => {
