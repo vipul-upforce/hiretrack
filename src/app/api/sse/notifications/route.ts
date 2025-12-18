@@ -22,7 +22,31 @@ export const runtime = 'nodejs';
 export async function GET(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // For SSE, we need to send an error event before closing
+    // Create a stream that sends an auth_error event and then closes
+    const stream = new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ type: 'auth_error', error: 'Unauthorized' })}\n\n`,
+          ),
+        );
+        // Close after sending error
+        setTimeout(() => {
+          controller.close();
+        }, 100);
+      },
+    });
+
+    return new NextResponse(stream, {
+      status: 401,
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
   }
   const orgId = user.organizationId;
   const userId = user.id;
@@ -71,7 +95,7 @@ export async function GET(req: NextRequest) {
               ),
             );
           }
-        } catch (e) {
+        } catch {
           // fail quietly
         }
       })();
@@ -85,10 +109,10 @@ export async function GET(req: NextRequest) {
       });
 
       const heartbeat = setInterval(() => {
-        const clientsCount = orgClients.size;
+        const currentClientsCount = orgClients.size;
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`,
+            `data: ${JSON.stringify({ type: 'clients', clients: currentClientsCount, orgId })}\n\n`,
           ),
         );
       }, 20000);

@@ -1,6 +1,10 @@
+/* eslint-disable max-lines */
 import { useEffect, useRef, useState, useCallback } from 'react';
+import type { Dispatch, AnyAction } from '@reduxjs/toolkit';
 import { Candidate } from '@/types/candidate';
 import logger from '@/lib/logger';
+import { refreshAccessToken } from '@/lib/api/baseApi';
+import { useAppDispatch } from '@/lib/redux/hooks';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
@@ -21,9 +25,17 @@ class SSEManager {
 
   private subscribers: Map<string, Subscriber> = new Map();
 
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   private isConnecting = false;
+
+  private isRefreshingToken = false;
+
+  private dispatch?: Dispatch<AnyAction>;
+
+  setDispatch(dispatch: Dispatch<AnyAction>) {
+    this.dispatch = dispatch;
+  }
 
   subscribe(subscriber: Subscriber): () => void {
     this.subscribers.set(subscriber.id, subscriber);
@@ -43,6 +55,41 @@ class SSEManager {
     };
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  private async checkIfUnauthorized(): Promise<boolean> {
+    try {
+      // Make a test request to check if we're unauthorized
+      const response = await fetch('/api/sse/notifications', {
+        method: 'HEAD',
+        credentials: 'include',
+      });
+      return response.status === 401;
+    } catch {
+      // If fetch fails, assume it might be a network issue, not necessarily 401
+      return false;
+    }
+  }
+
+  private async handleUnauthorizedError(): Promise<boolean> {
+    // Prevent multiple simultaneous refresh attempts
+    if (this.isRefreshingToken) {
+      return false;
+    }
+
+    this.isRefreshingToken = true;
+    try {
+      // Attempt to refresh the token
+      await refreshAccessToken(this.dispatch);
+      logger.log('SSE: Token refreshed successfully, reconnecting...');
+      this.isRefreshingToken = false;
+      return true;
+    } catch (error) {
+      logger.error('SSE: Failed to refresh token:', error);
+      this.isRefreshingToken = false;
+      return false;
+    }
+  }
+
   private connect() {
     if (this.isConnecting || this.eventSource) return;
 
@@ -57,13 +104,43 @@ class SSEManager {
     this.eventSource.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
+
+        // Handle auth_error events from SSE endpoint
+        if (data?.type === 'auth_error') {
+          logger.log('SSE: Received auth_error, attempting token refresh...');
+          const refreshSuccess = await this.handleUnauthorizedError();
+          if (refreshSuccess) {
+            // Close current connection and reconnect
+            if (this.eventSource) {
+              this.eventSource.close();
+              this.eventSource = null;
+            }
+            this.isConnecting = false;
+            // Reconnect after token refresh
+            if (this.subscribers.size > 0 && !this.reconnectTimeout) {
+              this.reconnectTimeout = setTimeout(() => {
+                this.reconnectTimeout = null;
+                this.connect();
+              }, 500);
+            }
+          } else {
+            // Refresh failed, close connection
+            if (this.eventSource) {
+              this.eventSource.close();
+              this.eventSource = null;
+            }
+            this.isConnecting = false;
+          }
+          return;
+        }
+
         await this.handleMessage(data);
       } catch (e) {
         logger.log('UPEXPECTED ERROR : ', e);
       }
     };
 
-    this.eventSource.onerror = () => {
+    this.eventSource.onerror = async () => {
       this.broadcastConnectionChange(false);
       if (this.eventSource) {
         this.eventSource.close();
@@ -71,7 +148,27 @@ class SSEManager {
       }
       this.isConnecting = false;
 
-      // Reconnect if we still have subscribers
+      // Check if the error is due to unauthorized (401)
+      const isUnauthorized = await this.checkIfUnauthorized();
+
+      if (isUnauthorized) {
+        // Attempt to refresh token and reconnect
+        const refreshSuccess = await this.handleUnauthorizedError();
+        if (
+          refreshSuccess &&
+          this.subscribers.size > 0 &&
+          !this.reconnectTimeout
+        ) {
+          // Wait a bit longer after token refresh to ensure cookies are set
+          this.reconnectTimeout = setTimeout(() => {
+            this.reconnectTimeout = null;
+            this.connect();
+          }, 500);
+          return;
+        }
+      }
+
+      // Reconnect if we still have subscribers (for non-401 errors or if refresh failed)
       if (this.subscribers.size > 0 && !this.reconnectTimeout) {
         this.reconnectTimeout = setTimeout(() => {
           this.reconnectTimeout = null;
@@ -81,13 +178,23 @@ class SSEManager {
     };
   }
 
-  private async handleMessage(data: any) {
+  private async handleMessage(data: {
+    type?: string;
+    count?: number;
+    notification?: string;
+    notifications?: unknown[];
+    candidate?: unknown;
+    candidates?: unknown;
+    lanes?: string[];
+    clients?: number;
+    error?: string;
+  }) {
     if (
       data?.type === 'notificationCountUpdated' &&
       typeof data.count === 'number'
     ) {
       this.subscribers.forEach((sub) => {
-        sub.onNotificationCountUpdated?.(data.count);
+        sub.onNotificationCountUpdated?.(data.count as number);
       });
     }
 
@@ -96,7 +203,7 @@ class SSEManager {
       typeof data.notification === 'string'
     ) {
       this.subscribers.forEach((sub) => {
-        sub.onNotification?.(data.notification);
+        sub.onNotification?.(data.notification as string);
       });
     }
 
@@ -111,37 +218,41 @@ class SSEManager {
       }
     }
 
-    if (data.type === 'candidateUpdate') {
+    if (data.type === 'candidateUpdate' && data.candidate) {
       const encodedCandidate = data.candidate;
-      const updatedCandidate = await getDecodedSSE(encodedCandidate);
-      if (updatedCandidate && updatedCandidate._id) {
-        this.subscribers.forEach((sub) => {
-          sub.onCandidateUpdate?.(updatedCandidate);
-        });
+      if (typeof encodedCandidate === 'string') {
+        const updatedCandidate = await getDecodedSSE(encodedCandidate);
+        if (updatedCandidate && updatedCandidate._id) {
+          this.subscribers.forEach((sub) => {
+            sub.onCandidateUpdate?.(updatedCandidate);
+          });
+        }
       }
     }
 
-    if (data.type === 'multipleCandidateUpdate') {
-      const decodedCandidates = await getDecodedSSE(data.candidates);
-      if (decodedCandidates) {
-        const updatedCandidates = Object.values(
-          decodedCandidates,
-        ) as Candidate[];
-        this.subscribers.forEach((sub) => {
-          sub.onMultipleCandidateUpdate?.(updatedCandidates);
-        });
+    if (data.type === 'multipleCandidateUpdate' && data.candidates) {
+      if (typeof data.candidates === 'string') {
+        const decodedCandidates = await getDecodedSSE(data.candidates);
+        if (decodedCandidates) {
+          const updatedCandidates = Object.values(
+            decodedCandidates,
+          ) as Candidate[];
+          this.subscribers.forEach((sub) => {
+            sub.onMultipleCandidateUpdate?.(updatedCandidates);
+          });
+        }
       }
     }
 
-    if (data.type === 'lanesUpdate') {
+    if (data.type === 'lanesUpdate' && Array.isArray(data.lanes)) {
       this.subscribers.forEach((sub) => {
-        sub.onLanesUpdate?.(data.lanes);
+        sub.onLanesUpdate?.(data.lanes as string[]);
       });
     }
 
-    if (data.type === 'clients') {
+    if (data.type === 'clients' && typeof data.clients === 'number') {
       this.subscribers.forEach((sub) => {
-        sub.onClientsUpdate?.(data.clients);
+        sub.onClientsUpdate?.(data.clients as number);
       });
     }
   }
@@ -176,6 +287,7 @@ export function useNotificationSSE(
   initialUnreadCount: number = 0,
   initialTotalCount: number = 0,
 ) {
+  const dispatch = useAppDispatch();
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [notification, setNotification] = useState<string | null>(null);
@@ -252,6 +364,9 @@ export function useNotificationSSE(
   }, [initialUnreadCount, initialTotalCount]);
 
   useEffect(() => {
+    // Set dispatch for token refresh
+    sseManager.setDispatch(dispatch);
+
     // Subscribe to the shared SSE connection
     const unsubscribe = sseManager.subscribe({
       id: subscriberIdRef.current,
@@ -270,6 +385,7 @@ export function useNotificationSSE(
 
     return unsubscribe;
   }, [
+    dispatch,
     handleNotificationCountUpdated,
     handleNotification,
     handleNotifications,

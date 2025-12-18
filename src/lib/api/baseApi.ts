@@ -53,7 +53,7 @@ function isPublicEndpoint(url: string): boolean {
  * with credentials: "include"
  * @param dispatch - Optional Redux dispatch function to trigger fetchUserFromToken after refresh
  */
-async function refreshAccessToken(
+export async function refreshAccessToken(
   dispatch?: Dispatch<AnyAction>,
 ): Promise<void> {
   const response = await fetch(`/api/auth/refresh`, {
