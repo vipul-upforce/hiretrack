@@ -5,7 +5,6 @@ import {
   FetchArgs,
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
-import { fetchUserFromToken } from '../redux/authSlice';
 
 /**
  * Configuration for public API endpoints that don't require authentication
@@ -101,7 +100,7 @@ const baseQueryWithReauth: BaseQueryFn<
     baseUrl: '/api',
     credentials: 'include', // Send httpOnly cookies with every request
   });
-  const fullUrl = (typeof args === "string" ? `/api ${args}` : `/api ${args.url}`);
+  const fullUrl = typeof args === 'string' ? `/api${args}` : `/api${args.url}`;
   const isPublic = isPublicEndpoint(fullUrl);
   // Execute the original request
   let result = await baseQuery(args, api, extraOptions);
@@ -117,9 +116,6 @@ const baseQueryWithReauth: BaseQueryFn<
     try {
       // Attempt to refresh the token using httpOnly cookie
       await refreshAccessToken();
-      // Dispatch fetchUserFromToken after successful token refresh
-      api.dispatch(fetchUserFromToken());
-      // Retry the original request with new token (sent via httpOnly cookie)
       result = await baseQuery(args, api, extraOptions);
     } catch {
       // Refresh failed - redirect to login (already handled in refreshAccessToken)
