@@ -82,10 +82,12 @@ export const useCaptchaSettings = (onClose: () => void) => {
 
       refetch();
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const errorMessage = e as { data?: { error?: string } };
       toast({
         title: 'Error',
-        description: e.data?.error || 'Failed to update CAPTCHA settings',
+        description:
+          errorMessage.data?.error || 'Failed to update CAPTCHA settings',
         variant: 'destructive',
       });
     }

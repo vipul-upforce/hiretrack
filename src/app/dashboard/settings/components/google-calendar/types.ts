@@ -10,8 +10,8 @@ export interface TestResult {
     lastTestedAt?: string;
     connectionStatusUpdated?: boolean;
     rawResponse?: string;
-    debugInfo?: any;
-    [key: string]: any;
+    debugInfo?: unknown;
+    [key: string]: unknown;
   };
 }
 

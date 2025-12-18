@@ -41,7 +41,7 @@ export function CandidateStatusBadge({ status }: CandidateStatusBadgeProps) {
 
   return (
     <Badge variant="secondary" className={`${bg} ${text} border-0`}>
-      {status?.charAt(0).toUpperCase() + status?.slice(1)}
+      {status ? status.charAt(0).toUpperCase() + status.slice(1) : ''}
     </Badge>
   );
 }

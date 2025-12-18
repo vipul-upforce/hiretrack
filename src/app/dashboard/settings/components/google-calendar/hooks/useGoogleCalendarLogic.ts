@@ -10,9 +10,12 @@ import { CredentialsFormData, TestResult } from '../types';
 export function useGoogleCalendarLogic() {
   const { toast } = useToast();
 
-  const { data, isLoading, refetch } = useGetGoogleCalendarConfigQuery(undefined);
-  const [updateGoogleCalendar, { isLoading: isUpdating }] = useUpdateGoogleCalendarMutation();
-  const [disconnectGoogleCalendar, { isLoading: isDisconnecting }] = useDisconnectGoogleCalendarMutation();
+  const { data, isLoading, refetch } =
+    useGetGoogleCalendarConfigQuery(undefined);
+  const [updateGoogleCalendar, { isLoading: isUpdating }] =
+    useUpdateGoogleCalendarMutation();
+  const [disconnectGoogleCalendar, { isLoading: isDisconnecting }] =
+    useDisconnectGoogleCalendarMutation();
 
   const [showConfetti, setShowConfetti] = useState(false);
   const [redirectUri, setRedirectUri] = useState('');
@@ -118,7 +121,7 @@ export function useGoogleCalendarLogic() {
         description: 'Google Calendar disconnected successfully',
       });
       refetch();
-    } catch{
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to disconnect Google Calendar',
@@ -137,14 +140,14 @@ export function useGoogleCalendarLogic() {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      let data;
+      let testData;
       let responseText = '';
 
       try {
         responseText = await response.text();
-        data = JSON.parse(responseText);
+        testData = JSON.parse(responseText);
       } catch {
-        data = {
+        testData = {
           success: false,
           error: 'Invalid JSON response',
           details: `Status: ${response.status} ${response.statusText}`,
@@ -153,19 +156,20 @@ export function useGoogleCalendarLogic() {
       }
 
       setTestResult({
-        success: data.success || false,
-        message: data.message || data.error || `HTTP ${response.status}`,
+        success: testData.success || false,
+        message:
+          testData.message || testData.error || `HTTP ${response.status}`,
         details:
-          data.details
-          || (response.ok
+          testData.details ||
+          (response.ok
             ? undefined
             : `Server returned ${response.status}: ${response.statusText}`),
         data: {
           ...data.data,
           debugInfo: data.debugInfo,
           rawResponse:
-            data.rawResponse
-            || (!data.success && responseText ? responseText : undefined),
+            data.rawResponse ||
+            (!data.success && responseText ? responseText : undefined),
           connectionStatusUpdated: data.connectionStatusUpdated,
         },
       });
@@ -179,9 +183,9 @@ export function useGoogleCalendarLogic() {
         toast({
           title: 'Connection Test Failed ❌',
           description:
-            data.details
-            || data.error
-            || `HTTP ${response.status}: ${response.statusText}`,
+            data.details ||
+            data.error ||
+            `HTTP ${response.status}: ${response.statusText}`,
           variant: 'destructive',
         });
 
@@ -189,10 +193,11 @@ export function useGoogleCalendarLogic() {
           setTimeout(() => refetch(), 1000);
         }
       }
-    } catch (networkError: any) {
-      const errorDetails = networkError instanceof Error
-        ? networkError.message
-        : String(networkError);
+    } catch (networkError: unknown) {
+      const errorDetails =
+        networkError instanceof Error
+          ? networkError.message
+          : String(networkError);
       setTestResult({
         success: false,
         message: 'Network connection failed',
