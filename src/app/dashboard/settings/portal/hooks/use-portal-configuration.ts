@@ -121,7 +121,7 @@ export function usePortalConfiguration() {
 
       const updatedUser = {
         ...user,
-        organizaionInfo: {
+        organizationInfo: {
           ...user?.organizationInfo,
           name: payload.portalName,
         },
@@ -129,7 +129,6 @@ export function usePortalConfiguration() {
       if (user) {
         dispatch(updateUserInState(updatedUser));
       }
-
       toast.success('Portal settings saved successfully');
     } catch {
       toast.error('Failed to save portal settings');
