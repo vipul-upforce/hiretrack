@@ -1,4 +1,4 @@
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/models/notification';
 import logger from '@/lib/logger';
 import { getUsersByRole } from '../core/userHelpers';
 import {

@@ -4,7 +4,11 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
 import type { OrganizationEmailNotifications } from '@/lib/models/settings';
 import type { AdminOverrideSettings } from '@/lib/utils/emailNotificationHelpers';
-import { mapToObject, objectToMap, mergeAdminOverrides } from '@/lib/utils/emailNotificationHelpers';
+import {
+  mapToObject,
+  objectToMap,
+  mergeAdminOverrides,
+} from '@/lib/utils/emailNotificationHelpers';
 import {
   validateDefaultSettings,
   validateAdminOverrides,
@@ -21,7 +25,8 @@ import {
 /**
  * Type for default notification settings
  */
-type DefaultNotificationSettings = OrganizationEmailNotifications['defaultSettings'];
+type DefaultNotificationSettings =
+  OrganizationEmailNotifications['defaultSettings'];
 
 /**
  * Request body type for PUT endpoint
@@ -54,7 +59,10 @@ interface UpdateEmailNotificationSettingsResponse {
  */
 interface SettingsUpdateData {
   'organizationEmailNotifications.defaultSettings'?: DefaultNotificationSettings;
-  'organizationEmailNotifications.adminOverrides'?: Map<string, AdminOverrideSettings>;
+  'organizationEmailNotifications.adminOverrides'?: Map<
+    string,
+    AdminOverrideSettings
+  >;
 }
 
 /**
@@ -177,7 +185,7 @@ export async function PUT(request: NextRequest) {
 
     // Prepare update data
     const updateData: SettingsUpdateData = {};
-    
+
     if (defaultSettings) {
       updateData['organizationEmailNotifications.defaultSettings'] =
         defaultSettings as DefaultNotificationSettings;

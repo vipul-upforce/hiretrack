@@ -1,4 +1,5 @@
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/models/notification';
+import { batchCheckNotifications } from '@/lib/services/emailDecisionEngine';
 import { getUsersEmailByRole } from '../core/userHelpers';
 import {
   createNotification,
@@ -58,8 +59,6 @@ export async function notifyMeetingInviteAccepted(params: {
 
   if (filteredIds.length === 0) return;
 
-  const { batchCheckNotifications } =
-    await import('@/lib/services/emailDecisionEngine');
   const decisionContexts = filteredIds.map((userId) => ({
     organizationId: params.organizationId,
     recipientUserId: userId,
@@ -152,8 +151,6 @@ export async function notifyMeetingInviteDeclined(params: {
 
   if (filteredIds.length === 0) return;
 
-  const { batchCheckNotifications } =
-    await import('@/lib/services/emailDecisionEngine');
   const decisionContexts = filteredIds.map((userId) => ({
     organizationId: params.organizationId,
     recipientUserId: userId,
@@ -245,9 +242,6 @@ export async function notifyMeetingInviteTentative(params: {
     .map((admin) => admin.id);
 
   if (filteredIds.length === 0) return;
-
-  const { batchCheckNotifications } =
-    await import('@/lib/services/emailDecisionEngine');
   const decisionContexts = filteredIds.map((userId) => ({
     organizationId: params.organizationId,
     recipientUserId: userId,
