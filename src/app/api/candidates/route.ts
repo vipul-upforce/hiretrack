@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
               ['admin', 'hr'],
             );
             const filteredAdminHrIds = adminHrIds.filter(
-              (id) => id !== userData.id,
+              (id: string) => id !== userData.id,
             );
 
             if (filteredAdminHrIds.length > 0) {

@@ -2,29 +2,29 @@ import mongoose, { Schema } from 'mongoose';
 
 export enum NotificationType {
   // Admin/HR notifications
-  NEW_APPLICATIONS = "newApplications",
-  INTERVIEW_ASSIGNMENTS = "interviewAssignments",
-  STATUS_UPDATES = "statusUpdates",
-  NEW_REMARKS = "newRemarks",
-  STEP_COMPLETED = "stepCompleted",
-  MENTIONS = "mentions",
-  CANDIDATE_DETAILS_UPDATED = "detailsUpdated",
-  MEETING_SCHEDULED = "meetingScheduled",
-  MEETING_UPDATED = "meetingUpdated",
-  MEETING_CANCELLED = "meetingCancelled",
-  MEETING_INVITE_ACCEPTED = "meetingInviteAccepted",
-  MEETING_INVITE_DECLINED = "meetingInviteDeclined",
-  MEETING_INVITE_TENTATIVE = "meetingInviteTentative",
-  FOLLOWUP_ADDED = "followupAdded",
-  FOLLOWUP_UPDATED = "followupUpdated",
-  FOLLOWUP_REMOVED = "followupRemoved",
-  JOB_CREATED = "jobCreated",
-  JOB_UPDATED = "jobUpdated",
-  USER_ADDED = "userAdded",
-  BULK_IMPORT_COMPLETED = "bulkImportCompleted",
-  CANDIDATE_REJECTED = "candidateRejected",
-  INTERVIEW_COMPLETED = "interviewCompleted",
-  CANDIDATE_MOVED = "candidateMoved",
+  NEW_APPLICATIONS = 'newApplications',
+  INTERVIEW_ASSIGNMENTS = 'interviewAssignments',
+  STATUS_UPDATES = 'statusUpdates',
+  NEW_REMARKS = 'newRemarks',
+  STEP_COMPLETED = 'stepCompleted',
+  MENTIONS = 'mentions',
+  CANDIDATE_DETAILS_UPDATED = 'detailsUpdated',
+  MEETING_SCHEDULED = 'meetingScheduled',
+  MEETING_UPDATED = 'meetingUpdated',
+  MEETING_CANCELLED = 'meetingCancelled',
+  MEETING_INVITE_ACCEPTED = 'meetingInviteAccepted',
+  MEETING_INVITE_DECLINED = 'meetingInviteDeclined',
+  MEETING_INVITE_TENTATIVE = 'meetingInviteTentative',
+  FOLLOWUP_ADDED = 'followupAdded',
+  FOLLOWUP_UPDATED = 'followupUpdated',
+  FOLLOWUP_REMOVED = 'followupRemoved',
+  JOB_CREATED = 'jobCreated',
+  JOB_UPDATED = 'jobUpdated',
+  USER_ADDED = 'userAdded',
+  BULK_IMPORT_COMPLETED = 'bulkImportCompleted',
+  CANDIDATE_REJECTED = 'candidateRejected',
+  INTERVIEW_COMPLETED = 'interviewCompleted',
+  CANDIDATE_MOVED = 'candidateMoved',
 
   // System notifications
   // DEADLINE_REMINDER = 'deadline_reminder',
@@ -78,14 +78,14 @@ export interface INotification {
     checklistName?: string;
     fileName?: string;
     errorMessage?: string;
-    [key: string]: any;
+    [key: string]: string | number | Date | boolean | undefined;
   };
 
   createdAt: Date;
   updatedAt: Date;
 }
 
-export const notificationSchema = new Schema<INotification>(
+export const notificationSchema = new mongoose.Schema<INotification>(
   {
     organizationId: {
       type: String,
@@ -168,7 +168,10 @@ export const notificationSchema = new Schema<INotification>(
 );
 
 // TTL index for deleting notifications docs after 30 days
-notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 30 });
+notificationSchema.index(
+  { createdAt: 1 },
+  { expireAfterSeconds: 60 * 60 * 24 * 30 },
+);
 
 // Add compound indexes for efficient queries
 notificationSchema.index({ organizationId: 1, recipientId: 1, createdAt: -1 }); // Main query pattern

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, {
- User, Candidate, History,
-} from '@/lib/mongodb';
-import { handleCustomFieldFiles, handleFileAttachments, handleSingleFile } from '@/lib/fileUtils';
+import connectToDatabase, { User, Candidate, History } from '@/lib/mongodb';
+import {
+  handleCustomFieldFiles,
+  handleFileAttachments,
+  handleSingleFile,
+} from '@/lib/fileUtils';
 import { ICandidate as IExternalCandidate } from '@/lib/models/candidate';
 import mongoose, { ProjectionType } from 'mongoose';
 import { getAuthenticatedUser } from '@/app/actions/auth';
@@ -10,8 +12,10 @@ import { IinfoUpdateLog } from '@/lib/models/history';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
+import logger from '@/lib/logger';
 import { Attachment } from '../route';
 
+/* eslint-disable max-lines-per-function , max-lines */
 interface UpdateObject {
   $set: Record<string, unknown>;
   $currentDate: { 'tracking.updatedAt': boolean };
@@ -127,7 +131,9 @@ export async function PUT(
     }
 
     if (data.attachments) {
-      const images = data.attachments.filter((attachment: Attachment) => attachment.type.startsWith('image'));
+      const images = data.attachments.filter((attachment: Attachment) =>
+        attachment.type.startsWith('image'),
+      );
       const files = data.attachments.filter(
         (attachment: Attachment) => !attachment.type.startsWith('image'),
       );
@@ -143,17 +149,18 @@ export async function PUT(
       );
       data.attachments = [...f, ...i];
       if (
-        JSON.stringify(existingCandidate.attachments)
-        !== JSON.stringify(data.attachments)
+        JSON.stringify(existingCandidate.attachments) !==
+        JSON.stringify(data.attachments)
       ) {
         updates.push({
           title: 'Updated Attachments',
           previousValue: existingCandidate.attachments,
           currentValue: data.attachments,
           attachments: data.attachments.filter(
-            (file: Attachment) => !existingCandidate.attachments.some(
-              (existingFile: Attachment) => existingFile.url === file.url,
-            ),
+            (file: Attachment) =>
+              !existingCandidate.attachments.some(
+                (existingFile: Attachment) => existingFile.url === file.url,
+              ),
           ),
         });
       }
@@ -206,8 +213,8 @@ export async function PUT(
 
       // Check for changes
       if (
-        JSON.stringify(existingCandidate.customFields)
-        !== JSON.stringify(data.customFields)
+        JSON.stringify(existingCandidate.customFields) !==
+        JSON.stringify(data.customFields)
       ) {
         const allKeys = Object.keys({
           ...existingCandidate.customFields,
@@ -218,14 +225,14 @@ export async function PUT(
           const prev = existingCandidate.customFields?.[key];
           const curr = data.customFields?.[key];
           if (
-            (prev === ''
-              || prev === null
-              || prev === undefined
-              || !((prev as string[]).length > 0))
-            && (curr === ''
-              || curr === null
-              || curr === undefined
-              || !((curr as string[]).length > 0))
+            (prev === '' ||
+              prev === null ||
+              prev === undefined ||
+              !((prev as string[]).length > 0)) &&
+            (curr === '' ||
+              curr === null ||
+              curr === undefined ||
+              !((curr as string[]).length > 0))
           ) {
             return;
           }
@@ -235,8 +242,8 @@ export async function PUT(
             if ('base64' in curr) {
               attachments = [curr];
             } else if (
-              Array.isArray(curr)
-              && curr.some((v) => v && typeof v === 'object' && 'base64' in v)
+              Array.isArray(curr) &&
+              curr.some((v) => v && typeof v === 'object' && 'base64' in v)
             ) {
               attachments = curr.filter(
                 (v) => v && typeof v === 'object' && 'base64' in v,
@@ -283,8 +290,8 @@ export async function PUT(
         updateObj.$unset = { attachments: 1 };
       } else {
         if (
-          JSON.stringify(existingCandidate.attachments)
-          !== JSON.stringify(data.attachments)
+          JSON.stringify(existingCandidate.attachments) !==
+          JSON.stringify(data.attachments)
         ) {
           whatWasUpdated.push('attachments');
         }
@@ -335,7 +342,9 @@ export async function PUT(
         console.log(noteArr, 'split notes');
 
         // 🛠 Look for an existing completion note (from ANY user)
-        const completionIndex = noteArr.findIndex((n: string) => n.endsWith('has completed the last step.'));
+        const completionIndex = noteArr.findIndex((n: string) =>
+          n.endsWith('has completed the last step.'),
+        );
         console.log(completionIndex, 'completionIndex');
 
         if (completionIndex !== -1) {
@@ -351,7 +360,8 @@ export async function PUT(
         data.followUp.note = noteArr.join('|||||\n');
 
         // Ensure userId is updated
-        data.followUp.userId = assignmentCompletedFollowUp.userId || data.followUp.userId;
+        data.followUp.userId =
+          assignmentCompletedFollowUp.userId || data.followUp.userId;
 
         updateObj.$set.followUp = data.followUp;
 
@@ -400,11 +410,11 @@ export async function PUT(
     // if ("scores" in data) {
     //   updateObj.$set.scores = data.scores;
     // }
-    
+
     if (
-      'remarks' in data
-      && Array.isArray(data.remarks)
-      && data.remarks.length > 0
+      'remarks' in data &&
+      Array.isArray(data.remarks) &&
+      data.remarks.length > 0
     ) {
       const existingRemarks = existingCandidate.remarks || [];
       if (JSON.stringify(existingRemarks) !== JSON.stringify(data.remarks)) {
@@ -413,16 +423,16 @@ export async function PUT(
     }
     fieldsToTrack.forEach((key) => {
       if (
-        key in data
-        && key === 'resume'
-        && JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
+        key in data &&
+        key === 'resume' &&
+        JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
       ) {
         whatWasUpdated.push(key);
       }
       if (
-        key in data
-        && key === 'customFields'
-        && JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
+        key in data &&
+        key === 'customFields' &&
+        JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
       ) {
         const customKeys = Object.keys(data.customFields);
         customKeys.forEach((customKey) => {
@@ -434,15 +444,15 @@ export async function PUT(
         });
       }
       if (
-        key in data
-        && key !== 'resume'
-        && key !== 'customFields'
-        && key !== 'tags'
+        key in data &&
+        key !== 'resume' &&
+        key !== 'customFields' &&
+        key !== 'tags'
       ) {
         if (
-          (key === 'currentCTC' || key === 'expectedCTC')
-          && userData.role
-          && userData.role === 'interviewer'
+          (key === 'currentCTC' || key === 'expectedCTC') &&
+          userData.role &&
+          userData.role === 'interviewer'
         ) {
           return;
         }
@@ -623,7 +633,7 @@ export async function PUT(
 
       // Send notifications for various updates
       try {
-        const jobInfo = updatedCandidate.jobId as any;
+        const jobInfo = updatedCandidate.jobId as IFJob;
 
         // Assignment notifications
         if ('assignment' in data) {
@@ -631,8 +641,8 @@ export async function PUT(
           const newAssignment = data.assignment;
           if (newAssignment) {
             if (
-              !oldAssignment
-              || JSON.stringify(oldAssignment) !== JSON.stringify(newAssignment)
+              !oldAssignment ||
+              JSON.stringify(oldAssignment) !== JSON.stringify(newAssignment)
             ) {
               const interviewer = await User?.findById(
                 newAssignment.interviewerId,
@@ -645,9 +655,9 @@ export async function PUT(
                     candidateId: updatedCandidate._id?.toString() || '',
                     candidateName: updatedCandidate.name,
                     jobId:
-                      jobInfo?._id?.toString()
-                      || updatedCandidate.jobId?.toString()
-                      || '',
+                      jobInfo?._id?.toString() ||
+                      updatedCandidate.jobId?.toString() ||
+                      '',
                     jobTitle: jobInfo?.title || 'Unknown Job',
                     interviewerId: newAssignment.interviewerId,
                     interviewerName: interviewer.name,
@@ -663,9 +673,9 @@ export async function PUT(
                       candidateId: updatedCandidate._id?.toString() || '',
                       candidateName: updatedCandidate.name,
                       jobId:
-                        jobInfo?._id?.toString()
-                        || updatedCandidate.jobId?.toString()
-                        || '',
+                        jobInfo?._id?.toString() ||
+                        updatedCandidate.jobId?.toString() ||
+                        '',
                       jobTitle: jobInfo?.title || 'Unknown Job',
                       interviewerId: newAssignment.interviewerId,
                       interviewerName: interviewer.name,
@@ -679,9 +689,9 @@ export async function PUT(
                       candidateId: updatedCandidate._id?.toString() || '',
                       candidateName: updatedCandidate.name,
                       jobId:
-                        jobInfo?._id?.toString()
-                        || updatedCandidate.jobId?.toString()
-                        || '',
+                        jobInfo?._id?.toString() ||
+                        updatedCandidate.jobId?.toString() ||
+                        '',
                       jobTitle: jobInfo?.title || 'Unknown Job',
                       interviewerId: newAssignment.interviewerId,
                       interviewerName: interviewer.name,
@@ -699,9 +709,9 @@ export async function PUT(
                     candidateId: updatedCandidate._id?.toString() || '',
                     candidateName: updatedCandidate.name,
                     jobId:
-                      jobInfo?._id?.toString()
-                      || updatedCandidate.jobId?.toString()
-                      || '',
+                      jobInfo?._id?.toString() ||
+                      updatedCandidate.jobId?.toString() ||
+                      '',
                     jobTitle: jobInfo?.title || 'Unknown Job',
                     interviewerId: interviewer._id.toString(),
                     interviewerName: interviewer.name,
@@ -715,33 +725,37 @@ export async function PUT(
             const interviewer = await User?.findById(
               oldAssignment?.interviewerId,
             ).select('_id name email');
-            if (newAssignment === null && interviewer && interviewer._id.toString() !== userData?.id?.toString()) {
+            if (
+              newAssignment === null &&
+              interviewer &&
+              interviewer._id.toString() !== userData?.id?.toString()
+            ) {
               await NotificationService.notifyCandidateUnassigned({
                 organizationId,
                 candidateId: updatedCandidate._id?.toString() || '',
                 candidateName: updatedCandidate.name,
                 jobId:
-                  jobInfo?._id?.toString()
-                  || updatedCandidate.jobId?.toString()
-                  || '',
+                  jobInfo?._id?.toString() ||
+                  updatedCandidate.jobId?.toString() ||
+                  '',
                 jobTitle: jobInfo?.title || 'Unknown Job',
                 previousInterviewerId: interviewer._id.toString(),
                 previousInterviewerName: interviewer.name,
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
               });
-            }else {
+            } else {
               await NotificationService.notifyInterviewCompleted({
                 organizationId,
                 candidateId: updatedCandidate._id?.toString() || '',
                 candidateName: updatedCandidate.name,
                 jobId:
-                  jobInfo?._id?.toString()
-                  || updatedCandidate.jobId?.toString()
-                  || '',
+                  jobInfo?._id?.toString() ||
+                  updatedCandidate.jobId?.toString() ||
+                  '',
                 jobTitle: jobInfo?.title || 'Unknown Job',
-                interviewerName: interviewer?.name,
-                interviewerId: interviewer._id.toString(),
+                interviewerName: interviewer?.name || '',
+                interviewerId: interviewer?._id?.toString() || '',
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
               });
@@ -749,36 +763,34 @@ export async function PUT(
           }
         }
 
-       
         try {
-          const jobInfo = existingCandidate.jobId as any;
+          const jobInfo2 = existingCandidate.jobId as IFJob;
           const oldFollowUp = existingCandidate.followUp;
           const newFollowUp = data?.followUp;
           const hadNoOldFollowUp =
-          oldFollowUp?.note == null &&
-          oldFollowUp?.date == null;
-        
-        const hasNewNote =
-          typeof newFollowUp?.note === 'string' &&
-          newFollowUp.note.trim() !== '';
-        
-        const hasNewDate =
-          typeof newFollowUp?.date === 'string' &&
-          newFollowUp.date.trim() !== '';
-        
+            oldFollowUp?.note == null && oldFollowUp?.date == null;
+
+          const hasNewNote =
+            typeof newFollowUp?.note === 'string' &&
+            newFollowUp.note.trim() !== '';
+
+          const hasNewDate =
+            typeof newFollowUp?.date === 'string' &&
+            newFollowUp.date.trim() !== '';
+
           // Follow-up notifications
           if ('followUp' in data) {
             // Case 1: Follow-up Added
-           if (hadNoOldFollowUp && (hasNewNote || hasNewDate))  {
+            if (hadNoOldFollowUp && (hasNewNote || hasNewDate)) {
               await NotificationService.notifyFollowUpAdded({
                 organizationId,
                 candidateId: existingCandidate._id?.toString() || '',
                 candidateName: existingCandidate.name,
                 jobId:
-                  jobInfo?._id?.toString()
-                  || existingCandidate.jobId?.toString()
-                  || '',
-                jobTitle: jobInfo?.title || 'Unknown Job',
+                  jobInfo?._id?.toString() ||
+                  existingCandidate.jobId?.toString() ||
+                  '',
+                jobTitle: jobInfo2?.title || 'Unknown Job',
                 followupNote: newFollowUp.note || '',
                 followupDate: newFollowUp.date
                   ? new Date(newFollowUp.date)
@@ -789,20 +801,20 @@ export async function PUT(
             }
             // Case 2: Follow-up Updated
             else if (
-              oldFollowUp
-              && newFollowUp
-              && newFollowUp.note !== null
-              && newFollowUp.note !== oldFollowUp.note
-              && newFollowUp.date !== oldFollowUp.date
+              oldFollowUp &&
+              newFollowUp &&
+              newFollowUp.note !== null &&
+              newFollowUp.note !== oldFollowUp.note &&
+              newFollowUp.date !== oldFollowUp.date
             ) {
               await NotificationService.notifyFollowupUpdated({
                 organizationId,
                 candidateId: existingCandidate._id?.toString() || '',
                 candidateName: existingCandidate.name,
                 jobId:
-                  jobInfo?._id?.toString()
-                  || existingCandidate.jobId?.toString()
-                  || '',
+                  jobInfo?._id?.toString() ||
+                  existingCandidate.jobId?.toString() ||
+                  '',
                 jobTitle: jobInfo?.title || 'Unknown Job',
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
@@ -810,21 +822,21 @@ export async function PUT(
             }
             // Case 3: Follow-up Removed
             else if (
-              oldFollowUp
-              && oldFollowUp !== undefined
-              && oldFollowUp.note !== null
-              && newFollowUp
-              && newFollowUp.note === null
-              && newFollowUp.date === null
+              oldFollowUp &&
+              oldFollowUp !== undefined &&
+              oldFollowUp.note !== null &&
+              newFollowUp &&
+              newFollowUp.note === null &&
+              newFollowUp.date === null
             ) {
               await NotificationService.notifyFollowupRemoved({
                 organizationId,
                 candidateId: existingCandidate._id?.toString() || '',
                 candidateName: existingCandidate.name,
                 jobId:
-                  jobInfo?._id?.toString()
-                  || existingCandidate.jobId?.toString()
-                  || '',
+                  jobInfo?._id?.toString() ||
+                  existingCandidate.jobId?.toString() ||
+                  '',
                 jobTitle: jobInfo?.title || 'Unknown Job',
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
@@ -832,9 +844,9 @@ export async function PUT(
             }
           }
         } catch (notificationError) {
-          console.error(
+          logger.error(
             'Failed to send follow-up notifications:',
-            notificationError,
+            notificationError as Error,
           );
           // Continue execution even if notification fails
         }
@@ -855,9 +867,10 @@ export async function PUT(
         if (updates.length > 0) {
           // Only send if there are significant updates (not just tracking fields)
           const significantUpdates = updates.filter(
-            (update) => !update.title.includes('Updated tracking')
-              && !update.title.includes('Updated _id')
-              && !update.title.includes('Updated Status'),
+            (update) =>
+              !update.title.includes('Updated tracking') &&
+              !update.title.includes('Updated _id') &&
+              !update.title.includes('Updated Status'),
           );
 
           if (significantUpdates.length > 0) {
@@ -866,9 +879,9 @@ export async function PUT(
               candidateId: updatedCandidate._id?.toString() || '',
               candidateName: updatedCandidate.name,
               jobId:
-                jobInfo?._id?.toString()
-                || updatedCandidate.jobId?.toString()
-                || '',
+                jobInfo?._id?.toString() ||
+                updatedCandidate.jobId?.toString() ||
+                '',
               jobTitle: jobInfo?.title || 'Unknown Job',
               triggerUserId: userData?.id?.toString() || '',
               triggerUserName: userData?.name || '',
@@ -876,7 +889,7 @@ export async function PUT(
           }
         }
       } catch (notificationError) {
-        console.error(
+        logger.error(
           'Failed to send candidate update notifications:',
           notificationError,
         );
@@ -898,7 +911,10 @@ export async function PUT(
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -937,12 +953,13 @@ export async function GET(
     }
 
     // Optimize projection based on role
-    const projection: ProjectionType<ICandidate> = userData?.role === 'interviewer'
-      ? {
-        currentCTC: 0,
-        expectedCTC: 0,
-      }
-      : {};
+    const projection: ProjectionType<ICandidate> =
+      userData?.role === 'interviewer'
+        ? {
+            currentCTC: 0,
+            expectedCTC: 0,
+          }
+        : {};
 
     // Fetch candidate first to get jobId for history query
     const candidate = await Candidate.findById(id, projection)
@@ -975,26 +992,27 @@ export async function GET(
     }
 
     // Extract jobId for history query
-    const jobId = typeof candidate.jobId === 'object'
-      && candidate.jobId !== null
-      && '_id' in candidate.jobId
-      ? candidate.jobId._id
-      : candidate.jobId;
+    const jobId =
+      typeof candidate.jobId === 'object' &&
+      candidate.jobId !== null &&
+      '_id' in candidate.jobId
+        ? candidate.jobId._id
+        : candidate.jobId;
 
     // Fetch history in parallel (if candidate has jobId)
     const history = jobId
       ? await History.findOne({
-        jobId,
-        candidateId: candidate._id.toString(),
-      })
-        .populate([
-          { path: 'history.currentInterviewer', select: '_id name email' },
-          { path: 'history.previousInterviewer', select: '_id name email' },
-          { path: 'history.assignmentBy', select: '_id name email' },
-          { path: 'history.note.userId', select: '_id name email' },
-        ])
-        .lean()
-        .exec()
+          jobId,
+          candidateId: candidate._id.toString(),
+        })
+          .populate([
+            { path: 'history.currentInterviewer', select: '_id name email' },
+            { path: 'history.previousInterviewer', select: '_id name email' },
+            { path: 'history.assignmentBy', select: '_id name email' },
+            { path: 'history.note.userId', select: '_id name email' },
+          ])
+          .lean()
+          .exec()
       : null;
 
     return NextResponse.json({
@@ -1004,8 +1022,7 @@ export async function GET(
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
       { status: 500 },
     );
@@ -1121,8 +1138,7 @@ export async function DELETE(
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
       { status: 500 },
     );

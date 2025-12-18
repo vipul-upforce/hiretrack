@@ -53,6 +53,7 @@ const eslintConfig = [
     rules: {
       // -- IGNORED RULE BY US
       'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-object-injection': 'off',
       'import/no-cycle': 'off',
       'no-restricted-syntax': 'off',
       'no-await-in-loop': 'off',
