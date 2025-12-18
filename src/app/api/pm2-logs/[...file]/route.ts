@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logsRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ file: string[] }> },
+async function getPM2Logs(
+  req: NextRequest,
+  { params }: { params: Promise<{ file: string[] }> }
 ) {
+  const user = await getAuthenticatedUser(req, 'admin');
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   const { file } = await params;
   const { searchParams } = new URL(req.url);
 
@@ -79,4 +85,8 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ file: string[] }> }) {
+  return logsRateLimiter(req, async (req: NextRequest) => await getPM2Logs(req, { params }));
 }

@@ -3,7 +3,7 @@ import { Form, Formik } from 'formik';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useUpdateAIProvidersMutation } from '@/lib/features/settings/settingsApi';
+import { useUpdateAIProvidersMutation } from '@/lib/features/settings';
 import { AIProvidersValues } from '../types';
 import { aiProvidersSchema } from '../schema';
 import { PROVIDER_CONFIGS } from '../constants';

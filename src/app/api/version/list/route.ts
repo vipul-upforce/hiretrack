@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Construct the URL for the version list endpoint
     const versionListUrl = `${licenseValidationUrl}/api/version/list`;
-
+    
     // Fetch version list from the license validation server
     const response = await fetch(versionListUrl, {
       method: 'GET',

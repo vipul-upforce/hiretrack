@@ -1,15 +1,15 @@
-import React, { memo } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronRight, LogOut, Link2Icon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { NotificationButton } from '@/components/ui/notifications';
-import OnboardingSidebar from '@/components/onboarding/OnboardingSidebar';
-import type { IUser } from '@/lib/models/user';
-import SidebarLogo from './SidebarLogo';
-
+import React, { memo } from'react';
+import { Button } from'@/components/ui/button';
+import { ChevronRight, LogOut, Link2Icon } from'lucide-react';
+import { cn } from'@/lib/utils';
+import Link from'next/link';
+import { usePathname } from'next/navigation';
+import { ThemeToggle } from'@/components/ui/theme-toggle';
+import { NotificationButton } from'@/components/ui/notifications';
+import OnboardingSidebar from'@/components/onboarding/OnboardingSidebar';
+import SidebarLogo from'./SidebarLogo';
+import type { IUser } from'@/lib/models/user';
+import { ILocalUser } from'@/lib/redux/authSlice';
 interface SidebarItem {
   title: string;
   href: string;
@@ -20,7 +20,7 @@ interface SidebarItem {
 interface SidebarContentProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
-  userData: IUser | null;
+  userData: ILocalUser | IUser | null;
   portalConfigData: any;
   isLoading: boolean;
   theme: string;

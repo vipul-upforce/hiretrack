@@ -1,4 +1,4 @@
-import mongoose, { Schema, ObjectId } from 'mongoose';
+import mongoose, { Schema, ObjectId, HydratedDocument, Model } from 'mongoose';
 
 export interface OrgInfo {
   customFields?: any;
@@ -69,6 +69,12 @@ export interface EmailNotificationSettings {
   };
 }
 
+export interface RefreshTokenEntry {
+  token: string;        // Hashed token
+  expiry: Date;
+  createdAt: Date;
+}
+
 export interface IUser {
   _id: string;
   organizationId: Organization | string;
@@ -81,12 +87,21 @@ export interface IUser {
   updatedAt: Date;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  refreshTokens?: RefreshTokenEntry[];
   isDeleted?: boolean;
   otpExpires?: Date;
   otp?: number;
   emailNotificationSettings?: EmailNotificationSettings;
+  tokenVersion?: number;
 }
-export const userSchema = new Schema<IUser>(
+export interface IUserMethods {
+  incrementTokenVersion: () => Promise<number>;
+}
+
+export type UserDocument = HydratedDocument<IUser, IUserMethods>;
+export type UserModel = Model<IUser, Record<string, never>, IUserMethods>;
+
+export const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
     name: {
       type: String,
@@ -120,6 +135,11 @@ export const userSchema = new Schema<IUser>(
       type: Date,
       required: false,
     },
+    refreshTokens: [{
+      token: { type: String, required: true },
+      expiry: { type: Date, required: true },
+      createdAt: { type: Date, default: Date.now }
+    }],
     isDeleted: {
       type: Boolean,
       required: false,
@@ -185,6 +205,11 @@ export const userSchema = new Schema<IUser>(
         default: new Map(),
       },
     },
+    tokenVersion: {
+      type: Number,
+      default: 1,
+      required: false,
+    },
   },
   {
     timestamps: true,
@@ -193,4 +218,9 @@ export const userSchema = new Schema<IUser>(
 
 export default userSchema;
 
-// export const User = mongoose.model<IUser>('User', userSchema);
+// export const User = mongoose.model<IUser>('User', userSchema)
+userSchema.methods.incrementTokenVersion = async function () {
+  this.tokenVersion = (this.tokenVersion || 0) + 1;
+  await this.save();
+  return this.tokenVersion;
+};

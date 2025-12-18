@@ -9,7 +9,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DiskFolderItem } from '@/lib/features/settings/settingsApi';
+import { DiskFolderItem } from '@/lib/features/settings';
 import { DirectoryContents } from './directory-contents';
 
 interface FileTreeItemProps {

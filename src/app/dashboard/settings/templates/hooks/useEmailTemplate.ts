@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
 import { EmailTemplate } from '../types';

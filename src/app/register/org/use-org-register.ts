@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FormikHelpers } from 'formik';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateOrgMutation } from '@/lib/features/org/orgApi';
-import { useGetCaptchaConfigsQuery } from '@/lib/features/settings/settingsApi';
+import {
+  useCreateOrgMutation,
+  useGetOrganizationAllowanceQuery,
+} from '@/lib/features/org/orgApi';
+import { useGetCaptchaConfigsQuery } from '@/lib/features/settings';
+import { useLazyValidateLicenseQuery } from '@/lib/features/auth/authApi';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
-import logger from '@/lib/logger';
 import { OrgFormValues } from './schema';
 
 export const useOrgRegister = () => {
@@ -15,49 +18,39 @@ export const useOrgRegister = () => {
   const [createOrg, { isLoading: isOrgLoading }] = useCreateOrgMutation();
   const { data: captchaConfig } = useGetCaptchaConfigsQuery(undefined);
 
+  const { data: allowanceData } = useGetOrganizationAllowanceQuery(undefined);
+
+  const [triggerLicenseCheck] = useLazyValidateLicenseQuery();
+
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
-  // 1. Check Allowance Logic
+  const organizationId = allowanceData?.data?.[0]?.organizationId;
+
   useEffect(() => {
-    let isMounted = true;
-    async function checkAllowance() {
-      try {
-        const response = await fetch('/api/organization');
-        const allowance = await response.json();
-
-        if (isMounted) {
-          setOrganizationId(allowance.data?.[0]?.organizationId);
-          if (!allowance.allow) {
-            router.push('/auth/login');
-          }
-        }
-      } catch (error) {
-        logger.error('Failed to check allowance', error);
-      }
+    if (allowanceData && !allowanceData.allow) {
+      router.push('/auth/login');
     }
-    checkAllowance();
-    return () => {
-      isMounted = false;
-    };
-  }, [router]);
+  }, [allowanceData, router]);
 
   // 2. Decrypt Captcha Key Logic
   useEffect(() => {
     let isMounted = true;
+
     const decryptSiteKey = async () => {
-      if (captchaConfig?.captcha?.siteKey) {
+      if (captchaConfig?.captcha?.siteKey && organizationId) {
         const decrypted = await getDecodedCaptcha(
           captchaConfig.captcha.siteKey,
-          organizationId!,
+          organizationId,
         );
         if (isMounted && decrypted) {
           setDecryptedSiteKey(decrypted);
         }
       }
     };
+
     decryptSiteKey();
+
     return () => {
       isMounted = false;
     };
@@ -79,19 +72,19 @@ export const useOrgRegister = () => {
         return;
       }
 
-      // License Check
       try {
-        const response = await fetch('/api/license-validate', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        const data = await response.json();
-        if (!data.valid) {
-          throw new Error(data.error || 'Invalid License');
+        const licenseData = await triggerLicenseCheck().unwrap();
+
+        if (!licenseData.valid) {
+          throw new Error(licenseData.error || 'Invalid License');
         }
       } catch (e: unknown) {
+        // Handle RTK error object or standard Error
         const msg =
-          e instanceof Error ? e.message : 'License verification failed.';
+          e instanceof Error
+            ? e.message
+            : (e as any)?.data?.message || 'License verification failed.';
+
         toast({
           title: 'License Error',
           description: msg,
@@ -129,11 +122,15 @@ export const useOrgRegister = () => {
         }
       } catch (err: unknown) {
         let errorMessage = 'An unknown error occurred';
+
         if (err instanceof Error) {
           errorMessage = err.message;
         } else if (typeof err === 'object' && err !== null && 'data' in err) {
-          const errorObj = err as { data?: { error?: string } };
-          errorMessage = errorObj.data?.error || errorMessage;
+          const errorObj = err as {
+            data?: { error?: string; message?: string };
+          };
+          errorMessage =
+            errorObj.data?.error || errorObj.data?.message || errorMessage;
         }
 
         setStatus(errorMessage);
@@ -144,7 +141,14 @@ export const useOrgRegister = () => {
         });
       }
     },
-    [captchaConfig, captchaToken, createOrg, router, toast],
+    [
+      captchaConfig,
+      captchaToken,
+      createOrg,
+      triggerLicenseCheck,
+      router,
+      toast,
+    ],
   );
 
   return {

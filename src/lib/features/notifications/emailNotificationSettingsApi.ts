@@ -1,5 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { EmailNotificationType } from '@/components/ui/email-notification-toggle';
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface EmailNotificationSettings {
   global: Record<EmailNotificationType, { enabled: boolean; source: string }>;
@@ -145,19 +145,7 @@ export interface GetUserEmailNotificationSettingsQueryArg {
   userId: string;
   jobId?: string;
 }
-
-export const emailNotificationSettingsApi = createApi({
-  reducerPath: 'emailNotificationSettingsApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: '/api/settings/email-notifications',
-    credentials: 'include',
-  }),
-  tagTypes: [
-    'EmailNotificationUser',
-    'EmailNotificationJob',
-    'EmailNotificationOrganization',
-    'EmailNotificationGlobal',
-  ],
+export const emailNotificationSettingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUserEmailNotificationSettings: builder.query<
       ApiSuccessResponse<GetUserEmailNotificationSettingsResponse>,
@@ -167,7 +155,7 @@ export const emailNotificationSettingsApi = createApi({
         const params = new URLSearchParams();
         if (jobId) params.append('jobId', jobId);
         const suffix = params.toString() ? `?${params.toString()}` : '';
-        return `/${userId}${suffix}`;
+        return `/settings/email-notifications/${userId}${suffix}`;
       },
       providesTags: (_result, _error, arg) => [
         { type: 'EmailNotificationUser', id: arg.userId },
@@ -179,7 +167,7 @@ export const emailNotificationSettingsApi = createApi({
       UpdateUserEmailNotificationSettingsRequest
     >({
       query: ({ userId, updates }) => ({
-        url: `/${userId}`,
+        url: `/settings/email-notifications/${userId}`,
         method: 'PUT',
         body: updates,
       }),
@@ -194,7 +182,7 @@ export const emailNotificationSettingsApi = createApi({
       ApiSuccessResponse<GetJobEmailNotificationSettingsResponse>,
       { jobId: string }
     >({
-      query: ({ jobId }) => `/job/${jobId}`,
+      query: ({ jobId }) => `/settings/email-notifications/job/${jobId}`,
       providesTags: (_result, _error, arg) => [
         { type: 'EmailNotificationJob', id: arg.jobId },
       ],
@@ -205,7 +193,7 @@ export const emailNotificationSettingsApi = createApi({
       UpdateJobEmailNotificationSettingsRequest
     >({
       query: ({ jobId, settings }) => ({
-        url: `/job/${jobId}`,
+        url: `/settings/email-notifications/job/${jobId}`,
         method: 'PUT',
         body: { settings },
       }),
@@ -218,7 +206,7 @@ export const emailNotificationSettingsApi = createApi({
       ApiSuccessResponse<OrganizationSettingsResponse>,
       void
     >({
-      query: () => '',
+      query: () => '/settings/email-notifications',
       providesTags: [{ type: 'EmailNotificationOrganization', id: 'ORG' }],
     }),
 
@@ -238,7 +226,7 @@ export const emailNotificationSettingsApi = createApi({
       }
     >({
       query: ({ updates }) => ({
-        url: '',
+        url: '/settings/email-notifications',
         method: 'PUT',
         body: updates,
       }),
@@ -249,7 +237,7 @@ export const emailNotificationSettingsApi = createApi({
       ApiSuccessResponse<GetGlobalEmailNotificationSettingsResponse>,
       void
     >({
-      query: () => '/global',
+      query: () => '/settings/email-notifications/global',
       providesTags: [{ type: 'EmailNotificationGlobal', id: 'GLOBAL' }],
     }),
 
@@ -258,7 +246,7 @@ export const emailNotificationSettingsApi = createApi({
       UpdateGlobalEmailNotificationSettingsRequest
     >({
       query: (body) => ({
-        url: '/global',
+        url: '/settings/email-notifications/global',
         method: 'PUT',
         body,
       }),

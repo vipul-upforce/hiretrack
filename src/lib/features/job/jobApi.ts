@@ -1,10 +1,7 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { baseApi } from '@/lib/api/baseApi';
 import { Job } from '@/types/job';
 
-export const jobApi = createApi({
-  reducerPath: 'jobApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Job'],
+export const jobApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchJobs: builder.query<Job[], void>({
       query: () => '/jobs',
@@ -52,10 +49,10 @@ export const jobApi = createApi({
       }),
       invalidatesTags: ['Job'],
     }),
-    fetchAssignments: builder.query<Job[], void>({
-      query: () => '/jobs/assignments',
-      providesTags: ['Job'],
-    }),
+    // fetchAssignments: builder.query<Job[], void>({
+    //   query: () => "/jobs/assignments",
+    //   providesTags: ["Job"],
+    // }),
     deleteJob: builder.mutation<void, string>({
       query: (id) => ({
         url: `/jobs/${id}`,
@@ -86,7 +83,7 @@ export const {
   useUpdateJobMutation,
   useFetchJobByIdQuery,
   useUpdateJobStatusMutation,
-  useFetchAssignmentsQuery,
+  // useFetchAssignmentsQuery,
   useDeleteJobMutation,
   useFetchOpenJobsQuery,
   useFetchOpenJobQuery,

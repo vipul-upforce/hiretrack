@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useGetServerLogsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetServerLogsQuery } from '@/lib/features/settings';
 import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
 import { useRenderLogTitle } from '@/app/dashboard/hooks/useRenderLogTitle';
 import { useDebounce } from '@/hooks/useDebounce';

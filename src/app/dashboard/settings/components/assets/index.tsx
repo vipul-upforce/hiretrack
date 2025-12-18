@@ -4,8 +4,10 @@ import { Button } from '@/components/ui/button';
 import { formatFileSize } from '@/components/ui/file-upload';
 import { toast } from '@/hooks/use-toast';
 import { FolderIcon, Loader, LucideDownload } from 'lucide-react';
-import { useFetchAssetsMetadataQuery } from '@/lib/features/settings/settingsApi';
-import { useState } from 'react';
+import {
+  useFetchAssetsMetadataQuery,
+  useDownloadAssetsMutation, // Import the new hook
+} from '@/lib/features/settings';
 import logger from '@/lib/logger';
 import AssetsLoadingSkeleton from './loading-skeleton';
 
@@ -18,34 +20,26 @@ interface AssetMetadata {
 }
 
 export default function AssetsDialog() {
-  const { data, isLoading, isFetching, isError, error, refetch } =
+  const { data, isLoading, isFetching, isError, error } =
     useFetchAssetsMetadataQuery(undefined);
 
-  const [downloading, setDownloading] = useState(false);
+  const [triggerDownload, { isLoading: isDownloading }] =
+    useDownloadAssetsMutation();
+
   const assetsMetadata: AssetMetadata | null = data?.data || null;
 
   const archiveAssets = async () => {
-    setDownloading(true);
     try {
-      const res = await fetch('/api/download/assets');
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to create assets archive');
-      }
+      const { blob, filename } = await triggerDownload().unwrap();
 
-      const contentDisposition = res.headers.get('Content-Disposition');
-      const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const fileName = fileNameMatch
-        ? fileNameMatch[1]
-        : `assets-${Date.now()}.tar.gz`;
-
-      const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = fileName;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
+
+      // Cleanup
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
@@ -53,17 +47,14 @@ export default function AssetsDialog() {
         title: 'Assets archived successfully',
         description: 'Assets archive has been downloaded.',
       });
-
-      refetch();
     } catch (err) {
       logger.error('Failed to archive assets:', err);
       toast({
         title: 'Error',
-        description: 'Failed to create assets archive',
+        description:
+          (err as any)?.data?.message || 'Failed to create assets archive',
         variant: 'destructive',
       });
-    } finally {
-      setDownloading(false);
     }
   };
 
@@ -99,9 +90,9 @@ export default function AssetsDialog() {
                 variant="ghost"
                 onClick={archiveAssets}
                 className="text-portal-primary text-xs hover:underline"
-                disabled={downloading}
+                disabled={isDownloading}
               >
-                {downloading ? (
+                {isDownloading ? (
                   <Loader className="h-4 w-4 animate-spin" />
                 ) : (
                   <LucideDownload className="h-4 w-4" />

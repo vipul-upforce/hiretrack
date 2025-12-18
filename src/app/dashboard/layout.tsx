@@ -17,13 +17,9 @@ import {
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import Cookies from 'js-cookie';
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
-import { IUser } from '@/lib/models/user';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { setAllowMultipleOrgs } from '@/lib/features/org/orgSlice';
-import { logout } from '@/lib/redux/authSlice';
-import { useDispatch, useSelector } from 'react-redux';
 import PortalHead from '@/components/layouts/PortalHead';
 import { useTheme } from '@/components/theme-provider';
 import {
@@ -37,10 +33,17 @@ import { Candidate } from '@/types/candidate';
 import { OnboardingProvider } from '@/components/onboarding/OnboardingProvider';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import SidebarContent from '@/components/layouts/SidebarContent';
-import { useGetOrganizationAllowanceQuery, useCheckOrgQuery } from '@/lib/features/org/orgApi';
+import {
+  useGetOrganizationAllowanceQuery,
+  useCheckOrgQuery,
+} from '@/lib/features/org/orgApi';
 import { useNotificationSSE } from '@/hooks/useNotificationSSE';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import logger from '@/lib/logger';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
+import { ILocalUser } from '@/lib/redux/authSlice';
+import { INotification } from '@/lib/models/notification';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 
 interface SidebarItem {
@@ -103,22 +106,21 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [userData, setUserData] = useState<IUser | null>(null);
+  const [userData, setUserData] = useState<ILocalUser | null>(null);
   const {
     data: portalConfigData,
     isLoading,
     refetch,
   } = useGetPortalConfigsQuery(undefined);
   const { setUserLoggedIn } = useCustomFields();
-  const {
-    data: allowanceData,
-  } = useGetOrganizationAllowanceQuery();
+  const { data: allowanceData } = useGetOrganizationAllowanceQuery();
 
   const [hasMultipleOrgs, seHasMultipleOrgs] = useState(false);
-
+  const router = useRouter();
   // Notification hooks
   const [notificationPage, setNotificationPage] = useState(1);
-  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] = useState(false);
+  const [isNotificationDropdownOpen, setIsNotificationDropdownOpen] =
+    useState(false);
   const {
     data: notificationsData,
     isLoading: notificationsLoading,
@@ -141,7 +143,7 @@ export default function DashboardLayout({
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
 
   // Notification handlers
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: INotification) => {
     // Mark as read if not already read
     if (!notification.isRead) {
       markAsRead(notification._id);
@@ -150,11 +152,11 @@ export default function DashboardLayout({
     // For interviewers, handle candidate-related and meeting notifications by opening dialog
     if (
       // userData?.role === "interviewer" &&
-      (notification.relatedEntity === 'candidate'
-        || notification.relatedEntity === 'followup'
-        || notification.relatedEntity === 'checklist'
-        || notification.relatedEntity === 'meeting')
-      && notification.relatedId
+      (notification.relatedEntity === 'candidate' ||
+        notification.relatedEntity === 'followup' ||
+        notification.relatedEntity === 'checklist' ||
+        notification.relatedEntity === 'meeting') &&
+      notification.relatedId
     ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
@@ -178,13 +180,15 @@ export default function DashboardLayout({
     }
   };
 
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth);
 
-  const {
-    data: orgCheckData,
-  } = useCheckOrgQuery(user?.organizationId, { skip: !user });
+  const { data: orgCheckData } = useCheckOrgQuery(
+    user?.organizationId as string,
+    { skip: !user },
+  );
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const [triggerLogout] = useLogoutUserMutation();
 
   useEffect(() => {
     if (allowanceData) {
@@ -195,20 +199,17 @@ export default function DashboardLayout({
 
   useEffect(() => {
     if (orgCheckData && !orgCheckData.exists) {
-      Cookies.remove('token');
-      dispatch(logout());
-      localStorage.removeItem('persist:auth');
-      localStorage.removeItem('persist:organization');
-      fetch('/api/auth/logout');
-      window.location.href = '/auth/login';
+      triggerLogout().then(() => {
+        router.push('/auth/login');
+      });
     }
-  }, [orgCheckData, dispatch]);
+  }, [orgCheckData, triggerLogout, dispatch, router]);
 
   useEffect(() => {
     if (
-      totalCount >= 0
-      && notificationCountData
-      && totalCount !== notificationCountData.totalCount
+      totalCount >= 0 &&
+      notificationCountData &&
+      totalCount !== notificationCountData.totalCount
     ) {
       // refetch notification when unread count changes to display latest notifications
       fetchNotifications();
@@ -219,7 +220,7 @@ export default function DashboardLayout({
     if (user) {
       setUserLoggedIn(true);
       setUserData(user);
-      refetch();
+      // refetch();
     }
   }, [user]);
 
@@ -228,7 +229,6 @@ export default function DashboardLayout({
     null,
   );
   const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
-  const router = useRouter();
   const { toast } = useToast();
 
   // Handle responsive sidebar behavior
@@ -262,10 +262,11 @@ export default function DashboardLayout({
   }, []); // Remove isCollapsed dependency to avoid infinite loops
 
   const handleLogout = async () => {
-    dispatch(logout());
-    localStorage.removeItem('persist:auth');
-    localStorage.removeItem('persist:organization');
-    await fetch('/api/auth/logout');
+    try {
+      await triggerLogout().unwrap();
+    } catch (error) {
+      logger.error('Logout failed', error);
+    }
     setUserData(null);
     setUserLoggedIn(false);
     refetch();
@@ -273,7 +274,7 @@ export default function DashboardLayout({
       title: 'Logged out',
       description: 'You have been successfully logged out',
     });
-    window.location.href = '/auth/login';
+    router.push('/auth/login');
   };
 
   const generateShareOrg = async (e: React.FormEvent) => {
@@ -368,10 +369,10 @@ export default function DashboardLayout({
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
       ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
       : null;
   };
 
@@ -445,11 +446,11 @@ export default function DashboardLayout({
 
   return (
     <OnboardingProvider>
-      <div className="w-full max-w-full flex" style={{ overflowX: 'hidden' }}>
+      <div className="flex w-full max-w-full" style={{ overflowX: 'hidden' }}>
         <PortalHead isLoading />
         <aside
           className={cn(
-            'hidden h-screen border-r bg-background md:block transition-all duration-300',
+            'hidden h-screen border-r bg-background transition-all duration-300 md:block',
             isCollapsed ? 'w-[70px]' : 'w-[240px]',
           )}
         >
@@ -482,7 +483,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden fixed left-4 top-4 z-40"
+              className="fixed left-4 top-4 z-40 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -513,8 +514,8 @@ export default function DashboardLayout({
             />
           </SheetContent>
         </Sheet>
-        <main className="w-full overflow-x-hidden overflow-y-hidden h-[100dvh]">
-          <div className="max-w-[100%] mx-auto overflow-x-hidden overflow-y-hidden">
+        <main className="h-[100dvh] w-full overflow-x-hidden overflow-y-hidden">
+          <div className="mx-auto max-w-[100%] overflow-x-hidden overflow-y-hidden">
             <NotificationsProvider
               notifications={notificationsData?.notifications || []}
               isLoading={notificationsLoading}

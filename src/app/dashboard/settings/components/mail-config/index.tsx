@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   useGetSMTPConfigsQuery,
   useUpdateSMTPConfigsMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { useTestConnection } from '@/hooks/use-test-connection';
 
 import { SMTPFormValues } from './types';

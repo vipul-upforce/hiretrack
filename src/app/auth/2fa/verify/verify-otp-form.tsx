@@ -10,17 +10,26 @@ import { useToast } from '@/hooks/use-toast';
 import { fetchUserFromToken } from '@/lib/redux/authSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/redux/store';
+import {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+} from '@/lib/features/auth/authApi';
 
 export default function VerifyOtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [otp, setOtp] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [cooldownSeconds, setCooldownSeconds] = useState(60);
+
   const email = searchParams?.get('email');
   const organizationId = searchParams?.get('orgId');
   const dispatch = useDispatch<AppDispatch>();
+
+  const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
+  const [sendOtp, { isLoading: isSending }] = useSendOtpMutation();
+
+  const isLoading = isVerifying || isSending;
 
   // Countdown timer effect
   useEffect(() => {
@@ -35,32 +44,31 @@ export default function VerifyOtpForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    try {
-      const response = await fetch('/api/auth/2fa/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
-      });
-
-      if (response.ok) {
-        toast({ title: 'Success', description: 'Login successful' });
-        router.push('/dashboard');
-      } else {
-        const { message } = await response.json();
-        toast({ title: 'Error', description: message, variant: 'destructive' });
-      }
-
-      dispatch(fetchUserFromToken());
-    } catch {
+    if (!email) {
       toast({
         title: 'Error',
-        description: 'An unknown error occurred',
+        description: 'Email is missing',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await verifyOtp({ email, otp }).unwrap();
+
+      toast({ title: 'Success', description: 'Login successful' });
+
+      dispatch(fetchUserFromToken());
+
+      router.push('/dashboard');
+    } catch (err: any) {
+      const errorMessage = err?.data?.message || 'Failed to verify OTP';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -74,29 +82,18 @@ export default function VerifyOtpForm() {
       return;
     }
 
-    setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/2fa/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, organizationId }),
-      });
+      await sendOtp({ email, organizationId }).unwrap();
 
-      if (response.ok) {
-        toast({ title: 'Success', description: 'New OTP sent' });
-        setCooldownSeconds(60); // Reset cooldown to 1 minute
-      } else {
-        const { message } = await response.json();
-        toast({ title: 'Error', description: message, variant: 'destructive' });
-      }
-    } catch {
+      toast({ title: 'Success', description: 'New OTP sent' });
+      setCooldownSeconds(60); // Reset cooldown to 1 minute
+    } catch (err: any) {
+      const errorMessage = err?.data?.message || 'Failed to resend OTP';
       toast({
         title: 'Error',
-        description: 'Failed to resend OTP',
+        description: errorMessage,
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -132,7 +129,7 @@ export default function VerifyOtpForm() {
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Verifying...' : 'Verify'}
+              {isVerifying ? 'Verifying...' : 'Verify'}
             </Button>
           </form>
           <div className="mt-4 text-center">
@@ -147,7 +144,7 @@ export default function VerifyOtpForm() {
                 onClick={handleResendOtp}
                 disabled={isLoading}
               >
-                Resend OTP
+                {isSending ? 'Sending...' : 'Resend OTP'}
               </Button>
             )}
           </div>

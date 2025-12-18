@@ -5,7 +5,7 @@ import {
   useGetBackupsQuery,
   useTakeSnapshotMutation,
   useDeleteBackupMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { BackupFile, BackupStats } from '../types';
 
 export function useBackupsLogic() {

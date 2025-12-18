@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Folder, FolderOpen, ChevronRight, ChevronDown } from 'lucide-react';
-import { useGetDiskSpaceQuery } from '@/lib/features/settings/settingsApi';
+import { useGetDiskSpaceQuery } from '@/lib/features/settings';
 import { cn } from '@/lib/utils';
 import { DirectoryContents } from './directory-contents';
 import { DiskStatsWidget } from './disk-stats-widget';

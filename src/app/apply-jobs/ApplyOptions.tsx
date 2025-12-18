@@ -6,7 +6,7 @@ import { Dialog } from '@headlessui/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, UserPlus, LogIn } from 'lucide-react';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import { ApplyAsGuestDialog } from './ApplyAsGuest';
 import { CreateCandidateDialog } from '../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog';

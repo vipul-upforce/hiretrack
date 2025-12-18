@@ -1,10 +1,7 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { baseApi } from '@/lib/api/baseApi';
 import { ILane } from '@/lib/models/Lane';
 
-export const laneApi = createApi({
-  reducerPath: 'laneApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Lane'],
+export const laneApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLanes: builder.query({
       query: ({ userId, jobId }: { userId?: string; jobId?: string }) => {
@@ -80,18 +77,15 @@ export const laneApi = createApi({
 });
 
 // Default Lanes
-export const defaultLanesApi = createApi({
-  reducerPath: 'defaultLanesApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api/organizations' }),
-  tagTypes: ['DefaultLanes'],
+export const defaultLanesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDefaultLanes: builder.query({
-      query: () => 'default-lanes',
+      query: () => `/organizations/default-lanes`,
       providesTags: ['DefaultLanes'],
     }),
     updateDefaultLanes: builder.mutation({
       query: (defaultLanes) => ({
-        url: 'default-lanes',
+        url: `/organizations/default-lanes`,
         method: 'PUT',
         body: { defaultLanes },
       }),
@@ -99,7 +93,7 @@ export const defaultLanesApi = createApi({
     }),
     addDefaultLane: builder.mutation({
       query: (laneName) => ({
-        url: 'default-lanes',
+        url: `/organizations/default-lanes`,
         method: 'POST',
         body: { laneName },
       }),
@@ -107,7 +101,7 @@ export const defaultLanesApi = createApi({
     }),
     deleteDefaultLane: builder.mutation({
       query: (laneName) => ({
-        url: 'default-lanes',
+        url: `/organizations/default-lanes`,
         method: 'DELETE',
         body: { laneName },
       }),

@@ -9,11 +9,17 @@ import connectToDatabase, {
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { IUser } from '@/lib/models/user';
 import { IUCandidateAccount } from '@/lib/models/candidateAccount';
-import { setSecureAuthTokens, setSecureOrgId } from '@/lib/secureTokens';
 import { emailLoginRateLimiter } from '@/lib/rateLimiter';
-import { signToken } from '@/app/actions/auth';
 import { UserWithoutCF } from '@/types/login';
 import { logger } from '@/lib/logger/logger.server';
+import {
+  cleanupExpiredTokens,
+  generateRefreshToken,
+  hashRefreshToken,
+  storeRefreshToken,
+} from '@/lib/refreshToken';
+import { signToken } from '@/lib/jwt';
+import { setAuthCookies } from '@/lib/authCookies';
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -42,17 +48,17 @@ async function handleLogin(req: NextRequest) {
     }
 
     if (users.length > 0 && candidates.length > 0) {
-      return await checkMultipleOrgs(orgId, users, candidates, password);
+      return await checkMultipleOrgs(orgId, users, candidates, password, req);
     }
 
     // Check if user exists in User collection
     if (users.length > 0) {
-      return await userLogin(users, orgId, password);
+      return await userLogin(users, orgId, password, req);
     }
 
     // Check if candidate exists
     if (candidates && candidates.length > 0) {
-      return await candidateLogin(candidates, orgId, password);
+      return await candidateLogin(candidates, orgId, password, req);
     }
 
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
@@ -65,7 +71,12 @@ async function handleLogin(req: NextRequest) {
   }
 }
 
-const userLogin = async (users: IUser[], orgId: string, password: string) => {
+const userLogin = async (
+  users: IUser[],
+  orgId: string,
+  password: string,
+  req: NextRequest,
+) => {
   const user = users[0];
   if (orgId) {
     const userInOrg = users.find(
@@ -102,7 +113,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
         organizationId: orgId,
       });
       response.headers.set('X-Content-Type-Options', 'nosniff');
-      // response.headers.set("X-Frame-Options", "DENY");
+      // response.headers.set('X-Frame-Options', 'DENY');
       response.headers.set('X-Frame-Options', 'SAMEORIGIN');
       response.headers.set('X-XSS-Protection', '1; mode=block');
       response.headers.set(
@@ -113,26 +124,30 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       return response;
     }
 
-    const user = {
+    const userTokenObj = {
       id: userInOrg._id.toString(),
       name: userInOrg.name,
       email: userInOrg.email,
       role: userInOrg.role,
+      tokenVersion: userInOrg.tokenVersion,
       organizationId: userInOrg.organizationId,
       organizationInfo: orgInfo,
       fileStorage: orgSettings?.fileStorage?.storageType,
     };
 
-    const response = returnTokenBasedResponse(user);
+    const response = await returnTokenBasedResponse(userTokenObj, req);
     return response;
   }
 
   // Collect organization info
   const orgs = [];
-  for (const user of users) {
-    const orgInfo = await Organization!.findById(user.organizationId);
+  for (const user1 of users) {
+    const orgInfo = await Organization!
+      .findById(user1.organizationId)
+      .select('name _id')
+      .lean();
     orgs.push({
-      orgId: user.organizationId,
+      orgId: user1.organizationId,
       name: orgInfo?.name,
       isCandidate: false,
     });
@@ -148,6 +163,9 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
       },
       { status: 200 },
     );
+  }
+  if (orgs.length === 1 && users.length === 1) {
+    return userLogin(users, orgs[0].orgId.toString(), password, req);
   }
 
   // If user exists in a single organization, proceed to check password
@@ -168,10 +186,11 @@ const userLogin = async (users: IUser[], orgId: string, password: string) => {
     email: user.email,
     role: user.role,
     organizationId: user.organizationId,
+    tokenVersion: user.tokenVersion,
     organizationInfo: orgInfo,
     fileStorage: fileStorage?.fileStorage?.storageType,
   };
-  const response = returnTokenBasedResponse(tokenObj);
+  const response = await returnTokenBasedResponse(tokenObj, req);
   return response;
 };
 
@@ -179,6 +198,7 @@ const candidateLogin = async (
   candidates: IUCandidateAccount[],
   orgId: string,
   password: string,
+  req: NextRequest,
 ) => {
   const candidate = candidates[0];
   if (orgId) {
@@ -224,7 +244,7 @@ const candidateLogin = async (
       organizationInfo: orgInfo,
       fileStorage: fileStorage?.fileStorage?.storageType,
     };
-    const response = returnTokenBasedResponse(tokenObj);
+    const response = await returnTokenBasedResponse(tokenObj, req);
     return response;
   }
 
@@ -278,7 +298,7 @@ const candidateLogin = async (
     organizationInfo: orgInfo,
     fileStorage: fileStorage?.fileStorage?.storageType,
   };
-  const response = returnTokenBasedResponse(tokenObj);
+  const response = await returnTokenBasedResponse(tokenObj, req);
   return response;
 };
 
@@ -287,6 +307,7 @@ const checkMultipleOrgs = async (
   users: IUser[],
   candidates: IUCandidateAccount[],
   password: string,
+  req: NextRequest,
 ) => {
   if (orgId) {
     // Find user and candidate in the specified organization
@@ -407,9 +428,10 @@ const checkMultipleOrgs = async (
         organizationId: userInOrg.organizationId,
         organizationInfo: orgInfo,
         fileStorage: fileStorage?.fileStorage?.storageType,
+        tokenVersion: userInOrg.tokenVersion,
       };
 
-      const response = await returnTokenBasedResponse(tokenObj);
+      const response = await returnTokenBasedResponse(tokenObj, req);
       return response;
     }
 
@@ -449,7 +471,7 @@ const checkMultipleOrgs = async (
         fileStorage: fileStorage?.fileStorage?.storageType,
       };
 
-      const response = await returnTokenBasedResponse(tokenObj);
+      const response = await returnTokenBasedResponse(tokenObj, req);
       return response;
     }
   }
@@ -514,7 +536,7 @@ const checkMultipleOrgs = async (
   );
 };
 
-const returnTokenBasedResponse = async (obj: any) => {
+const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
   const userWithoutCustomFields: UserWithoutCF = {
     ...obj,
   };
@@ -525,38 +547,59 @@ const returnTokenBasedResponse = async (obj: any) => {
     delete userWithoutCustomFields.organizationInfo.customFields;
   }
 
-  const token = await signToken(
+  // Generate short-lived access token (15 minutes)
+  const accessToken = await signToken(
     userWithoutCustomFields,
     obj.organizationId.toString(),
+  );
+  console.log('accessToken-534', accessToken);
+  const userId = obj.id || obj._id.toString();
+  const { role } = obj;
+  const isCandidate = role === 'candidate';
+  const orgId = obj.organizationId.toString();
+
+  // Cleanup expired tokens before storing new one (keeps array clean)
+  await cleanupExpiredTokens(userId, isCandidate);
+
+  // Generate refresh token using JWT (same method as access token)
+  const refreshTokenPayload = {
+    userId,
+    role,
+    orgId,
+    isCandidate,
+    tokenVersion: obj.tokenVersion,
+  };
+
+  const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+
+  // Store hashed refresh token in database
+  await storeRefreshToken(
+    userId,
+    refreshTokenHash,
+    isCandidate,
+    7, // 7 days
   );
 
   const response = NextResponse.json({
     message: 'Logged In Successfully',
-    user: token,
-  });
-  // SECURITY FIX: Use secure token system with improved security
-  // const resp = setSecureAuthTokens(response, token, {
-  //   expires: 30, // 30 days
-  //   maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-  // });
-  // Set secure auth token
-  let resp = setSecureAuthTokens(response, token, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    user: accessToken,
+    refreshToken, // Return JWT refresh token to client
   });
 
-  // Set secure organization ID
-  resp = setSecureOrgId(resp, obj.organizationId, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-    path: '/', // Consistent with auth token
+  // Centralized auth cookie handling
+  setAuthCookies({
+    response,
+    accessToken,
+    refreshToken,
+    orgId: obj.organizationId.toString(),
   });
 
-  return resp;
+  return response;
 };
 
 // Export with email-based rate limiting
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   // SECURITY FIX: Apply email-based rate limiting to prevent brute force attacks
-  return emailLoginRateLimiter(req as NextRequest, handleLogin);
+  return await emailLoginRateLimiter(req, handleLogin);
 }
