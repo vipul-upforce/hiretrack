@@ -3,7 +3,6 @@ import connectToDatabase ,{ User } from '@/lib/mongodb';
 import { signAccessToken } from '@/app/actions/auth';
 import { loginRateLimiter } from '@/lib/rateLimiter';
 import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from '@/lib/refreshToken';
-import crypto from 'crypto';
 import { logger } from '@/lib/logger/logger.server';
 import { setAuthCookies } from "@/lib/authCookies";
 
@@ -108,8 +107,6 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
   // Generate short-lived access token (15 minutes)
   const accessToken = await signAccessToken(obj[0], orgId);
 
-  // Generate device info
-  const deviceInfo = req?.headers.get('user-agent') || 'Unknown Device';
   const userId = obj[0].id;
   const role = obj[0].role;
   const isCandidate = role === 'candidate';
@@ -117,19 +114,13 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
   // Cleanup expired tokens before storing new one (keeps array clean)
   await cleanupExpiredTokens(userId, isCandidate);
   
-  // Generate deviceId
-  const deviceId = crypto.randomUUID();
-  
   // Generate refresh token using JWT (same method as access token)
   const refreshTokenPayload = {
     userId: userId,
     role: role,
     orgId: orgId,
     isCandidate: isCandidate,
-    deviceId: deviceId,
-    deviceInfo: deviceInfo,
     tokenVersion: obj[0].tokenVersion,
-    
   };
   
   const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
@@ -140,8 +131,6 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
     userId,
     refreshTokenHash,
     isCandidate,
-    deviceId,
-    deviceInfo,
     7 // 7 days
   );
 
@@ -149,14 +138,12 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
     message: 'Logged In Successfully',
     user: accessToken,
     refreshToken: refreshToken, // Return JWT refresh token to client
-    deviceId: deviceId,
   });
 
   setAuthCookies({
     response,
     accessToken,
     refreshToken,
-    deviceId,
     orgId,
   });
 

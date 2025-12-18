@@ -7,7 +7,6 @@ import { setSecureOrgId } from '@/lib/secureTokens';
 export const COOKIE_LIFETIMES = {
   ACCESS_TOKEN: 15 * 60, // 15 minutes
   REFRESH_TOKEN: 7 * 24 * 60 * 60, // 7 days
-  DEVICE_ID: 7 * 24 * 60 * 60, // 7 days
   ORG_ID: 7 * 24 * 60 * 60, // 7 days
 } as const;
 
@@ -25,7 +24,6 @@ interface SetAuthCookiesParams {
   response: NextResponse;
   accessToken: string;
   refreshToken: string;
-  deviceId: string;
   orgId: string;
 }
 
@@ -39,7 +37,6 @@ export function setAuthCookies({
   response,
   accessToken,
   refreshToken,
-  deviceId,
   orgId,
 }: SetAuthCookiesParams): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
@@ -70,15 +67,6 @@ export function setAuthCookies({
     path: '/',
   });
 
-  // Device identifier (7 days)
-  response.cookies.set('device_id', deviceId, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
-    maxAge: COOKIE_LIFETIMES.DEVICE_ID,
-    path: '/',
-  });
-
   // Organization id (7 days) - defer to existing helper for headers/options
   setSecureOrgId(response, orgId, {
     expires: 7,
@@ -105,16 +93,14 @@ export function updateAccessToken(
 
   // Read existing cookies
   const refreshToken = request.cookies.get('refresh_token')?.value || '';
-  const deviceId = request.cookies.get('device_id')?.value || '';
   const orgId = request.cookies.get('org_id')?.value || '';
 
   // If we have all required cookies, use full setAuthCookies
-  if (refreshToken && deviceId && orgId) {
+  if (refreshToken && orgId) {
     return setAuthCookies({
       response,
       accessToken: newAccessToken,
       refreshToken,
-      deviceId,
       orgId,
     });
   }
@@ -168,7 +154,6 @@ export function clearAuthTokens(response: NextResponse): NextResponse {
   response.cookies.set('auth_token', '', cookieOptions);
   response.cookies.set('auth_state', '', authStateCookieOptions);
   response.cookies.set('refresh_token', '', cookieOptions);
-  response.cookies.set('device_id', '', cookieOptions);
   response.cookies.set('org_id', '', authStateCookieOptions);
 
   return response;

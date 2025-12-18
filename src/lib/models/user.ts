@@ -72,8 +72,6 @@ export interface EmailNotificationSettings {
 export interface RefreshTokenEntry {
   token: string;        // Hashed token
   expiry: Date;
-  deviceId?: string;   // Unique device identifier
-  deviceInfo?: string;  // Browser/device info
   createdAt: Date;
 }
 
@@ -140,8 +138,6 @@ export const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     refreshTokens: [{
       token: { type: String, required: true },
       expiry: { type: Date, required: true },
-      deviceId: { type: String },
-      deviceInfo: { type: String },
       createdAt: { type: Date, default: Date.now }
     }],
     isDeleted: {

@@ -54,8 +54,6 @@ export const candidateAccountSchema = new Schema<IUCandidateAccount>(
     refreshTokens: [{
       token: { type: String, required: true },
       expiry: { type: Date, required: true },
-      deviceId: { type: String },
-      deviceInfo: { type: String },
       createdAt: { type: Date, default: Date.now }
     }],
     isDeleted: {

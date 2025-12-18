@@ -9,8 +9,6 @@ export interface RefreshTokenPayload {
   userId: string;
   orgId: string;
   isCandidate: boolean;
-  deviceId?: string;
-  deviceInfo?: string;
   tokenVersion?: number;
   role?: UserRole | string;
 }
@@ -119,19 +117,14 @@ export async function storeRefreshToken(
   userId: string,
   tokenHash: string,
   isCandidate: boolean = false,
-  deviceId?: string,
-  deviceInfo?: string,
   expiryDays: number = 7,
-): Promise<string> {
+): Promise<void> {
   const expiry = new Date();
   expiry.setDate(expiry.getDate() + expiryDays);
 
-  const deviceIdToUse = deviceId || crypto.randomUUID();
   const tokenEntry = {
     token: tokenHash,
     expiry,
-    deviceId: deviceIdToUse,
-    deviceInfo: deviceInfo || 'Unknown Device',
     createdAt: new Date(),
   };
 
@@ -144,8 +137,6 @@ export async function storeRefreshToken(
       $push: { refreshTokens: tokenEntry },
     });
   }
-
-  return deviceIdToUse;
 }
 
 /**
@@ -159,7 +150,6 @@ export async function verifyRefreshToken(
   isCandidate: boolean = false,
 ): Promise<{
   valid: boolean;
-  deviceId?: string;
   payload?: RefreshTokenPayload;
 }> {
   // First, verify and decrypt the JWT token
@@ -204,26 +194,25 @@ export async function verifyRefreshToken(
 
   return {
     valid: true,
-    deviceId: tokenEntry.deviceId,
     payload,
   };
 }
 
 /**
  * Clear refresh token from database
- * If deviceId is provided, clears only that device's token
- * If deviceId is not provided, clears all tokens
+ * If tokenHash is provided, clears only that specific token
+ * If tokenHash is not provided, clears all tokens
  */
 export async function clearRefreshToken(
   userId: string,
-  deviceId?: string,
+  tokenHash?: string,
   isCandidate: boolean = false,
 ): Promise<void> {
   if (isCandidate) {
-    if (deviceId) {
-      // Clear specific device token
+    if (tokenHash) {
+      // Clear specific token
       await CandidateAccount.findByIdAndUpdate(userId, {
-        $pull: { refreshTokens: { deviceId } },
+        $pull: { refreshTokens: { token: tokenHash } },
       });
     } else {
       // Clear all tokens
@@ -231,12 +220,16 @@ export async function clearRefreshToken(
         $set: { refreshTokens: [] },
       });
     }
-  } else if (deviceId) {
-    await User.findByIdAndUpdate(userId, {
-      $pull: { refreshTokens: { deviceId } },
-    });
   } else {
-    await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
+    if (tokenHash) {
+      // Clear specific token
+      await User.findByIdAndUpdate(userId, {
+        $pull: { refreshTokens: { token: tokenHash } },
+      });
+    } else {
+      // Clear all tokens
+      await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
+    }
   }
 }
 

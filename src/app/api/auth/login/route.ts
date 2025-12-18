@@ -1,15 +1,25 @@
 import { NextResponse, NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
-import connectToDatabase, { CandidateAccount, Settings,User, Organization  } from '@/lib/mongodb';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+  Organization,
+} from '@/lib/mongodb';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { IUser } from '@/lib/models/user';
 import { IUCandidateAccount } from '@/lib/models/candidateAccount';
 import { emailLoginRateLimiter } from '@/lib/rateLimiter';
 import { UserWithoutCF } from '@/types/login';
 import { logger } from '@/lib/logger/logger.server';
-import { cleanupExpiredTokens, generateRefreshToken, hashRefreshToken, storeRefreshToken } from '@/lib/refreshToken';
+import {
+  cleanupExpiredTokens,
+  generateRefreshToken,
+  hashRefreshToken,
+  storeRefreshToken,
+} from '@/lib/refreshToken';
 import { signToken } from '@/lib/jwt';
-import { setAuthCookies } from "@/lib/authCookies";
+import { setAuthCookies } from '@/lib/authCookies';
 
 async function handleLogin(req: NextRequest) {
   try {
@@ -61,7 +71,12 @@ async function handleLogin(req: NextRequest) {
   }
 }
 
-const userLogin = async (users: IUser[], orgId: string, password: string, req: NextRequest) => {
+const userLogin = async (
+  users: IUser[],
+  orgId: string,
+  password: string,
+  req: NextRequest,
+) => {
   const user = users[0];
   if (orgId) {
     const userInOrg = users.find(
@@ -89,7 +104,7 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
     const orgSettings = await Settings!
       .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
       .select('fileStorage twoFA')
-      .lean()
+      .lean();
 
     if (orgSettings.twoFA.enable2FA) {
       const response = NextResponse.json({
@@ -127,7 +142,10 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
   // Collect organization info
   const orgs = [];
   for (const user1 of users) {
-    const orgInfo = await Organization!.findById(user1.organizationId).select("name _id").lean();
+    const orgInfo = await Organization!
+      .findById(user1.organizationId)
+      .select('name _id')
+      .lean();
     orgs.push({
       orgId: user1.organizationId,
       name: orgInfo?.name,
@@ -146,8 +164,8 @@ const userLogin = async (users: IUser[], orgId: string, password: string, req: N
       { status: 200 },
     );
   }
-  if(orgs.length === 1 && users.length === 1) {
-    return  userLogin(users, orgs[0].orgId.toString(), password, req);
+  if (orgs.length === 1 && users.length === 1) {
+    return userLogin(users, orgs[0].orgId.toString(), password, req);
   }
 
   // If user exists in a single organization, proceed to check password
@@ -180,7 +198,7 @@ const candidateLogin = async (
   candidates: IUCandidateAccount[],
   orgId: string,
   password: string,
-  req: NextRequest
+  req: NextRequest,
 ) => {
   const candidate = candidates[0];
   if (orgId) {
@@ -289,7 +307,7 @@ const checkMultipleOrgs = async (
   users: IUser[],
   candidates: IUCandidateAccount[],
   password: string,
-  req: NextRequest
+  req: NextRequest,
 ) => {
   if (orgId) {
     // Find user and candidate in the specified organization
@@ -532,54 +550,41 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
   // Generate short-lived access token (15 minutes)
   const accessToken = await signToken(
     userWithoutCustomFields,
-    obj.organizationId.toString()
+    obj.organizationId.toString(),
   );
-  console.log("accessToken-534", accessToken);
-  // Generate device info
-  const deviceInfo = req?.headers.get('user-agent') || 'Unknown Device';
+  console.log('accessToken-534', accessToken);
   const userId = obj.id || obj._id.toString();
-  const role = obj.role;
+  const { role } = obj;
   const isCandidate = role === 'candidate';
   const orgId = obj.organizationId.toString();
-  
+
   // Cleanup expired tokens before storing new one (keeps array clean)
   await cleanupExpiredTokens(userId, isCandidate);
-  
-  // Generate deviceId
-  const deviceId = crypto.randomUUID();
-  
+
   // Generate refresh token using JWT (same method as access token)
   const refreshTokenPayload = {
-    userId: userId,
-    role: role,
-    orgId: orgId,
-    isCandidate: isCandidate,
-    deviceId: deviceId,
-    deviceInfo: deviceInfo,
+    userId,
+    role,
+    orgId,
+    isCandidate,
     tokenVersion: obj.tokenVersion,
   };
-  
+
   const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
   const refreshTokenHash = hashRefreshToken(refreshToken);
-  
+
   // Store hashed refresh token in database
   await storeRefreshToken(
     userId,
     refreshTokenHash,
     isCandidate,
-    deviceId,
-    deviceInfo,
-    7 // 7 days
+    7, // 7 days
   );
 
-  
-  
-  
   const response = NextResponse.json({
     message: 'Logged In Successfully',
     user: accessToken,
-    refreshToken: refreshToken, // Return JWT refresh token to client
-    deviceId: deviceId,
+    refreshToken, // Return JWT refresh token to client
   });
 
   // Centralized auth cookie handling
@@ -587,7 +592,6 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     response,
     accessToken,
     refreshToken,
-    deviceId,
     orgId: obj.organizationId.toString(),
   });
 

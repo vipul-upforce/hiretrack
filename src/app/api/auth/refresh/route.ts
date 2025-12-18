@@ -53,8 +53,6 @@ async function handleRefreshToken(req: NextRequest) {
     let orgId: string;
     let userId: string;
     let isCandidate: boolean;
-    let deviceId: string | undefined;
-    let deviceInfo: string | undefined;
     let tokenVersion: number | undefined;
     let role: UserRole | undefined;
     // If token is invalid, try to find orgId from database
@@ -106,8 +104,6 @@ async function handleRefreshToken(req: NextRequest) {
       orgId = payload.orgId;
       userId = payload.userId;
       isCandidate = payload.isCandidate || false;
-      deviceId = payload.deviceId;
-      deviceInfo = payload.deviceInfo;
       tokenVersion = payload.tokenVersion;
       role = payload.role as UserRole;
     }
@@ -116,8 +112,6 @@ async function handleRefreshToken(req: NextRequest) {
     if (!userId) userId = payload.userId;
     if (!orgId) orgId = payload.orgId;
     if (isCandidate === undefined) isCandidate = payload.isCandidate || false;
-    if (!deviceId) deviceId = payload.deviceId;
-    if (!deviceInfo) deviceInfo = payload.deviceInfo;
     if (!tokenVersion) tokenVersion = payload.tokenVersion;
     if (!role) role = payload.role as UserRole;
 
@@ -194,8 +188,6 @@ async function handleRefreshToken(req: NextRequest) {
       userId,
       orgId,
       isCandidate,
-      deviceId: verification.deviceId || deviceId,
-      deviceInfo: deviceInfo || verification.payload?.deviceInfo,
       role: user.role,
       tokenVersion: !isCandidate
         ? (user as IUser)?.tokenVersion || undefined
@@ -220,13 +212,10 @@ async function handleRefreshToken(req: NextRequest) {
       licenseValid: true,
     });
 
-    const nextDeviceId = verification.deviceId || deviceId!;
-
     setAuthCookies({
       response,
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
-      deviceId: nextDeviceId,
       orgId,
     });
 

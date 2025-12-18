@@ -3,6 +3,7 @@ import { clearAuthTokens } from '@/lib/authCookies';
 import { verifyAndDecryptToken } from '@/app/actions/auth';
 import {
   clearRefreshToken,
+  hashRefreshToken,
   verifyRefreshToken,
   verifyAndDecryptRefreshToken,
 } from '@/lib/refreshToken';
@@ -19,33 +20,18 @@ export async function GET(request: NextRequest) {
       const { success, user } = await verifyAndDecryptToken(token, orgId);
 
       if (success && user) {
-        // Try to get deviceId from refresh token cookie
+        // Try to get token hash from refresh token cookie
         const refreshToken = request.cookies.get('refresh_token')?.value;
-        let deviceId: string | undefined;
+        let tokenHash: string | undefined;
 
-        if (refreshToken && orgId) {
-          // Decrypt refresh token to get deviceId
-          const tokenVerification = verifyAndDecryptRefreshToken(
-            refreshToken,
-            orgId,
-          );
-          if (tokenVerification.success && tokenVerification.payload) {
-            deviceId = tokenVerification.payload.deviceId;
-          } else {
-            // Fallback: try database lookup
-            const verification = await verifyRefreshToken(
-              refreshToken,
-              user.id || user.email,
-              orgId,
-              user.role === 'candidate',
-            );
-            deviceId = verification.deviceId;
-          }
+        if (refreshToken) {
+          // Hash the refresh token to find and clear the specific token
+          tokenHash = hashRefreshToken(refreshToken);
         }
 
-        // Clear refresh token from database (specific device or all if deviceId not found)
+        // Clear refresh token from database (specific token or all if tokenHash not found)
         const isCandidate = user.role === 'candidate';
-        await clearRefreshToken(user.id || user.email, deviceId, isCandidate);
+        await clearRefreshToken(user.id || user.email, tokenHash, isCandidate);
       }
     }
 
