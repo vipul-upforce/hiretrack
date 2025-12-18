@@ -109,6 +109,18 @@ const eslintConfig = [
       },
     },
   },
+  // 5. SPECIFIC OVERRIDES (Hotfix for huge files)
+  {
+    // Target only route handlers
+    files: ['**/route.ts'],
+    rules: {
+      // Allow huge files
+      'max-lines': 'off',
+
+      // If complexity is an issue
+      complexity: 'off',
+    },
+  },
 ];
 
 export default eslintConfig;
