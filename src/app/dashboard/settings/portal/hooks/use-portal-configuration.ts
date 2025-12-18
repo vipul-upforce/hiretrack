@@ -121,7 +121,7 @@ export function usePortalConfiguration() {
 
       const updatedUser = {
         ...user,
-        organizaionInfo: {
+        organizationInfo: {
           ...user?.organizationInfo,
           name: payload.portalName,
         },
