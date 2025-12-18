@@ -5,7 +5,8 @@ import { FORM_FIELDS } from '../constants';
 import { SMTPFormValues } from '../types';
 
 export function DynamicInputs() {
-  const { values, handleChange, handleBlur } = useFormikContext<SMTPFormValues>();
+  const { values, handleChange, handleBlur } =
+    useFormikContext<SMTPFormValues>();
 
   return (
     <>
@@ -17,7 +18,7 @@ export function DynamicInputs() {
           <Input
             id={name}
             name={name}
-            value={values.name}
+            value={values[name as keyof SMTPFormValues] || ''}
             onChange={handleChange}
             onBlur={handleBlur}
             placeholder={placeholder}
@@ -25,7 +26,7 @@ export function DynamicInputs() {
           <ErrorMessage
             name={name}
             component="div"
-            className="text-red-500 text-sm"
+            className="text-sm text-red-500"
           />
         </div>
       ))}

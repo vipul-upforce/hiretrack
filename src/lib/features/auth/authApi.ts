@@ -2,7 +2,7 @@ import { baseApi } from '@/lib/api/baseApi';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
 import { NextResponse } from 'next/server';
-import { logout } from '@/lib/redux/authSlice';
+import { ILocalUser, logout } from '@/lib/redux/authSlice';
 import logger from '@/lib/logger';
 
 interface AuthRequest {
@@ -47,14 +47,23 @@ interface LicenseResponse {
   hasLicenseFile?: boolean;
 }
 
+interface GetMeResponse {
+  user: ILocalUser;
+}
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getMe: builder.query<GetMeResponse, void>({
+      query: () => '/auth/me',
+      providesTags: ['Users'],
+    }),
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
         url: '/auth/login',
         method: 'POST',
         body: credentials,
       }),
+      invalidatesTags: ['Users'],
     }),
     signup: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
@@ -142,4 +151,5 @@ export const {
   useVerifyOtpMutation,
   useSendOtpMutation,
   useLazyValidateLicenseQuery,
+  useGetMeQuery,
 } = authApi;
