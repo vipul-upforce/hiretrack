@@ -191,6 +191,31 @@ export interface DownloadAssetsResponse {
   filename: string;
 }
 
+export interface PortalFile {
+  id: string;
+  name: string;
+  url: string;
+  type?: string;
+  size?: number;
+}
+
+export interface PortalConfigData {
+  portalName: string;
+  portalLogo: PortalFile | null;
+  portalLogoDark: PortalFile | null;
+  portalFavicon: PortalFile | null;
+  portalHeader: PortalFile | null;
+  portalFooter: PortalFile | null;
+  primaryColor: string;
+  secondaryColor: string;
+  fileStorage?: { storageType: string };
+}
+
+export interface PortalConfigUpdateResponse {
+  message: string;
+  portalConfigs: PortalConfigData;
+}
+
 export const settingsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getBackups: builder.query<any, void>({
@@ -363,20 +388,25 @@ export const settingsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Settings'],
     }),
-    getPortalConfigs: builder.query({
+    getPortalConfigs: builder.query<PortalConfigData, void>({
       query: () => ({
         url: '/settings/portal',
         method: 'get',
       }),
       providesTags: ['Settings'],
     }),
-    updatePortalConfigs: builder.mutation({
+    updatePortalConfigs: builder.mutation<
+      PortalConfigUpdateResponse,
+      Partial<PortalConfigData> & {
+        portalHeaderHtml?: string;
+        portalFooterHtml?: string;
+      }
+    >({
       query: (portalConfigs) => ({
         url: '/settings/portal',
         method: 'PUT',
         body: portalConfigs,
       }),
-      invalidatesTags: ['Settings'],
     }),
     updateGoogleCalendar: builder.mutation({
       query: (googleCalendarConfig) => ({
