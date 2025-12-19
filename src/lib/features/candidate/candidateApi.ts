@@ -27,12 +27,17 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
+export interface UpdateRemarkRequest {
+  id: string;
+  description: string;
+  rating?: number | null;
+  isPrivate?: boolean;
+}
+
 export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
-      query: (jobId) =>
-        // debugger
-        `/jobs/${jobId}/candidates`,
+      query: (jobId) => `/jobs/${jobId}/candidates`,
       providesTags: ['Candidate'],
     }),
     fetchCandidateById: builder.query<Candidate, string>({
@@ -161,6 +166,14 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    updateCandidateRemark: builder.mutation<void, UpdateRemarkRequest>({
+      query: (data) => ({
+        url: '/api/candidates/history',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
     evaluateCandidate: builder.mutation<
       {
         message: string;
@@ -255,4 +268,5 @@ export const {
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
+  useUpdateCandidateRemarkMutation,
 } = candidateApi;

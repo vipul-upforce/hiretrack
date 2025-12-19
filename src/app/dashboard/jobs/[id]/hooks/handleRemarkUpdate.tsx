@@ -2,6 +2,7 @@ import { toast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
 import { Candidate } from '@/types/candidate';
 import { usePathname } from 'next/navigation';
+import { UpdateRemarkRequest } from '@/lib/features/candidate/candidateApi';
 
 export default async function handleRemarkUpdate(
   id: string,
@@ -12,30 +13,19 @@ export default async function handleRemarkUpdate(
   refetch: () => void,
   onUpdate: (x: Candidate) => void,
   localCandidate: Candidate,
+  updateRemark: (data: UpdateRemarkRequest) => { unwrap: () => Promise<void> },
   isPrivate?: boolean,
 ) {
   setIsEditRemarkDialogOpen(false);
   const pathname = usePathname();
+
   try {
-    const response = await fetch('/api/candidates/history', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id,
-        isPrivate,
-        description,
-        rating: remarkRatingHistory,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to update remark');
-    }
-
-    await response.json();
+    await updateRemark({
+      id,
+      isPrivate,
+      description,
+      rating: remarkRatingHistory,
+    }).unwrap();
 
     if (pathname === '/dashboard') {
       refetchAssignment?.();

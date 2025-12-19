@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
 import { Candidate } from '@/types/candidate';
+import { useSyncEventMutation } from '@/lib/features/calendar/calendarApi';
 
 interface UseCandidateCardSyncParams {
   localCandidate: Candidate;
@@ -20,6 +21,7 @@ export function useCandidateCardSync({
   setIsSyncing,
 }: UseCandidateCardSyncParams) {
   const { toast } = useToast();
+  const [syncEvent] = useSyncEventMutation();
 
   const handleSyncAttendeeResponses = useCallback(
     async (e: React.MouseEvent) => {
@@ -37,49 +39,42 @@ export function useCandidateCardSync({
       setIsSyncing(true);
 
       try {
-        const response = await fetch('/api/google-calendar/sync-event', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            candidateId: localCandidate._id,
-            eventId: localCandidate.assignment.googleMeet.eventId,
-          }),
-        });
+        const syncData = await syncEvent({
+          candidateId: localCandidate._id,
+          eventId: localCandidate.assignment.googleMeet.eventId,
+        }).unwrap();
 
-        if (response.ok) {
-          const syncData = await response.json();
-
-          // Update local candidate with new attendee responses
-          if (syncData.success && syncData.data.attendeeResponses) {
-            setLocalCandidate((prevCandidate) => ({
-              ...prevCandidate,
-              assignment: {
-                ...prevCandidate.assignment!,
-                googleMeet: {
-                  ...prevCandidate.assignment!.googleMeet!,
-                  attendeeResponses: syncData.data.attendeeResponses,
-                },
+        if (syncData.success && syncData.data.attendeeResponses) {
+          setLocalCandidate((prevCandidate) => ({
+            ...prevCandidate,
+            assignment: {
+              ...prevCandidate.assignment!,
+              googleMeet: {
+                ...prevCandidate.assignment!.googleMeet!,
+                attendeeResponses: syncData.data.attendeeResponses.map(
+                  (response) => ({
+                    ...response,
+                    lastUpdated: new Date(response.lastUpdated),
+                  }),
+                ),
               },
-            }));
-          }
-
-          let description: string;
-          if (syncData.data.notificationsSent > 0) {
-            description = `Updated attendee responses. ${syncData.data.notificationsSent} notifications sent.`;
-          } else if (syncData.data.changesDetected) {
-            description = 'Attendee responses updated successfully.';
-          } else {
-            description = 'Attendee responses are up to date.';
-          }
-          toast({
-            title: 'Sync Successful',
-            description,
-          });
-        } else {
-          throw new Error('Sync failed');
+            },
+          }));
         }
+
+        let description: string;
+        if (syncData.data.notificationsSent > 0) {
+          description = `Updated attendee responses. ${syncData.data.notificationsSent} notifications sent.`;
+        } else if (syncData.data.changesDetected) {
+          description = 'Attendee responses updated successfully.';
+        } else {
+          description = 'Attendee responses are up to date.';
+        }
+
+        toast({
+          title: 'Sync Successful',
+          description,
+        });
       } catch (err) {
         logger.error('Error syncing attendee responses:', err);
         toast({
@@ -97,6 +92,7 @@ export function useCandidateCardSync({
       setLocalCandidate,
       setIsSyncing,
       toast,
+      syncEvent,
     ],
   );
 
