@@ -8,7 +8,7 @@ import {
 import { MentionTextarea } from '@/components/ui/mention-textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 import Rating from '@mui/material/Rating';
 import { IEditRemark } from '../../schemas/EditRemarkDialog';
 
@@ -25,17 +25,17 @@ function EditRemarkDialog({
   isEditRemarkDialogOpen: boolean;
   setIsEditRemarkDialogOpen: (x: boolean) => void;
   editingRemark: IEditRemark | null;
-  setEditingRemark: ({}: IEditRemark) => void;
+  setEditingRemark: (remark: IEditRemark) => void;
   handleRemarkUpdate: (
     id: string,
     description: string,
-    isPrivate?: boolean
+    isPrivate?: boolean,
   ) => void;
   isLoading: boolean;
   setRemarkRating: (x: number | null) => void;
   setRemarkRatingHistory: (x: number | null) => void;
 }) {
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // const [remarkRating, setRemarkRating] = useState(editingRemark?.rating || 0);
   // const [remarkRatingHistory, setRemarkRatingHistory] = useState(
@@ -82,16 +82,16 @@ function EditRemarkDialog({
                 }
               }
             }}
-            organizationId={user?.organizationId || ''}
+            organizationId={String(user?.organizationId) || ''}
             currentUserRole={user?.role || ''}
             rows={5}
             isRemarkPrivate={editingRemark?.isPrivate ?? true}
           />
-          <div className="flex items-center gap-2 mt-2">
+          <div className="mt-2 flex items-center gap-2">
             <Label htmlFor="rating">Rating:</Label>
             <Rating
               name="half-rating"
-              onChange={(e, value) => {
+              onChange={(_event, value) => {
                 setRemarkRating(value || null);
                 setRemarkRatingHistory(value || null);
               }}

@@ -1,8 +1,6 @@
 'use client';
 
-import {
-  Formik, Form, Field, FormikHelpers,
-} from 'formik';
+import { Formik, Form, Field, FormikHelpers } from 'formik';
 import * as Yup from 'yup';
 import {
   Dialog,
@@ -25,11 +23,10 @@ import {
   useFetchOpenJobsQuery,
   useAssignJobMutation,
   useBulkAssignJobMutation,
-} from "@/lib/features/job/jobApi";
-import { Loader2, AlertCircle } from "lucide-react";
-import { useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+} from '@/lib/features/job/jobApi';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface AssignJobDialogProps {
   candidate: Candidate | Candidate[];
@@ -88,7 +85,7 @@ export function AssignJobDialog({
             .filter((c) => {
               const isAlreadyAssigned =
                 c.jobId &&
-                (typeof c.jobId === "string"
+                (typeof c.jobId === 'string'
                   ? c.jobId === values.jobId
                   : c.jobId._id === values.jobId);
               return !isAlreadyAssigned;
@@ -97,9 +94,10 @@ export function AssignJobDialog({
 
           if (candidateIdsToMove.length === 0) {
             toast({
-              title: "Warning",
-              description: "All selected candidates are already assigned to this job",
-              variant: "destructive",
+              title: 'Warning',
+              description:
+                'All selected candidates are already assigned to this job',
+              variant: 'destructive',
             });
             return;
           }
@@ -111,7 +109,7 @@ export function AssignJobDialog({
 
           onJobAssignment?.(resp.updatedCandidates);
           toast({
-            title: "Success",
+            title: 'Success',
             description: `Successfully assigned ${candidateIdsToMove.length} candidate(s) to the job`,
           });
         } catch (error) {
@@ -120,16 +118,17 @@ export function AssignJobDialog({
             description:
               'All selected candidates are already assigned to this job',
             variant: 'destructive',
-            title: "Error",
-            description: "Bulk job assignment failed.",
-            variant: "destructive",
+            title: 'Error',
+            description: 'Bulk job assignment failed.',
+            variant: 'destructive',
           });
         }
       } else {
         // Handle single candidate
-        const isAlreadyAssigned = candidate.jobId
-          && typeof candidate.jobId === 'object'
-          && (typeof candidate.jobId === 'string'
+        const isAlreadyAssigned =
+          candidate.jobId &&
+          typeof candidate.jobId === 'object' &&
+          (typeof candidate.jobId === 'string'
             ? candidate.jobId === values.jobId
             : candidate.jobId._id === values.jobId);
 
@@ -165,9 +164,9 @@ export function AssignJobDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden flex flex-col justify-start">
+      <DialogContent className="flex flex-col justify-start overflow-hidden p-0">
         <DialogHeader className="px-6 py-4 pr-12">
-          <DialogTitle className="flex justify-between align-center">
+          <DialogTitle className="align-center flex justify-between">
             {isMultiple
               ? `Assign Job to ${candidateCount} Candidates`
               : 'Assign Job'}
@@ -181,16 +180,16 @@ export function AssignJobDialog({
               <Skeleton className="h-4 w-[60%]" />
               <Skeleton className="h-10 w-full rounded-md" />
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
+            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Loading open jobs...</span>
             </div>
           </div>
         ) : error ? ( // error state
-          <div className="flex flex-col items-center justify-center px-6 py-12 text-center space-y-3">
+          <div className="flex flex-col items-center justify-center space-y-3 px-6 py-12 text-center">
             <AlertCircle className="h-6 w-6 text-destructive" />
-            <p className="text-red-500 font-medium">Failed to fetch jobs</p>
-            <p className="text-muted-foreground text-sm">
+            <p className="font-medium text-red-500">Failed to fetch jobs</p>
+            <p className="text-sm text-muted-foreground">
               Please try again or check your network connection.
             </p>
             <Button
@@ -209,28 +208,28 @@ export function AssignJobDialog({
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({
-              errors, touched, isSubmitting, setFieldValue,
-            }) => (
-              <Form className="flex-1 flex flex-col h-full overflow-y-auto">
-                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+            {({ errors, touched, isSubmitting, setFieldValue }) => (
+              <Form className="flex h-full flex-1 flex-col overflow-y-auto">
+                <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
                       <Label htmlFor="jobId">Assign To</Label>
                       <Field name="jobId">
                         {({ field }: { field: { value: string } }) => (
                           <Select
-                value={field.value}
-                onValueChange={(value) => setFieldValue('jobId', value)}
-              >
-                <SelectTrigger className="w-[400px]">
-                  <SelectValue placeholder="Select Job" />
-                </SelectTrigger>
-                <SelectContent className="w-[500px]">
-                  {jobs?.length ? (
+                            value={field.value}
+                            onValueChange={(value) =>
+                              setFieldValue('jobId', value)
+                            }
+                          >
+                            <SelectTrigger className="w-[400px]">
+                              <SelectValue placeholder="Select Job" />
+                            </SelectTrigger>
+                            <SelectContent className="w-[500px]">
+                              {jobs?.length ? (
                                 jobs.map((job) => (
                                   <SelectItem
-                                    className="w-full hover:bg-gray-100 cursor-pointer"
+                                    className="w-full cursor-pointer hover:bg-gray-100"
                                     key={job._id}
                                     value={job._id}
                                   >
@@ -238,24 +237,24 @@ export function AssignJobDialog({
                                   </SelectItem>
                                 ))
                               ) : (
-                                <div className="text-sm text-muted-foreground px-4 py-2">
+                                <div className="px-4 py-2 text-sm text-muted-foreground">
                                   No open jobs available
                                 </div>
                               )}
-                </SelectContent>
-              </Select>
+                            </SelectContent>
+                          </Select>
                         )}
                       </Field>
                       {errors.jobId && touched.jobId && (
-                      <div className="text-red-500 text-sm">
-                        {errors.jobId}
-                      </div>
+                        <div className="text-sm text-red-500">
+                          {errors.jobId}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex relative bottom-0 justify-between w-full space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+                <div className="relative sticky bottom-0 z-10 flex w-full justify-between space-x-2 border-t bg-background px-6 py-4">
                   <Button
                     type="submit"
                     disabled={isSubmitting || loading}

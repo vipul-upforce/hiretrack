@@ -7,15 +7,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { User } from '@/lib/features/users/usersApi';
 import { Interviewer } from '@/lib/features/user/userApi';
+import { FormValues } from '../../../schemas/AssignCandidateSchema';
 
 interface InterviewerSelectorProps {
   interviewers: Interviewer[] | undefined;
 }
 
-export function InterviewerSelector({ interviewers }: InterviewerSelectorProps) {
-  const { setFieldValue, errors, touched } = useFormikContext<any>();
+export function InterviewerSelector({
+  interviewers,
+}: InterviewerSelectorProps) {
+  const { setFieldValue, errors, touched } = useFormikContext<FormValues>();
 
   return (
     <div className="grid gap-2">
@@ -40,7 +42,7 @@ export function InterviewerSelector({ interviewers }: InterviewerSelectorProps) 
         )}
       </Field>
       {errors.interviewerId && touched.interviewerId && (
-        <div className="text-red-500 text-sm">
+        <div className="text-sm text-red-500">
           {errors.interviewerId as string}
         </div>
       )}

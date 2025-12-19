@@ -7,7 +7,7 @@ import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
 import { ICandidateHistory } from '@/lib/models/history';
 import { MessageSquare } from 'lucide-react';
-import { Dispatch, SetStateAction } from 'react';
+import React from 'react';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
 import { HistoryTimelineSkeleton } from '../../Candidate/history-timeine-skeleton';
 import { IEditRemark } from '../../../schemas/EditRemarkDialog';
@@ -19,9 +19,14 @@ interface CandidateHistoryTabProps {
   isHistoryLoading: boolean;
   isRemarkSubmitting: boolean;
   validTimeLineItems: ICandidateHistory[];
-  handleRemarkUpdate: (id: string, description: string, isPrivate?: boolean, rating?: number) => void;
-  setEditingRemark: Dispatch<SetStateAction<IEditRemark>>
-  setIsEditRemarkDialogOpen: (open: boolean) => void;
+  handleRemarkUpdate: (
+    id: string,
+    description: string,
+    isPrivate?: boolean,
+    rating?: number,
+  ) => void;
+  setEditingRemark: React.Dispatch<React.SetStateAction<IEditRemark | null>>;
+  setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 /**
@@ -46,35 +51,50 @@ export function CandidateHistoryTab({
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Candidate History
           </h3>
-          {isHistoryLoading && !isRemarkSubmitting ? (
-            <div className="bg-card border border-border rounded-lg p-6">
-              <HistoryTimelineSkeleton />
-            </div>
-          ) : candidateHistory && candidateHistory.length > 0 ? (
-            candidateDetailsFields
-              .find((field) => field.id === 'candidate-history')
-              ?.render(
-                { ...candidate, history: candidateHistory },
-                user,
-                validTimeLineItems,
-                handleRemarkUpdate,
-                setEditingRemark,
-                setIsEditRemarkDialogOpen,
-                false, // showHeader = false
-              )
-          ) : candidateHistory && candidateHistory.length === 0 ? (
-            <div className="bg-card border border-border rounded-lg p-6">
-              <HistoryTimelineSkeleton />
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold">No history found</h3>
-              <p className="text-muted-foreground">
-                No history entries found for this candidate.
-              </p>
-            </div>
-          )}
+          {(() => {
+            if (isHistoryLoading && !isRemarkSubmitting) {
+              return (
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <HistoryTimelineSkeleton />
+                </div>
+              );
+            }
+
+            if (candidateHistory && candidateHistory.length > 0) {
+              return candidateDetailsFields
+                .find((field) => field.id === 'candidate-history')
+                ?.render(
+                  { ...candidate, history: candidateHistory },
+                  {
+                    id: 'candidate-history',
+                    user,
+                    timeLineItems: validTimeLineItems,
+                    handleRemarkUpdate,
+                    setEditingRemark,
+                    setIsEditRemarkDialogOpen,
+                    showHeader: false, // showHeader = false
+                  },
+                );
+            }
+
+            if (candidateHistory && candidateHistory.length === 0) {
+              return (
+                <div className="rounded-lg border border-border bg-card p-6">
+                  <HistoryTimelineSkeleton />
+                </div>
+              );
+            }
+
+            return (
+              <div className="py-8 text-center">
+                <MessageSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                <h3 className="text-lg font-semibold">No history found</h3>
+                <p className="text-muted-foreground">
+                  No history entries found for this candidate.
+                </p>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -85,7 +105,7 @@ export function CandidateHistoryTab({
         </h3>
         {candidateDetailsFields
           .find((field) => field.id === 'status-history')
-          ?.render(candidate, user)}
+          ?.render(candidate, { id: 'status-history' })}
       </div>
 
       {/* Interview Assignment */}
@@ -95,7 +115,7 @@ export function CandidateHistoryTab({
         </h3>
         {candidateDetailsFields
           .find((field) => field.id === 'interview-assignment')
-          ?.render(candidate, user)}
+          ?.render(candidate, { id: 'interview-assignment' })}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Formik, Form, FormikHelpers } from 'formik';
 import {
   Dialog,
@@ -18,21 +18,19 @@ import { Trash2, Loader2 } from 'lucide-react';
 import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
-import { useSelector } from 'react-redux';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import logger from '@/lib/logger';
-import { useAssignCandidate } from '../../hooks/useAssignCandidate';
+import { useAppSelector } from '@/lib/redux/hooks';
 import {
   validationSchema,
   FormValues,
-  User,
   AssignCandidateDialogProps,
+  User,
 } from '../../schemas/AssignCandidateSchema';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
 import { GoogleMeetIntegration } from './assign-candidate-components/GoogleMeetIntegration';
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
 import ConfirmationDialog from './ConfirmationDialog';
+import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 
 export function AssignCandidateDialog({
   candidate,
@@ -49,18 +47,7 @@ export function AssignCandidateDialog({
   const [cancelNotes, setCancelNotes] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const { user: reduxUser } = useSelector((state: any) => state.auth || {});
-
-  // Cast Redux user to schema User type
-  const user: User | null = reduxUser
-    ? {
-        id: reduxUser.id || reduxUser._id || '',
-        name: reduxUser.name || '',
-        email: reduxUser.email || '',
-        role: reduxUser.role || '',
-        organizationInfo: reduxUser.organizationInfo || undefined,
-      }
-    : null;
+  const { user } = useAppSelector((state) => state.auth || {});
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery();
   const { data: googleCalendarData } =
@@ -88,7 +75,7 @@ export function AssignCandidateDialog({
     }
   }, [isOpen, refetchInterviewers]);
 
-  const getDefaultGuests = (selectedInterviewer: any) => {
+  const getDefaultGuests = (selectedInterviewer) => {
     const defaultGuests = [];
     if (selectedInterviewer?.email)
       defaultGuests.push(selectedInterviewer.email);
@@ -313,7 +300,7 @@ export function AssignCandidateDialog({
                       />
 
                       <AssignmentDetailsSection
-                        user={user}
+                        user={user as User}
                         candidate={candidate}
                         getOnAltEnterSubmit={getOnAltEnterSubmit}
                         isSubmitting={isSubmitting}

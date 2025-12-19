@@ -8,13 +8,12 @@ import ActionItems from '@/components/actionitems';
 import { Button } from '@/components/ui/button';
 import { Search, Bell } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
-import useRoles from '@/hooks/useRoles';
 import { useSSE } from '@/hooks/useSSE';
 import { Candidate } from '@/types/candidate';
 import { ITag } from '@/lib/models/organization';
 import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
-import { useNotificationsContext } from '@/contexts/NotificationsContext';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useNotificationsContext } from '@/contexts/NotificationsContext';
 import {
   useLazyFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
@@ -155,17 +154,16 @@ export default function DashboardPage() {
   const loadingRef = useRef(false);
   const [markAsRead] = useMarkNotificationAsReadMutation();
 
-  const role = useRoles();
-  const { candidates: sseCandidates } = useSSE(role || '', () => {}, null);
+  const { candidates: sseCandidates } = useSSE(() => {}, null);
   const isToday = (assignment: Assignment) => {
     const assignmentDate = new Date(
       assignment.assignment?.time || assignment.interviewDate,
     );
     const today = new Date();
     return (
-      assignmentDate.getDate() === today.getDate()
-      && assignmentDate.getMonth() === today.getMonth()
-      && assignmentDate.getFullYear() === today.getFullYear()
+      assignmentDate.getDate() === today.getDate() &&
+      assignmentDate.getMonth() === today.getMonth() &&
+      assignmentDate.getFullYear() === today.getFullYear()
     );
   };
 
@@ -245,7 +243,8 @@ export default function DashboardPage() {
   const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } =
+      scrollContainerRef.current;
     const scrollPercentage = (scrollTop + clientHeight) / scrollHeight;
 
     if (scrollPercentage > 0.9 && hasMoreData && !isLoadingMore) {
@@ -295,17 +294,19 @@ export default function DashboardPage() {
     setFilterText(searchText);
   };
 
-  const interviewerAssignments = assignments?.filter((assignment) => (isInterviewer
-    ? assignment.assignment?.interviewerId?.email === user?.email
-    : assignment));
+  const interviewerAssignments = assignments?.filter((assignment) =>
+    isInterviewer
+      ? assignment.assignment?.interviewerId?.email === user?.email
+      : assignment,
+  );
 
   const todayAssignments = interviewerAssignments?.filter((assignment) => {
     const assignmentDate = new Date(assignment?.assignment?.time);
     const today = new Date();
     return (
-      assignmentDate.getDate() === today.getDate()
-      && assignmentDate.getMonth() === today.getMonth()
-      && assignmentDate.getFullYear() === today.getFullYear()
+      assignmentDate.getDate() === today.getDate() &&
+      assignmentDate.getMonth() === today.getMonth() &&
+      assignmentDate.getFullYear() === today.getFullYear()
     );
   });
 
@@ -319,13 +320,14 @@ export default function DashboardPage() {
             // debugger;
             // Ensure the candidate has the required Assignment properties
             if (
-              'assignment' in sseCandidate
-              && sseCandidate._id
-              && 'assignment.interviewerId' in sseCandidate.assignment
+              'assignment' in sseCandidate &&
+              sseCandidate._id &&
+              'assignment.interviewerId' in sseCandidate.assignment
             ) {
               const candidateId = sseCandidate._id;
               const existingIndex = updatedAssignments.findIndex(
-                (assignment) => (assignment._id || assignment.id) === candidateId,
+                (assignment) =>
+                  (assignment._id || assignment.id) === candidateId,
               );
 
               if (!sseCandidate.assignment) {
@@ -397,17 +399,20 @@ export default function DashboardPage() {
                 }
               }
             } else if (
-              !sseCandidate.assignment
-                || !sseCandidate.assignment.interviewerId
+              !sseCandidate.assignment ||
+              !sseCandidate.assignment.interviewerId
             ) {
               logger.log('No SSE assignment found');
               // Remove if assignment is null/undefined
               const candidateId = sseCandidate._id;
               const existingIndex = updatedAssignments.findIndex(
-                (assignment) => (assignment._id || assignment.id) === candidateId,
+                (assignment) =>
+                  (assignment._id || assignment.id) === candidateId,
               );
               if (existingIndex !== -1) {
-                updatedAssignments = updatedAssignments.filter((_, index) => index != existingIndex);
+                updatedAssignments = updatedAssignments.filter(
+                  (_, index) => index != existingIndex,
+                );
               }
             }
           },
@@ -436,7 +441,8 @@ export default function DashboardPage() {
 
   // Fetch notifications for admin and HR - use shared context from layout
   const showRecentActivities = user?.role === 'admin' || user?.role === 'hr';
-  const { notifications, isLoading: notificationsLoading } = useNotificationsContext();
+  const { notifications, isLoading: notificationsLoading } =
+    useNotificationsContext();
 
   // Save sidebar preference to localStorage
   useEffect(() => {
@@ -456,11 +462,11 @@ export default function DashboardPage() {
 
     // For candidate-related and meeting notifications, open dialog
     if (
-      (notification.relatedEntity === 'candidate'
-        || notification.relatedEntity === 'followup'
-        || notification.relatedEntity === 'checklist'
-        || notification.relatedEntity === 'meeting')
-      && notification.relatedId
+      (notification.relatedEntity === 'candidate' ||
+        notification.relatedEntity === 'followup' ||
+        notification.relatedEntity === 'checklist' ||
+        notification.relatedEntity === 'meeting') &&
+      notification.relatedId
     ) {
       try {
         const result = await fetchCandidateById(notification.relatedId);
@@ -486,19 +492,19 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section with improved design */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Title */}
-            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+            <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
               All Assignments
             </CardTitle>
 
             {/* Right Section - Search and Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
-              <div className="flex gap-2 items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+              <div className="flex items-center gap-2">
                 <Input
                   placeholder="Search assignments..."
                   value={searchText}
@@ -510,7 +516,7 @@ export default function DashboardPage() {
                     if (value.length > 1) value = value.trimStart();
                     setSearchText(value);
                   }}
-                  className="max-w-lg w-96"
+                  className="w-96 max-w-lg"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
                       applyFilter();
@@ -518,7 +524,7 @@ export default function DashboardPage() {
                   }}
                 />
                 <Button variant="secondary" onClick={applyFilter}>
-                  <Search className="h-4 w-4 mr-2" />
+                  <Search className="mr-2 h-4 w-4" />
                   Apply
                 </Button>
                 {(user?.role === 'admin' || user?.role === 'hr') && (
@@ -535,7 +541,9 @@ export default function DashboardPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setIsActivitiesSidebarOpen(!isActivitiesSidebarOpen)}
+                    onClick={() =>
+                      setIsActivitiesSidebarOpen(!isActivitiesSidebarOpen)
+                    }
                     className="ml-2"
                     title={
                       isActivitiesSidebarOpen
@@ -552,7 +560,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="flex-1 min-h-0 flex gap-4 px-4 pb-4 mt-4 overflow-hidden">
+      <div className="mt-4 flex min-h-0 flex-1 gap-4 overflow-hidden px-4 pb-4">
         {/* Main Content Area */}
         <div
           ref={scrollContainerRef}
@@ -571,12 +579,15 @@ export default function DashboardPage() {
               {shouldShowAssignments ? (
                 <div>
                   {assignments?.length > 0 ? (
-                    <div className="flex flex-wrap gap-6 justify-start ">
+                    <div className="flex flex-wrap justify-start gap-6">
                       {assignments
-                        .filter((assignment) => !(
-                          assignment.isDeleted
-                            || assignment?.assignment?.interviewerId === null
-                        ))
+                        .filter(
+                          (assignment) =>
+                            !(
+                              assignment.isDeleted ||
+                              assignment?.assignment?.interviewerId === null
+                            ),
+                        )
                         .map((assignment, index) => (
                           <div
                             key={assignment.id || assignment._id}
@@ -589,7 +600,8 @@ export default function DashboardPage() {
                             <ActionItems
                               assignment={(() => {
                                 const sseMatch = sseCandidates.find(
-                                  (candidate) => candidate._id === assignment._id,
+                                  (candidate) =>
+                                    candidate._id === assignment._id,
                                 );
                                 return sseMatch || assignment;
                               })()}
@@ -601,14 +613,14 @@ export default function DashboardPage() {
                         ))}
                     </div>
                   ) : (
-                    <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                    <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">
                       No assignments found.
                     </p>
                   )}
 
                   {/* Loading indicator for infinite scroll */}
                   {isLoadingMore && (
-                    <div className="flex justify-center items-center py-8">
+                    <div className="flex items-center justify-center py-8">
                       <LoadingSpinner />
                       <span className="ml-2 text-gray-500">
                         Loading more assignments...
@@ -619,7 +631,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="mt-6 space-y-8">
                   <div>
-                    <h2 className="text-2xl font-bold mb-4">
+                    <h2 className="mb-4 text-2xl font-bold">
                       Today's Interviews
                     </h2>
                     {todayAssignments?.length > 0 ? (
@@ -627,49 +639,53 @@ export default function DashboardPage() {
                         todayAssignments={
                           sseCandidates.length > 0
                             ? ([
-                              ...sseCandidates.filter((candidate) => {
-                                // Check if the interview is scheduled for today
-                                const isToday = candidate.assignment?.time
-                                    && new Date(
+                                ...sseCandidates.filter((candidate) => {
+                                  // Check if the interview is scheduled for today
+                                  const isToday =
+                                    candidate.assignment?.time &&
+                                    new Date(
                                       candidate.assignment.time,
-                                    ).toDateString()
-                                      === new Date().toDateString();
+                                    ).toDateString() ===
+                                      new Date().toDateString();
 
-                                // Keep existing conditions for interviewerId
-                                return (
-                                  isToday
-                                    && candidate.assignment
-                                    && typeof candidate.assignment
-                                      .interviewerId === 'object'
-                                    && '_id'
-                                      in candidate.assignment.interviewerId
-                                    && candidate.assignment.interviewerId._id.toString()
-                                      === user?.id?.toString()
-                                );
-                              }),
+                                  // Keep existing conditions for interviewerId
+                                  return (
+                                    isToday &&
+                                    candidate.assignment &&
+                                    typeof candidate.assignment
+                                      .interviewerId === 'object' &&
+                                    '_id' in
+                                      candidate.assignment.interviewerId &&
+                                    candidate.assignment.interviewerId._id.toString() ===
+                                      user?.id?.toString()
+                                  );
+                                }),
 
-                              ...todayAssignments.filter(
-                                (older) => older.assignment
-                                    && !sseCandidates.some(
+                                ...todayAssignments.filter(
+                                  (older) =>
+                                    older.assignment &&
+                                    !sseCandidates.some(
                                       (latest) => latest._id === older._id,
-                                    )
-                                    && older.assignment?.time
-                                    && new Date(
+                                    ) &&
+                                    older.assignment?.time &&
+                                    new Date(
                                       older.assignment.time,
-                                    ).toDateString()
-                                      === new Date().toDateString(),
-                              ),
-                            ] as (Candidate & Assignment)[])
-                            : todayAssignments.filter((assignment) => (
-                              assignment.assignment?.time
-                                  && new Date(
+                                    ).toDateString() ===
+                                      new Date().toDateString(),
+                                ),
+                              ] as (Candidate & Assignment)[])
+                            : todayAssignments.filter(
+                                (assignment) =>
+                                  assignment.assignment?.time &&
+                                  new Date(
                                     assignment.assignment.time,
-                                  ).toDateString() === new Date().toDateString()
-                            ))
+                                  ).toDateString() ===
+                                    new Date().toDateString(),
+                              )
                         }
                       />
                     ) : (
-                      <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                      <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">
                         No interviews scheduled for today.
                       </p>
                     )}
@@ -677,7 +693,7 @@ export default function DashboardPage() {
 
                   {isInterviewer && (
                     <div>
-                      <h2 className="text-2xl font-bold mb-4">
+                      <h2 className="mb-4 text-2xl font-bold">
                         All My Assignments
                       </h2>
                       {interviewerAssignments?.length > 0 ? (
@@ -685,28 +701,30 @@ export default function DashboardPage() {
                           interviewerAssignments={
                             sseCandidates.length > 0
                               ? ([
-                                ...sseCandidates.filter((candidate) => (
-                                  candidate.assignment
-                                      && typeof candidate.assignment
-                                        .interviewerId === 'object'
-                                      && '_id'
-                                        in candidate.assignment.interviewerId
-                                      && candidate.assignment.interviewerId._id.toString()
-                                        === user.id?.toString()
-                                )),
+                                  ...sseCandidates.filter(
+                                    (candidate) =>
+                                      candidate.assignment &&
+                                      typeof candidate.assignment
+                                        .interviewerId === 'object' &&
+                                      '_id' in
+                                        candidate.assignment.interviewerId &&
+                                      candidate.assignment.interviewerId._id.toString() ===
+                                        user.id?.toString(),
+                                  ),
 
-                                ...interviewerAssignments.filter(
-                                  (older) => older.assignment
-                                      && !sseCandidates.some(
+                                  ...interviewerAssignments.filter(
+                                    (older) =>
+                                      older.assignment &&
+                                      !sseCandidates.some(
                                         (latest) => latest._id === older._id,
                                       ),
-                                ),
-                              ] as (Candidate & Assignment)[])
+                                  ),
+                                ] as (Candidate & Assignment)[])
                               : interviewerAssignments
                           }
                         />
                       ) : (
-                        <p className="text-lg font-semibold text-gray-500 text-center py-10 w-full flex justify-center items-center">
+                        <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">
                           No assignments found.
                         </p>
                       )}

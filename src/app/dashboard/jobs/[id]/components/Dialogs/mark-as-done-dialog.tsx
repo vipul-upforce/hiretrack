@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import Rating from '@mui/material/Rating';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 function ConfirmAndRemarkDialog({
   isOpen,
@@ -34,7 +35,7 @@ function ConfirmAndRemarkDialog({
   onAddHistoryEntry?: (historyEntry: any) => void;
   message?: string;
 }) {
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // Local state for the form
   const [remarkDescription, setRemarkDescription] = useState('');
@@ -63,14 +64,14 @@ function ConfirmAndRemarkDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent
-        className="p-0 gap-0 overflow-visible flex flex-col"
+        className="flex flex-col gap-0 overflow-visible p-0"
         size="lg"
       >
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>{title}</DialogTitle>
           {message && <DialogDescription>{message}</DialogDescription>}
         </DialogHeader>
-        <div className="px-6 py-4 space-y-4">
+        <div className="space-y-4 px-6 py-4">
           <div className="space-y-2">
             <Label htmlFor="remark-textarea">Remark</Label>
             <MentionTextarea
@@ -101,7 +102,7 @@ function ConfirmAndRemarkDialog({
           </div>
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-background border-t">
+        <DialogFooter className="border-t bg-background px-6 py-4">
           <Button
             variant="outline"
             onClick={handleCancel}

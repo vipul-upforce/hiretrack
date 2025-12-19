@@ -10,13 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  ArrowRight,
-  Users,
-  Trash2,
-  CheckCircle,
-  ArrowDown,
-} from 'lucide-react';
+import { Users, Trash2, CheckCircle, ArrowDown } from 'lucide-react';
 
 interface MigrationDialogProps {
   isOpen: boolean;
@@ -49,31 +43,29 @@ export function MigrationDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl bg-white dark:bg-black ">
+      <DialogContent className="max-w-2xl bg-white dark:bg-black">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl text-gray-900 dark:text-gray-100">
             <Users className="h-5 w-5" />
             Migrate Candidates
           </DialogTitle>
           <DialogDescription className="text-base text-gray-600 dark:text-gray-300">
-            The lane "
-            {laneToDelete}
-            " contains candidates that need to be moved
-            before deletion. Choose a destination lane to migrate all
+            The lane &quot;{laneToDelete}&quot; contains candidates that need to
+            be moved before deletion. Choose a destination lane to migrate all
             candidates.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-6 px-4 mb-14">
+        <div className="mb-14 px-4 py-6">
           <div className="flex flex-col items-center gap-4">
             {/* Source Lane */}
             <div className="w-full max-w-md">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <div className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
                 From
               </div>
               <div className="relative">
-                <div className="bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-700 rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="rounded-lg border-2 border-red-300 bg-red-100 p-4 text-center dark:border-red-700 dark:bg-red-900/30">
+                  <div className="mb-2 flex items-center justify-center gap-2">
                     <Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
                     <span className="font-semibold text-red-700 dark:text-red-300">
                       {laneToDelete}
@@ -93,18 +85,19 @@ export function MigrationDialog({
 
             {/* Target Lane */}
             <div className="w-full max-w-md">
-              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+              <div className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
                 To
               </div>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="max-h-64 space-y-2 overflow-y-auto">
                 {availableLanes.map((lane) => (
                   <button
+                    type="button"
                     key={lane}
                     onClick={() => setSelectedLane(lane)}
-                    className={`w-full p-4 py-2 rounded-lg border-2 text-left transition-all duration-200 ${
+                    className={`w-full rounded-lg border-2 p-4 py-2 text-left transition-all duration-200 ${
                       selectedLane === lane
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/30 dark:border-green-600 shadow-md'
-                        : 'border-gray-200 dark:border-gray-900 bg-white dark:bg-black hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                        ? 'border-green-500 bg-green-50 shadow-md dark:border-green-600 dark:bg-green-900/30'
+                        : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-blue-50 dark:border-gray-900 dark:bg-black dark:hover:border-blue-500 dark:hover:bg-blue-900/30'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -128,20 +121,20 @@ export function MigrationDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 fixed bottom-0 w-full bg-white dark:bg-black border-t border-gray-200 dark:border-gray-700">
+        <DialogFooter className="fixed bottom-0 w-full gap-2 border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-black">
           <Button
             variant="outline"
             onClick={onClose}
-            className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             Cancel
           </Button>
           <Button
             onClick={handleMigrate}
             disabled={!selectedLane}
-            className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white"
+            className="bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
           >
-            <Users className="h-4 w-4 mr-2" />
+            <Users className="mr-2 h-4 w-4" />
             Migrate & Delete Lane
           </Button>
         </DialogFooter>

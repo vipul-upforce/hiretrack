@@ -45,6 +45,7 @@ export const useKanbanBoard = ({
       const updateData: any = {
         userId: user?.id || '',
         lanes: lansArray,
+        jobId: jobId || undefined,
       };
 
       if (jobId) {

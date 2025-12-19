@@ -37,7 +37,7 @@ export const useDocumentMetadata = ({
       document.title = title;
     }, 10);
 
-    return () => clearTimeout(timeoutId);
+    clearTimeout(timeoutId);
   }, [title, initialRender, skipInitialTitleUpdate]);
 
   // Handle favicon updates

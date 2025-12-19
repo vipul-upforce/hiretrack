@@ -5,7 +5,7 @@ import {
   Droppable,
   DroppableProvided,
 } from '@hello-pangea/dnd';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import {
   useFetchJobByIdQuery,
@@ -52,6 +52,7 @@ import { LaneChecklistConfigDialog } from './components/Dialogs/lane-checklist-c
 import { MigrationDialog } from './components/Dialogs/MigrationDialog';
 import CandidateCustomFieldsDialog from './components/customFields/candidateCustomFieldsDialog';
 import { GlobalRemarksDialog } from './components/Dialogs/global-remarks-dialog';
+import { CustomCalendarEvent, Interviewer } from '../../calendar/types';
 
 interface FilterState {
   search: string;
@@ -159,13 +160,29 @@ export default function JobProgressPage() {
     }
   }, [tempSelectedCandidate, selectedCandidate, setSelectedCandidate]);
 
+  const prevLanesSigRef = useRef<string>('');
+
   // Get SSE lanes separately (still needed for lane updates)
   const { lanes: updatedLanes } = useSSE(
     user?.role || '',
-    setSelectedCandidate,
+    setSelectedCandidate as (
+      candidate: Candidate | CustomCalendarEvent | null,
+    ) => void,
     selectedCandidate,
     id,
   );
+
+  // Refetch candidates when lanes changed from SSE
+  useEffect(() => {
+    if (!updatedLanes || updatedLanes.length === 0) return;
+
+    const sig = updatedLanes.join('|');
+    if (sig === prevLanesSigRef.current) return;
+    prevLanesSigRef.current = sig;
+
+    refetch();
+  }, [updatedLanes, refetch]);
+
   const [updateJob, { isLoading }] = useUpdateJobMutation();
   // NEW: Use job-specific lanes with fallback to user lanes
   const {

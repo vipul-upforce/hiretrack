@@ -10,7 +10,6 @@ import {
   Tag,
   Download,
   MapPin,
-  Clock,
   Calendar,
   User,
   Phone,
@@ -23,7 +22,7 @@ import {
 import { Candidate } from '@/types/candidate';
 import { User as UserType } from '@/lib/features/users/usersApi';
 import TagsList from '@/components/ui/tagsList';
-import { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
@@ -63,7 +62,7 @@ export default function DetailsDialogHeader({
   };
 
   const handleInterviewerClick = () => {
-    if (user?.role == 'interviewer') {
+    if (user?.role === 'interviewer') {
       return; // Prevent action for interviewer users
     }
     if (onAssignClick) {
@@ -77,7 +76,7 @@ export default function DetailsDialogHeader({
       <div className="text-2xl font-semibold">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex gap-2 items-center">
+            <div className="flex items-center gap-2">
               <span className="text-2xl font-semibold">{candidate.name}</span>
               <Button
                 variant="ghost"
@@ -94,7 +93,7 @@ export default function DetailsDialogHeader({
               ) : null}
             </div>
             {candidate.email && (
-              <div className="text-gray-500 font-thin text-sm flex flex-wrap items-center gap-2 mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm font-thin text-gray-500">
                 <div className="flex items-center">
                   <Mail size={12} className="mr-1" />
                   {candidate.email}
@@ -102,7 +101,9 @@ export default function DetailsDialogHeader({
                     variant="ghost"
                     size="icon"
                     className="ml-1 h-5 w-5"
-                    onClick={() => handleCandidateInfoCopy(candidate.email || '')}
+                    onClick={() =>
+                      handleCandidateInfoCopy(candidate.email || '')
+                    }
                     title="Copy Email"
                   >
                     <Copy size={12} />
@@ -117,7 +118,9 @@ export default function DetailsDialogHeader({
                       variant="ghost"
                       size="icon"
                       className="ml-1 h-5 w-5"
-                      onClick={() => handleCandidateInfoCopy(candidate.contact || '')}
+                      onClick={() =>
+                        handleCandidateInfoCopy(candidate.contact || '')
+                      }
                       title="Copy Contact Number"
                     >
                       <Copy size={12} />
@@ -183,59 +186,54 @@ export default function DetailsDialogHeader({
               </div>
             )}
             {/* Location, Experience, and CTC on a separate line below email */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+            <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
               {candidate.location && (
-                <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                   <MapPin size={12} />
                   {candidate.location}
                 </span>
               )}
-              {(candidate.relevantExperience !== undefined
-                || candidate.experience !== undefined) && (
-                <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+              {(candidate.relevantExperience !== undefined ||
+                candidate.experience !== undefined) && (
+                <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                   <Briefcase size={12} />
-                  Exp:
-                  {' '}
-                  {candidate.relevantExperience !== undefined
-                    && `${candidate.relevantExperience}y Rel`}
-                  {candidate.relevantExperience !== undefined
-                    && candidate.experience !== undefined
-                    && ', '}
-                  {candidate.experience !== undefined
-                    && `${candidate.experience}y Total`}
+                  Exp:{' '}
+                  {candidate.relevantExperience !== undefined &&
+                    `${candidate.relevantExperience}y Rel`}
+                  {candidate.relevantExperience !== undefined &&
+                    candidate.experience !== undefined &&
+                    ', '}
+                  {candidate.experience !== undefined &&
+                    `${candidate.experience}y Total`}
                 </span>
               )}
               {candidate.noticePeriod !== undefined && (
-                <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                   <AlertCircle size={12} />
-                  Notice:
-                  {' '}
-                  {candidate.noticePeriod}
-                  d
+                  Notice: {candidate.noticePeriod}d
                 </span>
               )}
-              {((candidate.currentCTC !== undefined
-                && candidate.currentCTC !== null)
-                || (candidate.expectedCTC !== undefined
-                  && candidate.expectedCTC !== null))
-                && user?.role !== 'interviewer' && (
-                  <span className="text-sm font-normal text-gray-600 dark:text-gray-400 flex items-center gap-1">
+              {((candidate.currentCTC !== undefined &&
+                candidate.currentCTC !== null) ||
+                (candidate.expectedCTC !== undefined &&
+                  candidate.expectedCTC !== null)) &&
+                user?.role !== 'interviewer' && (
+                  <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                     <IndianRupee size={12} />
-                    Salary:
-                    {' '}
-                    {candidate.currentCTC !== undefined
-                      && candidate.currentCTC !== null
-                      && `${candidate.currentCTC}L Cur`}
-                    {candidate.currentCTC !== undefined
-                      && candidate.currentCTC !== null
-                      && candidate.expectedCTC !== undefined
-                      && candidate.expectedCTC !== null
-                      && ', '}
-                    {candidate.expectedCTC !== undefined
-                      && candidate.expectedCTC !== null
-                      && `${candidate.expectedCTC}L Exp`}
+                    Salary:{' '}
+                    {candidate.currentCTC !== undefined &&
+                      candidate.currentCTC !== null &&
+                      `${candidate.currentCTC}L Cur`}
+                    {candidate.currentCTC !== undefined &&
+                      candidate.currentCTC !== null &&
+                      candidate.expectedCTC !== undefined &&
+                      candidate.expectedCTC !== null &&
+                      ', '}
+                    {candidate.expectedCTC !== undefined &&
+                      candidate.expectedCTC !== null &&
+                      `${candidate.expectedCTC}L Exp`}
                   </span>
-              )}
+                )}
             </div>
           </div>
 
@@ -245,19 +243,21 @@ export default function DetailsDialogHeader({
               <div className="mr-0 mt-4">
                 <CandidateStatusBadge status={candidate?.status} />
               </div>
-              <p className="text-xs text-gray-500 truncate text-end mt-1 max-w-[300px]">
+              <p className="mt-1 max-w-[300px] truncate text-end text-xs text-gray-500">
                 {candidate?.jobId?.title}
               </p>
 
               {/* Interview Details */}
-              {candidate?.assignment
-                && candidate.assignment.interviewerId
-                && typeof candidate.assignment.interviewerId === 'object'
-                && candidate.assignment.interviewerId._id
-                && candidate.assignment.interviewerId.name && (
+              {candidate?.assignment &&
+                candidate.assignment.interviewerId &&
+                typeof candidate.assignment.interviewerId === 'object' &&
+                candidate.assignment.interviewerId._id &&
+                candidate.assignment.interviewerId.name && (
                   <div className="mt-2">
                     <div
-                      className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded px-2 py-1 min-w-[250px] cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors duration-200"
+                      role="button"
+                      tabIndex={0}
+                      className="min-w-[250px] cursor-pointer rounded border border-blue-200 bg-blue-50 px-2 py-1 transition-colors duration-200 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:hover:bg-blue-900/30"
                       onClick={handleInterviewerClick}
                       title="Click to edit assignment"
                     >
@@ -266,7 +266,7 @@ export default function DetailsDialogHeader({
                           size={12}
                           className="text-blue-600 dark:text-blue-400"
                         />
-                        <span className="font-medium truncate">
+                        <span className="truncate font-medium">
                           {candidate.assignment.interviewerId.name}
                         </span>
                         <span className="text-blue-700 dark:text-blue-300">
@@ -277,16 +277,13 @@ export default function DetailsDialogHeader({
                           className="text-blue-600 dark:text-blue-400"
                         />
                         <span className="text-blue-700 dark:text-blue-300">
-                          {formatDate(candidate?.assignment?.time)}
-                          {' '}
-                          •
-                          {' '}
+                          {formatDate(candidate?.assignment?.time)} •{' '}
                           {formatTime(candidate?.assignment?.time)}
                         </span>
                       </div>
                     </div>
                   </div>
-              )}
+                )}
             </div>
           </div>
         </div>

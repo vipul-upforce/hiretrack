@@ -6,7 +6,8 @@
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
+import React, { Dispatch, SetStateAction } from 'react';
 import { EditCandidateDialog } from '../Dialogs/edit-candidate-dialog';
 import { AssignCandidateDialog } from '../Dialogs/assign-candidate-dialog';
 import AddFollowUpDialog from '../Dialogs/add-followup-dialog';
@@ -54,12 +55,12 @@ interface CandidateCardDialogsProps {
   isFollowUpSubmitting: boolean;
   // Follow-up state
   newFollowUp: string;
-  setNewFollowUp: (value: string) => void;
+  setNewFollowUp: Dispatch<SetStateAction<string>>;
   newFollowUpDate: dayjs.Dayjs | null;
-  setNewFollowUpDate: (value: dayjs.Dayjs | null) => void;
+  setNewFollowUpDate: Dispatch<SetStateAction<Dayjs | null>>;
   // Other
   onDashboard: boolean;
-  setOpenRemarksFor: (id: string | null) => void;
+  // setOpenRemarksFor: (id: string | null) => void;
   triggerRef: React.RefObject<HTMLButtonElement>;
 }
 
@@ -99,7 +100,6 @@ export function CandidateCardDialogs({
   newFollowUpDate,
   setNewFollowUpDate,
   onDashboard,
-  setOpenRemarksFor,
   triggerRef,
 }: CandidateCardDialogsProps) {
   return (
@@ -162,7 +162,6 @@ export function CandidateCardDialogs({
           handleRemoveFollowUp={handleRemoveFollowUp}
           isOpen={isAddingFollowUp}
           onOpenChange={setIsAddingFollowUp}
-          refetch={async () => refetch()}
           handleAddFollowUp={handleAddFollowUp}
           setNewFollowUp={setNewFollowUp}
           setNewFollowUpDate={setNewFollowUpDate}
@@ -185,7 +184,7 @@ export function CandidateCardDialogs({
         isOpen={confirmUnassignOpen}
         setIsOpen={setConfirmUnassignOpen}
         onConfirm={(note, rating) => {
-          confirmUnassign(note, rating);
+          confirmUnassign(note, rating as number);
         }}
         onCancel={() => setConfirmUnassignOpen(false)}
         isLoading={isLoading}
@@ -229,7 +228,7 @@ export function CandidateCardDialogs({
             _id: candidate._id,
             name: candidate.name,
             email: candidate.email,
-            jobTitle: getJobTitle(candidate) || undefined,
+            jobTitle: getJobTitle(candidate) as string,
           }}
         />
       )}

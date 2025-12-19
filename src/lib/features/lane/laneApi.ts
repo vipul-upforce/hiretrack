@@ -17,11 +17,14 @@ export const laneApi = baseApi.injectEndpoints({
       query: (jobId: string) => `jobs/${jobId}/lanes`,
       providesTags: ['Lane'],
     }),
-    updateLanes: builder.mutation<ILane, { userId: string; lanes: string[] }>({
+    updateLanes: builder.mutation<
+      ILane,
+      { userId: string; lanes: string[]; jobId?: string }
+    >({
       query: (data) => ({
         url: 'lanes',
         method: 'PUT',
-        body: data,
+        body: { ...data, jobId: data.jobId || undefined },
       }),
       invalidatesTags: ['Lane'],
     }),
