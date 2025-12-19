@@ -11,6 +11,7 @@ import {
 import logger from '@/lib/logger';
 import { Candidate } from '@/types/candidate';
 import { useToast } from '@/hooks/use-toast';
+import { useGenerateCandidatePdfMutation } from '@/lib/features/candidate/candidateApi';
 import { ShareCandidateFieldSelector } from './share-candidate-components/ShareCandidateFieldSelector';
 import { ShareCandidateDialogFooter } from './share-candidate-components/ShareCandidateDialogFooter';
 
@@ -66,6 +67,7 @@ export function ShareCandidateDialog({
 }: ShareCandidateDialogProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateCandidatePdf] = useGenerateCandidatePdfMutation();
 
   const [selection, setSelection] = useState<ShareFieldsSelection>({
     // Basic - default selected
@@ -201,23 +203,10 @@ export function ShareCandidateDialog({
     setIsGenerating(true);
 
     try {
-      const response = await fetch('/api/candidates/share-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          candidateId: candidate._id,
-          selection,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-
-      // Get the PDF blob
-      const blob = await response.blob();
+      const blob = await generateCandidatePdf({
+        candidateId: candidate._id,
+        selection: selection as unknown as Record<string, boolean>,
+      }).unwrap();
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -259,13 +248,11 @@ export function ShareCandidateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         size="lg"
-        className="overflow-hidden flex flex-col justify-start"
+        className="flex flex-col justify-start overflow-hidden"
       >
         <DialogHeader>
           <DialogTitle>
-            Download Candidate Profile -
-            {' '}
-            {candidate.name}
+            Download Candidate Profile - {candidate.name}
           </DialogTitle>
           <DialogDescription>
             Customize and export the profile as a PDF

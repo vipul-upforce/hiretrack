@@ -34,6 +34,11 @@ export interface UpdateRemarkRequest {
   isPrivate?: boolean;
 }
 
+export interface ShareCandidateRequest {
+  candidateId: string;
+  selection: Record<string, boolean>;
+}
+
 export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
@@ -174,6 +179,14 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    generateCandidatePdf: builder.mutation<Blob, ShareCandidateRequest>({
+      query: (data) => ({
+        url: '/candidates/share-pdf',
+        method: 'POST',
+        body: data,
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
     evaluateCandidate: builder.mutation<
       {
         message: string;
@@ -297,5 +310,6 @@ export const {
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
   useUpdateCandidateRemarkMutation,
+  useGenerateCandidatePdfMutation,
   useSendEmailToCandidateMutation,
 } = candidateApi;
