@@ -5,6 +5,7 @@ import { Assignment } from '@/app/dashboard/page';
 import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
 import { toast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
+import { useRefetchCandidateMutation } from '@/lib/features/candidate/candidateApi';
 
 function ActionItems({
   assignment,
@@ -21,24 +22,17 @@ function ActionItems({
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
 
+  const [triggerRefetchCandidate] = useRefetchCandidateMutation();
+
   // Candidate-specific refetch function
   const refetchCandidate = async () => {
     if (!candidate?._id) return;
 
     try {
-      const response = await fetch(`/api/candidates/${candidate._id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const updatedCandidate = await triggerRefetchCandidate(
+        candidate._id,
+      ).unwrap();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch candidate');
-      }
-
-      const updatedCandidate: Candidate = await response.json();
       setCandidate(updatedCandidate);
 
       const updatedAssignments = !updatedCandidate.assignment
