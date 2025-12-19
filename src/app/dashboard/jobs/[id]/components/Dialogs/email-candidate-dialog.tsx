@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -117,37 +117,31 @@ export function EmailCandidateDialog({
   }, [user]);
 
   // Replace template variables with actual values
-  const replaceVariables = useCallback(
-    (content: string): string =>
-      content
-        .replace(/{{SenderName}}/g, userName || userEmail)
-        .replace(/{{ReceiverName}}/g, candidate.name)
-        .replace(/{{PortalName}}/g, organizationName)
-        .replace(/{{jobTitle}}/g, candidate.jobTitle || ''),
-    [userName, userEmail, candidate.name, organizationName, candidate.jobTitle],
-  );
+  const replaceVariables = (content: string): string =>
+    content
+      .replace(/{{SenderName}}/g, userName || userEmail)
+      .replace(/{{ReceiverName}}/g, candidate.name)
+      .replace(/{{PortalName}}/g, organizationName)
+      .replace(/{{jobTitle}}/g, candidate.jobTitle || '');
 
   // Handle template selection
-  const handleTemplateSelect = useCallback(
-    (templateId: string) => {
-      setSelectedTemplate(templateId);
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
 
-      if (templateId === 'none') {
-        setSubject('');
-        setBody('');
-        return;
-      }
+    if (templateId === 'none') {
+      setSubject('');
+      setBody('');
+      return;
+    }
 
-      const template = templates.find((t) => t.id === templateId);
-      if (template) {
-        setSubject(replaceVariables(template.subject));
-        setBody(replaceVariables(template.content));
-        // Reset to rich text mode when selecting a template for better UX
-        setContentMode('rich');
-      }
-    },
-    [templates, replaceVariables, setSubject, setBody, setContentMode],
-  );
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setSubject(replaceVariables(template.subject));
+      setBody(replaceVariables(template.content));
+      // Reset to rich text mode when selecting a template for better UX
+      setContentMode('rich');
+    }
+  };
 
   // Reset form state
   const resetForm = () => {
@@ -162,7 +156,7 @@ export function EmailCandidateDialog({
     setContentMode('rich');
   };
 
-  const handleSend = useCallback(async () => {
+  const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
       toast.error('Subject and body are required');
       return;
@@ -274,19 +268,7 @@ export function EmailCandidateDialog({
       setEmailError(errorMsg);
       toast.error(errorMsg);
     }
-  }, [
-    subject,
-    body,
-    attachments,
-    cc,
-    bcc,
-    replyTo,
-    candidate._id,
-    uploadFiles,
-    sendEmail,
-    onClose,
-    resetForm,
-  ]);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
