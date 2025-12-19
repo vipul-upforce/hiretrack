@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { baseApi } from '@/lib/api/baseApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -48,6 +49,18 @@ export interface SendEmailToCandidateResponse {
   success: boolean;
   message: string;
   emailHistoryId?: string;
+}
+
+export interface UpdateRemarkRequest {
+  id: string;
+  description: string;
+  rating?: number | null;
+  isPrivate?: boolean;
+}
+
+export interface ShareCandidateRequest {
+  candidateId: string;
+  selection: Record<string, boolean>;
 }
 
 export const candidateApi = baseApi.injectEndpoints({
