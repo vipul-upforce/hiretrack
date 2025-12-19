@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import {
   useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
+  useLazyFetchCandidateHistoryQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { useParams, usePathname } from 'next/navigation';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -17,7 +18,7 @@ import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
 import { followUpSepretorPatternRegex } from '@/lib/constants';
-import { EditCandidateDialog } from "./edit-candidate-dialog";
+import { EditCandidateDialog } from './edit-candidate-dialog';
 import { AssignCandidateDialog } from './assign-candidate-dialog';
 import { AssignJobDialog } from './assign-job-dialog';
 import { CandidateDetailsDialogProps } from '../../schemas/candidateDetailsDialogProps';
@@ -50,7 +51,17 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const id = useParams()?.id as string;
 
-  const [refetchCandidate, { data: candidateData }] = useLazyFetchCandidatesQuery();
+  const [refetchCandidate, { data: candidateData }] =
+    useLazyFetchCandidatesQuery();
+  const [
+    fetchHistory,
+    {
+      data: historyData,
+      isFetching: isHistoryFetching,
+      isError: isHistoryError,
+    },
+  ] = useLazyFetchCandidateHistoryQuery();
+
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -71,65 +82,42 @@ export function CandidateDetailsDialog({
   const [activeTab, setActiveTab] = useState('overview');
 
   // History loading state
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  const [candidateHistory, setCandidateHistory] = useState<any[]>([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
 
-  // fetch candidate history when history tab is opened
-  const fetchCandidateHistory = async () => {
-    if (
-      (!isRefetching && historyLoaded)
-      || !localCandidate?._id
-      || (isRefetching && isHistoryLoading)
-    ) return;
-
-    try {
-      const response = await fetch(
-        `/api/candidates/${localCandidate._id}/history`,
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setCandidateHistory(data.history || []);
-        setHistoryLoaded(true);
-      } else {
-        logger.error('Failed to fetch candidate history');
-        if (!isRefetching) {
-          toast({
-            title: 'Error',
-            description: 'Failed to load candidate history',
-            variant: 'destructive',
-          });
-        }
-      }
-    } catch (error) {
-      logger.error('Error fetching candidate history:', error);
-      if (!isRefetching) {
-        toast({
-          title: 'Error',
-          description: 'Failed to load candidate history',
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      if (!isRefetching) {
-        setIsHistoryLoading(false);
-      }
-    }
-  };
-
   // Load history when history tab is activated
   useEffect(() => {
-    if ((activeTab === 'history' || activeTab === 'logs') && !historyLoaded) {
-      fetchCandidateHistory();
+    if (
+      (activeTab === 'history' || activeTab === 'logs') &&
+      !historyLoaded &&
+      localCandidate?._id
+    ) {
+      fetchHistory(localCandidate._id);
     }
   }, [activeTab, historyLoaded, localCandidate?._id]);
+
+  useEffect(() => {
+    if (historyData?.history) {
+      setHistoryLoaded(true);
+      setTimeLineItems(historyData.history);
+    }
+  }, [historyData]);
+
+  // Handle History Error
+  useEffect(() => {
+    if (isHistoryError && !isRefetching) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load candidate history',
+        variant: 'destructive',
+      });
+    }
+  }, [isHistoryError, isRefetching]);
 
   // Reset history state when candidate changes
   useEffect(() => {
     if (candidate?._id !== localCandidate?._id) {
       setHistoryLoaded(false);
-      setIsHistoryLoading(false);
     }
   }, [localCandidate?._id, candidate?._id]);
 
@@ -137,18 +125,20 @@ export function CandidateDetailsDialog({
     setIsRefetching(true);
     const jobId = (id as string) || getJobId(candidate) || '';
     const result = await refetchCandidate(jobId);
-    const updatedCandidate = result.data!.find((c) => c._id === localCandidate?._id);
+    const updatedCandidate = result.data!.find(
+      (c) => c._id === localCandidate?._id,
+    );
 
     // Fetch updated history silently if already loaded
-    if (historyLoaded) {
-      await fetchCandidateHistory();
+    if (historyLoaded && localCandidate?._id) {
+      await fetchHistory(localCandidate._id);
     }
 
     // Update local candidate with the new data
     if (updatedCandidate) {
       setLocalCandidate({
         ...updatedCandidate,
-        history: candidateHistory || [],
+        history: historyData?.history || [],
       });
     }
     setIsRefetching(false);
@@ -201,23 +191,7 @@ export function CandidateDetailsDialog({
   const handleEditClick = () => {
     setIsEditing(true);
   };
-
-  const handleReEvaluationClick = () => {
-    // Check if candidate already has AI scores (indicating previous evaluation)
-    const hasExistingScores = localCandidate?.scores
-      && (localCandidate.scores.overall !== undefined
-        || localCandidate.scores.experience !== undefined
-        || localCandidate.scores.skills !== undefined
-        || localCandidate.scores.affordability !== undefined);
-
-    if (hasExistingScores && !confirmReEvaluateOpen) {
-      // Show confirmation dialog for re-evaluation
-      setConfirmReEvaluateOpen(true);
-    } else {
-      // First time evaluation - proceed directly
-      handleReEvaluation();
-    }
-  };
+  
 
   const handleReEvaluation = async () => {
     setConfirmReEvaluateOpen(false);
@@ -254,26 +228,40 @@ export function CandidateDetailsDialog({
     }
   };
 
-  useEffect(() => () => {
-    setNewRemark('');
-    setRemarkRating(0);
-    setRemarkRatingHistory(0);
-  }, []);
+  const handleReEvaluationClick = () => {
+    // Check if candidate already has AI scores (indicating previous evaluation)
+    const hasExistingScores =
+      localCandidate?.scores &&
+      (localCandidate.scores.overall !== undefined ||
+        localCandidate.scores.experience !== undefined ||
+        localCandidate.scores.skills !== undefined ||
+        localCandidate.scores.affordability !== undefined);
 
-  useEffect(() => {
-    // Update timeLineItems with the latest candidateHistory
-    // This ensures the UI shows the most recent history data
-    setTimeLineItems(candidateHistory || []);
-  }, [candidateHistory]);
+    if (hasExistingScores && !confirmReEvaluateOpen) {
+      // Show confirmation dialog for re-evaluation
+      setConfirmReEvaluateOpen(true);
+    } else {
+      // First time evaluation - proceed directly
+      handleReEvaluation();
+    }
+  };
+
+  useEffect(
+    () => () => {
+      setNewRemark('');
+      setRemarkRating(0);
+      setRemarkRatingHistory(0);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isAddingFollowUp) {
-
       const parts = localCandidate?.followUp?.note
         ? localCandidate.followUp.note
-          .split(followUpSepretorPatternRegex)
-          .map((p) => p.trim())
-          .filter(Boolean)
+            .split(followUpSepretorPatternRegex)
+            .map((p) => p.trim())
+            .filter(Boolean)
         : [];
 
       const followUpParts = parts.filter((p) => {
@@ -285,7 +273,8 @@ export function CandidateDetailsDialog({
       });
 
       // use the most recent follow-up note for editing, or empty string
-      const userNote = followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
+      const userNote =
+        followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
       setNewFollowUp(userNote);
 
       if (localCandidate?.followUp?.date) {
@@ -315,7 +304,7 @@ export function CandidateDetailsDialog({
 
   const validTimeLineItems = timeLineItems.filter((item) => item.title !== '');
   const header = (
-    <DialogHeader className="px-3 pt-3 pr-8 lg:px-4 lg:pt-4 lg:pr-10">
+    <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}
@@ -323,8 +312,8 @@ export function CandidateDetailsDialog({
           user={user}
           refetch={async () => {
             if (
-              pathname !== '/dashboard'
-              && pathname !== '/dashboard/calendar'
+              pathname !== '/dashboard' &&
+              pathname !== '/dashboard/calendar'
             ) {
               await refetch();
             } else {
@@ -337,7 +326,7 @@ export function CandidateDetailsDialog({
     </DialogHeader>
   );
   const body = (
-    <div className="flex-1 overflow-hidden flex flex-col">
+    <div className="flex flex-1 flex-col overflow-hidden">
       <CandidateDetailsTabs
         candidate={localCandidate}
         user={user}
@@ -348,8 +337,8 @@ export function CandidateDetailsDialog({
         isReEvaluating={isReEvaluating}
         isEvaluatingFor={isEvaluatingFor}
         onReEvaluate={() => setConfirmReEvaluateOpen(true)}
-        candidateHistory={candidateHistory}
-        isHistoryLoading={isHistoryLoading}
+        candidateHistory={historyData?.history || []}
+        isHistoryLoading={isHistoryFetching}
         isRemarkSubmitting={isRemarkSubmitting}
         validTimeLineItems={validTimeLineItems}
         handleRemarkUpdate={handleRemarkUpdate}
@@ -380,7 +369,7 @@ export function CandidateDetailsDialog({
       )}
 
       {/* Action Buttons */}
-      <div className="flex space-x-2 border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div className="flex space-x-2 border-t border-gray-200 pt-4 dark:border-gray-700">
         <CandidateDetailsActions
           candidate={localCandidate}
           user={user}
@@ -498,7 +487,7 @@ export function CandidateDetailsDialog({
         isLoading={isLoading}
         loadingText="Marking as done..."
       />
- 
+
       <ConfirmationDialog
         title="Re-evaluate Candidate with AI?"
         message="This will use your active AI provider to re-analyze the candidate's resume and may incur additional costs based on your AI provider's pricing. The existing evaluation scores will be overwritten with new results."

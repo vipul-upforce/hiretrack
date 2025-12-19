@@ -47,7 +47,7 @@ export function HistoryTimeline({
                 handleRemarkUpdate={handleRemarkUpdate}
                 setEditingRemark={setEditingRemark}
                 setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
-                key={interview.dateTime}
+                key={interview.dateTime + interview._id + interview.title}
               />
             );
           })

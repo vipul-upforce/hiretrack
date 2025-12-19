@@ -1,7 +1,7 @@
 import { baseApi } from '@/lib/api/baseApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { OrgInfo } from '@/lib/models/user';
 import { NextResponse } from 'next/server';
 
@@ -41,10 +41,20 @@ export const candidateApi = baseApi.injectEndpoints({
     }),
     fetchAssignments: builder.query<
       any,
-      { isPagination?: boolean; page?: number; limit?: number; filterValue?: string; assignedTo?: string }
+      {
+        isPagination?: boolean;
+        page?: number;
+        limit?: number;
+        filterValue?: string;
+        assignedTo?: string;
+      }
     >({
       query: ({
-        isPagination = true, page = 1, limit = 48, filterValue = '', assignedTo = '',
+        isPagination = true,
+        page = 1,
+        limit = 48,
+        filterValue = '',
+        assignedTo = '',
       }) => {
         const params = new URLSearchParams({
           isPagination: String(isPagination),
@@ -62,7 +72,14 @@ export const candidateApi = baseApi.injectEndpoints({
         url: `/candidates/${candidateId}`,
         method: 'GET',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Candidate', id }],
+      invalidatesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
+    }),
+    fetchCandidateHistory: builder.query<
+      { history: ICandidateHistory[] },
+      string
+    >({
+      query: (candidateId) => `/candidates/${candidateId}/history`,
+      providesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
     }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({
       query: (newCandidate) => ({
@@ -202,15 +219,15 @@ export const candidateApi = baseApi.injectEndpoints({
       },
       {
         candidateIds: string[];
-        action: "archive" | "unarchive";
+        action: 'archive' | 'unarchive';
       }
     >({
       query: ({ candidateIds, action }) => ({
-        url: "/candidates/bulk-archive",
-        method: "POST",
+        url: '/candidates/bulk-archive',
+        method: 'POST',
         body: { candidateIds, action },
       }),
-      invalidatesTags: ["Candidate"],
+      invalidatesTags: ['Candidate'],
     }),
   }),
 });
@@ -237,4 +254,5 @@ export const {
   useCandidateSignupMutation,
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
+  useLazyFetchCandidateHistoryQuery,
 } = candidateApi;
