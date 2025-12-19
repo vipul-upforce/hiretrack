@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { User } from '@/lib/features/users/usersApi';
 import { ListTree, TableIcon } from 'lucide-react';
 import {
@@ -26,7 +26,7 @@ export const HistoryAndLogTable: React.FC<{
   handleRemarkUpdate: (
     id: string,
     description: string,
-    isPrivate?: boolean
+    isPrivate?: boolean,
   ) => void;
   setEditingRemark: React.Dispatch<React.SetStateAction<IEditRemark | null>>;
   setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -43,39 +43,41 @@ export const HistoryAndLogTable: React.FC<{
   const [showLogTable, setShowLogTable] = useState(false);
   const tableRows = timeLineItems
     .sort(
-      (a, b) => new Date(b?.dateTime ?? 0).getTime()
-        - new Date(a?.dateTime ?? 0).getTime(),
+      (a, b) =>
+        new Date(b?.dateTime ?? 0).getTime() -
+        new Date(a?.dateTime ?? 0).getTime(),
     )
     .filter((interview) => {
       if (!interview.remark || !interview.remark.description) {
         return true;
       }
       return (
-        !interview.remark.isPrivate
-        || user?.role === 'hr'
-        || user?.role === 'admin'
+        !interview.remark.isPrivate ||
+        user?.role === 'hr' ||
+        user?.role === 'admin'
       );
     })
     .flatMap((interview, i) => {
       const timeDate = formatDate(interview.dateTime);
       const timeTime = formatTime(interview.dateTime);
       if (
-        typeof interview.currentInterviewer === 'object'
-        && interview.currentInterviewer
-        && 'email' in interview.currentInterviewer
-        && typeof interview.previousInterviewer === 'object'
-        && interview.previousInterviewer
-        && 'email' in interview.previousInterviewer
-        && interview.currentInterviewer !== null
-        && interview.currentInterviewer?.email
-          === interview.previousInterviewer?.email
-        && (!interview.note || !interview.note.description)
+        typeof interview.currentInterviewer === 'object' &&
+        interview.currentInterviewer &&
+        'email' in interview.currentInterviewer &&
+        typeof interview.previousInterviewer === 'object' &&
+        interview.previousInterviewer &&
+        'email' in interview.previousInterviewer &&
+        interview.currentInterviewer !== null &&
+        interview.currentInterviewer?.email ===
+          interview.previousInterviewer?.email &&
+        (!interview.note || !interview.note.description)
       ) {
         return [];
       }
-      const isLogTableEntry = interview.note
-        && interview.note.description
-        && Array.isArray(interview.note.description);
+      const isLogTableEntry =
+        interview.note &&
+        interview.note.description &&
+        Array.isArray(interview.note.description);
       if (!isLogTableEntry) return [];
 
       return (interview.note.description as IinfoUpdateLog[]).map(
@@ -84,20 +86,20 @@ export const HistoryAndLogTable: React.FC<{
             key={`${i}-${logIndex}-${interview.dateTime}`}
             className="border-b border-gray-200 dark:border-gray-700"
           >
-            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
+            <TableCell className="w-[250px] p-2 text-gray-900 dark:text-gray-100">
               {logIndex === 0 ? `${timeDate} ${timeTime}` : ''}
             </TableCell>
-            <TableCell className="p-2 w-[250px] text-gray-900 dark:text-gray-100">
+            <TableCell className="w-[250px] p-2 text-gray-900 dark:text-gray-100">
               {log.title.replace('Updated ', '') ?? log.title ?? 'N/A'}
             </TableCell>
-            <TableCell className="p-2 max-w-[200px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
-              {(!log.attachments
-                && JSON.stringify(log.previousValue as string)
+            <TableCell className="max-w-[200px] whitespace-pre-wrap break-words p-2 text-gray-900 dark:text-gray-100">
+              {(!log.attachments &&
+                JSON.stringify(log.previousValue as string)
                   ?.replaceAll('"', '')
-                  ?.replace('~', ''))
-                ?? 'N/A'}
+                  ?.replace('~', '')) ??
+                'N/A'}
             </TableCell>
-            <TableCell className="p-2 max-w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
+            <TableCell className="max-w-[250px] whitespace-pre-wrap break-words p-2 text-gray-900 dark:text-gray-100">
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
                   attachments={log.attachments.map((file, index) => ({
@@ -112,17 +114,17 @@ export const HistoryAndLogTable: React.FC<{
               ) : (
                 ''
               )}
-              {(!log.attachments
-                && JSON.stringify(log.currentValue as string)
+              {(!log.attachments &&
+                JSON.stringify(log.currentValue as string)
                   .replaceAll('"', '')
-                  .replace('~', ''))
-                ?? 'N/A'}
+                  .replace('~', '')) ??
+                'N/A'}
             </TableCell>
-            <TableCell className="p-2 w-[250px] break-words whitespace-pre-wrap text-gray-900 dark:text-gray-100">
-              {typeof interview.assignmentBy === 'object'
-              && interview.assignmentBy
-              && 'name' in interview.assignmentBy
-              && typeof interview.assignmentBy.name === 'string'
+            <TableCell className="w-[250px] whitespace-pre-wrap break-words p-2 text-gray-900 dark:text-gray-100">
+              {typeof interview.assignmentBy === 'object' &&
+              interview.assignmentBy &&
+              'name' in interview.assignmentBy &&
+              typeof interview.assignmentBy.name === 'string'
                 ? interview.assignmentBy.name
                 : ''}
             </TableCell>
@@ -153,7 +155,7 @@ export const HistoryAndLogTable: React.FC<{
     <div className="space-y-4">
       {showHeader && (
         <div className="flex items-center justify-between">
-          <Label className="font-semibold text-lg flex items-center gap-2">
+          <Label className="flex items-center gap-2 text-lg font-semibold">
             {showLogTable && user?.role !== 'interviewer'
               ? 'Candidate Update Logs'
               : 'Candidate History'}
@@ -163,16 +165,18 @@ export const HistoryAndLogTable: React.FC<{
             <Button
               variant="outline"
               size="sm"
-              onClick={() => user?.role !== 'interviewer' && setShowLogTable((prev) => !prev)}
+              onClick={() =>
+                user?.role !== 'interviewer' && setShowLogTable((prev) => !prev)
+              }
             >
               {showLogTable ? (
                 <>
-                  <ListTree className="h-4 w-4 mr-2" />
+                  <ListTree className="mr-2 h-4 w-4" />
                   Show Activities
                 </>
               ) : (
                 <>
-                  <TableIcon className="h-4 w-4 mr-2" />
+                  <TableIcon className="mr-2 h-4 w-4" />
                   Show Logs
                 </>
               )}
@@ -181,25 +185,25 @@ export const HistoryAndLogTable: React.FC<{
         </div>
       )}
       {showLogTable ? (
-        <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-black">
+        <div className="rounded-md border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-black">
           <div className="overflow-x-auto">
             {tableRows.length > 0 ? (
               <Table className="w-[130%] text-sm">
                 <TableHeader>
                   <TableRow className="border-gray-200 dark:border-gray-700">
-                    <TableHead className="p-2 font-bold text-left w-[150px] text-gray-900 dark:text-gray-100">
+                    <TableHead className="w-[150px] p-2 text-left font-bold text-gray-900 dark:text-gray-100">
                       Updated At
                     </TableHead>
-                    <TableHead className="p-2 font-bold text-left w-[150px] text-gray-900 dark:text-gray-100">
+                    <TableHead className="w-[150px] p-2 text-left font-bold text-gray-900 dark:text-gray-100">
                       Fields Updated
                     </TableHead>
-                    <TableHead className="p-2 font-bold text-left w-[200px] text-gray-900 dark:text-gray-100">
+                    <TableHead className="w-[200px] p-2 text-left font-bold text-gray-900 dark:text-gray-100">
                       Previous
                     </TableHead>
-                    <TableHead className="p-2 font-bold text-left w-[200px] text-gray-900 dark:text-gray-100">
+                    <TableHead className="w-[200px] p-2 text-left font-bold text-gray-900 dark:text-gray-100">
                       Updated
                     </TableHead>
-                    <TableHead className="p-2 font-bold text-left w-[150px] text-gray-900 dark:text-gray-100">
+                    <TableHead className="w-[150px] p-2 text-left font-bold text-gray-900 dark:text-gray-100">
                       Updated By
                     </TableHead>
                     {/* <TableHead className="p-2 font-bold text-left w-[150px]">
@@ -233,74 +237,77 @@ export const HistoryAndLogTable: React.FC<{
         <ol className="relative border-s border-gray-200 dark:border-gray-700">
           {timeLineItems.length > 0
             ? timeLineItems
-              .sort(
-                (a, b) => new Date(b?.dateTime ?? 0).getTime()
-                    - new Date(a?.dateTime ?? 0).getTime(),
-              )
-              .filter((interview) => {
-                // Check visibility based on visibleInHistory and user role
-                const role = user?.role;
-                // ✅ If this is a checklist form entry, enforce visibleInHistory
-                if (interview?.checklistForm?.responses) {
-                  const hasVisibleResponses = Object.values(
-                    interview.checklistForm.responses,
-                  ).some(
-                    (resp: any) => Array.isArray(resp?.visibleInHistory)
-                        && resp.visibleInHistory.includes(role),
-                  );
+                .sort(
+                  (a, b) =>
+                    new Date(b?.dateTime ?? 0).getTime() -
+                    new Date(a?.dateTime ?? 0).getTime(),
+                )
+                .filter((interview) => {
+                  // Check visibility based on visibleInHistory and user role
+                  const role = user?.role;
+                  // ✅ If this is a checklist form entry, enforce visibleInHistory
+                  if (interview?.checklistForm?.responses) {
+                    const hasVisibleResponses = Object.values(
+                      interview.checklistForm.responses,
+                    ).some(
+                      (resp: any) =>
+                        Array.isArray(resp?.visibleInHistory) &&
+                        resp.visibleInHistory.includes(role),
+                    );
                     // debugger;
 
-                  if (!hasVisibleResponses) {
-                    return false; // hide if no responses allow this role
+                    if (!hasVisibleResponses) {
+                      return false; // hide if no responses allow this role
+                    }
                   }
-                }
-                // Combine existing private remark logic with visibleInHistory
-                // debugger;
-                if (!interview.remark || !interview.remark.description) {
-                  return true;
-                }
-                return (
-                  !interview.remark.isPrivate
-                    || user?.role === 'hr'
-                    || user?.role === 'admin'
-                );
-              })
-              .map((interview, i) => {
-                const timeDate = formatDate(interview.dateTime);
-                const timeTime = formatTime(interview.dateTime);
-                if (
-                  typeof interview.currentInterviewer === 'object'
-                    && interview.currentInterviewer
-                    && 'email' in interview.currentInterviewer
-                    && typeof interview.previousInterviewer === 'object'
-                    && interview.previousInterviewer
-                    && 'email' in interview.previousInterviewer
-                    && interview.currentInterviewer !== null
-                    && interview.currentInterviewer?.email
-                      === interview.previousInterviewer?.email
-                    && (!interview.note || !interview.note.description)
-                ) {
-                  return null;
-                }
-                if (
-                  user?.role === 'interviewer'
-                    && interview.title?.toLowerCase().includes('followup')
-                ) return null;
-                return (
-                  <RenderHistoryEntry
-                    interview={interview}
-                    indexKey={i}
-                    localCandidate={candidate}
-                    user={user}
-                    timeDate={timeDate}
-                    timeTime={timeTime}
-                    handleRemarkUpdate={handleRemarkUpdate}
-                    setEditingRemark={setEditingRemark}
-                    setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
-                    key={i}
-                  />
-                );
-              })
+                  // Combine existing private remark logic with visibleInHistory
+                  // debugger;
+                  if (!interview.remark || !interview.remark.description) {
+                    return true;
+                  }
+                  return (
+                    !interview.remark.isPrivate ||
+                    user?.role === 'hr' ||
+                    user?.role === 'admin'
+                  );
+                })
+                .map((interview, i) => {
+                  const timeDate = formatDate(interview.dateTime);
+                  const timeTime = formatTime(interview.dateTime);
+                  if (
+                    typeof interview.currentInterviewer === 'object' &&
+                    interview.currentInterviewer &&
+                    'email' in interview.currentInterviewer &&
+                    typeof interview.previousInterviewer === 'object' &&
+                    interview.previousInterviewer &&
+                    'email' in interview.previousInterviewer &&
+                    interview.currentInterviewer !== null &&
+                    interview.currentInterviewer?.email ===
+                      interview.previousInterviewer?.email &&
+                    (!interview.note || !interview.note.description)
+                  ) {
+                    return null;
+                  }
+                  if (
+                    user?.role === 'interviewer' &&
+                    interview.title?.toLowerCase().includes('followup')
+                  )
+                    return null;
+                  return (
+                    <RenderHistoryEntry
+                      interview={interview}
+                      indexKey={i}
+                      localCandidate={candidate}
+                      user={user}
+                      timeDate={timeDate}
+                      timeTime={timeTime}
+                      handleRemarkUpdate={handleRemarkUpdate}
+                      setEditingRemark={setEditingRemark}
+                      setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+                      key={i}
+                    />
+                  );
+                })
             : 'No History'}
         </ol>
       )}
@@ -313,51 +320,51 @@ export const LogsTable: React.FC<{
   user: User | null;
   timeLineItems: ICandidateHistory[];
   isLoading: boolean;
-}> = ({
-  candidate, user, timeLineItems, isLoading,
-}) => {
+}> = ({ candidate, user, timeLineItems, isLoading }) => {
   const tableRows = timeLineItems
     .sort(
-      (a, b) => new Date(b?.dateTime ?? 0).getTime()
-        - new Date(a?.dateTime ?? 0).getTime(),
+      (a, b) =>
+        new Date(b?.dateTime ?? 0).getTime() -
+        new Date(a?.dateTime ?? 0).getTime(),
     )
     .filter((interview) => {
       if (!interview.remark || !interview.remark.description) {
         return true;
       }
       return (
-        !interview.remark.isPrivate
-        || user?.role === 'hr'
-        || user?.role === 'admin'
+        !interview.remark.isPrivate ||
+        user?.role === 'hr' ||
+        user?.role === 'admin'
       );
     })
     .flatMap((interview, i) => {
       const timeDate = formatDate(interview.dateTime);
       const timeTime = formatTime(interview.dateTime);
       if (
-        typeof interview.currentInterviewer === 'object'
-        && interview.currentInterviewer
-        && 'email' in interview.currentInterviewer
-        && typeof interview.previousInterviewer === 'object'
-        && interview.previousInterviewer
-        && 'email' in interview.previousInterviewer
-        && interview.currentInterviewer !== null
-        && interview.currentInterviewer?.email
-          === interview.previousInterviewer?.email
-        && (!interview.note || !interview.note.description)
+        typeof interview.currentInterviewer === 'object' &&
+        interview.currentInterviewer &&
+        'email' in interview.currentInterviewer &&
+        typeof interview.previousInterviewer === 'object' &&
+        interview.previousInterviewer &&
+        'email' in interview.previousInterviewer &&
+        interview.currentInterviewer !== null &&
+        interview.currentInterviewer?.email ===
+          interview.previousInterviewer?.email &&
+        (!interview.note || !interview.note.description)
       ) {
         return [];
       }
-      const isLogTableEntry = interview.note
-        && interview.note.description
-        && Array.isArray(interview.note.description);
+      const isLogTableEntry =
+        interview.note &&
+        interview.note.description &&
+        Array.isArray(interview.note.description);
       if (!isLogTableEntry) return [];
 
       return (interview.note.description as IinfoUpdateLog[]).map(
         (log: IinfoUpdateLog, logIndex) => (
           <TableRow
             key={`${i}-${logIndex}-${interview.dateTime}`}
-            className="border-b border-border hover:bg-muted/50 transition-colors"
+            className="border-b border-border transition-colors hover:bg-muted/50"
           >
             <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
               {logIndex === 0 ? `${timeDate} ${timeTime}` : ''}
@@ -365,10 +372,10 @@ export const LogsTable: React.FC<{
             <TableCell className="px-4 py-3 text-sm text-foreground">
               {log.title.replace('Updated ', '') ?? log.title ?? 'N/A'}
             </TableCell>
-            <TableCell className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
-              {Array.isArray(log.previousValue)
-              && log.previousValue.length > 0
-              && log.previousValue[0].name ? (
+            <TableCell className="max-w-xs truncate px-4 py-3 text-sm text-muted-foreground">
+              {Array.isArray(log.previousValue) &&
+              log.previousValue.length > 0 &&
+              log.previousValue[0].name ? (
                 <AttachmentsPopover
                   attachments={log.previousValue.map((file, index) => ({
                     id: `${i}-${logIndex}-${index}-${file.name}`,
@@ -379,44 +386,44 @@ export const LogsTable: React.FC<{
                   }))}
                   onMoreClick={() => null}
                 />
-                ) : typeof log.previousValue === 'object'
-                && log.previousValue !== null ? (
-                  <AttachmentsPopover
-                    attachments={[
-                      {
-                        id:
-                        typeof log.previousValue === 'object'
-                        && 'id' in log.previousValue
+              ) : typeof log.previousValue === 'object' &&
+                log.previousValue !== null ? (
+                <AttachmentsPopover
+                  attachments={[
+                    {
+                      id:
+                        typeof log.previousValue === 'object' &&
+                        'id' in log.previousValue
                           ? log.previousValue.id.toString()
                           : `${i}-${logIndex}-single`,
-                        name:
-                        'name' in log.previousValue
-                        && typeof log.previousValue.name === 'string'
+                      name:
+                        'name' in log.previousValue &&
+                        typeof log.previousValue.name === 'string'
                           ? log.previousValue.name
                           : 'unknown',
-                        url:
-                        ('url' in log.previousValue
-                          && log.previousValue?.url.toString())
-                        || ('base64' in log.previousValue
-                          && log.previousValue.base64.toString())
-                        || '#',
-                        type:
-                        'type' in log.previousValue
-                        && log.previousValue.type.toString(),
-                        size:
-                        'size' in log.previousValue
-                        && Number(log.previousValue.size),
-                      },
-                    ]}
-                    onMoreClick={() => null}
-                  />
-                  ) : (
-                    (JSON.stringify(log.previousValue as string)
-                      ?.replaceAll('"', '')
-                      ?.replace('~', ' ') ?? 'N/A')
-                  )}
+                      url:
+                        ('url' in log.previousValue &&
+                          log.previousValue?.url.toString()) ||
+                        ('base64' in log.previousValue &&
+                          log.previousValue.base64.toString()) ||
+                        '#',
+                      type:
+                        'type' in log.previousValue &&
+                        log.previousValue.type.toString(),
+                      size:
+                        'size' in log.previousValue &&
+                        Number(log.previousValue.size),
+                    },
+                  ]}
+                  onMoreClick={() => null}
+                />
+              ) : (
+                (JSON.stringify(log.previousValue as string)
+                  ?.replaceAll('"', '')
+                  ?.replace('~', ' ') ?? 'N/A')
+              )}
             </TableCell>
-            <TableCell className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
+            <TableCell className="max-w-xs truncate px-4 py-3 text-sm text-muted-foreground">
               {log.attachments && log.attachments.length > 0 ? (
                 <AttachmentsPopover
                   attachments={log.attachments.map((file, index) => ({
@@ -431,17 +438,17 @@ export const LogsTable: React.FC<{
               ) : (
                 ' '
               )}
-              {(!log.attachments
-                && JSON.stringify(log.currentValue as string)
+              {(!log.attachments &&
+                JSON.stringify(log.currentValue as string)
                   ?.replaceAll('"', '')
-                  ?.replace('~', ''))
-                ?? 'N/A'}
+                  ?.replace('~', '')) ??
+                'N/A'}
             </TableCell>
-            <TableCell className="px-4 py-3 text-sm text-foreground font-medium">
-              {typeof interview.assignmentBy === 'object'
-              && interview.assignmentBy
-              && 'name' in interview.assignmentBy
-              && typeof interview.assignmentBy.name === 'string'
+            <TableCell className="px-4 py-3 text-sm font-medium text-foreground">
+              {typeof interview.assignmentBy === 'object' &&
+              interview.assignmentBy &&
+              'name' in interview.assignmentBy &&
+              typeof interview.assignmentBy.name === 'string'
                 ? interview.assignmentBy.name
                 : '—'}
             </TableCell>
@@ -456,25 +463,25 @@ export const LogsTable: React.FC<{
 
   return (
     <div className="space-y-4">
-      <div className="border border-border rounded-lg bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
         <div className="overflow-x-auto">
           {tableRows.length > 0 ? (
             <Table className="w-full text-sm">
               <TableHeader>
                 <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                  <TableHead className="px-4 py-3 text-left font-semibold text-foreground">
                     Updated At
                   </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                  <TableHead className="px-4 py-3 text-left font-semibold text-foreground">
                     Fields Updated
                   </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                  <TableHead className="px-4 py-3 text-left font-semibold text-foreground">
                     Previous Value
                   </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                  <TableHead className="px-4 py-3 text-left font-semibold text-foreground">
                     New Value
                   </TableHead>
-                  <TableHead className="px-4 py-3 font-semibold text-foreground text-left">
+                  <TableHead className="px-4 py-3 text-left font-semibold text-foreground">
                     Updated By
                   </TableHead>
                 </TableRow>

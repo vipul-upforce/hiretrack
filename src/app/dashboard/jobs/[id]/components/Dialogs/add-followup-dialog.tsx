@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import dayjs, { Dayjs } from 'dayjs';
 import { Loader2 } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 // import { sentRemarkMail } from "@/lib/utils";
 
 function AddFollowUpDialog({
@@ -22,7 +22,6 @@ function AddFollowUpDialog({
   isOpen,
   onOpenChange,
   //   setOpenRemarksFor,
-  refetch,
   handleAddFollowUp,
   setNewFollowUp,
   setNewFollowUpDate,
@@ -36,7 +35,6 @@ function AddFollowUpDialog({
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   //   setOpenRemarksFor: (id: string | null) => void;
-  refetch: () => void;
   handleAddFollowUp: () => void;
   setNewFollowUp: Dispatch<SetStateAction<string>>;
   setNewFollowUpDate: Dispatch<SetStateAction<Dayjs | null>>;
@@ -46,7 +44,7 @@ function AddFollowUpDialog({
   handleRemoveFollowUp: () => void;
   isLoading: boolean;
 }) {
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
 
   //   const [newFollowUp, setNewFollowUP] = useState("");
   //   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
@@ -56,7 +54,7 @@ function AddFollowUpDialog({
       <DialogTrigger asChild>
         <div />
       </DialogTrigger>
-      <DialogContent className="w-[700px] p-0  flex flex-col ">
+      <DialogContent className="flex w-[700px] flex-col p-0">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>
             Create A Followup for
@@ -66,7 +64,7 @@ function AddFollowUpDialog({
             Schedule a follow-up reminder for this candidate.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 px-6 py-4 space-y-4">
+        <div className="flex-1 space-y-4 px-6 py-4">
           <MentionTextarea
             placeholder="Add the note... (Alt+Enter to submit)"
             className="max-h-80 overflow-y-auto"
@@ -81,24 +79,26 @@ function AddFollowUpDialog({
                 }
               }
             }}
-            organizationId={user?.organizationId || ''}
+            organizationId={(user?.organizationId as string) || ''}
             currentUserRole={user?.role || ''}
             rows={4}
           />
           <div className="relative" style={{ zIndex: 100 }}>
             <DateTimePicker
-              value={
-                newFollowUpDate !== undefined
-                  ? newFollowUpDate
-                  : candidate?.followUp?.date
-                    ? dayjs(candidate.followUp.date)
-                    : null
-              }
+              value={(() => {
+                if (newFollowUpDate !== undefined) {
+                  return newFollowUpDate;
+                }
+                if (candidate?.followUp?.date) {
+                  return dayjs(candidate.followUp.date);
+                }
+                return null;
+              })()}
               onChange={(date) => setNewFollowUpDate(date)}
             />
           </div>
         </div>
-        <DialogFooter className="flex justify-between items-center border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+        <DialogFooter className="sticky bottom-0 z-10 flex items-center justify-between border-t bg-background px-6 py-4">
           <div className="flex-1">
             {(candidate?.followUp?.date || candidate?.followUp?.note) && (
               <Button
@@ -108,7 +108,7 @@ function AddFollowUpDialog({
                   handleRemoveFollowUp();
                   onAddingFollowup();
                 }}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
                 disabled={isLoading}
               >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -130,11 +130,7 @@ function AddFollowUpDialog({
                 onAddingFollowup();
               }}
               variant="info"
-              disabled={
-                isLoading
-                || (!newFollowUp.trim() && !newFollowUpDate)
-              }
-
+              disabled={isLoading || (!newFollowUp.trim() && !newFollowUpDate)}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {candidate?.followUp?.note || candidate?.followUp?.date
