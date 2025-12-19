@@ -124,7 +124,6 @@ export function useGoogleCalendarLogic() {
       });
       refetch();
     } catch {
-    } catch {
       toast({
         title: 'Error',
         description: 'Failed to disconnect Google Calendar',
