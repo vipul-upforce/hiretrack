@@ -1,6 +1,6 @@
 /**
- * Re-export from modular structure for backward compatibility.
- * All imports from '@/lib/services/emailDecisionEngine' will continue to work.
+ * Backward compatibility re-export
+ * @deprecated Use '@/lib/notifications' instead
  */
 export {
   shouldSendNotification,
@@ -11,4 +11,4 @@ export {
   type NotificationDecisionContext,
   type NotificationDecisionResult,
   type NotificationType as NotificationTypeType,
-} from './notificationDecisionEngine/index';
+} from '@/lib/notifications/decision';

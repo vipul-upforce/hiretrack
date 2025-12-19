@@ -1,7 +1,7 @@
 import { NotificationType } from '@/lib/models/notification';
 import logger from '@/lib/logger';
-import { batchCheckNotifications } from '@/lib/services/emailDecisionEngine';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
+import { batchCheckNotifications } from '../decision';
 import { getUsersByRole } from '../core/userHelpers';
 import { createBulkNotificationsWithDecision } from '../core/notificationHelpers';
 import { CreateNotificationParams } from '../types';

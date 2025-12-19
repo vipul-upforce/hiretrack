@@ -1,4 +1,4 @@
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from './decision';
 
 export type RelatedEntityType =
   | 'candidate'

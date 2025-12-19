@@ -40,3 +40,4 @@ export type UserLean = {
 export type SettingsLean = {
   organizationEmailNotifications?: OrganizationEmailNotifications;
 };
+
