@@ -14,7 +14,7 @@ import { CandidateInfoSection } from './CandidateInfoSection';
 
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { IEditRemark } from '../../schemas/EditRemarkDialog';
-import { HistoryAndLogTable } from './HisotryAndLogTable';
+import { HistoryAndLogTable } from './history-and-log-table';
 // import { useDateFormatter } from "@/components/timezoneFormat/useGetFormattedTZ";
 
 /**

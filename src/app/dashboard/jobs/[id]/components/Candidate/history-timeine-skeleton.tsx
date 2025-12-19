@@ -8,10 +8,10 @@ export function HistoryTimelineSkeleton() {
         <Skeleton className="h-9 w-24" />
       </div>
 
-      <ol className="relative border-s border-gray-200 dark:border-gray-700 pl-6 space-y-8">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <li key={i} className="relative list-none">
-            <div className="absolute -left-[29px] top-0 h-4 w-4 rounded-full bg-accent animate-pulse border-2 border-background" />
+      <ol className="relative space-y-8 border-s border-gray-200 pl-6 dark:border-gray-700">
+        {Array.from({ length: 4 }).map(() => (
+          <li key={Math.random()} className="relative list-none">
+            <div className="absolute -left-[29px] top-0 h-4 w-4 animate-pulse rounded-full border-2 border-background bg-accent" />
 
             <div className="space-y-3">
               <div className="flex items-center gap-2">

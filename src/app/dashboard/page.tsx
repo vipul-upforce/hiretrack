@@ -8,12 +8,11 @@ import ActionItems from '@/components/actionitems';
 import { Button } from '@/components/ui/button';
 import { Search, Bell } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
-import useRoles from '@/hooks/useRoles';
 import { useSSE } from '@/hooks/useSSE';
 import { Candidate } from '@/types/candidate';
 import { ITag } from '@/lib/models/organization';
-import { useSelector } from 'react-redux';
 import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { useNotificationsContext } from '@/contexts/NotificationsContext';
 import { useLazyFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
 import { useToast } from '@/hooks/use-toast';
@@ -123,7 +122,7 @@ export default function DashboardPage() {
     thisWeek: 0,
     today: 0,
   });
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
     null,
   );
@@ -150,8 +149,7 @@ export default function DashboardPage() {
   const loadingRef = useRef(false);
   const [markAsRead] = useMarkNotificationAsReadMutation();
 
-  const role = useRoles();
-  const { candidates: sseCandidates } = useSSE(role || '', () => {}, null);
+  const { candidates: sseCandidates } = useSSE(() => {}, null);
   const isToday = (assignment: Assignment) => {
     const assignmentDate = new Date(
       assignment.assignment?.time || assignment.interviewDate,

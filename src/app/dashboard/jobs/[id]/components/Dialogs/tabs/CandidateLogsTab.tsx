@@ -6,7 +6,7 @@
 import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
 import { ICandidateHistory } from '@/lib/models/history';
-import { LogsTable } from '../../Candidate/HisotryAndLogTable';
+import { LogsTable } from '../../Candidate/history-and-log-table';
 
 interface CandidateLogsTabProps {
   candidate: Candidate;
