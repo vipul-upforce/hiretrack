@@ -5,7 +5,7 @@ import connectToDatabase, {
   Settings,
   User,
 } from '@/lib/mongodb';
-import { sendEventEmailWithHistory } from '@/lib/unifiedEmailService';
+import { sendEventEmailWithHistory } from '@/lib/services/unifiedEmailService';
 import { ObjectId, Types } from 'mongoose';
 import { Organization } from '@/lib/models/user';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';

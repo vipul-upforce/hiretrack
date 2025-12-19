@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { Settings } from '@/lib/mongodb';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { getOrganizationName } from '@/lib/utils/organization';

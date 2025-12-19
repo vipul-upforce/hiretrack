@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEventEmailWithHistory } from '@/lib/unifiedEmailService';
+import { sendEventEmailWithHistory } from '@/lib/services/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import connectToDatabase, { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';

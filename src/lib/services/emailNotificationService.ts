@@ -8,4 +8,4 @@ export {
   updateOrganizationEmailNotifications,
   getExistingSettings,
   type UserInfo,
-} from '@/lib/notifications/settings/emailNotificationService';
+} from '@/lib/notifications/settings/notificationService';

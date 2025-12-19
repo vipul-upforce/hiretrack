@@ -40,7 +40,7 @@ export {
   updateOrganizationEmailNotifications,
   getExistingSettings,
   type UserInfo,
-} from './settings/emailNotificationService';
+} from './settings/notificationService';
 export {
   safeSet,
   safeGet,

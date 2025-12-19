@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSmartNotification } from '@/lib/unifiedEmailService'; // Import sendSmartNotificationEmail
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService'; // Import sendSmartNotificationEmail
 import connectToDatabase, {
   Candidate,
   Organization,
