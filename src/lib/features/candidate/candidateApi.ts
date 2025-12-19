@@ -197,7 +197,7 @@ export const candidateApi = baseApi.injectEndpoints({
     }),
     updateCandidateRemark: builder.mutation<void, UpdateRemarkRequest>({
       query: (data) => ({
-        url: '/api/candidates/history',
+        url: '/candidates/history',
         method: 'PATCH',
         body: data,
       }),
