@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -19,6 +21,12 @@ import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
 import { useAppSelector } from '@/lib/redux/hooks';
+import logger from '@/lib/logger';
+import {
+  useCancelMeetingMutation,
+  useScheduleMeetingMutation,
+  useUpdateMeetingMutation,
+} from '@/lib/features/calendar/calendarApi';
 import {
   validationSchema,
   FormValues,
@@ -31,6 +39,10 @@ import { GoogleMeetIntegration } from './assign-candidate-components/GoogleMeetI
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
+
+function LoadingSpinner({ w = 4 }: { w?: number }) {
+  return <Loader2 className={`mr-2 h-${w} w-${w} animate-spin`} />;
+}
 
 export function AssignCandidateDialog({
   candidate,
@@ -45,7 +57,11 @@ export function AssignCandidateDialog({
   const { toast } = useToast();
   const [showCancelMeetDialog, setShowCancelMeetDialog] = useState(false);
   const [cancelNotes, setCancelNotes] = useState('');
-  const [isCancelling, setIsCancelling] = useState(false);
+
+  const [scheduleMeeting] = useScheduleMeetingMutation();
+  const [updateMeeting] = useUpdateMeetingMutation();
+  const [cancelMeeting, { isLoading: isCancelling }] =
+    useCancelMeetingMutation();
 
   const { user } = useAppSelector((state) => state.auth || {});
   const { data: interviewers, refetch: refetchInterviewers } =
@@ -75,7 +91,7 @@ export function AssignCandidateDialog({
     }
   }, [isOpen, refetchInterviewers]);
 
-  const getDefaultGuests = (selectedInterviewer) => {
+  const getDefaultGuests = (selectedInterviewer: any) => {
     const defaultGuests = [];
     if (selectedInterviewer?.email)
       defaultGuests.push(selectedInterviewer.email);
@@ -104,21 +120,6 @@ export function AssignCandidateDialog({
       candidate?.assignment?.googleMeet?.meetingAttachments || [],
     additionalGuests: [],
   };
-
-  function getOnAltEnterSubmit(
-    values: FormValues,
-    formikHelpers: FormikHelpers<FormValues>,
-    isSubmitting: boolean,
-  ) {
-    return (fieldValue: string) => (e: React.KeyboardEvent) => {
-      if (e.altKey && e.key === 'Enter') {
-        e.preventDefault();
-        if (fieldValue?.trim() && !isSubmitting) {
-          handleFormSubmit(values, formikHelpers);
-        }
-      }
-    };
-  }
 
   const handleFormSubmit = async (
     values: FormValues,
@@ -169,45 +170,33 @@ export function AssignCandidateDialog({
         );
 
         const isUpdating = candidate.assignment?.googleMeet?.eventId;
-        const apiUrl = isUpdating
-          ? '/api/google-calendar/update-meet'
-          : '/api/google-calendar/schedule-meet';
-        const method = isUpdating ? 'PUT' : 'POST';
+        let result;
 
-        const requestBody = isUpdating
-          ? {
-              eventId: candidate.assignment?.googleMeet.eventId,
-              candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString(),
-              duration: values.meetDuration || 30,
-              guests: allGuests,
-            }
-          : {
-              candidateId: candidate._id,
-              candidateName: candidate.name,
-              candidateEmail: candidate.email,
-              interviewerId: selectedInterviewer._id,
-              interviewerName: selectedInterviewer.name,
-              scheduledTime: values.time?.toISOString(),
-              duration: values.meetDuration || 30,
-              guests: allGuests,
-              jobTitle: candidate.jobId?.title || 'Position',
-              organizationName: user?.organizationInfo?.name || 'Company',
-              meetingNotes: values.meetingNotes || '',
-              meetingAttachments: processedMeetingAttachments,
-            };
-
-        const response = await fetch(apiUrl, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          logger.error('❌ API Error:', result.error);
-          throw new Error(result.error || 'Failed to schedule Google Meet');
+        if (isUpdating) {
+          // UPDATE EXISTING MEETING
+          result = await updateMeeting({
+            eventId: candidate.assignment?.googleMeet.eventId,
+            candidateId: candidate._id,
+            scheduledTime: values.time?.toISOString(),
+            duration: values.meetDuration || 30,
+            guests: allGuests,
+          }).unwrap();
+        } else {
+          // SCHEDULE NEW MEETING
+          result = await scheduleMeeting({
+            candidateId: candidate._id,
+            candidateName: candidate.name,
+            candidateEmail: candidate.email,
+            interviewerId: selectedInterviewer._id,
+            interviewerName: selectedInterviewer.name,
+            scheduledTime: values.time?.toISOString(),
+            duration: values.meetDuration || 30,
+            guests: allGuests,
+            jobTitle: candidate.jobId?.title || 'Position',
+            organizationName: user?.organizationInfo?.name || 'Company',
+            meetingNotes: values.meetingNotes || '',
+            meetingAttachments: processedMeetingAttachments,
+          }).unwrap();
         }
 
         const updatedValues = {
@@ -238,19 +227,64 @@ export function AssignCandidateDialog({
             ? 'Google Meet updated and candidate assigned'
             : 'Google Meet scheduled and candidate assigned',
         });
-      } catch (error) {
+      } catch (error: any) {
+        logger.error('❌ Google Meet Error:', error);
         toast({
           title: 'Error',
           description:
-            error instanceof Error
-              ? error.message
-              : 'Failed to schedule Google Meet',
+            error?.data?.error ||
+            error.message ||
+            'Failed to schedule/update Google Meet',
           variant: 'destructive',
         });
         formikHelpers.setSubmitting(false);
       }
     } else {
       await handleSubmit(values, formikHelpers, user, interviewers);
+    }
+  };
+
+  function getOnAltEnterSubmit(
+    values: FormValues,
+    formikHelpers: FormikHelpers<FormValues>,
+    isSubmitting: boolean,
+  ) {
+    return (fieldValue: string) => (e: React.KeyboardEvent) => {
+      if (e.altKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (fieldValue?.trim() && !isSubmitting) {
+          handleFormSubmit(values, formikHelpers);
+        }
+      }
+    };
+  }
+
+  const handleCancelMeeting = async () => {
+    if (!candidate.assignment?.googleMeet?.eventId) return;
+
+    try {
+      await cancelMeeting({
+        eventId: candidate.assignment.googleMeet.eventId,
+        candidateId: candidate._id,
+        cancelNotes,
+      }).unwrap();
+
+      toast({
+        title: 'Success',
+        description: 'Google Meet cancelled successfully',
+      });
+
+      if (refetch) await refetch();
+      onOpenChange(false);
+      setShowCancelMeetDialog(false);
+      setCancelNotes('');
+    } catch (error) {
+      logger.error('Error cancelling meeting:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel Google Meet',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -262,7 +296,7 @@ export function AssignCandidateDialog({
           className="flex flex-col justify-start overflow-hidden"
         >
           <DialogHeader>
-            <DialogTitle>Assign Candidate -{candidate.name}</DialogTitle>
+            <DialogTitle>Assign Candidate - {candidate.name}</DialogTitle>
           </DialogHeader>
 
           <Formik
@@ -337,9 +371,7 @@ export function AssignCandidateDialog({
                         disabled={isSubmitting}
                         variant="info"
                       >
-                        {isSubmitting && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
+                        {isSubmitting && <LoadingSpinner w={4} />}
                         {isSubmitting ? 'Assigning...' : 'Assign'}
                       </Button>
                     </div>
@@ -416,35 +448,7 @@ export function AssignCandidateDialog({
                 type="button"
                 variant="destructive"
                 disabled={isCancelling}
-                onClick={async () => {
-                  setIsCancelling(true);
-                  try {
-                    const response = await fetch(
-                      `/api/google-calendar/update-meet?eventId=${candidate.assignment?.googleMeet?.eventId}&candidateId=${candidate._id}&cancelNotes=${encodeURIComponent(cancelNotes)}`,
-                      { method: 'DELETE' },
-                    );
-                    if (response.ok) {
-                      toast({
-                        title: 'Success',
-                        description: 'Google Meet cancelled successfully',
-                      });
-                      refetch();
-                      onOpenChange(false);
-                      setShowCancelMeetDialog(false);
-                      setCancelNotes('');
-                    } else {
-                      throw new Error('Failed to cancel meeting');
-                    }
-                  } catch (error) {
-                    toast({
-                      title: 'Error',
-                      description: 'Failed to cancel Google Meet',
-                      variant: 'destructive',
-                    });
-                  } finally {
-                    setIsCancelling(false);
-                  }
-                }}
+                onClick={handleCancelMeeting}
               >
                 {isCancelling ? (
                   <>
