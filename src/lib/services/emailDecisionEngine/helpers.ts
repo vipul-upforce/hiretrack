@@ -58,3 +58,4 @@ export async function fetchUsersAndSettingsBatch(
 
   return [users as UserLean[], orgSettings as SettingsLean | null];
 }
+

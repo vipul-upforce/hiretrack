@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { Settings, User, EmailHistory } from '@/lib/mongodb';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { logger } from '@/lib/logger/logger.server';
 import type { StatusUpdateQueueData } from './types';
 
@@ -43,18 +43,18 @@ export async function createPendingEmailHistory(
       'status-update',
       {
         eventTitle,
-        jobTitle: jobName,
+        jobTitle: jobName || '',
         candidateName,
         newStatus: status,
-        statusMessage: remark,
-        rating,
-        actionBy,
+        statusMessage: remark || '' || 'N/A',
+        rating: rating?.toString() || 'N/A' || 'N/A',
+        actionBy: actionBy || '' || 'N/A',
         nextSteps: 'TBD', // Will be updated when actually sent
-        prev_status: prevStatus,
+        prev_status: prevStatus || '' || 'N/A',
         eventSubTitle,
-        candidateDetails,
+        candidateDetails: candidateDetails || '' || 'N/A',
         organizationName: 'TBD', // Will be updated when actually sent
-        hrContactInfo,
+        hrContactInfo: hrContactInfo || '' || 'N/A',
       },
       organizationId,
     ),

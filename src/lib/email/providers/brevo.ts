@@ -1,5 +1,5 @@
 import type { Ismtp } from '@/lib/models/settings';
-import logger from '../../logger';
+import logger from '@/lib/logger';
 import type { EmailOptions, EmailResult } from '../types';
 
 /**

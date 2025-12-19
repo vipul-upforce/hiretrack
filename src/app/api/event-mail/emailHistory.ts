@@ -1,13 +1,9 @@
-
 import mongoose from 'mongoose';
 import { User, EmailHistory } from '@/lib/mongodb';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { getFromEmailAndProvider } from '@/lib/utils/mailSettings';
 import { resolveSentByToObjectId } from '@/lib/utils/userResolution';
-import {
-  CreatePendingHistoryParams,
-} from './types';
-
+import { CreatePendingHistoryParams } from './types';
 
 /**
  * Create pending email history entries
@@ -49,13 +45,13 @@ export async function createPendingEmailHistory(
         eventTitle: data.eventTitle,
         interviewDate: 'TBD', // Will be updated when actually sent
         endDate: 'TBD',
-        jobTitle: data.jobName,
-        interviewerName: data.interviewerName,
-        candidateName: data.candidateName,
-        interviewType: data.status,
+        jobTitle: data.jobName || '',
+        interviewerName: data.interviewerName || '',
+        candidateName: data.candidateName || '',
+        interviewType: data.status || '',
         meetingLink: 'TBD',
         outlookCalendarLink: 'TBD',
-        candidateProfileLink: data.candidateDetailsPage,
+        candidateProfileLink: data.candidateDetailsPage || '',
         organizationName: 'TBD',
       },
       organizationId,
@@ -107,9 +103,7 @@ export async function createPendingEmailHistory(
         : [];
 
     // Create a map for fast lookup
-    const hrUserMap = new Map(
-      hrUsers?.map((user) => [user.email, user]) || [],
-    );
+    const hrUserMap = new Map(hrUsers?.map((user) => [user.email, user]) || []);
 
     // Create history records for BCC recipients (HR/Admins) - PENDING (batched)
     const hrHistoryPromises = emailList.map(async (hrEmail: string) => {
