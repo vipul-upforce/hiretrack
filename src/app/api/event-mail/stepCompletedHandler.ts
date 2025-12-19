@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';

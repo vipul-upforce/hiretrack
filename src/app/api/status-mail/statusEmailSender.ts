@@ -2,7 +2,7 @@ import { User } from '@/lib/mongodb';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
 import { getFromEmail, getMailSettings } from '@/lib/utils/mailSettings';
 import { getNextStep } from '@/lib/utils/organization';

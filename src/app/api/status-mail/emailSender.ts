@@ -4,7 +4,7 @@ import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmail
 import { Organization } from '@/lib/models/user';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
 import type { StatusUpdateQueueData } from './types';
 import { updateEmailHistoryStatus } from './statusEmailHistory';

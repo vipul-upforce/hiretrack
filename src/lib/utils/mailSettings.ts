@@ -77,9 +77,7 @@ export async function getFromEmailAndProvider(
 /**
  * Get from email address from organization settings
  */
-export async function getFromEmail(
-  organizationId: string,
-): Promise<string> {
+export async function getFromEmail(organizationId: string): Promise<string> {
   const settings = await getMailSettings(organizationId);
 
   return (
@@ -93,9 +91,7 @@ export async function getFromEmail(
 /**
  * Get mail provider from organization settings
  */
-export async function getMailProvider(
-  organizationId: string,
-): Promise<string> {
+export async function getMailProvider(organizationId: string): Promise<string> {
   const settings = await getMailSettings(organizationId);
 
   return settings?.mailConfig?.mailProvider || 'unknown';
