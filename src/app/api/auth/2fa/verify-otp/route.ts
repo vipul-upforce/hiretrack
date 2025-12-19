@@ -1,26 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { User } from '@/lib/mongodb';
-import { signToken } from '@/app/actions/auth';
-import { setSecureAuthTokens } from '@/lib/secureTokens';
+import connectToDatabase ,{ User } from '@/lib/mongodb';
+import { signAccessToken } from '@/app/actions/auth';
 import { loginRateLimiter } from '@/lib/rateLimiter';
+import { generateRefreshToken, hashRefreshToken, storeRefreshToken, cleanupExpiredTokens } from '@/lib/refreshToken';
 import { logger } from '@/lib/logger/logger.server';
-
-const returnTokenBasedResponse = async (obj: any, orgId: string) => {
-  const token = await signToken(obj[0], orgId);
-
-  const response = NextResponse.json({
-    message: 'Logged In Successfully',
-    user: token,
-  });
-
-  // SECURITY FIX: Use secure token system with improved security
-  setSecureAuthTokens(response, token, {
-    expires: 30, // 30 days
-    maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
-  });
-
-  return response;
-};
+import { setAuthCookies } from "@/lib/authCookies";
 
 async function handleVerifyOtp(req: NextRequest) {
   try {
@@ -102,6 +86,7 @@ async function handleVerifyOtp(req: NextRequest) {
       const response = await returnTokenBasedResponse(
         userData,
         userData[0].organizationId,
+        req
       );
       return response;
     }
@@ -113,10 +98,57 @@ async function handleVerifyOtp(req: NextRequest) {
     logger.error({ error }, ' Error verifying OTP');
     return NextResponse.json(
       { message: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
+
+const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextRequest) => {
+  // Generate short-lived access token (15 minutes)
+  const accessToken = await signAccessToken(obj[0], orgId);
+
+  const userId = obj[0].id;
+  const role = obj[0].role;
+  const isCandidate = role === 'candidate';
+  
+  // Cleanup expired tokens before storing new one (keeps array clean)
+  await cleanupExpiredTokens(userId, isCandidate);
+  
+  // Generate refresh token using JWT (same method as access token)
+  const refreshTokenPayload = {
+    userId: userId,
+    role: role,
+    orgId: orgId,
+    isCandidate: isCandidate,
+    tokenVersion: obj[0].tokenVersion,
+  };
+  
+  const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+  
+  // Store hashed refresh token in database
+  await storeRefreshToken(
+    userId,
+    refreshTokenHash,
+    isCandidate,
+    7 // 7 days
+  );
+
+  const response = NextResponse.json({
+    message: 'Logged In Successfully',
+    user: accessToken,
+    refreshToken: refreshToken, // Return JWT refresh token to client
+  });
+
+  setAuthCookies({
+    response,
+    accessToken,
+    refreshToken,
+    orgId,
+  });
+
+  return response;
+};
 
 // Export with rate limiting
 export async function POST(req: Request) {

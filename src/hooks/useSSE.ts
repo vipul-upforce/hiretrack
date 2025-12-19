@@ -1,7 +1,7 @@
 import logger from '@/lib/logger';
-import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
 import { verifyAndDecrypCaptcha, verifyAndDecryptSSE } from '@/lib/auth';
 import { Candidate } from '@/types/candidate';
+import { CustomCalendarEvent } from '@/app/dashboard/calendar/types';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
@@ -11,7 +11,7 @@ export async function getDecodedSSE(encodedData: string) {
   const orgId = Cookies.get('org_id');
 
   try {
-    const data = await verifyAndDecryptSSE(encodedData, orgId);
+    const data = await verifyAndDecryptSSE(encodedData, orgId || '');
     return data;
   } catch (error) {
     logger.error('SSE decryption error:', error);
@@ -28,8 +28,10 @@ export async function getDecodedCaptcha(encodedData: string, orgId: string) {
   }
 }
 export const useSSE = (
-  role: string,
-  setSelectedCandidate: any,
+  // role: string,
+  setSelectedCandidate: (
+    candidate: Candidate | CustomCalendarEvent | null,
+  ) => void,
   selectedCandidate: Candidate | CustomCalendarEvent | null,
   jobId?: string,
 ) => {
@@ -38,10 +40,16 @@ export const useSSE = (
     candidates,
     setCandidates,
     clients,
-    lanes,
+    lanes: sseLanes,
     isConnected,
+    jobId: sseJobId,
   } = useNotificationSSE(0, 0);
 
+  let lanes = sseLanes;
+
+  if (jobId && sseJobId && sseJobId !== jobId) {
+    lanes = undefined;
+  }
   const pathname = usePathname();
 
   // Use refs to store the latest setSelectedCandidate and selectedCandidate
@@ -64,15 +72,18 @@ export const useSSE = (
     let currentSelectedId: string | undefined;
     if (currentSelected) {
       if (pathname?.includes('/calendar')) {
-        currentSelectedId = (currentSelected as CustomCalendarEvent)?.extendedProps?.candidate?._id
-          || (currentSelected as any)?._def?.publicId;
+        currentSelectedId =
+          (currentSelected as CustomCalendarEvent)?.extendedProps?.candidate
+            ?._id || (currentSelected as Candidate)?._def?.publicId; // eslint-disable-line no-underscore-dangle
       } else {
         currentSelectedId = (currentSelected as Candidate)?._id;
       }
     }
 
     // Find if the selected candidate was updated
-    const updatedCandidate = candidates.find((c) => c._id === currentSelectedId);
+    const updatedCandidate = candidates.find(
+      (c) => c._id === currentSelectedId,
+    );
     if (updatedCandidate && currentSelectedId === updatedCandidate._id) {
       if (!pathname?.includes('/calendar')) {
         setSelectedCandidateRef.current(updatedCandidate);
@@ -108,23 +119,23 @@ export const useSSE = (
               jobDetails:
                 typeof updatedCandidate.jobId === 'object'
                   ? {
-                    title: updatedCandidate.jobId?.title || '',
-                    description: updatedCandidate.jobId?.description || '',
-                  }
+                      title: updatedCandidate.jobId?.title || '',
+                      description: updatedCandidate.jobId?.description || '',
+                    }
                   : undefined,
             },
             interviewer:
               typeof updatedCandidate?.assignment?.interviewerId === 'string'
                 ? {
-                  _id: updatedCandidate?.assignment?.interviewerId,
-                  name: 'Unknown',
-                  email: 'Unknown',
-                }
+                    _id: updatedCandidate?.assignment?.interviewerId,
+                    name: 'Unknown',
+                    email: 'Unknown',
+                  }
                 : updatedCandidate?.assignment?.interviewerId || {
-                  _id: '',
-                  name: 'Unknown',
-                  email: 'Unknown',
-                },
+                    _id: '',
+                    name: 'Unknown',
+                    email: 'Unknown',
+                  },
           },
         };
         setSelectedCandidateRef.current(updatedEvent);
@@ -133,6 +144,10 @@ export const useSSE = (
   }, [candidates, pathname]);
 
   return {
-    candidates, setCandidates, clients, lanes, isConnected,
+    candidates,
+    setCandidates,
+    clients,
+    lanes,
+    isConnected,
   };
 };

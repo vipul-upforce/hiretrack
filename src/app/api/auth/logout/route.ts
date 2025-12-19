@@ -1,9 +1,40 @@
-import { NextResponse } from 'next/server';
-import { clearAuthTokens } from '@/lib/secureTokens';
+import { NextRequest, NextResponse } from 'next/server';
+import { clearAuthTokens } from '@/lib/authCookies';
+import { verifyAndDecryptToken } from '@/app/actions/auth';
+import {
+  clearRefreshToken,
+  hashRefreshToken,
+  verifyRefreshToken,
+  verifyAndDecryptRefreshToken,
+} from '@/lib/refreshToken';
+import connectToDatabase from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    await connectToDatabase();
+    const token = request.cookies.get('auth_token')?.value;
+    const orgId = request.cookies.get('org_id')?.value;
+
+    if (token && orgId) {
+      const { success, user } = await verifyAndDecryptToken(token, orgId);
+
+      if (success && user) {
+        // Try to get token hash from refresh token cookie
+        const refreshToken = request.cookies.get('refresh_token')?.value;
+        let tokenHash: string | undefined;
+
+        if (refreshToken) {
+          // Hash the refresh token to find and clear the specific token
+          tokenHash = hashRefreshToken(refreshToken);
+        }
+
+        // Clear refresh token from database (specific token or all if tokenHash not found)
+        const isCandidate = user.role === 'candidate';
+        await clearRefreshToken(user.id || user.email, tokenHash, isCandidate);
+      }
+    }
+
     const response = NextResponse.json({
       message: 'Logged out successfully',
     });

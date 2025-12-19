@@ -4,6 +4,7 @@ import logger from '@/lib/logger';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
+// Singleton SSE connection manager
 type Subscriber = {
   id: string;
   onNotificationCountUpdated?: (count: number) => void;
@@ -11,7 +12,11 @@ type Subscriber = {
   onNotifications?: (notifications: string[]) => void;
   onCandidateUpdate?: (candidate: Candidate) => void;
   onMultipleCandidateUpdate?: (candidates: Candidate[]) => void;
-  onLanesUpdate?: (lanes: string[]) => void;
+  onLanesUpdate?: (
+    lanes: string[],
+    jobIdData: string,
+    laneRenamedData: boolean,
+  ) => void;
   onClientsUpdate?: (clients: number) => void;
   onConnectionChange?: (connected: boolean) => void;
 };
@@ -21,7 +26,9 @@ class SSEManager {
 
   private subscribers: Map<string, Subscriber> = new Map();
 
-  private reconnectTimeout: NodeJS.Timeout | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  private reconnectAttempts: number | null = null;
 
   private isConnecting = false;
 
@@ -72,12 +79,19 @@ class SSEManager {
       this.isConnecting = false;
 
       // Reconnect if we still have subscribers
-      if (this.subscribers.size > 0 && !this.reconnectTimeout) {
+      if (!this.reconnectAttempts) this.reconnectAttempts = 0;
+      if (
+        this.subscribers.size > 0 &&
+        !this.reconnectTimeout &&
+        this.reconnectAttempts < 50
+      ) {
         this.reconnectTimeout = setTimeout(() => {
           this.reconnectTimeout = null;
+          this.reconnectAttempts! += 1;
           this.connect();
-        }, 100);
+        }, 1000);
       }
+      // If successful connection occurs, elsewhere in `onopen` remember to reset `this.reconnectAttempts = 0`
     };
   }
 
@@ -135,7 +149,7 @@ class SSEManager {
 
     if (data.type === 'lanesUpdate') {
       this.subscribers.forEach((sub) => {
-        sub.onLanesUpdate?.(data.lanes);
+        sub.onLanesUpdate?.(data.lanes, data.jobId, data.laneRenamed);
       });
     }
 
@@ -183,6 +197,8 @@ export function useNotificationSSE(
   // Candidate update state
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [lanes, setLanes] = useState<string[]>();
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [laneRenamed, setLaneRenamed] = useState<boolean>(false);
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const subscriberIdRef = useRef<string>(
@@ -232,9 +248,14 @@ export function useNotificationSSE(
     [],
   );
 
-  const handleLanesUpdate = useCallback((lanesData: string[]) => {
-    setLanes(lanesData);
-  }, []);
+  const handleLanesUpdate = useCallback(
+    (lanesData: string[], jobIdData: string, laneRenamedData: boolean) => {
+      setLanes(lanesData);
+      setJobId(jobIdData);
+      setLaneRenamed(laneRenamedData);
+    },
+    [],
+  );
 
   const handleClientsUpdate = useCallback((clientsCount: number) => {
     setClients(clientsCount);
@@ -290,5 +311,7 @@ export function useNotificationSSE(
     lanes,
     clients,
     isConnected,
+    jobId,
+    laneRenamed,
   };
 }

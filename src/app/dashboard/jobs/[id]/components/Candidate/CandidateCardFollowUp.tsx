@@ -29,25 +29,25 @@ export function CandidateCardFollowUp({
   }
 
   return (
-    <div className="mb-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border-l-4 border-amber-400 dark:border-amber-500">
+    <div className="mb-2 rounded border-l-4 border-amber-400 bg-amber-50 p-2 dark:border-amber-500 dark:bg-amber-900/20">
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-start gap-2 flex-1 min-w-0">
-          <Bell className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
+        <div className="flex min-w-0 flex-1 items-start gap-2">
+          <Bell className="mt-0.5 h-3 w-3 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+          <div className="min-w-0 flex-1">
             {candidate.followUp.date && (
-              <div className="text-xs text-amber-700 dark:text-amber-300 font-medium mb-1">
-                {formatDate(candidate.followUp.date)}
-                {' '}
-                at
-                {' '}
+              <div className="mb-1 text-xs font-medium text-amber-700 dark:text-amber-300">
+                {formatDate(candidate.followUp.date)} at{' '}
                 {formatTime(candidate.followUp.date)}
               </div>
             )}
             {candidate.followUp.note && (
               <>
-                {parsed.userNotes.map((note, index) => (
-                  <div key={`note-${index}`} className="relative">
-                    <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words">
+                {parsed.userNotes.map((note) => (
+                  <div
+                    key={`note-${Math.random().toString(36).substr(2, 9)}`}
+                    className="relative"
+                  >
+                    <p className="line-clamp-2 break-words text-xs leading-tight text-amber-800 dark:text-amber-200">
                       {note}
                     </p>
                   </div>
@@ -58,7 +58,7 @@ export function CandidateCardFollowUp({
                       <hr className="my-2 border-t border-amber-300 dark:border-amber-600" />
                     )}
                     <div className="relative">
-                      <p className="text-xs text-amber-800 dark:text-amber-200 leading-tight line-clamp-2 break-words font-semibold">
+                      <p className="line-clamp-2 break-words text-xs font-semibold leading-tight text-amber-800 dark:text-amber-200">
                         {parsed.completionNote}
                       </p>
                     </div>
@@ -67,31 +67,34 @@ export function CandidateCardFollowUp({
               </>
             )}
             {candidate.followUp.userId && (
-              <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                Created by:
-                {' '}
-                <span className="font-bold">{candidate.followUp.userId.name}</span>
+              <div className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                Created by:{' '}
+                <span className="font-bold">
+                  {candidate.followUp.userId.name}
+                </span>
               </div>
             )}
           </div>
         </div>
         {user?.role !== 'candidate' && user?.role !== 'interviewer' && (
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center gap-1">
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit();
               }}
-              className="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200 transition-colors duration-200"
+              className="text-amber-600 transition-colors duration-200 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-200"
             >
               <Edit className="h-3 w-3" />
             </button>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove();
               }}
-              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-200"
+              className="text-red-500 transition-colors duration-200 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
             >
               <Trash2 size={12} />
             </button>

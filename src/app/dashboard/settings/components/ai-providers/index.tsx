@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import {
   useGetAIProvidersConfigsQuery,
   useGetPortalConfigsQuery,
-} from '@/lib/features/settings/settingsApi';
-import AIProvidersForm from './component/ai-providers-form';
+} from '@/lib/features/settings';
+import AIProvidersForm from './partials/ai-providers-form';
 import { AIProvidersValues } from './types';
 import { getModelDisplayValue } from './utils';
-import AiProviderSkeleton from './component/ai-provider-loading-skeleton';
+import AiProviderSkeleton from './partials/ai-provider-loading-skeleton';
 
 export default function AIProvidersConfigs({
   onClose,

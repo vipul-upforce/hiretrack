@@ -3,11 +3,10 @@
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { toast } from '@/hooks/use-toast';
 import useRoles from '@/hooks/useRoles';
-import {
-  useParams, usePathname, useRouter, redirect,
-} from 'next/navigation';
+import { useParams, usePathname, useRouter, redirect } from 'next/navigation';
 import { useEffect } from 'react';
 import { useFetchCandidateByIdQuery } from '@/lib/features/candidate/candidateApi';
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 
 export default function CandidateDetailsPage() {
   const params = useParams();
@@ -41,7 +40,7 @@ export default function CandidateDetailsPage() {
   // Error / Unauthorized handling
   useEffect(() => {
     if (isError) {
-      const status = (error as any)?.status;
+      const status = (error as FetchBaseQueryError)?.status;
       if (status === 401) {
         router.push(`/auth/login?redirect=${pathname}`);
         return;
@@ -59,7 +58,7 @@ export default function CandidateDetailsPage() {
   if (!candidate) return <div>Candidate not found.</div>;
 
   return (
-    <div className="w-screen h-[100dvh]">
+    <div className="h-[100dvh] w-screen">
       <CandidateDetailsDialog
         candidate={candidate}
         isOpen

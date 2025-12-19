@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   useGet2FAConfigsQuery,
   useUpdate2FAMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { TwoFASettingsProps, TwoFAValues, ApiError } from './types';
 import { twoFAValidationSchema } from './schema';
 import { TwoFALoadingSkeleton } from './loading-skeleton';

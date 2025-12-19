@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CandidateCard } from '@/app/dashboard/jobs/[id]/components/Candidate/candidate-card';
+import { CandidateCard } from '@/app/dashboard/jobs/[id]/components/Candidate/candidare-card';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { Assignment } from '@/app/dashboard/page';
 import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
@@ -43,11 +43,13 @@ function ActionItems({
 
       const updatedAssignments = !updatedCandidate.assignment
         ? assignments.filter(
-          (assignment) => assignment._id !== updatedCandidate._id,
-        )
-        : assignments.map((assignment) => (assignment._id === updatedCandidate._id
-          ? { ...assignment, ...updatedCandidate } // merge updated data
-          : assignment));
+            (assignment) => assignment._id !== updatedCandidate._id,
+          )
+        : assignments.map((assignment) =>
+            assignment._id === updatedCandidate._id
+              ? { ...assignment, ...updatedCandidate } // merge updated data
+              : assignment,
+          );
       setAssignments(updatedAssignments);
       toast({
         title: 'Success',

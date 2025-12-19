@@ -6,7 +6,7 @@ import {
   useToggleAutoUpdateMutation,
   useLazyGetVersionListQuery,
   useTriggerUpdateMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { FormikHelpers } from 'formik';
 import { AboutValues, VersionListResponse, VersionInfo } from '../types';
 

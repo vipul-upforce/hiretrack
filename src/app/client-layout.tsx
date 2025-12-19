@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { usePathname } from 'next/navigation';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';

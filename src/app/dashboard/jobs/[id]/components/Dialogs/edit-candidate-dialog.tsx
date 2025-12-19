@@ -80,15 +80,14 @@ const handleFileParse = async (
 
 const isFetchBaseQueryError = (
   error: unknown,
-): error is FetchBaseQueryError & { data: { error: string } } => (
-  typeof error === 'object'
-    && error !== null
-    && 'data' in error
-    && typeof error.data === 'object'
-    && error.data !== null
-    && 'error' in error.data
-    && typeof error.data.error === 'string'
-);
+): error is FetchBaseQueryError & { data: { error: string } } =>
+  typeof error === 'object' &&
+  error !== null &&
+  'data' in error &&
+  typeof error.data === 'object' &&
+  error.data !== null &&
+  'error' in error.data &&
+  typeof error.data.error === 'string';
 
 export function EditCandidateDialog({
   candidate,
@@ -164,9 +163,10 @@ export function EditCandidateDialog({
       return;
     }
     try {
-      const resumeBase64 = values.resume instanceof File
-        ? await convertFileToBase64(values.resume)
-        : values.resume?.url;
+      const resumeBase64 =
+        values.resume instanceof File
+          ? await convertFileToBase64(values.resume)
+          : values.resume?.url;
 
       const attachmentsBase64 = await Promise.all(
         values.attachments.map(
@@ -207,9 +207,9 @@ export function EditCandidateDialog({
           }
 
           return (
-            originalAttachment.name !== newAttachment.name
-            || originalAttachment.size !== newAttachment.size
-            || originalAttachment.url !== newAttachment.url
+            originalAttachment.name !== newAttachment.name ||
+            originalAttachment.size !== newAttachment.size ||
+            originalAttachment.url !== newAttachment.url
           );
         },
       );
@@ -219,18 +219,18 @@ export function EditCandidateDialog({
 
         resume: resumeBase64
           ? {
-            id: values?.resume?.id || uuidv4(),
-            name:
+              id: values?.resume?.id || uuidv4(),
+              name:
                 values.resume instanceof File
                   ? values.resume.name
                   : values?.resume?.name || '',
-            url: resumeBase64,
-            type: 'pdf',
-            size:
+              url: resumeBase64,
+              type: 'pdf',
+              size:
                 values.resume instanceof File
                   ? values.resume.size
                   : values?.resume?.size || 0,
-          }
+            }
           : undefined,
         email: values.email, // Added email field
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
@@ -249,8 +249,8 @@ export function EditCandidateDialog({
         if (values.assignment.interviewerId === '-1') {
           delete updatedCandidate.assignment;
         } else if (
-          typeof values.assignment.interviewerId === 'string'
-          || typeof values.assignment.interviewerId === 'object'
+          typeof values.assignment.interviewerId === 'string' ||
+          typeof values.assignment.interviewerId === 'object'
         ) {
           updatedCandidate.assignment = {
             // assignment: values.assignment.assignment,
@@ -281,28 +281,34 @@ export function EditCandidateDialog({
       const prevAssignment = candidate.assignment?.interviewerId;
       const newAssignment = result?.assignment?.interviewerId;
       // debugger;
-      const prevId = typeof prevAssignment === 'object'
-        ? prevAssignment?._id
-        : prevAssignment;
-      const newId = typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
+      const prevId =
+        typeof prevAssignment === 'object'
+          ? prevAssignment?._id
+          : prevAssignment;
+      const newId =
+        typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
 
       // if (prevId !== newId) {
       sentAssignmentMail(result, sendEmail);
       // }
 
-      const previousInterviewer = typeof candidate.assignment?.interviewerId === 'object'
-        ? candidate.assignment.interviewerId.name
-        : null;
-      const previousInterviewerId = typeof candidate.assignment?.interviewerId === 'object'
-        ? Object(candidate.assignment.interviewerId?._id)
-        : null;
+      const previousInterviewer =
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? candidate.assignment.interviewerId.name
+          : null;
+      const previousInterviewerId =
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? Object(candidate.assignment.interviewerId?._id)
+          : null;
 
-      const nextInterviewer = result && typeof result.assignment?.interviewerId === 'object'
-        ? result.assignment.interviewerId.name
-        : null;
-      const nextInterviewerId = result && typeof result.assignment?.interviewerId === 'object'
-        ? Object(result.assignment.interviewerId?._id)
-        : null;
+      const nextInterviewer =
+        result && typeof result.assignment?.interviewerId === 'object'
+          ? result.assignment.interviewerId.name
+          : null;
+      const nextInterviewerId =
+        result && typeof result.assignment?.interviewerId === 'object'
+          ? Object(result.assignment.interviewerId?._id)
+          : null;
 
       let title;
       if (!previousInterviewer || previousInterviewer === '') {
@@ -362,9 +368,9 @@ export function EditCandidateDialog({
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === 'object'
-          && errorData !== null
-          && 'error' in errorData
+          typeof errorData === 'object' &&
+          errorData !== null &&
+          'error' in errorData
         ) {
           toast({
             title: 'Error',
@@ -383,19 +389,21 @@ export function EditCandidateDialog({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
   let interviewerId = null;
   if (candidate?.assignment?.interviewerId) {
     // debugger;
     if (typeof candidate.assignment.interviewerId === 'string') {
-      interviewerId = candidate.assignment.interviewerId === '-1'
-        ? null
-        : candidate.assignment.interviewerId;
+      interviewerId =
+        candidate.assignment.interviewerId === '-1'
+          ? null
+          : candidate.assignment.interviewerId;
     } else if (candidate.assignment.interviewerId._id) {
       interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, '');
     }
@@ -409,11 +417,11 @@ export function EditCandidateDialog({
     assignment:
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
-          assignment: candidate.assignment,
-          interviewerId,
-          time: candidate.assignment.time,
-          assignedAt: candidate.assignment.assignedAt,
-        }
+            assignment: candidate.assignment,
+            interviewerId,
+            time: candidate.assignment.time,
+            assignedAt: candidate.assignment.assignedAt,
+          }
         : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
@@ -448,28 +456,28 @@ export function EditCandidateDialog({
       <DialogContent
         className={
           !isLargeViewport || isMaximized
-            ? '!max-w-none !w-screen !h-[100dvh] !min-h-[100dvh] !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col'
+            ? '!inset-0 !left-0 !top-0 !m-0 flex !h-[100dvh] !max-h-[100dvh] !min-h-[100dvh] !w-screen !min-w-0 !max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden !rounded-none !border-0'
             : `sm:max-w-[80vw] ${
-              candidate.resume ? 'xl:max-w-[65vw]' : 'xl:max-w-[50vw]'
-            } h-[90vh] flex flex-col justify-between overflow-hidden`
+                candidate.resume ? 'xl:max-w-[65vw]' : 'xl:max-w-[50vw]'
+              } flex h-[90vh] flex-col justify-between overflow-hidden`
         }
         style={
           !isLargeViewport || isMaximized
             ? {
-              position: 'fixed' as const,
-              inset: 0,
-              width: '100vw',
-              height: '100dvh',
-              minHeight: '100dvh',
-              maxHeight: '100dvh',
-              maxWidth: 'none',
-              transform: 'none',
-              left: 0,
-              top: 0,
-              margin: 0,
-              border: 0,
-              borderRadius: 0,
-            }
+                position: 'fixed' as const,
+                inset: 0,
+                width: '100vw',
+                height: '100dvh',
+                minHeight: '100dvh',
+                maxHeight: '100dvh',
+                maxWidth: 'none',
+                transform: 'none',
+                left: 0,
+                top: 0,
+                margin: 0,
+                border: 0,
+                borderRadius: 0,
+              }
             : {}
         }
       >
@@ -484,11 +492,9 @@ export function EditCandidateDialog({
           validationSchema={candidateSchema(validationSchema)}
           onSubmit={handleSubmit}
         >
-          {({
-            isSubmitting, errors, setFieldValue, dirty,
-          }) => (
+          {({ isSubmitting, errors, setFieldValue, dirty }) => (
             // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
-            <Form className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <Form className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
@@ -500,7 +506,7 @@ export function EditCandidateDialog({
                   isEditMode
                 />
               </div>
-              <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+              <div className="sticky bottom-0 z-10 flex justify-between space-x-2 border-t bg-background px-6 py-4">
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   candidateName={candidate.name}
@@ -511,7 +517,7 @@ export function EditCandidateDialog({
                     );
                   }}
                 />
-                <div className="gap-3 flex bottom-0">
+                <div className="bottom-0 flex gap-3">
                   <Button
                     type="button"
                     variant="outline"

@@ -18,16 +18,16 @@ export function CandidateCardSkills({ candidate }: CandidateCardSkillsProps) {
   return (
     <div className="mb-5">
       <div className="mb-2">
-        <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wide font-medium truncate">
+        <span className="truncate text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-500">
           Skills
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        {candidate.skills.slice(0, 4).map((skill, index) => (
+        {candidate.skills.slice(0, 4).map((skill) => (
           <Badge
-            key={`${candidate._id}-skill-${index}-${skill}`}
+            key={`${candidate._id}-skill-${skill}`}
             variant="secondary"
-            className="text-xs px-2.5 py-1 bg-gray-100 text-gray-900 border border-gray-200 dark:bg-black dark:text-gray-100 dark:border-gray-700 font-medium truncate max-w-full"
+            className="max-w-full truncate border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-900 dark:border-gray-700 dark:bg-black dark:text-gray-100"
             title={skill}
           >
             {skill}
@@ -37,12 +37,9 @@ export function CandidateCardSkills({ candidate }: CandidateCardSkillsProps) {
           <Badge
             key="more-skills"
             variant="secondary"
-            className="text-xs px-2.5 py-1 bg-gray-200 text-gray-700 border border-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 font-medium flex-shrink-0"
+            className="flex-shrink-0 border border-gray-300 bg-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-500 dark:bg-gray-600 dark:text-gray-200"
           >
-            +
-            {candidate.skills.length - 4}
-            {' '}
-            more
+            +{candidate.skills.length - 4} more
           </Badge>
         )}
       </div>

@@ -570,7 +570,11 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
-        select: 'portalConfigs',
+        select: {
+          'fileStorage.storageType': 1,
+          portalConfigs: 1,
+          smtpConfigs: 1,
+        },
       },
     );
 
@@ -580,8 +584,20 @@ export async function PUT(req: NextRequest) {
         { status: 404 },
       );
     }
+    const settings  = {
+      fileStorage: updatedSettings.fileStorage,
+      portalLogo: updatedSettings.portalConfigs?.portalLogo || null,
+      portalLogoDark: updatedSettings.portalConfigs?.portalLogoDark || null,
+      portalFavicon: updatedSettings.portalConfigs?.portalFavicon || null,
+      portalHeader: updatedSettings.portalConfigs?.portalHeader || null,
+      portalFooter: updatedSettings.portalConfigs?.portalFooter || null,
+      portalName: updatedSettings.portalConfigs?.portalName || '',
+      primaryColor: updatedSettings.portalConfigs?.primaryColor || '#6366f1',
+      secondaryColor: updatedSettings.portalConfigs?.secondaryColor || '#8b5cf6',
+    }
 
-    return NextResponse.json({ message: 'Settings updated successfully' });
+
+    return NextResponse.json({ message: 'Settings updated successfully' , portalConfigs: settings });
   } catch (error) {
     logger.error({ error, url: req.url }, 'Portal settings PUT error');
     return NextResponse.json(

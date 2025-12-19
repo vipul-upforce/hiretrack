@@ -4,7 +4,10 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { NextPage } from 'next';
 import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
+import {
+  User,
+  useLazyGetOrganizationAllowanceQuery,
+} from '@/lib/features/org/orgApi';
 import logger from '@/lib/logger';
 import { AuthGuardLoading } from './ui/authGuardLoader';
 
@@ -47,6 +50,8 @@ const withAuthGuard = <P extends object>(
 
     const router = useRouter();
     const pathname = usePathname();
+
+    const [getOrgAllowance] = useLazyGetOrganizationAllowanceQuery();
 
     const isAllowanceCacheValid = useCallback(() => {
       const currentUserId = user?.id || null;
@@ -109,13 +114,7 @@ const withAuthGuard = <P extends object>(
       isCheckingAllowance.current = true;
 
       try {
-        const response = await fetch('/api/organization');
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const allowanceData = await response.json();
+        const allowanceData = await getOrgAllowance().unwrap();
 
         // Update cache
         allowanceCache = {
@@ -131,7 +130,7 @@ const withAuthGuard = <P extends object>(
       } finally {
         isCheckingAllowance.current = false;
       }
-    }, [user?.id, isAllowanceCacheValid]);
+    }, [user?.id, isAllowanceCacheValid, getOrgAllowance]);
 
     const performAuthCheck = useCallback(async () => {
       try {

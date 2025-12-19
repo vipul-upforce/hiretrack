@@ -13,7 +13,7 @@ function CustomFieldBadge({
   return (
     <Badge
       variant="secondary"
-      className="max-w-full flex break-words items-start gap-1 p-2 h-auto min-h-6 flex-col"
+      className="flex h-auto min-h-6 max-w-full flex-col items-start gap-1 break-words p-2"
     >
       {/* <span className="font-medium text-xs shrink-0 w-4/5 break-words hyphens-auto">
           {key}:
@@ -24,11 +24,12 @@ function CustomFieldBadge({
       <p className="text-[11px] font-thin text-gray-500">
         {kii.split(' |||||(')[0]}
       </p>
-      {typeof value === 'string' ? (
-        <p className="font-bold text-xs break-words hyphens-auto overflow-wrap-anywhere leading-tight">
+      {typeof value === 'string' && (
+        <p className="overflow-wrap-anywhere hyphens-auto break-words text-xs font-bold leading-tight">
           {value}
         </p>
-      ) : Array.isArray(value) && value.length > 0 ? (
+      )}
+      {Array.isArray(value) && value.length > 0 && (
         <AttachmentsPopover
           attachments={value.map((file, index) => {
             if (typeof file === 'string') {
@@ -50,9 +51,8 @@ function CustomFieldBadge({
           })}
           onMoreClick={() => null}
         />
-      ) : (
-        ''
       )}
+      {/* Renders nothing if neither condition above matches */}
     </Badge>
   );
 }

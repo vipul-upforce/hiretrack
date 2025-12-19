@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   useGetMailTemplatesQuery,
   useUpdateMailTemplatesMutation,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import type { IEmailTemplatesConfig } from '@/app/dashboard/settings/components/types';
 import {
   Data as previewData,

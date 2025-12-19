@@ -4,7 +4,7 @@ import { Dialog } from '@headlessui/react';
 import React, { useState, useEffect } from 'react';
 import '../../components/ui/rte/rteStyles.css';
 import { Briefcase, X, ArrowRight, CheckCircle } from 'lucide-react';
-import { useGetPortalConfigsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import ApplyOptions from './ApplyOptions';
 import { CreateCandidateDialog } from '../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog';
 import { hasAppliedAsGuest } from './ApplyAsGuest';

@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2 } from 'lucide-react';
-import { useGetDiskFolderDetailsQuery } from '@/lib/features/settings/settingsApi';
+import { useGetDiskFolderDetailsQuery } from '@/lib/features/settings';
 import { FileTreeItem } from './file-tree-item';
 
 interface DirectoryContentsProps {

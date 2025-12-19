@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { baseApi } from '@/lib/api/baseApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
@@ -27,10 +27,7 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
-export const candidateApi = createApi({
-  reducerPath: 'candidateApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Candidate', 'CandidateApplication'],
+export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
       query: (jobId) =>
@@ -44,10 +41,20 @@ export const candidateApi = createApi({
     }),
     fetchAssignments: builder.query<
       any,
-      { isPagination?: boolean; page?: number; limit?: number; filterValue?: string; assignedTo?: string }
+      {
+        isPagination?: boolean;
+        page?: number;
+        limit?: number;
+        filterValue?: string;
+        assignedTo?: string;
+      }
     >({
       query: ({
-        isPagination = true, page = 1, limit = 48, filterValue = '', assignedTo = '',
+        isPagination = true,
+        page = 1,
+        limit = 48,
+        filterValue = '',
+        assignedTo = '',
       }) => {
         const params = new URLSearchParams({
           isPagination: String(isPagination),
@@ -65,7 +72,14 @@ export const candidateApi = createApi({
         url: `/candidates/${candidateId}`,
         method: 'GET',
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Candidate', id }],
+      invalidatesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
+    }),
+    fetchCandidateHistory: builder.query<
+      { history: ICandidateHistory[] },
+      string
+    >({
+      query: (candidateId) => `/candidates/${candidateId}/history`,
+      providesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
     }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({
       query: (newCandidate) => ({
@@ -205,15 +219,15 @@ export const candidateApi = createApi({
       },
       {
         candidateIds: string[];
-        action: "archive" | "unarchive";
+        action: 'archive' | 'unarchive';
       }
     >({
       query: ({ candidateIds, action }) => ({
-        url: "/candidates/bulk-archive",
-        method: "POST",
+        url: '/candidates/bulk-archive',
+        method: 'POST',
         body: { candidateIds, action },
       }),
-      invalidatesTags: ["Candidate"],
+      invalidatesTags: ['Candidate'],
     }),
   }),
 });
@@ -222,6 +236,7 @@ export const {
   useFetchCandidatesQuery,
   useFetchCandidateByIdQuery,
   useFetchAssignmentsQuery,
+  useLazyFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
   useCreateCandidateMutation,
   useCreateGuestCandidateMutation,
@@ -239,4 +254,5 @@ export const {
   useCandidateSignupMutation,
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
+  useLazyFetchCandidateHistoryQuery,
 } = candidateApi;

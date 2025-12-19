@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 
 export function useLocation() {
-  if (typeof window === 'undefined') return;
-
   const [location, setLocation] = useState({
     pathname: window.location.pathname,
     search: window.location.search,
@@ -18,6 +16,8 @@ export function useLocation() {
       });
     };
 
+    if (typeof window === 'undefined') return;
+
     // Listen for popstate events
     window.addEventListener('popstate', handleLocationChange);
 
@@ -30,9 +30,9 @@ export function useLocation() {
       };
 
       if (
-        currentLocation.pathname !== location.pathname
-        || currentLocation.search !== location.search
-        || currentLocation.hash !== location.hash
+        currentLocation.pathname !== location.pathname ||
+        currentLocation.search !== location.search ||
+        currentLocation.hash !== location.hash
       ) {
         handleLocationChange();
       }
@@ -41,11 +41,7 @@ export function useLocation() {
     // Observe the document for changes
     observer.observe(document, { subtree: true, childList: true });
 
-    return () => {
-      window.removeEventListener('popstate', handleLocationChange);
-      observer.disconnect();
-    };
+    window.removeEventListener('popstate', handleLocationChange);
+    observer.disconnect();
   }, [location]);
-
-  return location;
 }

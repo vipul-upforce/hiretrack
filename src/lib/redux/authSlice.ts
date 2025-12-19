@@ -1,14 +1,17 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import {
   EmailNotificationSettings,
   Organization,
   OrgInfo,
-} from "@/lib/models/user";
-import Cookies from "js-cookie";
-import logger from "../logger";
+} from '@/lib/models/user';
+import Cookies from 'js-cookie';
+import logger from '../logger';
+import { authApi } from '../features/auth/authApi';
 
 export interface ILocalUser {
   id: string;
+  _id?: string;
+  tokenVersion?: number;
   organizationId: Organization | string;
   organizationInfo?: OrgInfo;
   name: string;
@@ -23,7 +26,9 @@ export interface ILocalUser {
   otpExpires?: Date;
   otp?: number;
   emailNotificationSettings?: EmailNotificationSettings;
+  fileStorage?: string;
 }
+
 interface AuthState {
   user: ILocalUser | null;
   isAuthenticated: boolean;
@@ -31,28 +36,34 @@ interface AuthState {
   error: string | null;
 }
 
+const getIsAuthenticated = () => {
+  const authState = Cookies.get('auth_state');
+  return !!authState;
+};
+
 const initialState: AuthState = {
   user: null,
-  isAuthenticated: false,
+  isAuthenticated: getIsAuthenticated() || false,
   loading: false,
   error: null,
 };
 
 export const fetchUserFromToken = createAsyncThunk(
   'auth/fetchUserFromToken',
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
-      localStorage.removeItem("persist:auth");
-      localStorage.removeItem("persist:organization");
-      
-      const authState = Cookies.get("auth_state");
-      if (!authState || authState === "false") {
+      localStorage.removeItem('persist:auth');
+      localStorage.removeItem('persist:organization');
+
+      const authState = Cookies.get('auth_state');
+
+      if (!authState || authState === 'false') {
         const user = {
-          id: "guest",
-          name: "Guest",
-          email: "",
-          role: "",
-          organizationId: "",
+          id: 'guest',
+          name: 'Guest',
+          email: '',
+          role: '',
+          organizationId: '',
           organizationInfo: null,
           appliedApplications: [],
           fileStorage: null,
@@ -60,41 +71,24 @@ export const fetchUserFromToken = createAsyncThunk(
         return user;
       }
 
-      const response = await fetch("/api/auth/me");
+      const result = await dispatch(
+        authApi.endpoints.getMe.initiate(undefined, { forceRefetch: true }),
+      ).unwrap();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        localStorage.removeItem('persist:auth');
-        localStorage.removeItem('persist:organization');
-        return rejectWithValue(
-          errorData.message || 'Failed to fetch user data',
-        );
-      }
-      const data = await response.json();
-      return data.user;
-    } catch (e) {
+      return result.user;
+    } catch (e: any) {
       logger.error('Error fetching user from token:', e);
       localStorage.removeItem('persist:auth');
       localStorage.removeItem('persist:organization');
-      return rejectWithValue('Failed to connect to authentication server');
+
+      const errorMessage =
+        e?.data?.message ||
+        e?.message ||
+        'Failed to connect to authentication server';
+      return rejectWithValue(errorMessage);
     }
   },
 );
-
-// Simple async thunk to call logout API - no response handling needed
-export const logoutUser = createAsyncThunk('auth/logoutUser', async () => {
-  try {
-    // Just ping the server to clear cookies - don't care about response
-    await fetch('/api/auth/logout');
-    localStorage.removeItem('persist:auth');
-    localStorage.removeItem('persist:organization');
-  } catch (error) {
-    logger.error('Error during logout API call:', error);
-  }
-
-  // Always return success since we don't care about the API response
-  return true;
-});
 
 const authSlice = createSlice({
   name: 'auth',
@@ -134,14 +128,6 @@ const authSlice = createSlice({
       .addCase(fetchUserFromToken.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      })
-      // Handle logout API call
-      .addCase(logoutUser.fulfilled, (state) => {
-        // Clear state after API call
-        state.user = null;
-        state.isAuthenticated = false;
-        state.loading = false;
-        state.error = null;
       });
   },
 });

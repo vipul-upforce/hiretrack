@@ -10,7 +10,7 @@ import {
   useGetPm2LogFilesQuery,
   useLazyGetNginxFileContentQuery,
   useLazyGetPm2LogFileContentQuery,
-} from '@/lib/features/settings/settingsApi';
+} from '@/lib/features/settings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { SystemLogsResponse } from '../types';
 import packageJson from '../../../../../../../package.json';

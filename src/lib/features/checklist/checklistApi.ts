@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { baseApi } from '@/lib/api/baseApi';
 import {
   IJobLaneConfig,
   ILaneConfig,
@@ -42,10 +42,7 @@ interface SubmitChecklistRequest {
   };
 }
 
-export const checklistApi = createApi({
-  reducerPath: 'checklistApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['JobLaneConfig', 'ChecklistTemplate', 'CandidateChecklist'],
+export const checklistApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Job Lane Configuration endpoints
     getJobLaneConfig: builder.query<IJobLaneConfig, string>({

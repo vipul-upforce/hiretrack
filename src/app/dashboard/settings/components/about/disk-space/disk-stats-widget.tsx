@@ -1,6 +1,6 @@
 import { Cloud, Database, HardDrive } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DiskStats } from "@/lib/features/settings/settingsApi";
+import { DiskStats } from "@/lib/features/settings";
 
 interface DiskStatsWidgetProps {
   stats: DiskStats;

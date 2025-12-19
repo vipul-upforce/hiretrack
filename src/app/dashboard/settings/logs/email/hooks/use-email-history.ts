@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useGetEmailHistoryQuery } from '@/lib/features/settings/settingsApi';
+import { useGetEmailHistoryQuery } from '@/lib/features/settings';
 import { useDebounce } from '@/hooks/useDebounce';
 import { EmailHistoryRecord } from '../types';
 

@@ -35,7 +35,8 @@ function ManageTagsDialog({
     isLoading,
     error,
   } = useFetchOrgTagsQuery({ organizationId: orgId });
-  const [updateOrgTags, { isLoading: isUpdating, error: updateError }] = useUpdateOrgTagsMutation();
+  const [updateOrgTags, { isLoading: isUpdating, error: updateError }] =
+    useUpdateOrgTagsMutation();
   const [orgTags, setOrgTags] = useState<ITag[]>([]);
   const [newTagTitle, setNewTagTitle] = useState('');
   const [newTagColor, setNewTagColor] = useState('#FF4D4F');
@@ -118,8 +119,9 @@ function ManageTagsDialog({
     }
     if (
       orgTags.some(
-        (tag) => tag.title.toLowerCase() === editTagTitle.trim().toLowerCase()
-          && tag.title !== editingTag?.title,
+        (tag) =>
+          tag.title.toLowerCase() === editTagTitle.trim().toLowerCase() &&
+          tag.title !== editingTag?.title,
       )
     ) {
       toast({
@@ -129,9 +131,13 @@ function ManageTagsDialog({
       });
       return;
     }
-    setOrgTags((prev) => prev.map((tag) => (tag.title === editingTag?.title
-      ? { title: editTagTitle.trim(), color: editTagColor }
-      : tag)));
+    setOrgTags((prev) =>
+      prev.map((tag) =>
+        tag.title === editingTag?.title
+          ? { title: editTagTitle.trim(), color: editTagColor }
+          : tag,
+      ),
+    );
     setEditDialogOpen(false);
     setEditingTag(null);
     setEditTagTitle('');
@@ -165,7 +171,7 @@ function ManageTagsDialog({
         description: 'Tags updated successfully.',
       });
       onClose();
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to update tags. Please try again.',
@@ -195,46 +201,46 @@ function ManageTagsDialog({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-md p-0 overflow-hidden flex flex-col">
+        <DialogContent className="flex max-w-md flex-col overflow-hidden p-0">
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>Manage Tags</DialogTitle>
           </DialogHeader>
           {isLoading ? (
-            <div className="flex flex-col gap-4 max-h-[72vh] overflow-y-auto px-6 py-4 animate-pulse">
-              <div className="h-5 w-32 bg-gray-200 dark:bg-gray-800 rounded" />
+            <div className="flex max-h-[72vh] animate-pulse flex-col gap-4 overflow-y-auto px-6 py-4">
+              <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-800" />
 
               <div className="flex gap-2">
-                <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded" />
-                <div className="h-10 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+                <div className="h-10 w-full rounded bg-gray-200 dark:bg-gray-800" />
+                <div className="h-10 w-20 rounded bg-gray-200 dark:bg-gray-800" />
               </div>
 
-              <div className="h-9 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+              <div className="h-9 w-20 rounded bg-gray-200 dark:bg-gray-800" />
 
-              <div className="h-5 w-28 bg-gray-200 dark:bg-gray-800 rounded mt-4" />
+              <div className="mt-4 h-5 w-28 rounded bg-gray-200 dark:bg-gray-800" />
 
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="mt-2 flex flex-col gap-2">
                 {[...Array(7)].map((_, i) => (
                   <div key={i} className="flex items-center justify-between">
-                    <div className="h-6 w-40 bg-gray-200 dark:bg-gray-800 rounded" />
+                    <div className="h-6 w-40 rounded bg-gray-200 dark:bg-gray-800" />
 
                     <div className="flex gap-2">
-                      <div className="h-6 w-6 bg-gray-300 dark:bg-gray-700 rounded-full" />
-                      <div className="h-6 w-6 bg-gray-300 dark:bg-gray-700 rounded-full" />
+                      <div className="h-6 w-6 rounded-full bg-gray-300 dark:bg-gray-700" />
+                      <div className="h-6 w-6 rounded-full bg-gray-300 dark:bg-gray-700" />
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Footer buttons skeleton */}
-              <div className="flex justify-end gap-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
-                <div className="h-9 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
-                <div className="h-9 w-20 bg-gray-200 dark:bg-gray-800 rounded" />
+              <div className="sticky bottom-0 z-10 flex justify-end gap-2 border-t bg-background px-6 py-4">
+                <div className="h-9 w-20 rounded bg-gray-200 dark:bg-gray-800" />
+                <div className="h-9 w-20 rounded bg-gray-200 dark:bg-gray-800" />
               </div>
             </div>
           ) : error || updateError ? (
             <p className="text-red-500">An error occurred. Please try again.</p>
           ) : (
-            <div className="flex flex-col gap-4 max-h-[72vh] overflow-y-auto px-6 py-4">
+            <div className="flex max-h-[72vh] flex-col gap-4 overflow-y-auto px-6 py-4">
               <div className="flex flex-col gap-2">
                 <h4 className="text-sm font-medium">Add New Tags</h4>
                 <div className="flex gap-2 pl-[1px]">
@@ -246,7 +252,7 @@ function ManageTagsDialog({
                   />
                   <MuiColorInput
                     size="small"
-                    className="w-2/6 dark:[&_input]:!text-white dark:[&_fieldset]:!border-gray-500"
+                    className="w-2/6 dark:[&_fieldset]:!border-gray-500 dark:[&_input]:!text-white"
                     format="hex8"
                     value={newTagColor}
                     onChange={handleCPChange}
@@ -270,11 +276,11 @@ function ManageTagsDialog({
                     {orgTags.map((tag) => (
                       <div
                         key={tag.title}
-                        className="flex items-center gap-2 justify-between"
+                        className="flex items-center justify-between gap-2"
                       >
                         <Badge
                           style={{ backgroundColor: tag.color }}
-                          className="text-white break-all w-fit"
+                          className="w-fit break-all text-white"
                         >
                           {tag.title}
                         </Badge>
@@ -283,9 +289,9 @@ function ManageTagsDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditTag(tag)}
-                            className="rounded-full p-0 w-6 h-6"
+                            className="h-6 w-6 rounded-full p-0"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -294,9 +300,9 @@ function ManageTagsDialog({
                               setTitleToDelete(tag.title);
                               setConfirmDeleteDialogOpen(true);
                             }}
-                            className="rounded-full p-0 w-6 h-6"
+                            className="h-6 w-6 rounded-full p-0"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -304,7 +310,7 @@ function ManageTagsDialog({
                   </div>
                 )}
               </div>
-              <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+              <div className="sticky bottom-0 z-10 flex justify-end space-x-2 border-t bg-background px-6 py-4">
                 <Button
                   variant="outline"
                   onClick={onClose}
@@ -326,7 +332,7 @@ function ManageTagsDialog({
         </DialogContent>
       </Dialog>
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md p-0 overflow-hidden flex flex-col">
+        <DialogContent className="flex max-w-md flex-col overflow-hidden p-0">
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>Edit Tag</DialogTitle>
           </DialogHeader>
@@ -341,13 +347,13 @@ function ManageTagsDialog({
                 />
                 <MuiColorInput
                   size="small"
-                  className="w-2/6 dark:[&_input]:!text-white dark:[&_fieldset]:!border-gray-500"
+                  className="w-2/6 dark:[&_fieldset]:!border-gray-500 dark:[&_input]:!text-white"
                   format="hex8"
                   value={editTagColor}
                   onChange={handleEditCPChange}
                 />
               </div>
-              <div className="flex justify-end space-x-2 mt-2">
+              <div className="mt-2 flex justify-end space-x-2">
                 <Button onClick={handleCancelEdit} variant="outline">
                   Cancel
                 </Button>
