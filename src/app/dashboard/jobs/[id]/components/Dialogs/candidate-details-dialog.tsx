@@ -191,7 +191,6 @@ export function CandidateDetailsDialog({
   const handleEditClick = () => {
     setIsEditing(true);
   };
-  
 
   const handleReEvaluation = async () => {
     setConfirmReEvaluateOpen(false);

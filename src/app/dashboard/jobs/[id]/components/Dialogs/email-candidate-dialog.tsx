@@ -11,10 +11,6 @@ import {
 import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/theme-provider';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/lib/redux/store';
-
-// RTK Query hooks
 import { useGetEmailTemplatesQuery } from '@/lib/features/settings/configApi';
 import { useSendEmailToCandidateMutation } from '@/lib/features/candidate/candidateApi';
 import { useUploadFilesMutation } from '@/lib/features/files/fileSharesApi';
@@ -24,6 +20,7 @@ import {
   DEFAULT_TEMPLATE_IDS,
   DEFAULT_VARIABLES,
 } from '@/app/dashboard/settings/templates/constants';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { EmailTemplateSelector } from './email-candidate-components/EmailTemplateSelector';
 import { EmailEditor } from './email-candidate-components/EmailEditor';
 import { EmailRecipients } from './email-candidate-components/EmailRecipients';
@@ -63,7 +60,7 @@ export function EmailCandidateDialog({
   const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
 
   // Redux state
-  const { user } = useSelector((state: RootState) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // RTK Query hooks
   const {

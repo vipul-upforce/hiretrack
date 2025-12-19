@@ -319,5 +319,7 @@ export const {
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
+  useUpdateCandidateRemarkMutation,
   useSendEmailToCandidateMutation,
+  useGenerateCandidatePdfMutation,
 } = candidateApi;
