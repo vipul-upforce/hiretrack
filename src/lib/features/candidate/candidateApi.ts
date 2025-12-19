@@ -27,6 +27,29 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
+export interface EmailAttachment {
+  fileName: string;
+  fileSize: number;
+  shareId: string;
+  shareUrl: string;
+}
+
+export interface SendEmailToCandidateRequest {
+  candidateId: string;
+  subject: string;
+  body: string;
+  cc?: string[];
+  bcc?: string[];
+  replyTo?: string;
+  attachments?: EmailAttachment[];
+}
+
+export interface SendEmailToCandidateResponse {
+  success: boolean;
+  message: string;
+  emailHistoryId?: string;
+}
+
 export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
@@ -229,6 +252,20 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    sendEmailToCandidate: builder.mutation<
+      SendEmailToCandidateResponse,
+      SendEmailToCandidateRequest
+    >({
+      query: (emailData) => ({
+        url: '/candidates/email',
+        method: 'POST',
+        body: emailData,
+      }),
+      invalidatesTags: (_result, _error, { candidateId }) => [
+        { type: 'Candidate', id: candidateId },
+        'EmailHistory',
+      ],
+    }),
   }),
 });
 
@@ -255,4 +292,5 @@ export const {
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
+  useSendEmailToCandidateMutation,
 } = candidateApi;

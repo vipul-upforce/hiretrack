@@ -90,8 +90,10 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
         description: 'Evaluation settings updated successfully',
       });
       onClose();
-    } catch (error) {
-      const errorMessage = error?.data?.error || 'Failed to update settings';
+    } catch (error: unknown) {
+      const errorMessage =
+        (error as { data?: { error?: string } })?.data?.error ||
+        'Failed to update settings';
       toast({
         title: 'Error',
         description: errorMessage,
