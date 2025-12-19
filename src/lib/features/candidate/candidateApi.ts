@@ -242,6 +242,34 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    sendEmailToCandidate: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        emailHistoryId?: string;
+      },
+      {
+        candidateId: string;
+        subject: string;
+        body: string;
+        cc?: string[];
+        bcc?: string[];
+        replyTo?: string;
+        attachments?: Array<{
+          shareId: string;
+          shareUrl: string;
+          fileName: string;
+          fileSize: number;
+        }>;
+      }
+    >({
+      query: (body) => ({
+        url: '/candidates/email',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Candidate', 'EmailHistory'],
+    }),
   }),
 });
 
@@ -269,4 +297,5 @@ export const {
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
   useUpdateCandidateRemarkMutation,
+  useSendEmailToCandidateMutation,
 } = candidateApi;
