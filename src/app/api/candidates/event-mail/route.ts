@@ -10,7 +10,7 @@ import connectToDatabase, {
 import { ICandidate } from '@/lib/models/candidate';
 import mongoose from 'mongoose';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { logger } from '@/lib/logger/logger.server';

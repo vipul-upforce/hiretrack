@@ -2,7 +2,7 @@ import logger from '@/lib/logger';
 import mongoose from 'mongoose';
 import connectToDatabase, { User } from '@/lib/mongodb';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from './getMappedEmailTemplate';
 import {
   batchCheckNotifications,
   NotificationType,
@@ -237,12 +237,15 @@ export async function sendRemarkNotificationWithMentions(
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     'new-remark',
     {
-      recipientName: context.recipientName,
+      recipientName: context.recipientName || '',
       candidateName: context.candidateName || '',
       jobTitle: context.jobTitle || 'Unknown Position',
       reviewerName: context.reviewerName || 'Unknown',
       remarkDate: context.remarkDate || new Date().toISOString().split('T')[0],
-      rating: context.rating !== undefined ? context.rating : 'Not Provided',
+      rating:
+        context.rating !== undefined
+          ? context.rating.toString()
+          : 'Not Provided',
       remarkText: remarkContent,
       candidateProfileLink: context.candidateProfileLink || '#',
       organizationName: context.organizationName || 'Your Organization',

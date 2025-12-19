@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { User, EmailHistory } from '@/lib/mongodb';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { logger } from '@/lib/logger/logger.server';
 import { getMailProvider } from '@/lib/utils/mailSettings';
 import type { StatusUpdateQueueData } from './types';
@@ -41,18 +41,18 @@ export async function createPendingEmailHistory(
       'status-update',
       {
         eventTitle,
-        jobTitle: jobName,
+        jobTitle: jobName || '',
         candidateName,
         newStatus: status,
-        statusMessage: remark,
-        rating,
-        actionBy,
+        statusMessage: remark || '' || 'N/A',
+        rating: rating?.toString() || 'N/A',
+        actionBy: actionBy || '' || 'N/A',
         nextSteps: 'TBD', // Will be updated when actually sent
-        prev_status: prevStatus,
-        eventSubTitle,
-        candidateDetails,
+        prev_status: prevStatus || '' || 'N/A',
+        eventSubTitle: eventSubTitle || '',
+        candidateDetails: candidateDetails || '' || 'N/A',
         organizationName: 'TBD', // Will be updated when actually sent
-        hrContactInfo,
+        hrContactInfo: hrContactInfo || '' || 'N/A',
       },
       organizationId,
     );
@@ -108,7 +108,9 @@ export async function createPendingEmailHistory(
     });
 
     const resolvedHistoryIds = await Promise.all(historyPromises);
-    historyIds.push(...resolvedHistoryIds.filter((id) => id !== null) as string[]);
+    historyIds.push(
+      ...(resolvedHistoryIds.filter((id) => id !== null) as string[]),
+    );
 
     return historyIds;
   } catch (error) {
