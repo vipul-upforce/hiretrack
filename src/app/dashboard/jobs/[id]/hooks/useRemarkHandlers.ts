@@ -1,8 +1,10 @@
+/* eslint-disable max-lines */
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
+  useUpdateCandidateRemarkMutation,
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -22,6 +24,7 @@ export const useRemarkHandlers = (
   const pathname = usePathname();
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  const [updateCandidateRemark] = useUpdateCandidateRemarkMutation();
   const [newRemark, setNewRemark] = useState('');
 
   const [newFollowUp, setNewFollowUp] = useState(
@@ -77,25 +80,12 @@ export const useRemarkHandlers = (
     isPrivate?: boolean,
   ) => {
     try {
-      const response = await fetch('/api/candidates/history', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id,
-          isPrivate,
-          description,
-          rating: remarkRatingHistory,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update remark');
-      }
-
-      await response.json();
+      await updateCandidateRemark({
+        id,
+        isPrivate,
+        description,
+        rating: remarkRatingHistory,
+      }).unwrap();
 
       if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
         refetchAssignment?.();
@@ -244,7 +234,7 @@ export const useRemarkHandlers = (
           email: user?.email,
         },
       };
- 
+
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
@@ -325,7 +315,6 @@ export const useRemarkHandlers = (
     }
     // debugger;
     if (!user?.id) {
-
       toast({
         title: 'Error',
         description: 'Please add the follow-up note.',
@@ -353,7 +342,7 @@ export const useRemarkHandlers = (
         },
       };
       setMADFollowup(null);
-  
+
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
