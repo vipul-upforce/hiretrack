@@ -19,6 +19,7 @@ import './features/analytics/analyticsApi';
 import './features/users/usersApi';
 import './features/notifications/emailNotificationSettingsApi';
 import './features/onboarding/onboardingApi';
+import './features/files/fileSharesApi';
 
 // Persist config for organization slice
 const orgPersistConfig = {
