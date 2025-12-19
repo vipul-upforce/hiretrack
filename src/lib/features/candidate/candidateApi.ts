@@ -27,16 +27,27 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
-export interface UpdateRemarkRequest {
-  id: string;
-  description: string;
-  rating?: number | null;
-  isPrivate?: boolean;
+export interface EmailAttachment {
+  fileName: string;
+  fileSize: number;
+  shareId: string;
+  shareUrl: string;
 }
 
-export interface ShareCandidateRequest {
+export interface SendEmailToCandidateRequest {
   candidateId: string;
-  selection: Record<string, boolean>;
+  subject: string;
+  body: string;
+  cc?: string[];
+  bcc?: string[];
+  replyTo?: string;
+  attachments?: EmailAttachment[];
+}
+
+export interface SendEmailToCandidateResponse {
+  success: boolean;
+  message: string;
+  emailHistoryId?: string;
 }
 
 export const candidateApi = baseApi.injectEndpoints({
@@ -256,32 +267,18 @@ export const candidateApi = baseApi.injectEndpoints({
       invalidatesTags: ['Candidate'],
     }),
     sendEmailToCandidate: builder.mutation<
-      {
-        success: boolean;
-        message: string;
-        emailHistoryId?: string;
-      },
-      {
-        candidateId: string;
-        subject: string;
-        body: string;
-        cc?: string[];
-        bcc?: string[];
-        replyTo?: string;
-        attachments?: Array<{
-          shareId: string;
-          shareUrl: string;
-          fileName: string;
-          fileSize: number;
-        }>;
-      }
+      SendEmailToCandidateResponse,
+      SendEmailToCandidateRequest
     >({
-      query: (body) => ({
+      query: (emailData) => ({
         url: '/candidates/email',
         method: 'POST',
-        body,
+        body: emailData,
       }),
-      invalidatesTags: ['Candidate', 'EmailHistory'],
+      invalidatesTags: (_result, _error, { candidateId }) => [
+        { type: 'Candidate', id: candidateId },
+        'EmailHistory',
+      ],
     }),
   }),
 });
@@ -309,7 +306,5 @@ export const {
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
-  useUpdateCandidateRemarkMutation,
-  useGenerateCandidatePdfMutation,
   useSendEmailToCandidateMutation,
 } = candidateApi;

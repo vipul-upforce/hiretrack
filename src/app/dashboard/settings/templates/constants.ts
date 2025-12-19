@@ -9,6 +9,17 @@ export const templateVariables = [
   'jobTitle',
 ] as const;
 
+export const DEFAULT_TEMPLATE_IDS = [
+  'job-application',
+  'password-reset',
+  'interview-assignment',
+  'status-update',
+  'new-remark',
+  'step-completed',
+  'send-otp',
+];
+
+export const DEFAULT_VARIABLES = ['SenderName', 'ReceiverName', 'PortalName'];
 export { defaultTemplates, sampleCustomTemplates };
 
 export const Data = {
