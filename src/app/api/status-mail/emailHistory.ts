@@ -2,10 +2,7 @@ import mongoose from 'mongoose';
 import { Settings, User, EmailHistory } from '@/lib/mongodb';
 import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
 import { logger } from '@/lib/logger/logger.server';
-import type {
-  StatusUpdateQueueData,
-  UpdateHistoryParams,
-} from './types';
+import type { StatusUpdateQueueData } from './types';
 
 /**
  * Create pending email history entries for status updates
@@ -130,47 +127,13 @@ export async function createPendingEmailHistory(
     });
 
     const resolvedHistoryIds = await Promise.all(historyPromises);
-    historyIds.push(...resolvedHistoryIds.filter((id) => id !== null) as string[]);
+    historyIds.push(
+      ...(resolvedHistoryIds.filter((id) => id !== null) as string[]),
+    );
 
     return historyIds;
   } catch (error) {
     logger.error({ error }, 'Failed to create pending email history');
     return [];
-  }
-}
-
-/**
- * Update email history entries from pending to sent/failed
- */
-export async function updateEmailHistoryStatus(
-  params: UpdateHistoryParams,
-): Promise<void> {
-  const { historyIds, status, error, updatedContent } = params;
-
-  try {
-    const updateData: {
-      status: 'sent' | 'failed';
-      sentAt?: Date;
-      error?: string;
-      subject?: string;
-      body?: string;
-    } = {
-      status,
-      sentAt: status === 'sent' ? new Date() : undefined,
-      error: status === 'failed' ? error : undefined,
-    };
-
-    // Update content if provided (for final email with correct organization data)
-    if (updatedContent) {
-      updateData.subject = updatedContent.subject;
-      updateData.body = updatedContent.body;
-    }
-
-    await EmailHistory?.updateMany(
-      { _id: { $in: historyIds.map((id) => new mongoose.Types.ObjectId(id)) } },
-      { $set: updateData },
-    );
-  } catch (updateError) {
-    logger.error({ error: updateError }, 'Failed to update email history status');
   }
 }

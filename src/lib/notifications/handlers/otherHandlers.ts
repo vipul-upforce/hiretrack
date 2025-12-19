@@ -1,5 +1,6 @@
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/models/notification';
 import logger from '@/lib/logger';
+import { batchCheckNotifications } from '@/lib/services/emailDecisionEngine';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
 import { getUsersByRole } from '../core/userHelpers';
 import { createBulkNotificationsWithDecision } from '../core/notificationHelpers';
@@ -72,8 +73,6 @@ export async function notifyRemarkAdded(params: {
       notificationCategory: 'inApp' as const,
     }));
 
-    const { batchCheckNotifications } =
-      await import('@/lib/services/emailDecisionEngine');
     const decisions = await batchCheckNotifications(decisionContexts);
     const eligibleIds = allRecipients.filter(
       (_userId, index) => decisions[index]?.shouldSend,

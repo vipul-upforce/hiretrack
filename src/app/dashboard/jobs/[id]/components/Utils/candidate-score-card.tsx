@@ -1,18 +1,23 @@
 import { scoreColors } from '@/lib/constants';
 import React from 'react';
+import { Candidate } from '@/types/candidate';
 
-function CandidateScoreCard({ candidate }) {
+interface CandidateScoreCardProps {
+  candidate: Candidate;
+}
+
+function CandidateScoreCard({ candidate }: CandidateScoreCardProps) {
   return (
     <div className="space-y-4">
-      {candidate.scores.overall !== undefined && (
+      {candidate.scores?.overall !== undefined && (
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           AI Assessment Scores
         </h3>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {candidate.scores?.overall !== undefined
-          && (() => {
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {candidate.scores?.overall !== undefined &&
+          (() => {
             const normalizedScore = Math.max(
               1,
               Math.min(10, candidate.scores.overall),
@@ -27,11 +32,11 @@ function CandidateScoreCard({ candidate }) {
                   color: scoreColor.text,
                   borderColor: scoreColor.border,
                 }}
-                className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
+                className={`${scoreColor.bg} ${scoreColor.border} relative rounded-lg border p-4`}
               >
-                <div className="absolute top-3 right-3">
+                <div className="absolute right-3 top-3">
                   <svg
-                    className={`w-5 h-5 ${scoreColor.text}`}
+                    className={`h-5 w-5 ${scoreColor.text}`}
                     style={{ color: scoreColor.text }}
                     fill="none"
                     stroke="currentColor"
@@ -53,10 +58,10 @@ function CandidateScoreCard({ candidate }) {
                     {candidate.scores.overall}
                     /10
                   </div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
+                  <div className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">
                     Overall Fit
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Combined assessment
                   </div>
                 </div>
@@ -64,8 +69,8 @@ function CandidateScoreCard({ candidate }) {
             );
           })()}
 
-        {candidate.scores?.experience !== undefined
-          && (() => {
+        {candidate.scores?.experience !== undefined &&
+          (() => {
             const normalizedScore = Math.max(
               1,
               Math.min(10, candidate.scores.experience),
@@ -75,16 +80,16 @@ function CandidateScoreCard({ candidate }) {
 
             return (
               <div
-                className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
+                className={`${scoreColor.bg} ${scoreColor.border} relative rounded-lg border p-4`}
                 style={{
                   backgroundColor: scoreColor.bg,
                   color: scoreColor.text,
                   borderColor: scoreColor.border,
                 }}
               >
-                <div className="absolute top-3 right-3">
+                <div className="absolute right-3 top-3">
                   <svg
-                    className={`w-5 h-5 ${scoreColor.text}`}
+                    className={`h-5 w-5 ${scoreColor.text}`}
                     style={{ color: scoreColor.text }}
                     fill="none"
                     stroke="currentColor"
@@ -106,10 +111,10 @@ function CandidateScoreCard({ candidate }) {
                     {candidate.scores.experience}
                     /10
                   </div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
+                  <div className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">
                     Experience
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Relevant experience match
                   </div>
                 </div>
@@ -117,8 +122,8 @@ function CandidateScoreCard({ candidate }) {
             );
           })()}
 
-        {candidate.scores?.skills !== undefined
-          && (() => {
+        {candidate.scores?.skills !== undefined &&
+          (() => {
             const normalizedScore = Math.max(
               1,
               Math.min(10, candidate.scores.skills),
@@ -128,16 +133,16 @@ function CandidateScoreCard({ candidate }) {
 
             return (
               <div
-                className={`${scoreColor.bg} ${scoreColor.border} border rounded-lg p-4 relative`}
+                className={`${scoreColor.bg} ${scoreColor.border} relative rounded-lg border p-4`}
                 style={{
                   backgroundColor: scoreColor.bg,
                   color: scoreColor.text,
                   borderColor: scoreColor.border,
                 }}
               >
-                <div className="absolute top-3 right-3">
+                <div className="absolute right-3 top-3">
                   <svg
-                    className={`w-5 h-5 ${scoreColor.text}`}
+                    className={`h-5 w-5 ${scoreColor.text}`}
                     style={{ color: scoreColor.text }}
                     fill="none"
                     stroke="currentColor"
@@ -159,10 +164,10 @@ function CandidateScoreCard({ candidate }) {
                     {candidate.scores.skills}
                     /10
                   </div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
+                  <div className="mt-1 text-sm font-medium text-gray-900 dark:text-gray-100">
                     Skills Match
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     Technical skills alignment
                   </div>
                 </div>

@@ -6,8 +6,8 @@ import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { sendSmartNotification } from '@/lib/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
-import { updateEmailHistoryStatus } from './emailHistory';
 import type { StatusUpdateQueueData } from './types';
+import { updateEmailHistoryStatus } from './statusEmailHistory';
 
 /**
  * Type guard to check if object is Organization
@@ -86,9 +86,8 @@ export async function sendQueuedEmail(
 
   const nextSteps =
     orgData?.defaultLanes && orgData.defaultLanes.length > 0
-      ? orgData.defaultLanes[
-          orgData.defaultLanes.indexOf(status) + 1
-        ] ?? 'N/A'
+      ? (orgData.defaultLanes[orgData.defaultLanes.indexOf(status) + 1] ??
+        'N/A')
       : 'N/A';
 
   const organizationName =
@@ -181,7 +180,7 @@ export async function sendQueuedEmail(
         oldStatus: prevStatus || '',
         newStatus: status,
         triggerUserId: sentBy || '',
-        triggerUserName: sentByName || '' ,
+        triggerUserName: sentByName || '',
       });
     }
   } catch (notifyErr) {

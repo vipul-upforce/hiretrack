@@ -1,8 +1,8 @@
 import {
   batchCheckNotifications,
-  NotificationType,
   NotificationDecisionContext,
 } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/models/notification';
 import { CreateNotificationParams } from '../types';
 import {
   createBulkNotifications,

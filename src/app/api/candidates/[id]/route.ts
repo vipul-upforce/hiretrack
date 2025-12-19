@@ -15,7 +15,8 @@ import { NotificationService } from '@/lib/notifications/notificationService';
 import logger from '@/lib/logger';
 import { Attachment } from '../route';
 
-/* eslint-disable max-lines-per-function , max-lines */
+// /*  max-lines-per-function max-lines-per-file 300 */
+
 interface UpdateObject {
   $set: Record<string, unknown>;
   $currentDate: { 'tracking.updatedAt': boolean };

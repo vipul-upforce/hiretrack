@@ -59,9 +59,12 @@ export function extractMentions(text: string): MentionPattern[] {
       /@([a-zA-Z][a-zA-Z0-9\-_]*(?:\s+[a-zA-Z][a-zA-Z0-9\-_]*)*)/gi;
 
     const mentions: MentionPattern[] = [];
-    let match;
 
-    while ((match = mentionRegex.exec(text)) !== null) {
+    for (
+      let match = mentionRegex.exec(text);
+      match !== null;
+      match = mentionRegex.exec(text)
+    ) {
       const fullMatch = match[0]; // e.g., "@Aneri Shah"
       const cleanMatch = match[1]; // e.g., "Aneri Shah"
 

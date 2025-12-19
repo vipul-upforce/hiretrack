@@ -25,13 +25,6 @@ export enum NotificationType {
   CANDIDATE_REJECTED = 'candidateRejected',
   INTERVIEW_COMPLETED = 'interviewCompleted',
   CANDIDATE_MOVED = 'candidateMoved',
-
-  // System notifications
-  // DEADLINE_REMINDER = 'deadline_reminder',
-  // EMAIL_FAILED = 'email_failed',
-  // SYSTEM_MAINTENANCE = 'system_maintenance',
-  // FILE_UPLOAD_COMPLETED = 'file_upload_completed',
-  // REPORT_GENERATED = 'report_generated',
 }
 
 export type RelatedEntityType =

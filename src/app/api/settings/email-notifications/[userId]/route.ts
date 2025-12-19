@@ -6,29 +6,29 @@ import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisi
 
 // Valid notification setting keys (using Set for O(1) lookup)
 const VALID_NOTIFICATION_KEYS = new Set([
-  "mentions",
-  "newApplications",
-  "statusUpdates",
-  "detailsUpdated",
-  "interviewAssignments",
-  "stepCompleted",
-  "newRemarks",
-  "meetingScheduled",
-  "meetingUpdated",
-  "meetingCancelled",
-  "meetingInviteAccepted",
-  "meetingInviteDeclined",
-  "meetingInviteTentative",
-  "followupAdded",
-  "followupUpdated",
-  "followupRemoved",
-  "jobCreated",
-  "jobUpdated",
-  "userAdded",
-  "bulkImportCompleted",
-  "candidateRejected",
-  "interviewCompleted",
-  "candidateMoved",
+  'mentions',
+  'newApplications',
+  'statusUpdates',
+  'detailsUpdated',
+  'interviewAssignments',
+  'stepCompleted',
+  'newRemarks',
+  'meetingScheduled',
+  'meetingUpdated',
+  'meetingCancelled',
+  'meetingInviteAccepted',
+  'meetingInviteDeclined',
+  'meetingInviteTentative',
+  'followupAdded',
+  'followupUpdated',
+  'followupRemoved',
+  'jobCreated',
+  'jobUpdated',
+  'userAdded',
+  'bulkImportCompleted',
+  'candidateRejected',
+  'interviewCompleted',
+  'candidateMoved',
 ]);
 
 /**
@@ -79,7 +79,8 @@ export async function GET(
     // Get user basic info
     const user = await User?.findById(userId)
       .select('_id name email role organizationId')
-      .lean().exec();
+      .lean()
+      .exec();
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -145,7 +146,10 @@ export async function PUT(
     ]);
 
     if (!currentUser) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 },
+      );
     }
 
     // Validate userId
@@ -187,14 +191,16 @@ export async function PUT(
               (key) => key !== 'candidateMoved',
             ),
           );
-          
+
           const invalidKey = validateNotificationSettings(
             jobSettings as Record<string, unknown>,
             jobLevelValidKeys,
           );
           if (invalidKey) {
             return NextResponse.json(
-              { error: `Invalid job-level value for ${invalidKey} in job ${jobId}` },
+              {
+                error: `Invalid job-level value for ${invalidKey} in job ${jobId}`,
+              },
               { status: 400 },
             );
           }
@@ -278,7 +284,10 @@ export async function DELETE(
     ]);
 
     if (!currentUser) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 },
+      );
     }
     // Validate userId
     if (!mongoose.Types.ObjectId.isValid(userId)) {

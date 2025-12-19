@@ -8,7 +8,6 @@ interface CircularScoreProps {
   category: string;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showLabel?: boolean;
-  showTooltip?: boolean;
   treatZeroAsEmpty?: boolean;
 }
 
@@ -17,20 +16,24 @@ export function CircularScore({
   category,
   size = 'sm',
   showLabel = false,
-  showTooltip = false,
   treatZeroAsEmpty = false,
 }: CircularScoreProps) {
-  const hasScore = score !== null
-    && score !== undefined
-    && !isNaN(score)
-    && !(treatZeroAsEmpty && score === 0);
+  const hasScore =
+    score !== null &&
+    score !== undefined &&
+    !Number.isNaN(score) &&
+    !(treatZeroAsEmpty && score === 0);
   const normalizedScore = hasScore ? Math.max(0, Math.min(10, score)) : 0;
   const percentage = hasScore ? (normalizedScore / 10) * 100 : 0;
-  const displayScore = hasScore
-    ? score % 1 === 0
-      ? score.toString()
-      : score.toFixed(1)
-    : '-';
+
+  let displayScore: string;
+  if (!hasScore) {
+    displayScore = '-';
+  } else if (score % 1 === 0) {
+    displayScore = score.toString();
+  } else {
+    displayScore = score.toFixed(1);
+  }
 
   // Size configurations
   const sizeConfig = {
@@ -73,30 +76,28 @@ export function CircularScore({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   // Color based on score
-  const getScoreColor = (score: number, hasScore: boolean) => {
-    if (!hasScore) return 'stroke-gray-300 dark:stroke-gray-600';
-    if (score >= 8) return 'stroke-emerald-500';
-    if (score >= 7) return 'stroke-teal-500';
-    if (score >= 6) return 'stroke-blue-500';
-    if (score >= 5) return 'stroke-amber-500';
-    if (score >= 3) return 'stroke-orange-500';
+  const getScoreColor = (scoreValue: number, hasScoreValue: boolean) => {
+    if (!hasScoreValue) return 'stroke-gray-300 dark:stroke-gray-600';
+    if (scoreValue >= 8) return 'stroke-emerald-500';
+    if (scoreValue >= 7) return 'stroke-teal-500';
+    if (scoreValue >= 6) return 'stroke-blue-500';
+    if (scoreValue >= 5) return 'stroke-amber-500';
+    if (scoreValue >= 3) return 'stroke-orange-500';
     return 'stroke-red-500';
   };
 
-  const getBackgroundColor = (score: number, hasScore: boolean) => {
-    if (!hasScore) return 'stroke-gray-100 dark:stroke-gray-800';
-    if (score >= 8) return 'stroke-emerald-100 dark:stroke-emerald-900';
-    if (score >= 7) return 'stroke-teal-100 dark:stroke-teal-900';
-    if (score >= 6) return 'stroke-blue-100 dark:stroke-blue-900';
-    if (score >= 5) return 'stroke-amber-100 dark:stroke-amber-900';
-    if (score >= 3) return 'stroke-orange-100 dark:stroke-orange-900';
+  const getBackgroundColor = (scoreValue: number, hasScoreValue: boolean) => {
+    if (!hasScoreValue) return 'stroke-gray-100 dark:stroke-gray-800';
+    if (scoreValue >= 8) return 'stroke-emerald-100 dark:stroke-emerald-900';
+    if (scoreValue >= 7) return 'stroke-teal-100 dark:stroke-teal-900';
+    if (scoreValue >= 6) return 'stroke-blue-100 dark:stroke-blue-900';
+    if (scoreValue >= 5) return 'stroke-amber-100 dark:stroke-amber-900';
+    if (scoreValue >= 3) return 'stroke-orange-100 dark:stroke-orange-900';
     return 'stroke-red-100 dark:stroke-red-900';
   };
 
   const scoreColor = getScoreColor(normalizedScore, hasScore);
   const bgColor = getBackgroundColor(normalizedScore, hasScore);
-
-  const tooltipContent = `${category}: ${displayScore}/10`;
 
   const circleElement = (
     <div className={cn('relative', config.container)}>
@@ -144,12 +145,12 @@ export function CircularScore({
   );
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 group cursor-pointer">
+    <div className="group flex flex-1 cursor-pointer flex-col items-center justify-center">
       {circleElement}
       {showLabel && (
         <span
           className={cn(
-            'text-center text-muted-foreground font-bold mt-1',
+            'mt-1 text-center font-bold text-muted-foreground',
             config.labelSize,
           )}
         >
@@ -182,7 +183,7 @@ function CompactScoreBadge({
   return (
     <Badge
       variant="secondary"
-      className="text-xs font-medium px-2 py-1"
+      className="px-2 py-1 text-xs font-medium"
       style={{
         backgroundColor: colors.bg,
         color: colors.text,
@@ -190,10 +191,7 @@ function CompactScoreBadge({
         border: `1px solid ${colors.border}`,
       }}
     >
-      <span className="text-[11px] mr-1 font-normal">
-        {category}
-        :
-      </span>
+      <span className="mr-1 text-[11px] font-normal">{category}:</span>
       <span className="font-semibold">{displayScore}</span>
     </Badge>
   );
@@ -212,7 +210,7 @@ export function CompactCircularScores({
 }) {
   if (!scores || Object.keys(scores).length === 0) {
     return (
-      <div className="text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded">
+      <div className="rounded bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
         No Score
       </div>
     );
@@ -250,34 +248,30 @@ export function GridCircularScores({
   const scoreData = scores || {};
 
   return (
-    <div className="flex items-center justify-between w-full mb-3">
+    <div className="mb-3 flex w-full items-center justify-between">
       <CircularScore
         score={scoreData.overall}
         category="Overall"
         size="xs"
         showLabel
-        showTooltip={false}
       />
       <CircularScore
         score={scoreData.experience}
         category="Experience"
         size="xs"
         showLabel
-        showTooltip={false}
       />
       <CircularScore
         score={scoreData.skills}
         category="Skills"
         size="xs"
         showLabel
-        showTooltip={false}
       />
       <CircularScore
         score={scoreData.affordability}
         category="Affordability"
         size="xs"
         showLabel
-        showTooltip={false}
         treatZeroAsEmpty
       />
     </div>
