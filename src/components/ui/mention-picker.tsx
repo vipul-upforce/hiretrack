@@ -37,7 +37,7 @@ interface MentionPickerProps {
   position?: 'top' | 'bottom';
   isRemarkPrivate?: boolean;
 }
-
+/* eslint-disable max-lines */
 export const MentionPicker = forwardRef<
   { handleKeyDown: (e: React.KeyboardEvent) => void },
   MentionPickerProps
@@ -74,8 +74,8 @@ export const MentionPicker = forwardRef<
 
       setLoading(true);
       try {
-        const users = await userCacheService.getUsers(organizationId);
-        setUsers(users);
+        const usersData = await userCacheService.getUsers(organizationId);
+        setUsers(usersData);
       } catch (error) {
         logger.error('Failed to load users:', error);
       } finally {
@@ -241,6 +241,101 @@ export const MentionPicker = forwardRef<
       handleKeyDown,
     }));
 
+    // Render content based on loading and filtered users state
+    const renderContent = () => {
+      if (loading) {
+        return (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            Loading users...
+          </div>
+        );
+      }
+
+      if (filteredUsers.length === 0) {
+        return (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            {searchQuery ? 'No users found' : 'No users available'}
+          </div>
+        );
+      }
+
+      return (
+        <div className="p-1" role="listbox">
+          {filteredUsers.map((user, index) => {
+            const isSelected = index === selectedIndex;
+            return (
+              <div
+                key={user._id}
+                data-selected-index={index}
+                role="option"
+                aria-selected={isSelected}
+                tabIndex={-1}
+                className={cn(
+                  'group flex w-full cursor-pointer items-center gap-3 rounded-md p-3 transition-colors',
+                  isSelected
+                    ? 'bg-accent text-accent-foreground'
+                    : 'hover:bg-accent hover:text-accent-foreground',
+                )}
+                onClick={() => handleUserSelect(user)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleUserSelect(user);
+                  }
+                }}
+              >
+                <div className="flex-shrink-0">
+                  <div
+                    className={cn(
+                      'flex h-8 w-8 items-center justify-center rounded-full transition-all',
+                      isSelected
+                        ? 'from-primary/40 to-primary/30 bg-gradient-to-br'
+                        : 'from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 bg-gradient-to-br',
+                    )}
+                  >
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div
+                    className={cn(
+                      'truncate text-sm font-medium',
+                      isSelected
+                        ? 'text-accent-foreground'
+                        : 'group-hover:text-accent-foreground',
+                    )}
+                  >
+                    {user.name}
+                  </div>
+                  <div
+                    className={cn(
+                      'truncate text-xs',
+                      isSelected
+                        ? 'text-accent-foreground/70'
+                        : 'text-muted-foreground group-hover:text-accent-foreground/70',
+                    )}
+                  >
+                    {user.email}
+                  </div>
+                </div>
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    'text-xs capitalize transition-colors',
+                    isSelected
+                      ? 'bg-secondary/70'
+                      : 'bg-secondary/50 group-hover:bg-secondary/70',
+                  )}
+                >
+                  {user.role}
+                </Badge>
+              </div>
+            );
+          })}
+        </div>
+      );
+    };
+
     if (!shouldShowMentionPicker) {
       return null;
     }
@@ -250,6 +345,8 @@ export const MentionPicker = forwardRef<
         className={cn('relative', className)}
         onKeyDown={handleKeyDown}
         tabIndex={-1}
+        role="group"
+        aria-label="Mention picker"
       >
         {/* Mention picker dropdown */}
         {isOpen && (
@@ -269,80 +366,7 @@ export const MentionPicker = forwardRef<
               </div>
             </div>
             <div ref={scrollAreaRef} className="h-60 overflow-auto">
-              {loading ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  Loading users...
-                </div>
-              ) : filteredUsers.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  {searchQuery ? 'No users found' : 'No users available'}
-                </div>
-              ) : (
-                <div className="p-1">
-                  {filteredUsers.map((user, index) => {
-                    const isSelected = index === selectedIndex;
-                    return (
-                      <div
-                        key={user._id}
-                        data-selected-index={index}
-                        className={cn(
-                          'group flex w-full cursor-pointer items-center gap-3 rounded-md p-3 transition-colors',
-                          isSelected
-                            ? 'bg-accent text-accent-foreground'
-                            : 'hover:bg-accent hover:text-accent-foreground',
-                        )}
-                        onClick={() => handleUserSelect(user)}
-                      >
-                        <div className="flex-shrink-0">
-                          <div
-                            className={cn(
-                              'flex h-8 w-8 items-center justify-center rounded-full transition-all',
-                              isSelected
-                                ? 'from-primary/40 to-primary/30 bg-gradient-to-br'
-                                : 'from-primary/20 to-primary/10 group-hover:from-primary/30 group-hover:to-primary/20 bg-gradient-to-br',
-                            )}
-                          >
-                            <User className="h-4 w-4 text-primary" />
-                          </div>
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              'truncate text-sm font-medium',
-                              isSelected
-                                ? 'text-accent-foreground'
-                                : 'group-hover:text-accent-foreground',
-                            )}
-                          >
-                            {user.name}
-                          </div>
-                          <div
-                            className={cn(
-                              'truncate text-xs',
-                              isSelected
-                                ? 'text-accent-foreground/70'
-                                : 'text-muted-foreground group-hover:text-accent-foreground/70',
-                            )}
-                          >
-                            {user.email}
-                          </div>
-                        </div>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            'text-xs capitalize transition-colors',
-                            isSelected
-                              ? 'bg-secondary/70'
-                              : 'bg-secondary/50 group-hover:bg-secondary/70',
-                          )}
-                        >
-                          {user.role}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              {renderContent()}
             </div>
           </div>
         )}
