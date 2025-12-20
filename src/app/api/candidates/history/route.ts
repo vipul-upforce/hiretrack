@@ -374,7 +374,7 @@ export async function PUT(request: NextRequest) {
             : data.jobId._id || null,
         jobTitle: data.jobId?.title || 'Unknown Job',
         remarkText: data.newEntry.remark.description,
-        triggerUserId: userData.id,
+        triggerUserId: userData.id?.toString() || '',
         triggerUserName: userData.name || 'Unknown User',
         roles: ['admin', 'hr'],
         validMentionUserIds: selectedMentionUserIds,
@@ -382,9 +382,8 @@ export async function PUT(request: NextRequest) {
 
       // ⭐ INSERTED EMAIL NOTIFICATION BLOCK HERE ⭐
       try {
-        const { organizationId } = userData;
-        const users = await User.find({
-          organizationId,
+        const users = await User?.find({
+          organizationId: userData.organizationId,
           role: { $in: ['hr', 'admin'] },
           $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
         }).select('email');
@@ -395,24 +394,24 @@ export async function PUT(request: NextRequest) {
           userData.organizationId,
         )) as string;
         const remark = data.newEntry.remark.description || '';
-        const remark_for = candidateData?.name || '';
-        const remark_adder = userData.name;
+        const remarkFor = candidateData?.name || '';
+        const remarkAdder = userData.name;
         const rating = data.newEntry?.remark?.rating || null;
         const candidateProfileLink = `${process.env.NEXT_PUBLIC_APP_URL}/candidate/${data.candidateId}`;
         const organizationName = userData.organizationInfo?.name || 'HireTrack';
-        const emailList = users.map((user) => user.email);
+        const emailList = (users || []).map((user) => user.email);
         await sendRemarkNotificationWithMentions(
           organizationId,
           remark,
           {
-            triggererUserId: userData.id.toString(),
+            triggererUserId: userData.id?.toString() || '',
             triggererEmail: userData.email,
             triggererName: userData.name,
             jobId: data?.jobId?._id?.toString?.() || data?.jobId?.toString(),
             candidateId: data.candidateId.toString(),
-            candidateName: remark_for,
+            candidateName: remarkFor,
             jobTitle: data?.jobId?.title || 'Unknown Position',
-            reviewerName: remark_adder,
+            reviewerName: remarkAdder,
             remarkDate,
             rating,
             candidateProfileLink,
