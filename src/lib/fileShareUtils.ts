@@ -3,6 +3,7 @@ import connectToDatabase, { FileShare } from './mongodb';
 import { uploadFileToProvider } from './fileUtils';
 import { IFileShare } from './models/fileshare';
 import logger from './logger';
+import { Ifs } from './models/settings';
 
 // Allowed file extensions for attachments
 const ALLOWED_EXTENSIONS = [
@@ -26,6 +27,11 @@ const ALLOWED_EXTENSIONS = [
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 const MAX_ATTACHMENTS = 3;
 
+interface AttachmentFile {
+  fileName: string;
+  fileSize: number;
+}
+
 interface FileShareOptions {
   organizationId: string;
   userId: string;
@@ -42,7 +48,7 @@ interface FileShareOptions {
     relatedTo?: string;
     relatedId?: string;
   };
-  storageConfig: any;
+  storageConfig: Ifs;
 }
 
 interface FileShareResult {
@@ -78,7 +84,7 @@ export function validateFileForUpload(
   return { valid: true };
 }
 
-export function validateAttachments(files: any[]): {
+export function validateAttachments(files: AttachmentFile[]): {
   valid: boolean;
   error?: string;
 } {

@@ -22,7 +22,9 @@ export async function getPortalMetadata() {
     // Wait for models to initialize (same approach as portal API)
     let retries = 0;
     while ((!Settings || !Organization) && retries < 10) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 100);
+      });
       retries += 1;
     }
 

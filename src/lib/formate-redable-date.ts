@@ -49,7 +49,7 @@ export function formatReadableDate(
   if (!date) return '-';
 
   const parsed = new Date(date);
-  if (isNaN(parsed.getTime())) return '-';
+  if (Number.isNaN(parsed.getTime())) return '-';
 
   const now = new Date();
   const diffMs = now.getTime() - parsed.getTime();
@@ -65,17 +65,14 @@ export function formatReadableDate(
 
   // MODE: Full (Absolute)
   if (mode === 'full') {
-    return (
-      `${parsed.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-      } at ${parsed.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      })}`
-    );
+    return `${parsed.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })} at ${parsed.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    })}`;
   }
 
   // MODE: Smart Relative (Short relative < 1 month, then Date)
@@ -103,9 +100,12 @@ export function formatReadableDate(
     if (diffHours < 24) return `${diffHours}h ago`;
 
     // Note: Logic specifically prioritizes Days over Weeks if under 30 days
-    if (diffDays < 30) return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-    if (diffWeeks < 4) return diffWeeks === 1 ? '1 week ago' : `${diffWeeks} weeks ago`;
-    if (diffMonths < 12) return diffMonths === 1 ? '1 month ago' : `${diffMonths} months ago`;
+    if (diffDays < 30)
+      return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+    if (diffWeeks < 4)
+      return diffWeeks === 1 ? '1 week ago' : `${diffWeeks} weeks ago`;
+    if (diffMonths < 12)
+      return diffMonths === 1 ? '1 month ago' : `${diffMonths} months ago`;
     return diffYears === 1 ? '1 year ago' : `${diffYears} years ago`;
   }
 

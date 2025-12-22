@@ -1,6 +1,39 @@
 import CryptoJS from 'crypto-js';
 import { generateOrgJwtSecret } from './jwtSecretGenerator';
 import logger from './logger';
+
+/**
+ * Type definition for AI provider configuration
+ */
+interface AIProviderConfig {
+  api_key?: string;
+  model?: string;
+  customModel?: string;
+}
+
+/**
+ * Type definition for CAPTCHA configuration
+ */
+interface CaptchaConfig {
+  siteKey?: string;
+  secretKey?: string;
+  enableCaptcha?: boolean;
+  captchaProvider?: string;
+}
+
+/**
+ * Type definition for providers object that can contain AI providers and/or CAPTCHA config
+ */
+export interface ProvidersConfig {
+  activeProvider?: 'gemini' | 'openai' | 'anthropic' | 'perplexity';
+  gemini?: AIProviderConfig;
+  openai?: AIProviderConfig;
+  anthropic?: AIProviderConfig;
+  perplexity?: AIProviderConfig;
+  captcha?: CaptchaConfig;
+  [key: string]: unknown;
+}
+
 /**
  * Encrypts a string using AES encryption
  * @param text - The text to encrypt
@@ -42,7 +75,10 @@ export function decryptText(encryptedText: string, orgId: string): string {
  * @param providers - The AI providers object with plain text API keys
  * @returns The providers object with encrypted API keys
  */
-export function encryptProviderKeys(providers: any, orgId: string): any {
+export function encryptProviderKeys(
+  providers: ProvidersConfig | null | undefined,
+  orgId: string,
+): ProvidersConfig | null | undefined {
   if (!providers) return providers;
 
   const encrypted = { ...providers };
@@ -86,7 +122,10 @@ export function encryptProviderKeys(providers: any, orgId: string): any {
  * @param providers - The AI providers object with encrypted API keys
  * @returns The providers object with decrypted API keys
  */
-export function decryptProviderKeys(providers: any, orgId: string): any {
+export function decryptProviderKeys(
+  providers: ProvidersConfig | null | undefined,
+  orgId: string,
+): ProvidersConfig | null | undefined {
   if (!providers) return providers;
 
   const decrypted = { ...providers };
