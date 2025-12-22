@@ -52,7 +52,8 @@ export default function AssetsDialog() {
       toast({
         title: 'Error',
         description:
-          (err as any)?.data?.message || 'Failed to create assets archive',
+          (err as { data?: { message?: string } })?.data?.message ||
+          'Failed to create assets archive',
         variant: 'destructive',
       });
     }
@@ -64,7 +65,8 @@ export default function AssetsDialog() {
     return (
       <div className="py-6 text-center text-red-500">
         Failed to load assets metadata:{' '}
-        {(error as any)?.data?.message || 'Unknown error'}
+        {(error as { data?: { message?: string } })?.data?.message ||
+          'Unknown error'}
       </div>
     );
   }

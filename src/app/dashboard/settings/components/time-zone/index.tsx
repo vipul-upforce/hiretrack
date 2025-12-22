@@ -18,7 +18,10 @@ export interface TimeZoneValues {
   timeZone: string;
 }
 
-export default function TimeZoneSelect({ onClose }: { onClose: () => void }) {
+export interface TimeZoneSettingsProps {
+  onClose: () => void;
+}
+export default function TimeZoneSelect({ onClose }: TimeZoneSettingsProps) {
   const { toast } = useToast();
   const { data, isFetching, isLoading, refetch } =
     useGetTimeZoneQuery(undefined);

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import type { SerializedError } from '@reduxjs/toolkit';
 import {
   useGetGoogleCalendarConfigQuery,
   useUpdateGoogleCalendarMutation,
@@ -145,7 +147,7 @@ export function useGoogleCalendarLogic() {
           connectionData.error ||
           'Connection successful',
         details: connectionData.details,
-        data: connectionData.data,
+        data: connectionData.data as TestResult['data'],
       });
 
       if (connectionData.success) {
@@ -170,7 +172,7 @@ export function useGoogleCalendarLogic() {
       if (connectionData.connectionStatusUpdated) {
         refetch();
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 3. Handle Errors (Network, 500s, Parsing errors)
 
       let errorMessage = 'Network connection failed';
@@ -178,21 +180,31 @@ export function useGoogleCalendarLogic() {
       const rawResponse = undefined;
 
       if (error && typeof error === 'object') {
+        // Handle RTK Query FetchBaseQueryError
         if ('status' in error) {
-          errorMessage = `HTTP ${error.status}`;
+          const fetchError = error as FetchBaseQueryError;
+          errorMessage = `HTTP ${fetchError.status}`;
           errorDetails =
-            JSON.stringify(error.data) || error.statusText || 'Server Error';
+            JSON.stringify(fetchError.data) ||
+            (fetchError as { statusText?: string }).statusText ||
+            'Server Error';
 
           if (
-            error.data &&
-            typeof error.data === 'object' &&
-            'message' in error.data
+            fetchError.data &&
+            typeof fetchError.data === 'object' &&
+            'message' in fetchError.data
           ) {
-            errorMessage = (error.data as any).message;
+            const errorData = fetchError.data as { message?: string };
+            errorMessage = errorData.message || errorMessage;
           }
         } else if ('message' in error) {
-          errorMessage = error.message;
-          errorDetails = error.stack || String(error);
+          // Handle SerializedError or standard Error
+          const serializedError = error as SerializedError | Error;
+          errorMessage = serializedError.message || 'Unknown error occurred';
+          errorDetails =
+            'stack' in serializedError && serializedError.stack
+              ? serializedError.stack
+              : String(error);
         }
       }
 

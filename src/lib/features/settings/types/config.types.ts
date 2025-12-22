@@ -1,5 +1,5 @@
 export interface TestConnectionRequest {
-  storageType: 'cloudinary' | 's3' | 'smtp' | 'resend';
+  storageType: 'cloudinary' | 's3' | 'smtp' | 'resend' | 'brevo';
   credentials: {
     cloud_name?: string;
     api_key?: string;
@@ -9,15 +9,25 @@ export interface TestConnectionRequest {
     region?: string;
     user?: string;
     pass?: string;
+    host?: string;
+    port?: string;
+    from?: string;
+    // Resend credentials
+    resend_api_key?: string;
+    resend_from?: string;
+    reply_to?: string;
+    // Brevo credentials
+    brevo_api_key?: string;
+    brevo_from?: string;
   };
 }
 
 export interface TestConnectionResponse {
   success: boolean;
   message: string;
-  data?: any;
-  details?: any;
-  error?: any;
+  data?: unknown;
+  details?: string;
+  error?: string;
   connectionStatusUpdated?: boolean;
 }
 
@@ -26,6 +36,8 @@ export interface GoogleCalendarConfig {
   clientSecret?: string;
   connected?: boolean;
   redirectUri?: string;
+  connectedEmail?: string;
+  isConnected?: boolean;
 }
 
 export interface GoogleCalendarConfigResponse {

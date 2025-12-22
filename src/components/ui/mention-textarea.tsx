@@ -85,18 +85,33 @@ export function MentionTextarea({
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     const cursorPosition = e.target.selectionStart || 0;
+    const oldValue = value;
 
     onChange(newValue);
 
     if (!shouldShowMentionPicker) return;
 
-    // Check if user typed @
+    // Check if @ was deleted (backspace detection)
+    // If the old value had @ and new value doesn't, or if @ was removed, close picker
+    const oldTextBeforeCursor = oldValue.substring(0, Math.min(cursorPosition, oldValue.length));
+    const newTextBeforeCursor = newValue.substring(0, cursorPosition);
+    const hadAt = oldTextBeforeCursor.includes('@');
+    const hasAt = newTextBeforeCursor.includes('@');
+
+    // If @ was deleted (had @ but doesn't have it now, or cursor moved back past @)
+    if (hadAt && !hasAt) {
+      setShowMentionPicker(false);
+      setMentionQuery('');
+      return;
+    }
+
+    // Check if user typed @ or is typing after @
     const textBeforeCursor = newValue.substring(0, cursorPosition);
     const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-      // Only show mention picker if there's no space after @
+      // Only show mention picker if there's no space or newline after @
       if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
         const position = calculatePickerPosition();
         setPickerPosition(position);
@@ -112,7 +127,8 @@ export function MentionTextarea({
   // Handle mention selection
   const handleMentionSelect = (user: MentionUser) => {
     const cursorPosition = textareaRef.current?.selectionStart || 0;
-    const newText = insertMentionInText(value, user, cursorPosition);
+    const result = insertMentionInText(value, user, cursorPosition);
+    const { newText, insertionPosition } = result;
 
     onChange(newText);
     addMention(user);
@@ -123,9 +139,8 @@ export function MentionTextarea({
     setTimeout(() => {
       if (textareaRef.current) {
         textareaRef.current.focus();
-        // Position cursor after the mention
-        const newCursorPosition =
-          newText.indexOf(`@${user.name} `) + `@${user.name} `.length;
+        // Position cursor after the inserted mention (at the actual insertion point)
+        const newCursorPosition = insertionPosition + `@${user.name} `.length;
         textareaRef.current.setSelectionRange(
           newCursorPosition,
           newCursorPosition,
@@ -139,10 +154,13 @@ export function MentionTextarea({
     // Remove mention from selected mentions
     removeMention(user._id);
 
-    // Remove mention text from the textarea value
-    const mentionPattern = new RegExp(`@${user.name}\\s+`, 'g');
-    const newText = value.replace(mentionPattern, '');
-    onChange(newText);
+    // Remove only the first occurrence of the mention to avoid removing duplicates incorrectly
+    const mentionText = `@${user.name} `;
+    const firstIndex = value.indexOf(mentionText);
+    if (firstIndex !== -1) {
+      const newText = value.slice(0, firstIndex) + value.slice(firstIndex + mentionText.length);
+      onChange(newText);
+    }
   };
 
   // Handle key events
@@ -163,6 +181,24 @@ export function MentionTextarea({
         setMentionQuery('');
         return;
       }
+
+      // Close picker on space or newline (user finished typing mention query)
+      if (e.key === ' ' || e.key === 'Enter') {
+        setShowMentionPicker(false);
+        setMentionQuery('');
+        // Don't prevent default - allow space/enter to be inserted
+      }
+
+      // Close picker on backspace if it would delete the @
+      if (e.key === 'Backspace') {
+        const cursorPosition = textareaRef.current?.selectionStart || 0;
+        const textBeforeCursor = value.substring(0, cursorPosition);
+        // If backspace would delete the @, close picker
+        if (textBeforeCursor.endsWith('@')) {
+          setShowMentionPicker(false);
+          setMentionQuery('');
+        }
+      }
     }
 
     // Call the original onKeyDown if provided
@@ -171,12 +207,35 @@ export function MentionTextarea({
     }
   };
 
-  // Clear mentions when value is cleared
+  // Clear mentions when value is cleared and sync with text
   useEffect(() => {
     if (!value.trim()) {
       clearMentions();
+      return;
     }
-  }, [value, clearMentions]);
+
+    // Sync selected mentions with actual mentions in text
+    // Remove mentions that are no longer in the text
+    // Use a ref-like approach to avoid dependency issues
+    const currentMentions = selectedMentions;
+    const mentionsStillInText = currentMentions.filter((user) => {
+      const mentionText = `@${user.name}`;
+      // Check if mention exists in text
+      return value.includes(mentionText);
+    });
+
+    // Only update if there's a mismatch
+    if (mentionsStillInText.length < currentMentions.length) {
+      // Remove mentions that are no longer in text
+      currentMentions.forEach((user) => {
+        const mentionText = `@${user.name}`;
+        if (!value.includes(mentionText)) {
+          removeMention(user._id);
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, clearMentions, removeMention]);
 
   // Notify parent component when selected mentions change
   useEffect(() => {
