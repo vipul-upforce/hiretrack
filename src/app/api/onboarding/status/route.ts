@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Admin access required' },
-        { status: 403 },
+        { status: 401 },
       );
     }
 
@@ -51,7 +51,7 @@ export async function PUT(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req, 'admin');
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     await connectToDatabase();

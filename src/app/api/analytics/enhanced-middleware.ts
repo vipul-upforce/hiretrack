@@ -3,7 +3,8 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import CryptoJS from 'crypto-js';
 import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
-import { AuthenticatedUser, AnalyticsApiResponse } from './middleware';
+import { AuthenticatedUser } from '@/app/actions/auth';
+import { AnalyticsApiResponse } from './middleware';
 
 // Rate limiting storage (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
