@@ -1,9 +1,9 @@
 import { Spinner } from './spinner';
 
-export function LoadingSpinner({ w }: { w?: number }) {
+export function LoadingSpinner({ width }: { width?: number }) {
   return (
     <div className="flex items-center justify-center">
-      <Spinner />
+      <Spinner width={width} />
     </div>
   );
 }

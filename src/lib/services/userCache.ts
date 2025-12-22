@@ -25,7 +25,7 @@ class UserCacheService {
   private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
 
   private fetchingPromises: {
-    [organizationId: string]: Promise<CachedUser[]>;
+    [organizationId: string]: Promise<CachedUser[]> | undefined;
   } = {};
 
   /**
@@ -101,7 +101,7 @@ class UserCacheService {
   /**
    * Filter users by role and status
    */
-  filterUsers(users: CachedUser[]): CachedUser[] {
+  static filterUsers(users: CachedUser[]): CachedUser[] {
     if (!users || !Array.isArray(users)) {
       return [];
     }
@@ -162,7 +162,7 @@ class UserCacheService {
       // Handle both response formats: direct array or { users: array }
       const usersArray = Array.isArray(data) ? data : data.users;
 
-      const filteredUsers = this.filterUsers(usersArray);
+      const filteredUsers = UserCacheService.filterUsers(usersArray);
 
       // Cache the filtered users
       this.setCachedUsers(organizationId, filteredUsers);

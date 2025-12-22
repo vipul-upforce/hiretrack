@@ -72,8 +72,9 @@ export function PDFViewer({ files }: PDFViewerProps) {
             key={file.url}
             className="group flex w-full items-center gap-2 rounded-md border border-gray-200 bg-white p-3 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-black dark:hover:bg-gray-700"
           >
-            <div
-              className="flex w-full flex-1 cursor-pointer items-center gap-2"
+            <button
+              type="button"
+              className="flex w-full flex-1 cursor-pointer items-center gap-2 text-left"
               onClick={() => {
                 setSelectedFile(file);
               }}
@@ -105,12 +106,17 @@ export function PDFViewer({ files }: PDFViewerProps) {
                   </p>
                 )}
               </div>
-            </div>
+            </button>
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8 text-gray-600 opacity-100 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-gray-100"
-              onClick={() => downloadFile(file.url || file.base64, file.name)}
+              onClick={() => {
+                const url = file.url || file.base64;
+                if (url) {
+                  downloadFile(url, file.name);
+                }
+              }}
             >
               <Download className="h-4 w-4" />
             </Button>
@@ -138,11 +144,12 @@ export function PDFViewer({ files }: PDFViewerProps) {
               type="button"
               className="absolute right-12 top-4 rounded-sm text-gray-600 opacity-70 ring-offset-background transition-opacity hover:text-gray-900 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground dark:text-gray-300 dark:hover:text-gray-100"
               onClick={() => {
-                selectedFile &&
-                  downloadFile(
-                    selectedFile.url || selectedFile.base64,
-                    selectedFile.name,
-                  );
+                if (selectedFile) {
+                  const url = selectedFile.url ?? selectedFile.base64;
+                  if (url) {
+                    downloadFile(url, selectedFile.name);
+                  }
+                }
               }}
             >
               <Download className="h-4 w-4" />
