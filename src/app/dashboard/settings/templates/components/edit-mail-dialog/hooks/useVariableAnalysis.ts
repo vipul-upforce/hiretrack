@@ -1,6 +1,6 @@
 import type { IEmailTemplatesConfig } from '@/app/dashboard/settings/components/types';
+import { defaultTemplatesAsObject as defaultTemplates } from '@/app/dashboard/settings/templates/constants';
 import { extractVariablesFromContent } from '../../email-template-editor/utils';
-import { defaultTemplatesAsObject as defaultTemplates } from '../../constants';
 
 interface VariableAnalysis {
   used: string[];
@@ -23,11 +23,11 @@ export function analyzeVariables(
 
   const usedVariables = extractVariablesFromContent(allContent);
 
-  const used = availableVariables.filter((variable) =>
+  const used = availableVariables.filter((variable: string) =>
     usedVariables.includes(variable),
   );
   const unused = availableVariables.filter(
-    (variable) => !usedVariables.includes(variable),
+    (variable: string) => !usedVariables.includes(variable),
   );
   const invalid = usedVariables.filter(
     (variable) => !availableVariables.includes(variable),
@@ -35,4 +35,3 @@ export function analyzeVariables(
 
   return { used, unused, invalid };
 }
-

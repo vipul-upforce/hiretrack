@@ -31,4 +31,4 @@ export interface MailProvider {
   resend: string;
   brevo: string;
 }
-export type MailProviderType = 'smtp' | 'resend' | 'brevo';
+export type MailProviderType = keyof MailProvider;
