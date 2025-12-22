@@ -178,7 +178,7 @@ export function AssignCandidateDialog({
         if (isUpdating) {
           // UPDATE EXISTING MEETING
           result = await updateMeeting({
-            eventId: candidate.assignment?.googleMeet.eventId,
+            eventId: candidate.assignment?.googleMeet?.eventId || '',
             candidateId: candidate._id,
             scheduledTime: values.time?.toISOString(),
             duration: values.meetDuration || 30,
@@ -230,20 +230,20 @@ export function AssignCandidateDialog({
             ? 'Google Meet updated and candidate assigned'
             : 'Google Meet scheduled and candidate assigned',
         });
-      } catch (error: any) {
+      } catch (error) {
         logger.error('❌ Google Meet Error:', error);
         toast({
           title: 'Error',
           description:
-            error?.data?.error ||
-            error.message ||
+            (error as { data?: { error?: string } }).data?.error ||
+            (error as { message?: string }).message ||
             'Failed to schedule/update Google Meet',
           variant: 'destructive',
         });
         formikHelpers.setSubmitting(false);
       }
     } else {
-      await handleSubmit(values, formikHelpers, user, interviewers);
+      await handleSubmit(values, formikHelpers, interviewers || []);
     }
   };
 
@@ -328,7 +328,7 @@ export function AssignCandidateDialog({
                       <GoogleMeetIntegration
                         candidate={candidate}
                         interviewers={interviewers}
-                        googleCalendarData={googleCalendarData}
+                        googleCalendarData={googleCalendarData || {}}
                         setShowCancelMeetDialog={setShowCancelMeetDialog}
                         getOnAltEnterSubmit={getOnAltEnterSubmit}
                       />
