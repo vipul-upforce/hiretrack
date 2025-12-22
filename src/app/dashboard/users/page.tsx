@@ -68,16 +68,16 @@ function UsersPage() {
         title: 'Success',
         description: 'User deleted successfully',
       });
-    } catch (error: unknown) {
+    } catch (errorMessage: unknown) {
       toast({
         description: `Error: ${
-          typeof error === 'object' &&
-          error !== null &&
-          'data' in error &&
-          typeof error.data === 'object' &&
-          error.data &&
-          'error' in error.data
-            ? (error.data as { error: string }).error
+          typeof errorMessage === 'object' &&
+          errorMessage !== null &&
+          'data' in errorMessage &&
+          typeof errorMessage.data === 'object' &&
+          errorMessage.data &&
+          'error' in errorMessage.data
+            ? (errorMessage.data as { error: string }).error
             : 'Unknown error'
         }`,
         title: 'Failed to delete user',
