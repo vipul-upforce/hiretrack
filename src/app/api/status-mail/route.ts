@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
   try {
     const userData = await getAuthenticatedUser(req, 'admin');
     if (!userData) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Return queue status (only for admin users)
