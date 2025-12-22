@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
-import CryptoJS from 'crypto-js';
-import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
 import { logger } from '@/lib/logger/logger.server';
+import { getAuthenticatedUser , AuthenticatedUser } from '@/app/actions/auth';
 
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  organizationId: string;
-  role: string;
-  name: string;
-}
+// export interface AuthenticatedUser {
+//   id: string;
+//   email: string;
+//   organizationId: string;
+//   role: string;
+//   name: string;
+// }
 
 export interface AnalyticsApiResponse {
   success: boolean;
@@ -30,51 +27,51 @@ export interface AnalyticsApiResponse {
   };
 }
 
-export async function authenticateAnalyticsRequest(
-  request: NextRequest,
-): Promise<AuthenticatedUser | null> {
-  try {
-    const cookieStore = await cookies();
-    const httpOnlyToken = cookieStore.get('auth_token');
-    const token = httpOnlyToken?.value;
+// export async function authenticateAnalyticsRequest(
+//   request: NextRequest,
+// ): Promise<AuthenticatedUser | null> {
+//   try {
+//     const cookieStore = await cookies();
+//     const httpOnlyToken = cookieStore.get('auth_token');
+//     const token = httpOnlyToken?.value;
 
-    if (!token) {
-      return null;
-    }
+//     if (!token) {
+//       return null;
+//     }
 
-    const orgId = request.cookies.get('org_id')?.value;
-    const JWT_SECRET = generateOrgJwtSecret(orgId!);
-    if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
+//     const orgId = request.cookies.get('org_id')?.value;
+//     const JWT_SECRET = generateOrgJwtSecret(orgId!);
+//     if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 
-    const secretKey = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jwtVerify(token, secretKey);
+//     const secretKey = new TextEncoder().encode(JWT_SECRET);
+//     const { payload } = await jwtVerify(token, secretKey);
 
-    if (!payload || typeof payload !== 'object' || !payload.user) {
-      throw new Error('Invalid token structure');
-    }
+//     if (!payload || typeof payload !== 'object' || !payload.user) {
+//       throw new Error('Invalid token structure');
+//     }
 
-    // Decrypt the user data using CryptoJS (same as main middleware)
-    const bytes = CryptoJS.AES.decrypt(payload.user as string, JWT_SECRET);
-    const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+//     // Decrypt the user data using CryptoJS (same as main middleware)
+//     const bytes = CryptoJS.AES.decrypt(payload.user as string, JWT_SECRET);
+//     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
 
-    return {
-      id: decryptedData._id || decryptedData.id,
-      email: decryptedData.email,
-      organizationId:
-        typeof decryptedData.organizationId === 'string'
-          ? decryptedData.organizationId
-          : decryptedData.organizationId.toString(),
-      role: decryptedData.role,
-      name: decryptedData.name,
-    };
-  } catch (error) {
-    logger.error(
-      { error, url: request.url },
-      'Analytics authentication failed',
-    );
-    return null;
-  }
-}
+//     return {
+//       id: decryptedData._id || decryptedData.id,
+//       email: decryptedData.email,
+//       organizationId:
+//         typeof decryptedData.organizationId === 'string'
+//           ? decryptedData.organizationId
+//           : decryptedData.organizationId.toString(),
+//       role: decryptedData.role,
+//       name: decryptedData.name,
+//     };
+//   } catch (error) {
+//     logger.error(
+//       { error, url: request.url },
+//       'Analytics authentication failed',
+//     );
+//     return null;
+//   }
+// }
 
 export function createAnalyticsResponse<T>(
   data: T,
@@ -187,7 +184,7 @@ export async function withAnalyticsAuth(
     }
 
     // Authenticate user
-    const user = await authenticateAnalyticsRequest(request);
+    const user = await getAuthenticatedUser(request, 'admin');
 
     if (!user) {
       return createAnalyticsErrorResponse('Authentication required', 401);

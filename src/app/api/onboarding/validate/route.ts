@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Admin access required' },
-        { status: 403 },
+        { status: 401 },
       );
     }
 
@@ -242,7 +242,7 @@ export async function POST(req: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: 'Admin access required' },
-        { status: 403 },
+        { status: 401 },
       );
     }
 

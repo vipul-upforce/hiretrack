@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 'use client';
 
 import type React from 'react';
@@ -239,7 +241,7 @@ export const TableBodyRows = memo(
                 <TableCell className="font-medium">
                   <button
                     type="button"
-                    className="hover:text-primary/80 text-left cursor-pointer font-bold text-primary transition-colors hover:underline"
+                    className="hover:text-primary/80 cursor-pointer text-left font-bold text-primary transition-colors hover:underline"
                     onClick={(e) => handleViewDetails(candidate, e)}
                   >
                     {candidate.name}

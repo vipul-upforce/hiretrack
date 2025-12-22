@@ -8,12 +8,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { JobData, TrendsData } from '../types';
+import type { InterviewData, JobData, TrendsData } from '../types';
 
 interface QuickInsightsSectionProps {
   jobData: JobData;
   trendsData: TrendsData;
-  interviewData: any;
+  interviewData: InterviewData;
   dateRange: Date[] | null;
   isLoadingJob: boolean;
   isLoadingTrends: boolean;
@@ -43,6 +43,20 @@ export function QuickInsightsSection({
     }
   };
 
+  const renderAvgTimeToFill = () => {
+    if (isLoadingJob) {
+      return <Skeleton className="h-6 w-10 rounded-lg" />;
+    }
+
+    const avgTime = jobData?.summary?.avgTimeToFill;
+
+    if (typeof avgTime === 'number' && avgTime > 0) {
+      return `${avgTime} days`;
+    }
+
+    return 'No hires yet';
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {/* Quick Insights Card */}
@@ -57,28 +71,28 @@ export function QuickInsightsSection({
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Top Performing Job */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-muted/20 rounded-lg">
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 dark:bg-muted/20">
             <div>
               <div className="font-medium">Top Performing Job</div>
               <div className="text-sm text-muted-foreground">
                 {isLoadingJob ? (
-                  <Skeleton className="w-20 h-4 rounded-lg mt-1" />
+                  <Skeleton className="mt-1 h-4 w-20 rounded-lg" />
                 ) : (
-                  jobData?.insights?.topPerformingJobs?.[0]?.title
-                  || jobData?.jobPerformanceData?.[0]?.title
-                  || 'No jobs available'
+                  jobData?.insights?.topPerformingJobs?.[0]?.title ||
+                  jobData?.jobPerformanceData?.[0]?.title ||
+                  'No jobs available'
                 )}
               </div>
             </div>
             <div className="text-right">
               <div className="text-sm font-medium text-green-600 dark:text-green-400">
                 {isLoadingJob ? (
-                  <Skeleton className="w-10 h-6 rounded-lg" />
+                  <Skeleton className="h-6 w-10 rounded-lg" />
                 ) : (
                   `${
-                    jobData?.insights?.topPerformingJobs?.[0]?.successRate
-                    || jobData?.jobPerformanceData?.[0]?.successRate
-                    || 0
+                    jobData?.insights?.topPerformingJobs?.[0]?.successRate ||
+                    jobData?.jobPerformanceData?.[0]?.successRate ||
+                    0
                   }%`
                 )}
               </div>
@@ -86,7 +100,7 @@ export function QuickInsightsSection({
           </div>
 
           {/* Average Time to Fill */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-muted/20 rounded-lg">
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 dark:bg-muted/20">
             <div>
               <div className="font-medium">Average Time to Fill</div>
               <div className="text-sm text-muted-foreground">
@@ -97,13 +111,8 @@ export function QuickInsightsSection({
             </div>
             <div className="text-right">
               <div className="text-sm font-medium">
-                {isLoadingJob ? (
-                  <Skeleton className="w-10 h-6 rounded-lg" />
-                ) : jobData?.summary?.avgTimeToFill > 0 ? (
-                  `${jobData.summary.avgTimeToFill} days`
-                ) : (
-                  'No hires yet'
-                )}
+                {/* Use the helper function here */}
+                {renderAvgTimeToFill()}
               </div>
             </div>
           </div>
@@ -118,7 +127,7 @@ export function QuickInsightsSection({
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Applications This Period */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-muted/20 rounded-lg">
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 dark:bg-muted/20">
             <div>
               <div className="font-medium">Applications This Period</div>
               <div className="text-sm text-muted-foreground">
@@ -128,7 +137,7 @@ export function QuickInsightsSection({
             <div className="text-right">
               <div className="text-sm font-medium">
                 {isLoadingTrends ? (
-                  <Skeleton className="w-10 h-6 rounded-lg" />
+                  <Skeleton className="h-6 w-10 rounded-lg" />
                 ) : (
                   trendsData?.summary?.totalApplications || 0
                 )}
@@ -137,7 +146,7 @@ export function QuickInsightsSection({
           </div>
 
           {/* Active Interviewers */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 dark:bg-muted/20 rounded-lg">
+          <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3 dark:bg-muted/20">
             <div>
               <div className="font-medium">Active Interviewers</div>
               <div className="text-sm text-muted-foreground">
@@ -147,7 +156,7 @@ export function QuickInsightsSection({
             <div className="text-right">
               <div className="text-sm font-medium">
                 {isLoadingInterview ? (
-                  <Skeleton className="w-10 h-6 rounded-lg" />
+                  <Skeleton className="h-6 w-10 rounded-lg" />
                 ) : (
                   interviewData?.summary?.totalInterviewers || 0
                 )}

@@ -10,6 +10,7 @@ function CandidateFunnelSkeleton() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
+          // eslint-disable-next-line react/no-array-index-key
           <div key={i} className="p-4 rounded-lg border bg-muted/30 space-y-2">
             <div className="h-6 w-20 bg-muted animate-pulse rounded" />
             <div className="h-4 w-24 bg-muted animate-pulse rounded" />

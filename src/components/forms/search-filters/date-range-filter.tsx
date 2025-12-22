@@ -30,26 +30,26 @@ export function DateRangeFilter({
     if (!dateValue) return null;
 
     if (dateValue instanceof Date) {
-      return !isNaN(dateValue.getTime()) ? dateValue : null;
+      return !Number.isNaN(dateValue.getTime()) ? dateValue : null;
     }
 
     if (dateValue && typeof dateValue.toDate === 'function') {
       try {
         const date = dateValue.toDate();
-        return !isNaN(date.getTime()) ? date : null;
-      } catch (e) {
+        return !Number.isNaN(date.getTime()) ? date : null;
+      } catch {
         return null;
       }
     }
 
     if (typeof dateValue === 'string') {
       const date = new Date(dateValue);
-      return !isNaN(date.getTime()) ? date : null;
+      return !Number.isNaN(date.getTime()) ? date : null;
     }
 
     if (typeof dateValue === 'number') {
       const date = new Date(dateValue);
-      return !isNaN(date.getTime()) ? date : null;
+      return !Number.isNaN(date.getTime()) ? date : null;
     }
 
     return null;
@@ -63,7 +63,7 @@ export function DateRangeFilter({
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className={`w-full justify-start text-left font-normal h-9 ${
+              className={`h-9 w-full justify-start text-left font-normal ${
                 hasError('createdAfter') || hasError('createdBefore')
                   ? 'border-destructive'
                   : ''
@@ -78,27 +78,28 @@ export function DateRangeFilter({
                   ? new Date(createdBefore)
                   : null;
 
-                const isValidAfter = afterDate && !isNaN(afterDate.getTime());
-                const isValidBefore = beforeDate && !isNaN(beforeDate.getTime());
+                const isValidAfter =
+                  afterDate && !Number.isNaN(afterDate.getTime());
+                const isValidBefore =
+                  beforeDate && !Number.isNaN(beforeDate.getTime());
 
                 if (isValidAfter && isValidBefore) {
                   return (
                     <span>
-                      {format(afterDate, 'MMM dd')}
-                      {' '}
-                      -
-                      {' '}
+                      {format(afterDate, 'MMM dd')} -{' '}
                       {format(beforeDate, 'MMM dd, yyyy')}
                     </span>
                   );
-                } if (isValidAfter) {
+                }
+                if (isValidAfter) {
                   return (
                     <span>
                       From
                       {format(afterDate, 'MMM dd, yyyy')}
                     </span>
                   );
-                } if (isValidBefore) {
+                }
+                if (isValidBefore) {
                   return (
                     <span>
                       Until
@@ -126,12 +127,12 @@ export function DateRangeFilter({
                     const beforeDate = new Date(beforeStr);
 
                     if (
-                      !isNaN(afterDate.getTime())
-                      && !isNaN(beforeDate.getTime())
+                      !Number.isNaN(afterDate.getTime()) &&
+                      !Number.isNaN(beforeDate.getTime())
                     ) {
                       return [afterDate, beforeDate];
                     }
-                  } catch (e) {
+                  } catch {
                     // Invalid dates, return null
                   }
                 }
@@ -172,8 +173,8 @@ export function DateRangeFilter({
         </Popover>
         {(hasError('createdAfter') || hasError('createdBefore')) && (
           <p className="text-xs text-destructive">
-            {getErrorMessage('createdAfter')
-              || getErrorMessage('createdBefore')}
+            {getErrorMessage('createdAfter') ||
+              getErrorMessage('createdBefore')}
           </p>
         )}
       </div>
