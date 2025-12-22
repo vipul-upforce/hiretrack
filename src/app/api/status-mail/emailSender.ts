@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 import { Settings, User } from '@/lib/mongodb';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { Organization } from '@/lib/models/user';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
 import type { StatusUpdateQueueData } from './types';
 import { updateEmailHistoryStatus } from './statusEmailHistory';
@@ -101,18 +101,18 @@ export async function sendQueuedEmail(
       'status-update',
       {
         eventTitle,
-        jobTitle: jobName,
+        jobTitle: jobName || '',
         candidateName,
         newStatus: status,
-        statusMessage: remark,
-        rating,
-        actionBy,
+        statusMessage: remark || '',
+        rating: rating?.toString() || '',
+        actionBy: actionBy || '' || 'N/A',
         nextSteps,
-        prev_status: prevStatus,
-        eventSubTitle,
+        prev_status: prevStatus || 'N/A',
+        eventSubTitle: eventSubTitle || '',
         candidateDetails,
-        organizationName,
-        hrContactInfo,
+        organizationName: organizationName || '',
+        hrContactInfo: hrContactInfo || '',
       },
       organizationId,
     ),

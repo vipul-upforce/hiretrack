@@ -19,9 +19,9 @@ import {
 } from '@/lib/inputValidation';
 import { NotificationService } from '@/lib/notifications/notificationService';
 // import { sendSmartNotification } from "@/lib/unifiedEmailService";
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
 import { Attachment } from '../route';
 

@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
 import { Settings } from '@/lib/mongodb';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { getOrganizationName } from '@/lib/utils/organization';
 import { resolveSentByToObjectId } from '@/lib/utils/userResolution';
 import { generateCalendarLinks } from '@/app/api/event-mail/calendarUtils';
 import { updateEmailHistoryStatus } from '@/app/api/event-mail/emailHistory';
-import { SendQueuedEmailParams, EmailSendResult } from '@/app/api/event-mail/types';
+import {
+  SendQueuedEmailParams,
+  EmailSendResult,
+} from '@/app/api/event-mail/types';
 
 /**
  * Sends the actual email based on queue data
@@ -81,8 +84,12 @@ export async function sendQueuedEmail(
     ),
   ]);
 
-  const { googleCalendarLink, outlookCalendarLink, startDateString, endDateString } =
-    calendarLinks;
+  const {
+    googleCalendarLink,
+    outlookCalendarLink,
+    startDateString,
+    endDateString,
+  } = calendarLinks;
 
   // Fetch email template with organization name
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
@@ -91,15 +98,15 @@ export async function sendQueuedEmail(
       eventTitle,
       interviewDate: startDateString,
       endDate: endDateString,
-      jobTitle: jobName,
-      interviewerName,
-      candidateName,
-      interviewType: status,
+      jobTitle: jobName || '',
+      interviewerName: interviewerName || '',
+      candidateName: candidateName || '',
+      interviewType: status || '',
       meetingLink: googleCalendarLink,
       outlookCalendarLink,
       candidateProfileLink: candidateDetailsPage,
       organizationName,
-      dashboardLink,
+      dashboardLink: dashboardLink || '',
     },
     organizationId,
   );

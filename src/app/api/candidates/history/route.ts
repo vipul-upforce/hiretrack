@@ -19,7 +19,7 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { filterChecklistResponses } from '@/lib/utils/checklistVisibility';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { UserRole } from '@/lib/models/JobLaneConfig';
-import { sendRemarkNotificationWithMentions } from '@/lib/unifiedEmailService';
+import { sendRemarkNotificationWithMentions } from '@/lib/services/unifiedEmailService';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { logger } from '@/lib/logger/logger.server';
 

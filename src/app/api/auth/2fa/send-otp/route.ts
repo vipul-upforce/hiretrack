@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEventEmailWithHistory } from '@/lib/unifiedEmailService';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { sendEventEmailWithHistory } from '@/lib/services/unifiedEmailService';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import connectToDatabase, { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { otpRateLimiter } from '@/lib/rateLimiter';
@@ -77,9 +77,9 @@ async function handleSendOtp(req: NextRequest) {
       'send-otp',
       {
         otpCode: otp,
-        expirationTime: otpExpires,
-        organizationName,
-        userName: user?.name,
+        expirationTime: otpExpires.toISOString(),
+        organizationName: organizationName || '',
+        userName: user?.name || '',
       },
       organizationId,
     );

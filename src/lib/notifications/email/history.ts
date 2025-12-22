@@ -1,5 +1,5 @@
 import connectToDatabase, { EmailHistory } from '@/lib/mongodb';
-import logger from '../logger';
+import logger from '@/lib/logger';
 import type { EmailResult } from './types';
 
 /**

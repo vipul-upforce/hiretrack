@@ -1,5 +1,13 @@
 import { baseApi } from '@/lib/api/baseApi';
 
+interface EmailTemplateResponse {
+  templateId: string;
+  templateName: string;
+  subject: string;
+  html: string;
+  variables?: string[];
+}
+
 export const configApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSMTPConfigs: builder.query({
@@ -75,6 +83,13 @@ export const configApi = baseApi.injectEndpoints({
         body: { email, selectedOrgId },
       }),
     }),
+    getEmailTemplates: builder.query<
+      { templates: Record<string, EmailTemplateResponse> },
+      void
+    >({
+      query: () => ({ url: '/settings/templates', method: 'GET' }),
+      providesTags: ['Settings'],
+    }),
   }),
 });
 
@@ -92,4 +107,5 @@ export const {
   useGetMultipleOrgConfigsQuery,
   useUpdateMultipleOrgMutation,
   useCreateResetTokenMutation,
+  useGetEmailTemplatesQuery,
 } = configApi;

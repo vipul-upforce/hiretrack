@@ -1,8 +1,8 @@
 import { User } from '@/lib/mongodb';
-import { getMappedEmailTemplate } from '@/app/actions/getMappedEmailTemplate';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { sendSmartNotification } from '@/lib/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
 import { getFromEmail, getMailSettings } from '@/lib/utils/mailSettings';
 import { getNextStep } from '@/lib/utils/organization';
@@ -65,18 +65,18 @@ export async function sendQueuedEmail(
     'status-update',
     {
       eventTitle,
-      jobTitle: jobName,
+      jobTitle: jobName || '',
       candidateName,
       newStatus: status,
-      statusMessage: remark,
-      rating,
-      actionBy,
+      statusMessage: remark || '' || 'N/A',
+      rating: rating?.toString() || 'N/A' || 'N/A',
+      actionBy: actionBy || '' || 'N/A',
       nextSteps,
-      prev_status: prevStatus,
+      prev_status: prevStatus || '' || 'N/A',
       eventSubTitle,
       candidateDetails,
-      organizationName,
-      hrContactInfo,
+      organizationName: organizationName || '',
+      hrContactInfo: hrContactInfo || '' || 'N/A',
     },
     organizationId,
   );
@@ -137,7 +137,7 @@ export async function sendQueuedEmail(
         oldStatus: prevStatus || '',
         newStatus: status,
         triggerUserId: sentBy || '',
-        triggerUserName: sentByName || '' ,
+        triggerUserName: sentByName || '',
       });
     }
   } catch (notifyErr) {

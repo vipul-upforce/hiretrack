@@ -1,5 +1,5 @@
 import { NotificationType } from '@/lib/models/notification';
-import { batchCheckNotifications } from '@/lib/services/emailDecisionEngine';
+import { batchCheckNotifications } from '../decision';
 import { getUsersEmailByRole } from '../core/userHelpers';
 import {
   createNotification,

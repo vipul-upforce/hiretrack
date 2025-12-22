@@ -27,12 +27,22 @@ interface AuthResponse {
   organizations?: OneOfMulOrganization[];
 }
 
+export interface UpdateRemarkRequest {
+  id: string;
+  description: string;
+  rating?: number | null;
+  isPrivate?: boolean;
+}
+
+export interface ShareCandidateRequest {
+  candidateId: string;
+  selection: Record<string, boolean>;
+}
+
 export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
-      query: (jobId) =>
-        // debugger
-        `/jobs/${jobId}/candidates`,
+      query: (jobId) => `/jobs/${jobId}/candidates`,
       providesTags: ['Candidate'],
     }),
     fetchCandidateById: builder.query<Candidate, string>({
@@ -161,6 +171,22 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    updateCandidateRemark: builder.mutation<void, UpdateRemarkRequest>({
+      query: (data) => ({
+        url: '/api/candidates/history',
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
+    generateCandidatePdf: builder.mutation<Blob, ShareCandidateRequest>({
+      query: (data) => ({
+        url: '/candidates/share-pdf',
+        method: 'POST',
+        body: data,
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
     evaluateCandidate: builder.mutation<
       {
         message: string;
@@ -229,6 +255,34 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    sendEmailToCandidate: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        emailHistoryId?: string;
+      },
+      {
+        candidateId: string;
+        subject: string;
+        body: string;
+        cc?: string[];
+        bcc?: string[];
+        replyTo?: string;
+        attachments?: Array<{
+          shareId: string;
+          shareUrl: string;
+          fileName: string;
+          fileSize: number;
+        }>;
+      }
+    >({
+      query: (body) => ({
+        url: '/candidates/email',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Candidate', 'EmailHistory'],
+    }),
   }),
 });
 
@@ -255,4 +309,7 @@ export const {
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
+  useUpdateCandidateRemarkMutation,
+  useGenerateCandidatePdfMutation,
+  useSendEmailToCandidateMutation,
 } = candidateApi;

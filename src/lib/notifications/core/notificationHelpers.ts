@@ -1,7 +1,7 @@
 import {
   batchCheckNotifications,
   NotificationDecisionContext,
-} from '@/lib/services/emailDecisionEngine';
+} from '../decision';
 import { NotificationType } from '@/lib/models/notification';
 import { CreateNotificationParams } from '../types';
 import {
