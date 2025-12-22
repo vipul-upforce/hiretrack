@@ -4,7 +4,7 @@ import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
 import { formatDate, formatTime } from '../../../../hooks/dateTimeFormatting';
 import { IEditRemark } from '../../../../schemas/EditRemarkDialog';
-import RenderHistoryEntry from '../../HistoryEntry';
+import { RenderHistoryEntry } from '../../HistoryEntry';
 
 interface HistoryTimelineProps {
   timeLineItems: ICandidateHistory[];

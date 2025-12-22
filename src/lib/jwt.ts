@@ -20,9 +20,9 @@ export const signToken = (payload: any, orgId: string, expiresIn: string = "15m"
 };
 
 // Helper function for access tokens (15 minutes)
-export const signAccessToken = (payload: any, orgId: string) => {
-  return signToken(payload, orgId, '15m'); // 15 minutes
-};
+export const signAccessToken = (payload: any, orgId: string) => 
+   signToken(payload, orgId, '15m') // 15 minutes
+;
 
 
 

@@ -37,7 +37,8 @@
     "strictFunctionTypes": true,
     "noImplicitThis": true,
     "moduleDetection": "force",
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+    "allowImportingTsExtensions": true
   },
   "sourceMap": true,
   "include": [

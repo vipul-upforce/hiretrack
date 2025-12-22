@@ -12,6 +12,7 @@ import {
   Lock,
   Upload,
 } from 'lucide-react';
+import React from 'react';
 
 export const FIELD_TYPES = [
   { value: 'text', label: 'Text Input' },

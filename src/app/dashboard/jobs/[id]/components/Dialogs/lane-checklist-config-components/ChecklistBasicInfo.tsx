@@ -9,27 +9,29 @@ interface ChecklistBasicInfoProps {
   onChange: (updates: Partial<IChecklist>) => void;
 }
 
-export const ChecklistBasicInfo: React.FC<ChecklistBasicInfoProps> = ({
+export function ChecklistBasicInfo({
   checklist,
   onChange,
-}) => (
-  <div className="grid grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="checklist-name">Checklist Name</Label>
-      <Input
-        id="checklist-name"
-        value={checklist.name}
-        onChange={(e) => onChange({ name: e.target.value })}
-        placeholder="Enter checklist name..."
-      />
+}: ChecklistBasicInfoProps) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="checklist-name">Checklist Name</Label>
+        <Input
+          id="checklist-name"
+          value={checklist.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          placeholder="Enter checklist name..."
+        />
+      </div>
+      <div className="mt-6 flex items-center space-x-2">
+        <Switch
+          id="mandatory"
+          checked={checklist.isMandatory}
+          onCheckedChange={(checked) => onChange({ isMandatory: checked })}
+        />
+        <Label htmlFor="mandatory">Mandatory</Label>
+      </div>
     </div>
-    <div className="flex items-center space-x-2 mt-6">
-      <Switch
-        id="mandatory"
-        checked={checklist.isMandatory}
-        onCheckedChange={(checked) => onChange({ isMandatory: checked })}
-      />
-      <Label htmlFor="mandatory">Mandatory</Label>
-    </div>
-  </div>
-);
+  );
+}

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { Schema, Document } from 'mongoose';
 
 // Define user roles for visibility control
 export type UserRole = 'admin' | 'hr' | 'interviewer' | 'candidate' | 'system';
@@ -7,7 +7,20 @@ export type UserRole = 'admin' | 'hr' | 'interviewer' | 'candidate' | 'system';
 export interface IChecklistField {
   id: string;
   label: string;
-  type: 'text' | 'number' | 'email' | 'date' | 'time' | 'datetime' | 'checkbox' | 'radio' | 'select' | 'multiSelect' | 'textarea' | 'password' | 'file';
+  type:
+    | 'text'
+    | 'number'
+    | 'email'
+    | 'date'
+    | 'time'
+    | 'datetime'
+    | 'checkbox'
+    | 'radio'
+    | 'select'
+    | 'multiSelect'
+    | 'textarea'
+    | 'password'
+    | 'file';
   required: boolean;
   placeholder?: string;
   options?: string[]; // For select, radio, multiSelect
@@ -34,7 +47,6 @@ export interface IChecklist {
   createdAt: Date;
   updatedAt: Date;
   visibleInHistory?: string[];
-
 }
 
 // Interface for lane-specific configuration
@@ -61,7 +73,21 @@ const checklistFieldSchema = new Schema<IChecklistField>({
   type: {
     type: String,
     required: true,
-    enum: ['text', 'number', 'email', 'date', 'time', 'datetime', 'checkbox', 'radio', 'select', 'multiSelect', 'textarea', 'password', 'file'],
+    enum: [
+      'text',
+      'number',
+      'email',
+      'date',
+      'time',
+      'datetime',
+      'checkbox',
+      'radio',
+      'select',
+      'multiSelect',
+      'textarea',
+      'password',
+      'file',
+    ],
   },
   required: { type: Boolean, default: false },
   placeholder: String,

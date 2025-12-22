@@ -7,9 +7,10 @@ import { usePathname } from'next/navigation';
 import { ThemeToggle } from'@/components/ui/theme-toggle';
 import { NotificationButton } from'@/components/ui/notifications';
 import OnboardingSidebar from'@/components/onboarding/OnboardingSidebar';
-import SidebarLogo from'./SidebarLogo';
 import type { IUser } from'@/lib/models/user';
 import { ILocalUser } from'@/lib/redux/authSlice';
+import SidebarLogo from'./SidebarLogo';
+
 interface SidebarItem {
   title: string;
   href: string;

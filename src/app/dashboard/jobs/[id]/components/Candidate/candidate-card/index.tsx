@@ -317,7 +317,6 @@ export const CandidateCard = memo(
           newFollowUpDate={newFollowUpDate}
           setNewFollowUpDate={setNewFollowUpDate}
           onDashboard={onDashboard}
-          setOpenRemarksFor={setOpenRemarksFor}
           triggerRef={triggerRef}
         />
       </>

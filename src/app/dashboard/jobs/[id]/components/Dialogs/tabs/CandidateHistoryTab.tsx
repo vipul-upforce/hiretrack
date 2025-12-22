@@ -27,6 +27,7 @@ interface CandidateHistoryTabProps {
   ) => void;
   setEditingRemark: React.Dispatch<React.SetStateAction<IEditRemark | null>>;
   setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  historyLoaded: boolean;
 }
 
 /**
@@ -42,6 +43,7 @@ export function CandidateHistoryTab({
   handleRemarkUpdate,
   setEditingRemark,
   setIsEditRemarkDialogOpen,
+  historyLoaded,
 }: CandidateHistoryTabProps) {
   return (
     <div className="space-y-6">
@@ -52,7 +54,8 @@ export function CandidateHistoryTab({
             Candidate History
           </h3>
           {(() => {
-            if (isHistoryLoading && !isRemarkSubmitting) {
+            // Only show loading skeleton on initial load, not during SSE updates
+            if (isHistoryLoading && !isRemarkSubmitting && !historyLoaded) {
               return (
                 <div className="rounded-lg border border-border bg-card p-6">
                   <HistoryTimelineSkeleton />

@@ -4,15 +4,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ChipInput } from '@/components/ui/chip-input';
-import {
-  Check, Users, History, Eye,
-} from 'lucide-react';
+import { Check, Users, History, Eye } from 'lucide-react';
 import { IChecklistField, UserRole } from '@/lib/models/JobLaneConfig';
 import { FIELD_TYPES, fieldTypeIcons } from './constants';
 
@@ -24,13 +21,13 @@ interface FieldConfigDialogProps {
   isEditMode: boolean;
 }
 
-export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
+export function FieldConfigDialog({
   isOpen,
   onClose,
   onSave,
   field,
   isEditMode,
-}) => {
+}: FieldConfigDialogProps) {
   const [fieldData, setFieldData] = useState<IChecklistField>({
     id: '',
     label: '',
@@ -68,20 +65,20 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
         size="2xl"
-        className="p-0 flex flex-col overflow-hidden"
+        className="flex flex-col overflow-hidden p-0"
         aria-describedby="field-config-dialog-description"
       >
         <DialogHeader className="px-6 py-4">
           <DialogTitle>{isEditMode ? 'Edit Field' : 'Add Field'}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-6 py-4 pb-0">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 pb-0">
           <div className="space-y-8 pb-6">
             {/* Field Label */}
             <div>
               <Label
                 htmlFor="label"
-                className="text-lg font-medium flex items-center gap-1 pb-3"
+                className="flex items-center gap-1 pb-3 text-lg font-medium"
               >
                 Field Label
                 <span className="text-red-500">*</span>
@@ -89,8 +86,10 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               <Input
                 id="label"
                 value={fieldData.label}
-                onChange={(e) => setFieldData({ ...fieldData, label: e.target.value })}
-                className="text-lg py-3 px-4"
+                onChange={(e) =>
+                  setFieldData({ ...fieldData, label: e.target.value })
+                }
+                className="px-4 py-3 text-lg"
                 placeholder="Enter field label..."
               />
             </div>
@@ -100,32 +99,39 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               <Label htmlFor="fieldType" className="text-lg font-medium">
                 Field Type
               </Label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
+              <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                 {FIELD_TYPES.map((type) => {
                   const IconComponent = fieldTypeIcons[type.value];
                   const isSelected = fieldData.type === type.value;
                   return (
                     <div
+                      tabIndex={0}
+                      role="button"
                       key={type.value}
-                      className={`relative p-4 rounded-lg cursor-pointer border-2 transition-all duration-200 ${
+                      className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 ${
                         isSelected
                           ? 'shadow-md'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                       }`}
                       style={
                         isSelected
                           ? {
-                            borderColor: 'var(--portal-primary, #6366f1)',
-                            backgroundColor:
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
                                 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
-                          }
+                            }
                           : {}
                       }
-                      onClick={() => setFieldData({ ...fieldData, type: type.value as any })}
+                      onClick={() =>
+                        setFieldData({
+                          ...fieldData,
+                          type: type.value as IChecklistField['type'],
+                        })
+                      }
                     >
                       {isSelected && (
                         <div
-                          className="absolute -top-2 -right-2 text-white rounded-full p-1"
+                          className="absolute -right-2 -top-2 rounded-full p-1 text-white"
                           style={{
                             backgroundColor: 'var(--portal-primary, #6366f1)',
                           }}
@@ -133,7 +139,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                           <Check className="h-3 w-3" />
                         </div>
                       )}
-                      <div className="flex flex-col items-center text-center gap-2">
+                      <div className="flex flex-col items-center gap-2 text-center">
                         <IconComponent
                           className={`h-6 w-6 ${
                             isSelected
@@ -158,30 +164,31 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
             </div>
 
             {/* Field Options */}
-            {(fieldData.type === 'select'
-              || fieldData.type === 'multiSelect'
-              || fieldData.type === 'radio'
-              || fieldData.type === 'checkbox') && (
+            {(fieldData.type === 'select' ||
+              fieldData.type === 'multiSelect' ||
+              fieldData.type === 'radio' ||
+              fieldData.type === 'checkbox') && (
               <div>
                 <Label
                   htmlFor="options"
-                  className="text-lg font-medium block pb-3"
+                  className="block pb-3 text-lg font-medium"
                 >
                   Options
-                  <span className="text-red-500">*</span>
-                  {' '}
+                  <span className="text-red-500">*</span>{' '}
                   <span className="text-sm text-gray-500 dark:text-gray-400">
                     (Hit Enter to Add)
                   </span>
                 </Label>
                 <ChipInput
                   value={fieldData.options || []}
-                  onChange={(newOptions) => setFieldData({
-                    ...fieldData,
-                    options: newOptions
-                      .map((option) => option.trim())
-                      .filter((option) => option !== ''),
-                  })}
+                  onChange={(newOptions) =>
+                    setFieldData({
+                      ...fieldData,
+                      options: newOptions
+                        .map((option) => option.trim())
+                        .filter((option) => option !== ''),
+                    })
+                  }
                   placeholder="Type an option and press Enter..."
                   suggestions={[]}
                 />
@@ -195,15 +202,17 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
               <div>
                 <Label
                   htmlFor="placeholder"
-                  className="text-lg font-medium block pb-3"
+                  className="block pb-3 text-lg font-medium"
                 >
                   Placeholder
                 </Label>
                 <Input
                   id="placeholder"
                   value={fieldData.placeholder || ''}
-                  onChange={(e) => setFieldData({ ...fieldData, placeholder: e.target.value })}
-                  className="text-lg py-3 px-4"
+                  onChange={(e) =>
+                    setFieldData({ ...fieldData, placeholder: e.target.value })
+                  }
+                  className="px-4 py-3 text-lg"
                   placeholder="Enter placeholder text..."
                 />
               </div>
@@ -211,25 +220,29 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
 
             {/* Field Options */}
             <div>
-              <Label className="text-lg font-medium mb-4 block">
+              <Label className="mb-4 block text-lg font-medium">
                 Field Options
               </Label>
               <div className="grid grid-cols-1 gap-4">
                 <div
-                  className={`p-4 rounded-lg cursor-pointer transition-all duration-200 ${
+                  tabIndex={0}
+                  role="button"
+                  className={`cursor-pointer rounded-lg p-4 transition-all duration-200 ${
                     fieldData.required
                       ? 'bg-white dark:bg-black'
-                      : 'bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700'
+                      : 'bg-white hover:bg-gray-100 dark:bg-black dark:hover:bg-gray-700'
                   }`}
-                  onClick={() => setFieldData({
-                    ...fieldData,
-                    required: !fieldData.required,
-                  })}
+                  onClick={() =>
+                    setFieldData({
+                      ...fieldData,
+                      required: !fieldData.required,
+                    })
+                  }
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
                           fieldData.required
                             ? ''
                             : 'border-gray-300 dark:border-gray-600'
@@ -237,10 +250,10 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                         style={
                           fieldData.required
                             ? {
-                              backgroundColor:
+                                backgroundColor:
                                   'var(--portal-primary, #6366f1)',
-                              borderColor: 'var(--portal-primary, #6366f1)',
-                            }
+                                borderColor: 'var(--portal-primary, #6366f1)',
+                              }
                             : {}
                         }
                       >
@@ -264,13 +277,13 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
 
             {/* Role-based Visibility Controls */}
             <div>
-              <Label className="text-lg font-medium mb-4 block">
+              <Label className="mb-4 block text-lg font-medium">
                 Field Visibility
               </Label>
               <div className="grid grid-cols-1 gap-6">
                 {/* Visible on Form */}
                 <div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="mb-3 flex items-center gap-2">
                     <Eye className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                     <Label className="text-sm font-medium">
                       Visible on Form to:
@@ -281,18 +294,21 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                       {(['admin', 'hr', 'interviewer'] as UserRole[]).map(
                         (role) => (
                           <div
+                            tabIndex={0}
+                            role="button"
                             key={role}
-                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            className={`cursor-pointer rounded-lg p-3 transition-all duration-200 ${
                               fieldData.visibleOnForm.includes(role)
                                 ? 'bg-white dark:bg-black'
-                                : 'bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700'
+                                : 'bg-white hover:bg-gray-100 dark:bg-black dark:hover:bg-gray-700'
                             }`}
                             onClick={() => {
-                              const isSelected = fieldData.visibleOnForm.includes(role);
+                              const isSelected =
+                                fieldData.visibleOnForm.includes(role);
                               const newVisibleOnForm = isSelected
                                 ? fieldData.visibleOnForm.filter(
-                                  (r) => r !== role,
-                                )
+                                    (r) => r !== role,
+                                  )
                                 : [...fieldData.visibleOnForm, role];
                               setFieldData({
                                 ...fieldData,
@@ -303,7 +319,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                  className={`flex h-4 w-4 items-center justify-center rounded border-2 ${
                                     fieldData.visibleOnForm.includes(role)
                                       ? ''
                                       : 'border-gray-300 dark:border-gray-600'
@@ -311,11 +327,11 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                                   style={
                                     fieldData.visibleOnForm.includes(role)
                                       ? {
-                                        backgroundColor:
+                                          backgroundColor:
                                             'var(--portal-primary, #3b82f6)',
-                                        borderColor:
+                                          borderColor:
                                             'var(--portal-primary, #3b82f6)',
-                                      }
+                                        }
                                       : {}
                                   }
                                 >
@@ -324,7 +340,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                                   )}
                                 </div>
                                 <div>
-                                  <div className="font-medium text-sm capitalize text-gray-700 dark:text-gray-300">
+                                  <div className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
                                     {role}
                                   </div>
                                 </div>
@@ -341,7 +357,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                 {/* Visible in History */}
                 {fieldData.visibleInHistory && (
                   <div>
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="mb-3 flex items-center gap-2">
                       <History className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                       <Label className="text-sm font-medium">
                         Visible in History to:
@@ -352,17 +368,20 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                         (role) => (
                           <div
                             key={role}
-                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            tabIndex={0}
+                            role="button"
+                            className={`cursor-pointer rounded-lg p-3 transition-all duration-200 ${
                               fieldData.visibleInHistory.includes(role)
                                 ? 'bg-white dark:bg-black'
-                                : 'bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-700'
+                                : 'bg-white hover:bg-gray-100 dark:bg-black dark:hover:bg-gray-700'
                             }`}
                             onClick={() => {
-                              const isSelected = fieldData.visibleInHistory.includes(role);
+                              const isSelected =
+                                fieldData.visibleInHistory.includes(role);
                               const newVisibleInHistory = isSelected
                                 ? fieldData.visibleInHistory.filter(
-                                  (r) => r !== role,
-                                )
+                                    (r) => r !== role,
+                                  )
                                 : [...fieldData.visibleInHistory, role];
                               setFieldData({
                                 ...fieldData,
@@ -373,7 +392,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                  className={`flex h-4 w-4 items-center justify-center rounded border-2 ${
                                     fieldData.visibleInHistory.includes(role)
                                       ? ''
                                       : 'border-gray-300 dark:border-gray-600'
@@ -381,11 +400,11 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                                   style={
                                     fieldData.visibleInHistory.includes(role)
                                       ? {
-                                        backgroundColor:
+                                          backgroundColor:
                                             'var(--portal-primary, #8b5cf6)',
-                                        borderColor:
+                                          borderColor:
                                             'var(--portal-primary, #8b5cf6)',
-                                      }
+                                        }
                                       : {}
                                   }
                                 >
@@ -396,7 +415,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
                                   )}
                                 </div>
                                 <div>
-                                  <div className="font-medium text-sm capitalize text-gray-700 dark:text-gray-300">
+                                  <div className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
                                     {role}
                                   </div>
                                 </div>
@@ -414,7 +433,7 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-background border-t border-gray-200 dark:border-gray-600 px-6 py-4">
+        <div className="sticky bottom-0 border-t border-gray-200 bg-background px-6 py-4 dark:border-gray-600">
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={onClose}>
               Cancel
@@ -422,12 +441,12 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
             <Button
               onClick={handleSave}
               disabled={
-                !fieldData.label.trim()
-                || ((fieldData.type === 'select'
-                  || fieldData.type === 'multiSelect'
-                  || fieldData.type === 'radio'
-                  || fieldData.type === 'checkbox')
-                  && fieldData.options?.length == 0)
+                !fieldData.label.trim() ||
+                ((fieldData.type === 'select' ||
+                  fieldData.type === 'multiSelect' ||
+                  fieldData.type === 'radio' ||
+                  fieldData.type === 'checkbox') &&
+                  fieldData.options?.length === 0)
               }
               variant="primary"
               size="lg"
@@ -439,4 +458,4 @@ export const FieldConfigDialog: React.FC<FieldConfigDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}

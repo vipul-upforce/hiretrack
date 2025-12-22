@@ -1,9 +1,11 @@
 import React from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
-  Card, CardHeader, CardTitle, CardContent, CardDescription,
-} from '@/components/ui/card';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
 import { IChecklist } from '@/lib/models/JobLaneConfig';
@@ -14,11 +16,11 @@ interface TemplateSelectorProps {
   currentChecklist?: IChecklist;
 }
 
-export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
+export function TemplateSelector({
   filteredTemplates,
   onLoadFromTemplate,
   currentChecklist,
-}) => {
+}: TemplateSelectorProps) {
   if (filteredTemplates.length === 0) return null;
 
   return (
@@ -30,7 +32,13 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         <div className="flex gap-2">
           <Select onValueChange={onLoadFromTemplate}>
             <SelectTrigger>
-              <SelectValue placeholder={currentChecklist ? currentChecklist.name : 'No template selected'} />
+              <SelectValue
+                placeholder={
+                  currentChecklist
+                    ? currentChecklist.name
+                    : 'No template selected'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {filteredTemplates.map((template) => (
@@ -47,4 +55,4 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       </CardContent>
     </Card>
   );
-};
+}

@@ -1,10 +1,11 @@
 import logger from '@/lib/logger';
 import { verifyAndDecrypCaptcha, verifyAndDecryptSSE } from '@/lib/auth';
 import { Candidate } from '@/types/candidate';
-import { CustomCalendarEvent } from '@/app/dashboard/calendar/types';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
+import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
+
 import { useNotificationSSE } from './useNotificationSSE';
 
 export async function getDecodedSSE(encodedData: string) {

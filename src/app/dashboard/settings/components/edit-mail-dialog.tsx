@@ -14,10 +14,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Form, Formik } from 'formik';
 import {
-  useGetMailTemplatesQuery,
-  useUpdateMailTemplatesMutation,
-} from '@/lib/features/settings/settingsApi';
-import {
   Data,
   editorOptions,
  defaultTemplatesAsObject as defaultTemplates } from "@/app/dashboard/settings/templates/constants";
@@ -29,6 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  useGetMailTemplatesQuery,
+  useUpdateMailTemplatesMutation,
+} from '@/lib/features/settings/settingsApi';
 import type { IEmailTemplate, IEmailTemplatesConfig } from "./types";
 
 

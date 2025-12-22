@@ -19,22 +19,23 @@ import { DatePicker } from '@/components/ui/date-picker';
 import TimePicker from '@/components/ui/time-picker';
 import dayjs from 'dayjs';
 import { toast } from '@/hooks/use-toast';
+import { FileData } from '@/Custom_Fields/hooks/useCustomForm';
 
 interface ChecklistFieldRendererProps {
   field: IChecklistField;
-  value: any;
-  onChange: (value: any) => void;
+  value: string | string[] | number | null;
+  onChange: (value: string | string[] | number | null) => void;
   error?: string;
   touched?: boolean;
 }
 
-export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
+export function ChecklistFieldRenderer({
   field,
   value,
   onChange,
   error,
   touched,
-}) => {
+}: ChecklistFieldRendererProps) {
   const fieldId = `checklist-field-${field.id}`;
 
   const renderField = () => {
@@ -83,20 +84,22 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
           const selectedValues = Array.isArray(value) ? value : [];
           return (
             <div className="space-y-2">
-              {field.options.map((option, idx) => (
-                <div key={idx} className="flex items-center space-x-2">
+              {field.options.map((option) => (
+                <div key={option} className="flex items-center space-x-2">
                   <Checkbox
-                    id={`${fieldId}-${idx}`}
+                    id={`${fieldId}-${option}`}
                     checked={selectedValues.includes(option)}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         onChange([...selectedValues, option]);
                       } else {
-                        onChange(selectedValues.filter((v: any) => v !== option));
+                        onChange(
+                          selectedValues.filter((v: string) => v !== option),
+                        );
                       }
                     }}
                   />
-                  <Label htmlFor={`${fieldId}-${idx}`}>{option}</Label>
+                  <Label htmlFor={`${fieldId}-${option}`}>{option}</Label>
                 </div>
               ))}
             </div>
@@ -108,7 +111,9 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
             <Checkbox
               id={fieldId}
               checked={Boolean(value)}
-              onCheckedChange={onChange}
+              onCheckedChange={(checked) =>
+                onChange(checked ? field.label : null)
+              }
             />
             <Label htmlFor={fieldId}>{field.label}</Label>
           </div>
@@ -116,11 +121,11 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
 
       case 'radio':
         return (
-          <RadioGroup value={value || ''} onValueChange={onChange}>
-            {field.options?.map((option, idx) => (
-              <div key={idx} className="flex items-center space-x-2">
-                <RadioGroupItem value={option} id={`${fieldId}-${idx}`} />
-                <Label htmlFor={`${fieldId}-${idx}`}>{option}</Label>
+          <RadioGroup value={String(value) || ''} onValueChange={onChange}>
+            {field.options?.map((option) => (
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${fieldId}-${option}`} />
+                <Label htmlFor={`${fieldId}-${option}`}>{option}</Label>
               </div>
             ))}
           </RadioGroup>
@@ -128,15 +133,15 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
 
       case 'select':
         return (
-          <Select value={value || ''} onValueChange={onChange}>
+          <Select value={String(value) || ''} onValueChange={onChange}>
             <SelectTrigger>
               <SelectValue
                 placeholder={field.placeholder || 'Select an option'}
               />
             </SelectTrigger>
             <SelectContent>
-              {field.options?.map((option, idx) => (
-                <SelectItem key={idx} value={option}>
+              {field.options?.map((option) => (
+                <SelectItem key={option} value={option}>
                   {option}
                 </SelectItem>
               ))}
@@ -144,41 +149,39 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
           </Select>
         );
 
-      case 'multiSelect':
-        const selectedValues = Array.isArray(value) ? value : [];
+      case 'multiSelect': {
+        const selectedValues: string[] = Array.isArray(value) ? value : [];
         return (
           <ChipInput
             value={selectedValues}
-            onChange={(value) => {
-              onChange(value);
+            onChange={(newValue: string[]) => {
+              onChange(newValue);
             }}
             placeholder={field.placeholder || 'Select options'}
             suggestions={field.options || []}
-            onSuggestionClick={(suggestion) => {
-              const updatedValues = [
-                ...(selectedValues || []),
-                suggestion,
-              ].filter(
+            onSuggestionClick={(suggestion: string) => {
+              const updatedValues = [...selectedValues, suggestion].filter(
                 (v, index, self) => v && self.indexOf(v) === index, // Remove duplicates
               );
               onChange(updatedValues);
             }}
           />
         );
+      }
 
       case 'date':
         return (
           <DatePicker
-            value={value ? new Date(value) : undefined}
+            value={value ? new Date(String(value)) : undefined}
             onChange={(date) => {
               // DatePicker may return different object types, handle multiple cases
               let isoString = '';
               if (date) {
                 if (date instanceof Date) {
                   isoString = date.toISOString();
-                } else if (typeof (date as any).toISOString === 'function') {
+                } else if (typeof (date as Date).toISOString === 'function') {
                   // Handle other date-like objects with toISOString method
-                  isoString = (date as any).toISOString();
+                  isoString = (date as Date).toISOString();
                 } else if (typeof date === 'string') {
                   // Handle string dates
                   try {
@@ -189,7 +192,7 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
                 } else if (date && typeof date === 'object') {
                   // Handle other date-like objects
                   try {
-                    isoString = new Date(date as any).toISOString();
+                    isoString = new Date(date as Date).toISOString();
                   } catch {
                     isoString = '';
                   }
@@ -208,7 +211,7 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
         return (
           <TimePicker
             name={fieldId}
-            value={value || ''}
+            value={String(value) || ''}
             onChange={(time) => onChange(time)}
             onBlur={() => {}}
           />
@@ -217,16 +220,16 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
       case 'datetime':
         return (
           <DateTimePicker
-            value={value ? dayjs(value) : null}
+            value={value ? dayjs(String(value)) : null}
             onChange={(date) => {
               // DateTimePicker may return Dayjs or Date object, handle both
               let isoString = '';
               if (date) {
                 if (date instanceof Date) {
                   isoString = date.toISOString();
-                } else if (typeof (date as any).toISOString === 'function') {
+                } else if (typeof date.toISOString === 'function') {
                   // Dayjs object has toISOString method
-                  isoString = (date as any).toISOString();
+                  isoString = date.toISOString();
                 }
               }
               onChange(isoString);
@@ -246,8 +249,15 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
           />
         );
 
-      case 'file':
-        const fileValue = Array.isArray(value) ? value : [];
+      case 'file': {
+        const fileValue: FileData[] = Array.isArray(value)
+          ? value.map((file) => ({
+              name: file,
+              type: '',
+              size: 0,
+              base64: '',
+            }))
+          : [];
         return (
           <FileDropZone
             value={fileValue}
@@ -284,8 +294,8 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
                 );
 
                 const validFiles = fileData.filter(Boolean);
-                onChange(validFiles);
-              } catch (error) {
+                onChange(validFiles.map((file) => file?.name || ''));
+              } catch {
                 toast({
                   title: 'Upload failed',
                   description: 'Failed to process files',
@@ -293,7 +303,7 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
                 });
               }
             }}
-            existingFiles={fileValue.map((file: any) => ({
+            existingFiles={fileValue.map((file: FileData) => ({
               name: file.name,
               type: file.type,
               size: file.size,
@@ -303,7 +313,7 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
             maxSize={50 * 1024 * 1024} // 50MB
           />
         );
-
+      }
       default:
         return (
           <Input
@@ -320,10 +330,10 @@ export const ChecklistFieldRenderer: React.FC<ChecklistFieldRendererProps> = ({
     <div className="space-y-2">
       <Label htmlFor={fieldId} className="text-sm font-medium">
         {field.label}
-        {field.required && <span className="text-red-500 ml-1">*</span>}
+        {field.required && <span className="ml-1 text-red-500">*</span>}
       </Label>
       {renderField()}
-      {touched && error && <p className="text-sm text-red-500 mt-1">{error}</p>}
+      {touched && error && <p className="mt-1 text-sm text-red-500">{error}</p>}
     </div>
   );
-};
+}

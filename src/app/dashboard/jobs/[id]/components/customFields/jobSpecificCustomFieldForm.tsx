@@ -1,4 +1,5 @@
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
 import { useContext, useEffect, useMemo } from 'react';
 import JobSpecificCustomFieldFormWrapper from './JobSpecificCustomFIeldFormWrapper';
 
@@ -14,16 +15,11 @@ export default function JobSpecificCustomFieldForm({
   onClose: () => void;
   jobId: string;
   formId: string;
-  initialValue?: any;
+  initialValue?: CustomField;
   isEditMode: boolean;
 }) {
   const context = useContext(CustomFieldsContext);
-  const {
-    handleAddCustomField,
-    handleEditCustomField,
-    setSelectedFormId,
-    customFields,
-  } = context;
+  const { setSelectedFormId, customFields } = context;
 
   // Set up the form context for job-specific fields
   useEffect(() => {
@@ -63,10 +59,9 @@ export default function JobSpecificCustomFieldForm({
     <JobSpecificCustomFieldFormWrapper
       isOpen={isOpen}
       handleClose={onClose}
-      initialValue={jobSpecificInitialValue}
+      initialValue={jobSpecificInitialValue as CustomField}
       isEditMode={isEditMode}
       jobId={jobId}
-      formId={formId}
     />
   );
 }

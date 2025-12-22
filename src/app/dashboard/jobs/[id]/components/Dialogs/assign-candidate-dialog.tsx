@@ -12,13 +12,17 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { useFetchInterviewersQuery } from '@/lib/features/user/userApi';
+import {
+  Interviewer,
+  useFetchInterviewersQuery,
+} from '@/lib/features/user/userApi';
 import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Loader2 } from 'lucide-react';
 import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
 import { useAppSelector } from '@/lib/redux/hooks';
+import logger from '@/lib/logger';
 import {
   validationSchema,
   FormValues,
@@ -75,7 +79,7 @@ export function AssignCandidateDialog({
     }
   }, [isOpen, refetchInterviewers]);
 
-  const getDefaultGuests = (selectedInterviewer) => {
+  const getDefaultGuests = (selectedInterviewer: Interviewer) => {
     const defaultGuests = [];
     if (selectedInterviewer?.email)
       defaultGuests.push(selectedInterviewer.email);
@@ -105,21 +109,6 @@ export function AssignCandidateDialog({
     additionalGuests: [],
   };
 
-  function getOnAltEnterSubmit(
-    values: FormValues,
-    formikHelpers: FormikHelpers<FormValues>,
-    isSubmitting: boolean,
-  ) {
-    return (fieldValue: string) => (e: React.KeyboardEvent) => {
-      if (e.altKey && e.key === 'Enter') {
-        e.preventDefault();
-        if (fieldValue?.trim() && !isSubmitting) {
-          handleFormSubmit(values, formikHelpers);
-        }
-      }
-    };
-  }
-
   const handleFormSubmit = async (
     values: FormValues,
     formikHelpers: FormikHelpers<FormValues>,
@@ -147,7 +136,7 @@ export function AssignCandidateDialog({
         ];
 
         const processedMeetingAttachments = await Promise.all(
-          (values.meetingAttachments || []).map(async (file: any) => {
+          (values.meetingAttachments || []).map(async (file) => {
             if (file instanceof File) {
               const reader = new FileReader();
               const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -176,7 +165,7 @@ export function AssignCandidateDialog({
 
         const requestBody = isUpdating
           ? {
-              eventId: candidate.assignment?.googleMeet.eventId,
+              eventId: candidate.assignment?.googleMeet?.eventId,
               candidateId: candidate._id,
               scheduledTime: values.time?.toISOString(),
               duration: values.meetDuration || 30,
@@ -226,7 +215,7 @@ export function AssignCandidateDialog({
           attachments: [...values.attachments, ...processedMeetingAttachments],
         };
 
-        await handleSubmit(updatedValues, formikHelpers, user, interviewers);
+        await handleSubmit(updatedValues, formikHelpers, interviewers);
 
         if (refetch) {
           await refetch();
@@ -250,9 +239,24 @@ export function AssignCandidateDialog({
         formikHelpers.setSubmitting(false);
       }
     } else {
-      await handleSubmit(values, formikHelpers, user, interviewers);
+      await handleSubmit(values, formikHelpers, interviewers);
     }
   };
+
+  function getOnAltEnterSubmit(
+    values: FormValues,
+    formikHelpers: FormikHelpers<FormValues>,
+    isSubmitting: boolean,
+  ) {
+    return (fieldValue: string) => (e: React.KeyboardEvent) => {
+      if (e.altKey && e.key === 'Enter') {
+        e.preventDefault();
+        if (fieldValue?.trim() && !isSubmitting) {
+          handleFormSubmit(values, formikHelpers);
+        }
+      }
+    };
+  }
 
   return (
     <>
@@ -290,13 +294,10 @@ export function AssignCandidateDialog({
 
                       <GoogleMeetIntegration
                         candidate={candidate}
-                        user={user}
                         interviewers={interviewers}
                         googleCalendarData={googleCalendarData}
                         setShowCancelMeetDialog={setShowCancelMeetDialog}
                         getOnAltEnterSubmit={getOnAltEnterSubmit}
-                        isSubmitting={isSubmitting}
-                        formikProps={formikProps}
                       />
 
                       <AssignmentDetailsSection
@@ -354,7 +355,7 @@ export function AssignCandidateDialog({
             setIsOpen={setConfirmUnassignOpen}
             title="Confirm Mark As Done"
             message="Are you sure you want to Mark As Done this interviewer?"
-            onConfirm={() => confirmUnassign(user)}
+            onConfirm={confirmUnassign}
             onCancel={() => setConfirmUnassignOpen(false)}
             className="sm:max-w-[300px]"
           />

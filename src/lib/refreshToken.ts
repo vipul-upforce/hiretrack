@@ -220,8 +220,7 @@ export async function clearRefreshToken(
         $set: { refreshTokens: [] },
       });
     }
-  } else {
-    if (tokenHash) {
+  } else if (tokenHash) {
       // Clear specific token
       await User.findByIdAndUpdate(userId, {
         $pull: { refreshTokens: { token: tokenHash } },
@@ -230,7 +229,6 @@ export async function clearRefreshToken(
       // Clear all tokens
       await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
     }
-  }
 }
 
 /**
