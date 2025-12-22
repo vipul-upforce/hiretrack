@@ -16,9 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { UserPlus, Home, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import withAuthGuard from '@/components/withAuthGuard';
@@ -32,9 +30,7 @@ import { UserTableRow } from './components/User-Table-Row';
 function UsersPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const {
-    data: users = [], isLoading, error, refetch,
-  } = useGetUsersQuery();
+  const { data: users = [], isLoading, error, refetch } = useGetUsersQuery();
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [deleteUser] = useDeleteUserMutation();
   const [isOpen, setIsOpen] = useState(false);
@@ -74,16 +70,16 @@ function UsersPage() {
       });
     } catch (error: unknown) {
       toast({
-        description:
-          `Error: ${
-            typeof error === 'object'
-          && error !== null
-          && 'data' in error
-          && typeof error.data === 'object'
-          && error.data
-          && 'error' in error.data
-              ? (error.data as { error: string }).error
-              : 'Unknown error'}`,
+        description: `Error: ${
+          typeof error === 'object' &&
+          error !== null &&
+          'data' in error &&
+          typeof error.data === 'object' &&
+          error.data &&
+          'error' in error.data
+            ? (error.data as { error: string }).error
+            : 'Unknown error'
+        }`,
         title: 'Failed to delete user',
         variant: 'destructive',
       });
@@ -133,7 +129,7 @@ function UsersPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex h-96 items-center justify-center">
         <p className="text-red-500">Error loading users</p>
       </div>
     );
@@ -143,8 +139,8 @@ function UsersPage() {
     return (
       <div className="w-[100%] py-6">
         <Card>
-          <CardContent className="flex flex-col items-center justify-center h-96 space-y-4">
-            <p className="text-muted-foreground text-lg">No users found</p>
+          <CardContent className="flex h-96 flex-col items-center justify-center space-y-4">
+            <p className="text-lg text-muted-foreground">No users found</p>
             <Button onClick={() => router.push('/auth/signup')}>
               Create First User
             </Button>
@@ -155,40 +151,40 @@ function UsersPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       {/* Header section with improved design and breadcrumbs */}
-      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             {/* Left Section - Breadcrumbs */}
             <div className="flex items-center text-sm text-muted-foreground">
               <Link
                 href="/dashboard"
-                className="flex items-center hover:text-foreground transition-colors"
+                className="flex items-center transition-colors hover:text-foreground"
               >
-                <Home className="h-4 w-4 mr-2" />
+                <Home className="mr-2 h-4 w-4" />
                 Dashboard
               </Link>
-              <ChevronRight className="h-4 w-4 mx-2" />
+              <ChevronRight className="mx-2 h-4 w-4" />
               <Link
                 href="/dashboard/settings"
-                className="hover:text-foreground transition-colors"
+                className="transition-colors hover:text-foreground"
               >
                 Settings
               </Link>
-              <ChevronRight className="h-4 w-4 mx-2" />
-              <span className="text-foreground font-semibold">
+              <ChevronRight className="mx-2 h-4 w-4" />
+              <span className="font-semibold text-foreground">
                 User Management
               </span>
             </div>
 
             {/* Right Section - Create User Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
               <Button
                 variant="primary"
                 onClick={() => router.push('/auth/signup')}
               >
-                <UserPlus className="h-4 w-4 mr-2" />
+                <UserPlus className="mr-2 h-4 w-4" />
                 Create User
               </Button>
             </div>
@@ -196,7 +192,7 @@ function UsersPage() {
         </Card>
       </div>
 
-      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>All Users</CardTitle>

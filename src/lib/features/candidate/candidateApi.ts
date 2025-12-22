@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { baseApi } from '@/lib/api/baseApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -25,6 +26,29 @@ interface AuthResponse {
   user: ICandidate;
   _id?: string;
   organizations?: OneOfMulOrganization[];
+}
+
+export interface EmailAttachment {
+  fileName: string;
+  fileSize: number;
+  shareId: string;
+  shareUrl: string;
+}
+
+export interface SendEmailToCandidateRequest {
+  candidateId: string;
+  subject: string;
+  body: string;
+  cc?: string[];
+  bcc?: string[];
+  replyTo?: string;
+  attachments?: EmailAttachment[];
+}
+
+export interface SendEmailToCandidateResponse {
+  success: boolean;
+  message: string;
+  emailHistoryId?: string;
 }
 
 export interface UpdateRemarkRequest {
@@ -173,7 +197,7 @@ export const candidateApi = baseApi.injectEndpoints({
     }),
     updateCandidateRemark: builder.mutation<void, UpdateRemarkRequest>({
       query: (data) => ({
-        url: '/api/candidates/history',
+        url: '/candidates/history',
         method: 'PATCH',
         body: data,
       }),
@@ -256,32 +280,18 @@ export const candidateApi = baseApi.injectEndpoints({
       invalidatesTags: ['Candidate'],
     }),
     sendEmailToCandidate: builder.mutation<
-      {
-        success: boolean;
-        message: string;
-        emailHistoryId?: string;
-      },
-      {
-        candidateId: string;
-        subject: string;
-        body: string;
-        cc?: string[];
-        bcc?: string[];
-        replyTo?: string;
-        attachments?: Array<{
-          shareId: string;
-          shareUrl: string;
-          fileName: string;
-          fileSize: number;
-        }>;
-      }
+      SendEmailToCandidateResponse,
+      SendEmailToCandidateRequest
     >({
-      query: (body) => ({
+      query: (emailData) => ({
         url: '/candidates/email',
         method: 'POST',
-        body,
+        body: emailData,
       }),
-      invalidatesTags: ['Candidate', 'EmailHistory'],
+      invalidatesTags: (_result, _error, { candidateId }) => [
+        { type: 'Candidate', id: candidateId },
+        'EmailHistory',
+      ],
     }),
   }),
 });
@@ -310,6 +320,6 @@ export const {
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
   useUpdateCandidateRemarkMutation,
-  useGenerateCandidatePdfMutation,
   useSendEmailToCandidateMutation,
+  useGenerateCandidatePdfMutation,
 } = candidateApi;

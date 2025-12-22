@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,15 +11,16 @@ import {
 import { Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTheme } from '@/components/theme-provider';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store';
-
-// RTK Query hooks
 import { useGetEmailTemplatesQuery } from '@/lib/features/settings/configApi';
-import { useUploadFilesMutation } from '@/lib/features/files/fileSharesApi';
 import { useSendEmailToCandidateMutation } from '@/lib/features/candidate/candidateApi';
+import { useUploadFilesMutation } from '@/lib/features/files/fileSharesApi';
 
 // Import sub-components
+import {
+  DEFAULT_TEMPLATE_IDS,
+  DEFAULT_VARIABLES,
+} from '@/app/dashboard/settings/templates/constants';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { EmailTemplateSelector } from './email-candidate-components/EmailTemplateSelector';
 import { EmailEditor } from './email-candidate-components/EmailEditor';
 import { EmailRecipients } from './email-candidate-components/EmailRecipients';
@@ -55,26 +56,26 @@ export function EmailCandidateDialog({
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const { user } = useSelector((state: RootState) => state.auth || {});
-
-  // RTK Query hooks
-  const { data: templatesData, isLoading: templateLoading } =
-    useGetEmailTemplatesQuery(undefined, { skip: !isOpen });
-  const [uploadFiles, { isLoading: isUploading }] = useUploadFilesMutation();
-  const [sendEmail, { isLoading: isSendingEmail }] =
-    useSendEmailToCandidateMutation();
-
-  // Template management
   const [selectedTemplate, setSelectedTemplate] = useState<string>('none');
   const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
 
-  // Derived state
-  const sending = isUploading || isSendingEmail;
+  // Redux state
+  const { user } = useAppSelector((state) => state.auth || {});
+
+  // RTK Query hooks
+  const {
+    data: templatesData,
+    isLoading: templateLoading,
+    error: templatesError,
+  } = useGetEmailTemplatesQuery(undefined, { skip: !isOpen });
+
+  const [sendEmail, { isLoading: sending }] = useSendEmailToCandidateMutation();
+  const [uploadFiles] = useUploadFilesMutation();
+
+  // Derived state from user
   const userEmail = user?.email || '';
   const userName = user?.name || userEmail;
-  const organizationName =
-    (user?.organizationInfo as { name?: string } | undefined)?.name ||
-    'HireTrack';
+  const organizationName = user?.organizationInfo?.name || 'HireTrack';
 
   // Process templates from API response
   const templates = useMemo<EmailTemplate[]>(() => {
@@ -82,81 +83,77 @@ export function EmailCandidateDialog({
       return [];
     }
 
-    const loadedTemplates = Object.values(templatesData.templates).map(
-      (template) => ({
+    const loadedTemplates: EmailTemplate[] = Object.values(
+      templatesData.templates,
+    ).map((template) => {
+      const templateId = template.templateId.toLowerCase();
+      const isDefault = DEFAULT_TEMPLATE_IDS.some((defaultId) =>
+        templateId.includes(defaultId),
+      );
+
+      return {
         id: template.templateId,
         name: template.templateName,
         subject: template.subject,
         content: template.html,
-        variables: template.variables || [
-          'SenderName',
-          'ReceiverName',
-          'PortalName',
-        ],
-        isCustom:
-          !template.templateId.includes('job-application') &&
-          !template.templateId.includes('password-reset') &&
-          !template.templateId.includes('interview-assignment') &&
-          !template.templateId.includes('status-update') &&
-          !template.templateId.includes('new-remark') &&
-          !template.templateId.includes('step-completed') &&
-          !template.templateId.includes('send-otp'),
-        isDefault:
-          template.templateId.includes('job-application') ||
-          template.templateId.includes('password-reset') ||
-          template.templateId.includes('interview-assignment') ||
-          template.templateId.includes('status-update') ||
-          template.templateId.includes('new-remark') ||
-          template.templateId.includes('step-completed') ||
-          template.templateId.includes('send-otp'),
-      }),
-    );
+        variables: template.variables || DEFAULT_VARIABLES,
+        isCustom: !isDefault,
+        isDefault,
+      };
+    });
 
     // Filter to show only custom templates (suitable for manual emails to candidates)
     return loadedTemplates.filter((template) => template.isCustom);
   }, [templatesData]);
 
-  // Set replyTo when user is available
+  // Initialize user-related state
   useEffect(() => {
     if (user?.email) {
       setReplyTo(user.email);
     }
-  }, [user?.email]);
+  }, [user]);
 
   // Replace template variables with actual values
-  const replaceVariables = useCallback(
-    (content: string): string =>
-      content
-        .replace(/{{SenderName}}/g, userName || userEmail)
-        .replace(/{{ReceiverName}}/g, candidate.name)
-        .replace(/{{PortalName}}/g, organizationName)
-        .replace(/{{jobTitle}}/g, candidate.jobTitle || ''),
-    [userName, userEmail, candidate.name, candidate.jobTitle, organizationName],
-  );
+  const replaceVariables = (content: string): string =>
+    content
+      .replace(/{{SenderName}}/g, userName || userEmail)
+      .replace(/{{ReceiverName}}/g, candidate.name)
+      .replace(/{{PortalName}}/g, organizationName)
+      .replace(/{{jobTitle}}/g, candidate.jobTitle || '');
 
   // Handle template selection
-  const handleTemplateSelect = useCallback(
-    (templateId: string) => {
-      setSelectedTemplate(templateId);
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplate(templateId);
 
-      if (templateId === 'none') {
-        setSubject('');
-        setBody('');
-        return;
-      }
+    if (templateId === 'none') {
+      setSubject('');
+      setBody('');
+      return;
+    }
 
-      const template = templates.find((t) => t.id === templateId);
-      if (template) {
-        setSubject(replaceVariables(template.subject));
-        setBody(replaceVariables(template.content));
-        // Reset to rich text mode when selecting a template for better UX
-        setContentMode('rich');
-      }
-    },
-    [templates, replaceVariables],
-  );
+    const template = templates.find((t) => t.id === templateId);
+    if (template) {
+      setSubject(replaceVariables(template.subject));
+      setBody(replaceVariables(template.content));
+      // Reset to rich text mode when selecting a template for better UX
+      setContentMode('rich');
+    }
+  };
 
-  const handleSend = useCallback(async () => {
+  // Reset form state
+  const resetForm = () => {
+    setSubject('');
+    setBody('');
+    setCc([]);
+    setBcc([]);
+    setAttachments([]);
+    setEmailSent(false);
+    setEmailError('');
+    setSelectedTemplate('none');
+    setContentMode('rich');
+  };
+
+  const handleSend = async () => {
     if (!subject.trim() || !body.trim()) {
       toast.error('Subject and body are required');
       return;
@@ -168,10 +165,10 @@ export function EmailCandidateDialog({
 
     try {
       let uploadedAttachments: Array<{
-        shareId: string;
-        shareUrl: string;
         fileName: string;
         fileSize: number;
+        shareId: string;
+        shareUrl: string;
       }> = [];
 
       // Upload files if there are any
@@ -180,15 +177,17 @@ export function EmailCandidateDialog({
           const base64Promise = new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = (e) => {
-              if (e.target?.result) {
-                resolve(e.target.result as string);
+              const result = e.target?.result;
+              if (typeof result === 'string') {
+                resolve(result);
               } else {
                 reject(new Error('Failed to read file'));
               }
             };
-            reader.onerror = () => reject(new Error('File read error'));
+            reader.onerror = () => reject(new Error('Failed to read file'));
             reader.readAsDataURL(att.file);
           });
+
           const base64 = await base64Promise;
           return {
             base64,
@@ -200,31 +199,51 @@ export function EmailCandidateDialog({
 
         const fileData = await Promise.all(filePromises);
 
-        const uploadResult = await uploadFiles({
-          files: fileData,
-          shareOptions: {
-            isPublic: true,
-            expiresInHours: 24 * 30, // 30 days
-            metadata: {
-              purpose: 'email_attachment',
-              relatedTo: 'email',
-              candidateId: candidate._id,
+        try {
+          const uploadResult = await uploadFiles({
+            files: fileData,
+            shareOptions: {
+              isPublic: true,
+              expiresInHours: 24 * 30, // 30 days
+              metadata: {
+                purpose: 'email_attachment',
+                relatedTo: 'email',
+                candidateId: candidate._id,
+              },
             },
-          },
-        }).unwrap();
+          }).unwrap();
 
-        uploadedAttachments = uploadResult.files;
+          uploadedAttachments = uploadResult.files.map((file) => ({
+            fileName: file.fileName,
+            fileSize: file.fileSize,
+            shareId: file.shareId,
+            shareUrl: file.shareUrl,
+          }));
+        } catch (uploadError) {
+          let errorMessage = 'Failed to upload attachments';
+          if (
+            uploadError &&
+            typeof uploadError === 'object' &&
+            'data' in uploadError
+          ) {
+            errorMessage =
+              (uploadError.data as { error?: string })?.error ||
+              'Failed to upload attachments';
+          }
+          throw new Error(errorMessage);
+        }
       }
 
-      // Send email
+      // Send email using RTK Query
       await sendEmail({
         candidateId: candidate._id,
         subject,
         body,
-        cc,
-        bcc,
-        replyTo,
-        attachments: uploadedAttachments,
+        cc: cc.length > 0 ? cc : undefined,
+        bcc: bcc.length > 0 ? bcc : undefined,
+        replyTo: replyTo || undefined,
+        attachments:
+          uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
       }).unwrap();
 
       setEmailSent(true);
@@ -233,35 +252,20 @@ export function EmailCandidateDialog({
       // Auto-close after a short delay to show success state
       setTimeout(() => {
         onClose();
-        // Reset form
-        setSubject('');
-        setBody('');
-        setCc([]);
-        setBcc([]);
-        setAttachments([]);
-        setEmailSent(false);
-        setEmailError('');
-        setSelectedTemplate('none');
-        setContentMode('rich');
+        resetForm();
       }, 2000);
     } catch (error: unknown) {
-      const errorMsg =
-        error instanceof Error ? error.message : 'Failed to send email';
+      let errorMsg = 'Failed to send email';
+      if (error && typeof error === 'object' && 'data' in error) {
+        errorMsg =
+          (error.data as { error?: string })?.error || 'Failed to send email';
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
       setEmailError(errorMsg);
       toast.error(errorMsg);
     }
-  }, [
-    subject,
-    body,
-    attachments,
-    candidate._id,
-    cc,
-    bcc,
-    replyTo,
-    uploadFiles,
-    sendEmail,
-    onClose,
-  ]);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -280,6 +284,11 @@ export function EmailCandidateDialog({
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="space-y-4">
+            {templatesError && (
+              <div className="text-sm text-red-600 dark:text-red-400">
+                Failed to load email templates. Please try again.
+              </div>
+            )}
             {!templateLoading && (
               <EmailTemplateSelector
                 templates={templates}

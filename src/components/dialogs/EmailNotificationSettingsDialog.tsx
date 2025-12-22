@@ -6,11 +6,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Loader2, Mail, Shield } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Loader2, Mail, Shield } from 'lucide-react';
 
 import {
   EmailNotificationToggle,
@@ -19,36 +19,36 @@ import {
 import {
   useOrganizationEmailNotificationSettings,
   useUpdateOrganizationEmailNotificationSettings,
-} from "@/hooks/useEmailNotificationSettings";
+} from '@/hooks/useEmailNotificationSettings';
 
-import { useToast } from "@/hooks/use-toast";
-import EmailNotificationSettingsSkeleton from "./email-notification-settings-skeleton";
+import { useToast } from '@/hooks/use-toast';
+import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 
 // All email types (enabled by default)
 const DEFAULT_NOTIFICATION_TYPES: EmailNotificationType[] = [
-  "newApplications",
-  "interviewAssignments",
-  "statusUpdates",
-  "newRemarks",
-  "stepCompleted",
-  "mentions",
-  "detailsUpdated",
-  "meetingScheduled",
-  "meetingUpdated",
-  "meetingCancelled",
-  "meetingInviteAccepted",
-  "meetingInviteDeclined",
-  "meetingInviteTentative",
-  "interviewCompleted",
-  "followupAdded",
-  "followupUpdated",
-  "followupRemoved",
-  "jobCreated",
-  "jobUpdated",
-  "userAdded",
-  "bulkImportCompleted",
-  "candidateRejected",
-  "candidateMoved",
+  'newApplications',
+  'interviewAssignments',
+  'statusUpdates',
+  'newRemarks',
+  'stepCompleted',
+  'mentions',
+  'detailsUpdated',
+  'meetingScheduled',
+  'meetingUpdated',
+  'meetingCancelled',
+  'meetingInviteAccepted',
+  'meetingInviteDeclined',
+  'meetingInviteTentative',
+  'interviewCompleted',
+  'followupAdded',
+  'followupUpdated',
+  'followupRemoved',
+  'jobCreated',
+  'jobUpdated',
+  'userAdded',
+  'bulkImportCompleted',
+  'candidateRejected',
+  'candidateMoved',
 ] as const;
 
 interface EmailNotificationSettingsDialogProps {
@@ -66,8 +66,12 @@ export function EmailNotificationSettingsDialog({
 }: EmailNotificationSettingsDialogProps) {
   const { toast } = useToast();
 
-  const { settings: organizationSettings, loading, error, refetch } =
-    useOrganizationEmailNotificationSettings();
+  const {
+    settings: organizationSettings,
+    loading,
+    error,
+    refetch,
+  } = useOrganizationEmailNotificationSettings();
 
   const { updateSettings, loading: updating } =
     useUpdateOrganizationEmailNotificationSettings();
@@ -84,7 +88,7 @@ export function EmailNotificationSettingsDialog({
   // Type-safe helper to get override value
   const getOverrideValue = (
     overrides: Partial<Record<EmailNotificationType, boolean>>,
-    type: EmailNotificationType
+    type: EmailNotificationType,
   ): boolean | undefined => {
     const entry = Object.entries(overrides).find(([key]) => key === type);
     return entry ? (entry[1] as boolean) : undefined;
@@ -117,18 +121,20 @@ export function EmailNotificationSettingsDialog({
 
   const hasChanges = () =>
     notificationTypes.some(
-      (type) => getOverrideValue(adminOverrides, type) !== getOverrideValue(initialAdminOverrides, type)
+      (type) =>
+        getOverrideValue(adminOverrides, type) !==
+        getOverrideValue(initialAdminOverrides, type),
     );
 
   const allToggleEnabled =
     notificationTypes.length > 0 &&
     notificationTypes.every(
-      (type) => getOverrideValue(adminOverrides, type) ?? true
+      (type) => getOverrideValue(adminOverrides, type) ?? true,
     );
 
   const handleAllToggle = (enabled: boolean) => {
     const newOverrides = Object.fromEntries(
-      notificationTypes.map((type) => [type, enabled])
+      notificationTypes.map((type) => [type, enabled]),
     ) as Partial<Record<EmailNotificationType, boolean>>;
     setAdminOverrides(newOverrides);
   };
@@ -142,17 +148,19 @@ export function EmailNotificationSettingsDialog({
       });
 
       toast({
-        title: "Success",
-        description: "Admin override settings updated successfully.",
+        title: 'Success',
+        description: 'Admin override settings updated successfully.',
       });
 
       await refetch();
     } catch (err) {
       toast({
-        title: "Error",
+        title: 'Error',
         description:
-          err instanceof Error ? err.message : "Failed to save admin overrides.",
-        variant: "destructive",
+          err instanceof Error
+            ? err.message
+            : 'Failed to save admin overrides.',
+        variant: 'destructive',
       });
     }
   };
@@ -171,10 +179,10 @@ export function EmailNotificationSettingsDialog({
     }
 
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex h-full flex-col">
         {/* Fixed section below header */}
-        <div className="px-6 py-2 border-b bg-background">
-          <div className="flex items-center justify-between space-x-4 py-3 px-4 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+        <div className="border-b bg-background px-6 py-2">
+          <div className="flex items-center justify-between space-x-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
             <div className="flex-1 space-y-1">
               <Label
                 htmlFor="notification-all"
@@ -193,7 +201,7 @@ export function EmailNotificationSettingsDialog({
         </div>
 
         {/* Scrollable Notification Toggles */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 max-h-[50vh] scrollbar-thin scrollbar-thumb-gray-300">
+        <div className="scrollbar-thin scrollbar-thumb-gray-300 max-h-[50vh] flex-1 overflow-y-auto px-6 py-4">
           <div className="space-y-0">
             {notificationTypes.map((type) => (
               <EmailNotificationToggle
@@ -210,7 +218,7 @@ export function EmailNotificationSettingsDialog({
         </div>
 
         {/* Footer Buttons */}
-        <div className="flex justify-between items-center border-t bg-background px-6 py-2">
+        <div className="flex items-center justify-between border-t bg-background px-6 py-2">
           <Button
             variant="outline"
             onClick={handleReset}
@@ -232,9 +240,7 @@ export function EmailNotificationSettingsDialog({
               onClick={handleSave}
               disabled={updating || !hasChanges()}
             >
-              {updating && (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              )}
+              {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
           </div>
@@ -245,7 +251,7 @@ export function EmailNotificationSettingsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 overflow-hidden flex flex-col sm:max-w-lg">
+      <DialogContent className="flex flex-col overflow-hidden p-0 sm:max-w-lg">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
@@ -253,16 +259,16 @@ export function EmailNotificationSettingsDialog({
           </DialogTitle>
 
           {/* <DialogDescription> */}
-            <div className="flex items-center gap-2 mt-1">
-              <Shield className="h-4 w-4 text-amber-500" />
-              <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
-                Admin Override Mode
-              </span>
-            </div>
-            <span className="block mt-2 text-sm text-muted-foreground">
-              Configure which notifications are enabled or disabled for{" "}
-              {userName}. These settings cannot be changed by the user.
+          <div className="mt-1 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-amber-500" />
+            <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+              Admin Override Mode
             </span>
+          </div>
+          <span className="mt-2 block text-sm text-muted-foreground">
+            Configure which notifications are enabled or disabled for {userName}
+            . These settings cannot be changed by the user.
+          </span>
           {/* </DialogDescription> */}
         </DialogHeader>
 

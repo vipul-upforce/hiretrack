@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { User, X } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { MentionPicker } from "@/components/ui/mention-picker";
-import { useMentionPicker } from "@/hooks/useMentionPicker";
-import { userCacheService } from "@/lib/services/userCache";
-import { cn } from "@/lib/utils";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { User, X } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { MentionPicker } from '@/components/ui/mention-picker';
+import { useMentionPicker } from '@/hooks/useMentionPicker';
+import { cn } from '@/lib/utils';
 
 interface MentionUser {
   _id: string;
@@ -43,15 +42,14 @@ export function MentionTextarea({
   onSelectedMentionsChange,
 }: MentionTextareaProps) {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
-  const [mentionPosition, setMentionPosition] = useState(0);
   const [mentionQuery, setMentionQuery] = useState('');
   const [pickerPosition, setPickerPosition] = useState<'bottom' | 'top'>(
     'bottom',
   );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mentionPickerRef = useRef<{
-    handleKeyDown:(e: React.KeyboardEvent) => void;
-      }>(null);
+    handleKeyDown: (e: React.KeyboardEvent) => void;
+  }>(null);
   const {
     selectedMentions,
     addMention,
@@ -61,7 +59,8 @@ export function MentionTextarea({
   } = useMentionPicker();
 
   // Don't show mention picker for interviewers
-  const shouldShowMentionPicker = currentUserRole === 'admin' || currentUserRole === 'hr';
+  const shouldShowMentionPicker =
+    currentUserRole === 'admin' || currentUserRole === 'hr';
 
   // Calculate optimal position for mention picker
   const calculatePickerPosition = useCallback(() => {
@@ -102,7 +101,6 @@ export function MentionTextarea({
         const position = calculatePickerPosition();
         setPickerPosition(position);
         setShowMentionPicker(true);
-        setMentionPosition(lastAtIndex);
         setMentionQuery(textAfterAt);
         return;
       }
@@ -126,7 +124,8 @@ export function MentionTextarea({
       if (textareaRef.current) {
         textareaRef.current.focus();
         // Position cursor after the mention
-        const newCursorPosition = newText.indexOf(`@${user.name} `) + `@${user.name} `.length;
+        const newCursorPosition =
+          newText.indexOf(`@${user.name} `) + `@${user.name} `.length;
         textareaRef.current.setSelectionRange(
           newCursorPosition,
           newCursorPosition,
@@ -139,10 +138,10 @@ export function MentionTextarea({
   const handleMentionRemove = (user: MentionUser) => {
     // Remove mention from selected mentions
     removeMention(user._id);
-    
+
     // Remove mention text from the textarea value
-    const mentionPattern = new RegExp(`@${user.name}\\s+`, "g");
-    const newText = value.replace(mentionPattern, "");
+    const mentionPattern = new RegExp(`@${user.name}\\s+`, 'g');
+    const newText = value.replace(mentionPattern, '');
     onChange(newText);
   };
 
@@ -252,13 +251,13 @@ export function MentionTextarea({
       {/* Selected mentions display */}
       {shouldShowMentionPicker && selectedMentions.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
-          <span className="text-xs text-muted-foreground font-medium">
+          <span className="text-xs font-medium text-muted-foreground">
             Mentioned:
           </span>
           {selectedMentions.map((user) => (
             <span
               key={user._id}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20 hover:bg-primary/15 transition-colors"
+              className="bg-primary/10 border-primary/20 hover:bg-primary/15 inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs text-primary transition-colors"
             >
               <User className="h-3 w-3" />@{user.name}
               <button
@@ -267,7 +266,7 @@ export function MentionTextarea({
                   e.stopPropagation();
                   handleMentionRemove(user);
                 }}
-                className="ml-1 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                className="hover:bg-primary/20 ml-1 rounded-full p-0.5 transition-colors"
                 aria-label={`Remove mention of ${user.name}`}
               >
                 <X className="h-3 w-3" />

@@ -234,6 +234,7 @@ export async function sendRemarkNotificationWithMentions(
   sentToUsers: string[]; // User IDs who received emails
   mentionedUsers?: string[];
 }> {
+  console.log('context', context);
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     'new-remark',
     {
@@ -243,7 +244,7 @@ export async function sendRemarkNotificationWithMentions(
       reviewerName: context.reviewerName || 'Unknown',
       remarkDate: context.remarkDate || new Date().toISOString().split('T')[0],
       rating:
-        context.rating !== undefined
+        context.rating !== undefined && context.rating !== null
           ? context.rating.toString()
           : 'Not Provided',
       remarkText: remarkContent,

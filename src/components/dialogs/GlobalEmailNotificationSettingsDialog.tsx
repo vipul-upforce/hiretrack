@@ -19,9 +19,8 @@ import {
   useGlobalEmailNotificationSettings,
   useUpdateGlobalEmailNotificationSettings,
 } from '@/hooks/useGlobalEmailNotificationSettings';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { useOrganizationEmailNotificationSettings } from '@/hooks/useEmailNotificationSettings';
-import { RootState } from '@/lib/store';
 import {
   ALL_NOTIFICATION_TYPES,
   createDefaultNotificationSettings,
@@ -44,7 +43,7 @@ export function GlobalEmailNotificationSettingsDialog({
     Record<EmailNotificationType, boolean>
   >(() => createDefaultNotificationSettings());
 
-  const { user: currentUser } = useSelector((state: RootState) => state.auth || {});
+  const { user: currentUser } = useAppSelector((state) => state.auth);
   const { settings, effectiveSettingsWithSource, loading, error, refetch } =
     useGlobalEmailNotificationSettings();
   const { updateSettings, loading: updating } =
@@ -60,8 +59,9 @@ export function GlobalEmailNotificationSettingsDialog({
     try {
       if (organizationSettings) {
         setAdminOverrides(
-          organizationSettings.users.find((user) => user._id === currentUser?.id)
-            ?.currentOverride || {},
+          organizationSettings.users.find(
+            (user) => user._id === currentUser?.id,
+          )?.currentOverride || {},
         );
       }
     } catch (err) {
@@ -127,7 +127,9 @@ export function GlobalEmailNotificationSettingsDialog({
       (type) => !isAdminOverrideDisabled(type, adminOverrides),
     );
     if (toggleableTypes.length === 0) return false;
-    return toggleableTypes.every((type) => safeGetNotificationValue(localSettings, type) === true);
+    return toggleableTypes.every(
+      (type) => safeGetNotificationValue(localSettings, type) === true,
+    );
   };
 
   const handleAllToggle = (enabled: boolean) => {
@@ -207,7 +209,9 @@ export function GlobalEmailNotificationSettingsDialog({
                 <EmailNotificationToggle
                   key={type}
                   type={type}
-                  enabled={safeGetNotificationValue(localSettings, type) ?? false}
+                  enabled={
+                    safeGetNotificationValue(localSettings, type) ?? false
+                  }
                   source={source}
                   onToggle={handleToggle}
                   showSource

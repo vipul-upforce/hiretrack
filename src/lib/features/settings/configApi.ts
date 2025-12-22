@@ -8,6 +8,10 @@ interface EmailTemplateResponse {
   variables?: string[];
 }
 
+interface EmailTemplatesResponse {
+  templates: Record<string, EmailTemplateResponse>;
+}
+
 export const configApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getSMTPConfigs: builder.query({
@@ -83,10 +87,7 @@ export const configApi = baseApi.injectEndpoints({
         body: { email, selectedOrgId },
       }),
     }),
-    getEmailTemplates: builder.query<
-      { templates: Record<string, EmailTemplateResponse> },
-      void
-    >({
+    getEmailTemplates: builder.query<EmailTemplatesResponse, void>({
       query: () => ({ url: '/settings/templates', method: 'GET' }),
       providesTags: ['Settings'],
     }),

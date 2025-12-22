@@ -193,7 +193,6 @@ export async function getAuthenticatedUser(
 
 export const signToken = async (payload: unknown, orgId: string) => {
   const JWT_SECRET = generateOrgJwtSecret(orgId);
-  console.log('payload-263', payload);
 
   if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
 

@@ -20,8 +20,6 @@ import {
   useOrganizationEmailNotificationSettings,
   useUpdateJobEmailNotificationSettings,
 } from '@/hooks/useEmailNotificationSettings';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store';
 import {
   ALL_NOTIFICATION_TYPES,
   createDefaultNotificationSettings,
@@ -31,6 +29,7 @@ import {
   safeSetNotificationValue,
 } from '@/lib/utils/notificationSettings';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 
 interface JobEmailNotificationSettingsDialogProps {
@@ -50,7 +49,7 @@ export function JobEmailNotificationSettingsDialog({
     Record<EmailNotificationType, boolean>
   >(createDefaultNotificationSettings);
 
-  const { user: currentUser } = useSelector((state: RootState) => state.auth || {});
+  const { user: currentUser } = useAppSelector((state) => state.auth);
   const { settings, loading, error, refetch } =
     useJobEmailNotificationSettings(jobId);
   const { updateSettings, loading: updating } =
@@ -65,8 +64,9 @@ export function JobEmailNotificationSettingsDialog({
     try {
       if (organizationSettings && currentUser?.id) {
         setAdminOverrides(
-          organizationSettings.users.find((user) => user._id === currentUser?.id)
-            ?.currentOverride || {},
+          organizationSettings.users.find(
+            (user) => user._id === currentUser?.id,
+          )?.currentOverride || {},
         );
       }
     } catch (err) {
@@ -172,7 +172,9 @@ export function JobEmailNotificationSettingsDialog({
       (type) => !isAdminOverrideDisabled(type, adminOverrides),
     );
     if (toggleableTypes.length === 0) return false;
-    return toggleableTypes.every((type) => safeGetNotificationValue(localSettings, type) === true);
+    return toggleableTypes.every(
+      (type) => safeGetNotificationValue(localSettings, type) === true,
+    );
   };
 
   const handleAllToggle = (enabled: boolean) => {
@@ -252,7 +254,9 @@ export function JobEmailNotificationSettingsDialog({
                 <EmailNotificationToggle
                   key={type}
                   type={type}
-                  enabled={safeGetNotificationValue(localSettings, type) ?? false}
+                  enabled={
+                    safeGetNotificationValue(localSettings, type) ?? false
+                  }
                   source={source}
                   onToggle={handleToggle}
                   showSource

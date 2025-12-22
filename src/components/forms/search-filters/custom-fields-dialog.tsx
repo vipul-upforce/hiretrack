@@ -33,7 +33,7 @@ interface CustomFieldsDialogProps {
   metaFields: CustomField[];
   cols: Record<string, string | number | boolean | string[]>[];
   setCols: (
-    cols: Record<string, string | number | boolean | string[]>[]
+    cols: Record<string, string | number | boolean | string[]>[],
   ) => void;
   values: SearchFilter;
   setFieldValue: (field: string, value: any) => void;
@@ -60,9 +60,10 @@ export function CustomFieldsDialog({
 
   const removeInvalidFields = () => {
     const valid = cols.filter(
-      (col) => typeof col.fieldId === 'string'
-        && col.fieldId.trim() !== ''
-        && col.value !== '',
+      (col) =>
+        typeof col.fieldId === 'string' &&
+        col.fieldId.trim() !== '' &&
+        col.value !== '',
     );
 
     setCols(valid);
@@ -90,7 +91,7 @@ export function CustomFieldsDialog({
           )}
         </Button>
       </DialogTrigger>
-      <DialogContent size="2xl" className="overflow-hidden flex flex-col">
+      <DialogContent size="2xl" className="flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Configure Custom Fields</DialogTitle>
           <DialogDescription>
@@ -99,9 +100,9 @@ export function CustomFieldsDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto">
-          <Separator className="mt-0 mb-4" />
+          <Separator className="mb-4 mt-0" />
           <div className="rounded-lg p-4">
-            <div className="grid grid-cols-[200px_1fr_2px_0px] gap-4 mb-4">
+            <div className="mb-4 grid grid-cols-[200px_1fr_2px_0px] gap-4">
               <Label className="font-semibold">Field</Label>
               <Label className="font-semibold">Value</Label>
               <div />
@@ -119,15 +120,17 @@ export function CustomFieldsDialog({
                 <div key={col.id as string}>
                   <div
                     key={col.id as string}
-                    className="grid grid-cols-[200px_1fr_2px_0px] gap-4 items-start"
+                    className="grid grid-cols-[200px_1fr_2px_0px] items-start gap-4"
                   >
                     <Select
-                      key={index}
+                      key={col.fieldId as string}
                       value={col.fieldId as string}
-                      onValueChange={(fieldId) => updateSelectedMetaFields(
+                      onValueChange={(fieldId) =>
+                        updateSelectedMetaFields(
                           fieldId as string,
                           col.id as string,
-                      )}
+                        )
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select field" />
@@ -141,7 +144,7 @@ export function CustomFieldsDialog({
                       </SelectContent>
                     </Select>
 
-                    <div className="min-h-[40px] flex items-center">
+                    <div className="flex min-h-[40px] items-center">
                       <RenderFieldInFilter
                         label={col.label as string}
                         type={col?.type as string}
@@ -155,14 +158,18 @@ export function CustomFieldsDialog({
                             | [Dayjs, Dayjs]
                             | undefined
                         }
-                        onChange={(value) => updateColValue(col.id as string, value as string)}
-                        onBlur={(value) => updateColValue(col.id as string, value as string)}
+                        onChange={(value) =>
+                          updateColValue(col.id as string, value as string)
+                        }
+                        onBlur={(value) =>
+                          updateColValue(col.id as string, value as string)
+                        }
                       />
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="h-8 w-8 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
                       onClick={() => removeMetaField(col.id as string)}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -191,20 +198,19 @@ export function CustomFieldsDialog({
               ]);
             }}
           >
-            Add Fields
-            {' '}
-            <Plus className="h-4 w-4" />
+            Add Fields <Plus className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => {
               const hasInvalid = cols.some(
-                (col) => !col.fieldId
-                  || (typeof col.fieldId === 'string'
-                    && col.fieldId.trim() === '')
-                  || col.value === ''
-                  || col.value === undefined,
+                (col) =>
+                  !col.fieldId ||
+                  (typeof col.fieldId === 'string' &&
+                    col.fieldId.trim() === '') ||
+                  col.value === '' ||
+                  col.value === undefined,
               );
 
               if (hasInvalid) {
