@@ -60,7 +60,7 @@ let refreshAbortController: AbortController | null = null;
  * with credentials: "include"
  * @param dispatch - Optional Redux dispatch function to trigger fetchUserFromToken after refresh
  */
-async function refreshAccessToken(
+export async function refreshAccessToken(
   dispatch?: Dispatch<AnyAction>,
 ): Promise<void> {
   // If a refresh is already in progress, wait for it instead of starting a new one
