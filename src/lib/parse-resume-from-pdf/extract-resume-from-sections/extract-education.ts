@@ -27,11 +27,13 @@ import {
 
 // prettier-ignore
 const SCHOOLS = ['College', 'University', 'Institute', 'School', 'Academy', 'BASIS', 'Magnet'];
-const hasSchool = (item: TextItem) => SCHOOLS.some((school) => item.text.includes(school));
+const hasSchool = (item: TextItem) =>
+  SCHOOLS.some((school) => item.text.includes(school));
 // prettier-ignore
 const DEGREES = ['Associate', 'Bachelor', 'Master', 'PhD', 'Ph.'];
-const hasDegree = (item: TextItem) => DEGREES.some((degree) => item.text.includes(degree))
-  || /[ABM][A-Z\.]/.test(item.text); // Match AA, B.S., MBA, etc.
+const hasDegree = (item: TextItem) =>
+  DEGREES.some((degree) => item.text.includes(degree)) ||
+  /[ABM][A-Z.]/.test(item.text); // Match AA, B.S., MBA, etc.
 const matchGPA = (item: TextItem) => item.text.match(/[0-4]\.\d{1,2}/);
 const matchGrade = (item: TextItem) => {
   const grade = parseFloat(item.text);
@@ -92,7 +94,11 @@ export const extractEducation = (sections: ResumeSectionToLines) => {
     }
 
     educations.push({
-      school, degree, gpa, date, descriptions,
+      school,
+      degree,
+      gpa,
+      date,
+      descriptions,
     });
     educationsScores.push({
       schoolScores,
@@ -106,11 +112,10 @@ export const extractEducation = (sections: ResumeSectionToLines) => {
     const coursesLines = getSectionLinesByKeywords(sections, ['course']);
     if (coursesLines.length !== 0) {
       educations[0].descriptions.push(
-        `Courses: ${
-          coursesLines
-            .flat()
-            .map((item) => item.text)
-            .join(' ')}`,
+        `Courses: ${coursesLines
+          .flat()
+          .map((item) => item.text)
+          .join(' ')}`,
       );
     }
   }
