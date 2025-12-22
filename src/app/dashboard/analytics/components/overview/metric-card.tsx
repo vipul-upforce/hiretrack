@@ -47,7 +47,7 @@ export function MetricCard({
   detailsButtonLabel = 'Show Details',
 }: MetricCardProps) {
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="transition-shadow hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <div className="space-y-1">
           <CardTitle className="text-base font-medium">{title}</CardTitle>
@@ -60,12 +60,13 @@ export function MetricCard({
         <div className="flex items-baseline space-x-2">
           <div className="text-2xl font-bold">
             {isLoading ? (
-              <Skeleton className="w-10 h-8 rounded-lg" />
+              <Skeleton className="h-8 w-10 rounded-lg" />
             ) : (
               mainValue
             )}
           </div>
           {!isLoading && showTrendIcon && (
+            // eslint-disable-next-line react/jsx-no-useless-fragment
             <>
               {trendIsPositive ? (
                 <TrendingUpIcon className="h-4 w-4 text-green-500" />
@@ -76,12 +77,10 @@ export function MetricCard({
           )}
         </div>
 
-        <div className="text-xs text-muted-foreground space-y-1">
-          {secondaryMetrics.map((metric, idx) => (
-            <div key={idx}>
-              {metric.label}
-              :
-              {isLoading ? '-' : metric.value}
+        <div className="space-y-1 text-xs text-muted-foreground">
+          {secondaryMetrics.map((metric) => (
+            <div key={metric.label}>
+              {metric.label}:{isLoading ? '-' : metric.value}
             </div>
           ))}
         </div>
@@ -92,9 +91,7 @@ export function MetricCard({
           className="w-full bg-transparent"
           onClick={onDetailsClick}
         >
-          {detailsButtonLabel}
-          {' '}
-          <ChevronRightIcon className="h-4 w-4 ml-1" />
+          {detailsButtonLabel} <ChevronRightIcon className="ml-1 h-4 w-4" />
         </Button>
       </CardContent>
     </Card>

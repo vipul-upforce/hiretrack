@@ -1,18 +1,15 @@
 import { UserCheckIcon } from 'lucide-react';
 import React from 'react';
+import { InterviewSummary } from '../../hooks/useAnalytics';
 
-interface SummaryCardProps {
-  summary: {
-    totalInterviewers: number;
-    totalAssignments: number;
-    overallCompletionRate: number;
-  };
+interface SummaryCardsProps {
+  summary: InterviewSummary;
 }
 
-export function SummaryCards({ summary }: SummaryCardProps) {
+export function SummaryCards({ summary }: SummaryCardsProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
-      <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-2">
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-950/20">
         <div className="flex items-center gap-2">
           <UserCheckIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -23,7 +20,7 @@ export function SummaryCards({ summary }: SummaryCardProps) {
           Active Interviewers
         </div>
       </div>
-      <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+      <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/20">
         <div className="text-2xl font-bold text-green-600 dark:text-green-400">
           {summary.totalAssignments}
         </div>

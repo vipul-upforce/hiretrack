@@ -11,51 +11,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { RefreshCcwIcon, DownloadIcon } from 'lucide-react';
 import logger from '@/lib/logger';
+import { AssignmentData } from '@/app/api/analytics/types';
 import {
   useInterviewAssignments,
   AnalyticsFilters,
+  InterviewSummary,
 } from '../../hooks/useAnalytics';
 import { exportToCSV } from '../../utils/export';
 import InterviewAssignmentSkeleton from '../loading-skeletons/interview-assignment';
 import { WorkloadDistributionChart } from './workload-assignment-chart';
 import { SummaryCards } from './summary-cards';
-import InsightsCards from './insights-cards';
+import InsightsCards, { AssignmentInsights } from './insights-cards';
 import EmptyState from '../empty-state';
 
 interface InterviewAssignmentChartProps {
   filters?: AnalyticsFilters;
   organizationId?: string;
-}
-
-interface AssignmentData {
-  interviewerId: string;
-  interviewerName: string;
-  interviewerEmail: string;
-  role: string;
-  assignments: number;
-  completions: number;
-  pending: number;
-  accepted: number;
-  rejected: number;
-  completionRate: number;
-  successRate: number;
-  avgRating: number;
-  avgExperienceScore: number;
-  avgSkillsScore: number;
-  avgDailyAssignments: number;
-  candidateDetails: Array<{
-    candidateId: string;
-    candidateName: string;
-    status: string;
-    assignedAt: Date;
-    interviewTime?: Date;
-    scores?: {
-      overall?: number;
-      experience?: number;
-      skills?: number;
-    };
-  }>;
-  workloadDistribution: Date[];
 }
 
 export function InterviewAssignmentChart({
@@ -66,15 +37,16 @@ export function InterviewAssignmentChart({
     filters,
     organizationId,
   );
+
   const [assignmentData, setAssignmentData] = useState<AssignmentData[]>([]);
-  const [summary, setSummary] = useState<Record<string, any> | null>(null);
-  const [insights, setInsights] = useState<Record<string, any> | null>(null);
+  const [summary, setSummary] = useState<InterviewSummary | null>(null);
+  const [insights, setInsights] = useState<AssignmentInsights | null>(null);
 
   useEffect(() => {
     if (data) {
       setAssignmentData(data.assignmentData || []);
       setSummary(data.summary || null);
-      setInsights(data.insights || null);
+      setInsights((data.insights as unknown as AssignmentInsights) || null);
     }
   }, [data]);
 
@@ -88,7 +60,8 @@ export function InterviewAssignmentChart({
       return;
     }
 
-    const csvData = assignmentData.map((interviewer) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const csvData: any[] = assignmentData.map((interviewer) => ({
       Interviewer: interviewer.interviewerName,
       Email: interviewer.interviewerEmail,
       Role: interviewer.role,

@@ -24,7 +24,6 @@ import type {
   JobSummary,
   JobData,
   FunnelSummary,
-  InterviewSummary,
   TrendsSummary,
 } from '../components/types';
 
@@ -57,13 +56,20 @@ export type JobPerformanceAnalytics = JobData & {
   insights?: JobPerformanceInsights | null;
 };
 
+export interface InterviewSummary {
+  totalInterviewers: number;
+  totalAssignments: number;
+  overallCompletionRate: number;
+  overallSuccessRate: number;
+  completedAssignments?: number;
+  pendingAssignments?: number;
+}
+
 export interface InterviewAssignmentAnalytics {
   assignmentData?: AssignmentData[];
   summary?: InterviewSummary | null;
   insights?: Record<string, unknown> | null;
 }
-
-// Use centralized TrendsSummary
 
 export interface ApplicationTrendsAnalytics {
   trendData?: TrendData[];

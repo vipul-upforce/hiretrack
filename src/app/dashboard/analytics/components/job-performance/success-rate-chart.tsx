@@ -7,14 +7,46 @@ import {
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
+  TooltipProps,
   XAxis,
   YAxis,
 } from 'recharts';
 
+interface CustomTooltipProps extends TooltipProps<number, string> {
+  payload?: {
+    value?: number;
+    payload: unknown;
+  }[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (active && payload && payload.length > 0) {
+    const { value } = payload[0];
+
+    if (typeof value !== 'number') {
+      return null;
+    }
+
+    return (
+      <div className="rounded-lg border bg-background p-3 shadow-lg">
+        <p className="font-semibold text-foreground">Job: {label}</p>
+        <p className="text-foreground">
+          Success Rate:{' '}
+          <span
+            className={`font-bold ${value >= 20 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
+          >
+            {value}%
+          </span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+}
+
 // Success Rate Analysis Chart
-export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
-  data,
-}) => {
+export function SuccessRateChart({ data }: { data: JobPerformanceData[] }) {
   const successData = [...data]
     .filter((job) => job.applications >= 3)
     .sort((a, b) => b.successRate - a.successRate)
@@ -22,7 +54,7 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
 
   if (successData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         No jobs have at least 3 applications to display.
       </div>
     );
@@ -33,7 +65,10 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
       <BarChart
         data={successData}
         margin={{
-          top: 20, right: 30, left: 20, bottom: 60,
+          top: 20,
+          right: 30,
+          left: 20,
+          bottom: 60,
         }}
       >
         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
@@ -46,32 +81,9 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
           fontSize={12}
         />
         <YAxis />
-        <Tooltip
-          content={({ active, payload, label }) => {
-            if (active && payload && payload[0]) {
-              const value = payload[0].value as number;
-              return (
-                <div className="bg-background border rounded-lg shadow-lg p-3">
-                  <p className="font-semibold text-foreground">
-                    Job:
-                    {label}
-                  </p>
-                  <p className="text-foreground">
-                    Success Rate:
-                    {' '}
-                    <span
-                      className={`font-bold ${value >= 20 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                    >
-                      {value}
-                      %
-                    </span>
-                  </p>
-                </div>
-              );
-            }
-            return null;
-          }}
-        />
+
+        <Tooltip content={<CustomTooltip />} />
+
         <ReferenceLine
           y={20}
           stroke="#EF4444"
@@ -79,9 +91,9 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
           label="Target: 20%"
         />
         <Bar dataKey="successRate" radius={[4, 4, 0, 0]} opacity={0.8}>
-          {successData.map((entry, index) => (
+          {successData.map((entry) => (
             <Cell
-              key={`cell-${index}`}
+              key={`cell-${entry.jobId + entry.createdAt}`}
               fill={entry.successRate >= 20 ? '#10B981' : '#EF4444'}
             />
           ))}
@@ -89,4 +101,4 @@ export const SuccessRateChart: React.FC<{ data: JobPerformanceData[] }> = ({
       </BarChart>
     </ResponsiveContainer>
   );
-};
+}

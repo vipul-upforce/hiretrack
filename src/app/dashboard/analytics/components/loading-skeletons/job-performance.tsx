@@ -20,6 +20,7 @@ function JobPerformanceSkeleton() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
+              // eslint-disable-next-line react/no-array-index-key
               key={i}
               className="h-20 rounded-lg bg-muted/50 border animate-pulse"
             />

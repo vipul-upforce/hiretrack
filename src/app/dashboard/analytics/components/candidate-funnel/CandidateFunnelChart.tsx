@@ -39,13 +39,11 @@ export interface FunnelSummary {
   avgTimeToHire: number;
 }
 
-export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
+export function CandidateFunnelChart({
   filters,
   organizationId,
-}) => {
-  const {
-    data, loading, error, refetch,
-  } = useCandidateFunnel(
+}: CandidateFunnelChartProps) {
+  const { data, loading, error, refetch } = useCandidateFunnel(
     filters,
     organizationId,
   );
@@ -79,16 +77,16 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-red-500">
+          <div className="flex h-64 items-center justify-center text-red-500">
             <div className="text-center">
               <p>Error loading funnel data</p>
-              <p className="text-sm text-muted-foreground mt-2">{error}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{error}</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={handleRefresh}
               >
-                <RefreshCcwIcon className="h-4 w-4 mr-2" />
+                <RefreshCcwIcon className="mr-2 h-4 w-4" />
                 Retry
               </Button>
             </div>
@@ -120,7 +118,7 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCcwIcon className="h-4 w-4 mr-2" />
+              <RefreshCcwIcon className="mr-2 h-4 w-4" />
               Refresh
             </Button>
             <ExportButton funnelData={funnelData} summary={summary} />
@@ -136,4 +134,4 @@ export const CandidateFunnelChart: React.FC<CandidateFunnelChartProps> = ({
       </CardContent>
     </Card>
   );
-};
+}
