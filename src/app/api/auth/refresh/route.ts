@@ -35,21 +35,22 @@ async function handleRefreshToken(req: NextRequest) {
     // STEP 1: Validate license BEFORE refreshing token (runs every 15 min)
     const licenseValidation = await validateLicense();
     if (!licenseValidation.valid) {
-      // License is invalid - block token refresh
       return NextResponse.json(
         {
           error: 'License validation failed',
           licenseError: licenseValidation.error,
           code: 'LICENSE_INVALID',
         },
-        { status: 403 }, // 403 Forbidden - license issue
+        { status: 403 },
       );
     }
 
-    // STEP 2: Decrypt and verify refresh token JWT (same method as access token)
-    // First, try to decrypt without orgId (will fail, but we'll get error type)
-    let tokenVerification = verifyAndDecryptRefreshToken(refreshToken, '');
+    // STEP 2: Try to get orgId from cookie first (most common case)
+    const orgIdFromCookie = req.cookies.get('org_id')?.value;
 
+    let tokenVerification = orgIdFromCookie
+      ? verifyAndDecryptRefreshToken(refreshToken, orgIdFromCookie)
+      : verifyAndDecryptRefreshToken(refreshToken, '');
     let orgId: string;
     let userId: string;
     let isCandidate: boolean;
@@ -59,8 +60,6 @@ async function handleRefreshToken(req: NextRequest) {
     if (!tokenVerification.success || !tokenVerification.payload) {
       // Try to find user by hashed token in database to get orgId
       const tokenHash = hashRefreshToken(refreshToken);
-
-      console.log(tokenHash, 'tokenHash-65');
 
       let user = await User.findOne({
         'refreshTokens.token': tokenHash,
@@ -72,7 +71,7 @@ async function handleRefreshToken(req: NextRequest) {
         user = await CandidateAccount.findOne({
           'refreshTokens.token': tokenHash,
           'refreshTokens.expiry': { $gt: new Date() },
-        }).select('+refreshTokens');
+        }).select('+refreshTokens organizationId');
         foundIsCandidate = true;
       }
       console.log(user, 'user-77');
@@ -86,10 +85,9 @@ async function handleRefreshToken(req: NextRequest) {
         return response;
       }
 
-      // Now try to decrypt with correct orgId
+      // Now try to decrypt with correct orgId from database
       orgId = user.organizationId.toString();
       tokenVerification = verifyAndDecryptRefreshToken(refreshToken, orgId);
-      console.log(tokenVerification, 'tokenVerification-89');
       if (!tokenVerification.success || !tokenVerification.payload) {
         return NextResponse.json(
           { error: 'Invalid or expired refresh token' },
@@ -115,8 +113,10 @@ async function handleRefreshToken(req: NextRequest) {
     if (!tokenVersion) tokenVersion = payload.tokenVersion;
     if (!role) role = payload.role as UserRole;
 
-    // STEP 3: Verify token exists in database
-    await cleanupExpiredTokens(userId, isCandidate);
+    // STEP 3: Verify token exists in database (only if userId is set)
+    if (userId) {
+      await cleanupExpiredTokens(userId, isCandidate);
+    }
 
     const verification = await verifyRefreshToken(
       refreshToken,
@@ -125,7 +125,6 @@ async function handleRefreshToken(req: NextRequest) {
       isCandidate,
     );
 
-    console.log(verification, 'verification-129');
     if (!verification.valid) {
       return NextResponse.json(
         { error: 'Invalid or expired refresh token' },
