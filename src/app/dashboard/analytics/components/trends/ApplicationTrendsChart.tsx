@@ -17,10 +17,14 @@ import {
 import { exportToCSV } from '../../utils/export';
 import ApplicationTrendsSkeleton from '../loading-skeletons/application-trends';
 import SummaryCards from './summary-cards';
-import InsightsCards from './insights-cards';
+import InsightsCards, { TrendsInsights } from './insights-cards';
 import EmptyState from '../empty-state';
 import ApplicationTrendsTabs from './application-trends-tabs';
 import ApplicationTrendsHeader from './application-header';
+
+type TrendsSummary = NonNullable<
+  NonNullable<ReturnType<typeof useApplicationTrends>['data']>['summary']
+>;
 
 interface ApplicationTrendsChartProps {
   filters?: AnalyticsFilters;
@@ -68,18 +72,18 @@ export function ApplicationTrendsChart({
     enhancedFilters,
     organizationId,
   );
+
   const [trendData, setTrendData] = useState<TrendData[]>([]);
-  const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
+  const [summary, setSummary] = useState<TrendsSummary | null>(null);
+  const [insights, setInsights] = useState<TrendsInsights | null>(null);
+
   const [dataReady, setDataReady] = useState(false);
-  const [insights, setInsights] = useState<Record<string, unknown> | null>(
-    null,
-  );
 
   useEffect(() => {
     if (data) {
       setTrendData(data.trendData || []);
       setSummary(data.summary || null);
-      setInsights(data.insights || null);
+      setInsights((data.insights as unknown as TrendsInsights) || null);
       setDataReady(true);
     }
   }, [data]);
@@ -90,11 +94,11 @@ export function ApplicationTrendsChart({
 
   const handleExport = () => {
     if (!trendData || trendData.length === 0) {
-      // No application trends data to export
       return;
     }
 
-    const csvData = trendData.map((trend) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const csvData: any[] = trendData.map((trend) => ({
       Date: trend.date,
       'Period Type': trend.periodType,
       Applications: trend.applications,
@@ -152,7 +156,7 @@ export function ApplicationTrendsChart({
         {
           Date: 'Total Applications',
           'Period Type': 'daily',
-          Applications: summary.totalApplications as number,
+          Applications: summary.totalApplications,
           Applied: 0,
           Screening: 0,
           Shortlisted: 0,
@@ -174,7 +178,7 @@ export function ApplicationTrendsChart({
           Screening: 0,
           Shortlisted: 0,
           Processing: 0,
-          Accepted: summary.totalAccepted as number,
+          Accepted: summary.totalAccepted,
           Rejected: 0,
           'Growth Rate (%)': '',
           'Conversion Rate (%)': '',
@@ -192,7 +196,7 @@ export function ApplicationTrendsChart({
           Shortlisted: 0,
           Processing: 0,
           Accepted: 0,
-          Rejected: summary.totalRejected as number,
+          Rejected: summary.totalRejected,
           'Growth Rate (%)': '',
           'Conversion Rate (%)': '',
           'Rejection Rate (%)': '',
@@ -203,7 +207,7 @@ export function ApplicationTrendsChart({
         {
           Date: 'Average per Period',
           'Period Type': 'daily',
-          Applications: summary.avgApplicationsPerPeriod as number,
+          Applications: summary.avgApplicationsPerPeriod,
           Applied: 0,
           Screening: 0,
           Shortlisted: 0,

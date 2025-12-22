@@ -27,7 +27,7 @@ export interface FunnelData {
     avgTimeInDays: number;
     previousStageCount: number;
   }>;
-  data?: any;
+  data?: unknown;
 }
 
 export interface JobSummary {
@@ -49,7 +49,7 @@ export interface JobData {
   insights?: {
     topPerformingJobs?: JobPerformanceData[];
   };
-  data?: any;
+  data?: unknown;
 }
 
 export interface InterviewSummary {
@@ -77,7 +77,7 @@ export interface InterviewData {
     avgSkillsScore: number;
     avgDailyAssignments: number;
   }>;
-  data?: any;
+  data?: unknown;
 }
 
 export interface TrendsSummary {
@@ -107,5 +107,5 @@ export interface TrendsData {
     trend: string;
     movingAverage?: number;
   }>;
-  data?: any;
+  data?: unknown;
 }

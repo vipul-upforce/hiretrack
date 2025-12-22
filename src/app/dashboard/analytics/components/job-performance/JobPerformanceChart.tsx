@@ -10,7 +10,12 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCcwIcon } from 'lucide-react';
-import { useJobPerformance, AnalyticsFilters } from '../../hooks/useAnalytics';
+import {
+  useJobPerformance,
+  AnalyticsFilters,
+  JobPerformanceSummary,
+  JobPerformanceInsights,
+} from '../../hooks/useAnalytics';
 import JobPerformanceSkeleton from '../loading-skeletons/job-performance';
 import SummaryCards from './summary-cards';
 import JobStatusBreakdown from './job-status-breakdown';
@@ -25,20 +30,21 @@ export interface JobPerformanceChartProps {
   organizationId?: string;
 }
 
-export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
+export function JobPerformanceChart({
   filters,
   organizationId,
-}) => {
-  const {
-    data, loading, error, refetch,
-  } = useJobPerformance(
+}: JobPerformanceChartProps) {
+  const { data, loading, error, refetch } = useJobPerformance(
     filters,
     organizationId,
   );
+
   const [jobData, setJobData] = useState<JobPerformanceData[]>([]);
-  const [summary, setSummary] = useState<any>(null);
+
+  const [summary, setSummary] = useState<JobPerformanceSummary | null>(null);
+  const [insights, setInsights] = useState<JobPerformanceInsights | null>(null);
+
   const [dataReady, setDataReady] = useState(false);
-  const [insights, setInsights] = useState<any>(null);
 
   useEffect(() => {
     if (data) {
@@ -67,16 +73,16 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-red-500">
+          <div className="flex h-64 items-center justify-center text-red-500">
             <div className="text-center">
               <p>Error loading job performance data</p>
-              <p className="text-sm text-muted-foreground mt-2">{error}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{error}</p>
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={handleRefresh}
               >
-                <RefreshCcwIcon className="h-4 w-4 mr-2" />
+                <RefreshCcwIcon className="mr-2 h-4 w-4" />
                 Retry
               </Button>
             </div>
@@ -108,10 +114,13 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCcwIcon className="h-4 w-4 mr-2" />
+              <RefreshCcwIcon className="mr-2 h-4 w-4" />
               Refresh
             </Button>
-            <JobPerformanceExport jobData={jobData} summary={summary} />
+            <JobPerformanceExport
+              jobData={jobData}
+              summary={summary as JobPerformanceSummary}
+            />
           </div>
         </div>
       </CardHeader>
@@ -130,4 +139,4 @@ export const JobPerformanceChart: React.FC<JobPerformanceChartProps> = ({
       </CardContent>
     </Card>
   );
-};
+}

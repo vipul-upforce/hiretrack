@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { DownloadIcon } from 'lucide-react';
 import { exportToCSV } from '../../utils/export';
 import type { JobPerformanceData } from '../types';
+import { JobPerformanceSummary } from '../../hooks/useAnalytics';
 
 interface Props {
   jobData: JobPerformanceData[];
-  summary: any;
+  summary: JobPerformanceSummary;
 }
 
 function JobPerformanceExport({ jobData, summary }: Props) {

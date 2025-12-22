@@ -1,9 +1,10 @@
+/* eslint-disable max-lines */
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import logger from '@/lib/logger';
-import { useSelector } from 'react-redux';
-import type { User } from '@/lib/features/org/orgApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { HeaderControls } from './components/header-controls';
 import { AnalyticsTabs } from './components/analytics-tabs';
 import {
@@ -12,23 +13,54 @@ import {
   useInterviewAssignments,
   useApplicationTrends,
 } from './hooks/useAnalytics';
-import { exportToCSV } from './utils/export';
-import type { Filters } from './components/types';
+import { ExportData, exportToCSV } from './utils/export';
+import type {
+  Filters,
+  FunnelData,
+  InterviewData,
+  JobData,
+  TrendsData,
+} from './components/types';
+
+interface TimestampLike {
+  toDate: () => Date;
+}
+
+interface ISOStringLike {
+  toISOString: () => string;
+}
+
+type DateInput =
+  | Date
+  | string
+  | number
+  | TimestampLike
+  | ISOStringLike
+  | null
+  | undefined;
 
 export default function AnalyticsPage() {
-  const toDate = (dateValue: any): Date | null => {
+  const toDate = (dateValue: DateInput): Date | null => {
     if (!dateValue) return null;
+
     if (dateValue instanceof Date) return dateValue;
+
     if (typeof dateValue === 'string' || typeof dateValue === 'number') {
       const date = new Date(dateValue);
-      return isNaN(date.getTime()) ? null : date;
+      return Number.isNaN(date.getTime()) ? null : date;
     }
-    if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+
+    if ('toDate' in dateValue && typeof dateValue.toDate === 'function') {
       return dateValue.toDate();
     }
-    if (dateValue.toISOString && typeof dateValue.toISOString === 'function') {
+
+    if (
+      'toISOString' in dateValue &&
+      typeof dateValue.toISOString === 'function'
+    ) {
       return new Date(dateValue.toISOString());
     }
+
     return null;
   };
 
@@ -39,11 +71,13 @@ export default function AnalyticsPage() {
   });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | undefined>(undefined);
+  const [organizationId, setOrganizationId] = useState<string | undefined>(
+    undefined,
+  );
   const [isLoadingOrg, setIsLoadingOrg] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
-  const { user }: { user: User } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth);
 
   const filters = useMemo(() => {
     if (!dateRange || dateRange.length !== 2) return {};
@@ -52,7 +86,10 @@ export default function AnalyticsPage() {
     const toDateValue = toDate(dateRange[1]);
 
     return {
-      dateRange: fromDate && toDateValue ? { from: fromDate, to: toDateValue } : undefined,
+      dateRange:
+        fromDate && toDateValue
+          ? { from: fromDate, to: toDateValue }
+          : undefined,
     } as Filters;
   }, [dateRange?.[0], dateRange?.[1]]);
 
@@ -61,7 +98,11 @@ export default function AnalyticsPage() {
     loading: funnelLoading,
     refetch: refetchFunnel,
   } = useCandidateFunnel(filters, organizationId);
-  const { data: jobData, loading: jobLoading, refetch: refetchJob } = useJobPerformance(filters, organizationId);
+  const {
+    data: jobData,
+    loading: jobLoading,
+    refetch: refetchJob,
+  } = useJobPerformance(filters, organizationId);
   const {
     data: interviewData,
     loading: interviewLoading,
@@ -78,7 +119,7 @@ export default function AnalyticsPage() {
     const getUserOrganization = async () => {
       try {
         if (user) {
-          setOrganizationId(user.organizationId);
+          setOrganizationId(user.organizationId as string);
         }
       } catch (error) {
         logger.error('Error getting user organization:', error);
@@ -93,7 +134,12 @@ export default function AnalyticsPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([refetchFunnel(), refetchJob(), refetchInterview(), refetchTrends()]);
+      await Promise.all([
+        refetchFunnel(),
+        refetchJob(),
+        refetchInterview(),
+        refetchTrends(),
+      ]);
     } catch (error) {
       logger.error('Error refreshing analytics data:', error);
     } finally {
@@ -103,7 +149,7 @@ export default function AnalyticsPage() {
 
   const handleExport = () => {
     try {
-      const exportData: any[] = [];
+      const exportData: ExportData[] = [];
 
       // Add export timestamp and filters
       exportData.push({
@@ -162,7 +208,10 @@ export default function AnalyticsPage() {
       }
 
       const jobInfo = jobData;
-      if (jobInfo?.jobPerformanceData && jobInfo.jobPerformanceData.length > 0) {
+      if (
+        jobInfo?.jobPerformanceData &&
+        jobInfo.jobPerformanceData.length > 0
+      ) {
         exportData.push({ 'Report Type': '=== JOB PERFORMANCE ANALYSIS ===' });
 
         jobInfo.jobPerformanceData.forEach((job) => {
@@ -180,7 +229,9 @@ export default function AnalyticsPage() {
             'Skills Required': job.skillsRequired,
             'Salary Range': job.salaryRange?.inText || 'Not specified',
             'Created Date': new Date(job.createdAt).toLocaleDateString(),
-            'Closed Date': job.closedAt ? new Date(job.closedAt).toLocaleDateString() : 'Still open',
+            'Closed Date': job.closedAt
+              ? new Date(job.closedAt).toLocaleDateString()
+              : 'Still open',
           });
         });
 
@@ -224,7 +275,10 @@ export default function AnalyticsPage() {
       }
 
       const interviewInfo = interviewData;
-      if (interviewInfo?.assignmentData && interviewInfo.assignmentData.length > 0) {
+      if (
+        interviewInfo?.assignmentData &&
+        interviewInfo.assignmentData.length > 0
+      ) {
         exportData.push({
           'Report Type': '=== INTERVIEW ASSIGNMENT ANALYSIS ===',
         });
@@ -242,9 +296,11 @@ export default function AnalyticsPage() {
             'Completion Rate (%)': interviewer.completionRate.toFixed(2),
             'Success Rate (%)': interviewer.successRate.toFixed(2),
             'Average Rating': interviewer.avgRating.toFixed(2),
-            'Average Experience Score': interviewer.avgExperienceScore.toFixed(2),
+            'Average Experience Score':
+              interviewer.avgExperienceScore.toFixed(2),
             'Average Skills Score': interviewer.avgSkillsScore.toFixed(2),
-            'Average Daily Assignments': interviewer.avgDailyAssignments.toFixed(1),
+            'Average Daily Assignments':
+              interviewer.avgDailyAssignments.toFixed(1),
           });
         });
 
@@ -341,8 +397,8 @@ export default function AnalyticsPage() {
   if (isLoadingOrg) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <div className="flex h-64 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
         </div>
       </div>
     );
@@ -352,10 +408,12 @@ export default function AnalyticsPage() {
   if (!organizationId) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <p className="text-red-500">Unable to load analytics</p>
-            <p className="text-sm text-muted-foreground mt-2">Organization information not found</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Organization information not found
+            </p>
           </div>
         </div>
       </div>
@@ -371,7 +429,9 @@ export default function AnalyticsPage() {
         onRefresh={handleRefresh}
         onExport={handleExport}
         isRefreshing={isRefreshing}
-        isExporting={funnelLoading || jobLoading || interviewLoading || trendsLoading}
+        isExporting={
+          funnelLoading || jobLoading || interviewLoading || trendsLoading
+        }
       />
 
       {/* Analytics Tabs */}
@@ -380,10 +440,10 @@ export default function AnalyticsPage() {
         onTabChange={setActiveTab}
         filters={filters}
         organizationId={organizationId}
-        funnelData={funnelData}
-        jobData={jobData}
-        interviewData={interviewData}
-        trendsData={trendsData}
+        funnelData={funnelData as FunnelData}
+        jobData={jobData as JobData}
+        interviewData={interviewData as InterviewData}
+        trendsData={trendsData as TrendsData}
         isLoadingFunnel={funnelLoading}
         isLoadingJob={jobLoading}
         isLoadingInterview={interviewLoading}
