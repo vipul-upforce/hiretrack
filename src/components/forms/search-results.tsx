@@ -413,7 +413,7 @@ export function SearchResults({
         onConfirm: async () => {
           setIsDeleting(true);
           try {
-            const res = await deleteCandidate(candidate._id).unwrap();
+            await deleteCandidate(candidate._id).unwrap();
 
             const updatedCandidate = {
               ...candidate,
