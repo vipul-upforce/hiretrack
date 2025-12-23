@@ -1,15 +1,32 @@
 'use client';
 
+import { FormObject } from '@/Custom_Fields/Types/CustomField';
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import { JobCard } from './jobs-card';
 import { LoadingSkeleton } from './loading-skeleton';
 import { EmptyState } from './empty-state';
 
+interface ApplyJob {
+  _id: string;
+  title: string;
+  description: string;
+  skills: string[];
+  experience: number;
+  salary?: {
+    min: number;
+    max: number;
+    inText: string;
+    isPrivate: boolean;
+  };
+  customFields?: CustomFieldValues;
+}
+
 interface JobGridProps {
-  jobs: any[];
+  jobs: ApplyJob[];
   isLoading: boolean;
   primaryColor: string;
-  formNameObject: any;
-  onJobClick: (job: any) => void;
+  formNameObject: FormObject | undefined;
+  onJobClick: (job: ApplyJob) => void;
   hasSearch: boolean;
   onClearSearch?: () => void;
 }
@@ -49,10 +66,10 @@ export function JobGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {jobs.map((job, index) => (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {jobs.map((job) => (
         <JobCard
-          key={index}
+          key={job._id}
           job={job}
           primaryColor={primaryColor}
           formNameObject={formNameObject}

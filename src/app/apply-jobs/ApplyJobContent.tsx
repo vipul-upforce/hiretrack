@@ -8,7 +8,9 @@ import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import { useFetchAppliedApplicationQuery } from '@/lib/features/candidate/candidateApi';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import type { SerializedError } from '@reduxjs/toolkit';
-import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import useCustomForm, {
+  CustomFieldValues,
+} from '@/Custom_Fields/hooks/useCustomForm';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { useAppSelector } from '@/lib/redux/hooks';
@@ -29,12 +31,12 @@ interface Job {
   skills: string[];
   experience: number;
   salary?: {
-    min: 0;
-    max: 0;
+    min: number;
+    max: number;
     inText: string;
-    isPrivate: false;
+    isPrivate: boolean;
   };
-  customFields?: Record<string, any>;
+  customFields?: CustomFieldValues;
 }
 
 function isFetchBaseQueryError(
@@ -42,6 +44,7 @@ function isFetchBaseQueryError(
 ): error is FetchBaseQueryError {
   return typeof error === 'object' && error !== null && 'status' in error;
 }
+/* eslint-disable max-lines */
 
 export default function ApplyJobsContent({
   showHeaderFooter = true,
@@ -127,7 +130,8 @@ export default function ApplyJobsContent({
 
       if (urlOrgName) {
         const config = allowance?.data?.find(
-          (org: any) => org?.portalConfigs?.portalName === urlOrgName,
+          (org: { portalConfigs: { portalName: string } }) =>
+            org?.portalConfigs?.portalName === urlOrgName,
         )?.portalConfigs;
 
         if (config?.primaryColor) setPrimaryColor(config.primaryColor);
@@ -140,11 +144,11 @@ export default function ApplyJobsContent({
           if (portalData.secondaryColor)
             setSecondaryColor(portalData.secondaryColor);
           if (portalData.portalLogo) {
-            const logoUrl =
+            const logoUrl2 =
               typeof portalData.portalLogo === 'string'
                 ? portalData.portalLogo
                 : portalData.portalLogo?.url;
-            if (logoUrl) setLogoUrl(logoUrl);
+            if (logoUrl2) setLogoUrl(logoUrl2);
           }
           if (portalData.portalName) setPortalName(portalData.portalName);
         }
@@ -181,11 +185,11 @@ export default function ApplyJobsContent({
         if (portalData.secondaryColor)
           setSecondaryColor(portalData.secondaryColor);
         if (portalData.portalLogo) {
-          const logoUrl =
+          const logoUrl3 =
             typeof portalData.portalLogo === 'string'
               ? portalData.portalLogo
               : portalData.portalLogo?.url;
-          if (logoUrl) setLogoUrl(logoUrl);
+          if (logoUrl3) setLogoUrl(logoUrl3);
         }
         if (portalData.portalName) setPortalName(portalData.portalName);
       }

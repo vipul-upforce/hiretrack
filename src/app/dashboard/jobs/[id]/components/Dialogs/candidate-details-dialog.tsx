@@ -13,7 +13,7 @@ import {
 import { useParams, usePathname } from 'next/navigation';
 import { ICandidateHistory } from '@/lib/models/history';
 import { User } from '@/lib/features/users/usersApi';
-import { evaluateCandidate } from '@/app/apply-jobs/ApplyAsGuest';
+import { evaluateCandidate } from '@/app/apply-jobs/utils/guestApplicationUtils';
 import dayjs from 'dayjs';
 import { useSelector } from 'react-redux';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';

@@ -1,4 +1,5 @@
 import CustomFieldsData from '@/Custom_Fields/Components/CustomFields/customFields-details';
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import useRoles from '@/hooks/useRoles';
 import { Dialog } from '@headlessui/react';
 import React, { useState, useEffect } from 'react';
@@ -7,14 +8,14 @@ import { Briefcase, X, ArrowRight, CheckCircle } from 'lucide-react';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import ApplyOptions from './ApplyOptions';
 import { CreateCandidateDialog } from '../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog';
-import { hasAppliedAsGuest } from './ApplyAsGuest';
+import { hasAppliedAsGuest } from './utils/guestApplicationUtils';
 
 interface Job {
   title: string;
   description: string;
   skills: string[];
   experience: number;
-  customFields?: Record<string, string>;
+  customFields?: CustomFieldValues;
   _id?: string;
 }
 
@@ -34,6 +35,7 @@ interface JobWithSalary extends Job {
     isPrivate: boolean;
   };
 }
+/* eslint-disable max-lines */
 
 export default function JobModal({
   job,
