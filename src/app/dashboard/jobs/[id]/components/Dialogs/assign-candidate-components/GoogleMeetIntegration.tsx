@@ -109,8 +109,7 @@ export function GoogleMeetIntegration({
   };
 
   const hasExistingMeet = !!candidate.assignment?.googleMeet?.eventId;
-
-  if (!googleCalendarData?.isConnected) {
+  if (!googleCalendarData?.googleCalendar?.isConnected) {
     return null;
   }
 
