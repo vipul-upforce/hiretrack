@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Field, FieldProps, FormikErrors, FormikTouched } from 'formik';
 import { Eye, EyeOff, LucideIcon } from 'lucide-react';
 
+type GenericFormValues = Record<string, unknown>;
+
 interface FormInputProps {
   name: string;
   label: string;
@@ -12,8 +14,8 @@ interface FormInputProps {
   icon: LucideIcon;
   primaryColor: string;
   disabled: boolean;
-  errors: FormikErrors<any>;
-  touched: FormikTouched<any>;
+  errors: FormikErrors<GenericFormValues>;
+  touched: FormikTouched<GenericFormValues>;
 }
 
 export function FormInput({
@@ -31,6 +33,9 @@ export function FormInput({
   const isPassword = type === 'password';
   const passwordType = showPassword ? 'text' : 'password';
   const inputType = isPassword ? passwordType : type;
+
+  const fieldError = errors[name as keyof typeof errors];
+  const fieldTouched = touched[name as keyof typeof touched];
 
   return (
     <div className="space-y-2">
@@ -58,6 +63,7 @@ export function FormInput({
               }}
               onBlur={(e) => {
                 e.target.style.borderColor = '';
+                field.onBlur(e);
               }}
             />
           )}
@@ -78,8 +84,8 @@ export function FormInput({
         )}
       </div>
 
-      {errors.name && touched.name && (
-        <div className="mt-1 text-sm text-red-500">{errors.name as string}</div>
+      {fieldError && fieldTouched && (
+        <div className="mt-1 text-sm text-red-500">{fieldError as string}</div>
       )}
     </div>
   );

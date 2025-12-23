@@ -60,10 +60,10 @@ export interface DiskFolderDetailResponse {
 }
 
 export interface LogUser {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
+  _id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
 }
 
 export interface LogCandidate {

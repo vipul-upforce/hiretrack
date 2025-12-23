@@ -8,6 +8,7 @@ import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import {
+  PortalConfigData,
   useGetPortalConfigsQuery,
   useUpdatePortalConfigsMutation,
 } from '@/lib/features/settings';
@@ -15,7 +16,7 @@ import { PortalSettings, FileUpload } from '../types';
 
 export function usePortalConfiguration() {
   const dispatch = useDispatch();
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth);
 
   const {
     data: portalData,
@@ -44,16 +45,16 @@ export function usePortalConfiguration() {
   const [footerHtml, setFooterHtml] = useState<string>('');
   const [hasMultipleOrgs, setHasMultipleOrgs] = useState<boolean>(false);
 
-  const loadPortalData = (data: any) => {
+  const loadPortalData = (data: PortalConfigData) => {
     if (!data) return;
 
     setSettings({
       portalName: data.portalName || '',
-      portalLogo: data.portalLogo || null,
-      portalLogoDark: data.portalLogoDark || null,
-      portalFavicon: data.portalFavicon || null,
-      portalHeader: data.portalHeader || null,
-      portalFooter: data.portalFooter || null,
+      portalLogo: (data.portalLogo as FileUpload) || null,
+      portalLogoDark: (data.portalLogoDark as FileUpload) || null,
+      portalFavicon: (data.portalFavicon as FileUpload) || null,
+      portalHeader: (data.portalHeader as FileUpload) || null,
+      portalFooter: (data.portalFooter as FileUpload) || null,
       primaryColor: data.primaryColor || '#6366f1',
       secondaryColor: data.secondaryColor || '#8b5cf6',
     });
@@ -136,8 +137,9 @@ export function usePortalConfiguration() {
       }
 
       toast.success('Portal settings saved successfully');
-    } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to save portal settings');
+    } catch (error: unknown) {
+      const apiError = error as { data?: { message?: string } };
+      toast.error(apiError?.data?.message || 'Failed to save portal settings');
     }
   };
 

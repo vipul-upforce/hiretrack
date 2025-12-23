@@ -388,6 +388,7 @@ export default function ApplyJobsContent({
       </main>
 
       {shouldShowFooter && (
+        // eslint-disable-next-line react/no-danger
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
       )}
 

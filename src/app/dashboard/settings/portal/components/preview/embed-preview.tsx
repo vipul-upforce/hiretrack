@@ -1,6 +1,6 @@
 import React from 'react';
 import { Eye, Code } from 'lucide-react';
-import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { ILocalUser } from '@/lib/redux/authSlice';
 import { PortalSettings } from '../../types';
 
 interface EmbedPreviewProps {
@@ -10,7 +10,7 @@ interface EmbedPreviewProps {
   embedShowBorder: boolean;
   embedHideHeader: boolean;
   embedHideFooter: boolean;
-  user: User;
+  user: ILocalUser | null;
   hasMultipleOrgs: boolean;
 }
 
@@ -40,20 +40,20 @@ export function EmbedPreview({
   return (
     <div className="space-y-3">
       {/* Browser Frame */}
-      <div className="rounded-lg border bg-gray-100 dark:bg-black p-2">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="rounded-lg border bg-gray-100 p-2 dark:bg-black">
+        <div className="mb-2 flex items-center gap-2">
           <div className="flex gap-1">
-            <div className="w-3 h-3 rounded-full bg-red-500" />
-            <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <div className="w-3 h-3 rounded-full bg-green-500" />
+            <div className="h-3 w-3 rounded-full bg-red-500" />
+            <div className="h-3 w-3 rounded-full bg-yellow-500" />
+            <div className="h-3 w-3 rounded-full bg-green-500" />
           </div>
-          <div className="flex-1 bg-white dark:bg-gray-700 rounded px-3 py-1 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex-1 rounded bg-white px-3 py-1 text-xs text-gray-500 dark:bg-gray-700 dark:text-gray-400">
             yourwebsite.com/careers
           </div>
         </div>
 
         {/* Real Iframe */}
-        <div className="bg-white dark:bg-black rounded p-2 overflow-auto">
+        <div className="overflow-auto rounded bg-white p-2 dark:bg-black">
           <div
             style={{
               width: embedWidth.includes('%')
@@ -84,26 +84,16 @@ export function EmbedPreview({
       </div>
 
       {/* Embed Info */}
-      <div className="text-xs text-muted-foreground space-y-1">
+      <div className="space-y-1 text-xs text-muted-foreground">
         <p className="flex items-center gap-1">
           <Code className="h-3 w-3" />
-          Dimensions:
-          {' '}
-          {embedWidth}
-          {' '}
-          ×
-          {' '}
-          {embedHeight}
+          Dimensions: {embedWidth} × {embedHeight}
         </p>
         {(embedHideHeader || embedHideFooter) && (
           <p className="flex items-center gap-1">
             <Eye className="h-3 w-3" />
-            Hidden:
-            {' '}
-            {[
-              embedHideHeader && 'Header',
-              embedHideFooter && 'Footer',
-            ]
+            Hidden:{' '}
+            {[embedHideHeader && 'Header', embedHideFooter && 'Footer']
               .filter(Boolean)
               .join(', ')}
           </p>
