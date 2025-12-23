@@ -13,10 +13,11 @@ import useCustomForm, {
 } from '@/Custom_Fields/hooks/useCustomForm';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
 import logger from '@/lib/logger';
 import Cookies from 'js-cookie';
+import { refreshAccessToken } from '@/lib/api/baseApi';
 import { useIsIframe } from './IframeDetector';
 import { HeaderSection } from './components/header-section';
 import { SearchBar } from './components/search-bar';
@@ -51,10 +52,15 @@ export default function ApplyJobsContent({
 }: {
   showHeaderFooter?: boolean;
 }) {
+  const dispatch = useAppDispatch();
+  if (Cookies.get('org_id') != null && Cookies.get('auth_state') !== 'true') {
+    refreshAccessToken(dispatch);
+  }
+
   const router = useRouter();
   const isIframe = useIsIframe();
   const searchParams = useSearchParams();
-  const [orgName, setOrgName] = useState<string>('');
+  const [orgName, setOrgName] = useState<string>(searchParams?.get('o') || '');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
@@ -78,14 +84,15 @@ export default function ApplyJobsContent({
   const shouldShowFooter =
     showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
 
-  const shouldSkipQuery = orgName === '' || authState !== 'true';
+  const { user } = useAppSelector((state) => state.auth);
+  const isCandidate = user?.role === 'candidate';
 
+  const shouldSkipQuery =
+    !isCandidate && (orgName === '' || authState === 'true');
   const { data } = useFetchAppliedApplicationQuery(
     {},
-    { skip: shouldSkipQuery },
-  );
-  const { user } = useAppSelector((state) => state.auth);
-
+    { skip: shouldSkipQuery || user == null },
+  );  
   const { toast } = useToast();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>('');

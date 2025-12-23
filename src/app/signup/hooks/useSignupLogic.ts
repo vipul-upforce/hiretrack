@@ -167,14 +167,25 @@ export const useSignupLogic = () => {
     } catch (error: unknown) {
       let errorMessage = 'Failed to create account';
 
-      // Handle RTK Query error
-      if (error && typeof error === 'object' && 'data' in error) {
-        errorMessage =
-          (error as any).data?.error ||
-          (error as any).data?.message ||
-          'Failed to create account';
-      } else if (error instanceof Error) {
+      if (error instanceof Error) {
         errorMessage = error.message;
+      } else if (
+        typeof error === 'object' &&
+        error !== null &&
+        'data' in error
+      ) {
+        const errorWithData = error as { data: unknown };
+
+        if (
+          typeof errorWithData.data === 'object' &&
+          errorWithData.data !== null
+        ) {
+          const dataObj = errorWithData.data as {
+            error?: string;
+            message?: string;
+          };
+          errorMessage = dataObj.error || dataObj.message || errorMessage;
+        }
       }
 
       setStatus(errorMessage);
