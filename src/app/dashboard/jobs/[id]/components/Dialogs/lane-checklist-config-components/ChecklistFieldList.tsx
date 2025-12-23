@@ -4,14 +4,15 @@ import {
   Droppable,
   Draggable,
   DropResult,
+  DroppableProvided,
+  DraggableStateSnapshot,
+  DraggableProvided,
 } from '@hello-pangea/dnd';
 import { createPortal } from 'react-dom';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  GripVertical, Edit, Trash2, Type,
-} from 'lucide-react';
+import { GripVertical, Edit, Trash2, Type } from 'lucide-react';
 import { IChecklistField, UserRole } from '@/lib/models/JobLaneConfig';
 import { FIELD_TYPES, fieldTypeIcons } from './constants';
 
@@ -23,13 +24,13 @@ interface ChecklistFieldListProps {
   userRole: string;
 }
 
-export const ChecklistFieldList: React.FC<ChecklistFieldListProps> = ({
+export function ChecklistFieldList({
   fields,
   onEditField,
   onRemoveField,
   onDragEnd,
   userRole,
-}) => {
+}: ChecklistFieldListProps) {
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
     null,
   );
@@ -51,7 +52,7 @@ export const ChecklistFieldList: React.FC<ChecklistFieldListProps> = ({
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Droppable droppableId="checklist-fields">
-        {(provided, snapshot) => (
+        {(provided: DroppableProvided) => (
           <div
             {...provided.droppableProps}
             ref={provided.innerRef}
@@ -60,24 +61,23 @@ export const ChecklistFieldList: React.FC<ChecklistFieldListProps> = ({
             {visibleFields.map((field, index) => {
               const IconComponent = fieldTypeIcons[field.type] || Type;
               return (
-                <Draggable
-                  key={field.id}
-                  draggableId={field.id}
-                  index={index}
-                >
-                  {(provided, snapshot) => {
+                <Draggable key={field.id} draggableId={field.id} index={index}>
+                  {(
+                    draggableProvided: DraggableProvided,
+                    snapshot: DraggableStateSnapshot,
+                  ) => {
                     const draggingComponent = (
                       <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
+                        ref={draggableProvided.innerRef}
+                        {...draggableProvided.draggableProps}
                         style={{
-                          ...provided.draggableProps.style,
+                          ...draggableProvided.draggableProps.style,
                         }}
                       >
                         <Card
-                          className={`p-4 hover:shadow-md transition-shadow ${
+                          className={`p-4 transition-shadow hover:shadow-md ${
                             snapshot.isDragging
-                              ? 'shadow-2xl bg-white dark:bg-black border-2 border-primary opacity-95 scale-105'
+                              ? 'scale-105 border-2 border-primary bg-white opacity-95 shadow-2xl dark:bg-black'
                               : 'shadow-sm hover:shadow-md'
                           }`}
                         >
@@ -85,18 +85,18 @@ export const ChecklistFieldList: React.FC<ChecklistFieldListProps> = ({
                             <div className="flex items-center gap-3">
                               <div
                                 {...provided.dragHandleProps}
-                                className="text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing p-1 rounded hover:bg-muted/50"
+                                className="cursor-grab rounded p-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground active:cursor-grabbing"
                               >
                                 <GripVertical className="h-4 w-4" />
                               </div>
-                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                              <div className="rounded-lg bg-blue-50 p-2 dark:bg-blue-900/20">
                                 <IconComponent className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                               </div>
                               <div>
-                                <div className="font-medium text-sm">
+                                <div className="text-sm font-medium">
                                   {field.label}
                                 </div>
-                                <div className="text-xs text-gray-500 flex items-center gap-2">
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
                                   <span>
                                     {
                                       FIELD_TYPES.find(
@@ -107,22 +107,20 @@ export const ChecklistFieldList: React.FC<ChecklistFieldListProps> = ({
                                   {field.required && (
                                     <Badge
                                       variant="secondary"
-                                      className="text-xs px-1.5 py-0.5"
+                                      className="px-1.5 py-0.5 text-xs"
                                     >
                                       Required
                                     </Badge>
                                   )}
-                                  {field.options
-                                    && field.options.length > 0 && (
+                                  {field.options &&
+                                    field.options.length > 0 && (
                                       <Badge
                                         variant="outline"
-                                        className="text-xs px-1.5 py-0.5"
+                                        className="px-1.5 py-0.5 text-xs"
                                       >
-                                        {field.options.length}
-                                        {' '}
-                                        options
+                                        {field.options.length} options
                                       </Badge>
-                                  )}
+                                    )}
                                 </div>
                               </div>
                             </div>
@@ -162,4 +160,4 @@ export const ChecklistFieldList: React.FC<ChecklistFieldListProps> = ({
       </Droppable>
     </DragDropContext>
   );
-};
+}

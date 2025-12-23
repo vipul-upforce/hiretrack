@@ -5,7 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import ConfirmationDialog from '../Dialogs/ConfirmationDialog';
 
@@ -73,24 +73,30 @@ function FollowupDisplay({
       />
     );
   }
-  return showToolTip ? (
-    <TooltipProvider delayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {date ? contentWithDate : contentWODate}
-        </TooltipTrigger>
-        <TooltipContent className="max-w-80 break-words border border-border bg-popover text-popover-foreground shadow-lg">
-          <p className="text-md leading-relaxed text-muted-foreground">
-            {note}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  ) : date ? (
-    contentWithDate
-  ) : (
-    contentWODate
-  );
+  let displayContent: React.ReactNode;
+
+  if (showToolTip) {
+    displayContent = (
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {date ? contentWithDate : contentWODate}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-80 break-words border border-border bg-popover text-popover-foreground shadow-lg">
+            <p className="text-md leading-relaxed text-muted-foreground">
+              {note}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  } else if (date) {
+    displayContent = contentWithDate;
+  } else {
+    displayContent = contentWODate;
+  }
+
+  return displayContent;
 }
 
 export default FollowupDisplay;

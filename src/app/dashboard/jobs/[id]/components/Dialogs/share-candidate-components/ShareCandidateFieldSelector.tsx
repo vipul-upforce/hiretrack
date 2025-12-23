@@ -1,3 +1,8 @@
+/**
+ * Share Candidate Field Selector Component
+ * Displays all field selection categories with checkboxes
+ */
+
 import React, { memo } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -11,7 +16,6 @@ import {
   Brain,
   Settings,
   CheckCircle2,
-  LucideIcon,
 } from 'lucide-react';
 import { Candidate } from '@/types/candidate';
 import { cn } from '@/lib/utils';
@@ -57,7 +61,7 @@ CheckboxField.displayName = 'CheckboxField';
 
 interface CategoryCardProps {
   title: string;
-  icon: LucideIcon;
+  icon: React.ElementType;
   category: 'basic' | 'professional' | 'ai' | 'job' | 'additional';
   children: React.ReactNode;
   onSelectAll: (
@@ -67,7 +71,6 @@ interface CategoryCardProps {
     category: 'basic' | 'professional' | 'ai' | 'job' | 'additional',
   ) => void;
 }
-/* eslint-disable max-lines */
 
 const CategoryCard = memo(
   ({

@@ -32,6 +32,7 @@ const parseDate = (dateStr: string): Date | null => {
   if (dateStr.includes('Present')) return currentDate;
 
   // Match full month names, abbreviations, and spacing inconsistencies
+  // eslint-disable-next-line security/detect-non-literal-regexp
   const dateRegex = new RegExp(
     `(${monthNames.join('|')}|${monthAbbr.join('|')})\\s?\\d{0,2},?\\s?(\\d{4})`,
     'i',
@@ -39,15 +40,16 @@ const parseDate = (dateStr: string): Date | null => {
   const match = dateStr.match(dateRegex);
 
   if (match) {
-    const month = monthNames.findIndex(
-      (m) => m.toLowerCase() === match[1].toLowerCase(),
-    ) !== -1
-      ? monthNames.findIndex(
+    const month =
+      monthNames.findIndex(
         (m) => m.toLowerCase() === match[1].toLowerCase(),
-      )
-      : monthAbbr.findIndex(
-        (m) => m.toLowerCase() === match[1].toLowerCase(),
-      );
+      ) !== -1
+        ? monthNames.findIndex(
+            (m) => m.toLowerCase() === match[1].toLowerCase(),
+          )
+        : monthAbbr.findIndex(
+            (m) => m.toLowerCase() === match[1].toLowerCase(),
+          );
 
     const year = parseInt(match[2], 10);
 
@@ -94,9 +96,8 @@ function FormUpdater({
 }: {
   parsedResumeData: Resume | null;
 }) {
-  const {
-    values, setFieldValue, validateForm, setTouched,
-  } = useFormikContext<FormValues>();
+  const { values, setFieldValue, validateForm, setTouched } =
+    useFormikContext<FormValues>();
 
   useEffect(() => {
     if (parsedResumeData && parsedResumeData.profile) {
@@ -120,36 +121,40 @@ function FormUpdater({
       }
 
       if (
-        values.skills.length === 0
-        && parsedResumeData.skills?.descriptions.length > 0
+        values.skills.length === 0 &&
+        parsedResumeData.skills?.descriptions.length > 0
       ) {
         // Simple validation function - the heavy lifting is now done in the extraction
         const isValidSkill = (skill: string) => {
           const trimmed = skill.trim();
           return (
-            trimmed.length >= 2
-            && trimmed.length <= 30
-            && trimmed.split(/\s+/).length <= 3
-            && /[a-zA-Z]/.test(trimmed)
-            && !/^[\d\W_]+$/.test(trimmed)
+            trimmed.length >= 2 &&
+            trimmed.length <= 30 &&
+            trimmed.split(/\s+/).length <= 3 &&
+            /[a-zA-Z]/.test(trimmed) &&
+            !/^[\d\W_]+$/.test(trimmed)
           );
         };
 
         const splitSkills = [
           ...new Set([
             ...parsedResumeData.skills.featuredSkills
-              .flatMap((desc) => desc.skill
-                .replace(/^[^:]+:/, '')
-                ?.split(/[,|;\/]+/)
-                .map((skill) => skill.trim())
-                .filter(isValidSkill))
+              .flatMap((desc) =>
+                desc.skill
+                  .replace(/^[^:]+:/, '')
+                  ?.split(/[,|;\/]+/) // eslint-disable-line no-useless-escape
+                  .map((skill) => skill.trim())
+                  .filter(isValidSkill),
+              )
               .filter(Boolean),
             ...parsedResumeData.skills.descriptions
-              .flatMap((desc) => desc
-                .replace(/^[^:]+:/, '')
-                ?.split(/[,|;\/]+/)
-                .map((skill) => skill.trim())
-                .filter(isValidSkill))
+              .flatMap((desc) =>
+                desc
+                  .replace(/^[^:]+:/, '')
+                  ?.split(/[,|;\/]+/) // eslint-disable-line no-useless-escape
+                  .map((skill) => skill.trim())
+                  .filter(isValidSkill),
+              )
               .filter(Boolean),
           ]),
         ].slice(0, 20);

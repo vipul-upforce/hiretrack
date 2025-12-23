@@ -14,7 +14,6 @@ interface CreateCandidateDialogFooterProps {
   secondaryColor?: string;
   onCancel: () => void;
   onApply: () => void;
-  hasErrors: boolean;
 }
 
 export function CreateCandidateDialogFooter({
@@ -26,13 +25,12 @@ export function CreateCandidateDialogFooter({
   secondaryColor,
   onCancel,
   onApply,
-  hasErrors,
 }: CreateCandidateDialogFooterProps) {
   return (
-    <div className="flex-shrink-0 flex justify-end bottom-0 space-x-2 border-t bg-background px-6 py-4 sticky z-999">
+    <div className="z-999 sticky bottom-0 flex flex-shrink-0 justify-end space-x-2 border-t bg-background px-6 py-4">
       <Button
         type="button"
-        className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 hover:bg-gray-200 px-4 py-2 text-sm font-medium text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+        className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 px-4 py-2 text-sm font-medium text-black hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         onClick={onCancel}
       >
         Cancel
@@ -44,19 +42,19 @@ export function CreateCandidateDialogFooter({
         disabled={isSubmitting || isCreating || isLoading}
         onMouseEnter={(e) => {
           const target = e.target as HTMLElement;
-          target.style.backgroundColor = secondaryColor;
+          target.style.backgroundColor = secondaryColor || '';
         }}
         onMouseLeave={(e) => {
           const target = e.target as HTMLElement;
-          target.style.backgroundColor = primaryColor;
+          target.style.backgroundColor = primaryColor || '';
         }}
         style={{ backgroundColor: primaryColor }}
       >
-        {isSubmitting
-          ? 'Saving...'
-          : userRole === 'candidate' || userRole === ''
-            ? 'Apply'
-            : 'Add Candidate'}
+        {(() => {
+          if (isSubmitting) return 'Saving...';
+          if (userRole === 'candidate' || userRole === '') return 'Apply';
+          return 'Add Candidate';
+        })()}
       </Button>
     </div>
   );

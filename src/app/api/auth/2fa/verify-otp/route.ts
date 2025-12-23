@@ -108,7 +108,7 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
   const accessToken = await signAccessToken(obj[0], orgId);
 
   const userId = obj[0].id;
-  const role = obj[0].role;
+  const {role} = obj[0];
   const isCandidate = role === 'candidate';
   
   // Cleanup expired tokens before storing new one (keeps array clean)
@@ -116,10 +116,10 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
   
   // Generate refresh token using JWT (same method as access token)
   const refreshTokenPayload = {
-    userId: userId,
-    role: role,
-    orgId: orgId,
-    isCandidate: isCandidate,
+    userId,
+    role,
+    orgId,
+    isCandidate,
     tokenVersion: obj[0].tokenVersion,
   };
   
@@ -137,7 +137,7 @@ const returnTokenBasedResponse = async (obj: any, orgId: string, req?: NextReque
   const response = NextResponse.json({
     message: 'Logged In Successfully',
     user: accessToken,
-    refreshToken: refreshToken, // Return JWT refresh token to client
+    refreshToken, // Return JWT refresh token to client
   });
 
   setAuthCookies({

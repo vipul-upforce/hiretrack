@@ -28,34 +28,33 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Candidate } from '@/types/candidate';
+import { IGoogleCalendar } from '@/lib/models/settings';
 import { Interviewer } from '@/lib/features/user/userApi';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
-import { FormValues, User } from '../../../schemas/AssignCandidateSchema';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { FormValues } from '../../../schemas/AssignCandidateSchema';
 
 interface GoogleMeetIntegrationProps {
   candidate: Candidate;
-  user: User | null;
   interviewers: Interviewer[] | undefined;
-  googleCalendarData: any;
+  googleCalendarData: IGoogleCalendar;
   setShowCancelMeetDialog: (show: boolean) => void;
   getOnAltEnterSubmit: (
     values: FormValues,
     formikHelpers: FormikProps<FormValues>,
     isSubmitting: boolean,
   ) => (fieldValue: string) => (e: React.KeyboardEvent) => void;
-  isSubmitting: boolean;
-  formikProps: FormikProps<FormValues>;
 }
 
 export function GoogleMeetIntegration({
   candidate,
-  user,
   interviewers,
   googleCalendarData,
   setShowCancelMeetDialog,
   getOnAltEnterSubmit,
 }: GoogleMeetIntegrationProps) {
+  const { user } = useAppSelector((state) => state.auth || {});
   const formikContext = useFormikContext<FormValues>();
   const { values, setFieldValue, isSubmitting } = formikContext;
   const [isEditMode, setIsEditMode] = useState(false);
@@ -324,7 +323,9 @@ export function GoogleMeetIntegration({
                         formikContext,
                         isSubmitting,
                       )(field.value)}
-                      organizationId={user?.organizationInfo?._id || ''}
+                      organizationId={
+                        user?.organizationInfo?._id.toString() || ''
+                      }
                       currentUserRole={user?.role || ''}
                     />
                   )}
@@ -341,7 +342,9 @@ export function GoogleMeetIntegration({
                     const selectedInterviewer = interviewers?.find(
                       (i) => i._id === values.interviewerId,
                     );
-                    const defaultGuests = getDefaultGuests(selectedInterviewer);
+                    const defaultGuests = getDefaultGuests(
+                      selectedInterviewer as Interviewer,
+                    );
 
                     return defaultGuests.map((email) => {
                       let role = '';
@@ -393,9 +396,9 @@ export function GoogleMeetIntegration({
                 {values.additionalGuests &&
                   values.additionalGuests.length > 0 && (
                     <div className="space-y-1">
-                      {values.additionalGuests.map((email, index) => (
+                      {values.additionalGuests.map((email) => (
                         <div
-                          key={index}
+                          key={email}
                           className="flex items-center gap-2 rounded border border-gray-200 bg-white p-1.5 text-xs"
                         >
                           <Mail className="h-3 w-3 text-gray-500" />
@@ -501,9 +504,9 @@ export function GoogleMeetIntegration({
                     values.meetingAttachments.length > 0 && (
                       <ul className="space-y-2">
                         {values.meetingAttachments.map(
-                          (file: any, index: number) => (
+                          (file, index: number) => (
                             <li
-                              key={`${file.name}-${index}`}
+                              key={`${file.name}`}
                               className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-2 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                             >
                               <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -527,7 +530,7 @@ export function GoogleMeetIntegration({
                                 onClick={() => {
                                   const updatedFiles =
                                     values.meetingAttachments?.filter(
-                                      (_: any, i: number) => i !== index,
+                                      (_, i: number) => i !== index,
                                     );
                                   setFieldValue(
                                     'meetingAttachments',

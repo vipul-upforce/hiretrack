@@ -25,7 +25,7 @@ import { ILaneConfig } from '@/lib/models/JobLaneConfig';
 import CustomScrollbarLane from '@/components/ui/custom-scrollbar-lane';
 import { getJobId, getTrackingDate } from '../../utils/candidateAccessors';
 import { LaneOptionsMenu } from './lanes-options-menu';
-import { CandidateCard } from '../Candidate/candidare-card';
+import { CandidateCard } from '../Candidate/candidate-card';
 
 interface PendingMove {
   candidateId: string;

@@ -1,6 +1,7 @@
 import CustomFieldForm from '@/Custom_Fields/Components/Form/CustomFieldForm';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
-import { useContext, useMemo, useState } from 'react';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
+import { useContext, useMemo } from 'react';
 
 export default function JobSpecificCustomFieldFormWrapper({
   isOpen,
@@ -8,31 +9,34 @@ export default function JobSpecificCustomFieldFormWrapper({
   initialValue,
   isEditMode,
   jobId,
-  formId,
 }: {
   isOpen: boolean;
   handleClose: () => void;
-  initialValue: any;
+  initialValue: CustomField;
   isEditMode: boolean;
   jobId: string;
-  formId: string;
 }) {
   const context = useContext(CustomFieldsContext);
   const { handleAddCustomField, handleEditCustomField } = context;
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Override the context methods to add jobId
   const jobSpecificContext = useMemo(
     () => ({
       ...context,
-      handleAddCustomField: (field: any, selectedFormId: string | null) => {
+      handleAddCustomField: (
+        field: CustomField,
+        selectedFormId: string | null,
+      ) => {
         const jobSpecificField = {
           ...field,
           jobId,
         };
         handleAddCustomField(jobSpecificField, selectedFormId);
       },
-      handleEditCustomField: (field: any, selectedFormId: string | null) => {
+      handleEditCustomField: (
+        field: CustomField,
+        selectedFormId: string | null,
+      ) => {
         const jobSpecificField = {
           ...field,
           jobId,

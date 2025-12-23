@@ -8,7 +8,7 @@ import Rating from '@mui/material/Rating';
 import { User } from '@/lib/features/users/usersApi';
 import { Candidate } from '@/types/candidate';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface MentionUser {
   _id: string;
@@ -46,20 +46,21 @@ export default function RemarkInputSection({
   localCandidate,
   handleRemoveFollowUp,
 }: RemarkInputSectionProps) {
-  const hasFollowUp = localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
+  const hasFollowUp =
+    localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
   const [removeFU, setRemoveFU] = useState(false);
   const [selectedMentions, setSelectedMentions] = useState<MentionUser[]>([]);
-  
-  const handleFollowUpCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    if (event.target.checked && hasFollowUp) {
-      // handleRemoveFollowUp();
-      setRemoveFU(true);
-    } else {
-      setRemoveFU(false);
-    }
-  };
+
+  // const handleFollowUpCheckboxChange = (
+  //   event: React.ChangeEvent<HTMLInputElement>,
+  // ) => {
+  //   if (event.target.checked && hasFollowUp) {
+  //     // handleRemoveFollowUp();
+  //     setRemoveFU(true);
+  //   } else {
+  //     setRemoveFU(false);
+  //   }
+  // };
 
   return (
     <div className="space-y-4 border-t pt-4">
@@ -72,7 +73,7 @@ export default function RemarkInputSection({
             if (e.altKey && e.key === 'Enter') {
               e.preventDefault();
               if (newRemark.trim() && !isRemarkSubmitting) {
-                handleAddRemark(selectedMentions.map(m => m._id));
+                handleAddRemark(selectedMentions.map((m) => m._id));
               }
             }
           }}
@@ -82,13 +83,13 @@ export default function RemarkInputSection({
           isRemarkPrivate={isSubRemarkPrivate}
           onSelectedMentionsChange={setSelectedMentions}
         />
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Label htmlFor="rating">Rating:</Label>
             <Rating
               name="half-rating"
               value={remarkRating}
-              onChange={(e, value) => {
+              onChange={(_, value) => {
                 setRemarkRating(value || null);
                 setRemarkRatingHistory(value || null);
               }}
@@ -114,8 +115,8 @@ export default function RemarkInputSection({
           </div>
           <div className="flex flex-row items-center justify-evenly">
             <div className="flex items-center justify-between px-2 py-2">
-              {(user?.role === 'admin' || user?.role === 'hr')
-                && hasFollowUp && (
+              {(user?.role === 'admin' || user?.role === 'hr') &&
+                hasFollowUp && (
                   <div className="flex flex-row items-center justify-center space-x-2">
                     <Checkbox
                       onCheckedChange={(checked) => {
@@ -131,7 +132,7 @@ export default function RemarkInputSection({
                       Remove Follow-up
                     </Label>
                   </div>
-              )}
+                )}
             </div>
             <div className="flex items-center justify-between px-2 py-2">
               {(user?.role === 'admin' || user?.role === 'hr') && (
@@ -152,8 +153,10 @@ export default function RemarkInputSection({
                   <Switch
                     id="privacy-toggle-submit"
                     checked={isSubRemarkPrivate}
-                    onCheckedChange={() => setIsSubRemarkPrivate(!isSubRemarkPrivate)}
-                    className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
+                    onCheckedChange={() =>
+                      setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                    }
+                    className="border-1 ml-2 h-4 w-8 border border-solid drop-shadow-lg"
                   />
                 </>
               )}
@@ -162,8 +165,11 @@ export default function RemarkInputSection({
             <Button
               variant="primary"
               onClick={() => {
-                removeFU && handleRemoveFollowUp();
-                handleAddRemark(selectedMentions.map(m => m._id));
+                if (removeFU) {
+                  handleRemoveFollowUp();
+                } else {
+                  handleAddRemark(selectedMentions.map((m) => m._id));
+                }
               }}
               disabled={isRemarkSubmitting}
             >

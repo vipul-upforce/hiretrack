@@ -15,9 +15,10 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { User } from '@/lib/features/users/usersApi';
 import { evaluateCandidate } from '@/app/apply-jobs/utils/guestApplicationUtils';
 import dayjs from 'dayjs';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
 import { followUpSepretorPatternRegex } from '@/lib/constants';
+import { useSSE } from '@/hooks/useSSE';
 import { EditCandidateDialog } from './edit-candidate-dialog';
 import { AssignCandidateDialog } from './assign-candidate-dialog';
 import { AssignJobDialog } from './assign-job-dialog';
@@ -67,9 +68,7 @@ export function CandidateDetailsDialog({
   const [isAssigning, setIsAssigning] = useState(false);
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
   const [isAssigningJob, setIsAssigningJob] = useState(false);
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
@@ -84,6 +83,9 @@ export function CandidateDetailsDialog({
   // History loading state
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
+
+  // useSSE already handles updating localCandidate when SSE updates arrive
+  useSSE(setLocalCandidate, localCandidate || null, id);
 
   // Load history when history tab is activated
   useEffect(() => {
@@ -102,6 +104,81 @@ export function CandidateDetailsDialog({
       setTimeLineItems(historyData.history);
     }
   }, [historyData]);
+
+  // Merge SSE history updates into timeLineItems without refetching
+  // Watch localCandidate?.history because useSSE updates localCandidate when SSE arrives
+  useEffect(() => {
+    if (
+      localCandidate?.history &&
+      Array.isArray(localCandidate.history) &&
+      localCandidate.history.length > 0 &&
+      localCandidate._id === candidate?._id // Only merge if viewing this candidate
+    ) {
+      setTimeLineItems((prevItems) => {
+        // Create a map of existing items by their unique identifier
+        const existingItemsMap = new Map<string, ICandidateHistory>();
+        prevItems.forEach((item) => {
+          // Use a combination of dateTime and _id/remark.id as unique key
+          const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+          existingItemsMap.set(key, item);
+        });
+
+        if (!localCandidate.history) localCandidate.history = [];
+
+        // Find new items that don't exist in current timeline
+        const newItems = localCandidate.history.filter((newItem) => {
+          const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
+          return !existingItemsMap.has(key);
+        });
+
+        // If there are new items, merge them
+        if (newItems.length > 0) {
+          // Combine existing and new items, then sort by dateTime (newest first)
+          const merged = [...prevItems, ...newItems].sort(
+            (a, b) =>
+              new Date(b.dateTime ?? 0).getTime() -
+              new Date(a.dateTime ?? 0).getTime(),
+          );
+          return merged;
+        }
+
+        // If no new items, check if any existing items were updated (e.g., remark was edited)
+        const updatedItems = localCandidate.history
+          .map((updatedItem) => {
+            const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
+            const existing = existingItemsMap.get(key);
+            if (existing) {
+              // Item exists, return updated version
+              return updatedItem;
+            }
+            return null;
+          })
+          .filter(Boolean) as ICandidateHistory[];
+
+        if (updatedItems.length > 0) {
+          // Replace updated items
+          const updatedMap = new Map<string, ICandidateHistory>();
+          updatedItems.forEach((item) => {
+            const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+            updatedMap.set(key, item);
+          });
+
+          return prevItems
+            .map((item) => {
+              const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+              return updatedMap.get(key) || item;
+            })
+            .sort(
+              (a, b) =>
+                new Date(b.dateTime ?? 0).getTime() -
+                new Date(a.dateTime ?? 0).getTime(),
+            );
+        }
+
+        return prevItems;
+      });
+    }
+  }, [localCandidate?.history, localCandidate?._id, candidate?._id]);
 
   // Handle History Error
   useEffect(() => {
@@ -129,8 +206,13 @@ export function CandidateDetailsDialog({
       (c) => c._id === localCandidate?._id,
     );
 
-    // Fetch updated history silently if already loaded
-    if (historyLoaded && localCandidate?._id) {
+    // Only fetch updated history if it's not already loaded via SSE
+    // This prevents unnecessary refetches when SSE has already updated the data
+    if (
+      historyLoaded &&
+      localCandidate?._id &&
+      !localCandidate?.history?.length
+    ) {
       await fetchHistory(localCandidate._id);
     }
 
@@ -138,7 +220,7 @@ export function CandidateDetailsDialog({
     if (updatedCandidate) {
       setLocalCandidate({
         ...updatedCandidate,
-        history: historyData?.history || [],
+        history: historyData?.history || localCandidate?.history || [],
       });
     }
     setIsRefetching(false);
@@ -199,10 +281,12 @@ export function CandidateDetailsDialog({
       setIsEvaluatingFor(localCandidate?._id as string);
       const result: {
         candidate?: EvaluationResult;
-      } = await evaluateCandidate(
+      } = (await evaluateCandidate(
         localCandidate?._id as string,
         evaluateCandidateMutation,
-      );
+      )) as {
+        candidate?: EvaluationResult;
+      };
       if (!result.candidate) {
         return toast({
           title: 'Error',
@@ -225,6 +309,7 @@ export function CandidateDetailsDialog({
     } finally {
       setIsReEvaluating(false);
     }
+    return candidate;
   };
 
   const handleReEvaluationClick = () => {
@@ -289,6 +374,15 @@ export function CandidateDetailsDialog({
       setLocalCandidate(candidate);
       // Reset history state when candidate changes
       setHistoryLoaded(false);
+      // If candidate has history from SSE, initialize timeLineItems
+      if (
+        candidate.history &&
+        Array.isArray(candidate.history) &&
+        candidate.history.length > 0
+      ) {
+        setTimeLineItems(candidate.history);
+        setHistoryLoaded(true);
+      }
     }
   }, [candidate, id]);
 
@@ -372,7 +466,7 @@ export function CandidateDetailsDialog({
         <CandidateDetailsActions
           candidate={localCandidate}
           user={user}
-          fromFilter={fromFilter}
+          fromFilter={fromFilter || false}
           hideEditButton={hideEditButton}
           hideCloseButtons={hideCloseButtons}
           onAssign={() => setIsAssigning(true)}

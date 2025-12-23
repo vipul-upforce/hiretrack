@@ -19,7 +19,6 @@ interface RemarkOptionsMenuProps {
   onTogglePrivacy?: (id: string, isPrivate: boolean) => Promise<void>;
   onEdit: (id: string) => void;
   isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
 }
 
 export function RemarkOptionsMenu({
@@ -29,11 +28,9 @@ export function RemarkOptionsMenu({
   onTogglePrivacy,
   onEdit,
   isOpen,
-  setIsOpen,
 }: RemarkOptionsMenuProps) {
   const [isLocalPrivate, setIsLocalPrivate] = useState(isPrivate); // state for
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handlePrivacyToggle = async (checked: boolean) => {
     setIsLoading(true);
@@ -43,10 +40,8 @@ export function RemarkOptionsMenu({
     try {
       await onTogglePrivacy?.(remarkId, checked);
       setIsLoading(false);
-      setError(null);
     } catch {
       setIsLoading(false);
-      setError('Failed to update privacy!');
       setIsLocalPrivate(previousState); // Revert to the previous state on failure
     }
   };
@@ -93,6 +88,8 @@ export function RemarkOptionsMenu({
         )}
 
         <div
+          role="button"
+          tabIndex={0}
           className="flex cursor-pointer items-center justify-between px-2 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"
           onClick={handleEdit}
         >

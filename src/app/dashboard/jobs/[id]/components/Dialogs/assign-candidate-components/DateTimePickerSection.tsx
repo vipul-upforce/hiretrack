@@ -1,9 +1,10 @@
 import { Field, FieldProps, useFormikContext } from 'formik';
 import { Label } from '@/components/ui/label';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { FormValues } from '../../../schemas/AssignCandidateSchema';
 
 export function DateTimePickerSection() {
-  const { setFieldValue, errors, touched } = useFormikContext<any>();
+  const { setFieldValue, errors, touched } = useFormikContext<FormValues>();
 
   return (
     <div className="grid gap-2">
@@ -17,7 +18,7 @@ export function DateTimePickerSection() {
         )}
       </Field>
       {typeof errors.time === 'string' && touched.time && (
-        <div className="text-red-500 text-sm">{errors.time}</div>
+        <div className="text-sm text-red-500">{errors.time}</div>
       )}
     </div>
   );

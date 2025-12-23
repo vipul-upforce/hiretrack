@@ -1,9 +1,8 @@
-import {
-  Field, FieldProps, useFormikContext, FormikProps,
-} from 'formik';
+import { Field, FieldProps, useFormikContext, FormikProps } from 'formik';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MentionTextarea } from '@/components/ui/mention-textarea';
+import React from 'react';
 import { Rating } from '@mui/material';
 import { Paperclip, FileIcon, X } from 'lucide-react';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
@@ -17,7 +16,7 @@ interface AssignmentDetailsSectionProps {
   getOnAltEnterSubmit: (
     values: FormValues,
     formikHelpers: FormikProps<FormValues>,
-    isSubmitting: boolean
+    isSubmitting: boolean,
   ) => (fieldValue: string) => (e: React.KeyboardEvent) => void;
   isSubmitting: boolean;
   formikProps: FormikProps<FormValues>;
@@ -47,24 +46,21 @@ export function AssignmentDetailsSection({
                 formikProps,
                 isSubmitting,
               )(field.value)}
-              organizationId={
-                user?.organizationInfo?._id
-                || ''
-              }
+              organizationId={user?.organizationInfo?._id || ''}
               currentUserRole={user?.role || ''}
               rows={3}
             />
           )}
         </Field>
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Label htmlFor="rating">Rating:</Label>
             <Field name="rating">
-              {({ field }: { field: { value: number } }) => (
+              {({ field }: FieldProps<{ value: number | null }>) => (
                 <Rating
                   name="rating"
-                  value={field.value}
-                  onChange={(e, value) => setFieldValue('rating', value)}
+                  value={typeof field.value === 'number' ? field.value : null}
+                  onChange={(_event, value) => setFieldValue('rating', value)}
                   precision={0.5}
                 />
               )}
@@ -81,13 +77,13 @@ export function AssignmentDetailsSection({
               type="button"
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 h-8"
+              className="flex h-8 items-center gap-2"
               onClick={() => {
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.multiple = true;
                 input.onchange = (e) => {
-                  const { files } = (e.target as HTMLInputElement);
+                  const { files } = e.target as HTMLInputElement;
                   if (files && files.length > 0) {
                     const sanitizedFiles = sanitizeFiles(Array.from(files));
                     handleFileSelect({
@@ -101,7 +97,7 @@ export function AssignmentDetailsSection({
                 input.click();
               }}
             >
-              <Paperclip className="w-3 h-3" />
+              <Paperclip className="h-3 w-3" />
               Add Files
             </Button>
             <span className="text-xs text-muted-foreground">Max 30 files</span>
@@ -109,13 +105,13 @@ export function AssignmentDetailsSection({
 
           {values.attachments && values.attachments.length > 0 && (
             <div className="space-y-1">
-              {values.attachments.map((att: any, index: number) => (
+              {values.attachments.map((att, index: number) => (
                 <div
-                  key={index}
-                  className="flex items-center justify-between p-1.5 bg-white dark:bg-black border border-gray-200 rounded text-xs"
+                  key={att.name}
+                  className="flex items-center justify-between rounded border border-gray-200 bg-white p-1.5 text-xs dark:bg-black"
                 >
                   <div className="flex items-center gap-1">
-                    <FileIcon className="w-3 h-3 text-gray-500" />
+                    <FileIcon className="h-3 w-3 text-gray-500" />
                     <span className="truncate">{att.name}</span>
                   </div>
                   <Button
@@ -124,13 +120,13 @@ export function AssignmentDetailsSection({
                     size="sm"
                     onClick={() => {
                       const updatedFiles = values.attachments?.filter(
-                        (_: any, i: number) => i !== index,
+                        (_, i: number) => i !== index,
                       );
                       setFieldValue('attachments', updatedFiles);
                     }}
                     className="h-4 w-4 p-0 text-gray-400 hover:text-red-500"
                   >
-                    <X className="w-2.5 h-2.5" />
+                    <X className="h-2.5 w-2.5" />
                   </Button>
                 </div>
               ))}

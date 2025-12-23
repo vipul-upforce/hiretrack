@@ -8,23 +8,25 @@ interface ChecklistHeaderProps {
   onRemoveChecklist: () => void;
 }
 
-export const ChecklistHeader: React.FC<ChecklistHeaderProps> = ({
+export function ChecklistHeader({
   onSaveAsTemplate,
   onRemoveChecklist,
-}) => (
-  <CardHeader>
-    <div className="flex items-center justify-between">
-      <CardTitle className="text-base">Checklist Configuration</CardTitle>
-      <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm" onClick={onSaveAsTemplate}>
-          <Save className="h-4 w-4 mr-2" />
-          Save as Template
-        </Button>
-        <Button variant="outline" size="sm" onClick={onRemoveChecklist}>
-          <X className="h-4 w-4 mr-2" />
-          Remove Checklist
-        </Button>
+}: ChecklistHeaderProps) {
+  return (
+    <CardHeader>
+      <div className="flex items-center justify-between">
+        <CardTitle className="text-base">Checklist Configuration</CardTitle>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" size="sm" onClick={onSaveAsTemplate}>
+            <Save className="mr-2 h-4 w-4" />
+            Save as Template
+          </Button>
+          <Button variant="outline" size="sm" onClick={onRemoveChecklist}>
+            <X className="mr-2 h-4 w-4" />
+            Remove Checklist
+          </Button>
+        </div>
       </div>
-    </div>
-  </CardHeader>
-);
+    </CardHeader>
+  );
+}
