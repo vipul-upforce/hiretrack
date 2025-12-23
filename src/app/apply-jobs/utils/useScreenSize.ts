@@ -16,5 +16,3 @@ export const useScreenSize = (breakpoint = 1024) => {
 
   return isSmallScreen;
 };
-
-
