@@ -10,7 +10,7 @@ export interface UpdateSettingsSectionProps {
   values: {
     enableAutoUpdate: boolean;
   };
-  setFieldValue: (field: string, value: any, shouldValidate?: boolean) => void;
+  setFieldValue: (field: string, value: unknown, shouldValidate?: boolean) => void;
   isSubmitting: boolean;
   handleCheckForUpdates: () => void;
   checkingUpdatesRTK: boolean;
