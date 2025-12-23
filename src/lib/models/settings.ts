@@ -1,6 +1,8 @@
 import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
 import { Schema, Document } from 'mongoose';
 
+/* eslint-disable max-lines */
+
 const fileMetaSchema = new Schema(
   {
     id: { type: String, required: true },
@@ -297,22 +299,22 @@ const settingsSchema = new Schema({
     adminOverrides: {
       type: Map,
       of: {
-        newApplications: { type: Boolean},
-        interviewAssignments: { type: Boolean},
-        statusUpdates: { type: Boolean},
-        newRemarks: { type: Boolean},
-        stepCompleted: { type: Boolean},
-        mentions: { type: Boolean},
-        detailsUpdated: { type: Boolean},
-        meetingScheduled: { type: Boolean},
-        meetingUpdated: { type: Boolean},
-        meetingCancelled: { type: Boolean},
-        meetingInviteAccepted: { type: Boolean},
-        meetingInviteDeclined: { type: Boolean},
-        meetingInviteTentative: { type: Boolean},
-        followupAdded: { type: Boolean},
-        followupUpdated: { type: Boolean},
-        followupRemoved: { type: Boolean},
+        newApplications: { type: Boolean },
+        interviewAssignments: { type: Boolean },
+        statusUpdates: { type: Boolean },
+        newRemarks: { type: Boolean },
+        stepCompleted: { type: Boolean },
+        mentions: { type: Boolean },
+        detailsUpdated: { type: Boolean },
+        meetingScheduled: { type: Boolean },
+        meetingUpdated: { type: Boolean },
+        meetingCancelled: { type: Boolean },
+        meetingInviteAccepted: { type: Boolean },
+        meetingInviteDeclined: { type: Boolean },
+        meetingInviteTentative: { type: Boolean },
+        followupAdded: { type: Boolean },
+        followupUpdated: { type: Boolean },
+        followupRemoved: { type: Boolean },
         jobCreated: { type: Boolean },
         jobUpdated: { type: Boolean },
         userAdded: { type: Boolean },
@@ -424,66 +426,6 @@ export interface OrganizationEmailNotifications {
   };
 }
 
-export interface ISettings {
-  organizationId: string;
-  multipleOrg: boolean;
-  fileStorage: Ifs;
-  mailConfig: Ismtp;
-  aiProviders?: IAIProviders;
-  gemini?: IGemini; // Keep for backward compatibility
-  portalConfigs?: {
-    portalLogo: any | null;
-    portalLogoDark: any | null;
-    portalFavicon: any | null;
-    portalHeader: any | null;
-    portalFooter: any | null;
-    portalName: string;
-    primaryColor: string;
-    secondaryColor: string;
-  };
-  timeZone: {
-    name: string;
-    offset: string;
-  };
-  emailTemplates: { [key: string]: IEmailTemplate };
-  twoFA?: ITwoFA;
-  googleCalendar?: IGoogleCalendar;
-  onboardingStatus?: IOnboardingStatus;
-  organizationEmailNotifications?: OrganizationEmailNotifications;
-  captcha?: ICaptcha;
-  evaluationConfig?: IEvaluationConfig;
-}
-
-export interface IGemini {
-  gemini_key: string;
-}
-
-export interface Ismtp {
-  smtp_host: string;
-  smtp_port: string;
-  smtp_user: string;
-  smtp_password: string;
-  smtp_from: string;
-  resend_api_key: string;
-  resend_from: string;
-  resend_reply_to: string;
-  brevo_api_key: string;
-  brevo_from: string;
-  brevo_reply_to: string;
-  mailProvider: string;
-}
-
-export interface Ifs {
-  storageType: string;
-  cloudinaryCloudName?: string;
-  cloudinaryApiSecret?: string;
-  cloudinaryApiKey?: string;
-  awsRegion?: string;
-  awsAccessKeyId?: string;
-  awsSecretAccessKey?: string;
-  awsBucketName?: string;
-}
-
 export interface IAIProviders {
   activeProvider: 'gemini' | 'openai' | 'anthropic' | 'perplexity';
   gemini: {
@@ -507,6 +449,33 @@ export interface IAIProviders {
     customModel: string;
   };
 }
+
+export interface Ifs {
+  storageType: string;
+  cloudinaryCloudName?: string;
+  cloudinaryApiSecret?: string;
+  cloudinaryApiKey?: string;
+  awsRegion?: string;
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
+  awsBucketName?: string;
+}
+
+export interface Ismtp {
+  smtp_host: string;
+  smtp_port: string;
+  smtp_user: string;
+  smtp_password: string;
+  smtp_from: string;
+  resend_api_key: string;
+  resend_from: string;
+  resend_reply_to: string;
+  brevo_api_key: string;
+  brevo_from: string;
+  brevo_reply_to: string;
+  mailProvider: string;
+}
+
 export interface ITwoFA {
   enable2FA: boolean;
 }
@@ -536,6 +505,18 @@ export interface ICaptcha {
   captchaProvider: string;
 }
 
+export interface IFileMeta {
+  id: string;
+  name: string;
+  url: string;
+  type: string | null;
+  size: number;
+}
+
+export interface IGemini {
+  gemini_key: string;
+}
+
 export interface IEvaluationConfig {
   temperature: number;
   customPrompt: string | null;
@@ -545,6 +526,36 @@ export interface IEvaluationConfig {
   enableConfidenceScores?: boolean;
   enableRedFlagsDetection?: boolean;
   enableSkillsMatrix?: boolean;
+}
+
+export interface ISettings {
+  organizationId: string;
+  multipleOrg: boolean;
+  fileStorage: Ifs;
+  mailConfig: Ismtp;
+  aiProviders?: IAIProviders;
+  gemini?: IGemini; // Keep for backward compatibility
+  portalConfigs?: {
+    portalLogo: IFileMeta | null;
+    portalLogoDark: IFileMeta | null;
+    portalFavicon: IFileMeta | null;
+    portalHeader: IFileMeta | null;
+    portalFooter: IFileMeta | null;
+    portalName: string;
+    primaryColor: string;
+    secondaryColor: string;
+  };
+  timeZone: {
+    name: string;
+    offset: string;
+  };
+  emailTemplates: { [key: string]: IEmailTemplate };
+  twoFA?: ITwoFA;
+  googleCalendar?: IGoogleCalendar;
+  onboardingStatus?: IOnboardingStatus;
+  organizationEmailNotifications?: OrganizationEmailNotifications;
+  captcha?: ICaptcha;
+  evaluationConfig?: IEvaluationConfig;
 }
 
 export interface SettingsDocument extends Document, ISettings {}

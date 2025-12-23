@@ -32,7 +32,15 @@ export const MAX_LENGTHS = {
 
 export interface ValidationRule {
   required?: boolean;
-  type?: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'email' | 'objectId' | 'url';
+  type?:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'array'
+    | 'object'
+    | 'email'
+    | 'objectId'
+    | 'url';
   minLength?: number;
   maxLength?: number;
   pattern?: RegExp;
@@ -48,7 +56,10 @@ export interface ValidationSchema {
 }
 
 export class ValidationError extends Error {
-  constructor(public field: string, message: string) {
+  constructor(
+    public field: string,
+    message: string,
+  ) {
     super(`${field}: ${message}`);
     this.name = 'ValidationError';
   }
@@ -57,7 +68,10 @@ export class ValidationError extends Error {
 /**
  * Validates input data against a schema
  */
-export function validateInput(data: any, schema: ValidationSchema): { isValid: boolean; errors: string[] } {
+export function validateInput(
+  data: any,
+  schema: ValidationSchema,
+): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Check for null/undefined data
@@ -69,7 +83,10 @@ export function validateInput(data: any, schema: ValidationSchema): { isValid: b
     const value = data[field];
 
     // Required field check
-    if (rules.required && (value === undefined || value === null || value === '')) {
+    if (
+      rules.required &&
+      (value === undefined || value === null || value === '')
+    ) {
       errors.push(`${field} is required`);
       continue;
     }
@@ -94,7 +111,9 @@ export function validateInput(data: any, schema: ValidationSchema): { isValid: b
         errors.push(`${field} must be at least ${rules.minLength} characters`);
       }
       if (rules.maxLength && value.length > rules.maxLength) {
-        errors.push(`${field} must be no more than ${rules.maxLength} characters`);
+        errors.push(
+          `${field} must be no more than ${rules.maxLength} characters`,
+        );
       }
 
       // Pattern validation
@@ -153,11 +172,15 @@ function validateType(value: any, type: string): boolean {
     case 'array':
       return Array.isArray(value);
     case 'object':
-      return value !== null && typeof value === 'object' && !Array.isArray(value);
+      return (
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+      );
     case 'email':
       return typeof value === 'string' && VALIDATION_PATTERNS.email.test(value);
     case 'objectId':
-      return typeof value === 'string' && VALIDATION_PATTERNS.objectId.test(value);
+      return (
+        typeof value === 'string' && VALIDATION_PATTERNS.objectId.test(value)
+      );
     case 'url':
       return typeof value === 'string' && VALIDATION_PATTERNS.url.test(value);
     default:
@@ -202,7 +225,10 @@ export function sanitizeString(input: string): string {
 /**
  * Validates query parameters
  */
-export function validateQueryParams(searchParams: URLSearchParams, schema: ValidationSchema) {
+export function validateQueryParams(
+  searchParams: URLSearchParams,
+  schema: ValidationSchema,
+) {
   const data: Record<string, any> = {};
 
   // Convert URLSearchParams to object

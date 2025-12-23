@@ -54,6 +54,7 @@ const createSubsections = (
     const line = lines[i];
     if (i === 0) {
       subsection.push(line);
+      // eslint-disable-next-line no-continue
       continue;
     }
     if (isLineNewSubsection(line, lines[i - 1])) {
