@@ -6,7 +6,6 @@ import {
   IChecklistField,
 } from '@/lib/models/JobLaneConfig';
 import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
-import { current } from '@reduxjs/toolkit';
 
 interface ValidateChecklistResponse {
   success: boolean;
@@ -113,7 +112,8 @@ export const checklistApi = baseApi.injectEndpoints({
       query: (params) => {
         const searchParams = new URLSearchParams();
         if (params.type) searchParams.append('type', params.type);
-        if (params.active !== undefined) searchParams.append('active', params.active.toString());
+        if (params.active !== undefined)
+          searchParams.append('active', params.active.toString());
         return `/checklist-templates?${searchParams.toString()}`;
       },
       transformResponse: (response: {
