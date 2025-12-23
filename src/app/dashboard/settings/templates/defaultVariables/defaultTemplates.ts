@@ -171,13 +171,13 @@ export const defaultTemplates: EmailTemplate[] = [
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">New Feedback Added</h2>
+        <h2 style="color: #2c3e50; margin-top: 0;">New Remark Added</h2>
         <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
 
         <p style="margin: 0 0 15px 0;">New feedback has been added for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
 
         <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
-            <h3 style="margin-top: 0; color: #495057;">Feedback Details</h3>
+            <h3 style="margin-top: 0; color: #495057;">Remark Details</h3>
             <p style="margin: 5px 0;"><strong>Added by:</strong> {{reviewerName}}</p>
             <p style="margin: 5px 0;"><strong>Date:</strong> {{remarkDate}}</p>
             <p style="margin: 5px 0;"><strong>Rating:</strong> {{rating}}/5</p>
