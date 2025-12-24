@@ -15,9 +15,9 @@ import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
+import { refreshAccessToken } from '@/lib/api/baseApi';
 import logger from '@/lib/logger';
 import Cookies from 'js-cookie';
-import { refreshAccessToken } from '@/lib/api/baseApi';
 import { useIsIframe } from './IframeDetector';
 import { HeaderSection } from './components/header-section';
 import { SearchBar } from './components/search-bar';
@@ -92,7 +92,7 @@ export default function ApplyJobsContent({
   const { data } = useFetchAppliedApplicationQuery(
     {},
     { skip: shouldSkipQuery || user == null },
-  );  
+  );
   const { toast } = useToast();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -216,7 +216,27 @@ export default function ApplyJobsContent({
       logger.error('Error processing portal settings:', e);
     }
   }
+  const orgId = Cookies.get('org_id');
+  // Add this useEffect to proactively refresh token if refresh_token exists
+  useEffect(() => {
+    const checkAndRefreshToken = async () => {
+      // Check if refresh_token exists in cookies
 
+      // If we have refresh_token and orgId, but auth_state is not 'true' or user is null,
+      // proactively refresh the token
+      if (orgId && (!authState || authState !== 'true')) {
+        try {
+          await refreshAccessToken(dispatch).then(() => setUserLoggedIn(true));
+        } catch {
+          // Silently fail - don't disrupt the page if refresh fails
+          // The user can still use public endpoints
+          console.warn('Proactive token refresh failed:', error);
+        }
+      }
+    };
+
+    checkAndRefreshToken();
+  }, [dispatch, user, orgId, authState]);
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--portal-primary',
@@ -290,15 +310,15 @@ export default function ApplyJobsContent({
   const handleLogout = async () => {
     try {
       await triggerLogout().unwrap();
-      router.push('/auth/login');
     } catch (e) {
       logger.error('Logout failed', e);
+    } finally {
+      toast({
+        title: 'Logged out',
+        description: 'You have been successfully logged out',
+      });
+      router.push('/auth/login');
     }
-    toast({
-      title: 'Logged out',
-      description: 'You have been successfully logged out',
-    });
-    router.push('/auth/login');
   };
 
   if (error && !isLoading) {

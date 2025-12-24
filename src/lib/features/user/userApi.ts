@@ -10,14 +10,8 @@ export interface Interviewer {
 export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchInterviewers: builder.query<Interviewer[], void>({
-      queryFn: (_arg, _api, _extraOptions, baseQuery) => runIfCookiePresent<Interviewer[]>(
-        baseQuery,
-        () => ({
-          url: '/users/interviewers',
-          method: 'GET',
-        }),
-        { emptyResponse: [] },
-      ),
+      query: () => '/users/interviewers',
+      providesTags: ['Users'],
     }),
   }),
 });

@@ -7,8 +7,13 @@ async function checkOrgInDatabase(organizationId: string) {
   if (!Organization) {
     return false;
   }
+ try {
   const organization = await Organization?.findOne({ _id: organizationId }).select('name').lean();
   return !!organization?.name;
+ } catch (err) {
+  logger.error({err},'Error checking organization:');
+  return false;
+ }
 }
 
 const handleGetChekOrg = async (req: NextRequest) => {

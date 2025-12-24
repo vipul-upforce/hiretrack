@@ -17,8 +17,10 @@ import { CandidateFormValues } from '../../../schemas/candidate-schema';
 
 export function CandidateAssignmentSection() {
   const { values, setFieldValue, errors } = useFormikContext<CandidateFormValues>();
-  const { data: interviewers } = useFetchInterviewersQuery();
-  const { user } = useSelector((state:RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.auth);
+  // Skip fetching interviewers unless user exists and is not a candidate
+  const shouldFetchInterviewers = !!user && user.role !== 'candidate' && user.role !== '';
+  const { data: interviewers } = useFetchInterviewersQuery(undefined, { skip: !shouldFetchInterviewers });
   const [timeTouched, setTimeTouched] = useState(false);
 
   // Only render if user has permission

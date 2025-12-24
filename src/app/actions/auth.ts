@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUserRole } from '@/lib/utils/checklistVisibility';
 import type { UserRole } from '@/lib/models/JobLaneConfig';
-import connectToDatabase, { Settings, User } from '@/lib/mongodb';
+import connectToDatabase, { CandidateAccount, Settings, User } from '@/lib/mongodb';
 
 export interface OrganizationTag {
   title: string;
@@ -68,6 +68,7 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
     const oldTokenVersion = decryptedData?.tokenVersion;
     const organizationId = decryptedData?.organizationId;
     const userId = decryptedData?.id;
+    const isCandidate = decryptedData?.role === 'candidate';
 
     if (!userId) {
       return { success: false, error: 'User ID not found' };
@@ -76,17 +77,38 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
     // Parallelize database operations
     await connectToDatabase();
 
-    const [user, fileStorage] = await Promise.all([
-      User!
+    // Support fetching either CandidateAccount or User depending on isCandidate flag.
+    // Always prefer explicit, typed models, and minimize selected fields for performance and privacy.
+
+    let user: any = null;
+    if (isCandidate) {
+      // Fetch candidate account info by userId
+      user = await CandidateAccount!
         .findById(userId)
         .populate({
           path: 'organizationId',
-          select: '-customFields', // Exclude customFields from populated organization
+          select: '-customFields',
+        })
+        .select('name email role organizationId tokenVersion appliedApplications')
+        .lean();
+    } else {
+      // Fetch regular user info by userId
+      user = await User!
+        .findById(userId)
+        .populate({
+          path: 'organizationId',
+          select: '-customFields',
         })
         .select('name email role organizationId tokenVersion')
-        .lean(),
-      Settings!.findOne({ organizationId }).select('fileStorage').lean(),
-    ]);
+        .lean();
+    }
+    console.log(user, "user-106");
+    // File storage is always per-organization, so fetch regardless of user type
+    const fileStorage = await Settings!
+      .findOne({ organizationId })
+      .select('fileStorage')
+      .lean();
+
 
     if (!user) {
       return { success: false, error: 'User not found' };
