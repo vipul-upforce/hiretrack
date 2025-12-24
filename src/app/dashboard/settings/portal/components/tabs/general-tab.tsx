@@ -8,13 +8,13 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { ILocalUser } from '@/lib/redux/authSlice';
 import { PortalSettings } from '../../types';
 
 interface GeneralTabProps {
   settings: PortalSettings;
   setSettings: React.Dispatch<React.SetStateAction<PortalSettings>>;
-  user: User;
+  user: ILocalUser | null;
 }
 
 export function GeneralTab({ settings, setSettings, user }: GeneralTabProps) {
@@ -30,16 +30,18 @@ export function GeneralTab({ settings, setSettings, user }: GeneralTabProps) {
           <Input
             id="portalName"
             value={
-              settings.portalName
-              && settings.portalName !== ''
-              && settings.portalName.length > 0
+              settings.portalName &&
+              settings.portalName !== '' &&
+              settings.portalName.length > 0
                 ? settings.portalName
                 : user?.organizationInfo?.name
             }
-            onChange={(e) => setSettings((prev) => ({
-              ...prev,
-              portalName: e.target.value,
-            }))}
+            onChange={(e) =>
+              setSettings((prev) => ({
+                ...prev,
+                portalName: e.target.value,
+              }))
+            }
             placeholder="Enter your portal name"
           />
           <p className="text-xs text-muted-foreground">

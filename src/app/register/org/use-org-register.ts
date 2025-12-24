@@ -79,11 +79,23 @@ export const useOrgRegister = () => {
           throw new Error(licenseData.error || 'Invalid License');
         }
       } catch (e: unknown) {
-        // Handle RTK error object or standard Error
-        const msg =
-          e instanceof Error
-            ? e.message
-            : (e as any)?.data?.message || 'License verification failed.';
+        let msg = 'License verification failed.';
+
+        if (e instanceof Error) {
+          msg = e.message;
+        } else if (typeof e === 'object' && e !== null && 'data' in e) {
+          const errorData = (e as { data: unknown }).data;
+          if (
+            typeof errorData === 'object' &&
+            errorData !== null &&
+            'message' in errorData
+          ) {
+            const messageValue = (errorData as { message: unknown }).message;
+            if (typeof messageValue === 'string') {
+              msg = messageValue;
+            }
+          }
+        }
 
         toast({
           title: 'License Error',

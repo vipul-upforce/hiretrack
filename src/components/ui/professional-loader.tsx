@@ -23,7 +23,6 @@ interface ProfessionalLoaderProps {
   /**
    * Custom color for the loader (uses portal primary by default)
    */
-  variant?: 'primary' | 'secondary' | 'muted';
 }
 
 /**
@@ -35,10 +34,16 @@ export function ProfessionalLoader({
   text,
   className,
   fullscreen = false,
-  variant = 'primary',
 }: ProfessionalLoaderProps) {
   // Map sizes to UniqueLoading sizes
-  const morphSize = size === 'sm' || size === 'default' ? 'sm' : size === 'lg' || size === 'xl' ? 'md' : 'lg';
+  let morphSize: 'sm' | 'md' | 'lg';
+  if (size === 'sm' || size === 'default') {
+    morphSize = 'sm';
+  } else if (size === 'lg' || size === 'xl') {
+    morphSize = 'md';
+  } else {
+    morphSize = 'lg';
+  }
 
   const loader = (
     <div
@@ -52,9 +57,7 @@ export function ProfessionalLoader({
 
       {/* Loading text */}
       {text && (
-        <p className="text-sm font-medium text-muted-foreground">
-          {text}
-        </p>
+        <p className="text-sm font-medium text-muted-foreground">{text}</p>
       )}
     </div>
   );
@@ -82,12 +85,9 @@ export function CardLoader({
 }) {
   return (
     <div className={cn('flex flex-col gap-4', className)}>
-      {Array.from({ length: count }).map((_, i) => (
-        <div
-          key={i}
-          className="rounded-lg border bg-card p-6"
-        >
-          <div className="flex items-center justify-center h-40">
+      {Array.from({ length: count }, (_, i) => (
+        <div key={`card-loader-${i}`} className="rounded-lg border bg-card p-6">
+          <div className="flex h-40 items-center justify-center">
             <UniqueLoading variant="morph" size="sm" />
           </div>
         </div>
@@ -102,12 +102,12 @@ export function CardLoader({
 export function TableLoader({ rows = 5 }: { rows?: number }) {
   return (
     <div className="w-full space-y-4">
-      {Array.from({ length: rows }).map((_, i) => (
+      {Array.from({ length: rows }, (_, i) => (
         <div
-          key={i}
-          className="flex items-center gap-4 p-4 rounded-lg border bg-card"
+          key={`table-loader-row-${i}`}
+          className="flex items-center gap-4 rounded-lg border bg-card p-4"
         >
-          <div className="flex-1 flex justify-center">
+          <div className="flex flex-1 justify-center">
             <UniqueLoading variant="morph" size="sm" />
           </div>
         </div>
@@ -119,13 +119,9 @@ export function TableLoader({ rows = 5 }: { rows?: number }) {
 /**
  * Page loader - full page loading state
  */
-export function PageLoader({
-  text = 'Loading...',
-}: {
-  text?: string;
-}) {
+export function PageLoader({ text = 'Loading...' }: { text?: string }) {
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="flex min-h-[60vh] items-center justify-center">
       <ProfessionalLoader size="lg" text={text} />
     </div>
   );
@@ -134,26 +130,20 @@ export function PageLoader({
 /**
  * Inline loader - for buttons and small spaces
  */
-export function InlineLoader({
-  className,
-}: {
-  className?: string;
-}) {
+export function InlineLoader({ className }: { className?: string }) {
   return (
-    <UniqueLoading variant="morph" size="sm" className={cn('w-8 h-8', className)} />
+    <UniqueLoading
+      variant="morph"
+      size="sm"
+      className={cn('h-8 w-8', className)}
+    />
   );
 }
 
 /**
  * Content loader - replaces skeleton content with loading state
  */
-export function ContentLoader({
-  lines = 3,
-  className,
-}: {
-  lines?: number;
-  className?: string;
-}) {
+export function ContentLoader({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center justify-center py-8', className)}>
       <UniqueLoading variant="morph" size="md" />

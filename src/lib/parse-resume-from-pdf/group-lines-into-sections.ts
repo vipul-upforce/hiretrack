@@ -20,33 +20,6 @@ export const PROFILE_SECTION: ResumeKey = 'profile';
  * also in books and blogs. The resume parser uses this pattern to group lines
  * into the closest section title above these lines.
  */
-export const groupLinesIntoSections = (lines: Lines) => {
-  // debugger;
-  const sections: ResumeSectionToLines = {};
-  let sectionName: string = PROFILE_SECTION;
-  let sectionLines: Line[] = [];
-
-  if (lines) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const text = line[0]?.text.trim();
-
-      if (isSectionTitle(line, i)) {
-        sections[sectionName] = [...sectionLines];
-        sectionName = text;
-        sectionLines = [];
-      } else {
-        sectionLines.push(line);
-      }
-    }
-  }
-
-  if (sectionLines.length > 0) {
-    sections[sectionName] = [...sectionLines];
-  }
-
-  return sections;
-};
 
 const SECTION_TITLE_PRIMARY_KEYWORDS = [
   'experience',
@@ -91,17 +64,47 @@ const isSectionTitle = (line: Line, lineNumber: number) => {
   // The following is a fallback heuristic to detect section title if it includes a keyword match
   // (This heuristics is not well tested and may not work well)
   const text = textItem.text.trim();
-  const textHasAtMost2Words = text.split(' ').filter((s) => s !== '&').length <= 2;
+  const textHasAtMost2Words =
+    text.split(' ').filter((s) => s !== '&').length <= 2;
   const startsWithCapitalLetter = /[A-Z]/.test(text.slice(0, 1));
 
   if (
-    textHasAtMost2Words
-    && hasOnlyLettersSpacesAmpersands(textItem)
-    && startsWithCapitalLetter
-    && SECTION_TITLE_KEYWORDS.some((keyword) => text.toLowerCase().includes(keyword))
+    textHasAtMost2Words &&
+    hasOnlyLettersSpacesAmpersands(textItem) &&
+    startsWithCapitalLetter &&
+    SECTION_TITLE_KEYWORDS.some((keyword) =>
+      text.toLowerCase().includes(keyword),
+    )
   ) {
     return true;
   }
 
   return false;
+};
+export const groupLinesIntoSections = (lines: Lines) => {
+  // debugger;
+  const sections: ResumeSectionToLines = {};
+  let sectionName: string = PROFILE_SECTION;
+  let sectionLines: Line[] = [];
+
+  if (lines) {
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const text = line[0]?.text.trim();
+
+      if (isSectionTitle(line, i)) {
+        sections[sectionName] = [...sectionLines];
+        sectionName = text;
+        sectionLines = [];
+      } else {
+        sectionLines.push(line);
+      }
+    }
+  }
+
+  if (sectionLines.length > 0) {
+    sections[sectionName] = [...sectionLines];
+  }
+
+  return sections;
 };

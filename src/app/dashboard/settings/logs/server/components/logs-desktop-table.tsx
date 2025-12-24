@@ -86,7 +86,21 @@ export function LogsDesktopTable({
                     {log.jobData?.title || '—'}
                   </span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {(log.jobData?.skills || []).slice(0, 3).join(', ') || '—'}
+                    {(() => {
+                      const skills = log.jobData?.skills;
+
+                      if (!skills) {
+                        return '—';
+                      }
+
+                      // Ensure we have an array (handle 'string' vs 'string[]')
+                      const skillList = Array.isArray(skills)
+                        ? skills
+                        : [skills];
+
+                      // Process the array
+                      return skillList.slice(0, 3).join(', ') || '—';
+                    })()}
                   </span>
                 </div>
               </TableCell>

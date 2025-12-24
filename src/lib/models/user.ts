@@ -1,7 +1,11 @@
 import mongoose, { Schema, ObjectId, HydratedDocument, Model } from 'mongoose';
 
+export interface ICustomField {
+  [key: string]: object;
+}
+
 export interface OrgInfo {
-  customFields?: any;
+  customFields?: ICustomField[];
   _id: Schema.Types.ObjectId | string;
   name: string;
   adminId: mongoose.Types.ObjectId | string;
@@ -70,7 +74,7 @@ export interface EmailNotificationSettings {
 }
 
 export interface RefreshTokenEntry {
-  token: string;        // Hashed token
+  token: string; // Hashed token
   expiry: Date;
   createdAt: Date;
 }
@@ -135,11 +139,13 @@ export const userSchema = new Schema<IUser, UserModel, IUserMethods>(
       type: Date,
       required: false,
     },
-    refreshTokens: [{
-      token: { type: String, required: true },
-      expiry: { type: Date, required: true },
-      createdAt: { type: Date, default: Date.now }
-    }],
+    refreshTokens: [
+      {
+        token: { type: String, required: true },
+        expiry: { type: Date, required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     isDeleted: {
       type: Boolean,
       required: false,

@@ -22,7 +22,7 @@ export interface SerializedAnalyticsFilters {
   granularity?: 'daily' | 'weekly' | 'monthly';
 }
 
-export interface AnalyticsResponse<T> {
+export interface AnalyticsResponse<T = unknown> {
   success: boolean;
   data: T;
   metadata?: {
@@ -83,10 +83,13 @@ const buildQueryParams = ({ organizationId, filters }: AnalyticsQueryArgs) => {
 
 export const analyticsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    fetchAnalytics: builder.query<AnalyticsResponse<any>, AnalyticsQueryArgs>({
+    fetchAnalytics: builder.query<
+      AnalyticsResponse<unknown>,
+      AnalyticsQueryArgs
+    >({
       query: (args) => ({
-        url: `/analytics/${args.endpoint.replace(/^\/+/, "")}`,
-        method: "GET",
+        url: `/analytics/${args.endpoint.replace(/^\/+/, '')}`,
+        method: 'GET',
         params: buildQueryParams(args),
       }),
       providesTags: (_result, _error, arg) => [

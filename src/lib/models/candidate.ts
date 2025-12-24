@@ -4,6 +4,7 @@ import { CustomFieldFile } from '../fileUtils';
 import { ITag } from './organization';
 import logger from '../logger';
 
+/* eslint-disable max-lines */
 export interface FollowUp {
   note: string;
   date?: Date;

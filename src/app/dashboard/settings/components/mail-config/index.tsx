@@ -20,9 +20,13 @@ import { DynamicInputs } from './components/dynamic-inputs';
 import { SmtpPasswordField } from './components/smtp-password-field';
 import { ActionFooter } from './components/action-footer';
 
-export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
+export interface SMTPConfigsProps {
+  onClose: () => void;
+}
+export default function SMTPConfigs({ onClose }: SMTPConfigsProps) {
   const { toast } = useToast();
-  const { testConnection, isConnectionSuccessful, isTesting } = useTestConnection();
+  const { testConnection, isConnectionSuccessful, isTesting } =
+    useTestConnection();
 
   const { data, isLoading, refetch } = useGetSMTPConfigsQuery(undefined);
 
@@ -30,7 +34,8 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
     refetch();
   }, [refetch]);
 
-  const [updateSMTPConfigs, { isLoading: isUpdating }] = useUpdateSMTPConfigsMutation();
+  const [updateSMTPConfigs, { isLoading: isUpdating }] =
+    useUpdateSMTPConfigsMutation();
 
   const initialValues: SMTPFormValues = data ?? DEFAULT_INITIAL_VALUES;
 
@@ -78,7 +83,10 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
       };
     }
 
-    await testConnection(values.mailProvider as any, credentials);
+    await testConnection(
+      values.mailProvider as 'smtp' | 'resend' | 'brevo',
+      credentials,
+    );
   };
 
   if (isLoading) {
@@ -92,9 +100,9 @@ export default function SMTPConfigs({ onClose }: { onClose: () => void }) {
       onSubmit={handleSubmit}
       enableReinitialize
     >
-      {({ values, handleSubmit }) => (
-        <Form onSubmit={handleSubmit} className="flex flex-col h-auto ">
-          <div className="px-6 py-4 space-y-4">
+      {({ values, handleSubmit: handleSubmitFormik }) => (
+        <Form onSubmit={handleSubmitFormik} className="flex h-auto flex-col">
+          <div className="space-y-4 px-6 py-4">
             <ProviderSelect />
             <DynamicInputs />
             <SmtpPasswordField />

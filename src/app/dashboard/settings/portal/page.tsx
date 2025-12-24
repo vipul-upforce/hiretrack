@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   RefreshCw,
   Save,
-  Settings,
+  Settings as SettingsIcon,
   ImageIcon,
   PaintBucket,
   FileCode,
@@ -131,7 +131,7 @@ export default function PortalConfigurationPage() {
                   value="general"
                   className="flex items-center gap-2"
                 >
-                  <Settings className="h-4 w-4" />
+                  <SettingsIcon className="h-4 w-4" />
                   General
                 </TabsTrigger>
                 <TabsTrigger
@@ -170,7 +170,9 @@ export default function PortalConfigurationPage() {
                 <BrandingTab
                   settings={settings}
                   handleFileUpload={handleFileUpload}
-                  removeFile={removeFile}
+                  removeFile={(key: string) =>
+                    removeFile(key as keyof typeof settings)
+                  }
                 />
               </TabsContent>
 

@@ -14,6 +14,16 @@ interface UseAboutVersionProps {
   onClose: (values?: AboutValues) => void;
 }
 
+// Helper to safely extract error messages
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return fallback;
+};
+
 export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const { toast } = useToast();
 
@@ -25,10 +35,13 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   );
   const [changelogVersions, setChangelogVersions] = useState<VersionInfo[]>([]);
 
-  const { data: autoUpdateData, error: autoUpdateError } = useGetAutoUpdateQuery();
+  const { data: autoUpdateData, error: autoUpdateError } =
+    useGetAutoUpdateQuery();
   const [toggleAutoUpdate] = useToggleAutoUpdateMutation();
-  const [fetchVersionListRTK, { isFetching: checkingUpdatesRTK }] = useLazyGetVersionListQuery();
-  const [triggerUpdateRTK, { isLoading: updatingRTK }] = useTriggerUpdateMutation();
+  const [fetchVersionListRTK, { isFetching: checkingUpdatesRTK }] =
+    useLazyGetVersionListQuery();
+  const [triggerUpdateRTK, { isLoading: updatingRTK }] =
+    useTriggerUpdateMutation();
 
   const currentVersion = packageJson.version;
 
@@ -83,10 +96,10 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
           description: 'You are running the latest version.',
         });
       }
-    } catch (e: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: e?.message || 'Failed to check for updates',
+        description: getErrorMessage(error, 'Failed to check for updates'),
         variant: 'destructive',
       });
     }
@@ -112,10 +125,10 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
       }, 60000);
 
       onClose();
-    } catch (e: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: e?.message || 'Failed to start update',
+        description: getErrorMessage(error, 'Failed to start update'),
         variant: 'destructive',
       });
     }
@@ -128,8 +141,8 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
     ) => {
       try {
         if (
-          initialValues
-          && values.enableAutoUpdate !== initialValues.enableAutoUpdate
+          initialValues &&
+          values.enableAutoUpdate !== initialValues.enableAutoUpdate
         ) {
           const result = await toggleAutoUpdate().unwrap();
 
@@ -143,10 +156,10 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
         } else {
           onClose(values);
         }
-      } catch (e: any) {
+      } catch (error: unknown) {
         toast({
           title: 'Error',
-          description: e?.message || 'Failed to update settings',
+          description: getErrorMessage(error, 'Failed to update settings'),
           variant: 'destructive',
         });
       } finally {

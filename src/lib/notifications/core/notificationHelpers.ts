@@ -1,8 +1,8 @@
+import { NotificationType } from '@/lib/models/notification';
 import {
   batchCheckNotifications,
   NotificationDecisionContext,
 } from '../decision';
-import { NotificationType } from '@/lib/models/notification';
 import { CreateNotificationParams } from '../types';
 import {
   createBulkNotifications,

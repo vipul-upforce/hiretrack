@@ -11,8 +11,8 @@ import type { Lines, TextItem } from '@/lib/parse-resume-from-pdf/types';
  * U+26AB   MEDIUM BLACK CIRCLE (⚫︎)
  * U+25CF   BLACK CIRCLE (●)
  * U+2B24   BLACK LARGE CIRCLE (⬤)
- * U+26AC   MEDIUM SMALL WHITE CIRCLE ⚬
- * U+25CB   WHITE CIRCLE ○
+ * U+26AC   MEDIUM SMALL WHITE CIRCLE (⚬)
+ * U+25CB   WHITE CIRCLE (○)
  */
 export const BULLET_POINTS = [
   '⋅',
@@ -30,15 +30,29 @@ export const BULLET_POINTS = [
 /**
  * Convert bullet point lines into a string array aka descriptions.
  */
+
+const getFirstBulletPointLineIdx = (lines: Lines): number | undefined => {
+  for (let i = 0; i < lines.length; i += 1) {
+    for (const item of lines[i]) {
+      if (BULLET_POINTS.some((bullet) => item.text.includes(bullet))) {
+        return i;
+      }
+    }
+  }
+  return undefined;
+};
+
 export const getBulletPointsFromLines = (lines: Lines): string[] => {
   // debugger;
   // Simply return all lines with text item joined together if there is no bullet point
   const firstBulletPointLineIndex = getFirstBulletPointLineIdx(lines);
   if (firstBulletPointLineIndex === undefined) {
-    return lines.map((line) => line
-      .map((item) => item.text)
-    // .filter((lineText) => lineText.trim().split(/\s+/).length <= 3)
-      .join('|'));
+    return lines.map((line) =>
+      line
+        .map((item) => item.text)
+        // .filter((lineText) => lineText.trim().split(/\s+/).length <= 3)
+        .join('|'),
+    );
     // return lines.map((line) => line.map((item) => item.text).join("|"));
   }
 
@@ -54,6 +68,27 @@ export const getBulletPointsFromLines = (lines: Lines): string[] => {
     }
     lineStr += text;
   }
+
+  const getMostCommonBulletPoint = (str: string): string => {
+    const bulletToCount: { [bullet: string]: number } = BULLET_POINTS.reduce(
+      (acc: { [bullet: string]: number }, cur) => {
+        acc[cur] = 0;
+        return acc;
+      },
+      {},
+    );
+    let bulletWithMostCount = BULLET_POINTS[0];
+    const bulletMaxCount = 0;
+    for (const char of str) {
+      if (Object.prototype.hasOwnProperty.call(bulletToCount, char)) {
+        bulletToCount[char] += 1;
+        if (bulletToCount[char] > bulletMaxCount) {
+          bulletWithMostCount = char;
+        }
+      }
+    }
+    return bulletWithMostCount;
+  };
 
   // Get the most common bullet point
   const commonBulletPoint = getMostCommonBulletPoint(lineStr);
@@ -71,41 +106,10 @@ export const getBulletPointsFromLines = (lines: Lines): string[] => {
     .filter((text) => !!text || text.trim().split(/\s+/).length <= 3);
 };
 
-const getMostCommonBulletPoint = (str: string): string => {
-  const bulletToCount: { [bullet: string]: number } = BULLET_POINTS.reduce(
-    (acc: { [bullet: string]: number }, cur) => {
-      acc[cur] = 0;
-      return acc;
-    },
-    {},
-  );
-  let bulletWithMostCount = BULLET_POINTS[0];
-  const bulletMaxCount = 0;
-  for (const char of str) {
-    if (bulletToCount.hasOwnProperty(char)) {
-      bulletToCount[char]++;
-      if (bulletToCount[char] > bulletMaxCount) {
-        bulletWithMostCount = char;
-      }
-    }
-  }
-  return bulletWithMostCount;
-};
-
-const getFirstBulletPointLineIdx = (lines: Lines): number | undefined => {
-  for (let i = 0; i < lines.length; i++) {
-    for (const item of lines[i]) {
-      if (BULLET_POINTS.some((bullet) => item.text.includes(bullet))) {
-        return i;
-      }
-    }
-  }
-  return undefined;
-};
-
 // Only consider words that don't contain numbers
 const isWord = (str: string) => /^[^0-9]+$/.test(str);
-const hasAtLeast8Words = (item: TextItem) => item.text.split(/\s/).filter(isWord).length >= 8;
+const hasAtLeast8Words = (item: TextItem) =>
+  item.text.split(/\s/).filter(isWord).length >= 8;
 
 export const getDescriptionsLineIdx = (lines: Lines): number | undefined => {
   // The main heuristic to determine descriptions is to check if has bullet point
@@ -114,7 +118,7 @@ export const getDescriptionsLineIdx = (lines: Lines): number | undefined => {
   // Fallback heuristic if the main heuristic doesn't apply (e.g. LinkedIn resume) to
   // check if the line has at least 8 words
   if (idx === undefined) {
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i];
       if (line.length === 1 && hasAtLeast8Words(line[0])) {
         idx = i;

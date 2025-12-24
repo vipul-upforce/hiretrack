@@ -9,9 +9,13 @@ export const getSectionLinesByKeywords = (
 ) => {
   // debugger;
   for (const sectionName in sections) {
-    const hasKeyWord = keywords.some((keyword) => sectionName.toLowerCase().includes(keyword));
-    if (hasKeyWord) {
-      return sections[sectionName];
+    if (Object.prototype.hasOwnProperty.call(sections, sectionName)) {
+      const hasKeyWord = keywords.some((keyword) =>
+        sectionName.toLowerCase().includes(keyword),
+      );
+      if (hasKeyWord) {
+        return sections[sectionName];
+      }
     }
   }
   return [];

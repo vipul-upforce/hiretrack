@@ -99,7 +99,7 @@ export function TemplateEditor(props: TemplateEditorProps) {
               {currentTemplate.name}
             </CardTitle>
             <div className="flex gap-2">
-              {currentTemplate && (
+              {currentTemplate?.isDefault && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -110,24 +110,6 @@ export function TemplateEditor(props: TemplateEditorProps) {
                   Reset to Default
                 </Button>
               )}
-              {/* <Button
-                variant="outline"
-                size="sm"
-                className="h-8"
-                onClick={() => setPreviewMode(!previewMode)}
-              >
-                {previewMode ? (
-                  <>
-                    <Edit2 className="mr-1 h-3 w-3" />
-                    Back to Editor
-                  </>
-                ) : (
-                  <>
-                    <Eye className="mr-1 h-4 w-4" />
-                    Preview Email
-                  </>
-                )}
-              </Button> */}
               {!previewMode && (
                 <>
                   <Button

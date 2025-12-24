@@ -25,3 +25,10 @@ export interface FormFieldConfig {
   placeholder: string;
   condition: string;
 }
+
+export interface MailProvider {
+  smtp: string;
+  resend: string;
+  brevo: string;
+}
+export type MailProviderType = keyof MailProvider;

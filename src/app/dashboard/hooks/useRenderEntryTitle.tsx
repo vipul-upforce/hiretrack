@@ -1,110 +1,118 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { Candidate, Remark } from '@/types/candidate';
+import type { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 
-export function useRenderEntryTitle(interview: ICandidateHistory, localCandidate: Candidate) {
+export function useRenderEntryTitle(
+  interview: ICandidateHistory,
+  localCandidate: Candidate,
+) {
   const renderEntryTitle = useCallback(() => {
-    const noteDescription = typeof interview?.note?.description === 'string'
-      ? interview.note.description
-      : '';
+    // Helper to safely extract name from object fields
+    const getName = (obj: unknown): string | null => {
+      if (typeof obj === 'object' && obj !== null && 'name' in obj) {
+        const value = (obj as { name: unknown }).name;
+        if (typeof value === 'string') {
+          return value;
+        }
+      }
+      return null;
+    };
 
-    const showMainBlock = (interview.title !== '' || !interview.title)
-      && interview.title !== 'Assigned to Job'
-      && !interview.title?.includes('Followup')
-      && !interview.title?.startsWith('Direct Email')
-      && !interview.title?.startsWith('Email sent: ')
-      && !interview.checklistForm
-      && !noteDescription.startsWith('Email sent');
+    const noteDescription =
+      typeof interview?.note?.description === 'string'
+        ? interview.note.description
+        : '';
+
+    const showMainBlock =
+      (interview.title !== '' || !interview.title) &&
+      interview.title !== 'Assigned to Job' &&
+      !interview.title?.includes('Followup') &&
+      !interview.title?.startsWith('Direct Email') &&
+      !interview.title?.startsWith('Email sent: ') &&
+      !interview.checklistForm &&
+      !noteDescription.startsWith('Email sent');
+
+    const assignmentByName = getName(interview.assignmentBy);
 
     const UpdatedBySection = (
       <div className="flex flex-col items-end text-right">
         <p className="text-xs font-light text-gray-400">
           {interview?.assignmentBy && 'Updated by'}
         </p>
-        <p className="font-light text-gray-500 text-sm">
-          {interview.assignmentBy
-          && typeof interview.assignmentBy === 'object'
-          && 'name' in interview.assignmentBy
-            ? `${interview.assignmentBy.name}`
-            : ''}
+        <p className="text-sm font-light text-gray-500">
+          {assignmentByName || ''}
         </p>
       </div>
     );
 
+    const getMainBlockContent = () => {
+      const currentInterviewerName = getName(interview.currentInterviewer);
+      const previousInterviewerName = getName(interview.previousInterviewer);
+
+      // 1. Check Assignments
+      if (currentInterviewerName) {
+        if (previousInterviewerName) {
+          return (
+            <p className="pl-1">
+              {`${previousInterviewerName} → ${currentInterviewerName}`}
+            </p>
+          );
+        }
+        return (
+          <p className="pl-1">{`Assigned to ${currentInterviewerName}`}</p>
+        );
+      }
+
+      // 2. Check Remarks
+      if (interview.remark && interview.remark.description) {
+        return <p>{interview.title || 'Remark Added'}</p>;
+      }
+
+      // 3. Check Specific Titles
+      if (interview.title === 'Candidate Added' && interview.assignmentBy) {
+        return (
+          <p>
+            {localCandidate.name} was added by {assignmentByName || ''}
+          </p>
+        );
+      }
+
+      if (interview.title === 'Self Applied') {
+        return <p>{localCandidate.name} applied from portal</p>;
+      }
+
+      if (interview.title?.includes('Updated')) {
+        return <p>{interview.title}</p>;
+      }
+
+      if (interview.title === 'Archived') {
+        return <p>{localCandidate.name} was Archived</p>;
+      }
+
+      if (interview.title === 'Unarchived') {
+        return <p>{localCandidate.name} was Unarchived</p>;
+      }
+
+      if (interview.title === 'cv-process batch') {
+        return <p>{localCandidate.name} was added from CV Batch Upload</p>;
+      }
+
+      // 4. Check Unassignment (Only if current was null)
+      if (previousInterviewerName) {
+        return (
+          <p className="pl-1">Unassigned from {previousInterviewerName}</p>
+        );
+      }
+
+      return null;
+    };
+
     if (showMainBlock) {
       return (
-        <div className="flex flex-row items-start justify-between w-full">
-          <div className="flex flex-row w-[85%]">
-            {interview.currentInterviewer
-            && typeof interview.currentInterviewer === 'object'
-            && 'name' in interview.currentInterviewer ? (
-                interview.previousInterviewer
-              && typeof interview.previousInterviewer === 'object'
-              && 'name' in interview.previousInterviewer ? (
-                <p className="pl-1">
-                  {`${interview.previousInterviewer.name
-                  } → ${
-                    interview.currentInterviewer.name}`}
-                </p>
-                  ) : (
-                    <p className="pl-1">
-                      {`Assigned to ${interview.currentInterviewer.name}`}
-                    </p>
-                  )
-              ) : interview.remark && interview.remark.description ? (
-                <p>{interview.title || 'Remark Added'}</p>
-              ) : interview.title === 'Candidate Added'
-              && interview.assignmentBy ? (
-                <p>
-                  {localCandidate.name}
-                  {' '}
-                  was added by
-                  {' '}
-                  {interview.assignmentBy
-                && typeof interview.assignmentBy === 'object'
-                && 'name' in interview.assignmentBy
-                    ? `${interview.assignmentBy.name}`
-                    : ''}
-                </p>
-                ) : interview.title === 'Self Applied' ? (
-                  <p>
-                    {localCandidate.name}
-                    {' '}
-                    applied from portal
-                  </p>
-                ) : interview.title?.includes('Updated') ? (
-                  <p>{interview.title}</p>
-                ) : interview.title === 'Archived' ? (
-                  <p>
-                    {localCandidate.name}
-                    {' '}
-                    was Archived
-                  </p>
-                ) : interview.title === 'Unarchived' ? (
-                  <p>
-                    {localCandidate.name}
-                    {' '}
-                    was Unarchived
-                  </p>
-                ) : interview.title === 'cv-process batch' ? (
-                  <p>
-                    {localCandidate.name}
-                    {' '}
-                    was added from CV Batch Upload
-                  </p>
-                ) : interview?.previousInterviewer
-              && typeof interview.previousInterviewer === 'object'
-              && 'name' in interview.previousInterviewer ? (
-                <p className="pl-1">
-                  Unassigned from
-                  {' '}
-                  {interview.previousInterviewer.name}
-                </p>
-                  ) : null}
-          </div>
-
+        <div className="flex w-full flex-row items-start justify-between">
+          <div className="flex w-[85%] flex-row">{getMainBlockContent()}</div>
           {UpdatedBySection}
         </div>
       );
@@ -112,7 +120,7 @@ export function useRenderEntryTitle(interview: ICandidateHistory, localCandidate
 
     // Default fallback (title only + updated by)
     return (
-      <div className="flex flex-row items-start justify-between w-full">
+      <div className="flex w-full flex-row items-start justify-between">
         <span>{interview.title}</span>
         {interview.assignmentBy && UpdatedBySection}
       </div>
