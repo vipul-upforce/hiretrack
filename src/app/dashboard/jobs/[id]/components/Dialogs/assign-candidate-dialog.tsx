@@ -67,8 +67,9 @@ export function AssignCandidateDialog({
     useCancelMeetingMutation();
 
   const { user } = useAppSelector((state) => state.auth || {});
+  const shouldFetchInterviewers = !!user && user.role !== 'candidate' && user.role !== '';
   const { data: interviewers, refetch: refetchInterviewers } =
-    useFetchInterviewersQuery();
+    useFetchInterviewersQuery(undefined, { skip: !shouldFetchInterviewers });
   const { data: googleCalendarData } =
     useGetGoogleCalendarConfigQuery(undefined);
   const {

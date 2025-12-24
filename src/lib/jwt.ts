@@ -26,8 +26,9 @@ export const signAccessToken = (payload: any, orgId: string) =>
 
 
 
-export const verifyToken = (token: string) => {
+export const verifyToken = (token: string , orgId: string) => {
   try {
+    const JWT_SECRET = generateOrgJwtSecret(orgId);
     return jwt.verify(token, JWT_SECRET);
   } catch {
     return null;

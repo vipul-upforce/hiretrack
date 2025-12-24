@@ -89,10 +89,12 @@ async function handleRefreshToken(req: NextRequest) {
       orgId = user.organizationId.toString();
       tokenVerification = verifyAndDecryptRefreshToken(refreshToken, orgId);
       if (!tokenVerification.success || !tokenVerification.payload) {
-        return NextResponse.json(
+        const res = NextResponse.json(
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
         );
+        clearAuthTokens(res);
+        return res;
       }
 
       isCandidate = foundIsCandidate;
@@ -126,10 +128,12 @@ async function handleRefreshToken(req: NextRequest) {
     );
 
     if (!verification.valid) {
-      return NextResponse.json(
-        { error: 'Invalid or expired refresh token' },
-        { status: 401 },
-      );
+     const res = NextResponse.json(
+      { error: 'Invalid or expired refresh token' },
+      { status: 401 },
+    );
+    clearAuthTokens(res);
+    return res;
     }
 
     // STEP 4: Get user data
@@ -179,9 +183,7 @@ async function handleRefreshToken(req: NextRequest) {
         delete orgInfo.customFields;
       }
     }
-    console.log('userPayload-189', userPayload);
     const newAccessToken = await signAccessToken(userPayload, orgId);
-    console.log('newAccessToken-191', newAccessToken);
     // STEP 6: Token rotation - Generate new refresh token (JWT)
     const newRefreshTokenPayload = {
       userId,
