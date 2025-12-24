@@ -56,7 +56,7 @@ export function FileDropZone({
       const convertedFiles = await Promise.all(
         (value || []).map(async (item) => {
           if ('base64' in item) {
-            return await convertToFile(item);
+            return convertToFile(item);
           }
           return item;
         }),
@@ -85,6 +85,13 @@ export function FileDropZone({
 
   const generatePreviews = React.useCallback(async (newFiles: File[]) => {
     const newPreviews: { [key: string]: string } = {};
+    const fileToBase64 = (file: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+      });
 
     for (const file of newFiles) {
       try {
@@ -100,14 +107,6 @@ export function FileDropZone({
       ...newPreviews,
     }));
   }, []);
-
-  const fileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
 
   React.useEffect(() => {
     if (files.length > 0) {
@@ -169,7 +168,7 @@ export function FileDropZone({
           if (uniqueFileName === file.name) {
             return file;
           }
-          return await renameFileWithUUID(file, uniqueFileName);
+          return renameFileWithUUID(file, uniqueFileName);
         }),
       );
 
@@ -210,6 +209,16 @@ export function FileDropZone({
     const preview = previews[file.name];
     if (preview) {
       setPreviewFile(file);
+    }
+  };
+
+  const handlePreviewKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    file: File,
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openPreview(file);
     }
   };
 
@@ -289,16 +298,25 @@ export function FileDropZone({
         <div className="mb-2 w-full overflow-clip">
           {files.map((file, i) => (
             <div
+              /* eslint-disable-next-line react/no-array-index-key */
               key={i}
               className="group mb-2 flex w-full items-center gap-2 rounded-md border p-2 transition-colors hover:bg-muted/50"
             >
               <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Preview ${file.name}`}
                 className="cursor-pointer transition-transform group-hover:scale-105"
                 onClick={() => openPreview(file)}
+                onKeyDown={(e) => handlePreviewKeyDown(e, file)}
               />
               <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Preview ${file.name}`}
                 className="min-w-0 flex-1 cursor-pointer text-sm"
                 onClick={() => openPreview(file)}
+                onKeyDown={(e) => handlePreviewKeyDown(e, file)}
               >
                 <p className="truncate font-medium">{file.name}</p>
                 <p className="truncate text-xs text-muted-foreground">

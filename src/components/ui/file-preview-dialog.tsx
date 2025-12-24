@@ -35,6 +35,43 @@ export function FilePreviewDialog({
     document.body.removeChild(link);
   };
 
+  const renderPreview = () => {
+    if (file.type.startsWith('image/')) {
+      return (
+        <div className="flex items-center justify-center min-h-full p-4">
+          <img
+            src={preview}
+            alt={file.name}
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      );
+    }
+
+    if (file.type === 'application/pdf') {
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={preview}
+            className="w-full h-full"
+            title={file.name}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-4 min-h-full">
+        <File className="h-16 w-16" />
+        <p>Preview not available for this file type</p>
+        <Button variant="secondary" onClick={downloadFile}>
+          <Download className="mr-2 h-4 w-4" />
+          Download File
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col">
@@ -72,32 +109,7 @@ export function FilePreviewDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
-          {file.type.startsWith('image/') ? (
-            <div className="flex items-center justify-center min-h-full p-4">
-              <img
-                src={preview}
-                alt={file.name}
-                className="max-w-full max-h-full object-contain rounded-lg"
-              />
-            </div>
-          ) : file.type === 'application/pdf' ? (
-            <div className="w-full h-full">
-              <iframe
-                src={preview}
-                className="w-full h-full"
-                title={file.name}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-4 min-h-full">
-              <File className="h-16 w-16" />
-              <p>Preview not available for this file type</p>
-              <Button variant="secondary" onClick={downloadFile}>
-                <Download className="mr-2 h-4 w-4" />
-                Download File
-              </Button>
-            </div>
-          )}
+          {renderPreview()}
         </div>
       </DialogContent>
     </Dialog>

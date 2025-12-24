@@ -2,7 +2,7 @@
 
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -12,7 +12,6 @@ import Color from '@tiptap/extension-color';
 import TextStyle from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
 import Highlight from '@tiptap/extension-highlight';
-import { Extension } from '@tiptap/core';
 import './rteStyles.css';
 
 import {
@@ -55,7 +54,7 @@ interface RichTextEditorProps {
   touched?: boolean;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({
+function RichTextEditor({
   value,
   onChange,
   onBlur,
@@ -66,9 +65,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   id,
   name,
   error,
-  touched,
   ...props
-}) => {
+}: RichTextEditorProps) {
   const [currentFont, setCurrentFont] = useState('Default');
   const [isFocused, setIsFocused] = useState(false);
 
@@ -106,27 +104,28 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         name: 'customEnterKeymap',
         addKeyboardShortcuts() {
           return {
-            'Shift-Enter': ({ editor }) => editor.commands.setHardBreak(),
+            'Shift-Enter': ({ editor: editor2 }) =>
+              editor2.commands.setHardBreak(),
           };
         },
       }),
     ],
     content: value,
     editable: !readOnly,
-    onUpdate: ({ editor }) => {
-      const text = editor.getText();
+    onUpdate: ({ editor: editor2 }) => {
+      const text = editor2.getText();
       if (maxLength && text.length > maxLength) {
         return;
       }
-      const html = editor.getHTML();
+      const html = editor2.getHTML();
       onChange(html);
     },
     onFocus: () => {
       setIsFocused(true);
     },
-    onBlur: ({ editor }) => {
+    onBlur: ({ editor: editor2 }) => {
       setIsFocused(false);
-      const html = editor.getHTML();
+      const html = editor2.getHTML();
       if (onBlur) {
         onBlur(html);
       }
@@ -172,15 +171,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   );
 
   if (!editor) {
-    return <div className="h-64 w-full animate-pulse bg-muted rounded-md" />;
+    return <div className="h-64 w-full animate-pulse rounded-md bg-muted" />;
   }
 
   const borderColor = isFocused ? 'border-primary' : 'border-input';
 
   return (
-    <div className={`border rounded-md ${borderColor} ${className}`}>
+    <div className={`rounded-md border ${borderColor} ${className}`}>
       {!readOnly && (
-        <div className="flex flex-wrap gap-1 p-1 border-b">
+        <div className="flex flex-wrap gap-1 border-b p-1">
           <Toggle
             size="sm"
             pressed={editor.isActive('bold')}
@@ -202,7 +201,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive('underline')}
-            onPressedChange={() => editor.chain().focus().toggleUnderline().run()}
+            onPressedChange={() =>
+              editor.chain().focus().toggleUnderline().run()
+            }
             aria-label="Underline"
           >
             <UnderlineIcon className="h-4 w-4" />
@@ -212,7 +213,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-1">
                 <Type className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">{currentFont}</span>
+                <span className="hidden text-xs sm:inline">{currentFont}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
@@ -244,7 +245,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   <Button
                     key={color.value}
                     variant="ghost"
-                    className="h-8 w-8 p-0 rounded-md"
+                    className="h-8 w-8 rounded-md p-0"
                     style={{ backgroundColor: color.value }}
                     onClick={() => setColor(color.value)}
                     title={color.name}
@@ -266,7 +267,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                   <Button
                     key={color.value}
                     variant="ghost"
-                    className="h-8 w-8 p-0 rounded-md"
+                    className="h-8 w-8 rounded-md p-0"
                     style={{ backgroundColor: color.value }}
                     onClick={() => setHighlight(color.value)}
                     title={color.name}
@@ -274,7 +275,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 ))}
                 <Button
                   variant="ghost"
-                  className="h-8 w-8 p-0 rounded-md border border-dashed"
+                  className="h-8 w-8 rounded-md border border-dashed p-0"
                   onClick={() => editor.chain().focus().unsetHighlight().run()}
                   title="Remove highlight"
                 >
@@ -287,7 +288,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive('bulletList')}
-            onPressedChange={() => editor.chain().focus().toggleBulletList().run()}
+            onPressedChange={() =>
+              editor.chain().focus().toggleBulletList().run()
+            }
             aria-label="Bullet List"
           >
             <List className="h-4 w-4" />
@@ -296,7 +299,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive('orderedList')}
-            onPressedChange={() => editor.chain().focus().toggleOrderedList().run()}
+            onPressedChange={() =>
+              editor.chain().focus().toggleOrderedList().run()
+            }
             aria-label="Ordered List"
           >
             <ListOrdered className="h-4 w-4" />
@@ -305,7 +310,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive({ textAlign: 'left' })}
-            onPressedChange={() => editor.chain().focus().setTextAlign('left').run()}
+            onPressedChange={() =>
+              editor.chain().focus().setTextAlign('left').run()
+            }
             aria-label="Align Left"
           >
             <AlignLeft className="h-4 w-4" />
@@ -314,7 +321,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive({ textAlign: 'center' })}
-            onPressedChange={() => editor.chain().focus().setTextAlign('center').run()}
+            onPressedChange={() =>
+              editor.chain().focus().setTextAlign('center').run()
+            }
             aria-label="Align Center"
           >
             <AlignCenter className="h-4 w-4" />
@@ -323,7 +332,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <Toggle
             size="sm"
             pressed={editor.isActive({ textAlign: 'right' })}
-            onPressedChange={() => editor.chain().focus().setTextAlign('right').run()}
+            onPressedChange={() =>
+              editor.chain().focus().setTextAlign('right').run()
+            }
             aria-label="Align Right"
           >
             <AlignRight className="h-4 w-4" />
@@ -355,16 +366,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
       {!readOnly && maxLength && (
         <p
-          className={`text-right text-sm mt-1 mx-1 ${
+          className={`mx-1 mt-1 text-right text-sm ${
             editor?.getText().length >= maxLength
               ? 'text-red-500'
               : 'text-gray-400'
           }`}
         >
-          {editor?.getText().length || 0}
-          {' '}
-          /
-          {maxLength}
+          {editor?.getText().length || 0} /{maxLength}
         </p>
       )}
 
@@ -377,9 +385,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         name={name}
       />
 
-      {error && <p className="text-sm text-red-500 mt-1 ml-1">{error}</p>}
+      {error && <p className="ml-1 mt-1 text-sm text-red-500">{error}</p>}
     </div>
   );
-};
+}
 
 export default RichTextEditor;

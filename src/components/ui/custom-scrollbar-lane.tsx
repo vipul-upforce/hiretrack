@@ -1,8 +1,6 @@
 'use client';
 
-import React, {
-  useEffect, useRef, useState, forwardRef,
-} from 'react';
+import React, { useEffect, useRef, useState, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CustomScrollbarProps {
@@ -15,9 +13,7 @@ interface CustomScrollbarProps {
 
 // Use forwardRef to allow passing the ref from Virtuoso
 const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
-  ({
-    children, className, style, isDragging, scrollerRef,
-  }, ref) => {
+  ({ children, className, style, isDragging, scrollerRef }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [showScrollbar, setShowScrollbar] = useState(false);
     const [scrollTop, setScrollTop] = useState(0);
@@ -29,8 +25,10 @@ const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
       containerRef.current = element;
       if (typeof ref === 'function') {
         ref(element);
-      } else if (ref) {
-        (ref as React.MutableRefObject<HTMLDivElement | null>).current = element;
+      } else if (ref && 'current' in ref) {
+        // eslint-disable-next-line no-param-reassign
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current =
+          element;
       }
 
       // Also forward to scrollerRef for Virtuoso
@@ -38,21 +36,27 @@ const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
         if (typeof scrollerRef === 'function') {
           scrollerRef(element);
         } else if (scrollerRef && 'current' in scrollerRef) {
-          (scrollerRef as React.MutableRefObject<HTMLElement | null>).current = element;
+          // eslint-disable-next-line no-param-reassign
+          (scrollerRef as React.MutableRefObject<HTMLElement | null>).current =
+            element;
         }
       }
     };
 
     useEffect(() => {
       const container = containerRef.current;
-      if (!container) return;
+      if (!container) return undefined;
 
       const updateScrollInfo = () => {
-        const { scrollTop, scrollHeight, clientHeight } = container;
-        setScrollTop(scrollTop);
-        setScrollHeight(scrollHeight);
-        setClientHeight(clientHeight);
-        setShowScrollbar(scrollHeight > clientHeight);
+        const {
+          scrollTop: scrollTop2,
+          scrollHeight: scrollHeight2,
+          clientHeight: clientHeight2,
+        } = container;
+        setScrollTop(scrollTop2);
+        setScrollHeight(scrollHeight2);
+        setClientHeight(clientHeight2);
+        setShowScrollbar(scrollHeight2 > clientHeight2);
       };
 
       updateScrollInfo();
@@ -81,19 +85,21 @@ const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
       container.scrollTop = newScrollTop;
     };
 
-    const scrollbarHeight = clientHeight > 0 ? (clientHeight / scrollHeight) * clientHeight : 0;
-    const scrollbarTop = scrollHeight > clientHeight
-      ? (scrollTop / (scrollHeight - clientHeight))
-          * (clientHeight - scrollbarHeight)
-      : 0;
+    const scrollbarHeight =
+      clientHeight > 0 ? (clientHeight / scrollHeight) * clientHeight : 0;
+    const scrollbarTop =
+      scrollHeight > clientHeight
+        ? (scrollTop / (scrollHeight - clientHeight)) *
+          (clientHeight - scrollbarHeight)
+        : 0;
 
     // Clone children and pass scrollerRef if it's a Virtuoso component
     const childrenWithProps = React.Children.map(children, (child) => {
       if (React.isValidElement(child) && scrollerRef) {
         // Check if this is a Virtuoso component by checking for scrollerRef prop
         if (
-          'scrollerRef' in (child.props as object)
-          || child.type?.toString().includes('Virtuoso')
+          'scrollerRef' in (child.props as object) ||
+          child.type?.toString().includes('Virtuoso')
         ) {
           return React.cloneElement(child as any, { scrollerRef: setRefs });
         }
@@ -106,7 +112,7 @@ const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
         <div
           ref={setRefs}
           className={cn(
-            'h-full scrollbar-hide',
+            'scrollbar-hide h-full',
             isDragging ? 'overflow-hidden' : 'overflow-y-scroll',
           )}
           style={{
@@ -119,9 +125,12 @@ const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
         </div>
 
         {showScrollbar && (
-          <div className="absolute -right-2 top-0 bottom-0 w-1.5">
+          <div className="absolute -right-2 bottom-0 top-0 w-1.5">
             <div
-              className="absolute right-0 w-1 bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 cursor-pointer dark:bg-muted-foreground/20 dark:hover:bg-muted-foreground/40"
+              aria-label="Scrollbar"
+              role="button"
+              tabIndex={0}
+              className="absolute right-0 w-1 cursor-pointer rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 dark:bg-muted-foreground/20 dark:hover:bg-muted-foreground/40"
               style={{
                 height: `${scrollbarHeight}px`,
                 top: `${scrollbarTop}px`,

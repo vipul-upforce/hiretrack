@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -68,7 +69,6 @@ export function PortalFileUpload({
   existingFiles = [],
   id = '',
   setter,
-  isEdit = true,
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
@@ -130,15 +130,19 @@ export function PortalFileUpload({
           <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/30 p-2">
             <div className="flex items-center gap-2">
               {previewFile?.type?.startsWith('image/') ? (
-                <img
-                  src={
-                    isExistingFile(previewFile)
-                      ? previewFile.url
-                      : URL.createObjectURL(previewFile)
-                  }
-                  alt={previewFile.name}
-                  className="h-8 w-8 rounded object-cover"
-                />
+                <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded">
+                  <Image
+                    src={
+                      isExistingFile(previewFile)
+                        ? previewFile.url
+                        : URL.createObjectURL(previewFile)
+                    }
+                    alt={previewFile.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
               ) : (
                 <div className="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white">
                   {previewFile?.name?.charAt(0).toUpperCase() || 'N'}
