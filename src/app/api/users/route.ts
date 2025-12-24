@@ -42,7 +42,14 @@ export async function GET(req: NextRequest) {
     const [aggregated] = await User.aggregate([
       { $match: { organizationId: orgObjectId } },
       { $sort: { createdAt: -1 } },
-      { $project: { password: 0 } },
+      {
+        $project: {
+          password: 0,
+          refreshTokens: 0,
+          resetToken: 0,
+          resetTokenExpiry: 0,
+        },
+      },
       {
         $facet: {
           nonSystem: [{ $match: { role: { $ne: 'system' } } }],

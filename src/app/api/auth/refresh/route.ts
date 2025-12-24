@@ -89,6 +89,7 @@ async function handleRefreshToken(req: NextRequest) {
       orgId = user.organizationId.toString();
       tokenVerification = verifyAndDecryptRefreshToken(refreshToken, orgId);
       if (!tokenVerification.success || !tokenVerification.payload) {
+        console.log(tokenVerification, 'tokenVerification-failed-92');
         const res = NextResponse.json(
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
@@ -107,7 +108,7 @@ async function handleRefreshToken(req: NextRequest) {
       tokenVersion = payload.tokenVersion;
       role = payload.role as UserRole;
     }
-
+    console.log(tokenVerification, 'tokenVerification-109');
     const payload = tokenVerification.payload!;
     if (!userId) userId = payload.userId;
     if (!orgId) orgId = payload.orgId;
@@ -128,6 +129,7 @@ async function handleRefreshToken(req: NextRequest) {
     );
 
     if (!verification.valid) {
+      console.log(verification, 'verification-failed-131');
      const res = NextResponse.json(
       { error: 'Invalid or expired refresh token' },
       { status: 401 },
