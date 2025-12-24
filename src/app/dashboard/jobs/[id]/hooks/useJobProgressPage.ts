@@ -13,10 +13,12 @@ import {
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
 import { useSSE } from '@/hooks/useSSE';
-import {
-  CustomCalendarEvent,
-  Interviewer,
-} from '@/app/dashboard/calendar/types';
+// import {
+//   CustomCalendarEvent,
+//   Interviewer,
+// } from '@/app/dashboard/calendar/types';
+import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
+import { Interviewer } from '@/lib/features/user/userApi';
 import { initialCandidateColumns } from '../data/initial-data';
 import { useKanbanBoard } from './useKanbanBoard';
 import { useDragToScroll } from './useDragToScroll';
@@ -90,7 +92,6 @@ export const useJobProgressPage = () => {
 
   // SSE for real-time updates
   const { candidates: sseCandidates, lanes: updatedLanes } = useSSE(
-    user?.role || '',
     setSelectedCandidate as (
       candidate: Candidate | CustomCalendarEvent | null,
     ) => void,

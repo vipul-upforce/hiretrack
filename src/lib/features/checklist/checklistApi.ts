@@ -6,7 +6,7 @@ import {
   IChecklistField,
 } from '@/lib/models/JobLaneConfig';
 import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
-import { current } from '@reduxjs/toolkit';
+import { ChecklistSubmissionData } from '@/types/checklist';
 
 interface ValidateChecklistResponse {
   success: boolean;
@@ -18,29 +18,8 @@ interface ValidateChecklistResponse {
   message?: string;
 }
 
-interface SubmitChecklistRequest {
-  checklistId: string;
-  checklistName: string;
-  checklistType: 'incoming' | 'outgoing';
-  laneId: string;
-  laneName: string;
-
-  responses: Record<
-    string,
-    {
-      value: any;
-      fieldLabel?: string;
-      fieldType?: string;
-      files?: any[];
-      visibleInHistory: string[];
-    }
-  >;
-  remark?: {
-    description: string;
-    isPrivate?: boolean;
-    rating?: number;
-  };
-}
+// Alias for backward compatibility - use ChecklistSubmissionData from types/checklist.ts
+type SubmitChecklistRequest = ChecklistSubmissionData;
 
 export const checklistApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -113,7 +92,8 @@ export const checklistApi = baseApi.injectEndpoints({
       query: (params) => {
         const searchParams = new URLSearchParams();
         if (params.type) searchParams.append('type', params.type);
-        if (params.active !== undefined) searchParams.append('active', params.active.toString());
+        if (params.active !== undefined)
+          searchParams.append('active', params.active.toString());
         return `/checklist-templates?${searchParams.toString()}`;
       },
       transformResponse: (response: {
@@ -237,3 +217,6 @@ export const {
   useValidateCandidateChecklistMutation,
   useSubmitCandidateChecklistMutation,
 } = checklistApi;
+
+// Export types for use in other files
+export type { ValidateChecklistResponse, SubmitChecklistRequest };

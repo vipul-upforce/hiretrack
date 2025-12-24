@@ -12,6 +12,7 @@ import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
 import { sentStatusMailHandler } from '@/lib/utils';
 import { Job } from '@/types/job';
 import logger from '@/lib/logger';
+import { IJobLaneConfig } from '@/lib/models/JobLaneConfig';
 import { useClientSideChecklistValidation } from './useClientSideChecklistValidation';
 
 interface UseCandidateProps {
@@ -25,9 +26,9 @@ interface UseCandidateProps {
   setIsDeleteDialogOpen: (open: boolean) => void;
   setSelectedCandidate: (candidate: Candidate | null) => void;
   selectedCandidate: Candidate | null;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<void>;
   candidateToDelete: string | null;
-  jobLaneConfig?: any;
+  jobLaneConfig?: IJobLaneConfig;
   job?: Job;
 }
 
@@ -144,7 +145,7 @@ export const useCandidate = ({
 
       // Refetch to ensure consistency
       await refetch();
-    } catch (error) {
+    } catch {
       // If database update fails, don't move the card
       toast({
         title: 'Error',

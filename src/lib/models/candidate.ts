@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { ChecklistFieldValue } from '@/types/checklist';
 import { CustomFieldFile } from '../fileUtils';
 import { ITag } from './organization';
 import logger from '../logger';
@@ -155,7 +156,7 @@ export interface ICandidate {
         completedBy: mongoose.Schema.Types.ObjectId;
         responses: {
           [fieldId: string]: {
-            value: any;
+            value: ChecklistFieldValue;
             files?: CustomFieldFile[];
           };
         };
@@ -166,7 +167,7 @@ export interface ICandidate {
         completedBy: mongoose.Schema.Types.ObjectId;
         responses: {
           [fieldId: string]: {
-            value: any;
+            value: ChecklistFieldValue;
             files?: CustomFieldFile[];
           };
         };

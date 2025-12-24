@@ -13,6 +13,11 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ObjectId } from 'mongoose';
 import { logger } from '@/lib/logger/logger.server';
+import { ICandidateHistory } from '@/lib/models/history';
+import {
+  ChecklistResponse,
+  ChecklistHistoryResponseItem,
+} from '@/types/checklist';
 // POST - Submit checklist responses for a candidate
 export async function POST(
   req: NextRequest,
@@ -181,7 +186,7 @@ export async function POST(
     const user = await User!.findById(userId);
 
     // Create history entry
-    const historyEntry: any = {
+    const historyEntry: Partial<ICandidateHistory> = {
       dateTime: currentTime,
       title: `Completed ${checklistType} checklist for ${laneName} lane`,
       checklistForm: {
@@ -191,22 +196,25 @@ export async function POST(
         laneId,
         laneName,
         responses: Object.fromEntries(
-          Object.entries(responses).map(
-            ([fieldId, response]: [string, any]) => [
+          Object.entries(responses as Record<string, ChecklistResponse>).map(
+            ([fieldId, response]): [string, ChecklistHistoryResponseItem] => [
               fieldId,
               {
-                fieldId,
+                value: response.value,
                 fieldLabel: response.fieldLabel || fieldId,
                 fieldType: response.fieldType || 'text',
-                value: response.value,
                 files: response.files || [],
                 visibleInHistory: response.visibleInHistory || [],
               },
             ],
           ),
-        ),
-        completedAt: currentTime,
-        completedBy: userId,
+        ) as Record<string, ChecklistHistoryResponseItem>,
+        completedAt: new Date(currentTime),
+        completedBy: {
+          _id: userId,
+          name: user?.name || '',
+          email: user?.email || '',
+        },
       },
       currentInterviewer: null,
       previousInterviewer: null,

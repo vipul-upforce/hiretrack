@@ -141,6 +141,12 @@ export default function DashboardLayout({
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllNotificationsAsReadMutation();
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
+  const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null,
+  );
+  const { toast } = useToast();
 
   // Notification handlers
   const handleNotificationClick = async (notification: INotification) => {
@@ -224,13 +230,6 @@ export default function DashboardLayout({
     }
   }, [user]);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
-    null,
-  );
-  const [isCandidateDialogOpen, setIsCandidateDialogOpen] = useState(false);
-  const { toast } = useToast();
-
   // Handle responsive sidebar behavior
   useEffect(() => {
     const handleResize = () => {
@@ -244,13 +243,14 @@ export default function DashboardLayout({
         } else {
           setIsCollapsed(true);
         }
-      } else {
-        // On large screens, respect user preference or default to expanded
+      }
+      // On large screens, respect user preference or default to expanded
+      if (!isSmallScreen) {
         if (userPreference === 'collapsed') {
           setIsCollapsed(true);
-        } else {
-          setIsCollapsed(false);
+          return;
         }
+        setIsCollapsed(false);
       }
     };
 
@@ -259,7 +259,7 @@ export default function DashboardLayout({
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []); // Remove isCollapsed dependency to avoid infinite loops
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -307,6 +307,45 @@ export default function DashboardLayout({
   };
 
   const { theme } = useTheme();
+  // Helper functions for color manipulation
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
+      : null;
+  };
+
+  const darkenColor = (hex: string, percent: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+
+    const factor = (100 - percent) / 100;
+    const r = Math.round(rgb.r * factor);
+    const g = Math.round(rgb.g * factor);
+    const b = Math.round(rgb.b * factor);
+
+    // Ensure we always return a valid 6-digit hex
+    const result = (r * 16 + g * 8 + b).toString(16).padStart(6, '0');
+    return `#${result}`;
+  };
+
+  const lightenColor = (hex: string, percent: number) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return hex;
+
+    const factor = percent / 100;
+    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
+    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
+    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
+
+    // Ensure we always return a valid 6-digit hex
+    const result = (r * 16 + g * 8 + b).toString(16).padStart(6, '0');
+    return `#${result}`;
+  };
 
   // Inject portal colors as CSS custom properties
   useEffect(() => {
@@ -363,46 +402,6 @@ export default function DashboardLayout({
       }
     }
   }, [portalConfigData]);
-
-  // Helper functions for color manipulation
-  const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
-  };
-
-  const darkenColor = (hex: string, percent: number) => {
-    const rgb = hexToRgb(hex);
-    if (!rgb) return hex;
-
-    const factor = (100 - percent) / 100;
-    const r = Math.round(rgb.r * factor);
-    const g = Math.round(rgb.g * factor);
-    const b = Math.round(rgb.b * factor);
-
-    // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
-    return `#${result}`;
-  };
-
-  const lightenColor = (hex: string, percent: number) => {
-    const rgb = hexToRgb(hex);
-    if (!rgb) return hex;
-
-    const factor = percent / 100;
-    const r = Math.round(rgb.r + (255 - rgb.r) * factor);
-    const g = Math.round(rgb.g + (255 - rgb.g) * factor);
-    const b = Math.round(rgb.b + (255 - rgb.b) * factor);
-
-    // Ensure we always return a valid 6-digit hex
-    const result = ((r << 16) + (g << 8) + b).toString(16).padStart(6, '0');
-    return `#${result}`;
-  };
 
   // Memoized handlers to prevent re-renders
   const handleToggleCollapse = useCallback(() => {
