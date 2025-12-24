@@ -5,15 +5,17 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { DatePicker } from './date-picker';
 
+interface DateTimePickerProps {
+  value?: Dayjs | null;
+  onChange: (date: Dayjs | null) => void;
+  placeholder?: string;
+}
+
 export function DateTimePicker({
   value,
   onChange,
   placeholder = 'MM/DD/YYYY hh:mm aa',
-}: {
-  value?: Dayjs | null;
-  onChange: (date: Dayjs | null) => void;
-  placeholder?: string;
-}) {
+}: DateTimePickerProps) {
   // Convert Dayjs to Date for the new DatePicker
   // const dateValue = value ? value.toDate() : null;
   const dateValue = React.useMemo(
@@ -41,20 +43,18 @@ export function DateTimePicker({
   //   onBlur?.();
   // };
   const handleDateChange = React.useCallback(
-    (date: any) => {
+    (date: Date | null) => {
       let normalizedDate: Date | null = null;
 
       if (date && typeof date === 'object') {
-        if ('toDate' in date) {
-          normalizedDate = date.toDate();
-        } else if (date instanceof Date) {
+        if (date instanceof Date) {
           normalizedDate = date;
         }
       }
 
       // Convert to Dayjs
       const newDayjsValue =
-        normalizedDate && !isNaN(normalizedDate.getTime())
+        normalizedDate && !Number.isNaN(normalizedDate.getTime())
           ? dayjs(normalizedDate)
           : null;
 

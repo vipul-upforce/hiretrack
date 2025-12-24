@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import MultiDatePicker from 'react-multi-date-picker';
+import type { DateObject } from 'react-multi-date-picker';
 import TimePicker from 'react-multi-date-picker/plugins/time_picker';
 import { Calendar, Clock, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -104,7 +105,7 @@ export function DatePicker({
   onClose,
   portalContainer,
 }: DatePickerProps) {
-  const pickerRef = useRef<any>(null);
+  const pickerRef = useRef<{ closeCalendar: () => void } | null>(null);
   const [internalOpen, setInternalOpen] = useState(false);
   const doneClicked = useRef(false);
   const allowOutsideClose = useRef(false);
@@ -131,7 +132,6 @@ export function DatePicker({
         if (pickerRef.current) pickerRef.current.closeCalendar();
       }}
       showNow={!!showTimePicker && showNowButton}
-      pickerRef={pickerRef}
     />,
   ];
 
@@ -150,20 +150,37 @@ export function DatePicker({
         }
       };
       document.addEventListener('mousedown', handleClick);
-      return () => document.removeEventListener('mousedown', handleClick);
+      return () => {
+        document.removeEventListener('mousedown', handleClick);
+      };
     }
+    return undefined;
   }, [internalOpen, showTimePicker]);
 
   // Use the same className as the Input component
   const inputClassName =
     'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm';
 
+  // Convert Date to DateObject for MultiDatePicker
+  const handleChange = (date: DateObject | DateObject[] | null) => {
+    if (date === null) {
+      onChange(null);
+      return;
+    }
+    if (Array.isArray(date)) {
+      // For range mode, take the first date
+      onChange(date[0]?.toDate() || null);
+      return;
+    }
+    onChange(date.toDate());
+  };
+
   return (
     <div ref={pickerContainerRef} className={cn('relative', className)}>
       <MultiDatePicker
         ref={pickerRef}
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         format={format}
         placeholder={placeholder}
         className="wren-picker"
@@ -173,7 +190,7 @@ export function DatePicker({
         calendarPosition="bottom"
         range={range}
         portal={!!portalContainer}
-        portalTarget={portalContainer}
+        portalTarget={portalContainer || undefined}
         onOpen={() => {
           setInternalOpen(true);
           doneClicked.current = false;
@@ -186,12 +203,14 @@ export function DatePicker({
             showTimePicker &&
             !doneClicked.current &&
             !allowOutsideClose.current
-          )
+          ) {
             return false;
+          }
           setInternalOpen(false);
           doneClicked.current = false;
           allowOutsideClose.current = false;
           onClose?.();
+          return undefined;
         }}
       />
     </div>
