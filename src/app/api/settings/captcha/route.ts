@@ -36,8 +36,11 @@ const handleGetCaptcha = async (req: NextRequest) => {
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while ((!Settings || !Organization) && retries < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      retries++;
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 100);
+      });
+      retries += 1;
     }
 
     if (!Settings || !Organization) {
@@ -134,7 +137,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Encrypt before saving
-    const encryptedCaptcha = encryptProviderKeys(
+    const encryptedProviders = encryptProviderKeys(
       {
         captcha: {
           enableCaptcha: enableCaptcha || false,
@@ -143,7 +146,16 @@ export async function PUT(req: NextRequest) {
         },
       },
       orgId,
-    ).captcha;
+    );
+
+    if (!encryptedProviders || !encryptedProviders.captcha) {
+      return NextResponse.json(
+        { error: 'Failed to encrypt CAPTCHA settings' },
+        { status: 500 },
+      );
+    }
+
+    const encryptedCaptcha = encryptedProviders.captcha;
 
     const updatedSettings = await Settings?.findOneAndUpdate(
       { organizationId: orgId },

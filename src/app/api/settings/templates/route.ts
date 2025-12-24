@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
+import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
 
 export async function GET(req: NextRequest) {
   try {
@@ -73,7 +74,7 @@ export async function PUT(req: NextRequest) {
     }
 
     for (const [templateId, template] of Object.entries(templates)) {
-      const temp = template as any;
+      const temp = template as IEmailTemplate;
       if (
         !temp.templateId ||
         !temp.templateName ||

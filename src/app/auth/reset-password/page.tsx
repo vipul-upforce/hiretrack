@@ -2,11 +2,9 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form, Field, FieldProps } from 'formik';
 import * as Yup from 'yup';
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,7 +66,7 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Reset Password</CardTitle>
@@ -91,7 +89,7 @@ function ResetPasswordContent() {
                   <Label htmlFor="password">New Password</Label>
                   <div className="relative">
                     <Field name="password">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
                           type={showPassword ? 'text' : 'password'}
@@ -108,7 +106,7 @@ function ResetPasswordContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                      className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {!showPassword ? (
@@ -119,7 +117,7 @@ function ResetPasswordContent() {
                     </Button>
                   </div>
                   {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs">
+                    <div className="text-xs text-red-500">
                       {errors.password}
                     </div>
                   )}
@@ -129,7 +127,7 @@ function ResetPasswordContent() {
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
                     <Field name="confirmPassword">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
                           type={showConfirmPassword ? 'text' : 'password'}
@@ -146,8 +144,10 @@ function ResetPasswordContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
                       {!showConfirmPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -157,7 +157,7 @@ function ResetPasswordContent() {
                     </Button>
                   </div>
                   {errors.confirmPassword && touched.confirmPassword && (
-                    <div className="text-red-500 text-xs">
+                    <div className="text-xs text-red-500">
                       {errors.confirmPassword}
                     </div>
                   )}
@@ -178,15 +178,15 @@ function ResetPasswordContent() {
 export default function ResetPassword() {
   return (
     <Suspense
-      fallback={(
-        <div className="flex items-center justify-center min-h-screen bg-background">
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Loading...</CardTitle>
             </CardHeader>
           </Card>
         </div>
-      )}
+      }
     >
       <ResetPasswordContent />
     </Suspense>

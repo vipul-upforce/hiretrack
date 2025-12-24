@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
+import type { IOnboardingStatus } from '@/lib/models/settings';
 
 export async function GET(req: NextRequest) {
   try {
@@ -55,9 +56,9 @@ export async function PUT(req: NextRequest) {
     }
 
     await connectToDatabase();
-    const body = await req.json();
+    const body = (await req.json()) as Partial<IOnboardingStatus>;
 
-    const allowedFields = [
+    const allowedFields: Array<keyof IOnboardingStatus> = [
       'completedSteps',
       'skippedSteps',
       'doNotShowAgain',
@@ -65,13 +66,16 @@ export async function PUT(req: NextRequest) {
       'isCompleted',
     ];
 
-    const $set: Record<string, any> = {
+    const $set: Record<string, string[] | boolean | number | Date> = {
       'onboardingStatus.lastUpdated': new Date(),
     };
 
     for (const key of allowedFields) {
-      if (key in body) {
-        $set[`onboardingStatus.${key}`] = body.key;
+      if (key in body && body[key] !== undefined) {
+        $set[`onboardingStatus.${key}`] = body[key] as
+          | string[]
+          | boolean
+          | number;
       }
     }
 

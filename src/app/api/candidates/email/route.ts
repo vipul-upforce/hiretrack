@@ -8,6 +8,7 @@ import connectToDatabase, {
 import { sendMail } from '@/lib/emailUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
+import { EmailAttachment } from '@/lib/features/candidate/candidateApi';
 
 export async function POST(request: NextRequest) {
   try {
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
     if (attachments.length > 0) {
       // Plain text version
       finalBody += '\n\nAttachments (click links to download):\n';
-      attachments.forEach((attachment: any) => {
+      attachments.forEach((attachment: EmailAttachment) => {
         finalBody += `- ${attachment.fileName}: ${attachment.shareUrl}\n`;
       });
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         <p style="margin: 0 0 8px 0; font-weight: bold; color: #374151;">Attachments:</p>
         <ul style="margin: 0; padding-left: 20px; list-style-type: disc;">`;
 
-      attachments.forEach((attachment: any) => {
+      attachments.forEach((attachment: EmailAttachment) => {
         htmlBody += `
           <li style="margin: 4px 0;">
             <a href="${attachment.shareUrl}" 
@@ -133,10 +134,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare email data
-    const candidateEmail =
-      typeof candidate.email === 'string'
-        ? candidate.email
-        : (candidate.email as any)?.email || 'unknown@email.com';
+    let candidateEmail: string;
+    if (typeof candidate.email === 'string') {
+      candidateEmail = candidate.email;
+    } else if (
+      typeof candidate.email === 'object' &&
+      candidate.email !== null &&
+      'email' in candidate.email
+    ) {
+      candidateEmail = (candidate.email as { email: string }).email;
+    } else {
+      candidateEmail = 'unknown@email.com';
+    }
 
     const fromEmail =
       settings.mailConfig.smtp_from ||
@@ -182,7 +191,7 @@ export async function POST(request: NextRequest) {
       cc: emailData.cc,
       bcc: emailData.bcc,
       replyTo: emailData.replyTo,
-      attachments: attachments.map((att: any) => ({
+      attachments: attachments.map((att: EmailAttachment) => ({
         fileName: att.fileName,
         fileSize: att.fileSize,
         shareId: att.shareId,

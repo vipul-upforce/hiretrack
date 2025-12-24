@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectToDatabase, { EmailHistory } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
+import type { IEmailHistory } from '@/lib/models/emailhistory';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +37,9 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate');
 
     // Build query
-    const query: any = { organizationId: user.organizationId };
+    const query: mongoose.FilterQuery<IEmailHistory> = {
+      organizationId: user.organizationId,
+    };
 
     if (search) {
       query.$or = [

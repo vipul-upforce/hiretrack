@@ -32,8 +32,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { SignupFormValues } from '@/types/signup';
-import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { SignupSchema } from '../schema/Signup.schema';
 
 export default function Signup() {
@@ -42,9 +41,7 @@ export default function Signup() {
   const [signup, { isLoading }] = useSignupMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { user: userData }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user: userData } = useAppSelector((state) => state.auth);
 
   const initialValues: SignupFormValues = {
     email: '',

@@ -6,6 +6,21 @@ import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
 import { logger } from '@/lib/logger/logger.server';
 
+interface GoogleApiError extends Error {
+  code?: string;
+  response?: {
+    status?: number;
+    statusText?: string;
+    data?: {
+      error?: {
+        message?: string;
+      };
+    };
+    headers?: Record<string, unknown>;
+  };
+  stack?: string;
+}
+
 // Safe getter for Settings model
 async function getSettingsModel() {
   try {
@@ -209,9 +224,6 @@ export async function POST(req: NextRequest) {
         calendarId: 'primary',
       });
 
-      const now = new Date();
-      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
       // Gather connection details
       const connectionInfo = {
         calendarCount: calendarListResponse.data.items?.length || 0,
@@ -230,7 +242,8 @@ export async function POST(req: NextRequest) {
         message: 'Google Calendar connection is working properly',
         data: connectionInfo,
       });
-    } catch (apiError: any) {
+    } catch (error) {
+      const apiError = error as GoogleApiError;
       logger.error(
         { apiError, url: req.url },
         'Google Calendar API test failed:',
@@ -239,7 +252,12 @@ export async function POST(req: NextRequest) {
       // Handle specific error types
       let errorMessage = 'Connection test failed';
       let errorDetails = '';
-      let debugInfo: any = {};
+      let debugInfo: {
+        status?: number;
+        statusText?: string;
+        data?: unknown;
+        headers?: Record<string, unknown>;
+      } = {};
 
       // Capture detailed error information for debugging
       if (apiError.response) {
