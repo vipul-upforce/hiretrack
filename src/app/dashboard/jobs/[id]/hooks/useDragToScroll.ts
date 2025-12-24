@@ -14,13 +14,13 @@ export const useDragToScroll = <T extends HTMLElement>() => {
   const [isDndDragging, setIsDndDragging] = useState(false);
 
   useEffect(() => {
-    if (!element) return;
+    if (!element) return undefined;
 
     const onMouseDown = (e: MouseEvent) => {
       if (
-        isDndDragging
-        || e.button !== 0
-        || (e.target as HTMLElement).closest(
+        isDndDragging ||
+        e.button !== 0 ||
+        (e.target as HTMLElement).closest(
           'button, a, input, textarea, [data-rbd-draggable-id]',
         )
       ) {
@@ -70,6 +70,10 @@ export const useDragToScroll = <T extends HTMLElement>() => {
   }, [element, isDragging, startX, scrollLeft, isDndDragging]);
 
   return {
-    ref, element, setIsDndDragging, isDragging, isDndDragging,
+    ref,
+    element,
+    setIsDndDragging,
+    isDragging,
+    isDndDragging,
   };
 };

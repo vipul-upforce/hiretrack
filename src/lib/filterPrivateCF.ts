@@ -21,23 +21,32 @@ const filterCandidateCustomFields = (
 };
 
 // Function to filter private customFields for multiple candidates
-const getFilterPrivateCF = async (candidates: ICandidate[], req: NextRequest): Promise<ICandidate[] | undefined> => {
+const getFilterPrivateCF = async (
+  candidates: ICandidate[],
+  req: NextRequest,
+): Promise<ICandidate[] | undefined> => {
   if (!Organization) return undefined;
 
   const userData = await getAuthenticatedUser(req);
   if (!userData) return undefined;
 
-  const orgData = await Organization.findById(userData.organizationId, { customFields: 1 });
+  const orgData = await Organization.findById(userData.organizationId, {
+    customFields: 1,
+  });
   if (!orgData) return candidates;
 
   // Get private field labels from organization.customFields.g2xh8hoe1.fields
-  const privateFieldLabels = ((Object.values(orgData.customFields)[1]?.fields || []) as CustomField[])
+  const privateFieldLabels = (
+    (Object.values(orgData.customFields)[1]?.fields || []) as CustomField[]
+  )
     .filter((field) => field.privateInt === true)
     .map((field) => field.label);
 
   if (userData.role === 'interviewer') {
     const candidatesWithoutPrivateCF = await Promise.all(
-      candidates.map(async (candidate) => filterCandidateCustomFields(candidate, privateFieldLabels)),
+      candidates.map(async (candidate) =>
+        filterCandidateCustomFields(candidate, privateFieldLabels),
+      ),
     );
     return candidatesWithoutPrivateCF;
   }
@@ -47,14 +56,20 @@ const getFilterPrivateCF = async (candidates: ICandidate[], req: NextRequest): P
 };
 
 // Function to filter private customFields for a single candidate
-const getFilterPrivateCFSingle = async (candidate: ICandidate, role: string, organizationId:string): Promise<any> => {
+const getFilterPrivateCFSingle = async (
+  candidate: ICandidate,
+  role: string,
+  organizationId: string,
+): Promise<ICandidate | undefined> => {
   if (!Organization) return undefined;
 
   const orgData = await Organization.findById(organizationId);
   if (!orgData) return candidate;
 
   // Get private field labels from organization.customFields.g2xh8hoe1.fields
-  const privateFieldLabels = ((Object.values(orgData.customFields)[1]?.fields || []) as CustomField[])
+  const privateFieldLabels = (
+    (Object.values(orgData.customFields)[1]?.fields || []) as CustomField[]
+  )
     .filter((field) => field.privateInt === true)
     .map((field) => field.label);
 

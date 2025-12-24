@@ -10,7 +10,6 @@ import { MentionTextarea } from '@/components/ui/mention-textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import Rating from '@mui/material/Rating';
 import { useAppSelector } from '@/lib/redux/hooks';
 
@@ -31,8 +30,6 @@ function ConfirmAndRemarkDialog({
   isLoading?: boolean;
   loadingText?: string;
   title?: string;
-  assignmentId?: string;
-  onAddHistoryEntry?: (historyEntry: any) => void;
   message?: string;
 }) {
   const { user } = useAppSelector((state) => state.auth || {});
@@ -85,7 +82,7 @@ function ConfirmAndRemarkDialog({
                   handleConfirm();
                 }
               }}
-              organizationId={user?.organizationId || ''}
+              organizationId={user?.organizationInfo?._id.toString() || ''}
               currentUserRole={user?.role || ''}
               rows={5}
             />
@@ -96,7 +93,7 @@ function ConfirmAndRemarkDialog({
             <Rating
               name="task-rating"
               value={remarkRating}
-              onChange={(e, value) => setRemarkRating(value)}
+              onChange={(_e, value) => setRemarkRating(value)}
               precision={0.5}
             />
           </div>

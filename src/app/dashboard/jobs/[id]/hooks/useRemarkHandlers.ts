@@ -172,16 +172,19 @@ export const useRemarkHandlers = (
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
 
-      localCandidate &&
-        (await updateCandidateHistory({
+      if (localCandidate) {
+        await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
-        }).unwrap());
+        }).unwrap();
+      }
 
       const result = await updateCandidate(updateData).unwrap();
       if (onUpdate && result && pathname !== '/dashboard/calendar') {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 500);
+        });
         onUpdate(result);
       }
       if (onUpdate && localCandidate) {
@@ -257,7 +260,9 @@ export const useRemarkHandlers = (
 
       const result = await updateCandidate(updateData).unwrap();
       if (onUpdate && result && pathname !== '/dashboard/calendar') {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 500);
+        });
         onUpdate(result);
       }
       if (onUpdate && localCandidate) {

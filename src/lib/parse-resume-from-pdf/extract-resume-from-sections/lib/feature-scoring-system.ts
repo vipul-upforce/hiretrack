@@ -14,7 +14,7 @@ const computeFeatureScores = (
     match: false,
   }));
 
-  for (let i = 0; i < textItems.length; i++) {
+  for (let i = 0; i < textItems.length; i += 1) {
     const textItem = textItems[i];
 
     for (const featureSet of featureSets) {
@@ -23,7 +23,7 @@ const computeFeatureScores = (
       if (result) {
         let { text } = textItem;
         if (returnMatchingText && typeof result === 'object') {
-          text = result[0];
+          [text] = result;
         }
 
         const textScore = textScores[i];
@@ -67,7 +67,8 @@ export const getTextWithHighestFeatureScore = (
     }
   }
 
-  if (returnEmptyStringIfHighestScoreIsNotPositive && highestScore <= 0) return ['', textScores] as const;
+  if (returnEmptyStringIfHighestScoreIsNotPositive && highestScore <= 0)
+    return ['', textScores] as const;
 
   // Note: If textItems is an empty array, textsWithHighestFeatureScore[0] is undefined, so we default it to empty string
   const text = !returnConcatenatedStringForTextsWithSameHighestScore

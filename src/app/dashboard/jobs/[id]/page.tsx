@@ -47,7 +47,7 @@ import { useNormalizedCandidates } from './hooks/useNormalizedCandidates';
 import { useCandidateState } from './hooks/useCandidateState';
 import { QuickSelectAndFilter } from './components/QuickSelectAndFilter';
 import { JobAnalyticsModal } from '../../jobs-board/components/JobAnalyticsModal';
-import ChecklistRemarksDialog from './components/Dialogs/checklist-remarks-dialog';
+import ChecklistRemarksDialog from './components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import { LaneChecklistConfigDialog } from './components/Dialogs/lane-checklist-config-dialog';
 import { MigrationDialog } from './components/Dialogs/MigrationDialog';
 import CandidateCustomFieldsDialog from './components/customFields/candidateCustomFieldsDialog';

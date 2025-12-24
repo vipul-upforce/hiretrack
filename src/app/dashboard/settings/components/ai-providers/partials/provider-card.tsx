@@ -34,7 +34,7 @@ interface ProviderCardProps {
   onVerify: (apiKey: string, model: string) => void;
   onToggleVisibility: () => void;
 }
-
+/* eslint-disable max-lines */
 export function ProviderCard({
   config,
   formik,

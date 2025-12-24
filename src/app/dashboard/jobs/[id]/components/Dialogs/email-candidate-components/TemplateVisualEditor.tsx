@@ -74,7 +74,7 @@ export function TemplateVisualEditor({
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
         className={cn(
-          'max-h-[400px] overflow-y-auto bg-white p-4 dark:bg-black',
+          'max-h-[400px] overflow-y-auto bg-white p-4',
           'prose prose-sm max-w-none',
           isEditing &&
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',

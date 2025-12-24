@@ -84,6 +84,7 @@ async function processSmartNotificationRecipients(
  * Sends email notifications only (no in-app notifications)
  * This function checks user email preferences and sends emails accordingly
  */
+
 export async function sendSmartNotification(
   organizationId: string,
   notificationType: NotificationType,

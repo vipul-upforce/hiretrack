@@ -1,6 +1,6 @@
 'use client';
 
-import { Formik, Form, Field, FormikHelpers } from 'formik';
+import { Formik, Form, Field, FormikHelpers, FieldProps } from 'formik';
 import * as Yup from 'yup';
 import {
   Dialog,
@@ -60,16 +60,17 @@ export function AssignJobDialog({
   const candidateCount = isMultiple ? candidate.length : 1;
 
   // Initial form values
+  const getInitialJobId = () => {
+    if (isMultiple) return '';
+    if (!candidate.jobId) return '';
+    if (typeof candidate.jobId === 'string') return candidate.jobId;
+    if (typeof candidate.jobId === 'object' && candidate.jobId._id)
+      return candidate.jobId._id;
+    return '';
+  };
+
   const initialValues: FormValues = {
-    // jobId: "",
-    jobId:
-      !isMultiple && candidate.jobId
-        ? typeof candidate.jobId === 'string'
-          ? candidate.jobId
-          : typeof candidate.jobId === 'object'
-            ? candidate.jobId._id
-            : ''
-        : '',
+    jobId: getInitialJobId(),
   };
 
   const handleSubmit = async (
@@ -112,12 +113,8 @@ export function AssignJobDialog({
             title: 'Success',
             description: `Successfully assigned ${candidateIdsToMove.length} candidate(s) to the job`,
           });
-        } catch (error) {
+        } catch {
           toast({
-            title: 'Warning',
-            description:
-              'All selected candidates are already assigned to this job',
-            variant: 'destructive',
             title: 'Error',
             description: 'Bulk job assignment failed.',
             variant: 'destructive',
@@ -174,7 +171,8 @@ export function AssignJobDialog({
         </DialogHeader>
 
         {/* loading skeleton */}
-        {isFetching ? (
+        {/* Render loading, error, or normal state without nested ternaries */}
+        {isFetching && (
           <div className="flex flex-col gap-4 px-6 py-8">
             <div className="space-y-3">
               <Skeleton className="h-4 w-[60%]" />
@@ -185,7 +183,8 @@ export function AssignJobDialog({
               <span>Loading open jobs...</span>
             </div>
           </div>
-        ) : error ? ( // error state
+        )}
+        {!isFetching && error && (
           <div className="flex flex-col items-center justify-center space-y-3 px-6 py-12 text-center">
             <AlertCircle className="h-6 w-6 text-destructive" />
             <p className="font-medium text-red-500">Failed to fetch jobs</p>
@@ -201,7 +200,8 @@ export function AssignJobDialog({
               Retry
             </Button>
           </div>
-        ) : (
+        )}
+        {!isFetching && !error && (
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
@@ -215,7 +215,7 @@ export function AssignJobDialog({
                     <div className="grid gap-2">
                       <Label htmlFor="jobId">Assign To</Label>
                       <Field name="jobId">
-                        {({ field }: { field: { value: string } }) => (
+                        {({ field }: FieldProps) => (
                           <Select
                             value={field.value}
                             onValueChange={(value) =>
@@ -261,9 +261,13 @@ export function AssignJobDialog({
                     variant="primary"
                   >
                     {isSubmitting || loading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    {isSubmitting || loading ? 'Assigning' : 'Assign'}
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Assigning
+                      </>
+                    ) : (
+                      'Assign'
+                    )}
                   </Button>
                 </div>
               </Form>

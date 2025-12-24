@@ -1,4 +1,12 @@
-import { IChecklistField, IChecklist, UserRole } from '@/lib/models/JobLaneConfig';
+import {
+  IChecklistField,
+  IChecklist,
+  UserRole,
+} from '@/lib/models/JobLaneConfig';
+import {
+  ChecklistResponses,
+  ChecklistHistoryResponseItem,
+} from '@/types/checklist';
 
 /**
  * Filters checklist fields based on user role and visibility context
@@ -16,7 +24,8 @@ export function filterFieldsByRole(
 
   return fields.filter((field) => {
     // Handle backward compatibility - if visibility arrays don't exist, show to all roles except 'candidate'
-    const visibilityArray = context === 'form' ? field.visibleOnForm : field.visibleInHistory;
+    const visibilityArray =
+      context === 'form' ? field.visibleOnForm : field.visibleInHistory;
 
     if (!visibilityArray || !Array.isArray(visibilityArray)) {
       // Backward compatibility: show to admin, hr, interviewer by default
@@ -41,7 +50,11 @@ export function filterChecklistByRole(
 ): IChecklist | null {
   if (!checklist) return null;
 
-  const filteredFields = filterFieldsByRole(checklist.fields, userRole, context);
+  const filteredFields = filterFieldsByRole(
+    checklist.fields,
+    userRole,
+    context,
+  );
 
   // If no fields are visible, return null to indicate no checklist should be shown
   if (filteredFields.length === 0) {
@@ -71,28 +84,29 @@ export function shouldShowChecklist(
 
 /**
  * Filters checklist responses in history based on user role visibility
- * @param responses - Map of field responses
+ * @param responses - Map or Record of field responses
  * @param fields - Original checklist fields with visibility settings
  * @param userRole - Current user's role
- * @returns Filtered responses object with only visible fields
+ * @returns Filtered responses Record with only visible fields
  */
 export function filterChecklistResponses(
-  responses: Record<string, any> | Map<string, any>,
+  responses: ChecklistResponses,
   fields: IChecklistField[],
   userRole: UserRole,
-): Record<string, any> {
+): Record<string, ChecklistHistoryResponseItem> {
   if (!responses || !fields) return {};
 
   // Convert Map to object if needed
-  const responsesObj = responses instanceof Map
-    ? Object.fromEntries(responses.entries())
-    : responses;
+  const responsesObj: Record<string, ChecklistHistoryResponseItem> =
+    responses instanceof Map
+      ? Object.fromEntries(responses.entries())
+      : responses;
 
   const visibleFields = filterFieldsByRole(fields, userRole, 'history');
   const visibleFieldIds = new Set(visibleFields.map((f) => f.id));
 
   // Filter responses to only include visible fields
-  const filteredResponses: Record<string, any> = {};
+  const filteredResponses: Record<string, ChecklistHistoryResponseItem> = {};
   Object.entries(responsesObj).forEach(([fieldId, response]) => {
     if (visibleFieldIds.has(fieldId)) {
       filteredResponses[fieldId] = response;

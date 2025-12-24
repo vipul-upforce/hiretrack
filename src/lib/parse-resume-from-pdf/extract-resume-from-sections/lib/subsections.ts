@@ -15,32 +15,6 @@ import type {
  * schools or work experiences in the section. The feature scoring system then
  * process each subsection to retrieve each's resume attributes and append the results.
  */
-export const divideSectionIntoSubsections = (lines: Lines): Subsections => {
-  // The main heuristic to determine a subsection is to check if its vertical line gap
-  // is larger than the typical line gap * 1.4
-  const isLineNewSubsectionByLineGap = createIsLineNewSubsectionByLineGap(lines);
-
-  let subsections = createSubsections(lines, isLineNewSubsectionByLineGap);
-
-  // Fallback heuristic if the main heuristic doesn't apply to check if the text item is bolded
-  if (subsections.length === 1) {
-    const isLineNewSubsectionByBold = (line: Line, prevLine: Line) => {
-      if (
-        !isBold(prevLine[0])
-        && isBold(line[0])
-        // Ignore bullet points that sometimes being marked as bolded
-        && !BULLET_POINTS.includes(line[0].text)
-      ) {
-        return true;
-      }
-      return false;
-    };
-
-    subsections = createSubsections(lines, isLineNewSubsectionByBold);
-  }
-
-  return subsections;
-};
 
 type IsLineNewSubsection = (line: Line, prevLine: Line) => boolean;
 
@@ -52,7 +26,7 @@ const createIsLineNewSubsectionByLineGap = (
   const linesY = lines.map((line) => line[0].y);
   let lineGapWithMostCount: number = 0;
   let maxCount = 0;
-  for (let i = 1; i < linesY.length; i++) {
+  for (let i = 1; i < linesY.length; i += 1) {
     const lineGap = Math.round(linesY[i - 1] - linesY[i]);
     if (!lineGapToCount[lineGap]) lineGapToCount[lineGap] = 0;
     lineGapToCount[lineGap] += 1;
@@ -64,7 +38,8 @@ const createIsLineNewSubsectionByLineGap = (
   // Use common line gap to set a sub section threshold
   const subsectionLineGapThreshold = lineGapWithMostCount * 1.4;
 
-  const isLineNewSubsection = (line: Line, prevLine: Line) => Math.round(prevLine[0].y - line[0].y) > subsectionLineGapThreshold;
+  const isLineNewSubsection = (line: Line, prevLine: Line) =>
+    Math.round(prevLine[0].y - line[0].y) > subsectionLineGapThreshold;
 
   return isLineNewSubsection;
 };
@@ -75,10 +50,11 @@ const createSubsections = (
 ): Subsections => {
   const subsections: Subsections = [];
   let subsection: Lines = [];
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
     if (i === 0) {
       subsection.push(line);
+      // eslint-disable-next-line no-continue
       continue;
     }
     if (isLineNewSubsection(line, lines[i - 1])) {
@@ -90,5 +66,32 @@ const createSubsections = (
   if (subsection.length > 0) {
     subsections.push(subsection);
   }
+  return subsections;
+};
+export const divideSectionIntoSubsections = (lines: Lines): Subsections => {
+  // The main heuristic to determine a subsection is to check if its vertical line gap
+  // is larger than the typical line gap * 1.4
+  const isLineNewSubsectionByLineGap =
+    createIsLineNewSubsectionByLineGap(lines);
+
+  let subsections = createSubsections(lines, isLineNewSubsectionByLineGap);
+
+  // Fallback heuristic if the main heuristic doesn't apply to check if the text item is bolded
+  if (subsections.length === 1) {
+    const isLineNewSubsectionByBold = (line: Line, prevLine: Line) => {
+      if (
+        !isBold(prevLine[0]) &&
+        isBold(line[0]) &&
+        // Ignore bullet points that sometimes being marked as bolded
+        !BULLET_POINTS.includes(line[0].text)
+      ) {
+        return true;
+      }
+      return false;
+    };
+
+    subsections = createSubsections(lines, isLineNewSubsectionByBold);
+  }
+
   return subsections;
 };

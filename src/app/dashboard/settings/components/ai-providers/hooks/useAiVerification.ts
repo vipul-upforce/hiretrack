@@ -62,12 +62,14 @@ export const useAiVerification = () => {
         ...prev,
         [provider]: message,
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       setVerificationStatus((prev) => ({ ...prev, [provider]: 'error' }));
 
       const errorMessage =
-        error?.data?.error ||
-        error?.data?.message ||
+        (error as { data?: { error?: string; message?: string } }).data
+          ?.error ||
+        (error as { data?: { error?: string; message?: string } }).data
+          ?.message ||
         (error instanceof Error ? error.message : 'Unknown error');
 
       setVerificationMessages((prev) => ({

@@ -1,33 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { Candidate, Remark } from '@/types/candidate';
-import type { Job } from '@/types/job';
-
-export type LogEntry = {
-  candidateId: string;
-  jobId: string;
-  candidateData: Candidate;
-  jobData: Job;
-  dateTime: string;
-  assignmentBy: any;
-  currentInterviewer: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-  }[];
-  remark: Remark;
-  previousInterviewer: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-  }[];
-  title: string;
-  note: { description: string; date: string; rating: number; userId: string[] };
-  attachments: any[];
-};
+import { LogEntry } from '../settings/logs/server/types';
 
 /**
  * Hook to render a log title string
@@ -35,24 +9,25 @@ export type LogEntry = {
  */
 export function useRenderLogTitle() {
   const renderLogTitle = useCallback((log: LogEntry): string => {
-    const noteDescription = typeof log?.note?.description === 'string' ? log.note.description : '';
+    const noteDescription =
+      typeof log?.note?.description === 'string' ? log.note.description : '';
 
     if (
-      (log.title !== '' || !log.title)
-      && log.title !== 'Assigned to Job'
-      && !log.title?.includes('Followup')
-      && !log.title?.startsWith('Direct Email')
-      && !log.title?.startsWith('Email sent: ')
-      && !noteDescription.startsWith('Email sent')
+      (log.title !== '' || !log.title) &&
+      log.title !== 'Assigned to Job' &&
+      !log.title?.includes('Followup') &&
+      !log.title?.startsWith('Direct Email') &&
+      !log.title?.startsWith('Email sent: ') &&
+      !noteDescription.startsWith('Email sent')
     ) {
       // CASE 1: Assigned / Reassigned
       if (
-        Array.isArray(log.currentInterviewer)
-        && log.currentInterviewer.length > 0
+        Array.isArray(log.currentInterviewer) &&
+        log.currentInterviewer.length > 0
       ) {
         if (
-          Array.isArray(log.previousInterviewer)
-          && log.previousInterviewer.length > 0
+          Array.isArray(log.previousInterviewer) &&
+          log.previousInterviewer.length > 0
         ) {
           return `${log.previousInterviewer[0].name} → ${log.currentInterviewer[0].name}`;
         }
@@ -65,9 +40,9 @@ export function useRenderLogTitle() {
       }
 
       // CASE 3: Candidate Added
-      if (log.title === 'Candidate Added' && log.assignmentBy) {
+      if (log.title === 'Candidate Added' && log.assignmentBy?.length > 0) {
         return `${log.candidateData?.name || 'Candidate'} was added by ${
-          log.assignmentBy?.name || 'someone'
+          log.assignmentBy[0].name || 'someone'
         }`;
       }
 
@@ -91,8 +66,8 @@ export function useRenderLogTitle() {
 
       // CASE 7: Unassigned
       if (
-        Array.isArray(log.previousInterviewer)
-        && log.previousInterviewer.length > 0
+        Array.isArray(log.previousInterviewer) &&
+        log.previousInterviewer.length > 0
       ) {
         return `Unassigned from ${log.previousInterviewer[0].name}`;
       }

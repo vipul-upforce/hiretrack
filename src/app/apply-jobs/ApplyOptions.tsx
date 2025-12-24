@@ -1,5 +1,6 @@
 'use client';
 
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import { Button } from '@/components/ui/button';
 import useRoles from '@/hooks/useRoles';
 import { Dialog } from '@headlessui/react';
@@ -17,7 +18,7 @@ interface Job {
   description: string;
   skills: string[];
   experience: number;
-  customFields?: Record<string, string>;
+  customFields?: CustomFieldValues;
   _id?: string;
 }
 
@@ -202,7 +203,6 @@ export default function ApplyOptions({
                     closeParent={onClose}
                     jobTitle={job.title}
                     primaryColor={primaryColor}
-                    secondaryColor={secondaryColor}
                   />
                 </div>
               </>

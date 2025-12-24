@@ -14,7 +14,7 @@ interface SecretInputProps {
 
 export function SecretInput({ name, label }: SecretInputProps) {
   const [show, setShow] = useState(false);
-  const { values, setFieldValue } = useFormikContext<any>();
+  const { values, setFieldValue } = useFormikContext<{ name: string }>();
 
   return (
     <div>

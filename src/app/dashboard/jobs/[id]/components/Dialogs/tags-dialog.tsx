@@ -28,13 +28,15 @@ function TagsDialog({
   onClose,
   isDialog,
 }: TagsDialogProps) {
-  const orgId: string = user && typeof user.organizationId === 'string' ? user?.organizationId : '';
+  const orgId: string =
+    user && typeof user.organizationId === 'string' ? user?.organizationId : '';
   const {
     data: tagsObj,
     isLoading,
     error,
   } = useFetchOrgTagsQuery({ organizationId: orgId });
-  const [updateCandidate, { isLoading: isUpdating, error: candidateError }] = useUpdateCandidateMutation();
+  const [updateCandidate, { isLoading: isUpdating, error: candidateError }] =
+    useUpdateCandidateMutation();
   const [selectedTags, setSelectedTags] = useState<ITag[]>([]);
   const [allTags, setAllTags] = useState<ITag[]>([]);
   const [isManageTagsOpen, setIsManageTagsOpen] = useState(false);
@@ -47,7 +49,9 @@ function TagsDialog({
     [...orgTags, ...candidateTags].forEach((tag) => {
       uniqueTagsMap.set(tag.title, tag);
     });
-    const combinedTags = Array.from(uniqueTagsMap.values()).sort((a, b) => a.title.localeCompare(b.title));
+    const combinedTags = Array.from(uniqueTagsMap.values()).sort((a, b) =>
+      a.title.localeCompare(b.title),
+    );
     setAllTags(combinedTags);
   }, [tagsObj, candidate.tags]);
 
@@ -58,9 +62,11 @@ function TagsDialog({
   }, [candidate.tags]);
 
   const handleTagSelection = (tag: ITag) => {
-    setSelectedTags((prev) => (prev.some((t) => t.title === tag.title)
-      ? prev.filter((t) => t.title !== tag.title)
-      : [...prev, tag]));
+    setSelectedTags((prev) =>
+      prev.some((t) => t.title === tag.title)
+        ? prev.filter((t) => t.title !== tag.title)
+        : [...prev, tag],
+    );
   };
 
   const handleSave = async (e: React.MouseEvent) => {
@@ -92,30 +98,34 @@ function TagsDialog({
     onClose();
   };
 
-  const hasChanges = JSON.stringify(selectedTags) !== JSON.stringify(candidate.tags);
+  const hasChanges =
+    JSON.stringify(selectedTags) !== JSON.stringify(candidate.tags);
 
   return (
     <div
-      className="p-4 pt-2 w-[300px] max-h-[570px] flex flex-col"
+      role="dialog"
+      className="flex max-h-[570px] w-[300px] flex-col p-4 pt-2"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold mr-4">Assign Tags</h3>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="mr-4 text-lg font-semibold">Assign Tags</h3>
         <Button variant="outline" size="sm" onClick={handleOpenManageTags}>
-          <Settings className="w-3 h-3" />
+          <Settings className="h-3 w-3" />
         </Button>
       </div>
-      {isLoading ? (
+      {isLoading && (
         <div className="flex justify-center">
           <LoadingSpinner w={4} />
         </div>
-      ) : error || candidateError ? (
+      )}
+      {!isLoading && (error || candidateError) && (
         <p className="text-red-500">An error occurred. Please try again.</p>
-      ) : allTags.length === 0 ? (
+      )}
+      {!isLoading && !(error || candidateError) && allTags.length === 0 && (
         <p className="text-gray-500">No tags available.</p>
-      ) : (
+      )}
+      {!isLoading && !(error || candidateError) && allTags.length > 0 && (
         <div className="flex-1 overflow-y-auto">
-          {' '}
           <div className="flex flex-col gap-3">
             {allTags.map((tag) => (
               <div key={tag.title} className="flex items-center gap-3">
@@ -128,7 +138,7 @@ function TagsDialog({
                 />
                 <label htmlFor={`tag-${tag.title}`}>
                   <Badge
-                    className="text-white cursor-pointer break-all w-fit"
+                    className="w-fit cursor-pointer break-all text-white"
                     style={{ backgroundColor: tag.color }}
                   >
                     {tag.title}
@@ -139,7 +149,7 @@ function TagsDialog({
           </div>
         </div>
       )}
-      <div className={`flex justify-end mt-4 ${isDialog ? 'w-[110%]' : ''}`}>
+      <div className={`mt-4 flex justify-end ${isDialog ? 'w-[110%]' : ''}`}>
         <Button
           variant="primary"
           onClick={handleSave}

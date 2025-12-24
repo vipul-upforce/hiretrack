@@ -17,7 +17,7 @@ interface UseKanbanBoardProps {
   jobId?: string; // NEW: Add jobId for job-specific operations
   setIsConfirmLaneDeleteOpen: (open: boolean) => void;
   setIsLaneEditOpen: (open: boolean) => void;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<void>;
 }
 
 export const useKanbanBoard = ({
@@ -42,7 +42,7 @@ export const useKanbanBoard = ({
     const lansArray = newColumns.map((column) => column.id);
     try {
       // NEW: Use job-specific lanes if jobId is provided
-      const updateData: any = {
+      const updateData: { userId: string; lanes: string[]; jobId?: string } = {
         userId: user?.id || '',
         lanes: lansArray,
         jobId: jobId || undefined,
@@ -77,7 +77,7 @@ export const useKanbanBoard = ({
     if (isDuplicate) {
       toast({
         title: 'Error',
-        description: `Lane with title \"${title}\" already exists.`, // Corrected escaping for consistency
+        description: `Lane with title "${title}" already exists.`, // Corrected escaping for consistency
         variant: 'destructive',
       });
       return;
@@ -128,13 +128,19 @@ export const useKanbanBoard = ({
 
       const newColumns = columns.filter((col) => col.id !== laneId);
       setColumns(newColumns);
-    } catch (err: any) {
-      if (err.data?.migrationNeeded) {
+    } catch (err: unknown) {
+      if (
+        (err as { data?: { migrationNeeded: boolean } }).data?.migrationNeeded
+      ) {
         setLaneToDelete(laneId);
-        setMigrationLanes(err.data.lanes);
+        setMigrationLanes(
+          (err as { data?: { lanes: string[] } }).data?.lanes || [],
+        );
         setIsMigrationDialogOpen(true);
       } else {
-        const errorMessage = (err.data as { error: string }).error || 'Failed to delete the lane';
+        const errorMessage =
+          (err as { data?: { error: string } }).data?.error ||
+          'Failed to delete the lane';
         toast({
           title: 'Error',
           description: errorMessage,
@@ -164,8 +170,10 @@ export const useKanbanBoard = ({
       }
       const newColumns = columns.filter((col) => col.id !== laneToDelete);
       setColumns(newColumns);
-    } catch (err: any) {
-      const errorMessage = (err.data as { error: string }).error || 'Failed to delete the lane';
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { data?: { error: string } }).data?.error ||
+        'Failed to delete the lane';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -207,7 +215,8 @@ export const useKanbanBoard = ({
       }
     } catch (err: unknown) {
       if (err && typeof err === 'object' && 'data' in err) {
-        const errorMessage = (err.data as { error: string }).error || 'Failed to edit the lane';
+        const errorMessage =
+          (err.data as { error: string }).error || 'Failed to edit the lane';
         toast({
           title: 'Error',
           description: errorMessage,

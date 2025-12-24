@@ -22,6 +22,6 @@ export default function UsersLayout({
   useEffect(() => {
     checkUser();
   }, []);
-
+  // eslint-disable-next-line react/jsx-no-useless-fragment
   return <>{children}</>;
 }

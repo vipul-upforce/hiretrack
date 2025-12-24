@@ -1,4 +1,4 @@
-import { Field, FieldProps, useFormikContext, FormikProps } from 'formik';
+import { Field, FieldProps, useFormikContext } from 'formik';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { MentionTextarea } from '@/components/ui/mention-textarea';
@@ -7,30 +7,22 @@ import { Rating } from '@mui/material';
 import { Paperclip, FileIcon, X } from 'lucide-react';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
 import { Candidate } from '@/types/candidate';
+import { useAltEnterSubmit } from '@/lib/utils/useAltEnterSubmit';
 import { User, FormValues } from '../../../schemas/AssignCandidateSchema';
 import { handleFileSelect } from '../../../hooks/fileUploadUtils';
 
 interface AssignmentDetailsSectionProps {
   user: User | null;
   candidate: Candidate;
-  getOnAltEnterSubmit: (
-    values: FormValues,
-    formikHelpers: FormikProps<FormValues>,
-    isSubmitting: boolean,
-  ) => (fieldValue: string) => (e: React.KeyboardEvent) => void;
-  isSubmitting: boolean;
-  formikProps: FormikProps<FormValues>;
 }
 
 export function AssignmentDetailsSection({
   user,
   candidate,
-  getOnAltEnterSubmit,
-  isSubmitting,
-  formikProps,
 }: AssignmentDetailsSectionProps) {
   const { values, setFieldValue } = useFormikContext<FormValues>();
   const { sanitizeFiles } = useSanitizeFiles();
+  const getOnAltEnterSubmit = useAltEnterSubmit();
 
   return (
     <>
@@ -41,11 +33,7 @@ export function AssignmentDetailsSection({
               placeholder="Add a remark... (Alt+Enter to submit)"
               value={field.value || ''}
               onChange={(value: string) => setFieldValue('remark', value)}
-              onKeyDown={getOnAltEnterSubmit(
-                values,
-                formikProps,
-                isSubmitting,
-              )(field.value)}
+              onKeyDown={getOnAltEnterSubmit}
               organizationId={user?.organizationInfo?._id || ''}
               currentUserRole={user?.role || ''}
               rows={3}

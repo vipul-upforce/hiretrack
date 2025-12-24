@@ -29,7 +29,7 @@ export function EmailRecipients({
         <ChipInput
           value={cc}
           onChange={setCc}
-          placeholder="Add email addresses"
+          placeholder="Add email addresses or press Enter"
           suggestions={[]}
         />
       </div>
@@ -39,7 +39,7 @@ export function EmailRecipients({
         <ChipInput
           value={bcc}
           onChange={setBcc}
-          placeholder="Add email addresses"
+          placeholder="Add email addresses or press Enter"
           suggestions={[]}
         />
       </div>

@@ -2,23 +2,23 @@
 import { CandidateCardSkeleton } from './candidate-card-skelton';
 import { InterviewerCardSkeleton } from './interviewer-card-skelton';
 
-export function DashboardSkeleton({ role }) {
+export function DashboardSkeleton({ role }: { role: string | null }) {
   return (
-    <div className="h-auto flex flex-col overflow-y-auto w-full animate-pulse">
+    <div className="flex h-auto w-full animate-pulse flex-col overflow-y-auto">
       {/* HEADER */}
-      <div className="flex-shrink-0 px-4 border-b border-gray-200 dark:border-gray-700 py-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 py-4 dark:border-gray-700">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="h-20 rounded-lg bg-muted/50 border animate-pulse"
+              className="h-20 animate-pulse rounded-lg border bg-muted/50"
             />
           ))}
         </div>
       </div>
 
       {/* CARDS AREA */}
-      <div className="flex-1 px-4 mt-6">
+      <div className="mt-6 flex-1 px-4">
         <div className="flex flex-wrap gap-6">
           {role === 'interviewer'
             ? [...Array(8)].map((_, i) => <InterviewerCardSkeleton key={i} />)

@@ -9,6 +9,7 @@ export const organizationSlice = createSlice({
   initialState,
   reducers: {
     setAllowMultipleOrgs: (state, action) => {
+      // eslint-disable-next-line no-param-reassign
       state.allowMultipleOrgs = action.payload;
     },
   },

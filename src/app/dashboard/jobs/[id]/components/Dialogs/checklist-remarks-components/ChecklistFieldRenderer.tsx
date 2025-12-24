@@ -1,5 +1,6 @@
 import React from 'react';
 import { IChecklistField } from '@/lib/models/JobLaneConfig';
+import { ChecklistFieldValue } from '@/types/checklist';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea as UITextarea } from '@/components/ui/textarea';
@@ -23,8 +24,8 @@ import { FileData } from '@/Custom_Fields/hooks/useCustomForm';
 
 interface ChecklistFieldRendererProps {
   field: IChecklistField;
-  value: string | string[] | number | null;
-  onChange: (value: string | string[] | number | null) => void;
+  value: ChecklistFieldValue;
+  onChange: (value: ChecklistFieldValue) => void;
   error?: string;
   touched?: boolean;
 }
@@ -49,30 +50,32 @@ export function ChecklistFieldRenderer({
             id={fieldId}
             type={field.type}
             placeholder={field.placeholder}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}
             className={errorClass}
           />
         );
 
-      case 'number':
+      case 'number': {
+        const inputValue =
+          typeof value === 'number' || typeof value === 'string' ? value : '';
         return (
           <Input
             id={fieldId}
             type="number"
             placeholder={field.placeholder}
-            value={value || ''}
+            value={inputValue}
             onChange={(e) => onChange(Number(e.target.value))}
             className={errorClass}
           />
         );
-
+      }
       case 'textarea':
         return (
           <UITextarea
             id={fieldId}
             placeholder={field.placeholder}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}
             className={errorClass}
           />
@@ -243,7 +246,7 @@ export function ChecklistFieldRenderer({
             id={fieldId}
             type="password"
             placeholder={field.placeholder}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}
             className={errorClass}
           />
@@ -319,7 +322,7 @@ export function ChecklistFieldRenderer({
           <Input
             id={fieldId}
             placeholder={field.placeholder}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}
           />
         );

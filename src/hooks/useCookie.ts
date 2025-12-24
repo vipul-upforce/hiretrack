@@ -1,11 +1,7 @@
-import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 const useCookie = () => {
-  // const [user, setUSer] = useState<{[key: string]: string|number|boolean}>({});
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth);
 
   return user;
 };

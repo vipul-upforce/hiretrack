@@ -25,8 +25,8 @@ export function ThemeToggle({
     const newTheme = theme === 'light' ? 'dark' : 'light';
 
     if (
-      !document.startViewTransition
-      || window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      !document.startViewTransition ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
     ) {
       setTheme(newTheme);
       return;
@@ -41,7 +41,9 @@ export function ThemeToggle({
 
     const transition = document.startViewTransition(async () => {
       setTheme(newTheme);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), 0);
+      });
     });
 
     transition.ready.then(() => {
@@ -72,7 +74,7 @@ export function ThemeToggle({
       <div className="relative flex h-4 w-4 items-center justify-center">
         <Sun
           className={cn(
-            'absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring',
+            'ease-spring absolute h-[1.2rem] w-[1.2rem] transition-all duration-500',
             theme === 'dark'
               ? '-rotate-90 scale-0 opacity-0'
               : 'rotate-0 scale-100 opacity-100',
@@ -80,7 +82,7 @@ export function ThemeToggle({
         />
         <Moon
           className={cn(
-            'absolute h-[1.2rem] w-[1.2rem] transition-all duration-500 ease-spring',
+            'ease-spring absolute h-[1.2rem] w-[1.2rem] transition-all duration-500',
             theme === 'dark'
               ? 'rotate-0 scale-100 opacity-100'
               : 'rotate-90 scale-0 opacity-0',
@@ -94,7 +96,7 @@ export function ThemeToggle({
         </span>
       )}
 
-      <span className="absolute inset-0 -z-10 bg-primary/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <span className="bg-primary/5 absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
     </Button>
   );
 }

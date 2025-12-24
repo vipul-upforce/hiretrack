@@ -54,8 +54,8 @@ results.forEach((file) => {
 
 // 2. Recursively calculate totals (bubbling up from bottom to top)
 function calculateStats(node) {
-  let e = 0,
-    w = 0;
+  let e = 0;
+  let w = 0;
 
   // Sum files in this dir
   node.files.forEach((f) => {

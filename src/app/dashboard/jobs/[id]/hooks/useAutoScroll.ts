@@ -1,13 +1,13 @@
 'use client';
 
-import {
-  useState, useEffect, useRef, useCallback,
-} from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 const SCROLL_AREA_WIDTH = 60; // The width of the edge area that triggers scrolling (in pixels)
 const SCROLL_SPEED = 15; // The amount to scroll on each frame
 
-export function useAutoScroll(scrollContainerRef: React.RefObject<HTMLElement>) {
+export function useAutoScroll(
+  scrollContainerRef: React.RefObject<HTMLElement>,
+) {
   const [isDragging, setIsDragging] = useState(false);
   const scrollIntervalRef = useRef<number | null>(null);
 
@@ -18,28 +18,36 @@ export function useAutoScroll(scrollContainerRef: React.RefObject<HTMLElement>) 
       }
 
       const { clientX } = event;
-      const { left, right, width } = scrollContainerRef.current.getBoundingClientRect();
+      const { left, right } =
+        scrollContainerRef.current.getBoundingClientRect();
 
       if (clientX < left + SCROLL_AREA_WIDTH) {
         // Mouse is in the left scroll zone
         if (scrollIntervalRef.current === null) {
+          const currentContainer = scrollContainerRef.current;
+          if (!currentContainer) return;
           scrollIntervalRef.current = window.setInterval(() => {
-            scrollContainerRef.current!.scrollLeft -= SCROLL_SPEED;
+            // Use latest reference on each tick
+            const container = scrollContainerRef.current;
+            if (container) container.scrollLeft -= SCROLL_SPEED;
           }, 16); // ~60fps
         }
       } else if (clientX > right - SCROLL_AREA_WIDTH) {
         // Mouse is in the right scroll zone
         if (scrollIntervalRef.current === null) {
+          const currentContainer = scrollContainerRef.current;
+          if (!currentContainer) return;
           scrollIntervalRef.current = window.setInterval(() => {
-            scrollContainerRef.current!.scrollLeft += SCROLL_SPEED;
-          }, 16);
+            // Use latest reference on each tick
+            const container = scrollContainerRef.current;
+            if (container) container.scrollLeft += SCROLL_SPEED;
+          }, 16); // ~60fps
         }
-      } else {
+      } else if (scrollIntervalRef.current !== null) {
         // Mouse is in the neutral zone
-        if (scrollIntervalRef.current !== null) {
-          window.clearInterval(scrollIntervalRef.current);
-          scrollIntervalRef.current = null;
-        }
+
+        window.clearInterval(scrollIntervalRef.current);
+        scrollIntervalRef.current = null;
       }
     },
     [isDragging, scrollContainerRef],

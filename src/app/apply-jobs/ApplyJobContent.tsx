@@ -8,7 +8,9 @@ import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import { useFetchAppliedApplicationQuery } from '@/lib/features/candidate/candidateApi';
 import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import type { SerializedError } from '@reduxjs/toolkit';
-import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import useCustomForm, {
+  CustomFieldValues,
+} from '@/Custom_Fields/hooks/useCustomForm';
 import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
@@ -30,12 +32,12 @@ interface Job {
   skills: string[];
   experience: number;
   salary?: {
-    min: 0;
-    max: 0;
+    min: number;
+    max: number;
     inText: string;
-    isPrivate: false;
+    isPrivate: boolean;
   };
-  customFields?: Record<string, any>;
+  customFields?: CustomFieldValues;
 }
 
 function isFetchBaseQueryError(
@@ -43,16 +45,22 @@ function isFetchBaseQueryError(
 ): error is FetchBaseQueryError {
   return typeof error === 'object' && error !== null && 'status' in error;
 }
+/* eslint-disable max-lines */
 
 export default function ApplyJobsContent({
   showHeaderFooter = true,
 }: {
   showHeaderFooter?: boolean;
 }) {
+  const dispatch = useAppDispatch();
+  if (Cookies.get('org_id') != null && Cookies.get('auth_state') !== 'true') {
+    refreshAccessToken(dispatch);
+  }
+
   const router = useRouter();
   const isIframe = useIsIframe();
   const searchParams = useSearchParams();
-  const [orgName, setOrgName] = useState<string>('');
+  const [orgName, setOrgName] = useState<string>(searchParams?.get('o') || '');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
@@ -76,14 +84,15 @@ export default function ApplyJobsContent({
   const shouldShowFooter =
     showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
 
-  const shouldSkipQuery = orgName === '' || authState !== 'true';
+  const { user } = useAppSelector((state) => state.auth);
+  const isCandidate = user?.role === 'candidate';
 
+  const shouldSkipQuery =
+    !isCandidate && (orgName === '' || authState === 'true');
   const { data } = useFetchAppliedApplicationQuery(
     {},
-    { skip: shouldSkipQuery },
+    { skip: shouldSkipQuery || user == null },
   );
-  const { user } = useAppSelector((state) => state.auth);
-  const dispatch = useAppDispatch();
   const { toast } = useToast();
   const { setUserLoggedIn, userLoggedIn } = useCustomFields();
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -128,7 +137,8 @@ export default function ApplyJobsContent({
 
       if (urlOrgName) {
         const config = allowance?.data?.find(
-          (org: any) => org?.portalConfigs?.portalName === urlOrgName,
+          (org: { portalConfigs: { portalName: string } }) =>
+            org?.portalConfigs?.portalName === urlOrgName,
         )?.portalConfigs;
 
         if (config?.primaryColor) setPrimaryColor(config.primaryColor);
@@ -141,11 +151,11 @@ export default function ApplyJobsContent({
           if (portalData.secondaryColor)
             setSecondaryColor(portalData.secondaryColor);
           if (portalData.portalLogo) {
-            const logoUrl =
+            const logoUrl2 =
               typeof portalData.portalLogo === 'string'
                 ? portalData.portalLogo
                 : portalData.portalLogo?.url;
-            if (logoUrl) setLogoUrl(logoUrl);
+            if (logoUrl2) setLogoUrl(logoUrl2);
           }
           if (portalData.portalName) setPortalName(portalData.portalName);
         }
@@ -182,11 +192,11 @@ export default function ApplyJobsContent({
         if (portalData.secondaryColor)
           setSecondaryColor(portalData.secondaryColor);
         if (portalData.portalLogo) {
-          const logoUrl =
+          const logoUrl3 =
             typeof portalData.portalLogo === 'string'
               ? portalData.portalLogo
               : portalData.portalLogo?.url;
-          if (logoUrl) setLogoUrl(logoUrl);
+          if (logoUrl3) setLogoUrl(logoUrl3);
         }
         if (portalData.portalName) setPortalName(portalData.portalName);
       }
@@ -217,7 +227,7 @@ export default function ApplyJobsContent({
       if (orgId && (!authState || authState !== 'true')) {
         try {
           await refreshAccessToken(dispatch).then(() => setUserLoggedIn(true));
-        } catch (error) {
+        } catch {
           // Silently fail - don't disrupt the page if refresh fails
           // The user can still use public endpoints
           console.warn('Proactive token refresh failed:', error);
@@ -405,6 +415,7 @@ export default function ApplyJobsContent({
       </main>
 
       {shouldShowFooter && (
+        // eslint-disable-next-line react/no-danger
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
       )}
 

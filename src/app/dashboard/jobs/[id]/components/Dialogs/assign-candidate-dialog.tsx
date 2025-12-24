@@ -30,6 +30,7 @@ import {
   useScheduleMeetingMutation,
   useUpdateMeetingMutation,
 } from '@/lib/features/calendar/calendarApi';
+import { IGoogleCalendar } from '@/lib/models/settings';
 import {
   validationSchema,
   FormValues,
@@ -38,7 +39,7 @@ import {
 } from '../../schemas/AssignCandidateSchema';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
-import { GoogleMeetIntegration } from './assign-candidate-components/GoogleMeetIntegration';
+import { GoogleMeetIntegration } from './assign-candidate-components/google-meet/GoogleMeetIntegration';
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
 import ConfirmationDialog from './ConfirmationDialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
@@ -248,21 +249,6 @@ export function AssignCandidateDialog({
     }
   };
 
-  function getOnAltEnterSubmit(
-    values: FormValues,
-    formikHelpers: FormikHelpers<FormValues>,
-    isSubmitting: boolean,
-  ) {
-    return (fieldValue: string) => (e: React.KeyboardEvent) => {
-      if (e.altKey && e.key === 'Enter') {
-        e.preventDefault();
-        if (fieldValue?.trim() && !isSubmitting) {
-          handleFormSubmit(values, formikHelpers);
-        }
-      }
-    };
-  }
-
   const handleCancelMeeting = async () => {
     if (!candidate.assignment?.googleMeet?.eventId) return;
 
@@ -326,20 +312,20 @@ export function AssignCandidateDialog({
 
                       <DateTimePickerSection />
 
-                      <GoogleMeetIntegration
-                        candidate={candidate}
-                        interviewers={interviewers}
-                        googleCalendarData={googleCalendarData || {}}
-                        setShowCancelMeetDialog={setShowCancelMeetDialog}
-                        getOnAltEnterSubmit={getOnAltEnterSubmit}
-                      />
+                      {googleCalendarData && (
+                        <GoogleMeetIntegration
+                          candidate={candidate}
+                          interviewers={interviewers}
+                          googleCalendarData={
+                            googleCalendarData.googleCalendar as IGoogleCalendar
+                          }
+                          setShowCancelMeetDialog={setShowCancelMeetDialog}
+                        />
+                      )}
 
                       <AssignmentDetailsSection
                         user={user as User}
                         candidate={candidate}
-                        getOnAltEnterSubmit={getOnAltEnterSubmit}
-                        isSubmitting={isSubmitting}
-                        formikProps={formikProps}
                       />
                     </div>
                   </div>

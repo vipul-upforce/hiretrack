@@ -368,6 +368,7 @@ export function LaneChecklistConfigDialog({
           <div className="px-6 pb-4">
             <div className="flex space-x-1 rounded-lg bg-muted p-1">
               <button
+                type="button"
                 onClick={() => setActiveTab('incoming')}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   activeTab === 'incoming'
@@ -384,6 +385,7 @@ export function LaneChecklistConfigDialog({
                 )}
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('outgoing')}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   activeTab === 'outgoing'
@@ -452,12 +454,13 @@ export function LaneChecklistConfigDialog({
                       onEditField={editField}
                       onRemoveField={removeField}
                       onDragEnd={handleDragEnd}
-                      userRole={user.role}
+                      userRole={user?.role || 'candidate'}
                     />
 
                     {currentChecklist.fields.length === 0 && (
                       <div className="py-8 text-center text-muted-foreground">
-                        No fields added yet. Click "Add Field" to get started.
+                        No fields added yet. Click &quot;Add Field&quot; to get
+                        started.
                       </div>
                     )}
                   </div>

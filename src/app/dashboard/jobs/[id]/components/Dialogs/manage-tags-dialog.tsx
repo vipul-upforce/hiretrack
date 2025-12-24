@@ -205,7 +205,7 @@ function ManageTagsDialog({
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>Manage Tags</DialogTitle>
           </DialogHeader>
-          {isLoading ? (
+          {isLoading && (
             <div className="flex max-h-[72vh] animate-pulse flex-col gap-4 overflow-y-auto px-6 py-4">
               <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-800" />
 
@@ -219,8 +219,11 @@ function ManageTagsDialog({
               <div className="mt-4 h-5 w-28 rounded bg-gray-200 dark:bg-gray-800" />
 
               <div className="mt-2 flex flex-col gap-2">
-                {[...Array(7)].map((_, i) => (
-                  <div key={i} className="flex items-center justify-between">
+                {[...Array(7)].map(() => (
+                  <div
+                    key={Math.random()}
+                    className="flex items-center justify-between"
+                  >
                     <div className="h-6 w-40 rounded bg-gray-200 dark:bg-gray-800" />
 
                     <div className="flex gap-2">
@@ -237,9 +240,11 @@ function ManageTagsDialog({
                 <div className="h-9 w-20 rounded bg-gray-200 dark:bg-gray-800" />
               </div>
             </div>
-          ) : error || updateError ? (
+          )}
+          {!isLoading && (error || updateError) && (
             <p className="text-red-500">An error occurred. Please try again.</p>
-          ) : (
+          )}
+          {!isLoading && !(error || updateError) && (
             <div className="flex max-h-[72vh] flex-col gap-4 overflow-y-auto px-6 py-4">
               <div className="flex flex-col gap-2">
                 <h4 className="text-sm font-medium">Add New Tags</h4>
@@ -269,7 +274,7 @@ function ManageTagsDialog({
               </div>
               <h4 className="text-sm font-medium">Current Tags</h4>
               <div className="flex flex-col gap-2 overflow-y-auto">
-                {!orgTags.length ? (
+                {orgTags.length === 0 ? (
                   <p className="text-gray-500">No Tags available.</p>
                 ) : (
                   <div className="flex flex-col gap-2">

@@ -22,7 +22,11 @@ import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
 import { ClipboardCheck } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { IChecklistField } from '@/lib/models/JobLaneConfig';
-import { useSelector } from 'react-redux';
+import {
+  ChecklistFieldChangeHandler,
+  ChecklistHistoryResponseItem,
+} from '@/types/checklist';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { getJobId } from '../../utils/candidateAccessors';
 import { ChecklistForm } from './checklist-remarks-components/ChecklistForm';
 import { ChecklistRemarksSection } from './checklist-remarks-components/ChecklistRemarksSection';
@@ -71,7 +75,7 @@ function ChecklistRemarksDialog({
   );
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [checklistResponses, setChecklistResponses] = useState<
-    Record<string, any>
+    Record<string, ChecklistHistoryResponseItem>
   >({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [fieldTouched, setFieldTouched] = useState<Record<string, boolean>>({});
@@ -82,7 +86,7 @@ function ChecklistRemarksDialog({
   const [sendStatusMail] = useSendStatusMailMutation();
   const [submitChecklist] = useSubmitCandidateChecklistMutation();
 
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   // const customFieldsContext = useContext(CustomFieldsContext);
   const { data: jobLaneConfig } = useGetJobLaneConfigQuery(
     getJobId(candidate) || '',
@@ -110,7 +114,7 @@ function ChecklistRemarksDialog({
   // Initialize checklist responses
   useEffect(() => {
     if (hasChecklist) {
-      const initialResponses: Record<string, any> = {};
+      const initialResponses: Record<string, ChecklistHistoryResponseItem> = {};
 
       parsedChecklistInfo.checklist!.fields.forEach((field) => {
         initialResponses[field.id] = {
@@ -141,51 +145,57 @@ function ChecklistRemarksDialog({
         // Check if this field is now valid
         let isValid = false;
         if (
-          response
-          && response.value !== undefined
-          && response.value !== null
+          response &&
+          response.value !== undefined &&
+          response.value !== null
         ) {
           switch (field.type) {
             case 'date':
             case 'datetime':
               // Date/datetime fields store ISO strings, check if it's a valid date string
               if (
-                response.value
-                && response.value !== ''
-                && response.value !== null
+                response.value &&
+                response.value !== '' &&
+                response.value !== null
               ) {
                 try {
                   // Handle both string and Date object values
-                  const dateObj = response.value instanceof Date
-                    ? response.value
-                    : new Date(response.value);
-                  isValid = !isNaN(dateObj.getTime()) && dateObj.getTime() > 0;
-                } catch (error) {
+                  const dateObj =
+                    response.value instanceof Date
+                      ? response.value
+                      : new Date(response.value as string);
+                  isValid =
+                    !Number.isNaN(dateObj.getTime()) && dateObj.getTime() > 0;
+                } catch {
                   isValid = false;
                 }
               }
               break;
             case 'time':
               // Time fields store time strings
-              isValid = response.value
-                && response.value !== ''
-                && response.value.trim() !== '';
+              isValid =
+                (response.value as boolean) &&
+                response.value !== '' &&
+                (response.value as string).trim() !== '';
               break;
             case 'text':
             case 'email':
             case 'textarea':
             case 'password':
-              isValid = response.value.trim() !== '';
+              isValid = (response.value as string).trim() !== '';
               break;
             case 'number':
-              isValid = response.value !== '' && !isNaN(Number(response.value));
+              isValid =
+                response.value !== '' && !Number.isNaN(Number(response.value));
               break;
             case 'multiSelect':
             case 'checkbox':
-              isValid = Array.isArray(response.value) && response.value.length > 0;
+              isValid =
+                Array.isArray(response.value) && response.value.length > 0;
               break;
             case 'file':
-              isValid = Array.isArray(response.value) && response.value.length > 0;
+              isValid =
+                Array.isArray(response.value) && response.value.length > 0;
               break;
             default:
               isValid = !!response.value;
@@ -210,7 +220,10 @@ function ChecklistRemarksDialog({
     parsedChecklistInfo,
   ]);
 
-  const handleChecklistFieldChange = (fieldId: string, value: any) => {
+  const handleChecklistFieldChange: ChecklistFieldChangeHandler = (
+    fieldId,
+    value,
+  ) => {
     // Mark field as touched when user interacts with it
     setFieldTouched((prev) => ({ ...prev, [fieldId]: true }));
 
@@ -250,9 +263,9 @@ function ChecklistRemarksDialog({
         let isEmpty = false;
 
         if (
-          !response
-          || response.value === undefined
-          || response.value === null
+          !response ||
+          response.value === undefined ||
+          response.value === null
         ) {
           isEmpty = true;
         } else {
@@ -262,37 +275,42 @@ function ChecklistRemarksDialog({
             case 'email':
             case 'textarea':
             case 'password':
-              isEmpty = !response.value || response.value.trim() === '';
+              isEmpty =
+                !response.value || (response.value as string).trim() === '';
               break;
             case 'number':
-              isEmpty = response.value === '' || isNaN(Number(response.value));
+              isEmpty =
+                response.value === '' || Number.isNaN(Number(response.value));
               break;
             case 'date':
             case 'datetime':
               // Date/datetime fields store ISO strings, check if it's a valid date
               if (
-                !response.value
-                || response.value === ''
-                || response.value === null
+                !response.value ||
+                response.value === '' ||
+                response.value === null
               ) {
                 isEmpty = true;
               } else {
                 try {
                   // Handle both string and Date object values
-                  const dateObj = response.value instanceof Date
-                    ? response.value
-                    : new Date(response.value);
-                  isEmpty = isNaN(dateObj.getTime()) || dateObj.getTime() <= 0;
-                } catch (error) {
+                  const dateObj =
+                    response.value instanceof Date
+                      ? response.value
+                      : new Date(response.value as string);
+                  isEmpty =
+                    Number.isNaN(dateObj.getTime()) || dateObj.getTime() <= 0;
+                } catch {
                   isEmpty = true;
                 }
               }
               break;
             case 'time':
               // Time fields store time strings
-              isEmpty = !response.value
-                || response.value === ''
-                || response.value.trim() === '';
+              isEmpty =
+                !response.value ||
+                response.value === '' ||
+                (response.value as string).trim() === '';
               break;
             case 'select':
             case 'radio':
@@ -300,10 +318,12 @@ function ChecklistRemarksDialog({
               break;
             case 'multiSelect':
             case 'checkbox':
-              isEmpty = !Array.isArray(response.value) || response.value.length === 0;
+              isEmpty =
+                !Array.isArray(response.value) || response.value.length === 0;
               break;
             case 'file':
-              isEmpty = !Array.isArray(response.value) || response.value.length === 0;
+              isEmpty =
+                !Array.isArray(response.value) || response.value.length === 0;
               break;
             default:
               isEmpty = !response.value;
@@ -339,13 +359,15 @@ function ChecklistRemarksDialog({
     setIsSubmitting(true);
 
     try {
+      if (!user) return;
       // Submit checklist if present
       if (hasChecklist && parsedChecklistInfo) {
         const checklist = parsedChecklistInfo.checklist!;
 
         const laneConfig = jobLaneConfig?.laneConfigs.find(
-          (lc) => lc.laneId
-            === (parsedChecklistInfo.checklistType === 'incoming'
+          (lc) =>
+            lc.laneId ===
+            (parsedChecklistInfo.checklistType === 'incoming'
               ? parsedChecklistInfo.targetLane
               : parsedChecklistInfo.currentLane),
         );
@@ -364,10 +386,10 @@ function ChecklistRemarksDialog({
             responses: checklistResponses,
             remark: newRemark.trim()
               ? {
-                description: newRemark.trim(),
-                isPrivate: isSubRemarkPrivate,
-                rating: remarkRating || undefined,
-              }
+                  description: newRemark.trim(),
+                  isPrivate: isSubRemarkPrivate,
+                  rating: remarkRating || undefined,
+                }
               : undefined,
           },
         }).unwrap();
@@ -387,8 +409,8 @@ function ChecklistRemarksDialog({
           sendStatusMail,
           {
             remark: newRemark.trim(),
-            rating: remarkRating,
-          }
+            rating: remarkRating || undefined,
+          },
         );
       } else if (newRemark.trim()) {
         // Only submit remark if no checklist
@@ -409,9 +431,9 @@ function ChecklistRemarksDialog({
           date: new Date().toISOString(),
           rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
           userId: {
-            _id: user.id,
-            name: user.name,
-            email: user.email,
+            _id: user?.id,
+            name: user?.name,
+            email: user?.email,
           },
         };
 
@@ -426,7 +448,7 @@ function ChecklistRemarksDialog({
           currentInterviewer: null,
           previousInterviewer: null,
           remark: newRemarkHistoryObj,
-          assignmentBy: user.id,
+          assignmentBy: user?.id || '',
           title: null,
           note: {
             description: '',
@@ -446,7 +468,7 @@ function ChecklistRemarksDialog({
         const updatedCandidate = await updateCandidate(updateData).unwrap();
         await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
           remark: newRemark.trim(),
-          rating: remarkRating,
+          rating: remarkRating || undefined,
         });
       }
 
@@ -457,7 +479,7 @@ function ChecklistRemarksDialog({
       setOpenRemarksFor('');
       setChecklistResponses({});
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // await new Promise((resolve) => setTimeout(resolve, 100));
       await refetch();
 
       toast({
@@ -494,8 +516,8 @@ function ChecklistRemarksDialog({
   };
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent size="2xl" className="p-0  flex flex-col max-h-[90vh]">
-        <DialogHeader className="px-6 py-4 pr-12 border-b">
+      <DialogContent size="2xl" className="flex max-h-[90vh] flex-col p-0">
+        <DialogHeader className="border-b px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             {hasChecklist && <ClipboardCheck className="h-5 w-5" />}
             {hasChecklist
@@ -504,21 +526,20 @@ function ChecklistRemarksDialog({
           </DialogTitle>
           <DialogDescription>
             {hasChecklist
-              ? parsedChecklistInfo?.checklist?.description
-                || 'Please complete the checklist before proceeding.'
+              ? parsedChecklistInfo?.checklist?.description ||
+                'Please complete the checklist before proceeding.'
               : 'Add your observations and feedback for this candidate.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex min-h-0 flex-1 flex-col">
           <div className="flex-1 overflow-y-auto px-6 py-4">
             {hasChecklist && parsedChecklistInfo?.checklist ? (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold">
                   {parsedChecklistInfo.checklistType === 'incoming'
                     ? 'Incoming'
-                    : 'Outgoing'}
-                  {' '}
+                    : 'Outgoing'}{' '}
                   Checklist
                 </h3>
 
@@ -536,7 +557,7 @@ function ChecklistRemarksDialog({
             )}
           </div>
 
-          <div className="px-6 py-4 bg-background z-20">
+          <div className="z-20 bg-background px-6 py-4">
             <ChecklistRemarksSection
               newRemark={newRemark}
               setNewRemark={setNewRemark}
@@ -555,7 +576,6 @@ function ChecklistRemarksDialog({
         <ChecklistDialogFooter
           isChecklistMandatory={isChecklistMandatory}
           isSubmitting={isSubmitting}
-          user={user}
           handleCancel={handleCancel}
           handleSubmit={handleSubmit}
         />

@@ -9,6 +9,11 @@ interface MentionUser {
   role: string;
 }
 
+interface InsertMentionResult {
+  newText: string;
+  insertionPosition: number;
+}
+
 interface UseMentionPickerReturn {
   selectedMentions: MentionUser[];
   addMention: (user: MentionUser) => void;
@@ -19,7 +24,7 @@ interface UseMentionPickerReturn {
     text: string,
     user: MentionUser,
     cursorPosition: number
-  ) => string;
+  ) => InsertMentionResult;
 }
 
 export function useMentionPicker(): UseMentionPickerReturn {
@@ -49,7 +54,7 @@ export function useMentionPicker(): UseMentionPickerReturn {
   const getMentionText = useCallback(() => selectedMentions.map((user) => `@${user.name}`).join(' '), [selectedMentions]);
 
   const insertMentionInText = useCallback(
-    (text: string, user: MentionUser, cursorPosition: number) => {
+    (text: string, user: MentionUser, cursorPosition: number): InsertMentionResult => {
       const beforeCursor = text.substring(0, cursorPosition);
       const afterCursor = text.substring(cursorPosition);
 
@@ -59,11 +64,20 @@ export function useMentionPicker(): UseMentionPickerReturn {
       if (lastAtIndex !== -1) {
         const textBeforeAt = beforeCursor.substring(0, lastAtIndex);
         const mentionText = `@${user.name} `;
-        return textBeforeAt + mentionText + afterCursor;
+        const newText = textBeforeAt + mentionText + afterCursor;
+        // Return the position where the mention was inserted
+        return {
+          newText,
+          insertionPosition: textBeforeAt.length,
+        };
       }
 
-      // If no @ found, just append the mention
-      return `${beforeCursor}@${user.name} ${afterCursor}`;
+      // If no @ found, just append the mention at cursor position
+      const newText = `${beforeCursor}@${user.name} ${afterCursor}`;
+      return {
+        newText,
+        insertionPosition: beforeCursor.length,
+      };
     },
     [],
   );

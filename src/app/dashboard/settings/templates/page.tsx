@@ -29,7 +29,6 @@ export default function EmailTemplatesPage() {
     selectedTemplate,
     setSelectedTemplate,
     previewMode,
-    setPreviewMode,
     isLoading,
     showAddDialog,
     setShowAddDialog,
@@ -63,10 +62,10 @@ export default function EmailTemplatesPage() {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full">
+    <div className="flex h-screen w-full flex-col overflow-hidden">
       <TemplateHeader onSave={handleSave} saving={saving} />
 
-      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 overflow-y-auto">
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <div className="space-y-6">
           <TemplateSelector
             templates={templates}
@@ -76,13 +75,12 @@ export default function EmailTemplatesPage() {
             onDeleteClick={handleDeleteRequest}
           />
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <TemplateEditor
               currentTemplate={currentTemplate}
               updateTemplate={updateTemplate}
               resetToDefault={resetToDefault}
               previewMode={previewMode}
-              setPreviewMode={setPreviewMode}
               renderPreview={renderPreview}
               theme={theme}
             />

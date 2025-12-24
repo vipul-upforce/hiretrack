@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useTestConnectionMutation } from '@/lib/features/settings';
 
-type StorageType = 'cloudinary' | 's3' | 'smtp' | 'resend';
+type StorageType = 'cloudinary' | 's3' | 'smtp' | 'resend' | 'brevo';
 
 interface Credentials {
   // Cloudinary credentials
@@ -20,12 +20,19 @@ interface Credentials {
   host?: string;
   port?: string;
   from?: string;
+  // Resend credentials
+  resend_api_key?: string;
+  resend_from?: string;
+  reply_to?: string;
+  // Brevo credentials
+  brevo_api_key?: string;
+  brevo_from?: string;
 }
 
 interface UseTestConnectionReturn {
   testConnection: (
     storageType: StorageType,
-    credentials: Credentials
+    credentials: Credentials,
   ) => Promise<boolean>;
   isConnectionSuccessful: boolean;
   isTesting: boolean;
@@ -35,7 +42,8 @@ interface UseTestConnectionReturn {
 export function useTestConnection(): UseTestConnectionReturn {
   const { toast } = useToast();
   const [isConnectionSuccessful, setIsConnectionSuccessful] = useState(false);
-  const [testConnectionMutation, { isLoading: isTesting }] = useTestConnectionMutation();
+  const [testConnectionMutation, { isLoading: isTesting }] =
+    useTestConnectionMutation();
 
   const testConnection = async (
     storageType: StorageType,
@@ -69,7 +77,8 @@ export function useTestConnection(): UseTestConnectionReturn {
                   message: string;
                 };
               }
-            ).data?.message}` || 'Unknown error',
+            ).data?.message
+          }` || 'Unknown error',
         variant: 'destructive',
       });
 

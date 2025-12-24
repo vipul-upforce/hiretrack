@@ -27,6 +27,7 @@ import { getJobId, getTrackingDate } from '../../utils/candidateAccessors';
 import { LaneOptionsMenu } from './lanes-options-menu';
 import { CandidateCard } from '../Candidate/candidate-card';
 
+// --- Types ---
 interface PendingMove {
   candidateId: string;
   sourceLaneId: string;
@@ -39,6 +40,93 @@ interface SortConfig {
   field: string | null;
   direction: 'asc' | 'desc';
   enabled: boolean;
+}
+
+// --- 1. Define Context Interface ---
+// This defines what data the static row renderer needs access to
+interface CandidateContextType {
+  laneId: string;
+  pendingMoves: PendingMove[];
+  refetch: () => void;
+  openRemarksFor: string | null;
+  setOpenRemarksFor: (id: string | null) => void;
+  setSelectedCandidate: (candidate: Candidate | null) => void;
+  handleDeleteClick: (id: string) => void;
+  setIsDetailsOpen: (val: boolean) => void;
+}
+
+// --- 2. Extract CandidateRow (Pure Component) ---
+const CandidateRow = memo(
+  ({
+    candidate,
+    index,
+    isPending,
+    context,
+  }: {
+    candidate: Candidate;
+    index: number;
+    isPending: boolean;
+    context: CandidateContextType;
+  }) => {
+    // Helper handlers using context
+    const handleViewDetails = () => {
+      context.setSelectedCandidate(candidate);
+      context.setIsDetailsOpen(true);
+    };
+
+    const handleDelete = () => {
+      context.setSelectedCandidate(candidate);
+      context.handleDeleteClick(candidate._id);
+    };
+
+    const handleSelect = () => {
+      context.setSelectedCandidate(candidate);
+    };
+
+    return (
+      <div className="pb-2">
+        <CandidateCard
+          key={candidate._id}
+          candidate={candidate}
+          index={index}
+          refetch={context.refetch}
+          onViewDetails={handleViewDetails}
+          openRemarks={context.openRemarksFor === candidate._id}
+          setOpenRemarksFor={context.setOpenRemarksFor}
+          onDeleteClick={handleDelete}
+          onEditClick={handleSelect}
+          onAssignClick={handleSelect}
+          onMarkAsDoneClick={handleSelect}
+          onFollowUpClick={handleSelect}
+          onAddRemarkClick={handleSelect}
+          isPending={isPending}
+        />
+      </div>
+    );
+  },
+);
+CandidateRow.displayName = 'CandidateRow';
+
+// --- 3. Define Item Content Function OUTSIDE Component ---
+// This function is static and never recreated. It receives `context` as the 3rd arg.
+function renderCandidateItem(
+  index: number,
+  candidate: Candidate,
+  context: CandidateContextType,
+) {
+  const isPending = context.pendingMoves.some(
+    (pm) =>
+      pm.candidateId === candidate._id && pm.targetLaneId === context.laneId,
+  );
+
+  return (
+    <CandidateRow
+      candidate={candidate}
+      index={index}
+      isPending={isPending}
+      context={context}
+    />
+  );
 }
 
 interface KanbanColumnProps {
@@ -86,9 +174,7 @@ const KanbanColumn = memo(
     setLaneToDelete,
     setLaneToEdit,
     refetch,
-    selectedCandidate,
     setSelectedCandidate,
-    isDetailsOpen,
     setIsDetailsOpen,
     openRemarksFor,
     setOpenRemarksFor,
@@ -102,7 +188,6 @@ const KanbanColumn = memo(
       null,
     );
 
-    // Simplified sort state
     const [sortConfig, setSortConfig] = useState<SortConfig>({
       field: null,
       direction: 'asc',
@@ -113,7 +198,31 @@ const KanbanColumn = memo(
     const jobId = pathname?.split('/')[3];
     const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-    // Simplified sort function
+    // --- 4. Create Memoized Context ---
+    // This object bundles all the dynamic props needed by the list items
+    const contextValue = useMemo<CandidateContextType>(
+      () => ({
+        laneId: column.id,
+        pendingMoves,
+        refetch,
+        openRemarksFor,
+        setOpenRemarksFor,
+        setSelectedCandidate,
+        handleDeleteClick,
+        setIsDetailsOpen,
+      }),
+      [
+        column.id,
+        pendingMoves,
+        refetch,
+        openRemarksFor,
+        setOpenRemarksFor,
+        setSelectedCandidate,
+        handleDeleteClick,
+        setIsDetailsOpen,
+      ],
+    );
+
     const sortCandidates = useCallback(
       (
         candidates: Candidate[],
@@ -123,9 +232,9 @@ const KanbanColumn = memo(
         [...candidates].sort((a, b) => {
           const getValue = (
             candidate: Candidate,
-            field: string,
+            fieldToUse: string,
           ): string | number | Date | null | undefined => {
-            switch (field) {
+            switch (fieldToUse) {
               case 'name':
                 return candidate.name?.toLowerCase() || '';
               case 'email':
@@ -137,7 +246,7 @@ const KanbanColumn = memo(
               case 'experience':
                 return typeof candidate.experience === 'number'
                   ? candidate.experience
-                  : parseInt(candidate.experience as string) || 0;
+                  : parseInt(candidate.experience as string, 10) || 0;
               case 'skills':
                 return Array.isArray(candidate.skills)
                   ? candidate.skills.length
@@ -166,14 +275,17 @@ const KanbanColumn = memo(
                 return candidate.tracking?.createdAt
                   ? new Date(candidate.tracking?.createdAt).getTime()
                   : 0;
-              case 'lastModified':
+              case 'lastModified': {
                 const updatedAt = getTrackingDate(candidate, 'updatedAt');
                 const createdAt = getTrackingDate(candidate, 'createdAt');
-                return updatedAt
-                  ? updatedAt.getTime()
-                  : createdAt
-                    ? createdAt.getTime()
-                    : 0;
+                if (updatedAt) {
+                  return updatedAt.getTime();
+                }
+                if (createdAt) {
+                  return createdAt.getTime();
+                }
+                return 0;
+              }
               default:
                 return '';
             }
@@ -182,22 +294,21 @@ const KanbanColumn = memo(
           const aValue = getValue(a, field);
           const bValue = getValue(b, field);
 
-          if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-          if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+          if (aValue && bValue && aValue < bValue)
+            return direction === 'asc' ? -1 : 1;
+          if (aValue && bValue && aValue > bValue)
+            return direction === 'asc' ? 1 : -1;
           return 0;
         }),
       [],
     );
 
-    // Single source of truth for processed candidates
     const processedCandidates = useMemo(() => {
-      // First filter by jobId
       const filtered = column.candidates.filter((candidate) => {
         const candidateJobId = getJobId(candidate)?.toString() || '';
         return candidateJobId === jobId?.toString();
       });
 
-      // Then sort if enabled and field is selected
       if (!sortConfig.enabled || !sortConfig.field) {
         return filtered;
       }
@@ -205,7 +316,6 @@ const KanbanColumn = memo(
       return sortCandidates(filtered, sortConfig.field, sortConfig.direction);
     }, [column.candidates, jobId, sortConfig, sortCandidates]);
 
-    // Handle sort from LaneOptionsMenu
     const handleSort = useCallback(
       (field: string, direction: 'asc' | 'desc') => {
         setSortConfig({ field, direction, enabled: true });
@@ -213,27 +323,9 @@ const KanbanColumn = memo(
       [],
     );
 
-    // Disable sorting during drag operations
     const handleDragStart = useCallback(() => {
       setSortConfig((prev) => ({ ...prev, enabled: false }));
     }, []);
-
-    // Memoized event handlers
-    const handleViewDetails = useCallback(
-      (candidate: any) => {
-        setSelectedCandidate(candidate);
-        setIsDetailsOpen(true);
-      },
-      [setSelectedCandidate, setIsDetailsOpen],
-    );
-
-    const handleDeleteClickMemo = useCallback(
-      (id: string, candidate: any) => {
-        setSelectedCandidate(candidate);
-        handleDeleteClick(id);
-      },
-      [setSelectedCandidate, handleDeleteClick],
-    );
 
     return (
       <Draggable draggableId={column.id} index={index} isDragDisabled={false}>
@@ -252,6 +344,8 @@ const KanbanColumn = memo(
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div
+                      role="button"
+                      tabIndex={0}
                       {...provided.dragHandleProps}
                       onMouseDown={(e) => {
                         e.stopPropagation();
@@ -267,13 +361,14 @@ const KanbanColumn = memo(
                     </h3>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {/* Checklist Indicators */}
                     <div className="flex items-center space-x-1">
                       {laneConfig?.incomingChecklist && (
                         <TooltipProvider delayDuration={0}>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div
+                                role="button"
+                                tabIndex={0}
                                 className="flex cursor-pointer items-center text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -307,6 +402,8 @@ const KanbanColumn = memo(
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div
+                                role="button"
+                                tabIndex={0}
                                 className="flex cursor-pointer items-center text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -360,13 +457,12 @@ const KanbanColumn = memo(
                 </div>
               </div>
 
-              {/* Virtualized List Container */}
               <div className="min-w-0 flex-1 space-y-2 overflow-hidden pr-2">
                 <Droppable droppableId={column.id} type="candidate">
-                  {(provided: DroppableProvided) => (
+                  {(droppableProvided: DroppableProvided) => (
                     <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
+                      ref={droppableProvided.innerRef}
+                      {...droppableProvided.droppableProps}
                       className="relative h-full"
                       onDragOver={(e) => {
                         if (
@@ -408,56 +504,23 @@ const KanbanColumn = memo(
                         className="h-full"
                         scrollerRef={scrollerRef}
                       >
+                        {/* --- 5. Pass Context to Virtuoso --- */}
                         <Virtuoso
                           style={{ height: '100%', scrollbarWidth: 'none' }}
                           data={processedCandidates}
                           increaseViewportBy={{ bottom: 250, top: 100 }}
-                          scrollerRef={() => scrollerRef}
-                          computeItemKey={(index, candidate) => candidate._id}
-                          itemContent={(index, candidate) => {
-                            const isPending = pendingMoves.some(
-                              (pm) =>
-                                pm.candidateId === candidate._id &&
-                                pm.targetLaneId === column.id,
-                            );
-
-                            return (
-                              <div className="pb-2">
-                                <CandidateCard
-                                  key={candidate._id}
-                                  candidate={candidate}
-                                  index={index}
-                                  refetch={refetch}
-                                  onViewDetails={handleViewDetails}
-                                  openRemarks={openRemarksFor === candidate._id}
-                                  setOpenRemarksFor={setOpenRemarksFor}
-                                  onDeleteClick={(id: string) =>
-                                    handleDeleteClickMemo(id, candidate)
-                                  }
-                                  onEditClick={(candidate) => {
-                                    setSelectedCandidate(candidate);
-                                  }}
-                                  onAssignClick={(candidate) => {
-                                    setSelectedCandidate(candidate);
-                                  }}
-                                  onMarkAsDoneClick={(candidate) => {
-                                    setSelectedCandidate(candidate);
-                                  }}
-                                  onFollowUpClick={(candidate) => {
-                                    setSelectedCandidate(candidate);
-                                  }}
-                                  onAddRemarkClick={(candidate) => {
-                                    setSelectedCandidate(candidate);
-                                  }}
-                                  isPending={isPending}
-                                />
-                              </div>
-                            );
+                          scrollerRef={(el) => {
+                            if (el) scrollerRef.current = el as HTMLDivElement;
                           }}
+                          computeItemKey={(_index, candidate) => candidate._id}
+                          // Pass the static function here
+                          itemContent={renderCandidateItem}
+                          // Pass the memoized context here
+                          context={contextValue}
                         />
                       </CustomScrollbarLane>
 
-                      {provided.placeholder}
+                      {droppableProvided.placeholder}
                     </div>
                   )}
                 </Droppable>

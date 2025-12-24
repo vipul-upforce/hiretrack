@@ -28,7 +28,7 @@ export const readPdf = async (fileUrl: string): Promise<TextItems> => {
   const pdfFile = await pdfjs.getDocument(fileUrl).promise;
   let textItems: TextItems = [];
 
-  for (let i = 1; i <= pdfFile.numPages; i++) {
+  for (let i = 1; i <= pdfFile.numPages; i += 1) {
     // Parse each page into text content
     const page = await pdfFile.getPage(i);
     const textContent = await page.getTextContent();
@@ -41,7 +41,6 @@ export const readPdf = async (fileUrl: string): Promise<TextItems> => {
     const pageTextItems = textContent.items.map((item) => {
       const {
         str: text,
-        dir, // Remove text direction
         transform,
         fontName: pdfFontName,
         ...otherProps
@@ -84,7 +83,8 @@ export const readPdf = async (fileUrl: string): Promise<TextItems> => {
   }
 
   // Filter out empty space textItem noise
-  const isEmptySpace = (textItem: TextItem) => !textItem.hasEOL && textItem.text.trim() === '';
+  const isEmptySpace = (textItem: TextItem) =>
+    !textItem.hasEOL && textItem.text.trim() === '';
   textItems = textItems.filter((textItem) => !isEmptySpace(textItem));
 
   return textItems;

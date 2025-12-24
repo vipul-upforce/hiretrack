@@ -151,8 +151,8 @@ export function createEmailPasswordResetLimiter() {
   ): Promise<NextResponse> {
     // Extract email if not provided
     if (!email) {
-      email = await extractEmailFromRequest(request);
-      if (!email) {
+      const emailValue = await extractEmailFromRequest(request);
+      if (!emailValue) {
         return NextResponse.json(
           { error: 'Email is required' },
           { status: 400 },
@@ -210,8 +210,8 @@ export function createEmailOTPLimiter() {
   ): Promise<NextResponse> {
     // Extract email if not provided
     if (!email) {
-      email = await extractEmailFromRequest(request);
-      if (!email) {
+      const emailValue = await extractEmailFromRequest(request);
+      if (!emailValue) {
         return NextResponse.json(
           { error: 'Email is required' },
           { status: 400 },
@@ -272,16 +272,18 @@ export function createEmailSignupLimiter() {
     email?: string,
   ): Promise<NextResponse> {
     // Extract email if not provided
-    if (!email) {
-      email = await extractEmailFromRequest(request);
-      if (!email) {
+    let emailToUse = email;
+    if (!emailToUse) {
+      const emailValue = await extractEmailFromRequest(request);
+      if (!emailValue) {
         return NextResponse.json(
           { error: 'Email is required' },
           { status: 400 },
         );
       }
+      emailToUse = emailValue;
     }
-    const emailKey = `signup:${email}`;
+    const emailKey = `signup:${emailToUse}`;
     const now = Date.now();
     const windowMs = 60 * 60 * 1000; // 1 hour
     const maxRequests = 3; // 3 signup attempts per email per hour
@@ -407,10 +409,8 @@ export const licenseValidateRateLimiter = createRateLimiter({
 // Email-based rate limiting for login attempts
 export const loginRateLimiter = emailLoginRateLimiter;
 
-
-
 export const logsRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   maxRequests: 15, // 15 requests per minute
-  message: "rate limit exceeded",
+  message: 'rate limit exceeded',
 });

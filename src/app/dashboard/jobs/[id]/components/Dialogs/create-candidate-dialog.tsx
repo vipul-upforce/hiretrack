@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Formik, Form } from 'formik';
@@ -15,7 +11,7 @@ import useCustomForm, {
 import { Resume } from '@/lib/redux/types';
 import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
 import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 import FormUpdater from '../Utils/FormUpdater';
 import { CandidateForm } from '../Candidate/candidate-form';
 import { candidateSchema } from '../../schemas/candidate-schema';
@@ -23,19 +19,11 @@ import { CreateCandidateDialogHeader } from './create-candidate-components/Creat
 import { CreateCandidateDialogFooter } from './create-candidate-components/CreateCandidateDialogFooter';
 import { useCreateCandidateSubmission } from './create-candidate-components/useCreateCandidateSubmission';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
 interface CreateCandidateDialogProps {
   jobId: string;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
-  isCreating?: (isCreating: boolean) => void;
   jobTitle?: string;
   primaryColor?: string;
   secondaryColor?: string;
@@ -71,9 +59,8 @@ const handleFileParse = async (
         try {
           const fileUrl = result;
           // Dynamically import PDF parsing only on client side
-          const { parseResumeFromPdf } = await import(
-            '@/lib/parse-resume-from-pdf'
-          );
+          const { parseResumeFromPdf } =
+            await import('@/lib/parse-resume-from-pdf');
           const parsedData = await parseResumeFromPdf(fileUrl);
           setParsedResume(parsedData);
         } catch {
@@ -97,7 +84,7 @@ export function CreateCandidateDialog({
   primaryColor,
   secondaryColor,
 }: CreateCandidateDialogProps) {
-  const { formikRef, handleApply } = useApplyHandler<any>();
+  const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   const formName = 'Candidate';
   const { validationSchema, initialValues: inits } = useCustomForm(
@@ -107,19 +94,17 @@ export function CreateCandidateDialog({
     false, // Don't use fetchGlobal, as we want job-specific fields too
   );
   const [resetForm, setResetForm] = useState(false);
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
   const [isClient, setIsClient] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
-  const [pendingFormValues, setPendingFormValues] = useState<CandidateFormValues | null>(null);
+  const [pendingFormValues, setPendingFormValues] =
+    useState<CandidateFormValues | null>(null);
   const [isLargeViewport, setIsLargeViewport] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
   const {
     submitCandidate,
     isCreating,
-    isFormSubmitting,
     isLoading: isSubmissionLoading,
   } = useCreateCandidateSubmission({
     jobId,
@@ -189,22 +174,20 @@ export function CreateCandidateDialog({
             disabled={isSubmissionLoading || isCreating}
             onMouseEnter={(e) => {
               const target = e.target as HTMLElement;
-              target.style.backgroundColor = secondaryColor;
+              target.style.backgroundColor = secondaryColor || '';
             }}
             onMouseLeave={(e) => {
               const target = e.target as HTMLElement;
-              target.style.backgroundColor = primaryColor;
+              target.style.backgroundColor = primaryColor || '';
             }}
             style={{ backgroundColor: primaryColor }}
-            className="inline-flex justify-center w-full rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
           >
-            {isSubmissionLoading || isCreating
-              ? 'Processing...'
-              : 'Apply Now'}
+            {isSubmissionLoading || isCreating ? 'Processing...' : 'Apply Now'}
           </button>
         ) : (
           <Button variant="primary" className="w-full">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Add Candidate
           </Button>
         )}
@@ -212,27 +195,27 @@ export function CreateCandidateDialog({
       <DialogContent
         className={
           !isLargeViewport || isMaximized
-            ? '!max-w-none !w-screen !h-[100dvh] !min-h-100dvh !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col p-0'
-            : 'lg:max-w-[80vw] xl:max-w-[65vw] lg:h-[90vh] lg:border lg:rounded-lg p-0 overflow-hidden flex flex-col'
+            ? '!min-h-100dvh !inset-0 !left-0 !top-0 !m-0 flex !h-[100dvh] !max-h-[100dvh] !w-screen !min-w-0 !max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden !rounded-none !border-0 p-0'
+            : 'flex flex-col overflow-hidden p-0 lg:h-[90vh] lg:max-w-[80vw] lg:rounded-lg lg:border xl:max-w-[65vw]'
         }
         style={
           !isLargeViewport || isMaximized
             ? {
-              position: 'fixed' as const,
-              inset: 0,
-              width: '100vw',
-              height: '100dvh',
-              minHeight: '100dvh',
-              maxHeight: '100dvh',
-              maxWidth: 'none',
-              transform: 'none',
-              left: 0,
-              top: 0,
-              margin: 0,
-              border: 0,
-              borderRadius: 0,
-              zIndex: 9999,
-            }
+                position: 'fixed' as const,
+                inset: 0,
+                width: '100vw',
+                height: '100dvh',
+                minHeight: '100dvh',
+                maxHeight: '100dvh',
+                maxWidth: 'none',
+                transform: 'none',
+                left: 0,
+                top: 0,
+                margin: 0,
+                border: 0,
+                borderRadius: 0,
+                zIndex: 9999,
+              }
             : undefined
         }
       >
@@ -254,26 +237,18 @@ export function CreateCandidateDialog({
           onSubmit={handleSubmit}
           enableReinitialize={false}
         >
-          {({
-            isSubmitting,
-            errors,
-            setTouched,
-            values,
-            setFieldValue,
-          }) => (
-            <Form className="flex flex-col flex-1 min-h-0 sticky top-0 overflow-y-clip">
+          {({ isSubmitting, setTouched, values, setFieldValue }) => (
+            <Form className="sticky top-0 flex min-h-0 flex-1 flex-col overflow-y-clip">
               <FormUpdater parsedResumeData={parsedResumeData} />
-              <div className="flex-1 overflow-y-auto px-6 py-4 h-full">
+              <div className="h-full flex-1 overflow-y-auto px-6 py-4">
                 <CandidateForm
                   jobId={jobId}
                   onFileUpload={async (file: File) => {
                     setFieldValue('resume', file);
                     await handleFileParse(file, setParsedResume);
-                    Object?.entries(values?.customFields).forEach(
-                      ([key]) => {
-                        setTouched({ [key]: true });
-                      },
-                    );
+                    Object?.entries(values?.customFields).forEach(([key]) => {
+                      setTouched({ [key]: true });
+                    });
                   }}
                 />
               </div>
@@ -286,7 +261,6 @@ export function CreateCandidateDialog({
                 secondaryColor={secondaryColor}
                 onCancel={() => setIsOpen(false)}
                 onApply={handleApply}
-                hasErrors={Object.keys(errors).length > 0}
               />
             </Form>
           )}

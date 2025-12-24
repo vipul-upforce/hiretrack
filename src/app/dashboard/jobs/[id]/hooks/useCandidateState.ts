@@ -20,12 +20,17 @@ interface UseCandidateStateProps {
  * - Remarks dialog state
  * - URL parameter sync
  */
-export function useCandidateState({ jobId, candidates }: UseCandidateStateProps) {
+export function useCandidateState({
+  jobId,
+  candidates,
+}: UseCandidateStateProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const candidateIdParam = searchParams.get('candidateId');
+  const candidateIdParam = searchParams?.get('candidateId');
 
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
+    null,
+  );
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
 
@@ -46,7 +51,7 @@ export function useCandidateState({ jobId, candidates }: UseCandidateStateProps)
       setIsDetailsOpen(open);
       if (!open && candidateIdParam) {
         // Remove candidateId parameter from URL when dialog is closed
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams(searchParams?.toString());
         params.delete('candidateId');
         const newUrl = params.toString() ? `?${params.toString()}` : '';
         router.replace(`/dashboard/jobs/${jobId}${newUrl}`, { scroll: false });

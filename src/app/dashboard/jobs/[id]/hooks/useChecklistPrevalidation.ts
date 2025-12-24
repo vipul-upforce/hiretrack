@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { IJobLaneConfig } from '@/lib/models/JobLaneConfig';
+import { IChecklist, IJobLaneConfig } from '@/lib/models/JobLaneConfig';
 import { useValidateCandidateChecklistMutation } from '@/lib/features/checklist/checklistApi';
 import logger from '@/lib/logger';
 
 interface PrevalidatedChecklist {
   laneId: string;
   type: 'incoming' | 'outgoing';
-  checklist: any;
+  checklist: IChecklist;
   isMandatory: boolean;
   canMove: boolean;
 }
@@ -69,6 +69,11 @@ export const useChecklistPrevalidation = (
           movementType,
         }).unwrap();
 
+        if (!validation.checklist) {
+          logger.error('No checklist found for validation');
+          return null;
+        }
+
         const result: PrevalidatedChecklist = {
           laneId: movementType === 'incoming' ? targetLane : currentLane,
           type: movementType,
@@ -100,7 +105,7 @@ export const useChecklistPrevalidation = (
     ) => {
       if (!jobLaneConfig) return;
 
-      const validationPromises: Promise<any>[] = [];
+      const validationPromises: Promise<PrevalidatedChecklist | null>[] = [];
 
       // Check outgoing from current lane (only if it has an outgoing checklist)
       if (hasChecklist(currentLaneId, 'outgoing')) {
@@ -146,7 +151,9 @@ export const useChecklistPrevalidation = (
         try {
           await Promise.race([
             Promise.all(validationPromises),
-            new Promise((resolve) => setTimeout(resolve, 2000)), // 2 second timeout
+            new Promise<void>((resolve) => {
+              setTimeout(resolve, 2000);
+            }), // 2 second timeout
           ]);
         } catch (error) {
           logger.error('Prevalidation timeout or error:', error);

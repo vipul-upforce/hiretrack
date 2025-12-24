@@ -62,7 +62,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Handle skills with $and
     if (skills && skills.length > 0) {
       const skillsConditions = skills.map((skill: string) => ({
         skills: {
@@ -70,7 +69,6 @@ export async function POST(request: NextRequest) {
           $options: 'i',
         },
       }));
-
       addLogicCondition({ $or: skillsConditions });
     }
 
@@ -197,6 +195,14 @@ export async function POST(request: NextRequest) {
       throw new Error('Candidate model is not available');
     }
 
+    if (
+      query[logicOperator] &&
+      Array.isArray(query[logicOperator]) &&
+      query[logicOperator].length === 0
+    ) {
+      delete query[logicOperator];
+    }
+
     const candidatesResult = await Candidate.aggregate([
       { $match: query },
       { $sort: { 'tracking.createdAt': -1 } },
@@ -207,7 +213,6 @@ export async function POST(request: NextRequest) {
           paginatedData: [
             { $skip: skip },
             { $limit: limit },
-            // all your existing lookups and projections go here
             {
               $lookup: {
                 from: 'users',

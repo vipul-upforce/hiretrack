@@ -1,6 +1,6 @@
 import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
 import { Schema } from 'mongoose';
-import { CustomFieldFile } from '../fileUtils';
+import { ChecklistResponses } from '@/types/checklist';
 
 export interface IinfoUpdateLog {
   title: string;
@@ -210,18 +210,7 @@ export interface ICandidateHistory {
     checklistType: 'incoming' | 'outgoing';
     laneId: string;
     laneName: string;
-
-    responses: Record<
-      string,
-      {
-        fieldId: string;
-        fieldLabel: string;
-        fieldType: string;
-        value: any;
-        files?: CustomFieldFile[];
-        visibleInHistory?: string[]; // Define visibleInHistory as string[] or undefined
-      }
-    >;
+    responses: ChecklistResponses;
     completedAt: Date;
     completedBy: {
       _id: string;

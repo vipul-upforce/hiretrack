@@ -1,4 +1,4 @@
-import { Field, FieldProps, useFormikContext, FormikProps } from 'formik';
+import { Field, FieldProps } from 'formik';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,21 +30,13 @@ import { toast } from '@/hooks/use-toast';
 import { Candidate } from '@/types/candidate';
 import { IGoogleCalendar } from '@/lib/models/settings';
 import { Interviewer } from '@/lib/features/user/userApi';
-import React, { useState } from 'react';
-import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
-import { useAppSelector } from '@/lib/redux/hooks';
-import { FormValues } from '../../../schemas/AssignCandidateSchema';
+import { useGoogleMeetIntegration } from './useGoogleMeetIntegration';
 
 interface GoogleMeetIntegrationProps {
   candidate: Candidate;
   interviewers: Interviewer[] | undefined;
   googleCalendarData: IGoogleCalendar;
   setShowCancelMeetDialog: (show: boolean) => void;
-  getOnAltEnterSubmit: (
-    values: FormValues,
-    formikHelpers: FormikProps<FormValues>,
-    isSubmitting: boolean,
-  ) => (fieldValue: string) => (e: React.KeyboardEvent) => void;
 }
 
 export function GoogleMeetIntegration({
@@ -52,63 +44,24 @@ export function GoogleMeetIntegration({
   interviewers,
   googleCalendarData,
   setShowCancelMeetDialog,
-  getOnAltEnterSubmit,
 }: GoogleMeetIntegrationProps) {
-  const { user } = useAppSelector((state) => state.auth || {});
-  const formikContext = useFormikContext<FormValues>();
-  const { values, setFieldValue, isSubmitting } = formikContext;
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [newGuest, setNewGuest] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const { sanitizeFiles: contextSanitizeFiles } = useSanitizeFiles();
-  // Prioritize sanitizeFiles from context, fallback to hook.
-  const { sanitizeFiles: localSanitizeFiles } = useSanitizeFiles();
-  const sanitizeFiles = contextSanitizeFiles || localSanitizeFiles;
-
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-  };
-
-  const handleAddGuest = () => {
-    if (!newGuest) {
-      setEmailError('Please enter an email address');
-      return;
-    }
-    if (!validateEmail(newGuest)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-    const currentGuests = values.additionalGuests || [];
-    if (currentGuests.includes(newGuest)) {
-      setEmailError('This email is already in the guest list');
-      return;
-    }
-    setFieldValue('additionalGuests', [...currentGuests, newGuest]);
-    setNewGuest('');
-    setEmailError('');
-  };
-
-  const handleRemoveGuest = (email: string) => {
-    const currentGuests = values.additionalGuests || [];
-    setFieldValue(
-      'additionalGuests',
-      currentGuests.filter((g) => g !== email),
-    );
-  };
-
-  const getDefaultGuests = (selectedInterviewer: Interviewer) => {
-    const defaultGuests = [];
-    if (selectedInterviewer?.email)
-      defaultGuests.push(selectedInterviewer.email);
-    if (candidate.email) defaultGuests.push(candidate.email);
-    if (user?.email && user.email !== selectedInterviewer?.email) {
-      defaultGuests.push(user.email);
-    }
-    return defaultGuests;
-  };
-
-  const hasExistingMeet = !!candidate.assignment?.googleMeet?.eventId;
+  const {
+    user,
+    values,
+    setFieldValue,
+    isEditMode,
+    setIsEditMode,
+    newGuest,
+    setNewGuest,
+    emailError,
+    setEmailError,
+    sanitizeFiles,
+    getOnAltEnterSubmit,
+    handleAddGuest,
+    handleRemoveGuest,
+    getDefaultGuests,
+    hasExistingMeet,
+  } = useGoogleMeetIntegration({ candidate });
 
   if (!googleCalendarData?.isConnected) {
     return null;
@@ -318,11 +271,7 @@ export function GoogleMeetIntegration({
                       placeholder="Add notes to include in the meeting description... (Alt+Enter to submit)"
                       rows={2}
                       className="text-sm"
-                      onKeyDown={getOnAltEnterSubmit(
-                        values,
-                        formikContext,
-                        isSubmitting,
-                      )(field.value)}
+                      onKeyDown={getOnAltEnterSubmit}
                       organizationId={
                         user?.organizationInfo?._id.toString() || ''
                       }

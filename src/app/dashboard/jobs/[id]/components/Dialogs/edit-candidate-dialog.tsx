@@ -1,13 +1,7 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Maximize, Minimize } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Formik, Form } from 'formik';
 import {
@@ -28,13 +22,12 @@ import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
 import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 import FormUpdater from '../Utils/FormUpdater';
 import { getJobId } from '../../utils/candidateAccessors';
 import { CandidateForm } from '../Candidate/candidate-form';
 import { candidateSchema } from '../../schemas/candidate-schema';
 import { EditCandidateDialogHeader } from './edit-candidate-components/EditCandidateDialogHeader';
-import { EditCandidateDialogFooter } from './edit-candidate-components/EditCandidateDialogFooter';
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -44,12 +37,6 @@ interface EditCandidateDialogProps {
   refetchAssignment?: () => void;
   onSuccess: () => void;
   reopenDetailsDialog?: () => void;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
 }
 
 const handleFileParse = async (
@@ -115,10 +102,8 @@ export function EditCandidateDialog({
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   // const [user, setuser] = useState<User | null>(null);
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
-  const { formikRef, handleApply } = useApplyHandler<any>();
+  const { user } = useAppSelector((state) => state.auth || {});
+  const { formikRef, handleApply } = useApplyHandler<Candidate>();
   const {
     handleAddCustomField,
     selectedFormId,
@@ -147,6 +132,13 @@ export function EditCandidateDialog({
       setSelectedFormId(null);
     };
   }, [customFields, setSelectedFormId, setStepName]);
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
 
   const handleSubmit = async (values: Candidate) => {
     // debugger;
@@ -278,15 +270,15 @@ export function EditCandidateDialog({
       }
       // sentAssignmentMail(result, sendEmail);
       // check if assignment has changed before sending email
-      const prevAssignment = candidate.assignment?.interviewerId;
-      const newAssignment = result?.assignment?.interviewerId;
+      // const prevAssignment = candidate.assignment?.interviewerId;
+      // const newAssignment = result?.assignment?.interviewerId;
       // debugger;
-      const prevId =
-        typeof prevAssignment === 'object'
-          ? prevAssignment?._id
-          : prevAssignment;
-      const newId =
-        typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
+      // const prevId =
+      //   typeof prevAssignment === 'object'
+      //     ? prevAssignment?._id
+      //     : prevAssignment;
+      // const newId =
+      //   typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
 
       // if (prevId !== newId) {
       sentAssignmentMail(result, sendEmail);
@@ -340,8 +332,8 @@ export function EditCandidateDialog({
 
       if (nextInterviewer && nextInterviewer !== '') {
         await updateCandidateHistory({
-          candidateId: updatedCandidate._id || null,
-          jobId: updatedCandidate?.jobId || null,
+          candidateId: updatedCandidate._id || '',
+          jobId: updatedCandidate?.jobId || '',
           newEntry: newHistoryEntry,
         }).unwrap();
       }
@@ -389,13 +381,6 @@ export function EditCandidateDialog({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
   let interviewerId = null;
   if (candidate?.assignment?.interviewerId) {
     // debugger;
@@ -492,7 +477,7 @@ export function EditCandidateDialog({
           validationSchema={candidateSchema(validationSchema)}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting, errors, setFieldValue, dirty }) => (
+          {({ isSubmitting, errors, setFieldValue }) => (
             // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
             <Form className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <FormUpdater parsedResumeData={parsedResumeData} />
@@ -535,7 +520,9 @@ export function EditCandidateDialog({
                     onClick={() => {
                       handleApply();
                     }}
-                    type={Object.keys(errors).length == 0 ? 'button' : 'submit'}
+                    type={
+                      Object.keys(errors).length === 0 ? 'button' : 'submit'
+                    }
                     variant="primary"
                   >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}

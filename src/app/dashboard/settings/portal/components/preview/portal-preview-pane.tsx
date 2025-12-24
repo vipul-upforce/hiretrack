@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Moon, Sun } from 'lucide-react';
-import { User } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { ILocalUser } from '@/lib/redux/authSlice';
 import { PortalSettings } from '../../types';
 import { LivePreview } from './live-preview';
 import { EmbedPreview } from './embed-preview';
@@ -23,7 +23,7 @@ interface PortalPreviewPaneProps {
   embedShowBorder: boolean;
   embedHideHeader: boolean;
   embedHideFooter: boolean;
-  user: User;
+  user: ILocalUser | null;
   hasMultipleOrgs: boolean;
 }
 
@@ -53,7 +53,9 @@ export function PortalPreviewPane({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setPreviewTheme(previewTheme === 'light' ? 'dark' : 'light')}
+              onClick={() =>
+                setPreviewTheme(previewTheme === 'light' ? 'dark' : 'light')
+              }
             >
               {previewTheme === 'light' ? (
                 <Moon className="h-4 w-4" />
