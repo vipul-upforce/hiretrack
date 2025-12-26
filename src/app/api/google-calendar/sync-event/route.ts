@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
 
     // Get candidate details
     const candidate = await Candidate?.findById(candidateId)
-      .populate("jobId")
-      .populate("assignment.interviewerId")
+      .populate('jobId')
+      .populate('assignment.interviewerId')
       .lean();
     if (!candidate) {
       return NextResponse.json(
@@ -55,16 +55,18 @@ export async function POST(req: NextRequest) {
     }
 
     const { eventId } = candidate.assignment.googleMeet;
-    const jobId = typeof candidate.jobId === 'object'
-      && candidate.jobId !== null
-      && '_id' in candidate.jobId
-      ? candidate.jobId._id.toString()
-      : candidate.jobId?.toString() || '';
-    const jobTitle = typeof candidate.jobId === 'object'
-      && candidate.jobId !== null
-      && 'title' in candidate.jobId
-      ? candidate.jobId.title
-      : 'Position';
+    const jobId =
+      typeof candidate.jobId === 'object' &&
+      candidate.jobId !== null &&
+      '_id' in candidate.jobId
+        ? candidate.jobId._id.toString()
+        : candidate.jobId?.toString() || '';
+    const jobTitle =
+      typeof candidate.jobId === 'object' &&
+      candidate.jobId !== null &&
+      'title' in candidate.jobId
+        ? candidate.jobId.title
+        : 'Position';
 
     // Get Google Calendar settings
     const settings = await Settings?.findOne({ organizationId });
@@ -80,7 +82,10 @@ export async function POST(req: NextRequest) {
       settings.googleCalendar.clientSecret,
       organizationId,
     );
-    const accessToken = decryptText(settings.googleCalendar.accessToken, organizationId);
+    const accessToken = decryptText(
+      settings.googleCalendar.accessToken,
+      organizationId,
+    );
     const refreshToken = decryptText(
       settings.googleCalendar.refreshToken,
       organizationId,
@@ -113,15 +118,16 @@ export async function POST(req: NextRequest) {
 
     // Process attendee responses
     const attendees = event.attendees || [];
-    const previousResponses = candidate.assignment.googleMeet.attendeeResponses || [];
+    const previousResponses =
+      candidate.assignment.googleMeet.attendeeResponses || [];
     const updatedResponses = [];
     const historyEntries = [];
     const notificationPromises = [];
     for (const attendee of attendees) {
-      const attendeeEmail = attendee.email || "";
-      const user = await User?.findOne({ email: attendeeEmail }).select("name");
-      const attendeeName = attendee.displayName || user?.name || "";
-      const responseStatus = attendee.responseStatus || "needsAction";
+      const attendeeEmail = attendee.email || '';
+      const user = await User?.findOne({ email: attendeeEmail }).select('name');
+      const attendeeName = attendee.displayName || user?.name || '';
+      const responseStatus = attendee.responseStatus || 'needsAction';
 
       // Find previous response for this attendee
       const previousResponse = previousResponses.find(
@@ -129,7 +135,8 @@ export async function POST(req: NextRequest) {
       );
 
       // Check if response has changed
-      const hasChanged = !previousResponse || previousResponse.responseStatus !== responseStatus;
+      const hasChanged =
+        !previousResponse || previousResponse.responseStatus !== responseStatus;
 
       // Create updated response object
       const updatedResponse = {
@@ -149,40 +156,41 @@ export async function POST(req: NextRequest) {
 
       // If response changed and notification not already sent for this status
       if (hasChanged && responseStatus !== 'needsAction') {
-        const shouldNotify = !previousResponse
-          || previousResponse.responseStatus !== responseStatus
-          || !previousResponse.notificationSent;
+        const shouldNotify =
+          !previousResponse ||
+          previousResponse.responseStatus !== responseStatus ||
+          !previousResponse.notificationSent;
 
         if (shouldNotify) {
           // Mark notification as sent
           updatedResponse.notificationSent = true;
 
           // Create history entry
-          const historyMessage = `${attendeeName} (${attendeeEmail}) ${
-            responseStatus === 'accepted'
-              ? 'accepted'
-              : responseStatus === 'declined'
-                ? 'declined'
-                : responseStatus === 'tentative'
-                  ? 'tentatively accepted'
-                  : 'updated response for'
-          } the interview invitation`;
+          let actionVerb: string;
+          if (responseStatus === 'accepted') {
+            actionVerb = 'accepted';
+          } else if (responseStatus === 'declined') {
+            actionVerb = 'declined';
+          } else if (responseStatus === 'tentative') {
+            actionVerb = 'tentatively accepted';
+          } else {
+            actionVerb = 'updated response for';
+          }
+          const historyMessage = `${attendeeName} (${attendeeEmail}) ${actionVerb} the interview invitation`;
 
           historyEntries.push({
             title: `Meeting invite ${responseStatus}`,
             dateTime: new Date().toISOString(),
+            currentInterviewer: null,
+            previousInterviewer: null,
+            assignmentBy: null, // System generated
             note: {
               description: historyMessage,
               date: new Date().toISOString(),
+              rating: 0,
               userId: null, // System generated
             },
-            metadata: {
-              eventType: 'meeting_response',
-              responseStatus,
-              attendeeEmail,
-              attendeeName,
-              comment: attendee.comment,
-            },
+            attachments: [],
           });
 
           // Prepare notification based on response status
@@ -196,8 +204,8 @@ export async function POST(req: NextRequest) {
             attendeeEmail,
             attendeeName: attendeeName as string,
             interviewerId:
-              candidate.assignment?.interviewerId?._id?.toString()
-              || candidate.assignment?.interviewerId?.toString(),
+              candidate.assignment?.interviewerId?._id?.toString() ||
+              candidate.assignment?.interviewerId?.toString(),
             interviewerName: candidate.assignment?.interviewerId?.name,
             interviewerEmail: candidate.assignment?.interviewerId?.email,
             meetingDate: candidate.assignment?.time
@@ -226,6 +234,9 @@ export async function POST(req: NextRequest) {
                   notificationParams,
                 ),
               );
+              break;
+            default:
+              // No notification for other statuses (e.g., 'needsAction')
               break;
           }
         }

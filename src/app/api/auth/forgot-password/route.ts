@@ -49,6 +49,164 @@ const getNodemailerErrorMessage = (error: NodemailerError) => {
   }
 };
 
+// Function to handle the actual password reset after organization selection
+async function handlePasswordReset(
+  email: string,
+  organizationId: string,
+  req: Request,
+  isCandidate?: boolean,
+) {
+  try {
+    const settings = await Settings?.findOne({
+      organizationId: new Types.ObjectId(organizationId),
+    }).lean();
+    if (!settings || !settings.mailConfig) {
+      throw new Error('Mail configuration not found');
+    }
+
+    const fromEmail =
+      settings.mailConfig.resend_from ||
+      settings.mailConfig.brevo_from ||
+      settings.mailConfig.smtp_from ||
+      'system@hiretrack.com';
+
+    // Find the correct user with both email and organizationId
+    let user;
+    let resolvedIsCandidate: boolean;
+    if (!CandidateAccount || !User) {
+      throw new Error('Database not connected');
+    }
+    if (isCandidate !== undefined) {
+      // If we explicitly know if it's a candidate or not
+      resolvedIsCandidate = isCandidate;
+      if (isCandidate) {
+        user = await CandidateAccount.findOne({
+          email,
+          organizationId,
+        }).populate('organizationId');
+      } else {
+        user = await User.findOne({
+          email,
+          organizationId,
+        }).populate('organizationId');
+      }
+    } else {
+      // Try regular user first, then candidate
+      resolvedIsCandidate = false;
+      user = await User.findOne({ email, organizationId }).populate(
+        'organizationId',
+      );
+
+      if (!user) {
+        user = await CandidateAccount.findOne({
+          email,
+          organizationId,
+        }).populate('organizationId');
+        resolvedIsCandidate = true;
+      }
+    }
+
+    if (!user) {
+      throw new Error(
+        'No account found with this email in the selected organization',
+      );
+    }
+    // Generate password reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000);
+
+    // Update the user with reset token
+    if (resolvedIsCandidate) {
+      await CandidateAccount.findByIdAndUpdate(user._id, {
+        resetToken: resetTokenHash,
+        resetTokenExpiry,
+      });
+    } else {
+      await User.findByIdAndUpdate(user._id, {
+        resetToken: resetTokenHash,
+        resetTokenExpiry,
+      });
+    }
+
+    const origin = req.headers.get('origin') || 'http://localhost:3000';
+    const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${resolvedIsCandidate ? '&type=candidate' : ''}`;
+
+    const { emailContent, emailSubject } = await getMappedEmailTemplate(
+      'password-reset',
+      {
+        resetLink: resetUrl,
+        organizationName: (user?.organizationId as Organization)
+          ?.name as string,
+        userName: user?.name,
+      },
+      organizationId,
+    );
+
+    const systemUser = await User.findOneAndUpdate(
+      { email: fromEmail, organizationId },
+      {
+        $setOnInsert: {
+          name: 'HireTrack System',
+          email: fromEmail,
+          role: 'system',
+          organizationId,
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    const emailStatus = await sendEventEmailWithHistory(
+      organizationId,
+      [email],
+      emailSubject,
+      emailContent,
+      {
+        sentBy: systemUser._id.toString(),
+        sentByEmail: systemUser.email,
+        sentByName: systemUser.name,
+        metadata: {
+          templateUsed: 'reset-password-request',
+          eventType: 'password_reset',
+        },
+      },
+    );
+
+    if (emailStatus.status === 200) {
+      return NextResponse.json({ message: 'Email sent successfully.' });
+    }
+    return NextResponse.json(
+      { error: emailStatus.message },
+      { status: emailStatus.status },
+    );
+  } catch (error: unknown) {
+    logger.error({ error }, 'Error handling password reset.');
+    let errorMessage = 'An unknown error occurred';
+    if (typeof error === 'object' && error !== null) {
+      errorMessage = getNodemailerErrorMessage(error as NodemailerError);
+    }
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+// Helper function to extract organization ID from populated or non-populated organizationId
+function getOrganizationId(organizationId: unknown): string {
+  if (!organizationId) {
+    return '';
+  }
+  if (
+    typeof organizationId === 'object' &&
+    organizationId !== null &&
+    '_id' in organizationId
+  ) {
+    return (organizationId as Organization)._id.toString();
+  }
+  return String(organizationId);
+}
+
 // Initial lookup to find all accounts with the given email
 async function handleForgotPassword(req: NextRequest) {
   try {
@@ -94,12 +252,7 @@ async function handleForgotPassword(req: NextRequest) {
 
     const candidateAccounts: OrgUserData[] = candidateUsers.map((user) => ({
       id: user._id.toString(),
-      organizationId: user.organizationId
-        ? typeof user.organizationId === 'object' &&
-          '_id' in user.organizationId
-          ? (user.organizationId as Organization)._id.toString()
-          : user.organizationId.toString()
-        : '',
+      organizationId: getOrganizationId(user.organizationId),
       organizationName:
         user.organizationId &&
         typeof user.organizationId === 'object' &&
@@ -139,145 +292,6 @@ async function handleForgotPassword(req: NextRequest) {
       accounts: allAccounts,
     });
   } catch (error: unknown) {
-    let errorMessage = 'An unknown error occurred';
-    if (typeof error === 'object' && error !== null) {
-      errorMessage = getNodemailerErrorMessage(error as NodemailerError);
-    }
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
-  }
-}
-
-// Function to handle the actual password reset after organization selection
-async function handlePasswordReset(
-  email: string,
-  organizationId: string,
-  req: Request,
-  isCandidate?: boolean,
-) {
-  try {
-    const settings = await Settings?.findOne({
-      organizationId: new Types.ObjectId(organizationId),
-    }).lean();
-    if (!settings || !settings.mailConfig) {
-      throw new Error('Mail configuration not found');
-    }
-
-    const fromEmail =
-      settings.mailConfig.resend_from ||
-      settings.mailConfig.brevo_from ||
-      settings.mailConfig.smtp_from ||
-      'system@hiretrack.com';
-
-    // Find the correct user with both email and organizationId
-    let user;
-    if (!CandidateAccount || !User) {
-      throw new Error('Database not connected');
-    }
-    if (isCandidate !== undefined) {
-      // If we explicitly know if it's a candidate or not
-      if (isCandidate) {
-        user = await CandidateAccount.findOne({
-          email,
-          organizationId,
-        }).populate('organizationId');
-      } else {
-        user = await User.findOne({
-          email,
-          organizationId,
-        }).populate('organizationId');
-      }
-    } else {
-      // Try regular user first, then candidate
-      user = await User.findOne({ email, organizationId }).populate(
-        'organizationId',
-      );
-
-      if (!user) {
-        user = await CandidateAccount.findOne({
-          email,
-          organizationId,
-        }).populate('organizationId');
-        isCandidate = true;
-      }
-    }
-
-    if (!user) {
-      throw new Error(
-        'No account found with this email in the selected organization',
-      );
-    }
-    // Generate password reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenHash = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
-    const resetTokenExpiry = new Date(Date.now() + 3600000);
-
-    // Update the user with reset token
-    if (isCandidate) {
-      await CandidateAccount.findByIdAndUpdate(user._id, {
-        resetToken: resetTokenHash,
-        resetTokenExpiry,
-      });
-    } else {
-      await User.findByIdAndUpdate(user._id, {
-        resetToken: resetTokenHash,
-        resetTokenExpiry,
-      });
-    }
-
-    const origin = req.headers.get('origin') || 'http://localhost:3000';
-    const resetUrl = `${origin}/auth/reset-password?token=${resetToken}${isCandidate ? '&type=candidate' : ''}`;
-
-    const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      'password-reset',
-      {
-        resetLink: resetUrl,
-        organizationName: user?.organizationId.name,
-        userName: user?.name,
-      },
-      organizationId,
-    );
-
-    const systemUser = await User.findOneAndUpdate(
-      { email: fromEmail, organizationId },
-      {
-        $setOnInsert: {
-          name: 'HireTrack System',
-          email: fromEmail,
-          role: 'system',
-          organizationId,
-        },
-      },
-      { upsert: true, new: true },
-    );
-
-    const emailStatus = await sendEventEmailWithHistory(
-      organizationId,
-      [email],
-      emailSubject,
-      emailContent,
-      {
-        sentBy: systemUser._id.toString(),
-        sentByEmail: systemUser.email,
-        sentByName: systemUser.name,
-        metadata: {
-          templateUsed: 'reset-password-request',
-          eventType: 'password_reset',
-        },
-      },
-    );
-
-    if (emailStatus.status === 200) {
-      return NextResponse.json({ message: 'Email sent successfully.' });
-    }
-    return NextResponse.json(
-      { error: emailStatus.message },
-      { status: emailStatus.status },
-    );
-  } catch (error: unknown) {
-    logger.error({ error }, 'Error handling password reset.');
     let errorMessage = 'An unknown error occurred';
     if (typeof error === 'object' && error !== null) {
       errorMessage = getNodemailerErrorMessage(error as NodemailerError);

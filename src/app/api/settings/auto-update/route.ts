@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '@/lib/logger/logger.server';
+import { ConfigData } from '@/lib/licenseUtils';
 
 // Path to config.json in the parent of the current project root
 const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
@@ -15,16 +16,18 @@ function readConfig() {
     const content = fs.readFileSync(CONFIG_PATH, 'utf8');
     return JSON.parse(content);
   } catch (err) {
+    logger.error({ error: err }, 'Failed to read config file');
     return null;
   }
 }
 
 // Helper to write config file
-function writeConfig(config: any) {
+function writeConfig(config: ConfigData) {
   try {
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), 'utf8');
     return true;
   } catch (err) {
+    logger.error({ error: err }, 'Failed to write config file');
     return false;
   }
 }
@@ -51,7 +54,7 @@ export async function POST(req: NextRequest) {
     );
   }
   // Toggle the value
-  config.autoUpdate = config.autoUpdate != true;
+  config.autoUpdate = config.autoUpdate !== true;
   const success = writeConfig(config);
   if (!success) {
     logger.error({ url: req.url }, 'Failed to write config file');

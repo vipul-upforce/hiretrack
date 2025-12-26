@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
           updatedAt: new Date(),
         },
       ),
-      broadcastNotificationCount(user?.organizationId!, user?.id!, 0),
+      broadcastNotificationCount(user?.organizationId || '', user?.id || '', 0),
     ]);
 
     return NextResponse.json({

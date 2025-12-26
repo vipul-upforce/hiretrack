@@ -3,12 +3,9 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { NextPage } from 'next';
-import { useSelector } from 'react-redux';
-import {
-  User,
-  useLazyGetOrganizationAllowanceQuery,
-} from '@/lib/features/org/orgApi';
+import { useLazyGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { AuthGuardLoading } from './ui/authGuardLoader';
 
 let allowanceCache: {
@@ -44,9 +41,8 @@ const withAuthGuard = <P extends object>(
   const displayName =
     WrappedComponent.displayName || WrappedComponent.name || 'Component';
 
-  function AuthGuardComponent(props: NextPage<P>) {
-    const { user, isAuthenticated }: { user: User; isAuthenticated: boolean } =
-      useSelector((state: any) => state.auth || {});
+  function AuthGuardComponent(props: P) {
+    const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
     const router = useRouter();
     const pathname = usePathname();
@@ -226,7 +222,9 @@ const withAuthGuard = <P extends object>(
     }
 
     return authState === 'authorized' ? (
-      <WrappedComponent {...props} user={{ role: user?.role || null }} />
+      <WrappedComponent
+        {...({ ...props, user: { role: user?.role || null } } as P)}
+      />
     ) : null;
   }
 

@@ -5,15 +5,15 @@ import connectToDatabase, {
   Settings,
   cvBatch as CVBatch,
   History,
-} from "@/lib/mongodb";
-import { handleSingleFile } from "@/lib/fileUtils";
-import { AIProviderFactory, ProcessedResumeData } from "@/lib/ai-providers";
-import { AIProviders } from "@/lib/ai-providers/types";
-import { decryptProviderKeys } from "@/lib/encryption";
-import { NotificationService } from "@/lib/notifications/notificationService";
-import { Types } from "mongoose";
-import { getAuthenticatedUser } from "@/app/actions/auth";
-import { ISettings, IAIProviders } from "@/lib/models/settings";
+} from '@/lib/mongodb';
+import { handleSingleFile } from '@/lib/fileUtils';
+import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
+import { AIProviders } from '@/lib/ai-providers/types';
+import { decryptProviderKeys, ProvidersConfig } from '@/lib/encryption';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { Types } from 'mongoose';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { ISettings, IAIProviders } from '@/lib/models/settings';
 import logger from '@/lib/logger';
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
@@ -34,7 +34,7 @@ interface ExtendedProcessedResumeData extends ProcessedResumeData {
 interface ProcessResult {
   filename: string;
   candidateId?: Types.ObjectId;
-  status: "success" | "failed";
+  status: 'success' | 'failed';
   error?: string;
 }
 
@@ -54,7 +54,7 @@ interface FileObject {
 async function processResume(
   base64Resume: string,
   decryptedAiProviders: AIProviders,
-  organizationId: string
+  organizationId: string,
 ): Promise<ExtendedProcessedResumeData> {
   try {
     // Use the already decrypted AI providers directly
@@ -82,7 +82,6 @@ async function processResume(
       apiKey,
       selectedModel,
     );
-    console.log('parsedData in process-cv ---------------------------->', parsedData);
 
     // Check if the response indicates an invalid CV
     if (parsedData.error) {
@@ -137,11 +136,12 @@ function processZipEntries(zip: AdmZip): File[] {
       entry.entryName.includes('/._') ||
       entry.entryName.startsWith('._')
     ) {
-      continue;
+      continue; // eslint-disable-line no-continue
     }
 
     // Check if it's a directory by checking if the path ends with '/'
     if (entry.entryName.endsWith('/')) {
+      // eslint-disable-next-line no-continue
       continue; // Skip directories as we'll process their contents through their files
     }
     // Check if it's a PDF file
@@ -149,7 +149,8 @@ function processZipEntries(zip: AdmZip): File[] {
       const content = entry.getData();
       // Extract just the filename from the full path
       const filename = entry.entryName.split('/').pop() || entry.entryName;
-      const file = new File([content as BlobPart], filename, {
+      // const file = new File([content as BlobPart], filename, {
+      const file = new File([new Uint8Array(content)], filename, {
         type: 'application/pdf',
       });
       files.push(file);
@@ -191,11 +192,14 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    const settings = await Settings.findOne({ organizationId })
-      .select("aiProviders gemini fileStorage")
+    const settings = (await Settings.findOne({ organizationId })
+      .select('aiProviders gemini fileStorage')
       .lean()
-      .exec() as Pick<ISettings, "aiProviders" | "gemini" | "fileStorage"> | null;
-    
+      .exec()) as Pick<
+      ISettings,
+      'aiProviders' | 'gemini' | 'fileStorage'
+    > | null;
+
     if (!settings) {
       return NextResponse.json(
         { error: 'Settings not found' },
@@ -204,7 +208,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if AI providers are configured with backward compatibility
-    let aiProvider : IAIProviders | AIProviders | undefined = settings.aiProviders as IAIProviders | AIProviders | undefined;
+    let aiProvider: IAIProviders | AIProviders | undefined =
+      settings.aiProviders as IAIProviders | AIProviders | undefined;
 
     // Handle backward compatibility for legacy Gemini-only installations
     if (!aiProvider) {
@@ -235,14 +240,17 @@ export async function POST(request: NextRequest) {
         },
       } as IAIProviders;
 
-      console.log("Using backward compatibility for legacy Gemini settings");
+      logger.log('Using backward compatibility for legacy Gemini settings');
     }
 
     // Decrypt API keys from database - MOVED UP
     // Note: decryptProviderKeys returns the same structure but with decrypted keys
-    const decryptedAiProviders = decryptProviderKeys(aiProvider, organizationId) as AIProviders;
+    const decryptedAiProviders = decryptProviderKeys(
+      aiProvider as ProvidersConfig,
+      organizationId,
+    ) as AIProviders;
 
-    const {activeProvider} = decryptedAiProviders;
+    const { activeProvider } = decryptedAiProviders;
     const apiKey = decryptedAiProviders[activeProvider]?.api_key;
 
     // Add debug logging similar to evaluate API
@@ -301,7 +309,7 @@ export async function POST(request: NextRequest) {
         const candidateData = await processResume(
           base64Data,
           decryptedAiProviders, // Pass the already decrypted aiProviders
-          organizationId as string
+          organizationId as string,
         );
         // Check if the CV was invalid
         if (candidateData.error) {
@@ -318,6 +326,7 @@ export async function POST(request: NextRequest) {
             filename: file.name,
             error: candidateData.error,
           });
+          // eslint-disable-next-line no-continue
           continue; // Skip to next file
         }
 
@@ -348,7 +357,9 @@ export async function POST(request: NextRequest) {
         });
 
         // Validate required fields
-        const requiredFields: Array<keyof ExtendedProcessedResumeData> = ["name"];
+        const requiredFields: Array<keyof ExtendedProcessedResumeData> = [
+          'name',
+        ];
         const missingFields = requiredFields.filter(
           (field) => !candidateData[field],
         );
@@ -418,7 +429,7 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id.toString(),
       successCount: cvBatchInfo.successCount,
       failureCount: cvBatchInfo.failureCount,
-      triggerUserId: user?.id!,
+      triggerUserId: user?.id as string,
       triggerUserName: user?.name || 'Unknown User',
     });
 

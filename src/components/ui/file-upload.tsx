@@ -2,10 +2,8 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import {
-  Upload, File as FileIcon, Pencil, X, Paperclip,
-} from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { Upload, File as FileIcon, Pencil, X, Paperclip } from 'lucide-react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { RenameFileDialog } from './rename-file-dialog';
 import { Button } from './button';
 
@@ -21,7 +19,7 @@ interface FileUploadProps {
       url: string;
       type: string;
       size: number;
-    }>
+    }>,
   ) => void;
   isEdit?: boolean;
   accept: Record<string, string[]>;
@@ -48,13 +46,6 @@ interface RenameFileState {
     type: string;
     size: number;
   };
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
 }
 
 export const formatFileSize = (bytes: number): string => {
@@ -105,9 +96,7 @@ export function FileUpload({
   };
 
   const colors = getColorClasses(colorScheme);
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -115,10 +104,14 @@ export function FileUpload({
         const newFile = new File([renameFile.file], newName, {
           type: renameFile.file.type,
         });
-        const updatedFiles = files.map((f) => (f === renameFile.file ? newFile : f));
+        const updatedFiles = files.map((f) =>
+          f === renameFile.file ? newFile : f,
+        );
         setter?.(updatedFiles);
       } else {
-        const updatedFiles = files.map((f) => (f === renameFile.file ? { ...f, name: newName } : f));
+        const updatedFiles = files.map((f) =>
+          f === renameFile.file ? { ...f, name: newName } : f,
+        );
         setter?.(updatedFiles);
       }
     }
@@ -138,9 +131,7 @@ export function FileUpload({
     [onFileSelect],
   );
 
-  const {
-    getRootProps, getInputProps, isDragActive, open,
-  } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept,
     maxFiles,
@@ -156,8 +147,7 @@ export function FileUpload({
       {dropZone ? (
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer
-            ${isDragActive ? 'border-primary bg-primary/10' : 'border-border'}`}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center ${isDragActive ? 'bg-primary/10 border-primary' : 'border-border'}`}
         >
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
@@ -179,24 +169,24 @@ export function FileUpload({
           )}
         </div>
       ) : (
-        <div className="flex items-center gap-3 ">
+        <div className="flex items-center gap-3">
           <Button
             type="button"
             onClick={open}
             variant="outline"
             className="flex items-center gap-2"
           >
-            <Paperclip className="w-4 h-4" />
+            <Paperclip className="h-4 w-4" />
             {isResume ? 'Resume' : 'Add Documents'}
           </Button>
           {(user?.role === 'candidate' || user?.role === '') && (
-            <div className="space-y-1 flex items-center gap-2">
+            <div className="flex items-center gap-2 space-y-1">
               {!accept['application/pdf'] && (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   Max 2 files
                 </p>
               )}
-              <p className="text-sm text-muted-foreground m-0">3MB per file</p>
+              <p className="m-0 text-sm text-muted-foreground">3MB per file</p>
             </div>
           )}
           {/* {user && ["hr", "admin", "interviewer"].includes(user.role) && (
@@ -211,21 +201,19 @@ export function FileUpload({
         {existingFiles.map((file) => (
           <div
             key={file.id}
-            className="flex items-center justify-between p-2 border rounded break-all"
+            className="flex items-center justify-between break-all rounded border p-2"
           >
             <div className="flex items-center space-x-2">
               <FileIcon className="h-4 w-4" />
-              <span className="text-sm break-words max-w-[350px]">
+              <span className="max-w-[350px] break-words text-sm">
                 {file.name}
               </span>
               <span className="text-xs text-gray-500">
-                (
-                {formatFileSize(file.size)}
-                )
+                ({formatFileSize(file.size)})
               </span>
               <button
                 type="button"
-                className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                className="rounded-md p-2 hover:bg-muted hover:text-red-500"
                 onClick={() => handleRemoveFile(file.name)}
               >
                 <X className="h-4 w-4 text-muted-foreground" />
@@ -233,12 +221,14 @@ export function FileUpload({
             </div>
             <button
               type="button"
-              className="p-2 hover:bg-muted rounded-md"
-              onClick={() => setRenameFile({
-                file: null,
-                isExisting: true,
-                existingFile: file,
-              })}
+              className="rounded-md p-2 hover:bg-muted"
+              onClick={() =>
+                setRenameFile({
+                  file: null,
+                  isExisting: true,
+                  existingFile: file,
+                })
+              }
             >
               <Pencil className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -251,14 +241,12 @@ export function FileUpload({
             className={`flex items-center justify-between p-3 ${colors.bg} ${colors.border} rounded-lg`}
           >
             <div className="flex items-center gap-2">
-              <FileIcon className={`w-4 h-4 ${colors.icon}`} />
+              <FileIcon className={`h-4 w-4 ${colors.icon}`} />
               <span className={`text-sm font-medium ${colors.text}`}>
                 {file.name}
               </span>
               <span className={`text-xs ${colors.icon}`}>
-                (
-                {formatFileSize(file.size)}
-                )
+                ({formatFileSize(file.size)})
               </span>
             </div>
             <div className="flex items-center gap-1">
@@ -266,17 +254,19 @@ export function FileUpload({
                 <button
                   type="button"
                   className={`p-2 ${colors.hoverBg} rounded-md text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300`}
-                  onClick={() => setRenameFile({
-                    file,
-                    isExisting: false,
-                  })}
+                  onClick={() =>
+                    setRenameFile({
+                      file,
+                      isExisting: false,
+                    })
+                  }
                 >
-                  <Pencil className="h-4 " />
+                  <Pencil className="h-4" />
                 </button>
               )}
               <button
                 type="button"
-                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-md text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                className="rounded-md p-2 text-red-600 hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/50 dark:hover:text-red-300"
                 onClick={() => handleRemoveFile(file.name)}
               >
                 <X className="h-4 w-4" />

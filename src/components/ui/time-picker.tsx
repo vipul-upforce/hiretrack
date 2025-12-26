@@ -18,17 +18,19 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
+interface TimePickerProps {
+  name?: string;
+  value: string;
+  onChange: (timeString: string) => void;
+  onBlur?: () => void;
+}
+
 export default function TimePicker({
   name,
   value,
   onChange,
   onBlur,
-}: {
-  name?: string;
-  value: string;
-  onChange: (timeString: string) => void;
-  onBlur?: () => void;
-}) {
+}: TimePickerProps) {
   const [selectedTime, setSelectedTime] = React.useState<string>(value || '');
   const [hours, setHours] = React.useState<number>();
   const [minutes, setMinutes] = React.useState<number>();
@@ -36,33 +38,21 @@ export default function TimePicker({
 
   // Sync with external value changes
   React.useEffect(() => {
-    if (value) {
-      const [hour, minute] = value.split(':');
-      const isPM = parseInt(hour) >= 12;
-      const formattedHour = isPM
-        ? hour === '12'
-          ? '12'
-          : `${parseInt(hour) - 12}`
-        : hour === '0'
-          ? '12'
-          : hour;
-      setHours(parseInt(formattedHour));
-      setMinutes(parseInt(minute));
-      setMeridiem(isPM ? 'PM' : 'AM');
-      setSelectedTime(value);
-    }
     if (value && value !== selectedTime) {
       const [hour, minute] = value.split(':');
-      const isPM = parseInt(hour) >= 12;
-      const formattedHour = isPM
-        ? hour === '12'
-          ? '12'
-          : `${parseInt(hour) - 12}`
-        : hour === '0'
-          ? '12'
-          : hour;
-      setHours(parseInt(formattedHour));
-      setMinutes(parseInt(minute));
+      const hourNum = Number.parseInt(hour, 10);
+      const minuteNum = Number.parseInt(minute, 10);
+      const isPM = hourNum >= 12;
+
+      let formattedHour: string;
+      if (isPM) {
+        formattedHour = hour === '12' ? '12' : `${hourNum - 12}`;
+      } else {
+        formattedHour = hour === '0' ? '12' : hour;
+      }
+
+      setHours(Number.parseInt(formattedHour, 10));
+      setMinutes(minuteNum);
       setMeridiem(isPM ? 'PM' : 'AM');
       setSelectedTime(value);
     }
@@ -70,17 +60,18 @@ export default function TimePicker({
 
   // Handle user selections (only call onChange for user interactions)
   const handleHoursChange = (newHours: string) => {
-    const hoursNum = Number.parseInt(newHours);
+    const hoursNum = Number.parseInt(newHours, 10);
     setHours(hoursNum);
 
     if (hoursNum && minutes !== undefined && meridiem) {
-      const formattedHours = hoursNum === 12
-        ? meridiem === 'AM'
-          ? '0'
-          : '12'
-        : meridiem === 'PM'
-          ? hoursNum + 12
-          : hoursNum;
+      let formattedHours: number;
+      if (hoursNum === 12) {
+        formattedHours = meridiem === 'AM' ? 0 : 12;
+      } else if (meridiem === 'PM') {
+        formattedHours = hoursNum + 12;
+      } else {
+        formattedHours = hoursNum;
+      }
       const timeString = `${formattedHours}:${minutes.toString().padStart(2, '0')}`;
       setSelectedTime(timeString);
       onChange(timeString);
@@ -89,17 +80,18 @@ export default function TimePicker({
   };
 
   const handleMinutesChange = (newMinutes: string) => {
-    const minutesNum = Number.parseInt(newMinutes);
+    const minutesNum = Number.parseInt(newMinutes, 10);
     setMinutes(minutesNum);
 
     if (hours !== undefined && minutesNum !== undefined && meridiem) {
-      const formattedHours = hours === 12
-        ? meridiem === 'AM'
-          ? '0'
-          : '12'
-        : meridiem === 'PM'
-          ? hours + 12
-          : hours;
+      let formattedHours: number;
+      if (hours === 12) {
+        formattedHours = meridiem === 'AM' ? 0 : 12;
+      } else if (meridiem === 'PM') {
+        formattedHours = hours + 12;
+      } else {
+        formattedHours = hours;
+      }
       const timeString = `${formattedHours}:${minutesNum.toString().padStart(2, '0')}`;
       setSelectedTime(timeString);
       onChange(timeString);
@@ -111,13 +103,14 @@ export default function TimePicker({
     setMeridiem(newMeridiem);
 
     if (hours !== undefined && minutes !== undefined && newMeridiem) {
-      const formattedHours = hours === 12
-        ? newMeridiem === 'AM'
-          ? '0'
-          : '12'
-        : newMeridiem === 'PM'
-          ? hours + 12
-          : hours;
+      let formattedHours: number;
+      if (hours === 12) {
+        formattedHours = newMeridiem === 'AM' ? 0 : 12;
+      } else if (newMeridiem === 'PM') {
+        formattedHours = hours + 12;
+      } else {
+        formattedHours = hours;
+      }
       const timeString = `${formattedHours}:${minutes.toString().padStart(2, '0')}`;
       setSelectedTime(timeString);
       onChange(timeString);

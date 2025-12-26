@@ -47,8 +47,8 @@ export function ChipInput({
     onChange(newValues);
   };
 
-  const addSkill = (value: string) => {
-    const trimmedValue = value.trim();
+  const addSkill = (value2: string) => {
+    const trimmedValue = value2.trim();
     const hasAlphanumeric = /[a-zA-Z0-9]/.test(trimmedValue);
     const hasLongSpecialCharSequence = /[^a-zA-Z0-9]{5,}/.test(trimmedValue);
 
@@ -79,12 +79,12 @@ export function ChipInput({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target;
-    setInputValue(value);
+    const { value: value2 } = e.target;
+    setInputValue(value2);
 
     // Mobile-friendly: Check for comma or space separation
-    if (value.includes(',')) {
-      const parts = value.split(/[,]+/).filter((part) => part.trim() !== '');
+    if (value2.includes(',')) {
+      const parts = value2.split(/[,]+/).filter((part) => part.trim() !== '');
       if (parts.length > 1) {
         // Add all parts except the last one (which might be incomplete)
         parts.slice(0, -1).forEach((part) => addSkill(part));
@@ -98,12 +98,12 @@ export function ChipInput({
   const handleCompositionEnd = (
     e: React.CompositionEvent<HTMLInputElement>,
   ) => {
-    const { value } = e.currentTarget;
-    setInputValue(value);
+    const { value: value2 } = e.currentTarget;
+    setInputValue(value2);
 
     // Check if the composition ended with a comma or space
-    if (value.includes(',')) {
-      const parts = value.split(/[,]+/).filter((part) => part.trim() !== '');
+    if (value2.includes(',')) {
+      const parts = value2.split(/[,]+/).filter((part) => part.trim() !== '');
       if (parts.length > 1) {
         parts.slice(0, -1).forEach((part) => addSkill(part));
         setInputValue(parts[parts.length - 1]);
@@ -113,35 +113,35 @@ export function ChipInput({
 
   return (
     <div className="relative" style={{ width: fullWidth ? '100%' : '' }}>
-      <div className="group border border-input px-3 py-2 text-sm rounded-md focus-within:ring-2 focus-within:ring-ring">
-        <div className="flex gap-1 flex-wrap">
+      <div className="group rounded-md border border-input px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-ring">
+        <div className="flex flex-wrap gap-1">
           {typeof selectedValues === 'string'
             ? null
             : (selectedValues || []).map((item) => (
-              <Badge
-                key={item}
-                variant="secondary"
-                className="bg-muted hover:bg-muted/80 break-all"
-              >
-                {item}
-                <button
-                  type="button"
-                  className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleUnselect(item);
-                    }
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onClick={() => handleUnselect(item)}
+                <Badge
+                  key={item}
+                  variant="secondary"
+                  className="break-all bg-muted hover:bg-muted/80"
                 >
-                  <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                </button>
-              </Badge>
-            ))}
+                  {item}
+                  <button
+                    type="button"
+                    className="ml-1 rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleUnselect(item);
+                      }
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={() => handleUnselect(item)}
+                  >
+                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                  </button>
+                </Badge>
+              ))}
           <input
             ref={inputRef}
             type="text"
@@ -155,7 +155,7 @@ export function ChipInput({
             }}
             onFocus={() => setOpen(true)}
             placeholder={placeholder}
-            className="ml-2 bg-transparent outline-none placeholder:text-muted-foreground flex-1"
+            className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
           />
           {showAddButton && inputValue.trim() !== '' && (
             <Button
@@ -173,15 +173,28 @@ export function ChipInput({
 
       <div className="relative mt-2" style={{ zIndex: 1000 }}>
         {open && suggestions.length > 0 && (
-          <div className="absolute top-full left-0 w-full bg-background rounded-md shadow-md pb-5">
+          <div
+            className="absolute left-0 top-full w-full rounded-md bg-background pb-5 shadow-md"
+            role="listbox"
+          >
             {suggestions.map((suggestion) => (
               <div
                 key={suggestion}
+                role="option"
+                aria-selected={false}
+                tabIndex={0}
                 onClick={() => {
                   onSuggestionClick?.(suggestion);
                   setTimeout(() => setOpen(false), 100);
                 }}
-                className="px-2 py-1 hover:bg-accent cursor-pointer capitalize"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSuggestionClick?.(suggestion);
+                    setTimeout(() => setOpen(false), 100);
+                  }
+                }}
+                className="cursor-pointer px-2 py-1 capitalize hover:bg-accent focus:bg-accent focus:outline-none"
               >
                 {suggestion}
               </div>
