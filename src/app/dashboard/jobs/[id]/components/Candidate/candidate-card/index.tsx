@@ -129,7 +129,6 @@ export const CandidateCard = memo(
       isFollowUpSubmitting,
     } = useRemarkHandlers(
       localCandidate,
-      user as User | null,
       async () => refetch(),
       undefined,
       undefined,
@@ -142,7 +141,6 @@ export const CandidateCard = memo(
       confirmUnassign,
     } = useUnassignHandlers(
       localCandidate,
-      user as User | null,
       async () => refetch(),
       () => {},
       () => {},

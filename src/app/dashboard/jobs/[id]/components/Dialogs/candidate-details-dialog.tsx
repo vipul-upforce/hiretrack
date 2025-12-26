@@ -95,7 +95,7 @@ export function CandidateDetailsDialog({
     ) {
       fetchHistory(localCandidate._id);
     }
-  }, [activeTab, historyLoaded, localCandidate?._id]);
+  }, [activeTab, historyLoaded, localCandidate?._id, fetchHistory]);
 
   useEffect(() => {
     if (historyData?.history) {
@@ -241,12 +241,10 @@ export function CandidateDetailsDialog({
     setNewFollowUpDate,
     newFollowUp,
     newFollowUpDate,
-    MADFollowup,
     setMADFollowup,
     handleRemoveFollowUp,
   } = useRemarkHandlers(
     localCandidate,
-    user,
     refetch,
     refetchAssignment,
     onUpdate,
@@ -261,7 +259,6 @@ export function CandidateDetailsDialog({
     confirmUnassign,
   } = useUnassignHandlers(
     localCandidate,
-    user,
     refetch,
     setLocalCandidate,
     onUpdate,
@@ -421,7 +418,6 @@ export function CandidateDetailsDialog({
     <div className="flex flex-1 flex-col overflow-hidden">
       <CandidateDetailsTabs
         candidate={localCandidate}
-        user={user}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onEditFollowUp={() => setIsAddingFollowUp(true)}
@@ -429,7 +425,7 @@ export function CandidateDetailsDialog({
         isReEvaluating={isReEvaluating}
         isEvaluatingFor={isEvaluatingFor}
         onReEvaluate={() => setConfirmReEvaluateOpen(true)}
-        candidateHistory={historyData?.history || []}
+        candidateHistory={timeLineItems}
         isHistoryLoading={isHistoryFetching}
         isRemarkSubmitting={isRemarkSubmitting}
         validTimeLineItems={validTimeLineItems}
@@ -498,7 +494,7 @@ export function CandidateDetailsDialog({
         {header}
         {body}
 
-        {user?.role !== 'candidate' && footer}
+        {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
       {isAssigning && localCandidate && (
         <AssignCandidateDialog
@@ -537,7 +533,6 @@ export function CandidateDetailsDialog({
           handleRemoveFollowUp={handleRemoveFollowUp}
           isOpen={isAddingFollowUp}
           onOpenChange={setIsAddingFollowUp}
-          refetch={refetch}
           handleAddFollowUp={handleAddFollowUp}
           setNewFollowUp={setNewFollowUp}
           setNewFollowUpDate={setNewFollowUpDate}

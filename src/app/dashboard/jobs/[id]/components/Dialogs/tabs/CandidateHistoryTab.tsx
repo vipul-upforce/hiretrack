@@ -4,18 +4,17 @@
  */
 
 import { Candidate } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import { ICandidateHistory } from '@/lib/models/history';
 import { MessageSquare } from 'lucide-react';
 import React from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { User } from '@/lib/features/users/usersApi';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
 import { HistoryTimelineSkeleton } from '../../Candidate/history-timeine-skeleton';
 import { IEditRemark } from '../../../schemas/EditRemarkDialog';
 
 interface CandidateHistoryTabProps {
   candidate: Candidate;
-  user: User | null;
-  candidateHistory: ICandidateHistory[] | undefined;
   isHistoryLoading: boolean;
   isRemarkSubmitting: boolean;
   validTimeLineItems: ICandidateHistory[];
@@ -35,8 +34,6 @@ interface CandidateHistoryTabProps {
  */
 export function CandidateHistoryTab({
   candidate,
-  user,
-  candidateHistory,
   isHistoryLoading,
   isRemarkSubmitting,
   validTimeLineItems,
@@ -45,6 +42,7 @@ export function CandidateHistoryTab({
   setIsEditRemarkDialogOpen,
   historyLoaded,
 }: CandidateHistoryTabProps) {
+  const { user } = useAppSelector((state) => state.auth);
   return (
     <div className="space-y-6">
       {/* Candidate History */}
@@ -63,11 +61,12 @@ export function CandidateHistoryTab({
               );
             }
 
-            if (candidateHistory && candidateHistory.length > 0) {
+            // Check validTimeLineItems instead of candidateHistory since that's what gets rendered
+            if (validTimeLineItems && validTimeLineItems.length > 0) {
               return candidateDetailsFields
                 .find((field) => field.id === 'candidate-history')
                 ?.render(
-                  { ...candidate, history: candidateHistory },
+                  { ...candidate, history: validTimeLineItems },
                   {
                     id: 'candidate-history',
                     user,
@@ -75,17 +74,9 @@ export function CandidateHistoryTab({
                     handleRemarkUpdate,
                     setEditingRemark,
                     setIsEditRemarkDialogOpen,
-                    showHeader: false, // showHeader = false
+                    showHeader: false,
                   },
                 );
-            }
-
-            if (candidateHistory && candidateHistory.length === 0) {
-              return (
-                <div className="rounded-lg border border-border bg-card p-6">
-                  <HistoryTimelineSkeleton />
-                </div>
-              );
             }
 
             return (

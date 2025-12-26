@@ -32,25 +32,27 @@ export async function GET(request: NextRequest) {
     }
 
     const openJobCardsOrder = organization.openJobCards || [];
-    const openJobIds = new Set(openJobCardsOrder.map((id) => id.toString()));
+    const openJobIds = new Set(openJobCardsOrder.map((id) => id?.toString()));
     const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
 
     const sortedJobs = openJobCardsOrder
-      .map((id) => jobsMap.get(id.toString()))
+      .map((id) => jobsMap.get(id?.toString()))
       .filter((job): job is NonNullable<typeof job> => !!job);
-    const otherJobs = jobs.filter((job) => !openJobIds.has(job._id.toString()));
+    const otherJobs = jobs.filter(
+      (job) => !openJobIds.has(job._id?.toString()),
+    );
 
     const candidateCounts = await Candidate?.aggregate([
       { $match: { jobId: { $in: jobs.map((job) => job._id) } } },
       { $group: { _id: '$jobId', count: { $sum: 1 } } },
     ]);
     const candidateCountMap = new Map(
-      candidateCounts?.map((item) => [item._id.toString(), item.count]),
+      candidateCounts?.map((item) => [item._id?.toString(), item.count]),
     );
 
     const jobsWithCount = [...sortedJobs, ...otherJobs].map((job) => ({
       ...(job as any),
-      candidateCount: candidateCountMap.get(job._id.toString()) || 0,
+      candidateCount: candidateCountMap.get(job._id?.toString()) || 0,
     }));
 
     return NextResponse.json(jobsWithCount);
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
       try {
         await NotificationService.notifyJobCreated({
           organizationId,
-          jobId: newJob._id.toString(),
+          jobId: newJob._id?.toString(),
           jobTitle: newJob.title,
           triggerUserId: userData?.id as string,
           triggerUserName: userData?.name as string,

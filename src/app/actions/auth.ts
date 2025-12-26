@@ -7,7 +7,11 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUserRole } from '@/lib/utils/checklistVisibility';
 import type { UserRole } from '@/lib/models/JobLaneConfig';
-import connectToDatabase, { CandidateAccount, Settings, User } from '@/lib/mongodb';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+} from '@/lib/mongodb';
 
 export interface OrganizationTag {
   title: string;
@@ -89,7 +93,9 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
           path: 'organizationId',
           select: '-customFields',
         })
-        .select('name email role organizationId tokenVersion appliedApplications')
+        .select(
+          'name email role organizationId tokenVersion appliedApplications',
+        )
         .lean();
     } else {
       // Fetch regular user info by userId
@@ -102,13 +108,12 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
         .select('name email role organizationId tokenVersion')
         .lean();
     }
-    console.log(user, "user-106");
+    // console.log(user, "user-106");
     // File storage is always per-organization, so fetch regardless of user type
     const fileStorage = await Settings!
       .findOne({ organizationId })
       .select('fileStorage')
       .lean();
-
 
     if (!user) {
       return { success: false, error: 'User not found' };

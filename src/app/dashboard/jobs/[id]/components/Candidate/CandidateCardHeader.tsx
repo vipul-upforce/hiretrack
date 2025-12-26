@@ -88,11 +88,7 @@ export function CandidateCardHeader({
   // If not present on Candidate, you'll need to adjust as per your model
   const jobTitle: string =
     candidate.jobId?.title || candidate.jobDetails?.title || '-';
-  const status: string =
-    (candidate.status as string) ||
-    candidate.currentStatus ||
-    candidate.state ||
-    '-';
+  const status: string = candidate.status as string;
 
   const formatSmartDate = (date: Date | null | undefined) => {
     if (!date) return 'N/A';

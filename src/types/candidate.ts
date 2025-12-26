@@ -54,14 +54,12 @@ interface Assignment {
     }>;
     lastSyncedAt?: Date;
   };
-  status?: string;
-  assignment?: { status: string };
   jobId?: Job;
 }
 
 export interface Candidate {
-  [x: string]: any;
   _id: string;
+  id?: string;
   jobId: {
     _id: string;
     title: string;
@@ -168,12 +166,57 @@ export interface Candidate {
     weightedScore?: number;
   };
   followUp?: {
-    note: string;
-    date?: Date | string;
+    note: string | null;
+    date?: Date | string | null;
     userId?: {
-      _id: string;
-      name: string;
-      email: string;
+      _id: string | null;
+      name: string | null;
+      email: string | null;
+    };
+  };
+  organizationId?: string;
+  candidateName?: string; // Alias for name
+  jobTitle?: string; // Flattened from jobId.title
+  interviewDate?: string; // Flattened from assignment.time
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+
+  checklistData?: {
+    [laneId: string]: {
+      incoming?: {
+        checklistId: string;
+        completedAt: Date | string;
+        completedBy: string;
+        responses: {
+          [fieldId: string]: {
+            value: string | string[] | number | boolean | Date | null;
+            files?: Array<{
+              id: string;
+              name: string;
+              url: string;
+              type: string;
+              size: number;
+            }>;
+          };
+        };
+      };
+      outgoing?: {
+        checklistId: string;
+        completedAt: Date | string;
+        completedBy: string;
+        responses: {
+          [fieldId: string]: {
+            value: string | string[] | number | boolean | Date | null;
+            files?: Array<{
+              id: string;
+              name: string;
+              url: string;
+              type: string;
+              size: number;
+            }>;
+          };
+        };
+      };
     };
   };
 }

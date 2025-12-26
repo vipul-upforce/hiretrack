@@ -16,3 +16,4 @@ export function EntryRating({ rating }: EntryRatingProps) {
   );
 }
 
+

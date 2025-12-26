@@ -10,7 +10,6 @@ import { Search, Bell } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { useSSE } from '@/hooks/useSSE';
 import { Candidate } from '@/types/candidate';
-import { ITag } from '@/lib/models/organization';
 import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useNotificationsContext } from '@/contexts/NotificationsContext';
@@ -29,78 +28,78 @@ import { RenderInterviewerAssignments } from './components/RenderInterviewerAssi
 import { RenderTodaysInterviews } from './components/RenderTodaysInterviews';
 // import DashboardLoader from './components/dashboard-loader';
 
-export interface Assignment {
-  id: string;
-  _id?: string;
-  candidateName: string;
-  jobTitle: string;
-  interviewDate: string;
-  status: string;
-  contact: string;
-  assignment: {
-    assignedAt: string;
-    time: string;
-    name: string;
-    interviewerId: {
-      _id: string;
-      name: string;
-      email: string;
-    };
-    jobId: {
-      title: string;
-      skills: string[];
-      description: string;
-    };
-  };
-  jobId: {
-    _id: string;
-    title: string;
-    skills: string[];
-    description: string;
-  };
-  name: string;
-  resume: {
-    id: string;
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-  };
-  tracking: {
-    createdAt: string;
-    updatedAt: string;
-  };
-  tags?: ITag[];
-  organizationId: string;
-  location: string;
-  experience: number;
-  relevantExperience: number;
-  skills: string[];
-  expectedCTC?: number;
-  currentCTC?: number;
-  noticePeriod: number;
-  remarks: {
-    description: string;
-    date: string;
-    userId: {
-      _id: string;
-      name: string;
-      email: string;
-    };
-  };
-  attachments: {
-    id: string;
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-    _id: string;
-  }[];
-  isDeleted?: boolean;
-  customFields: { [key: string]: string };
-  createdAt: string;
-  updatedAt: string;
-}
+// export interface Assignment {
+//   id: string;
+//   _id?: string;
+//   candidateName: string;
+//   jobTitle: string;
+//   interviewDate: string;
+//   status: string;
+//   contact: string;
+//   assignment: {
+//     assignedAt: string;
+//     time: string;
+//     name: string;
+//     interviewerId: {
+//       _id: string;
+//       name: string;
+//       email: string;
+//     };
+//     jobId: {
+//       title: string;
+//       skills: string[];
+//       description: string;
+//     };
+//   };
+//   jobId: {
+//     _id: string;
+//     title: string;
+//     skills: string[];
+//     description: string;
+//   };
+//   name: string;
+//   resume: {
+//     id: string;
+//     name: string;
+//     url: string;
+//     type: string;
+//     size: number;
+//   };
+//   tracking: {
+//     createdAt: string;
+//     updatedAt: string;
+//   };
+//   tags?: ITag[];
+//   organizationId: string;
+//   location: string;
+//   experience: number;
+//   relevantExperience: number;
+//   skills: string[];
+//   expectedCTC?: number;
+//   currentCTC?: number;
+//   noticePeriod: number;
+//   remarks: {
+//     description: string;
+//     date: string;
+//     userId: {
+//       _id: string;
+//       name: string;
+//       email: string;
+//     };
+//   };
+//   attachments: {
+//     id: string;
+//     name: string;
+//     url: string;
+//     type: string;
+//     size: number;
+//     _id: string;
+//   }[];
+//   isDeleted?: boolean;
+//   customFields: { [key: string]: string };
+//   createdAt: string;
+//   updatedAt: string;
+// }
 
 interface Interviewer {
   count: number;
@@ -115,7 +114,7 @@ export default function DashboardPage() {
   const itemsPerPage = 48;
   const [open, setOpen] = useState(false);
   const [selectedAssignedTo, setSelectedAssignedTo] = useState('');
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [assignments, setAssignments] = useState<Candidate[]>([]);
   const [assignedInterviewers, setAssignedInterviewers] = useState<
     Interviewer[]
   >([]);
@@ -155,9 +154,9 @@ export default function DashboardPage() {
   const [markAsRead] = useMarkNotificationAsReadMutation();
 
   const { candidates: sseCandidates } = useSSE(() => {}, null);
-  const isToday = (assignment: Assignment) => {
+  const isToday = (assignment: Candidate) => {
     const assignmentDate = new Date(
-      assignment.assignment?.time || assignment.interviewDate,
+      assignment.assignment?.time || assignment.interviewDate || '',
     );
     const today = new Date();
     return (
@@ -167,9 +166,9 @@ export default function DashboardPage() {
     );
   };
 
-  const isThisWeek = (assignment: Assignment) => {
+  const isThisWeek = (assignment: Candidate) => {
     const assignmentDate = new Date(
-      assignment.assignment?.time || assignment.interviewDate,
+      assignment.assignment?.time || assignment.interviewDate || '',
     );
     const today = new Date();
     const startOfWeek = new Date(today);
@@ -284,7 +283,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const container = scrollContainerRef.current;
-    if (!container) return;
+    if (!container) return undefined;
 
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
@@ -296,12 +295,13 @@ export default function DashboardPage() {
 
   const interviewerAssignments = assignments?.filter((assignment) =>
     isInterviewer
-      ? assignment.assignment?.interviewerId?.email === user?.email
+      ? (assignment.assignment?.interviewerId as { email: string })?.email ===
+        user?.email
       : assignment,
   );
 
   const todayAssignments = interviewerAssignments?.filter((assignment) => {
-    const assignmentDate = new Date(assignment?.assignment?.time);
+    const assignmentDate = new Date(assignment?.assignment?.time || '');
     const today = new Date();
     return (
       assignmentDate.getDate() === today.getDate() &&
@@ -313,110 +313,95 @@ export default function DashboardPage() {
   useEffect(() => {
     if (sseCandidates && sseCandidates.length > 0) {
       setAssignments((prevAssignments) => {
-        let updatedAssignments: Assignment[] = [...prevAssignments];
+        let updatedAssignments: Candidate[] = [...prevAssignments];
 
-        (sseCandidates as (Candidate | Assignment)[]).forEach(
-          (sseCandidate) => {
-            // debugger;
-            // Ensure the candidate has the required Assignment properties
-            if (
-              'assignment' in sseCandidate &&
-              sseCandidate._id &&
-              'assignment.interviewerId' in sseCandidate.assignment
-            ) {
-              const candidateId = sseCandidate._id;
-              const existingIndex = updatedAssignments.findIndex(
-                (assignment) =>
-                  (assignment._id || assignment.id) === candidateId,
-              );
+        (sseCandidates as Candidate[]).forEach((sseCandidate) => {
+          // debugger;
+          // Ensure the candidate has the required Assignment properties
+          if (
+            'assignment' in sseCandidate &&
+            sseCandidate._id &&
+            sseCandidate.assignment &&
+            'assignment.interviewerId' in sseCandidate.assignment
+          ) {
+            const candidateId = sseCandidate._id;
+            const existingIndex = updatedAssignments.findIndex(
+              (assignment) => (assignment._id || assignment.id) === candidateId,
+            );
 
-              if (!sseCandidate.assignment) {
-                // Remove if assignment is null/undefined
-                if (existingIndex !== -1) {
-                  updatedAssignments = updatedAssignments.filter(
-                    (_, index) => index !== existingIndex,
-                  );
-                }
-              } else {
-                // Convert Candidate to Assignment or use directly if already Assignment
-                const assignment: Assignment = {
-                  id: sseCandidate._id!,
-                  _id: sseCandidate._id,
-                  candidateName: sseCandidate.name,
-                  contact: sseCandidate.contact,
-                  jobTitle: sseCandidate.jobId.title,
-                  interviewDate: sseCandidate.assignment.time,
-                  status: sseCandidate.status || 'pending',
-                  assignment: (sseCandidate as Assignment).assignment,
-                  jobId: (sseCandidate as Assignment).jobId,
-                  name: (sseCandidate as Assignment).name,
-                  resume: (sseCandidate as Assignment).resume,
-                  tracking: (sseCandidate as Assignment).tracking,
-                  organizationId: sseCandidate.organizationId,
-                  location: sseCandidate.location,
-                  experience: sseCandidate.experience,
-                  relevantExperience: sseCandidate.relevantExperience,
-                  skills: sseCandidate.skills,
-                  tags: sseCandidate.tags,
-                  expectedCTC: sseCandidate.expectedCTC,
-                  currentCTC: sseCandidate.currentCTC,
-                  noticePeriod: sseCandidate.noticePeriod,
-                  remarks: (() => {
-                    const candidateRemarks = (sseCandidate as Candidate)
-                      .remarks;
-                    if (Array.isArray(candidateRemarks)) {
-                      // If remarks is an array, take the first remark or provide a default
-                      return (
-                        candidateRemarks[0] || {
-                          description: '',
-                          date: new Date().toISOString(),
-                          userId: { _id: '', name: '', email: '' },
-                        }
-                      );
-                    }
-                    // If remarks is a single object or undefined, return it or a default
-                    return (
-                      candidateRemarks || {
-                        description: '',
-                        date: new Date().toISOString(),
-                        userId: { _id: '', name: '', email: '' },
-                      }
-                    );
-                  })(),
-                  attachments: (sseCandidate as Assignment).attachments,
-                  customFields: (sseCandidate as Assignment).customFields,
-                  createdAt: sseCandidate.createdAt,
-                  updatedAt: sseCandidate.updatedAt,
-                };
-
-                if (existingIndex !== -1) {
-                  updatedAssignments[existingIndex] = {
-                    ...updatedAssignments[existingIndex],
-                    ...assignment,
-                  };
-                } else {
-                  updatedAssignments.push(assignment);
-                }
-              }
-            } else if (
-              !sseCandidate.assignment ||
-              !sseCandidate.assignment.interviewerId
-            ) {
-              logger.log('No SSE assignment found');
+            if (!sseCandidate.assignment) {
               // Remove if assignment is null/undefined
-              const candidateId = sseCandidate._id;
-              const existingIndex = updatedAssignments.findIndex(
-                (assignment) =>
-                  (assignment._id || assignment.id) === candidateId,
-              );
               if (existingIndex !== -1) {
                 updatedAssignments = updatedAssignments.filter(
-                  (_, index) => index != existingIndex,
+                  (_, index) => index !== existingIndex,
                 );
               }
+            } else {
+              // Convert Candidate to Assignment or use directly if already Assignment
+              const assignment: Candidate = {
+                id: sseCandidate._id!,
+                _id: sseCandidate._id,
+                email: sseCandidate.email,
+                candidateName: sseCandidate.name,
+                contact: sseCandidate.contact,
+                jobTitle: sseCandidate.jobId.title,
+                interviewDate: sseCandidate.assignment.time,
+                status: sseCandidate.status || 'pending',
+                assignment: (sseCandidate as Candidate).assignment,
+                jobId: (sseCandidate as Candidate).jobId,
+                name: (sseCandidate as Candidate).name,
+                resume: (sseCandidate as Candidate).resume,
+                tracking: (sseCandidate as Candidate).tracking,
+                organizationId: sseCandidate.organizationId,
+                location: sseCandidate.location,
+                experience: sseCandidate.experience,
+                relevantExperience: sseCandidate.relevantExperience,
+                skills: sseCandidate.skills,
+                tags: sseCandidate.tags,
+                expectedCTC: sseCandidate.expectedCTC,
+                currentCTC: sseCandidate.currentCTC,
+                noticePeriod: sseCandidate.noticePeriod,
+                remarks: (() => {
+                  const candidateRemarks = (sseCandidate as Candidate).remarks;
+                  if (Array.isArray(candidateRemarks)) {
+                    // If remarks is an array, take the first remark or provide a default
+                    return candidateRemarks;
+                  }
+                  // If remarks is a single object or undefined, return it or a default
+                  return candidateRemarks || [];
+                })(),
+                attachments: (sseCandidate as Candidate).attachments,
+                customFields: (sseCandidate as Candidate).customFields,
+                createdAt: sseCandidate.createdAt,
+                updatedAt: sseCandidate.updatedAt,
+              };
+
+              if (existingIndex !== -1) {
+                updatedAssignments[existingIndex] = {
+                  ...updatedAssignments[existingIndex],
+                  ...assignment,
+                };
+              } else {
+                updatedAssignments.push(assignment);
+              }
             }
-          },
-        );
+          } else if (
+            !sseCandidate.assignment ||
+            !sseCandidate.assignment.interviewerId
+          ) {
+            logger.log('No SSE assignment found');
+            // Remove if assignment is null/undefined
+            const candidateId = sseCandidate._id;
+            const existingIndex = updatedAssignments.findIndex(
+              (assignment) => (assignment._id || assignment.id) === candidateId,
+            );
+            if (existingIndex !== -1) {
+              updatedAssignments = updatedAssignments.filter(
+                (_, index) => index !== existingIndex,
+              );
+            }
+          }
+        });
 
         setAssignmentsCounts({
           totalInterviews: updatedAssignments.length,
@@ -632,7 +617,7 @@ export default function DashboardPage() {
                 <div className="mt-6 space-y-8">
                   <div>
                     <h2 className="mb-4 text-2xl font-bold">
-                      Today's Interviews
+                      Today&apos;s Interviews
                     </h2>
                     {todayAssignments?.length > 0 ? (
                       <RenderTodaysInterviews
@@ -641,7 +626,7 @@ export default function DashboardPage() {
                             ? ([
                                 ...sseCandidates.filter((candidate) => {
                                   // Check if the interview is scheduled for today
-                                  const isToday =
+                                  const isTodayAssignment =
                                     candidate.assignment?.time &&
                                     new Date(
                                       candidate.assignment.time,
@@ -650,7 +635,7 @@ export default function DashboardPage() {
 
                                   // Keep existing conditions for interviewerId
                                   return (
-                                    isToday &&
+                                    isTodayAssignment === true &&
                                     candidate.assignment &&
                                     typeof candidate.assignment
                                       .interviewerId === 'object' &&
@@ -673,7 +658,7 @@ export default function DashboardPage() {
                                     ).toDateString() ===
                                       new Date().toDateString(),
                                 ),
-                              ] as (Candidate & Assignment)[])
+                              ] as Candidate[])
                             : todayAssignments.filter(
                                 (assignment) =>
                                   assignment.assignment?.time &&
@@ -719,7 +704,7 @@ export default function DashboardPage() {
                                         (latest) => latest._id === older._id,
                                       ),
                                   ),
-                                ] as (Candidate & Assignment)[])
+                                ] as Candidate[])
                               : interviewerAssignments
                           }
                         />

@@ -1,27 +1,23 @@
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
-import { CandidateStatus } from '@/types/candidate';
-import {
-  BriefcaseIcon, CalendarIcon, ClockIcon, Zap,
-} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Candidate, CandidateStatus } from '@/types/candidate';
+import { BriefcaseIcon, CalendarIcon, ClockIcon, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Assignment } from '../page';
+// import { Assignment } from '@/types/assignment';
 import { CandidateStatusBadge } from '../jobs/[id]/components/Utils/candidate-status-badge';
 import { formatDate, formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
 
 export function RenderTodaysInterviews({
   todayAssignments,
 }: {
-  todayAssignments: Assignment[];
+  todayAssignments: Candidate[];
 }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {todayAssignments?.map((assignment) => (
         <Card key={assignment.id || Math.random().toString()}>
           <CardHeader className="pb-2">
             <CardTitle className="text-lg capitalize">
-              <div className="flex pb-2 flex-row items-center justify-between">
+              <div className="flex flex-row items-center justify-between pb-2">
                 <p>{assignment.name}</p>
                 <div>
                   <CandidateStatusBadge
@@ -35,7 +31,7 @@ export function RenderTodaysInterviews({
             <div className="space-y-4">
               {/* Position */}
               <div className="flex items-start gap-2">
-                <BriefcaseIcon className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <BriefcaseIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div>
                   <p className="text-sm text-muted-foreground">Position</p>
                   <p className="font-medium">
@@ -46,9 +42,9 @@ export function RenderTodaysInterviews({
 
               {/* Skills */}
               <div className="flex items-start gap-2">
-                <Zap className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <Zap className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1.5">Skills</p>
+                  <p className="mb-1.5 text-sm text-muted-foreground">Skills</p>
                   <div className="flex flex-wrap gap-1.5">
                     {assignment.skills.slice(0, 3).map((skill) => (
                       <Badge
@@ -61,8 +57,7 @@ export function RenderTodaysInterviews({
                     ))}
                     {assignment.skills.length > 3 && (
                       <Badge variant="secondary" className="text-xs">
-                        +
-                        {assignment.skills.length - 3}
+                        +{assignment.skills.length - 3}
                       </Badge>
                     )}
                   </div>
@@ -76,10 +71,10 @@ export function RenderTodaysInterviews({
                   <div>
                     <p className="text-xs text-muted-foreground">Date</p>
                     <p className="text-sm font-medium">
-                      {assignment.assignment.time
+                      {assignment.assignment?.time
                         ? formatDate(
-                          assignment.assignment.time.toLocaleString(),
-                        )
+                            assignment.assignment.time.toLocaleString(),
+                          )
                         : 'N/A'}
                     </p>
                   </div>
@@ -90,10 +85,10 @@ export function RenderTodaysInterviews({
                   <div>
                     <p className="text-xs text-muted-foreground">Time</p>
                     <p className="text-sm font-medium">
-                      {assignment.assignment.time
+                      {assignment.assignment?.time
                         ? formatTime(
-                          assignment.assignment.time.toLocaleString(),
-                        )
+                            assignment.assignment.time.toLocaleString(),
+                          )
                         : 'N/A'}
                     </p>
                   </div>

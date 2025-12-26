@@ -164,10 +164,7 @@ export default function JobProgressPage() {
 
   // Get SSE lanes separately (still needed for lane updates)
   const { lanes: updatedLanes } = useSSE(
-    user?.role || '',
-    setSelectedCandidate as (
-      candidate: Candidate | CustomCalendarEvent | null,
-    ) => void,
+    setSelectedCandidate as (candidate: Candidate | null) => void,
     selectedCandidate,
     id,
   );

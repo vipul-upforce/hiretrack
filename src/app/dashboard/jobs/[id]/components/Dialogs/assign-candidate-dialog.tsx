@@ -1,5 +1,3 @@
-/* eslint-disable max-lines */
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -67,8 +65,9 @@ export function AssignCandidateDialog({
   const [cancelMeeting, { isLoading: isCancelling }] =
     useCancelMeetingMutation();
 
-  const { user } = useAppSelector((state) => state.auth || {});
-  const shouldFetchInterviewers = !!user && user.role !== 'candidate' && user.role !== '';
+  const { user } = useAppSelector((state) => state.auth);
+  const shouldFetchInterviewers =
+    !!user && user.role !== 'candidate' && user.role !== '';
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery(undefined, { skip: !shouldFetchInterviewers });
   const { data: googleCalendarData } =

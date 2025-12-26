@@ -1,8 +1,8 @@
 import { useRef } from 'react';
-import { FormikProps, FormikTouched } from 'formik';
+import { FormikProps, FormikTouched, FormikValues } from 'formik';
 import { scrollToError } from '@/lib/formUtils';
 
-export const useApplyHandler = <T extends Record<string, unknown>>() => {
+export const useApplyHandler = <T extends FormikValues>() => {
   const formikRef = useRef<FormikProps<T>>(null);
 
   const handleApply = async () => {

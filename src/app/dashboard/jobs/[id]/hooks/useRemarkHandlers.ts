@@ -8,19 +8,19 @@ import {
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
-import { User } from '@/lib/features/users/usersApi';
 import { usePathname } from 'next/navigation';
 import dayjs, { Dayjs } from 'dayjs';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 export const useRemarkHandlers = (
   localCandidate: Candidate | null,
-  user: User | null,
   refetch: () => void,
   refetchAssignment?: () => void,
   onUpdate?: (candidate: Candidate) => void,
   refetchCandidates?: () => void,
 ) => {
+  const user = useAppSelector((state) => state.auth.user);
   const pathname = usePathname();
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
@@ -52,6 +52,114 @@ export const useRemarkHandlers = (
     }
   }, [user]);
 
+  const handleAddFollowUp = async () => {
+    if (!newFollowUp.trim() && !newFollowUpDate?.toISOString()) {
+      logger.error('Please provide either a follow-up note or a date. ');
+      return;
+    }
+    // debugger;
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'Please add the follow-up note.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsFollowUpSubmitting(true);
+    try {
+      const followUpSeparator = '|||||\n'; // Matches regex separator
+
+      const combinedNote = MADFollowup
+        ? `${newFollowUp.trim()}${followUpSeparator}${MADFollowup}`
+        : newFollowUp.trim();
+
+      const newFollowUpObj = {
+        // note: String(newFollowUp).trim(),
+        note: combinedNote,
+        date: newFollowUpDate?.toISOString() || '',
+        // rating: remarkRating ? Number(remarkRating) : undefined,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+      setMADFollowup(null);
+
+      const newHistoryEntry: ICandidateHistory = {
+        dateTime: new Date().toISOString(),
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user!.id,
+        title: 'Followup Created',
+        note: {
+          description: newFollowUp,
+          date: newFollowUpDate?.toISOString() || '',
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
+      const updateData = {
+        _id: localCandidate?._id,
+        name: localCandidate?.name,
+        followUp: newFollowUpObj,
+      };
+
+      const result = await updateCandidate(updateData).unwrap();
+      if (onUpdate && result && pathname !== '/dashboard/calendar') {
+        await new Promise((resolve) => {
+          setTimeout(resolve, 500);
+        });
+        onUpdate(result);
+      }
+      if (onUpdate && localCandidate) {
+        await onUpdate(localCandidate);
+      }
+      if (localCandidate) {
+        await updateCandidateHistory({
+          candidateId: localCandidate?._id,
+          jobId: localCandidate?.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+      }
+      if (pathname === '/dashboard/search') {
+        // debugger;
+        await refetchCandidates?.();
+        await refetch();
+      }
+      if (
+        pathname !== '/dashboard' &&
+        !pathname?.endsWith('calendar') &&
+        !pathname?.startsWith('/candidate')
+      ) {
+        await refetch();
+      }
+      if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
+        await refetchAssignment?.();
+        await refetch();
+      }
+      setNewFollowUp('');
+      setNewFollowUpDate(null);
+
+      toast({
+        title: 'Success',
+        description: 'Followup created successfully',
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsFollowUpSubmitting(false);
+    }
+  };
+
   // Update follow-up state when candidate data changes
   useEffect(() => {
     if (
@@ -60,7 +168,7 @@ export const useRemarkHandlers = (
     ) {
       setNewFollowUp(localCandidate.followUp.note);
     } else {
-      handleAddFollowUp;
+      handleAddFollowUp();
       setNewFollowUp('');
     }
 
@@ -227,14 +335,30 @@ export const useRemarkHandlers = (
   };
   const handleRemoveFollowUp = async () => {
     setIsFollowUpSubmitting(true);
+    if (!localCandidate) {
+      toast({
+        title: 'Error',
+        description: 'Candidate not found',
+        variant: 'destructive',
+      });
+      return;
+    }
     try {
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'User not found',
+          variant: 'destructive',
+        });
+        return;
+      }
       const newFollowUpObj = {
-        note: null,
         date: null,
+        note: null,
         userId: {
-          _id: user?.id,
-          name: user?.name,
-          email: user?.email,
+          _id: user.id,
+          name: user.name,
+          email: user.email,
         },
       };
 
@@ -253,8 +377,8 @@ export const useRemarkHandlers = (
         attachments: [],
       };
       const updateData = {
-        _id: localCandidate?._id,
-        name: localCandidate?.name,
+        _id: localCandidate._id,
+        name: localCandidate.name,
         followUp: newFollowUpObj,
       };
 
@@ -268,12 +392,13 @@ export const useRemarkHandlers = (
       if (onUpdate && localCandidate) {
         await onUpdate(localCandidate);
       }
-      localCandidate &&
-        (await updateCandidateHistory({
+      if (localCandidate) {
+        await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
-        }).unwrap());
+        }).unwrap();
+      }
       if (pathname === '/dashboard/search') {
         // debugger;
         await refetchCandidates?.();
@@ -296,114 +421,6 @@ export const useRemarkHandlers = (
       toast({
         title: 'Success',
         description: 'Followup removed successfully',
-      });
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      setIsFollowUpSubmitting(false);
-    }
-  };
-  const handleAddFollowUp = async () => {
-    if (!newFollowUp.trim() && !newFollowUpDate?.toISOString()) {
-      toast({
-        title: 'Error',
-        description: 'Please provide either a follow-up note or a date.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    // debugger;
-    if (!user?.id) {
-      toast({
-        title: 'Error',
-        description: 'Please add the follow-up note.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setIsFollowUpSubmitting(true);
-    try {
-      const followUpSeparator = '|||||\n'; // Matches regex separator
-
-      const combinedNote = MADFollowup
-        ? `${newFollowUp.trim()}${followUpSeparator}${MADFollowup}`
-        : newFollowUp.trim();
-
-      const newFollowUpObj = {
-        // note: String(newFollowUp).trim(),
-        note: combinedNote,
-        date: newFollowUpDate?.toISOString() || '',
-        // rating: remarkRating ? Number(remarkRating) : undefined,
-        userId: {
-          _id: user.id,
-          name: user.name,
-          email: user.email,
-        },
-      };
-      setMADFollowup(null);
-
-      const newHistoryEntry: ICandidateHistory = {
-        dateTime: new Date().toISOString(),
-        currentInterviewer: null,
-        previousInterviewer: null,
-        assignmentBy: user!.id,
-        title: 'Followup Created',
-        note: {
-          description: newFollowUp,
-          date: newFollowUpDate?.toISOString() || '',
-          rating: 0,
-          userId: null,
-        },
-        attachments: [],
-      };
-      const updateData = {
-        _id: localCandidate?._id,
-        name: localCandidate?.name,
-        followUp: newFollowUpObj,
-      };
-
-      const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result && pathname !== '/dashboard/calendar') {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        onUpdate(result);
-      }
-      if (onUpdate && localCandidate) {
-        await onUpdate(localCandidate);
-      }
-      localCandidate &&
-        (await updateCandidateHistory({
-          candidateId: localCandidate?._id,
-          jobId: localCandidate?.jobId,
-          newEntry: newHistoryEntry,
-        }).unwrap());
-      if (pathname === '/dashboard/search') {
-        // debugger;
-        await refetchCandidates?.();
-        await refetch();
-      }
-      if (
-        pathname !== '/dashboard' &&
-        !pathname?.endsWith('calendar') &&
-        !pathname?.startsWith('/candidate')
-      ) {
-        await refetch();
-      }
-      if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
-        await refetchAssignment?.();
-        await refetch();
-      }
-      setNewFollowUp('');
-      setNewFollowUpDate(null);
-
-      toast({
-        title: 'Success',
-        description: 'Followup created successfully',
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
