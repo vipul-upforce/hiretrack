@@ -97,7 +97,14 @@ export interface ScoreData {
   scoreRange: string;
   count: number;
   percentage: number;
-  dimension: 'overall' | 'experience' | 'skills' | 'affordability' | 'education' | 'projects' | 'certifications';
+  dimension:
+    | 'overall'
+    | 'experience'
+    | 'skills'
+    | 'affordability'
+    | 'education'
+    | 'projects'
+    | 'certifications';
 }
 
 export interface GeographicData {
@@ -125,17 +132,17 @@ export interface CustomFieldData {
   effectiveness: number;
 }
 
-export interface AnalyticsResponse<T> {
+export interface AnalyticsApiResponse<T = unknown> {
   success: boolean;
-  data: T;
-  metadata: {
-    totalRecords: number;
-    dateRange: {
+  data?: T;
+  error?: string;
+  metadata?: {
+    totalRecords?: number;
+    dateRange?: {
       start: Date;
       end: Date;
     };
     generatedAt: Date;
     organizationId: string;
   };
-  error?: string;
 }
