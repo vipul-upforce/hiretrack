@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form, Field, FieldProps } from 'formik';
 import * as Yup from 'yup';
 import {
   Dialog,
@@ -73,7 +73,8 @@ function ForgotPasswordDialog({ isOpen, onClose }: ForgotPasswordDialogProps) {
     } catch (err: unknown) {
       const errorMessage =
         typeof err === 'object' && err !== null && 'data' in err
-          ? (err as any).data?.error || 'Failed to send reset link.'
+          ? (err as { data?: { error: string } }).data?.error ||
+            'Failed to send reset link.'
           : 'An unexpected error occurred.';
 
       toast({
@@ -118,7 +119,8 @@ function ForgotPasswordDialog({ isOpen, onClose }: ForgotPasswordDialogProps) {
     } catch (err: unknown) {
       const errorMessage =
         typeof err === 'object' && err !== null && 'data' in err
-          ? (err as any).data?.error || 'Failed to send reset link.'
+          ? (err as { data?: { error: string } }).data?.error ||
+            'Failed to send reset link.'
           : 'An unexpected error occurred.';
 
       toast({
@@ -162,7 +164,7 @@ function ForgotPasswordDialog({ isOpen, onClose }: ForgotPasswordDialogProps) {
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Field name="email">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
                           id="email"
@@ -219,7 +221,7 @@ function ForgotPasswordDialog({ isOpen, onClose }: ForgotPasswordDialogProps) {
                     </Label>
                     <hr />
                     <Field name="selectedOrgId">
-                      {({ field, form }: any) => (
+                      {({ field, form }: FieldProps) => (
                         <RadioGroup
                           value={field.value}
                           onValueChange={(value) =>

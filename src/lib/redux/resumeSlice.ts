@@ -97,7 +97,9 @@ export const resumeSlice = createSlice({
     },
     changeEducations: (
       draft,
-      action: PayloadAction<CreateChangeActionWithDescriptions<ResumeEducation>>,
+      action: PayloadAction<
+        CreateChangeActionWithDescriptions<ResumeEducation>
+      >,
     ) => {
       const { idx, field, value } = action.payload;
       const education = draft.educations[idx];
@@ -169,8 +171,8 @@ export const resumeSlice = createSlice({
       const { form, idx, direction } = action.payload;
       if (form !== 'skills' && form !== 'custom') {
         if (
-          (idx === 0 && direction === 'up')
-          || (idx === draft[form].length - 1 && direction === 'down')
+          (idx === 0 && direction === 'up') ||
+          (idx === draft[form].length - 1 && direction === 'down')
         ) {
           return draft;
         }
@@ -213,7 +215,8 @@ export const {
 
 export const selectResume = (state: RootState) => state.resume;
 export const selectProfile = (state: RootState) => state.resume.profile;
-export const selectWorkExperiences = (state: RootState) => state.resume.workExperiences;
+export const selectWorkExperiences = (state: RootState) =>
+  state.resume.workExperiences;
 export const selectEducations = (state: RootState) => state.resume.educations;
 export const selectProjects = (state: RootState) => state.resume.projects;
 export const selectSkills = (state: RootState) => state.resume.skills;

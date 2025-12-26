@@ -8,6 +8,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
 import { useEffect, useState, useRef } from 'react';
 import { EventClickArg } from '@fullcalendar/core';
+import { useAppSelector } from '@/lib/redux/hooks';
+
 import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,7 +18,6 @@ import { Candidate, CandidateStatus } from '@/types/candidate';
 import { Assignment } from '@/types/assignment';
 import { useSSE } from '@/hooks/useSSE';
 import useRoles from '@/hooks/useRoles';
-import { useSelector } from 'react-redux';
 import LoaderSkeletonCalender from './components/loader-skeleton-calender';
 import { formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
 import { CandidateDetailsDialog } from '../jobs/[id]/components/Dialogs/candidate-details-dialog';
@@ -120,10 +121,10 @@ export default function CalendarPage() {
     'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek'
   >('dayGridMonth');
 
-  const { user } = useSelector((state: any) => state.auth || {});
-  const role = useRoles();
+  const { user } = useAppSelector((state) => state.auth);
+  const role = user?.role || '';
   const { candidates: sseCandidates } = useSSE(
-    role || '',
+    role,
     setSelectedEvent,
     selectedEvent,
   );

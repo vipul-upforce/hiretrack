@@ -1,6 +1,13 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '@/lib/redux/store';
 
+export type ShowForm =
+  | 'workExperiences'
+  | 'educations'
+  | 'projects'
+  | 'skills'
+  | 'custom';
+
 export interface Settings {
   themeColor: string;
   fontFamily: string;
@@ -29,7 +36,6 @@ export interface Settings {
   };
 }
 
-export type ShowForm = keyof Settings['formToShow'];
 export type FormWithBulletPoints = keyof Settings['showBulletPoints'];
 export type GeneralSetting = Exclude<
   keyof Settings,
@@ -121,7 +127,7 @@ export const settingsSlice = createSlice({
       const { field, value } = action.payload;
       draft.showBulletPoints[field] = value;
     },
-    setSettings: (draft, action: PayloadAction<Settings>) => action.payload,
+    setSettings: (_, action: PayloadAction<Settings>) => action.payload,
   },
 });
 
@@ -138,15 +144,22 @@ export const selectSettings = (state: RootState) => state.settings;
 export const selectThemeColor = (state: RootState) => state.settings.themeColor;
 
 export const selectFormToShow = (state: RootState) => state.settings.formToShow;
-export const selectShowByForm = (form: ShowForm) => (state: RootState) => state.settings.formToShow[form];
+export const selectShowByForm = (form: ShowForm) => (state: RootState) =>
+  state.settings.formToShow[form];
 
-export const selectFormToHeading = (state: RootState) => state.settings.formToHeading;
-export const selectHeadingByForm = (form: ShowForm) => (state: RootState) => state.settings.formToHeading[form];
+export const selectFormToHeading = (state: RootState) =>
+  state.settings.formToHeading;
+export const selectHeadingByForm = (form: ShowForm) => (state: RootState) =>
+  state.settings.formToHeading[form];
 
 export const selectFormsOrder = (state: RootState) => state.settings.formsOrder;
-export const selectIsFirstForm = (form: ShowForm) => (state: RootState) => state.settings.formsOrder[0] === form;
-export const selectIsLastForm = (form: ShowForm) => (state: RootState) => state.settings.formsOrder[state.settings.formsOrder.length - 1] === form;
+export const selectIsFirstForm = (form: ShowForm) => (state: RootState) =>
+  state.settings.formsOrder[0] === form;
+export const selectIsLastForm = (form: ShowForm) => (state: RootState) =>
+  state.settings.formsOrder[state.settings.formsOrder.length - 1] === form;
 
-export const selectShowBulletPoints = (form: FormWithBulletPoints) => (state: RootState) => state.settings.showBulletPoints[form];
+export const selectShowBulletPoints =
+  (form: FormWithBulletPoints) => (state: RootState) =>
+    state.settings.showBulletPoints[form];
 
 export default settingsSlice.reducer;

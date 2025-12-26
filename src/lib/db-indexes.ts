@@ -121,8 +121,9 @@ export const ANALYTICS_INDEXES: IndexDefinition[] = [
  * Creates all analytics indexes
  * Should be run during application startup or as a migration
  */
-export async function createAnalyticsIndexes(connection: mongoose.Connection): Promise<void> {
-
+export async function createAnalyticsIndexes(
+  connection: mongoose.Connection,
+): Promise<void> {
   const results = [];
 
   for (const indexDef of ANALYTICS_INDEXES) {
@@ -131,32 +132,41 @@ export async function createAnalyticsIndexes(connection: mongoose.Connection): P
 
       // Check if index already exists
       const existingIndexes = await collection.indexes();
-      const indexExists = existingIndexes.some((idx) => idx.name === indexDef.options?.name);
+      const indexExists = existingIndexes.some(
+        (idx) => idx.name === indexDef.options?.name,
+      );
 
       if (indexExists) {
+        // eslint-disable-next-line no-continue
         continue;
       }
 
       // Create the index
-      const result = await collection.createIndex(indexDef.index, indexDef.options);
+      const result = await collection.createIndex(
+        indexDef.index,
+        indexDef.options,
+      );
       results.push({
         collection: indexDef.collection,
         name: indexDef.options?.name || 'unnamed',
         result,
       });
-
     } catch (error) {
-      logger.error(`Error creating index on collection ${indexDef.collection}:`, error);
+      logger.error(
+        `Error creating index on collection ${indexDef.collection}:`,
+        error,
+      );
       throw error;
     }
   }
-
 }
 
 /**
  * Drops all analytics indexes (for cleanup/testing)
  */
-export async function dropAnalyticsIndexes(connection: mongoose.Connection): Promise<void> {
+export async function dropAnalyticsIndexes(
+  connection: mongoose.Connection,
+): Promise<void> {
   for (const indexDef of ANALYTICS_INDEXES) {
     try {
       const collection = connection.collection(indexDef.collection);
@@ -165,33 +175,42 @@ export async function dropAnalyticsIndexes(connection: mongoose.Connection): Pro
         await collection.dropIndex(indexDef.options.name);
       }
     } catch (error) {
-      logger.warn(`Could not drop index ${indexDef.options?.name} on collection ${indexDef.collection}: ${error.message}`);
+      logger.warn(
+        `Could not drop index ${indexDef.options?.name} on collection ${indexDef.collection}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
-
 }
 
 /**
  * Checks the status of analytics indexes
  */
-export async function checkAnalyticsIndexes(connection: mongoose.Connection): Promise<{
-  collection: string;
-  indexName: string;
-  exists: boolean;
-  stats?: any;
-}[]> {
+export async function checkAnalyticsIndexes(
+  connection: mongoose.Connection,
+): Promise<
+  {
+    collection: string;
+    indexName: string;
+    exists: boolean;
+    stats?: any;
+  }[]
+> {
   const results = [];
 
   for (const indexDef of ANALYTICS_INDEXES) {
     try {
       const collection = connection.collection(indexDef.collection);
       const existingIndexes = await collection.indexes();
-      const indexExists = existingIndexes.some((idx) => idx.name === indexDef.options?.name);
+      const indexExists = existingIndexes.some(
+        (idx) => idx.name === indexDef.options?.name,
+      );
 
       let stats = null;
       if (indexExists && indexDef.options?.name) {
         try {
-          stats = await (collection as any).indexStats({ name: indexDef.options.name });
+          stats = await (collection as any).indexStats({
+            name: indexDef.options.name,
+          });
         } catch (e) {
           // Index stats might not be available in all MongoDB versions
         }
@@ -219,14 +238,19 @@ export async function checkAnalyticsIndexes(connection: mongoose.Connection): Pr
 /**
  * Validates query performance with explain plans
  */
-export async function validateQueryPerformance(connection: mongoose.Connection): Promise<any[]> {
+export async function validateQueryPerformance(
+  connection: mongoose.Connection,
+): Promise<any[]> {
   const testQueries = [
     // Test candidate funnel query
     {
       collection: 'candidates',
       query: {
         organizationId: 'test-org-id',
-        'tracking.createdAt': { $gte: new Date('2024-01-01'), $lte: new Date() },
+        'tracking.createdAt': {
+          $gte: new Date('2024-01-01'),
+          $lte: new Date(),
+        },
         isDeleted: { $ne: true },
       },
       name: 'candidate_funnel_query',
@@ -236,7 +260,10 @@ export async function validateQueryPerformance(connection: mongoose.Connection):
       collection: 'jobs',
       query: {
         organizationId: 'test-org-id',
-        'tracking.createdAt': { $gte: new Date('2024-01-01'), $lte: new Date() },
+        'tracking.createdAt': {
+          $gte: new Date('2024-01-01'),
+          $lte: new Date(),
+        },
         isDeleted: { $ne: true },
       },
       name: 'job_performance_query',
@@ -258,7 +285,9 @@ export async function validateQueryPerformance(connection: mongoose.Connection):
   for (const testQuery of testQueries) {
     try {
       const collection = connection.collection(testQuery.collection);
-      const explainResult = await collection.find(testQuery.query).explain('executionStats');
+      const explainResult = await collection
+        .find(testQuery.query)
+        .explain('executionStats');
 
       results.push({
         name: testQuery.name,
@@ -268,7 +297,8 @@ export async function validateQueryPerformance(connection: mongoose.Connection):
         performance: {
           totalDocsExamined: explainResult.executionStats?.totalDocsExamined,
           totalKeysExamined: explainResult.executionStats?.totalKeysExamined,
-          executionTimeMillis: explainResult.executionStats?.executionTimeMillis,
+          executionTimeMillis:
+            explainResult.executionStats?.executionTimeMillis,
         },
       });
     } catch (error: unknown) {

@@ -24,12 +24,12 @@ interface OrganizationDialogProps {
   setSelectedOrgId: (orgId: string) => void;
 }
 
-const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
+function OrganizationDialog({
   isOpen,
   onClose,
   data,
   setSelectedOrgId,
-}) => {
+}: OrganizationDialogProps) {
   const [loadingOrg, setLoadingOrg] = useState<string | null>(null);
   const [selectedOrgId, setSelectedOrgIdLocal] = useState<string>('');
 
@@ -44,7 +44,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent size="md" className="p-0 overflow-hidden flex flex-col">
+      <DialogContent size="md" className="flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 py-4">
           <DialogTitle>Select an Organization</DialogTitle>
           <DialogDescription>
@@ -52,22 +52,29 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
             any one.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
           <Label>Select your organization</Label>
           <hr />
-          <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+          <div className="max-h-[40vh] space-y-2 overflow-y-auto">
             <RadioGroup
               value={selectedOrgId}
               onValueChange={(value) => setSelectedOrgIdLocal(value)}
-              className="space-y-2 max-h-[50vh] "
+              className="max-h-[50vh] space-y-2"
             >
               {data.organizations.map((org) => (
                 <div
                   key={org.orgId}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selectedOrgId === org.orgId}
                   onClick={() => setSelectedOrgIdLocal(org.orgId)}
-                  className={`flex items-center space-x-3 p-3 border rounded-md cursor-pointer 
-                              hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors 
-                              ${selectedOrgId === org.orgId ? 'border-primary' : ''}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedOrgIdLocal(org.orgId);
+                    }
+                  }}
+                  className={`flex cursor-pointer items-center space-x-3 rounded-md border p-3 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:hover:bg-gray-900 ${selectedOrgId === org.orgId ? 'border-primary' : ''}`}
                 >
                   <RadioGroupItem
                     value={org.orgId}
@@ -78,7 +85,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
                   <div className="flex flex-col">
                     <Label
                       htmlFor={org.orgId}
-                      className="font-medium cursor-pointer"
+                      className="cursor-pointer font-medium"
                     >
                       {org.name}
                     </Label>
@@ -91,7 +98,7 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
             </RadioGroup>
           </div>
           <hr />
-          <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+          <div className="sticky bottom-0 z-10 flex justify-end space-x-2 border-t bg-background px-6 py-4">
             <Button
               type="button"
               variant="outline"
@@ -113,6 +120,6 @@ const OrganizationDialog: React.FC<OrganizationDialogProps> = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
 
 export default OrganizationDialog;

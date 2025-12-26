@@ -1,4 +1,3 @@
-import { runIfCookiePresent } from '@/lib/utils/queryGuards';
 import { baseApi } from '@/lib/api/baseApi';
 
 export interface Interviewer {

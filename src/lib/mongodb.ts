@@ -1,3 +1,7 @@
+/* eslint-disable import/no-mutable-exports */
+// Models must be mutable as they are reassigned during connection initialization
+// This is a legitimate use case for mutable exports in a module registry pattern
+
 import mongoose from 'mongoose';
 import { candidateSchema, ICandidate } from './models/candidate';
 import { IUser, userSchema } from './models/user';
@@ -6,7 +10,8 @@ import { jobSchema, IJob } from './models/job';
 import organizationSchema, { IOrganization } from './models/organization';
 import settingsSchema, { ISettings } from './models/settings';
 import { historySchema, IHistory } from './models/history';
-import candidateAccountSchema, {
+import {
+  candidateAccountSchema,
   IUCandidateAccount,
 } from './models/candidateAccount';
 import cvBatchSchema, { ICVBatch } from './models/cvBatch';
@@ -17,9 +22,10 @@ import {
 } from './models/ChecklistTemplate';
 import fileShareSchema, { IFileShare } from './models/fileshare';
 import emailHistorySchema, { IEmailHistory } from './models/emailhistory';
-import notificationSchema, { INotification } from './models/notification';
+import { notificationSchema, INotification } from './models/notification';
 import { FileUrlMappingSchema, IFileUrlMapping } from './models/fileUrlMapping';
-import webhookSubscriptionSchema, {
+import {
+  webhookSubscriptionSchema,
   IWebhookSubscription,
 } from './models/webhookSubscription';
 import logger from './logger';
@@ -29,27 +35,31 @@ interface MongooseGlobal {
   promise: Promise<typeof mongoose> | null;
 }
 
+// TypeScript global augmentation requires 'var' and the name collision is intentional
 declare global {
+  // eslint-disable-next-line no-var, vars-on-top, no-shadow
   var mongoose: MongooseGlobal | null;
 }
 
-export var User: mongoose.Model<IUser> | null = null;
-export var Organization: mongoose.Model<IOrganization> | null = null;
-export var Lane: mongoose.Model<ILane> | null = null;
-export var Job: mongoose.Model<IJob> | null = null;
-export var Candidate: mongoose.Model<ICandidate> | null = null;
-export var Settings: mongoose.Model<ISettings> | null = null;
-export var History: mongoose.Model<IHistory> | null = null;
-export var CandidateAccount: mongoose.Model<IUCandidateAccount> | null = null;
-export var cvBatch: mongoose.Model<ICVBatch> | null = null;
-export var JobLaneConfig: mongoose.Model<IJobLaneConfig> | null = null;
-export var ChecklistTemplate: mongoose.Model<IChecklistTemplate> | null = null;
-export var FileShare: mongoose.Model<IFileShare> | null = null;
-export var EmailHistory: mongoose.Model<IEmailHistory> | null = null;
-export var Notification: mongoose.Model<INotification> | null = null;
-export var WebhookSubscription: mongoose.Model<IWebhookSubscription> | null =
+// Models are reassigned in registerModels during connection initialization
+// Using 'let' is necessary for this module registry pattern
+export let User: mongoose.Model<IUser> | null = null;
+export let Organization: mongoose.Model<IOrganization> | null = null;
+export let Lane: mongoose.Model<ILane> | null = null;
+export let Job: mongoose.Model<IJob> | null = null;
+export let Candidate: mongoose.Model<ICandidate> | null = null;
+export let Settings: mongoose.Model<ISettings> | null = null;
+export let History: mongoose.Model<IHistory> | null = null;
+export let CandidateAccount: mongoose.Model<IUCandidateAccount> | null = null;
+export let cvBatch: mongoose.Model<ICVBatch> | null = null;
+export let JobLaneConfig: mongoose.Model<IJobLaneConfig> | null = null;
+export let ChecklistTemplate: mongoose.Model<IChecklistTemplate> | null = null;
+export let FileShare: mongoose.Model<IFileShare> | null = null;
+export let EmailHistory: mongoose.Model<IEmailHistory> | null = null;
+export let Notification: mongoose.Model<INotification> | null = null;
+export let WebhookSubscription: mongoose.Model<IWebhookSubscription> | null =
   null;
-export var FileUrlMapping: mongoose.Model<IFileUrlMapping> | null = null;
+export let FileUrlMapping: mongoose.Model<IFileUrlMapping> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -62,7 +72,8 @@ if (!MONGODB_URI) {
 let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  global.mongoose = { conn: null, promise: null };
+  cached = global.mongoose;
 }
 
 // Helper function to register/re-register all models

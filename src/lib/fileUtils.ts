@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 import path from 'path';
-import fs, { existsSync, mkdir, promises } from 'fs';
+import fs, { existsSync, promises } from 'fs';
 
 import {
   v2 as cloudinary,
@@ -9,6 +9,7 @@ import {
   UploadApiOptions,
 } from 'cloudinary';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { FileStorageValues } from '@/app/dashboard/settings/components/file-storage/schema';
 import { Settings, FileUrlMapping } from './mongodb';
 import logger from './logger';
 // import { NextRequest } from "next/server";
@@ -253,14 +254,16 @@ export async function handleFileAttachments(
               uploadName,
             );
             break;
-          default:
+          default: {
             const localUrl = await saveFileLocally(
               item.url,
               folder,
               uploadName,
             );
             processedItems.push({ ...item, url: localUrl });
+            // eslint-disable-next-line no-continue
             continue; // Skip the rest for local files
+          }
         }
 
         if (realUrl && FileUrlMapping) {
@@ -298,66 +301,71 @@ export async function handleCustomFieldFiles(
   organizationId: string,
 ) {
   for (const fieldKey in customFields) {
-    const field = customFields[fieldKey];
-    if (
-      Array.isArray(field) &&
-      field.length > 0 &&
-      typeof field[0] === 'object' &&
-      field[0] !== null &&
-      'base64' in field[0] &&
-      'type' in field[0] &&
-      'name' in field[0]
-    ) {
-      const files = field as CustomFieldFile[];
-      const processedFiles = [];
+    if (Object.prototype.hasOwnProperty.call(customFields, fieldKey)) {
+      const field = customFields[fieldKey];
+      if (
+        Array.isArray(field) &&
+        field.length > 0 &&
+        typeof field[0] === 'object' &&
+        field[0] !== null &&
+        'base64' in field[0] &&
+        'type' in field[0] &&
+        'name' in field[0]
+      ) {
+        const files = field as CustomFieldFile[];
+        const processedFiles = [];
 
-      for (const file of files) {
-        if (file.base64?.startsWith('data:')) {
-          const isImage = file.type.startsWith('image/');
-          const folder = isImage ? 'images' : 'documents';
-          let realUrl = '';
+        for (const file of files) {
+          if (file.base64?.startsWith('data:')) {
+            const isImage = file.type.startsWith('image/');
+            const folder = isImage ? 'images' : 'documents';
+            let realUrl = '';
 
-          switch (fileStorage) {
-            case 'cloudinary':
-              realUrl = await uploadFile(
-                file.base64,
-                folder,
-                organizationId,
-                file.name,
-              );
-              break;
-            case 's3':
-              realUrl = await uploadFileToS3(
-                file.base64,
-                folder,
-                organizationId,
-                file.name,
-              );
-              break;
-            default:
-              const localUrl = await saveFileLocally(
-                file.base64,
-                folder,
-                file.name,
-              );
-              processedFiles.push({ ...file, base64: localUrl });
-              continue; // Skip the rest for local files
-          }
+            switch (fileStorage) {
+              case 'cloudinary':
+                realUrl = await uploadFile(
+                  file.base64,
+                  folder,
+                  organizationId,
+                  file.name,
+                );
+                break;
+              case 's3':
+                realUrl = await uploadFileToS3(
+                  file.base64,
+                  folder,
+                  organizationId,
+                  file.name,
+                );
+                break;
+              default: {
+                const localUrl = await saveFileLocally(
+                  file.base64,
+                  folder,
+                  file.name,
+                );
+                processedFiles.push({ ...file, base64: localUrl });
+                // eslint-disable-next-line no-continue
+                continue; // Skip the rest for local files
+              }
+            }
 
-          if (realUrl && FileUrlMapping) {
-            const fileId =
-              file.id || new mongoose.Types.ObjectId().toHexString();
-            await FileUrlMapping.create({ fileId, realUrl });
-            const proxiedUrl = `/api/file/${fileId}`;
-            processedFiles.push({ ...file, base64: proxiedUrl, id: fileId });
+            if (realUrl && FileUrlMapping) {
+              const fileId =
+                file.id || new mongoose.Types.ObjectId().toHexString();
+              await FileUrlMapping.create({ fileId, realUrl });
+              const proxiedUrl = `/api/file/${fileId}`;
+              processedFiles.push({ ...file, base64: proxiedUrl, id: fileId });
+            } else {
+              processedFiles.push({ ...file, base64: '' });
+            }
           } else {
-            processedFiles.push({ ...file, base64: '' });
+            processedFiles.push(file);
           }
-        } else {
-          processedFiles.push(file);
         }
+        // eslint-disable-next-line no-param-reassign
+        customFields[fieldKey] = processedFiles;
       }
-      customFields[fieldKey] = processedFiles;
     }
   }
   return customFields;
@@ -373,11 +381,14 @@ export async function handleSingleFile(
   if (file.url?.startsWith('data:')) {
     const isImage = file.type.startsWith('image/');
     const isHtml = file.type === 'text/html';
-    const folder = isImage
-      ? 'images'
-      : isHtml
-        ? `organizations/${orgName}`
-        : 'documents';
+    let folder: string;
+    if (isImage) {
+      folder = 'images';
+    } else if (isHtml) {
+      folder = `organizations/${orgName}`;
+    } else {
+      folder = 'documents';
+    }
     let realUrl = '';
 
     switch (fileStorage) {
@@ -392,9 +403,10 @@ export async function handleSingleFile(
           file.name,
         );
         break;
-      default:
+      default: {
         const localUrl = await saveFileLocally(file.url, folder, file.name);
         return { ...file, url: localUrl };
+      }
     }
 
     if (realUrl && FileUrlMapping) {
@@ -411,7 +423,7 @@ export async function handleSingleFile(
 // Helper function for file sharing module
 export async function uploadFileToProvider(
   base64: string,
-  fileStorage: any,
+  fileStorage: FileStorageValues,
   organizationId: string,
   filePath: string,
 ): Promise<{
@@ -456,12 +468,11 @@ export async function uploadFileToProvider(
 // Helper function to get file from provider
 export async function getFileFromProvider(
   filePath: string,
-  fileStorage: any,
-  organizationId: string,
+  fileStorage: FileStorageValues,
 ): Promise<{ success: boolean; buffer?: Buffer; error?: string }> {
   try {
     switch (fileStorage.storageType) {
-      case 'local':
+      case 'local': {
         // For local files, read from the file system
         const publicPath = path.join(process.cwd(), '..', 'assets');
         const fullPath = path.join(publicPath, filePath);
@@ -472,8 +483,9 @@ export async function getFileFromProvider(
 
         const buffer = await fs.promises.readFile(fullPath);
         return { success: true, buffer };
+      }
 
-      case 'cloudinary':
+      case 'cloudinary': {
         // For Cloudinary, fetch the file from URL
         const response = await fetch(filePath);
         if (!response.ok) {
@@ -484,8 +496,9 @@ export async function getFileFromProvider(
         }
         const arrayBuffer = await response.arrayBuffer();
         return { success: true, buffer: Buffer.from(arrayBuffer) };
+      }
 
-      case 's3':
+      case 's3': {
         // For S3, use AWS SDK to get the file
         // This would need to be implemented based on your S3 setup
         // For now, we'll fetch from the URL
@@ -495,6 +508,7 @@ export async function getFileFromProvider(
         }
         const s3ArrayBuffer = await s3Response.arrayBuffer();
         return { success: true, buffer: Buffer.from(s3ArrayBuffer) };
+      }
 
       default:
         return { success: false, error: 'Unknown storage provider' };

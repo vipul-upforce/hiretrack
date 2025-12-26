@@ -129,13 +129,66 @@ export async function storeRefreshToken(
   };
 
   if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(userId, {
+    await CandidateAccount?.findByIdAndUpdate(userId, {
       $push: { refreshTokens: tokenEntry },
     });
   } else {
-    await User.findByIdAndUpdate(userId, {
+    await User?.findByIdAndUpdate(userId, {
       $push: { refreshTokens: tokenEntry },
     });
+  }
+}
+
+/**
+ * Cleanup expired tokens from database
+ */
+export async function cleanupExpiredTokens(
+  userId: string,
+  isCandidate: boolean = false,
+): Promise<void> {
+  const now = new Date();
+
+  if (isCandidate) {
+    await CandidateAccount?.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { expiry: { $lt: now } } },
+    });
+  } else {
+    await User?.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { expiry: { $lt: now } } },
+    });
+  }
+}
+
+/**
+ * Clear refresh token from database
+ * If tokenHash is provided, clears only that specific token
+ * If tokenHash is not provided, clears all tokens
+ */
+export async function clearRefreshToken(
+  userId: string,
+  tokenHash?: string,
+  isCandidate: boolean = false,
+): Promise<void> {
+  if (isCandidate) {
+    if (tokenHash) {
+      // Clear specific token
+      await CandidateAccount?.findByIdAndUpdate(userId, {
+        $pull: { refreshTokens: { token: tokenHash } },
+      });
+    } else {
+      // Clear all tokens
+      await CandidateAccount?.findByIdAndUpdate(userId, {
+        $set: { refreshTokens: [] },
+      });
+    }
+  } else if (tokenHash) {
+    // Clear specific token
+    await User?.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { token: tokenHash } },
+    });
+  } else {
+    // Clear all tokens
+    await User?.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
   }
 }
 
@@ -170,8 +223,8 @@ export async function verifyRefreshToken(
   const tokenHash = hashRefreshToken(token);
 
   const user = isCandidate
-    ? await CandidateAccount.findById(userId).select('+refreshTokens')
-    : await User.findById(userId).select('+refreshTokens');
+    ? await CandidateAccount?.findById(userId).select('+refreshTokens')
+    : await User?.findById(userId).select('+refreshTokens');
 
   if (!user || !user.refreshTokens || user.refreshTokens.length === 0) {
     return { valid: false };
@@ -199,59 +252,6 @@ export async function verifyRefreshToken(
 }
 
 /**
- * Clear refresh token from database
- * If tokenHash is provided, clears only that specific token
- * If tokenHash is not provided, clears all tokens
- */
-export async function clearRefreshToken(
-  userId: string,
-  tokenHash?: string,
-  isCandidate: boolean = false,
-): Promise<void> {
-  if (isCandidate) {
-    if (tokenHash) {
-      // Clear specific token
-      await CandidateAccount.findByIdAndUpdate(userId, {
-        $pull: { refreshTokens: { token: tokenHash } },
-      });
-    } else {
-      // Clear all tokens
-      await CandidateAccount.findByIdAndUpdate(userId, {
-        $set: { refreshTokens: [] },
-      });
-    }
-  } else if (tokenHash) {
-      // Clear specific token
-      await User.findByIdAndUpdate(userId, {
-        $pull: { refreshTokens: { token: tokenHash } },
-      });
-    } else {
-      // Clear all tokens
-      await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
-    }
-}
-
-/**
- * Cleanup expired tokens from database
- */
-export async function cleanupExpiredTokens(
-  userId: string,
-  isCandidate: boolean = false,
-): Promise<void> {
-  const now = new Date();
-
-  if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(userId, {
-      $pull: { refreshTokens: { expiry: { $lt: now } } },
-    });
-  } else {
-    await User.findByIdAndUpdate(userId, {
-      $pull: { refreshTokens: { expiry: { $lt: now } } },
-    });
-  }
-}
-
-/**
  * Update refresh token (for token rotation)
  */
 export async function updateRefreshToken(
@@ -264,7 +264,7 @@ export async function updateRefreshToken(
   newExpiry.setDate(newExpiry.getDate() + 7); // 7 days
 
   if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(
+    await CandidateAccount?.findByIdAndUpdate(
       userId,
       {
         $set: {
@@ -277,7 +277,7 @@ export async function updateRefreshToken(
       },
     );
   } else {
-    await User.findByIdAndUpdate(
+    await User?.findByIdAndUpdate(
       userId,
       {
         $set: {

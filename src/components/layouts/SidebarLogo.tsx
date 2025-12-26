@@ -1,6 +1,5 @@
-import React, {
-  memo, useState, useEffect, useMemo,
-} from 'react';
+import React, { memo, useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 
 interface SidebarLogoProps {
   portalLogo?: string;
@@ -16,7 +15,11 @@ interface SidebarLogoProps {
  */
 const SidebarLogo = memo(
   ({
-    portalLogo, portalLogoDark, portalName, theme, isLoading,
+    portalLogo,
+    portalLogoDark,
+    portalName,
+    theme,
+    isLoading,
   }: SidebarLogoProps) => {
     const [imageError, setImageError] = useState(false);
 
@@ -24,7 +27,8 @@ const SidebarLogo = memo(
     const logoUrl = useMemo(() => {
       if (theme === 'dark' && portalLogoDark) {
         return portalLogoDark;
-      } if (portalLogo) {
+      }
+      if (portalLogo) {
         return portalLogo;
       }
       // Fallback to default logos
@@ -39,7 +43,7 @@ const SidebarLogo = memo(
     // Show loading spinner
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center h-8">
+        <div className="flex h-8 items-center justify-center">
           <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       );
@@ -53,30 +57,30 @@ const SidebarLogo = memo(
     };
 
     // If image error occurred, show fallback logo
-    const displayUrl = imageError
-      ? theme === 'dark'
-        ? '/logo_dark.png'
-        : '/logo.png'
-      : logoUrl;
+    let displayUrl = logoUrl;
+    if (imageError) {
+      displayUrl = theme === 'dark' ? '/logo_dark.png' : '/logo.png';
+    }
 
     return (
-      <img
-        src={displayUrl}
-        alt={portalName || 'Dashboard Logo'}
-        className="object-contain rounded h-8 w-auto max-w-[180px]"
-        loading="eager"
-        onError={handleImageError}
-        draggable={false}
-      />
+      <div className="relative h-8 w-[180px]">
+        <Image
+          src={displayUrl}
+          alt={portalName || 'Dashboard Logo'}
+          fill
+          className="rounded object-contain"
+          onError={handleImageError}
+          unoptimized={displayUrl.startsWith('http')}
+        />
+      </div>
     );
   },
   // Custom comparison function - only re-render if these specific props change
-  (prevProps, nextProps) => (
-    prevProps.portalLogo === nextProps.portalLogo
-      && prevProps.portalLogoDark === nextProps.portalLogoDark
-      && prevProps.theme === nextProps.theme
-      && prevProps.isLoading === nextProps.isLoading
-  ),
+  (prevProps, nextProps) =>
+    prevProps.portalLogo === nextProps.portalLogo &&
+    prevProps.portalLogoDark === nextProps.portalLogoDark &&
+    prevProps.theme === nextProps.theme &&
+    prevProps.isLoading === nextProps.isLoading,
 );
 
 SidebarLogo.displayName = 'SidebarLogo';

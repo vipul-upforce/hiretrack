@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             name: indexDef.name,
             status: 'created',
           });
-          created++;
+          created += 1;
         } catch (error: unknown) {
           results.push({
             collection: indexDef.collection,
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
             status: 'failed',
             error: error instanceof Error ? error.message : 'Unknown error',
           });
-          failed++;
+          failed += 1;
         }
       }
 
