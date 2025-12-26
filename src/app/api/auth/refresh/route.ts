@@ -61,14 +61,14 @@ async function handleRefreshToken(req: NextRequest) {
       // Try to find user by hashed token in database to get orgId
       const tokenHash = hashRefreshToken(refreshToken);
 
-      let user = await User.findOne({
+      let user = await User!.findOne({
         'refreshTokens.token': tokenHash,
         'refreshTokens.expiry': { $gt: new Date() },
       }).select('+refreshTokens organizationId');
 
       let foundIsCandidate = false;
       if (!user) {
-        user = await CandidateAccount.findOne({
+        user = await CandidateAccount!.findOne({
           'refreshTokens.token': tokenHash,
           'refreshTokens.expiry': { $gt: new Date() },
         }).select('+refreshTokens organizationId');
@@ -81,7 +81,7 @@ async function handleRefreshToken(req: NextRequest) {
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
         );
-        clearAuthTokens(response);
+        // clearAuthTokens(response);
         return response;
       }
 
@@ -94,7 +94,7 @@ async function handleRefreshToken(req: NextRequest) {
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
         );
-        clearAuthTokens(res);
+        // clearAuthTokens(res);
         return res;
       }
 
@@ -117,9 +117,9 @@ async function handleRefreshToken(req: NextRequest) {
     if (!role) role = payload.role as UserRole;
 
     // STEP 3: Verify token exists in database (only if userId is set)
-    if (userId) {
-      await cleanupExpiredTokens(userId, isCandidate);
-    }
+    // if (userId) {
+    //   await cleanupExpiredTokens(userId, isCandidate);
+    // }
 
     const verification = await verifyRefreshToken(
       refreshToken,
@@ -130,38 +130,31 @@ async function handleRefreshToken(req: NextRequest) {
 
     if (!verification.valid) {
       console.log(verification, 'verification-failed-131');
-     const res = NextResponse.json(
+    //  const res =
+    // clearAuthTokens(res);
+    return  NextResponse.json(
       { error: 'Invalid or expired refresh token' },
       { status: 401 },
     );
-    clearAuthTokens(res);
-    return res;
     }
 
     // STEP 4: Get user data
     const user = isCandidate
-      ? await CandidateAccount.findById(userId)
-          .select('name _id role email organizationId')
-          .populate('organizationId')
-      : await User.findById(userId)
-          .select('tokenVersion name _id role email organizationId')
-          .populate('organizationId');
-
-    if (!user) {
+      ? await CandidateAccount!.findById(userId)
+          .select('name _id role email organizationId isDeleted ')
+          
+      : await User!.findById(userId)
+          .select('tokenVersion name _id role email organizationId isDeleted ')
+          
+    if (!user || user.isDeleted) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const fileStorage = await Settings.findOne({ organizationId: orgId })
+    const fileStorage = await Settings!.findOne({ organizationId: orgId })
       .select('fileStorage')
       .lean();
 
     // STEP 5: Generate new access token
-    const orgSource = user.organizationId as unknown;
-    const orgObject =
-      typeof (orgSource as { toObject?: () => unknown })?.toObject ===
-      'function'
-        ? (orgSource as { toObject: () => unknown }).toObject()
-        : orgSource;
 
     const userPayload = {
       id: user._id.toString(),
@@ -169,22 +162,12 @@ async function handleRefreshToken(req: NextRequest) {
       email: user.email,
       role: user.role,
       organizationId: orgId,
-      organizationInfo: user?.organizationId
-        ? { ...(orgObject as Record<string, unknown>) }
-        : undefined,
       tokenVersion: !isCandidate
-        ? (user as IUser)?.tokenVersion || undefined
+        ? (user as IUser)?.tokenVersion as number | undefined | null
         : undefined,
       fileStorage: fileStorage?.fileStorage?.storageType as string,
     };
 
-    // Remove customFields from organizationInfo (same as login route)
-    if (userPayload.organizationInfo) {
-      const orgInfo = userPayload.organizationInfo as Record<string, unknown>;
-      if ('customFields' in orgInfo) {
-        delete orgInfo.customFields;
-      }
-    }
     const newAccessToken = await signAccessToken(userPayload, orgId);
     // STEP 6: Token rotation - Generate new refresh token (JWT)
     const newRefreshTokenPayload = {

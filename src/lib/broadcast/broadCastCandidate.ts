@@ -1,4 +1,4 @@
-import { signToken } from '@/app/actions/auth';
+import { signAccessToken } from '@/app/actions/auth';
 import { ICandidate } from '../models/candidate';
 import { ICandidateHistory } from '../models/history';
 import logger from '../logger';
@@ -26,7 +26,7 @@ export function broadcastCandidateUpdate(
   const encoder = new TextEncoder();
   orgClients?.forEach(async (client: NotificationSSEClient) => {
     try {
-      const encodedSSE = await signToken(candidate, orgId);
+      const encodedSSE = await signAccessToken(candidate, orgId);
       const data = `data: ${JSON.stringify({ type: 'candidateUpdate', candidate: encodedSSE })}\n\n`;
       const clientsCount = orgClients.size;
       client.controller.enqueue(encoder.encode(data));
@@ -50,7 +50,7 @@ export function broadcastMultipleCandidateUpdate(
   const encoder = new TextEncoder();
   orgClients?.forEach(async (client: NotificationSSEClient) => {
     try {
-      const encodedSSE = await signToken(candidates, orgId);
+      const encodedSSE = await signAccessToken(candidates, orgId);
       const data = `data: ${JSON.stringify({ type: 'multipleCandidateUpdate', candidates: encodedSSE })}\n\n`;
       client.controller.enqueue(encoder.encode(data));
     } catch (error) {

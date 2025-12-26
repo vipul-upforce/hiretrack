@@ -24,6 +24,7 @@ export default function VerifyOtpForm() {
 
   const email = searchParams?.get('email');
   const organizationId = searchParams?.get('orgId');
+  const isCandidate = searchParams?.get('isCandidate') === 'true' ;
   const dispatch = useDispatch<AppDispatch>();
 
   const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
@@ -55,7 +56,7 @@ export default function VerifyOtpForm() {
     }
 
     try {
-      await verifyOtp({ email, otp }).unwrap();
+      await verifyOtp({ email, otp,isCandidate: isCandidate || false }).unwrap();
 
       toast({ title: 'Success', description: 'Login successful' });
 
@@ -85,7 +86,7 @@ export default function VerifyOtpForm() {
     }
 
     try {
-      await sendOtp({ email, organizationId }).unwrap();
+      await sendOtp({ email, organizationId,isCandidate: isCandidate || false }).unwrap();
 
       toast({ title: 'Success', description: 'New OTP sent' });
       setCooldownSeconds(60); // Reset cooldown to 1 minute

@@ -5,7 +5,7 @@ import {
   FetchArgs,
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
-import type { Dispatch, AnyAction } from '@reduxjs/toolkit';
+import type { AppDispatch } from '@/lib/redux/store';
 import logger from '../logger';
 
 const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
@@ -83,7 +83,7 @@ let refreshAbortController: AbortController | null = null;
  * @param dispatch - Optional Redux dispatch function to trigger fetchUserFromToken after refresh
  */
 export async function refreshAccessToken(
-  dispatch?: Dispatch<AnyAction>,
+  dispatch?: AppDispatch,
 ): Promise<void> {
   // If a refresh is already in progress, wait for it instead of starting a new one
   if (refreshPromise) {
