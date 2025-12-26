@@ -306,18 +306,24 @@ export async function GET(request: NextRequest) {
             allowDiskUse: false, // Use memory only for better performance
           })
           .toArray();
-      } catch (aggregationError: any) {
+      } catch (aggregationError: unknown) {
         logger.error(
           { error: aggregationError, url: request.url },
           ' Interview assignments - Aggregation failed',
           aggregationError,
         );
-        if (aggregationError.message?.includes('timeout')) {
+
+        const errorMessage =
+          aggregationError instanceof Error
+            ? aggregationError.message
+            : String(aggregationError);
+
+        if (errorMessage.includes('timeout')) {
           throw new Error(
             'Query timeout - please try a smaller date range or add more filters',
           );
         }
-        throw new Error(`Aggregation failed: ${aggregationError.message}`);
+        throw new Error(`Aggregation failed: ${errorMessage}`);
       }
 
       // Process results to create assignment analytics data
