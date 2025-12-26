@@ -552,7 +552,6 @@ const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
     userWithoutCustomFields,
     obj.organizationId.toString(),
   );
-  console.log('accessToken-534', accessToken);
   const userId = obj.id || obj._id.toString();
   const { role } = obj;
   const isCandidate = role === 'candidate';

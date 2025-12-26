@@ -42,8 +42,8 @@ export async function GET(req: NextRequest) {
       );
       const userData = decryptedResponse.user;
       if (decryptedResponse.success) {
-        organizationId = userData.organizationId || '';
-        if (userData.role !== 'admin' && userData.role !== 'hr') {
+        organizationId = userData?.organizationId || '';
+        if (userData?.role !== 'admin' && userData?.role !== 'hr') {
           return new NextResponse(
             `
             <html>
