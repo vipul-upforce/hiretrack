@@ -14,10 +14,24 @@ import {
 } from '../utils';
 import { FunnelData } from '../types';
 
-interface defaultLanesResponse {
+interface LanesDocument {
   defaultLanes?: string[];
   lanes?: string[];
   _id: Types.ObjectId;
+}
+
+interface StageMetrics {
+  stage: string;
+  count: number;
+  avgTimeInDays: number;
+  createdDates: Date[];
+}
+
+interface AggregationResult {
+  _id: string;
+  count: number;
+  avgTimeInStage: number | null;
+  createdDates: Date[];
 }
 
 export async function GET(request: NextRequest) {
@@ -31,17 +45,23 @@ export async function GET(request: NextRequest) {
 
       const { organizationId, dateRange, filters } = parseAnalyticsRequest(req);
 
-      let defaultLanes: defaultLanesResponse;
+      let lanesSource: LanesDocument | null | undefined = null;
+
       if (filters?.jobIds && filters?.jobIds?.length > 0) {
-        defaultLanes = await Job?.findOne({
+        lanesSource = await Job?.findOne({
           _id: filters.jobIds[0],
           organizationId,
-        }).select('lanes');
+        })
+          .select('lanes')
+          .lean<LanesDocument>();
       } else {
-        defaultLanes = await Organization?.findById(organizationId).select('defaultLanes');
+        lanesSource = await Organization?.findById(organizationId)
+          .select('defaultLanes')
+          .lean<LanesDocument>();
       }
 
-      const defaultLanesFinal = defaultLanes.defaultLanes || defaultLanes.lanes || [];
+      const defaultLanesFinal: string[] =
+        lanesSource?.defaultLanes || lanesSource?.lanes || [];
 
       // Build aggregation pipeline for candidate funnel analysis
       const pipeline = [
@@ -94,15 +114,16 @@ export async function GET(request: NextRequest) {
         },
       ];
 
-      const results = await Candidate.collection
+      const rawResults = await Candidate.collection
         .aggregate(pipeline, {
           maxTimeMS: 15000, // 15 second timeout
           allowDiskUse: false, // Use memory only for better performance
         })
         .toArray();
 
-      // Process results to create funnel data with conversion rates
-      const stageData = new Map<string, any>();
+      const results = rawResults as unknown as AggregationResult[];
+
+      const stageData = new Map<string, StageMetrics>();
       let totalCandidates = 0;
 
       // Initialize all stages with zero counts
@@ -165,14 +186,17 @@ export async function GET(request: NextRequest) {
 
       // Calculate overall funnel metrics
       const appliedCount = funnelData[0]?.count || 0;
-      const acceptedCount = funnelData.find((f) => f.stage.toLowerCase() === 'accepted')?.count
-        || 0;
-      const rejectedCount = funnelData.find((f) => f.stage.toLowerCase() === 'rejected')?.count
-        || 0;
+      const acceptedCount =
+        funnelData.find((f) => f.stage.toLowerCase() === 'accepted')?.count ||
+        0;
+      const rejectedCount =
+        funnelData.find((f) => f.stage.toLowerCase() === 'rejected')?.count ||
+        0;
 
-      const overallConversionRate = appliedCount > 0
-        ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100
-        : 0;
+      const overallConversionRate =
+        appliedCount > 0
+          ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100
+          : 0;
 
       const response = createAnalyticsResponse(
         {
@@ -183,8 +207,8 @@ export async function GET(request: NextRequest) {
             rejectedCandidates: rejectedCount,
             overallConversionRate,
             avgTimeToHire:
-              funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0)
-              / funnelData.length,
+              funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0) /
+              (funnelData.length || 1),
           },
         },
         user.organizationId,
@@ -196,12 +220,15 @@ export async function GET(request: NextRequest) {
 
       return NextResponse.json(response);
     } catch (error: unknown) {
-      logger.error({error, url: request.url}, ' Candidate funnel analytics error.');
+      logger.error(
+        { error, url: request.url },
+        ' Candidate funnel analytics error.',
+      );
 
       // Handle specific error types with better messages
       if (
-        error instanceof Error && error.message?.includes('timeout')
-        || error instanceof Error && error.message?.includes('maxTimeMS')
+        (error instanceof Error && error.message?.includes('timeout')) ||
+        (error instanceof Error && error.message?.includes('maxTimeMS'))
       ) {
         return createAnalyticsErrorResponse(
           'Query timeout - please try a smaller date range or add job filters',
