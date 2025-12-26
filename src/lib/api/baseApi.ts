@@ -6,6 +6,7 @@ import {
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
 import type { Dispatch, AnyAction } from '@reduxjs/toolkit';
+import logger from '../logger';
 
 const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
   [
@@ -15,25 +16,24 @@ const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
     '/api/auth/reset-password',
     '/api/auth/2fa/send-otp',
     '/api/auth/2fa/verify-otp',
-    '/api/jobs/open',
+    { url: 'api/jobs/open', methods: ['GET'] },
     '/api/jobs/open-jobs',
-    '/api/organization',
+    { url: '/api/organization', methods: ['GET'] },
     '/api/orgs',
     '/api/candidates/signup',
     '/api/candidates/guest-apply',
     '/api/candidates/apply-application',
     '/api/candidates/evaluate',
-    '/api/event-mail',
+    { url: '/api/event-mail', methods: ['GET'] },
     '/api/candidates/event-mail',
     '/api/files',
     '/api/file-proxy',
     '/api/file',
     '/api/shared-files',
-    '/api/organization/cs/',
-    '/api/organization/tags',
+    { url: '/api/organization/tags', methods: ['GET'] },
     // GET is public, but PUT/POST/DELETE require auth
     { url: '/api/settings/portal', methods: ['GET'] },
-    '/api/settings/captcha',
+    { url: '/api/settings/captcha', methods: ['GET'] },
     '/api/license-validate',
   ];
 
@@ -143,7 +143,7 @@ export async function refreshAccessToken(
           })
           .catch((error) => {
             // Log error but don't throw - token refresh was successful
-            console.error(
+            logger.error(
               'Failed to dispatch fetchUserFromToken after token refresh:',
               error,
             );
@@ -154,7 +154,7 @@ export async function refreshAccessToken(
 
       // Handle abort/timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn('Token refresh request was aborted or timed out');
+        logger.warn('Token refresh request was aborted or timed out');
         // Don't redirect on timeout - let the original request fail naturally
         throw new Error('Token refresh timeout');
       }
