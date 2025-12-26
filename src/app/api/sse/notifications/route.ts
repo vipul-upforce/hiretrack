@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Notification } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 interface NotificationSSEClient {
   id: number;
@@ -34,7 +35,13 @@ export async function GET(req: NextRequest) {
         );
         // Close after sending error
         setTimeout(() => {
-          controller.close();
+          try {
+            if (typeof controller.desiredSize === 'number' && controller.desiredSize !== null) {
+              controller.close();
+            }
+          } catch (error) {
+            logger.error({error}, 'SSE controller close error');
+          }
         }, 100);
       },
     });

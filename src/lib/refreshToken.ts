@@ -13,12 +13,6 @@ export interface RefreshTokenPayload {
   role?: UserRole | string;
 }
 
-/**
- * Generate a secure refresh token using JWT (same method as access token)
- * - Encrypts payload with AES
- * - Signs with JWT
- * - Expires in 7 days
- */
 export function generateRefreshToken(
   payload: RefreshTokenPayload,
   orgId: string,

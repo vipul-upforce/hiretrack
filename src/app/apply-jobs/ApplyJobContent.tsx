@@ -53,9 +53,7 @@ export default function ApplyJobsContent({
   showHeaderFooter?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  if (Cookies.get('org_id') != null && Cookies.get('auth_state') !== 'true') {
-    refreshAccessToken(dispatch);
-  }
+  
 
   const router = useRouter();
   const isIframe = useIsIframe();
@@ -230,7 +228,7 @@ export default function ApplyJobsContent({
         } catch {
           // Silently fail - don't disrupt the page if refresh fails
           // The user can still use public endpoints
-          console.warn('Proactive token refresh failed:', error);
+          logger.warn('Proactive token refresh failed:', error);
         }
       }
     };
