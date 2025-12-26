@@ -43,10 +43,10 @@ export function HeaderControls({
   const handleDone = () => {
     // only apply if both dates are present (for range)
     if (
-      !tempRange
-      || tempRange.length !== 2
-      || !tempRange[0]
-      || !tempRange[1]
+      !tempRange ||
+      tempRange.length !== 2 ||
+      !tempRange[0] ||
+      !tempRange[1]
     ) {
       setShowPicker(false);
       return;
@@ -58,8 +58,8 @@ export function HeaderControls({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-      <div className="flex flex-wrap gap-2 relative">
+    <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="relative flex flex-wrap gap-2">
         {/* Trigger / display button */}
         {!showPicker ? (
           <Button
@@ -72,18 +72,26 @@ export function HeaderControls({
             <span>
               {dateRange && dateRange.length === 2
                 ? `${new Date(dateRange[0]).toLocaleDateString()} - ${new Date(
-                  dateRange[1],
-                ).toLocaleDateString()}`
+                    dateRange[1],
+                  ).toLocaleDateString()}`
                 : 'Select date range'}
             </span>
           </Button>
         ) : (
           // Inline controlled picker box (keeps open until Done/Cancel)
-          <div className="p-3 border rounded-md bg-card text-card-foreground shadow-md flex flex-col gap-3 z-10">
+          <div className="z-10 flex flex-col gap-3 rounded-md border bg-card p-3 text-card-foreground shadow-md">
             <DatePicker
               value={tempRange}
               onChange={(newRange) => {
-                setTempRange(newRange);
+                // Normalize the value: convert single Date to array, or keep array/null
+                if (newRange === null) {
+                  setTempRange(null);
+                } else if (Array.isArray(newRange)) {
+                  setTempRange(newRange);
+                } else {
+                  // Single date selected - convert to array (user will select second date)
+                  setTempRange([newRange]);
+                }
               }}
               range
               showTimePicker={false}
@@ -113,7 +121,7 @@ export function HeaderControls({
           disabled={isRefreshing}
         >
           <RefreshCcwIcon
-            className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`}
+            className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
           />
           Refresh
         </Button>
@@ -123,7 +131,7 @@ export function HeaderControls({
           onClick={onExport}
           disabled={isExporting}
         >
-          <DownloadIcon className="h-4 w-4 mr-2" />
+          <DownloadIcon className="mr-2 h-4 w-4" />
           Export
         </Button>
       </div>
