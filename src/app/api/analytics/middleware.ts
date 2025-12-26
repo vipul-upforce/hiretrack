@@ -1,83 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger/logger.server';
-import { getAuthenticatedUser , AuthenticatedUser } from '@/app/actions/auth';
+import { getAuthenticatedUser, AuthenticatedUser } from '@/app/actions/auth';
+import { AnalyticsApiResponse } from './types';
 
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// export interface AuthenticatedUser {
-//   id: string;
-//   email: string;
-//   organizationId: string;
-//   role: string;
-//   name: string;
-// }
-
-export interface AnalyticsApiResponse {
-  success: boolean;
-  data?: any;
-  error?: string;
-  metadata?: {
-    totalRecords?: number;
-    dateRange?: {
-      start: Date;
-      end: Date;
-    };
-    generatedAt: Date;
-    organizationId: string;
-  };
-}
-
-// export async function authenticateAnalyticsRequest(
-//   request: NextRequest,
-// ): Promise<AuthenticatedUser | null> {
-//   try {
-//     const cookieStore = await cookies();
-//     const httpOnlyToken = cookieStore.get('auth_token');
-//     const token = httpOnlyToken?.value;
-
-//     if (!token) {
-//       return null;
-//     }
-
-//     const orgId = request.cookies.get('org_id')?.value;
-//     const JWT_SECRET = generateOrgJwtSecret(orgId!);
-//     if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
-
-//     const secretKey = new TextEncoder().encode(JWT_SECRET);
-//     const { payload } = await jwtVerify(token, secretKey);
-
-//     if (!payload || typeof payload !== 'object' || !payload.user) {
-//       throw new Error('Invalid token structure');
-//     }
-
-//     // Decrypt the user data using CryptoJS (same as main middleware)
-//     const bytes = CryptoJS.AES.decrypt(payload.user as string, JWT_SECRET);
-//     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-
-//     return {
-//       id: decryptedData._id || decryptedData.id,
-//       email: decryptedData.email,
-//       organizationId:
-//         typeof decryptedData.organizationId === 'string'
-//           ? decryptedData.organizationId
-//           : decryptedData.organizationId.toString(),
-//       role: decryptedData.role,
-//       name: decryptedData.name,
-//     };
-//   } catch (error) {
-//     logger.error(
-//       { error, url: request.url },
-//       'Analytics authentication failed',
-//     );
-//     return null;
-//   }
-// }
 
 export function createAnalyticsResponse<T>(
   data: T,
   organizationId: string,
-  metadata?: Partial<AnalyticsApiResponse['metadata']>,
-): AnalyticsApiResponse {
+  metadata?: Partial<AnalyticsApiResponse<T>['metadata']>,
+): AnalyticsApiResponse<T> {
   return {
     success: true,
     data,
@@ -98,7 +30,7 @@ export function createAnalyticsErrorResponse(
       success: false,
       error,
       generatedAt: new Date(),
-    } as AnalyticsApiResponse,
+    } as AnalyticsApiResponse<null>,
     { status },
   );
 }
@@ -108,7 +40,7 @@ export function validateAnalyticsPermissions(
   requestedOrgId?: string,
 ): boolean {
   // Check if user has permission to access analytics
-  const allowedRoles = ['admin', 'hr']; // Use lowercase to match the actual role values
+  const allowedRoles = ['admin', 'hr'];
 
   if (!allowedRoles.includes(user.role.toLowerCase())) {
     return false;
@@ -162,7 +94,7 @@ export async function withAnalyticsAuth(
   request: NextRequest,
   handler: (
     user: AuthenticatedUser,
-    request: NextRequest,
+    req: NextRequest,
   ) => Promise<NextResponse>,
 ): Promise<NextResponse> {
   try {
