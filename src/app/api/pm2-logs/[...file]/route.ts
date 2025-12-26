@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger/logger.server';
 
 async function getPM2Logs(
   req: NextRequest,
-  { params }: { params: Promise<{ file: string[] }> }
+  { params }: { params: Promise<{ file: string[] }> },
 ) {
   const user = await getAuthenticatedUser(req, 'admin');
   if (!user) {
@@ -87,6 +87,11 @@ async function getPM2Logs(
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ file: string[] }> }) {
-  return logsRateLimiter(req, async (req: NextRequest) => await getPM2Logs(req, { params }));
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ file: string[] }> },
+) {
+  return logsRateLimiter(req, async (limitedReq: NextRequest) =>
+    getPM2Logs(limitedReq, { params }),
+  );
 }
