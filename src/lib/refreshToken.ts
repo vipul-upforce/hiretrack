@@ -4,6 +4,10 @@ import CryptoJS from 'crypto-js';
 import { User, CandidateAccount } from '@/lib/mongodb';
 import { generateOrgJwtSecret } from './jwtSecretGenerator';
 import { UserRole } from './models/JobLaneConfig';
+import { signAccessToken } from '@/app/actions/auth';
+import { IAccessTokenPayload } from '@/types/login';
+import { NextResponse } from 'next/server';
+import { setAuthCookies } from './authCookies';
 
 export interface RefreshTokenPayload {
   userId: string;
@@ -12,6 +16,7 @@ export interface RefreshTokenPayload {
   tokenVersion?: number;
   role?: UserRole | string;
 }
+
 
 export function generateRefreshToken(
   payload: RefreshTokenPayload,
@@ -105,6 +110,38 @@ export function hashRefreshToken(token: string): string {
 }
 
 /**
+ * Clear refresh token from database
+ * If tokenHash is provided, clears only that specific token
+ * If tokenHash is not provided, clears all tokens
+ */
+export async function clearRefreshToken(
+  userId: string,
+  tokenHash?: string,
+  isCandidate: boolean = false,
+): Promise<void> {
+  if (isCandidate) {
+    if (tokenHash) {
+      // Clear specific token
+      await CandidateAccount!.findByIdAndUpdate(userId, {
+        $pull: { refreshTokens: { token: tokenHash } },
+      });
+    } else {
+      // Clear all tokens
+      await CandidateAccount!.findByIdAndUpdate(userId, {
+        $set: { refreshTokens: [] },
+      });
+    }
+  } else if (tokenHash) {
+    // Clear specific token
+    await User!.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { token: tokenHash } },
+    });
+  } else {
+    // Clear all tokens
+    await User!.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
+  }
+}
+/**
  * Store refresh token in database (supports multiple devices)
  */
 export async function storeRefreshToken(
@@ -114,7 +151,7 @@ export async function storeRefreshToken(
   expiryDays: number = 7,
 ): Promise<void> {
   const expiry = new Date();
-  expiry.setDate(expiry.getDate() + expiryDays);
+  expiry.setTime(expiry.getTime() + expiryDays * 24 * 60 * 60 * 1000);
 
   const tokenEntry = {
     token: tokenHash,
@@ -123,12 +160,38 @@ export async function storeRefreshToken(
   };
 
   if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(userId, {
+    await CandidateAccount!.findByIdAndUpdate(userId, {
       $push: { refreshTokens: tokenEntry },
     });
   } else {
-    await User.findByIdAndUpdate(userId, {
+    await User!.findByIdAndUpdate(userId, {
       $push: { refreshTokens: tokenEntry },
+    });
+  }
+}
+/**
+ * Cleanup expired tokens from database
+ */
+export async function cleanupExpiredTokens(
+  userId: string,
+  isCandidate: boolean = false,
+): Promise<void> {
+  console.log(
+    ' in cleanupExpiredTokens-176',
+    userId,
+    isCandidate,
+    'isCandidate',
+  );
+
+  const now = new Date();
+
+  if (isCandidate) {
+    await CandidateAccount!.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { expiry: { $lt: now } } },
+    });
+  } else {
+    await User!.findByIdAndUpdate(userId, {
+      $pull: { refreshTokens: { expiry: { $lt: now } } },
     });
   }
 }
@@ -164,24 +227,37 @@ export async function verifyRefreshToken(
   const tokenHash = hashRefreshToken(token);
 
   const user = isCandidate
-    ? await CandidateAccount.findById(userId).select('+refreshTokens')
-    : await User.findById(userId).select('+refreshTokens');
+    ? await CandidateAccount!.findById(userId).select('+refreshTokens')
+    : await User!.findById(userId).select('+refreshTokens');
 
+  console.log(user, 'user-170', isCandidate, 'isCandidate');
   if (!user || !user.refreshTokens || user.refreshTokens.length === 0) {
+    console.log('user-172 not found');
+
     return { valid: false };
   }
 
   // Cleanup expired tokens before verification
   const now = new Date();
   const validTokens = user.refreshTokens.filter((rt) => rt.expiry > now);
-
+  console.log(
+    validTokens?.length,
+    user.refreshTokens?.length,
+    'validTokens-235',
+  );
   if (validTokens.length < user.refreshTokens.length) {
+    console.log(' in cleanuo cleanupExpiredTokens-236');
+
     await cleanupExpiredTokens(userId, isCandidate);
   }
-
+  console.log(validTokens, 'validTokens-184');
   // Find matching token from valid tokens
   const tokenEntry = validTokens.find((rt) => rt.token === tokenHash);
-
+  console.log(
+    tokenEntry,
+    tokenHash,
+    'tokenEntry-187 if not found then it fails',
+  );
   if (!tokenEntry) {
     return { valid: false };
   }
@@ -193,59 +269,6 @@ export async function verifyRefreshToken(
 }
 
 /**
- * Clear refresh token from database
- * If tokenHash is provided, clears only that specific token
- * If tokenHash is not provided, clears all tokens
- */
-export async function clearRefreshToken(
-  userId: string,
-  tokenHash?: string,
-  isCandidate: boolean = false,
-): Promise<void> {
-  if (isCandidate) {
-    if (tokenHash) {
-      // Clear specific token
-      await CandidateAccount.findByIdAndUpdate(userId, {
-        $pull: { refreshTokens: { token: tokenHash } },
-      });
-    } else {
-      // Clear all tokens
-      await CandidateAccount.findByIdAndUpdate(userId, {
-        $set: { refreshTokens: [] },
-      });
-    }
-  } else if (tokenHash) {
-      // Clear specific token
-      await User.findByIdAndUpdate(userId, {
-        $pull: { refreshTokens: { token: tokenHash } },
-      });
-    } else {
-      // Clear all tokens
-      await User.findByIdAndUpdate(userId, { $set: { refreshTokens: [] } });
-    }
-}
-
-/**
- * Cleanup expired tokens from database
- */
-export async function cleanupExpiredTokens(
-  userId: string,
-  isCandidate: boolean = false,
-): Promise<void> {
-  const now = new Date();
-
-  if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(userId, {
-      $pull: { refreshTokens: { expiry: { $lt: now } } },
-    });
-  } else {
-    await User.findByIdAndUpdate(userId, {
-      $pull: { refreshTokens: { expiry: { $lt: now } } },
-    });
-  }
-}
-
-/**
  * Update refresh token (for token rotation)
  */
 export async function updateRefreshToken(
@@ -254,11 +277,12 @@ export async function updateRefreshToken(
   newTokenHash: string,
   isCandidate: boolean = false,
 ): Promise<void> {
+  // In updateRefreshToken function (around line 267)
   const newExpiry = new Date();
-  newExpiry.setDate(newExpiry.getDate() + 7); // 7 days
+  newExpiry.setTime(newExpiry.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
   if (isCandidate) {
-    await CandidateAccount.findByIdAndUpdate(
+    await CandidateAccount!.findByIdAndUpdate(
       userId,
       {
         $set: {
@@ -271,7 +295,7 @@ export async function updateRefreshToken(
       },
     );
   } else {
-    await User.findByIdAndUpdate(
+    await User!.findByIdAndUpdate(
       userId,
       {
         $set: {
@@ -285,3 +309,49 @@ export async function updateRefreshToken(
     );
   }
 }
+
+
+
+
+export const returnTokenBasedResponse = async (obj: IAccessTokenPayload): Promise<NextResponse> => {
+  // Generate short-lived access token (15 minutes)
+  const accessToken = await signAccessToken(obj, obj.organizationId);
+  const userId = obj.id;
+  const { role } = obj;
+  const isCandidate = role === 'candidate';
+  const orgId = obj.organizationId.toString();
+
+  // Cleanup expired tokens before storing new one (keeps array clean)
+  await cleanupExpiredTokens(userId, isCandidate);
+
+  // Generate refresh token using JWT (same method as access token)
+  const refreshTokenPayload = {
+    userId,
+    role,
+    orgId,
+    isCandidate,
+    tokenVersion: obj.tokenVersion as number,
+    fileStorage: obj.fileStorage as string,
+    appliedApplications: obj.appliedApplications as string[],
+  };
+
+  const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
+
+  // Store hashed refresh token in database
+  await storeRefreshToken(userId, refreshTokenHash, isCandidate, 7);
+
+  const response = NextResponse.json({
+    message: 'Logged In Successfully',
+  });
+
+  // Centralized auth cookie handling
+  setAuthCookies({
+    response,
+    accessToken,
+    refreshToken,
+    orgId,
+  });
+
+  return response;
+};

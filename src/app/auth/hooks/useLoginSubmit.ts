@@ -140,6 +140,7 @@ export const useHandleLoginSubmit = ({
             await sendOtp({
               email: values.email.toLowerCase().trim(),
               organizationId,
+              isCandidate: response.isCandidate,
             }).unwrap();
 
             toast({
@@ -148,7 +149,7 @@ export const useHandleLoginSubmit = ({
               variant: 'default',
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`,
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}${response.isCandidate ? '&isCandidate=true' : ''}`,
             );
           } catch (error) {
             logger.error(error);
@@ -167,7 +168,8 @@ export const useHandleLoginSubmit = ({
         }
         // Handle Redirects & Redux State
         const redirectUrl = getRedirectUrl();
-
+        
+        dispatch(fetchUserFromToken());
         if (isAuthenticated) {
           if (redirectUrl !== '/') {
             router.push(redirectUrl);
@@ -180,7 +182,6 @@ export const useHandleLoginSubmit = ({
           });
         }
 
-        dispatch(fetchUserFromToken());
       } catch (err: unknown) {
         logger.error(err);
         const errorMessage =

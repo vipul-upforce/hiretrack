@@ -1,4 +1,6 @@
 function generateHash(organizationId: string): string {
+  console.log('organizationId', organizationId);
+  
   let saltedId = '';
   const first = organizationId.charAt(0);
   const last = organizationId.charAt(organizationId.length - 1);
