@@ -96,7 +96,13 @@ export function CreateJobDialog({
     },
     promptForStatusChangeReason: true,
   };
-
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
   const handleSubmit = async (
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>,
@@ -166,14 +172,6 @@ export function CreateJobDialog({
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-
   const validationSchemas = jobSchema(validationSchema);
 
   return (
@@ -199,7 +197,7 @@ export function CreateJobDialog({
           validationSchema={validationSchemas}
           onSubmit={handleSubmit}
         >
-          {({ isSubmitting, errors, touched }) => (
+          {({ isSubmitting, errors }) => (
             <Form className="flex h-[calc(90vh-80px)] flex-col overflow-hidden">
               <div className="sticky top-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
                 <JobForm />
@@ -215,7 +213,7 @@ export function CreateJobDialog({
                 </Button>
                 <Button
                   type="submit"
-                  variant="secondary"
+                  variant="primary"
                   onClick={() => scrollToError(errors)}
                   disabled={isSubmitting}
                 >
