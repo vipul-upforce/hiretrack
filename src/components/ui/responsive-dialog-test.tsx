@@ -27,96 +27,74 @@ export function ResponsiveDialogTest() {
       </div>
       <div>
         <Label htmlFor="message">Message</Label>
-        <Textarea
-          id="message"
-          placeholder="Enter your message..."
-          rows={4}
-        />
+        <Textarea id="message" placeholder="Enter your message..." rows={4} />
       </div>
       <div className="space-y-2">
         <h4 className="font-medium">Long Content Test</h4>
         <p className="text-sm text-muted-foreground">
           This is a longer piece of content to test how dialogs handle scrolling
           and overflow on different screen sizes. Lorem ipsum dolor sit amet,
-          consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore
-          et dolore magna aliqua.
+          consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
+          labore et dolore magna aliqua.
         </p>
         <p className="text-sm text-muted-foreground">
-          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
-          ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit
-          in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
+          nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+          reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+          pariatur.
         </p>
         <p className="text-sm text-muted-foreground">
-          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia
-          deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste
-          natus error sit voluptatem accusantium doloremque laudantium.
+          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui
+          officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde
+          omnis iste natus error sit voluptatem accusantium doloremque
+          laudantium.
         </p>
       </div>
     </div>
   );
 
   return (
-    <div className="p-8 space-y-4">
-      <h2 className="text-2xl font-bold mb-6">Responsive Dialog Tests</h2>
+    <div className="space-y-4 p-8">
+      <h2 className="mb-6 text-2xl font-bold">Responsive Dialog Tests</h2>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {/* Different dialog sizes */}
-        <Button onClick={() => setActiveDialog('xs')}>
-          XS Dialog (320px)
-        </Button>
-        <Button onClick={() => setActiveDialog('sm')}>
-          SM Dialog (400px)
-        </Button>
-        <Button onClick={() => setActiveDialog('md')}>
-          MD Dialog (500px)
-        </Button>
-        <Button onClick={() => setActiveDialog('lg')}>
-          LG Dialog (700px)
-        </Button>
-        <Button onClick={() => setActiveDialog('xl')}>
-          XL Dialog (900px)
-        </Button>
+        <Button onClick={() => setActiveDialog('xs')}>XS Dialog (320px)</Button>
+        <Button onClick={() => setActiveDialog('sm')}>SM Dialog (400px)</Button>
+        <Button onClick={() => setActiveDialog('md')}>MD Dialog (500px)</Button>
+        <Button onClick={() => setActiveDialog('lg')}>LG Dialog (700px)</Button>
+        <Button onClick={() => setActiveDialog('xl')}>XL Dialog (900px)</Button>
         <Button onClick={() => setActiveDialog('2xl')}>
           2XL Dialog (1200px)
         </Button>
       </div>
 
-      <div className="mt-8 p-4 bg-muted rounded-lg">
-        <h3 className="font-semibold mb-2">Responsive Behavior Notes:</h3>
-        <ul className="text-sm space-y-1 text-muted-foreground">
+      <div className="mt-8 rounded-lg bg-muted p-4">
+        <h3 className="mb-2 font-semibold">Responsive Behavior Notes:</h3>
+        <ul className="space-y-1 text-sm text-muted-foreground">
           <li>
-            •
-            <strong>Mobile (≤640px):</strong>
-            {' '}
-            All dialogs use 90vw width with proper margins
+            •<strong>Mobile (≤640px):</strong> All dialogs use 90vw width with
+            proper margins
           </li>
           <li>
-            •
-            <strong>Tablet (641px-1024px):</strong>
-            {' '}
-            XL/2XL dialogs limited to 85vw
+            •<strong>Tablet (641px-1024px):</strong> XL/2XL dialogs limited to
+            85vw
           </li>
           <li>
             •
             <strong>
-              Desktop (
-              {'>'}
+              Desktop ({'>'}
               1024px):
-            </strong>
-            {' '}
+            </strong>{' '}
             Dialogs use their defined max-widths
           </li>
           <li>
-            •
-            <strong>Height:</strong>
-            {' '}
-            All dialogs respect 90vh max-height with scrollable content
+            •<strong>Height:</strong> All dialogs respect 90vh max-height with
+            scrollable content
           </li>
           <li>
-            •
-            <strong>Buttons:</strong>
-            {' '}
-            Stack vertically on mobile, horizontal on desktop
+            •<strong>Buttons:</strong> Stack vertically on mobile, horizontal on
+            desktop
           </li>
         </ul>
       </div>
@@ -129,7 +107,7 @@ export function ResponsiveDialogTest() {
           onClose={() => setActiveDialog(null)}
           title={`${size.toUpperCase()} Responsive Dialog`}
           description={`Testing ${size} dialog size across different screen sizes`}
-          size={size as any}
+          size={size as 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'}
           primaryAction={{
             label: 'Save Changes',
             onClick: () => setActiveDialog(null),

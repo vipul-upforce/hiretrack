@@ -6,45 +6,67 @@ import {
   FetchBaseQueryError,
 } from '@reduxjs/toolkit/query/react';
 import type { Dispatch, AnyAction } from '@reduxjs/toolkit';
+import logger from '../logger';
 
-/**
- * Configuration for public API endpoints that don't require authentication
- * These endpoints will skip token refresh logic on 401 errors
- */
-const PUBLIC_API_PATTERNS = [
-  '/api/auth/login',
-  '/api/auth/signup',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/auth/2fa/send-otp',
-  '/api/auth/2fa/verify-otp',
-  '/api/jobs/open',
-  '/api/jobs/open-jobs',
-  '/api/organization',
-  '/api/orgs',
-  '/api/candidates/signup',
-  '/api/candidates/guest-apply',
-  '/api/candidates/apply-application',
-  '/api/candidates/evaluate',
-  '/api/event-mail',
-  '/api/candidates/event-mail',
-  '/api/files',
-  '/api/file-proxy',
-  '/api/file',
-  '/api/shared-files',
-  '/api/organization/cs/',
-  '/api/organization/tags',
-  '/api/settings/portal',
-  '/api/settings/captcha',
-  '/api/license-validate',
-];
+const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
+  [
+    '/api/auth/login',
+    '/api/auth/signup',
+    '/api/auth/forgot-password',
+    '/api/auth/reset-password',
+    '/api/auth/2fa/send-otp',
+    '/api/auth/2fa/verify-otp',
+    { url: 'api/jobs/open', methods: ['GET'] },
+    '/api/jobs/open-jobs',
+    { url: '/api/organization', methods: ['GET'] },
+    '/api/orgs',
+    '/api/candidates/signup',
+    '/api/candidates/guest-apply',
+    '/api/candidates/apply-application',
+    '/api/candidates/evaluate',
+    { url: '/api/event-mail', methods: ['GET'] },
+    '/api/candidates/event-mail',
+    '/api/files',
+    '/api/file-proxy',
+    '/api/file',
+    '/api/shared-files',
+    { url: '/api/organization/tags', methods: ['GET'] },
+    // GET is public, but PUT/POST/DELETE require auth
+    { url: '/api/settings/portal', methods: ['GET'] },
+    { url: '/api/settings/captcha', methods: ['GET'] },
+    '/api/license-validate',
+  ];
 
 /**
  * Check if an API endpoint is public (doesn't require authentication)
+ * @param url - The full URL of the request
+ * @param method - The HTTP method (GET, POST, PUT, DELETE, etc.)
  */
-function isPublicEndpoint(url: string): boolean {
+function isPublicEndpoint(url: string, method?: string): boolean {
   if (typeof url !== 'string') return false;
-  return PUBLIC_API_PATTERNS.some((pattern) => url.includes(pattern));
+
+  const normalizedMethod = method?.toUpperCase();
+
+  return PUBLIC_API_PATTERNS.some((pattern) => {
+    // Handle object-based patterns with method restrictions
+    if (typeof pattern === 'object') {
+      const matchesUrl = url.includes(pattern.url);
+      if (!matchesUrl) return false;
+
+      // If methods are specified, check if current method is in the list
+      if (pattern.methods && normalizedMethod) {
+        return pattern.methods
+          .map((m) => m.toUpperCase())
+          .includes(normalizedMethod);
+      }
+
+      // If no methods specified, all methods are public for this URL
+      return true;
+    }
+
+    // Handle string-based patterns (all methods are public)
+    return url.includes(pattern);
+  });
 }
 
 /**
@@ -105,7 +127,7 @@ export async function refreshAccessToken(
         }
 
         // If refresh fails, redirect to login
-        if (typeof window !== 'undefined' || response.status === 401 ) {
+        if (typeof window !== 'undefined' || response.status === 401) {
           window.location.href = '/auth/login';
         }
         throw new Error('Failed to refresh token');
@@ -121,7 +143,7 @@ export async function refreshAccessToken(
           })
           .catch((error) => {
             // Log error but don't throw - token refresh was successful
-            console.error(
+            logger.error(
               'Failed to dispatch fetchUserFromToken after token refresh:',
               error,
             );
@@ -132,7 +154,7 @@ export async function refreshAccessToken(
 
       // Handle abort/timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
-        console.warn('Token refresh request was aborted or timed out');
+        logger.warn('Token refresh request was aborted or timed out');
         // Don't redirect on timeout - let the original request fail naturally
         throw new Error('Token refresh timeout');
       }
@@ -162,8 +184,13 @@ const baseQueryWithReauth: BaseQueryFn<
     baseUrl: '/api',
     credentials: 'include', // Send httpOnly cookies with every request
   });
+
+  // Extract URL and method from args
   const fullUrl = typeof args === 'string' ? `/api${args}` : `/api${args.url}`;
-  const isPublic = isPublicEndpoint(fullUrl);
+  const method =
+    typeof args === 'string' ? 'GET' : args.method?.toUpperCase() || 'GET';
+
+  const isPublic = isPublicEndpoint(fullUrl, method);
   // Execute the original request
   let result = await baseQuery(args, api, extraOptions);
 
@@ -252,7 +279,9 @@ export const baseApi = createApi({
 
 /**
  * Helper function to check if an endpoint should be treated as public
+ * @param url - The full URL of the request
+ * @param method - Optional HTTP method (GET, POST, PUT, DELETE, etc.)
  */
-export function shouldSkipAuth(url: string): boolean {
-  return isPublicEndpoint(url);
+export function shouldSkipAuth(url: string, method?: string): boolean {
+  return isPublicEndpoint(url, method);
 }

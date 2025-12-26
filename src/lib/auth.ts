@@ -57,7 +57,10 @@ export async function auth(request: NextRequest) {
   }
 
   if (token) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token), orgId);
+    const decryptedResponse = await verifyAndDecryptToken(
+      String(token),
+      orgId as string,
+    );
     if (decryptedResponse.success && decryptedResponse.user) {
       return { user: decryptedResponse.user };
     }

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import React, { Fragment } from 'react';
 import type { Resume } from '@/lib/redux/types';
 import {
   initialEducation,
@@ -35,25 +35,26 @@ function TableRow({
         {typeof value === 'string'
           ? value
           : value.map((x, idx) => (
-            <Fragment key={idx}>
-              •
-              {' '}
-              {x}
-              <br />
-            </Fragment>
-          ))}
+              /* eslint-disable-next-line react/no-array-index-key */
+              <Fragment key={idx}>
+                • {x}
+                <br />
+              </Fragment>
+            ))}
       </td>
     </tr>
   );
 }
 
 export function ResumeTable({ resume }: { resume: Resume }) {
-  const educations = resume.educations.length === 0
-    ? [deepClone(initialEducation)]
-    : resume.educations;
-  const workExperiences = resume.workExperiences.length === 0
-    ? [deepClone(initialWorkExperience)]
-    : resume.workExperiences;
+  const educations =
+    resume.educations.length === 0
+      ? [deepClone(initialEducation)]
+      : resume.educations;
+  const workExperiences =
+    resume.workExperiences.length === 0
+      ? [deepClone(initialWorkExperience)]
+      : resume.workExperiences;
   const skills = [...resume.skills.descriptions];
   const featuredSkills = resume.skills.featuredSkills
     .filter((item) => item.skill.trim())
@@ -75,6 +76,7 @@ export function ResumeTable({ resume }: { resume: Resume }) {
         <TableRow label="Summary" value={resume.profile.summary} />
         <TableRowHeader>Education</TableRowHeader>
         {educations.map((education, idx) => (
+          /* eslint-disable-next-line react/no-array-index-key */
           <Fragment key={idx}>
             <TableRow label="School" value={education.school} />
             <TableRow label="Degree" value={education.degree} />
@@ -84,15 +86,16 @@ export function ResumeTable({ resume }: { resume: Resume }) {
               label="Descriptions"
               value={education.descriptions}
               className={
-                educations.length - 1 !== 0
-                && idx !== educations.length - 1
-                && '!border-b-4'
+                educations.length - 1 !== 0 &&
+                idx !== educations.length - 1 &&
+                '!border-b-4'
               }
             />
           </Fragment>
         ))}
         <TableRowHeader>Work Experience</TableRowHeader>
         {workExperiences.map((workExperience, idx) => (
+          /* eslint-disable-next-line react/no-array-index-key */
           <Fragment key={idx}>
             <TableRow label="Company" value={workExperience.company} />
             <TableRow label="Job Title" value={workExperience.jobTitle} />
@@ -101,9 +104,9 @@ export function ResumeTable({ resume }: { resume: Resume }) {
               label="Descriptions"
               value={workExperience.descriptions}
               className={
-                workExperiences.length - 1 !== 0
-                && idx !== workExperiences.length - 1
-                && '!border-b-4'
+                workExperiences.length - 1 !== 0 &&
+                idx !== workExperiences.length - 1 &&
+                '!border-b-4'
               }
             />
           </Fragment>
@@ -112,6 +115,7 @@ export function ResumeTable({ resume }: { resume: Resume }) {
           <TableRowHeader>Projects</TableRowHeader>
         )}
         {resume.projects.map((project, idx) => (
+          /* eslint-disable-next-line react/no-array-index-key */
           <Fragment key={idx}>
             <TableRow label="Project" value={project.project} />
             <TableRow label="Date" value={project.date} />
@@ -119,9 +123,9 @@ export function ResumeTable({ resume }: { resume: Resume }) {
               label="Descriptions"
               value={project.descriptions}
               className={
-                resume.projects.length - 1 !== 0
-                && idx !== resume.projects.length - 1
-                && '!border-b-4'
+                resume.projects.length - 1 !== 0 &&
+                idx !== resume.projects.length - 1 &&
+                '!border-b-4'
               }
             />
           </Fragment>

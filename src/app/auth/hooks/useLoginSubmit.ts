@@ -97,12 +97,15 @@ export const useHandleLoginSubmit = ({
         setIsSubmitting(false);
       } catch (e: unknown) {
         // Handle license check failure
-        const errorMessage =
-          e && typeof e === 'object' && 'data' in e
-            ? (e as any).data?.message || 'License check failed'
-            : e instanceof Error
-              ? e.message
-              : 'License not verified. Please contact support or try re-installing the platform.';
+        let errorMessage =
+          'License not verified. Please contact support or try re-installing the platform.';
+
+        if (e && typeof e === 'object' && 'data' in e) {
+          const errorData = e as { data?: { message?: string } };
+          errorMessage = errorData.data?.message || 'License check failed';
+        } else if (e instanceof Error) {
+          errorMessage = e.message;
+        }
 
         toast({
           title: 'Error',
@@ -153,7 +156,7 @@ export const useHandleLoginSubmit = ({
           } catch (error) {
             logger.error(error);
             const errorMessage =
-              error?.data?.message ||
+              (error as { data?: { message: string } })?.data?.message ||
               (error instanceof Error ? error.message : 'Failed to send OTP');
 
             setStatus(errorMessage);

@@ -173,8 +173,10 @@ const handleGetPortalData = async (req: NextRequest) => {
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while ((!Settings || !Organization) && retries < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      retries++;
+      await new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), 100);
+      });
+      retries += 1;
     }
 
     if (!Settings || !Organization) {
@@ -584,7 +586,7 @@ export async function PUT(req: NextRequest) {
         { status: 404 },
       );
     }
-    const settings  = {
+    const settings = {
       fileStorage: updatedSettings.fileStorage,
       portalLogo: updatedSettings.portalConfigs?.portalLogo || null,
       portalLogoDark: updatedSettings.portalConfigs?.portalLogoDark || null,
@@ -593,11 +595,14 @@ export async function PUT(req: NextRequest) {
       portalFooter: updatedSettings.portalConfigs?.portalFooter || null,
       portalName: updatedSettings.portalConfigs?.portalName || '',
       primaryColor: updatedSettings.portalConfigs?.primaryColor || '#6366f1',
-      secondaryColor: updatedSettings.portalConfigs?.secondaryColor || '#8b5cf6',
-    }
+      secondaryColor:
+        updatedSettings.portalConfigs?.secondaryColor || '#8b5cf6',
+    };
 
-
-    return NextResponse.json({ message: 'Settings updated successfully' , portalConfigs: settings });
+    return NextResponse.json({
+      message: 'Settings updated successfully',
+      portalConfigs: settings,
+    });
   } catch (error) {
     logger.error({ error, url: req.url }, 'Portal settings PUT error');
     return NextResponse.json(

@@ -10,6 +10,105 @@ import {
 import { parseAnalyticsRequest, calculateTrend } from '../utils';
 import { TrendData } from '../types';
 
+// Helper function to format date based on granularity
+function formatDateByGranularity(date: Date, granularity: string): string {
+  let options: Intl.DateTimeFormatOptions;
+
+  if (granularity === 'monthly') {
+    options = { year: 'numeric', month: 'short' };
+  } else if (granularity === 'weekly') {
+    options = { year: 'numeric', month: 'short', day: 'numeric' };
+  } else {
+    options = { year: 'numeric', month: 'short', day: 'numeric' };
+  }
+
+  return new Intl.DateTimeFormat('en-US', options).format(date);
+}
+
+// Helper function to calculate seasonal patterns
+function calculateSeasonalPatterns(
+  data: Array<TrendData & { movingAverage?: number }>,
+): Array<{
+  month: number;
+  monthName: string;
+  avgApplications: number;
+  dataPoints: number;
+}> {
+  const monthlyData = data.reduce(
+    (acc, period) => {
+      const month = new Date(period.fullDate).getMonth();
+      if (!acc[month]) acc[month] = [];
+      acc[month].push(period.applications);
+      return acc;
+    },
+    {} as Record<number, number[]>,
+  );
+
+  const seasonalAverages = Object.entries(monthlyData).map(
+    ([month, values]) => ({
+      month: parseInt(month, 10),
+      monthName: new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
+        new Date(2024, parseInt(month, 10)),
+      ),
+      avgApplications: Math.round(
+        values.reduce((sum, val) => sum + val, 0) / values.length,
+      ),
+      dataPoints: values.length,
+    }),
+  );
+
+  return seasonalAverages.sort((a, b) => a.month - b.month);
+}
+
+// Helper function to calculate overall trend direction
+function calculateOverallTrend(
+  data: TrendData[],
+): 'increasing' | 'decreasing' | 'stable' {
+  if (data.length < 2) return 'stable';
+
+  const halfLength = Math.floor(data.length / 2);
+  const firstHalf = data.slice(0, halfLength);
+  const secondHalf = data.slice(halfLength);
+
+  const firstHalfAvg =
+    firstHalf.reduce((sum, p) => sum + p.applications, 0) / firstHalf.length;
+  const secondHalfAvg =
+    secondHalf.reduce((sum, p) => sum + p.applications, 0) / secondHalf.length;
+
+  const change = (secondHalfAvg - firstHalfAvg) / firstHalfAvg;
+
+  if (change > 0.1) return 'increasing';
+  if (change < -0.1) return 'decreasing';
+  return 'stable';
+}
+
+// Helper function to calculate volatility
+function calculateVolatility(data: TrendData[]): number {
+  if (data.length < 2) return 0;
+
+  const mean = data.reduce((sum, p) => sum + p.applications, 0) / data.length;
+  const variance =
+    data.reduce((sum, p) => sum + (p.applications - mean) ** 2, 0) /
+    data.length;
+
+  return Math.round(Math.sqrt(variance) * 100) / 100;
+}
+
+// Helper function to calculate growth trend
+function calculateGrowthTrend(data: TrendData[]): number {
+  if (data.length < 2) return 0;
+
+  const firstPeriod = data[0].applications;
+  const lastPeriod = data[data.length - 1].applications;
+
+  if (firstPeriod === 0) return 0;
+
+  return (
+    Math.round(((lastPeriod - firstPeriod) / firstPeriod) * 100 * 100) / 100
+  );
+}
+
+
 export async function GET(request: NextRequest) {
   return withAnalyticsAuth(request, async (user, req) => {
     try {
@@ -36,6 +135,50 @@ export async function GET(request: NextRequest) {
           start.setDate(start.getDate() - 30); // 30 days
         }
         effectiveDateRange = { start, end };
+      }
+
+      // Determine grouping and date projection based on granularity
+      let groupIdObject: Record<string, unknown>;
+      let dateProjectionObject: Record<string, unknown>;
+
+      if (granularity === 'monthly') {
+        groupIdObject = {
+          year: { $year: '$tracking.createdAt' },
+          month: { $month: '$tracking.createdAt' },
+        };
+        dateProjectionObject = {
+          $dateFromParts: {
+            year: '$_id.year',
+            month: '$_id.month',
+            day: 1,
+          },
+        };
+      } else if (granularity === 'weekly') {
+        groupIdObject = {
+          year: { $year: '$tracking.createdAt' },
+          week: { $week: '$tracking.createdAt' },
+        };
+        dateProjectionObject = {
+          $dateFromParts: {
+            isoWeekYear: '$_id.year',
+            isoWeek: '$_id.week',
+            isoDayOfWeek: 1,
+          },
+        };
+      } else {
+        // Daily
+        groupIdObject = {
+          year: { $year: '$tracking.createdAt' },
+          month: { $month: '$tracking.createdAt' },
+          day: { $dayOfMonth: '$tracking.createdAt' },
+        };
+        dateProjectionObject = {
+          $dateFromParts: {
+            year: '$_id.year',
+            month: '$_id.month',
+            day: '$_id.day',
+          },
+        };
       }
 
       // Build aggregation pipeline for application trends analysis
@@ -69,22 +212,7 @@ export async function GET(request: NextRequest) {
         // Group by time period based on granularity
         {
           $group: {
-            _id:
-              granularity === 'monthly'
-                ? {
-                    year: { $year: '$tracking.createdAt' },
-                    month: { $month: '$tracking.createdAt' },
-                  }
-                : granularity === 'weekly'
-                  ? {
-                      year: { $year: '$tracking.createdAt' },
-                      week: { $week: '$tracking.createdAt' },
-                    }
-                  : {
-                      year: { $year: '$tracking.createdAt' },
-                      month: { $month: '$tracking.createdAt' },
-                      day: { $dayOfMonth: '$tracking.createdAt' },
-                    },
+            _id: groupIdObject,
             applications: { $sum: 1 },
             // Break down by status
             appliedCount: {
@@ -125,30 +253,7 @@ export async function GET(request: NextRequest) {
         {
           $addFields: {
             jobDiversity: { $size: '$uniqueJobs' },
-            date:
-              granularity === 'monthly'
-                ? {
-                    $dateFromParts: {
-                      year: '$_id.year',
-                      month: '$_id.month',
-                      day: 1,
-                    },
-                  }
-                : granularity === 'weekly'
-                  ? {
-                      $dateFromParts: {
-                        isoWeekYear: '$_id.year',
-                        isoWeek: '$_id.week',
-                        isoDayOfWeek: 1,
-                      },
-                    }
-                  : {
-                      $dateFromParts: {
-                        year: '$_id.year',
-                        month: '$_id.month',
-                        day: '$_id.day',
-                      },
-                    },
+            date: dateProjectionObject,
           },
         },
         // Sort by date
@@ -183,7 +288,7 @@ export async function GET(request: NextRequest) {
       const trendData: TrendData[] = [];
       let previousApplications = 0;
 
-      for (let i = 0; i < results.length; i++) {
+      for (let i = 0; i < results.length; i += 1) {
         const result = results[i];
         const currentApplications = result.applications;
 
@@ -194,17 +299,18 @@ export async function GET(request: NextRequest) {
             : calculateTrend(currentApplications, previousApplications);
 
         // Calculate growth rate
-        const growthRate =
-          i === 0
-            ? 0
-            : previousApplications > 0
-              ? Math.round(
-                  ((currentApplications - previousApplications) /
-                    previousApplications) *
-                    100 *
-                    100,
-                ) / 100
-              : 0;
+        let growthRate = 0;
+        if (i !== 0) {
+          if (previousApplications > 0) {
+            growthRate =
+              Math.round(
+                ((currentApplications - previousApplications) /
+                  previousApplications) *
+                  100 *
+                  100,
+              ) / 100;
+          }
+        }
 
         // Format date based on granularity
         const dateStr = formatDateByGranularity(result.date, granularity);
@@ -280,11 +386,10 @@ export async function GET(request: NextRequest) {
       // Calculate moving averages for trend smoothing
       const trendDataWithMovingAvg = trendData.map((period, index) => {
         const windowSize = Math.min(7, trendData.length); // 7-period moving average
-        const startIndex = Math.max(0, index - Math.floor(windowSize / 2));
-        const endIndex = Math.min(
-          trendData.length - 1,
-          index + Math.floor(windowSize / 2),
-        );
+        const halfWindow = Math.floor(windowSize / 2);
+
+        const startIndex = Math.max(0, index - halfWindow);
+        const endIndex = Math.min(trendData.length - 1, index + halfWindow);
 
         const windowData = trendData.slice(startIndex, endIndex + 1);
         const movingAvg = Math.round(
@@ -364,98 +469,4 @@ export async function GET(request: NextRequest) {
       );
     }
   });
-}
-
-// Helper function to format date based on granularity
-function formatDateByGranularity(date: Date, granularity: string): string {
-  const options: Intl.DateTimeFormatOptions =
-    granularity === 'monthly'
-      ? { year: 'numeric', month: 'short' }
-      : granularity === 'weekly'
-        ? { year: 'numeric', month: 'short', day: 'numeric' }
-        : { year: 'numeric', month: 'short', day: 'numeric' };
-
-  return new Intl.DateTimeFormat('en-US', options).format(date);
-}
-
-// Helper function to calculate seasonal patterns
-function calculateSeasonalPatterns(
-  data: Array<TrendData & { movingAverage?: number }>,
-): Array<{
-  month: number;
-  monthName: string;
-  avgApplications: number;
-  dataPoints: number;
-}> {
-  const monthlyData = data.reduce(
-    (acc, period) => {
-      const month = new Date(period.fullDate).getMonth();
-      if (!acc[month]) acc[month] = [];
-      acc[month].push(period.applications);
-      return acc;
-    },
-    {} as Record<number, number[]>,
-  );
-
-  const seasonalAverages = Object.entries(monthlyData).map(
-    ([month, values]) => ({
-      month: parseInt(month),
-      monthName: new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
-        new Date(2024, parseInt(month)),
-      ),
-      avgApplications: Math.round(
-        values.reduce((sum, val) => sum + val, 0) / values.length,
-      ),
-      dataPoints: values.length,
-    }),
-  );
-
-  return seasonalAverages.sort((a, b) => a.month - b.month);
-}
-
-// Helper function to calculate overall trend direction
-function calculateOverallTrend(
-  data: TrendData[],
-): 'increasing' | 'decreasing' | 'stable' {
-  if (data.length < 2) return 'stable';
-
-  const firstHalf = data.slice(0, Math.floor(data.length / 2));
-  const secondHalf = data.slice(Math.floor(data.length / 2));
-
-  const firstHalfAvg =
-    firstHalf.reduce((sum, p) => sum + p.applications, 0) / firstHalf.length;
-  const secondHalfAvg =
-    secondHalf.reduce((sum, p) => sum + p.applications, 0) / secondHalf.length;
-
-  const change = (secondHalfAvg - firstHalfAvg) / firstHalfAvg;
-
-  if (change > 0.1) return 'increasing';
-  if (change < -0.1) return 'decreasing';
-  return 'stable';
-}
-
-// Helper function to calculate volatility
-function calculateVolatility(data: TrendData[]): number {
-  if (data.length < 2) return 0;
-
-  const mean = data.reduce((sum, p) => sum + p.applications, 0) / data.length;
-  const variance =
-    data.reduce((sum, p) => sum + (p.applications - mean) ** 2, 0) /
-    data.length;
-
-  return Math.round(Math.sqrt(variance) * 100) / 100;
-}
-
-// Helper function to calculate growth trend
-function calculateGrowthTrend(data: TrendData[]): number {
-  if (data.length < 2) return 0;
-
-  const firstPeriod = data[0].applications;
-  const lastPeriod = data[data.length - 1].applications;
-
-  if (firstPeriod === 0) return 0;
-
-  return (
-    Math.round(((lastPeriod - firstPeriod) / firstPeriod) * 100 * 100) / 100
-  );
 }

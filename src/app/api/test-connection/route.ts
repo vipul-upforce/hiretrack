@@ -11,30 +11,6 @@ interface CustomError {
   };
 }
 
-export async function POST(request: Request) {
-  const { storageType, credentials } = await request.json(); // Expecting storageType and credentials in the request body
-
-  if (storageType === 'cloudinary') {
-    return await testCloudinary(credentials);
-  }
-  if (storageType === 's3') {
-    return await testAWSConnection(credentials);
-  }
-  if (storageType === 'smtp') {
-    return await testSMTPConnection(credentials);
-  }
-  if (storageType === 'resend') {
-    return await testResendConnection(credentials);
-  }
-  if (storageType === 'brevo') {
-    return await testBrevoConnection(credentials);
-  }
-  return NextResponse.json(
-    { success: false, message: 'Invalid storage type' },
-    { status: 400 },
-  );
-}
-
 const testCloudinary = async (credentials: {
   cloud_name: string;
   api_key: string;
@@ -174,6 +150,7 @@ const testBrevoConnection = async (credentials: {
     }
 
     // Validate emails
+    // eslint-disable-next-line no-useless-escape
     const emailRegex = /^[\w\.\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$/;
     if (
       !credentials.brevo_from ||
@@ -244,18 +221,41 @@ const testBrevoConnection = async (credentials: {
       statusCode = 408;
     }
 
+    let errorDetail: string | undefined;
+    if (process.env.ENVIRONMENT === 'development') {
+      errorDetail = error instanceof Error ? error.message : 'Unknown error';
+    }
+
     return NextResponse.json(
       {
         success: false,
         message: errorMessage,
-        error:
-          process.env.ENVIRONMENT === 'development'
-            ? error instanceof Error
-              ? error.message
-              : 'Unknown error'
-            : undefined,
+        error: errorDetail,
       },
       { status: statusCode },
     );
   }
 };
+export async function POST(request: Request) {
+  const { storageType, credentials } = await request.json(); // Expecting storageType and credentials in the request body
+
+  if (storageType === 'cloudinary') {
+    return testCloudinary(credentials);
+  }
+  if (storageType === 's3') {
+    return testAWSConnection(credentials);
+  }
+  if (storageType === 'smtp') {
+    return testSMTPConnection(credentials);
+  }
+  if (storageType === 'resend') {
+    return testResendConnection(credentials);
+  }
+  if (storageType === 'brevo') {
+    return testBrevoConnection(credentials);
+  }
+  return NextResponse.json(
+    { success: false, message: 'Invalid storage type' },
+    { status: 400 },
+  );
+}

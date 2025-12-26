@@ -33,7 +33,7 @@ export default function VerifyOtpForm() {
 
   // Countdown timer effect
   useEffect(() => {
-    if (cooldownSeconds <= 0) return;
+    if (cooldownSeconds <= 0) return undefined;
 
     const timer = setInterval(() => {
       setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
@@ -62,8 +62,10 @@ export default function VerifyOtpForm() {
       dispatch(fetchUserFromToken());
 
       router.push('/dashboard');
-    } catch (err: any) {
-      const errorMessage = err?.data?.message || 'Failed to verify OTP';
+    } catch (err) {
+      const errorMessage =
+        (err as { data?: { message: string } })?.data?.message ||
+        'Failed to verify OTP';
       toast({
         title: 'Error',
         description: errorMessage,
@@ -87,8 +89,10 @@ export default function VerifyOtpForm() {
 
       toast({ title: 'Success', description: 'New OTP sent' });
       setCooldownSeconds(60); // Reset cooldown to 1 minute
-    } catch (err: any) {
-      const errorMessage = err?.data?.message || 'Failed to resend OTP';
+    } catch (err) {
+      const errorMessage =
+        (err as { data?: { message: string } })?.data?.message ||
+        'Failed to resend OTP';
       toast({
         title: 'Error',
         description: errorMessage,

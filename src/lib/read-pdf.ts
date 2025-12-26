@@ -1,7 +1,6 @@
 // Getting pdfjs to work is tricky. The following 3 lines would make it work
 // https://stackoverflow.com/a/63486898/7699841
 import * as pdfjs from 'pdfjs-dist';
-// @ts-ignore
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
 
 import type { TextItem as PdfjsTextItem } from 'pdfjs-dist/types/src/display/api';

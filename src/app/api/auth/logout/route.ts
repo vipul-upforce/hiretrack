@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { clearAuthTokens } from '@/lib/authCookies';
 import { verifyAndDecryptToken } from '@/app/actions/auth';
-import {
-  clearRefreshToken,
-  hashRefreshToken,
-  verifyRefreshToken,
-  verifyAndDecryptRefreshToken,
-} from '@/lib/refreshToken';
+import { clearRefreshToken, hashRefreshToken } from '@/lib/refreshToken';
 import connectToDatabase from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
 

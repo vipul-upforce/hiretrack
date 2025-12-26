@@ -4,4 +4,5 @@
  *
  * Client side can simply use structuredClone.
  */
-export const deepClone = <T extends { [key: string]: any }>(object: T) => JSON.parse(JSON.stringify(object)) as T;
+export const deepClone = <T extends { [key: string]: unknown }>(object: T) =>
+  JSON.parse(JSON.stringify(object)) as T;

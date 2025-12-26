@@ -111,6 +111,20 @@ export function usePortalConfiguration() {
   };
 
   const handleSave = async () => {
+    if (!settings.portalName || settings.portalName.trim() === '') {
+      toast.error('Portal Name cannot be empty.');
+      return;
+    }
+
+    const nameRegex = /^[a-zA-Z0-9\s-]*$/;
+
+    if (!nameRegex.test(settings.portalName)) {
+      toast.error(
+        'Portal name contains invalid characters. Only letters, numbers, spaces, and hyphens are allowed.',
+      );
+      return;
+    }
+
     try {
       const { ...settingsWithoutHtmlFiles } = settings;
       const payload = {

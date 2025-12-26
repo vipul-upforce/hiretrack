@@ -1,9 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  createContext, useContext, useEffect, useState,
-} from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type {
   Theme,
   ThemeProviderState,
@@ -21,7 +19,6 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 export function ThemeProvider({
   children,
   defaultTheme = 'light',
-  storageKey = 'hiretrack-theme',
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [mounted, setMounted] = useState(false);
@@ -50,12 +47,15 @@ export function ThemeProvider({
     }
   }, [theme, mounted]);
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      setTheme(theme);
-    },
-  };
+  const value = useMemo(
+    () => ({
+      theme,
+      setTheme: (newTheme: Theme) => {
+        setTheme(newTheme);
+      },
+    }),
+    [theme],
+  );
 
   return (
     <ThemeProviderContext.Provider value={value}>
@@ -67,7 +67,8 @@ export function ThemeProvider({
 export const useTheme = () => {
   const context = useContext(ThemeProviderContext);
 
-  if (context === undefined) throw new Error('useTheme must be used within a ThemeProvider');
+  if (context === undefined)
+    throw new Error('useTheme must be used within a ThemeProvider');
 
   return context;
 };

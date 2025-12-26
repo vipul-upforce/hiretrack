@@ -106,7 +106,22 @@ export function GlobalEmailNotificationSettingsDialog({
 
   const handleReset = () => {
     if (settings) {
-      setLocalSettings(settings);
+      // Merge with defaults to ensure all notification types are present and defined
+      const defaults = createDefaultNotificationSettings();
+      const merged: Record<EmailNotificationType, boolean> = {
+        ...defaults,
+      };
+      // Only include defined values from settings (skip undefined optional properties)
+      ALL_NOTIFICATION_TYPES.forEach((type) => {
+        const value = safeGetNotificationValue(
+          settings as unknown as Record<string, boolean | undefined>,
+          type,
+        );
+        if (value !== undefined) {
+          merged[type] = value;
+        }
+      });
+      setLocalSettings(merged);
     } else {
       setLocalSettings(createDefaultNotificationSettings());
     }
@@ -116,7 +131,11 @@ export function GlobalEmailNotificationSettingsDialog({
     if (!settings) return false;
     return ALL_NOTIFICATION_TYPES.some((key) => {
       const localValue = safeGetNotificationValue(localSettings, key);
-      const settingsValue = safeGetNotificationValue(settings, key) ?? true;
+      const settingsValue =
+        safeGetNotificationValue(
+          settings as unknown as Record<string, boolean | undefined>,
+          key,
+        ) ?? true;
       return localValue !== settingsValue;
     });
   };

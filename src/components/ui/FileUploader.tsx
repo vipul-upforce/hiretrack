@@ -35,8 +35,7 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
     <div className="mb-6">
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed p-8 text-center cursor-pointer
-          ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+        className={`cursor-pointer border-2 border-dashed p-8 text-center ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
       >
         <input {...getInputProps()} />
         {isDragActive ? (
@@ -51,14 +50,11 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
           <h3 className="font-semibold">Selected Files:</h3>
           <ul className="list-disc pl-5">
             {files.map((file, index) => (
+              /* eslint-disable-next-line react/no-array-index-key */
               <li key={index}>{file.name}</li>
             ))}
           </ul>
-          <Button
-            onClick={handleSubmit}
-            variant="info"
-            className="mt-4"
-          >
+          <Button onClick={handleSubmit} variant="info" className="mt-4">
             Process Files
           </Button>
         </div>

@@ -6,28 +6,7 @@ import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
 import { uploadFile, uploadFileToS3, saveFileLocally } from '@/lib/fileUtils';
 import { logger } from '@/lib/logger/logger.server';
-
-interface ScheduleMeetRequest {
-  candidateId: string;
-  candidateName: string;
-  candidateEmail: string;
-  interviewerId: string;
-  interviewerName: string;
-  scheduledTime: string;
-  duration: number;
-  guests: string[];
-  jobId?: string;
-  jobTitle?: string;
-  organizationName?: string;
-  meetingNotes?: string;
-  meetingAttachments?: Array<{
-    id: string;
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-  }>;
-}
+import { MeetingAttachment } from '@/lib/features/calendar/calendarApi';
 
 export async function POST(req: NextRequest) {
   try {
@@ -143,58 +122,62 @@ Candidate: ${candidateName}`;
 
     // Upload meeting attachments and add to description
     const validAttachments =
-      meetingAttachments?.filter((att) => att && att.name && att.url) || [];
+      meetingAttachments?.filter(
+        (att: MeetingAttachment) => att && att.name && att.url,
+      ) || [];
     if (validAttachments.length > 0) {
       description += '\n\nAttachments:';
 
       const fileStorageSettings = settings.fileStorage;
-      const uploadPromises = validAttachments.map(async (attachment) => {
-        try {
-          let uploadedUrl = '';
-          const timestamp = new Date().getTime();
-          const uploadName =
-            attachment.name || `meeting_attachment_${timestamp}`;
+      const uploadPromises = validAttachments.map(
+        async (attachment: MeetingAttachment) => {
+          try {
+            let uploadedUrl = '';
+            const timestamp = new Date().getTime();
+            const uploadName =
+              attachment.name || `meeting_attachment_${timestamp}`;
 
-          // Convert attachment data to base64 if needed
-          const base64Data = attachment.url.startsWith('data:')
-            ? attachment.url
-            : `data:${attachment.type};base64,${attachment.url}`;
+            // Convert attachment data to base64 if needed
+            const base64Data = attachment.url.startsWith('data:')
+              ? attachment.url
+              : `data:${attachment.type};base64,${attachment.url}`;
 
-          switch (fileStorageSettings?.storageType) {
-            case 'cloudinary':
-              uploadedUrl = await uploadFile(
-                base64Data,
-                'documents',
-                organizationId,
-                uploadName,
-              );
-              break;
-            case 's3':
-              uploadedUrl = await uploadFileToS3(
-                base64Data,
-                'documents',
-                organizationId,
-                uploadName,
-              );
-              break;
-            default:
-              uploadedUrl = await saveFileLocally(
-                base64Data,
-                'documents',
-                uploadName,
-              );
+            switch (fileStorageSettings?.storageType) {
+              case 'cloudinary':
+                uploadedUrl = await uploadFile(
+                  base64Data,
+                  'documents',
+                  organizationId,
+                  uploadName,
+                );
+                break;
+              case 's3':
+                uploadedUrl = await uploadFileToS3(
+                  base64Data,
+                  'documents',
+                  organizationId,
+                  uploadName,
+                );
+                break;
+              default:
+                uploadedUrl = await saveFileLocally(
+                  base64Data,
+                  'documents',
+                  uploadName,
+                );
+            }
+
+            return { name: attachment.name, url: uploadedUrl };
+          } catch (error) {
+            logger.error(
+              { error, url: req.url },
+              'Failed to upload attachment:',
+              error,
+            );
+            return { name: attachment.name, url: 'Upload failed' };
           }
-
-          return { name: attachment.name, url: uploadedUrl };
-        } catch (error) {
-          logger.error(
-            { error, url: req.url },
-            'Failed to upload attachment:',
-            error,
-          );
-          return { name: attachment.name, url: 'Upload failed' };
-        }
-      });
+        },
+      );
 
       const uploadedAttachments = await Promise.all(uploadPromises);
 
@@ -226,7 +209,7 @@ Candidate: ${candidateName}`;
         dateTime: endDateTime.toISOString(),
         timeZone: organizationTimezone,
       },
-      attendees: guests.map((email) => ({ email })),
+      attendees: guests.map((email: string) => ({ email })),
       conferenceData: {
         createRequest: {
           requestId: `hiretrack-${Date.now()}`,
@@ -257,18 +240,25 @@ Candidate: ${candidateName}`;
     const { summary } = event;
 
     // Store initial attendee list with 'needsAction' status
-    const initialAttendeeResponses = guests.map((email) => ({
-      email,
-      name:
-        email === candidateEmail
-          ? candidateName
-          : email === settings.googleCalendar?.connectedEmail
-            ? interviewerName
-            : email.split('@')[0], // Default to email prefix for other attendees
-      responseStatus: 'needsAction' as const,
-      lastUpdated: new Date(),
-      notificationSent: false,
-    }));
+    const initialAttendeeResponses = guests.map((email: string) => {
+      let name: string;
+      if (email === candidateEmail) {
+        name = candidateName;
+      } else if (email === settings.googleCalendar?.connectedEmail) {
+        name = interviewerName;
+      } else {
+        const [emailPrefix] = email.split('@');
+        name = emailPrefix; // Default to email prefix for other attendees
+      }
+
+      return {
+        email,
+        name,
+        responseStatus: 'needsAction' as const,
+        lastUpdated: new Date(),
+        notificationSent: false,
+      };
+    });
 
     // Update candidate record with Google Meet info and initial attendee responses
     if (candidateId) {

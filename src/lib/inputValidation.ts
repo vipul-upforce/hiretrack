@@ -66,6 +66,50 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Type validation helper
+ */
+function validateType(value: any, type: string): boolean {
+  switch (type) {
+    case 'string':
+      return typeof value === 'string';
+    case 'number':
+      return typeof value === 'number' && !Number.isNaN(value);
+    case 'boolean':
+      return typeof value === 'boolean';
+    case 'array':
+      return Array.isArray(value);
+    case 'object':
+      return (
+        value !== null && typeof value === 'object' && !Array.isArray(value)
+      );
+    case 'email':
+      return typeof value === 'string' && VALIDATION_PATTERNS.email.test(value);
+    case 'objectId':
+      return (
+        typeof value === 'string' && VALIDATION_PATTERNS.objectId.test(value)
+      );
+    case 'url':
+      return typeof value === 'string' && VALIDATION_PATTERNS.url.test(value);
+    default:
+      return true;
+  }
+}
+
+function containsHtmlOrScript(value: string): boolean {
+  const dangerousPatterns = [
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+    /javascript:/gi,
+    /on\w+\s*=/gi,
+    /<object\b/gi,
+    /<embed\b/gi,
+    /<form\b/gi,
+  ];
+
+  return dangerousPatterns.some((pattern) => pattern.test(value));
+}
+
+/**
  * Validates input data against a schema
  */
 export function validateInput(
@@ -88,11 +132,13 @@ export function validateInput(
       (value === undefined || value === null || value === '')
     ) {
       errors.push(`${field} is required`);
+      // eslint-disable-next-line no-continue
       continue;
     }
 
     // Skip validation if field is optional and not provided
     if (!rules.required && (value === undefined || value === null)) {
+      // eslint-disable-next-line no-continue
       continue;
     }
 
@@ -100,6 +146,7 @@ export function validateInput(
     if (rules.type) {
       if (!validateType(value, rules.type)) {
         errors.push(`${field} must be of type ${rules.type}`);
+        // eslint-disable-next-line no-continue
         continue;
       }
     }
@@ -159,51 +206,8 @@ export function validateInput(
 }
 
 /**
- * Type validation helper
- */
-function validateType(value: any, type: string): boolean {
-  switch (type) {
-    case 'string':
-      return typeof value === 'string';
-    case 'number':
-      return typeof value === 'number' && !isNaN(value);
-    case 'boolean':
-      return typeof value === 'boolean';
-    case 'array':
-      return Array.isArray(value);
-    case 'object':
-      return (
-        value !== null && typeof value === 'object' && !Array.isArray(value)
-      );
-    case 'email':
-      return typeof value === 'string' && VALIDATION_PATTERNS.email.test(value);
-    case 'objectId':
-      return (
-        typeof value === 'string' && VALIDATION_PATTERNS.objectId.test(value)
-      );
-    case 'url':
-      return typeof value === 'string' && VALIDATION_PATTERNS.url.test(value);
-    default:
-      return true;
-  }
-}
-
-/**
  * Detects potential HTML/script injection
  */
-function containsHtmlOrScript(value: string): boolean {
-  const dangerousPatterns = [
-    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-    /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
-    /javascript:/gi,
-    /on\w+\s*=/gi,
-    /<object\b/gi,
-    /<embed\b/gi,
-    /<form\b/gi,
-  ];
-
-  return dangerousPatterns.some((pattern) => pattern.test(value));
-}
 
 /**
  * Sanitizes string input by removing dangerous HTML

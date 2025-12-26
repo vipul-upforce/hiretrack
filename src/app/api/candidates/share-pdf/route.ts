@@ -8,16 +8,87 @@ import fs from 'fs';
 import path from 'path';
 import { JSDOM } from 'jsdom';
 import { logger } from '@/lib/logger/logger.server';
+import type { ITag } from '@/lib/models/organization';
+import type { CustomFieldFile } from '@/lib/fileUtils';
+
+// Type definitions for populated candidate
+interface PopulatedJob {
+  _id: string;
+  title: string;
+  description: string;
+  skills?: string[];
+}
+
+interface PopulatedInterviewer {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+interface PopulatedTag extends ITag {
+  title: string;
+  color: string;
+}
+
+interface PopulatedFollowUpUser {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+interface PopulatedCandidate {
+  _id: string;
+  name: string;
+  email: string;
+  contact: string;
+  location: string;
+  organizationId: string;
+  experience: number;
+  relevantExperience: number;
+  skills: string[];
+  expectedCTC?: number;
+  currentCTC?: number;
+  noticePeriod: number;
+  tags?: PopulatedTag[];
+  resume?: {
+    url: string;
+  } | null;
+  status: string;
+  jobId?: PopulatedJob | string;
+  assignment?: {
+    interviewerId?: PopulatedInterviewer | string;
+    time?: Date | string;
+    googleMeet?: {
+      meetingLink: string;
+    };
+  };
+  followUp?: {
+    note?: string;
+    date?: Date | string;
+    userId?: PopulatedFollowUpUser | string;
+  };
+  customFields?: Record<string, string | string[] | CustomFieldFile[] | object>;
+  scores?: {
+    overall: number;
+    experience?: number;
+    skills?: number;
+    affordability?: number;
+    strengths?: string[];
+    areas_for_improvement?: string[];
+    recommendation?: string;
+    notes?: string;
+  };
+}
 
 // Helper function to convert hex to RGB
 function hexToRgb(hex: string): [number, number, number] {
   // Remove # if present
-  hex = hex.replace('#', '');
+  const cleanHex = hex.replace('#', '');
 
   // Parse hex values
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
 
   return [r, g, b];
 }
@@ -41,7 +112,7 @@ function parseHTMLContent(html: string) {
     items?: string[];
   }[] = [];
 
-  document.body.childNodes.forEach((node) => {
+  document.body.childNodes.forEach((node: Node) => {
     if (node.nodeName.startsWith('H')) {
       result.push({
         type: 'heading',
@@ -54,7 +125,7 @@ function parseHTMLContent(html: string) {
       });
     } else if (node.nodeName === 'UL' || node.nodeName === 'OL') {
       const items: string[] = [];
-      node.childNodes.forEach((li) => {
+      node.childNodes.forEach((li: Node) => {
         if (li.textContent)
           items.push(removeUnsupportedEmojis(li.textContent.trim()));
       });
@@ -132,7 +203,7 @@ async function loadImageAsBase64(
     else if (ext === '.svg') mimeType = 'image/svg+xml';
 
     return `data:${mimeType};base64,${base64}`;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -154,11 +225,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch candidate data
-    const candidate = await Candidate?.findById(candidateId)
+    const candidate = (await Candidate?.findById(candidateId)
       .populate('jobId', 'title description skills')
       .populate('assignment.interviewerId', 'name email')
       .populate('tags', 'name color')
-      .lean();
+      .lean()) as unknown as PopulatedCandidate | null;
 
     if (!candidate) {
       return NextResponse.json(
@@ -173,11 +244,10 @@ export async function POST(req: NextRequest) {
     }).lean();
 
     const primaryColorHex = settings?.portalConfigs?.primaryColor || '#6366f1';
-    const secondaryColorHex =
-      settings?.portalConfigs?.secondaryColor || '#8b5cf6';
     const logoUrl = settings?.portalConfigs?.portalLogo?.url || null;
 
     // Generate PDF with modern design
+    // eslint-disable-next-line new-cap
     const doc = new jsPDF();
     let yPosition = 20;
     const leftMargin = 15;
@@ -466,7 +536,7 @@ export async function POST(req: NextRequest) {
           doc.text(skillText, currentX + 2, yPosition);
 
           currentX += skillWidth;
-          skillsInRow++;
+          skillsInRow += 1;
         });
 
         yPosition += 8;
@@ -495,7 +565,7 @@ export async function POST(req: NextRequest) {
         selection.skillsScore ||
         selection.affordability
       ) {
-        const scoreData: any[] = [];
+        const scoreData: Array<[string, string]> = [];
         if (selection.overallScore)
           scoreData.push(['Overall Match', `${candidate.scores.overall}/10`]);
         if (selection.experienceScore && candidate.scores.experience) {
@@ -541,11 +611,19 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          yPosition = (doc as any).lastAutoTable.finalY + 8;
+          yPosition =
+            (doc as { lastAutoTable?: { finalY: number } }).lastAutoTable
+              ?.finalY ?? yPosition + 6;
+          // Add spacing after table before next section
+          yPosition += 10;
         }
       }
 
-      if (selection.strengths && candidate.scores.strengths?.length > 0) {
+      if (
+        selection.strengths &&
+        candidate.scores.strengths &&
+        candidate.scores.strengths.length > 0
+      ) {
         checkNewPage(15);
         // Modern subsection label
         doc.setFontSize(8);
@@ -557,25 +635,28 @@ export async function POST(req: NextRequest) {
         candidate.scores.strengths.forEach((strength: string) => {
           addBullet(strength);
         });
-        yPosition += 2;
+        yPosition += 8;
       }
 
       if (
         selection.areasForImprovement &&
-        candidate.scores.areas_for_improvement?.length > 0
+        candidate.scores.areas_for_improvement
       ) {
-        checkNewPage(15);
-        // Modern subsection label
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(subtextColor[0], subtextColor[1], subtextColor[2]);
-        doc.text('AREAS FOR DEVELOPMENT', leftMargin, yPosition);
-        yPosition += 6;
+        const areasForImprovement = candidate.scores.areas_for_improvement;
+        if (areasForImprovement.length > 0) {
+          checkNewPage(15);
+          // Modern subsection label
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(subtextColor[0], subtextColor[1], subtextColor[2]);
+          doc.text('AREAS FOR DEVELOPMENT', leftMargin, yPosition);
+          yPosition += 6;
 
-        candidate.scores.areas_for_improvement.forEach((area: string) => {
-          addBullet(area);
-        });
-        yPosition += 2;
+          areasForImprovement.forEach((area: string) => {
+            addBullet(area);
+          });
+          yPosition += 2;
+        }
       }
 
       if (selection.recommendation && candidate.scores.recommendation) {
@@ -593,28 +674,31 @@ export async function POST(req: NextRequest) {
       doc.setFont('helvetica', 'normal');
 
       if (selection.jobDetails && candidate.jobId) {
-        addKeyValue('Position', (candidate.jobId as any).title);
+        const jobIdObj = candidate.jobId as PopulatedJob;
+        addKeyValue('Position', jobIdObj.title);
 
-        if ((candidate.jobId as any).description) {
-          yPosition += 2;
+        if (jobIdObj.description) {
+          yPosition += 6;
           doc.setFontSize(9);
           doc.setFont('helvetica', 'bold');
-          doc.setTextColor(subtextColor[0], subtextColor[1], subtextColor[2]);
+          doc.setTextColor(0, 0, 0);
           doc.text('JOB DESCRIPTION', leftMargin, yPosition);
           yPosition += 8;
 
           // --- Parse and render structured job description ---
-          const parsedSections = parseHTMLContent(
-            (candidate.jobId as any).description,
-          );
+          const parsedSections = parseHTMLContent(jobIdObj.description);
 
           parsedSections.forEach((section) => {
             switch (section.type) {
               case 'heading':
-                yPosition += 3;
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0); // black for headings
+                doc.setTextColor(
+                  subtextColor[0],
+                  subtextColor[1],
+                  subtextColor[2],
+                );
+
                 doc.text(section.text || '', leftMargin, yPosition);
                 yPosition += 7;
                 break;
@@ -641,11 +725,8 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        if ((candidate.jobId as any).skills?.length > 0) {
-          addKeyValue(
-            'Required Skills',
-            (candidate.jobId as any).skills.join(', '),
-          );
+        if (jobIdObj.skills && jobIdObj.skills.length > 0) {
+          addKeyValue('Required Skills', jobIdObj.skills.join(', '));
         }
 
         if (selection.status) {
@@ -666,15 +747,14 @@ export async function POST(req: NextRequest) {
       if (hasInterviewData) {
         addSectionHeader('INTERVIEW DETAILS');
 
-        if (typeof candidate.assignment.interviewerId === 'object') {
-          addKeyValue(
-            'Interviewer',
-            (candidate.assignment.interviewerId as any).name,
-          );
-          addKeyValue(
-            'Interviewer Email',
-            (candidate.assignment.interviewerId as any).email,
-          );
+        if (
+          typeof candidate.assignment.interviewerId === 'object' &&
+          candidate.assignment.interviewerId
+        ) {
+          const interviewer = candidate.assignment
+            .interviewerId as PopulatedInterviewer;
+          addKeyValue('Interviewer', interviewer.name);
+          addKeyValue('Interviewer Email', interviewer.email);
         }
 
         if (candidate.assignment.time) {
@@ -705,7 +785,8 @@ export async function POST(req: NextRequest) {
         candidate.followUp.date ||
         (candidate.followUp.userId &&
           typeof candidate.followUp.userId === 'object' &&
-          (candidate.followUp.userId as any).name);
+          candidate.followUp.userId &&
+          'name' in candidate.followUp.userId);
 
       if (hasFollowUpData) {
         addSectionHeader('FOLLOW-UP');
@@ -725,17 +806,20 @@ export async function POST(req: NextRequest) {
         if (
           candidate.followUp.userId &&
           typeof candidate.followUp.userId === 'object' &&
-          (candidate.followUp.userId as any).name
+          candidate.followUp.userId &&
+          'name' in candidate.followUp.userId
         ) {
-          addKeyValue('Added By', (candidate.followUp.userId as any).name);
+          const followUpUser = candidate.followUp
+            .userId as unknown as PopulatedFollowUpUser;
+          addKeyValue('Added By', followUpUser.name);
         }
         yPosition += 3;
       }
     }
     // Tags - only show if there are valid tag titles
-    if (selection.tags && candidate.tags?.length > 0) {
+    if (selection.tags && candidate.tags && candidate.tags.length > 0) {
       const validTags = candidate.tags.filter(
-        (tag: any) => tag?.title && tag.title.trim(),
+        (tag: PopulatedTag) => tag?.title && tag.title.trim(),
       );
 
       if (validTags.length > 0) {
@@ -748,7 +832,7 @@ export async function POST(req: NextRequest) {
         const paddingX = 2;
         const paddingY = 2;
 
-        validTags.forEach((tag: any) => {
+        validTags.forEach((tag: PopulatedTag) => {
           const text = tag.title.trim();
           const textWidth = doc.getTextWidth(text) + paddingX * 2;
           const boxWidth = textWidth + 1;
@@ -781,7 +865,7 @@ export async function POST(req: NextRequest) {
     // Custom Fields - only show if there are valid fields with values
     if (selection.customFields && candidate.customFields) {
       const validFields = Object.entries(candidate.customFields).filter(
-        ([key, value]) => {
+        ([_key, value]) => {
           if (value === null || value === undefined || value === '')
             return false;
           if (Array.isArray(value) && value.length === 0) return false;
@@ -810,7 +894,7 @@ export async function POST(req: NextRequest) {
             const maxWidth = doc.internal.pageSize.width - leftMargin - 10;
             const boxHeight = 8;
 
-            value.forEach((file: any) => {
+            value.forEach((file: CustomFieldFile) => {
               const fileURL = `${baseUrl}${file.base64}`;
               const displayText = file.name || 'Attachment';
 
@@ -913,7 +997,7 @@ export async function POST(req: NextRequest) {
 
     // Modern footer on all pages
     const totalPages = doc.getNumberOfPages();
-    for (let i = 1; i <= totalPages; i++) {
+    for (let i = 1; i <= totalPages; i += 1) {
       doc.setPage(i);
 
       // Subtle footer line with border color
@@ -1009,7 +1093,7 @@ export async function POST(req: NextRequest) {
 
         // Convert jsPDF to bytes
         const profilePdfBytes = doc.output('arraybuffer');
-       
+
         // Merge PDFs using pdf-lib
         const profilePdf = await PDFDocument.load(profilePdfBytes);
         const cvPdf = await PDFDocument.load(cvArrayBuffer);
@@ -1030,7 +1114,7 @@ export async function POST(req: NextRequest) {
         cvPages.forEach((page) => mergedPdf.addPage(page));
         // Get final PDF bytes
         finalPdfBytes = await mergedPdf.save();
-      } catch (error) {
+      } catch (_error) {
         finalPdfBytes = new Uint8Array(doc.output('arraybuffer'));
       }
     } else {
@@ -1048,7 +1132,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    logger.error({error, url: req.url }, 'ERROR Generating PDF');
+    logger.error({ error, url: req.url }, 'ERROR Generating PDF');
 
     return NextResponse.json(
       {

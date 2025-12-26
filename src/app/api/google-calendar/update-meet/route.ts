@@ -360,21 +360,23 @@ export async function DELETE(req: NextRequest) {
         .lean();
 
       if (candidate) {
-        const jobId =
-          candidate.jobId &&
-          typeof candidate.jobId !== 'string' &&
-          '_id' in candidate.jobId
-            ? candidate.jobId._id.toString()
-            : candidate.jobId
-              ? candidate.jobId.toString()
-              : '';
+        let jobId = '';
+        if (candidate.jobId) {
+          if (typeof candidate.jobId !== 'string' && '_id' in candidate.jobId) {
+            jobId = candidate.jobId._id.toString();
+          } else {
+            jobId = candidate.jobId.toString();
+          }
+        }
 
-        const jobTitle =
+        let jobTitle = 'Unknown Job';
+        if (
           candidate.jobId &&
           typeof candidate.jobId !== 'string' &&
           'title' in candidate.jobId
-            ? candidate.jobId.title
-            : 'Unknown Job';
+        ) {
+          jobTitle = candidate.jobId.title;
+        }
 
         if (History) {
           try {
@@ -410,22 +412,28 @@ export async function DELETE(req: NextRequest) {
           }
         }
 
+        const interviewerId =
+          candidate.assignment?.interviewerId &&
+          typeof candidate.assignment.interviewerId !== 'string' &&
+          candidate.assignment.interviewerId._id
+            ? candidate.assignment.interviewerId._id.toString()
+            : '';
+
+        const interviewerName =
+          candidate.assignment?.interviewerId &&
+          typeof candidate.assignment.interviewerId !== 'string' &&
+          candidate.assignment.interviewerId.name
+            ? candidate.assignment.interviewerId.name
+            : 'Interviewer';
+
         await NotificationService.notifyMeetingCancelled({
           organizationId,
           candidateId: candidate._id.toString(),
           candidateName: candidate.name,
           jobId,
           jobTitle,
-          interviewerId:
-            candidate.assignment?.interviewerId &&
-            typeof candidate.assignment.interviewerId !== 'string'
-              ? candidate.assignment.interviewerId._id?.toString()!
-              : '',
-          interviewerName:
-            candidate.assignment?.interviewerId &&
-            typeof candidate.assignment.interviewerId !== 'string'
-              ? candidate.assignment.interviewerId.name!
-              : 'Interviewer',
+          interviewerId,
+          interviewerName,
           triggerUserId: userData?.id || '',
           triggerUserName: userData?.name || 'System',
         });

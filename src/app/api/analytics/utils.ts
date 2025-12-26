@@ -30,7 +30,10 @@ export function parseAnalyticsRequest(request: NextRequest): AnalyticsRequest {
   const filters = {
     jobIds: searchParams.get('jobIds')?.split(',').filter(Boolean),
     candidateStatuses: searchParams.get('statuses')?.split(',').filter(Boolean),
-    interviewerIds: searchParams.get('interviewerIds')?.split(',').filter(Boolean),
+    interviewerIds: searchParams
+      .get('interviewerIds')
+      ?.split(',')
+      .filter(Boolean),
     locations: searchParams.get('locations')?.split(',').filter(Boolean),
   };
 
@@ -42,7 +45,10 @@ export function parseAnalyticsRequest(request: NextRequest): AnalyticsRequest {
 }
 
 // Utility function to calculate conversion rates
-export function calculateConversionRate(current: number, previous: number): number {
+export function calculateConversionRate(
+  current: number,
+  previous: number,
+): number {
   if (previous === 0) return 0;
   return Math.round((current / previous) * 100 * 100) / 100; // Round to 2 decimal places
 }
@@ -73,7 +79,10 @@ export function getStageColor(stage: string): string {
 }
 
 // Utility function to determine trend direction
-export function calculateTrend(current: number, previous: number): 'up' | 'down' | 'stable' {
+export function calculateTrend(
+  current: number,
+  previous: number,
+): 'up' | 'down' | 'stable' {
   const threshold = 0.05; // 5% threshold for stability
   const change = (current - previous) / previous;
 
@@ -93,12 +102,18 @@ export function formatNumber(num: number): string {
 }
 
 // Utility function to validate organization access
-export function validateOrganizationAccess(requestOrgId: string, userOrgId: string): boolean {
+export function validateOrganizationAccess(
+  requestOrgId: string,
+  userOrgId: string,
+): boolean {
   return requestOrgId === userOrgId;
 }
 
 // Utility function to create MongoDB date match pipeline
-export function createDateMatchPipeline(dateRange: { start: Date; end: Date }, dateField: string = 'createdAt') {
+export function createDateMatchPipeline(
+  dateRange: { start: Date; end: Date },
+  dateField: string = 'createdAt',
+) {
   return {
     [dateField]: {
       $gte: dateRange.start,
@@ -108,6 +123,8 @@ export function createDateMatchPipeline(dateRange: { start: Date; end: Date }, d
 }
 
 // Utility function to sanitize and validate aggregation results
-export function sanitizeAggregationResult<T>(result: any[]): T[] {
-  return result.filter((item) => item && typeof item === 'object');
+export function sanitizeAggregationResult<T>(result: unknown[]): T[] {
+  return result.filter(
+    (item): item is T => item !== null && typeof item === 'object',
+  ) as T[];
 }

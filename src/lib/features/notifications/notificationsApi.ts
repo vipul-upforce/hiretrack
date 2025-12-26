@@ -1,7 +1,7 @@
 import { baseApi } from '@/lib/api/baseApi';
 import { INotification } from '@/lib/models/notification';
 
-interface NotificationsResponse {
+export interface NotificationsResponse {
   notifications: INotification[];
   pagination: {
     currentPage: number;
@@ -12,7 +12,7 @@ interface NotificationsResponse {
   };
 }
 
-interface NotificationCountResponse {
+export interface NotificationCountResponse {
   unreadCount: number;
   totalCount: number;
 }

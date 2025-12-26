@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Job, Candidate, History } from '@/lib/mongodb';
-import { auth } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ICandidateHistory } from '@/lib/models/history';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { NotificationService } from '@/lib/notifications/notificationService';
@@ -9,9 +9,16 @@ import { logger } from '@/lib/logger/logger.server';
 export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
-    const session = await auth(req);
-    const organizationId = session?.user.organizationId;
+    const user = await getAuthenticatedUser(req, ['admin', 'hr']);
 
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 },
+      );
+    }
+
+    const { organizationId } = user;
     if (!organizationId) {
       return NextResponse.json(
         { error: 'Organization ID not found' },
@@ -19,8 +26,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { jobId, candidateIds } = body;
+    const { jobId, candidateIds } = await req.json();
 
     if (
       !jobId ||
@@ -50,21 +56,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const lane = session?.user?.organizationInfo?.lanes
-      ? session?.user?.organizationInfo?.lanes[0]
-      : session?.user?.organizationInfo?.defaultLanes
-        ? session?.user?.organizationInfo?.defaultLanes[0]
-        : 'applied';
+    // Determine lane - avoid nested ternary
+    let lane = 'applied';
+    const [firstLane] = user.organizationInfo?.lanes || [];
+    const [firstDefaultLane] = user.organizationInfo?.defaultLanes || [];
+    if (firstLane) {
+      lane = firstLane;
+    } else if (firstDefaultLane) {
+      lane = firstDefaultLane;
+    }
 
-    // Process each candidate
+    // Fetch all candidates upfront to filter invalid ones
+    const candidates = await Candidate.find({
+      _id: { $in: candidateIds },
+    });
+
+    // Filter valid candidates (exist and not already assigned to target job)
+    const validCandidates = candidates.filter(
+      (candidate) => candidate.jobId?.toString() !== jobId,
+    );
+
+    if (validCandidates.length === 0) {
+      return NextResponse.json(
+        { error: 'No valid candidates to move' },
+        { status: 400 },
+      );
+    }
+
+    // Process each valid candidate
     const movedCandidateIds: string[] = [];
+    const userId = user.id || null;
+    const userName = user.name || 'Unknown User';
 
-    for (const candidateId of candidateIds) {
-      const candidate = await Candidate.findById(candidateId);
-      if (!candidate) continue;
-
-      // Skip if already assigned to this job
-      if (candidate.jobId?.toString() === jobId) continue;
+    for (const candidate of validCandidates) {
+      const candidateId = candidate._id.toString();
 
       const previousJobId = candidate.jobId?.toString() || null;
       const previousJob = previousJobId
@@ -103,12 +128,12 @@ export async function POST(req: NextRequest) {
           description: `Candidate moved from ${previousJob?.title || 'No previous job'} to ${targetJob.title}`,
           date: new Date().toISOString(),
           rating: 0,
-          userId: session?.user.id || null,
+          userId,
         },
         attachments: [],
         currentInterviewer: null,
         previousInterviewer: null,
-        assignmentBy: session?.user.id || null,
+        assignmentBy: userId,
       };
 
       await History.findOneAndUpdate(
@@ -122,15 +147,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Send single bulk notification for all moved candidates
-    if (session?.user && movedCandidateIds.length > 0) {
+    if (movedCandidateIds.length > 0) {
       try {
         await NotificationService.notifyBulkCandidateMoved({
           organizationId,
           candidateIds: movedCandidateIds,
           toJobId: jobId,
           toJobTitle: targetJob.title,
-          triggerUserId: session.user.id,
-          triggerUserName: session.user.name || 'Unknown User',
+          triggerUserId: userId || '',
+          triggerUserName: userName,
         });
       } catch (notificationError) {
         logger.error(

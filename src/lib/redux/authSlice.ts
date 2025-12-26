@@ -76,14 +76,14 @@ export const fetchUserFromToken = createAsyncThunk(
       ).unwrap();
 
       return result.user;
-    } catch (e: any) {
+    } catch (e: unknown) {
       logger.error('Error fetching user from token:', e);
       localStorage.removeItem('persist:auth');
       localStorage.removeItem('persist:organization');
 
       const errorMessage =
-        e?.data?.message ||
-        e?.message ||
+        (e as { data?: { message?: string } })?.data?.message ||
+        (e as { message?: string })?.message ||
         'Failed to connect to authentication server';
       return rejectWithValue(errorMessage);
     }

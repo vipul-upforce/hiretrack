@@ -25,14 +25,18 @@ export function CustomScrollbar({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) return undefined;
 
     const updateScrollInfo = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      setScrollTop(scrollTop);
-      setScrollHeight(scrollHeight);
-      setClientHeight(clientHeight);
-      setShowScrollbar(scrollHeight > clientHeight);
+      const {
+        scrollTop: scrollTop2,
+        scrollHeight: scrollHeight2,
+        clientHeight: clientHeight2,
+      } = container;
+      setScrollTop(scrollTop2);
+      setScrollHeight(scrollHeight2);
+      setClientHeight(clientHeight2);
+      setShowScrollbar(scrollHeight2 > clientHeight2);
     };
 
     updateScrollInfo();
@@ -61,11 +65,13 @@ export function CustomScrollbar({
     container.scrollTop = newScrollTop;
   };
 
-  const scrollbarHeight = clientHeight > 0 ? (clientHeight / scrollHeight) * clientHeight : 0;
-  const scrollbarTop = scrollHeight > clientHeight
-    ? (scrollTop / (scrollHeight - clientHeight))
-        * (clientHeight - scrollbarHeight)
-    : 0;
+  const scrollbarHeight =
+    clientHeight > 0 ? (clientHeight / scrollHeight) * clientHeight : 0;
+  const scrollbarTop =
+    scrollHeight > clientHeight
+      ? (scrollTop / (scrollHeight - clientHeight)) *
+        (clientHeight - scrollbarHeight)
+      : 0;
 
   return (
     <div className={cn('relative', className)} style={style}>
@@ -74,9 +80,12 @@ export function CustomScrollbar({
         ref={(el) => {
           containerRef.current = el;
           if (typeof ref === 'function') ref(el);
-          else if (ref) ref.current = el;
+          else if (ref && 'current' in ref) {
+            // eslint-disable-next-line no-param-reassign
+            (ref as React.MutableRefObject<HTMLDivElement | null>).current = el;
+          }
         }}
-        className={`h-full scrollbar-hide ${isDragging ? 'overflow-hidden' : 'overflow-y-scroll'}`}
+        className={`scrollbar-hide h-full ${isDragging ? 'overflow-hidden' : 'overflow-y-scroll'}`}
         // className={cn("h-full scrollbar-hide overflow-y-auto")} //
         style={{
           scrollbarWidth: 'none',
@@ -88,9 +97,12 @@ export function CustomScrollbar({
       </div>
 
       {showScrollbar && (
-        <div className="absolute -right-2 top-0 bottom-0 w-1.5">
+        <div className="absolute -right-2 bottom-0 top-0 w-1.5">
           <div
-            className="absolute right-0 w-1 bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 cursor-pointer dark:bg-muted-foreground/20 dark:hover:bg-muted-foreground/40"
+            aria-label="Scrollbar"
+            role="button"
+            tabIndex={0}
+            className="absolute right-0 w-1 cursor-pointer rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 dark:bg-muted-foreground/20 dark:hover:bg-muted-foreground/40"
             style={{
               height: `${scrollbarHeight}px`,
               top: `${scrollbarTop}px`,
