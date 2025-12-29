@@ -713,7 +713,7 @@ const apiExemptPaths = [
   "/api/settings/twofa",
   "/api/settings/portal",
   "/api/shared-files",
-  "/api/organization/tags",
+  // "/api/organization/tags",
   "/api/auth/google/callback",
   "/api/auth/google/authorize",
   "/api/settings/captcha",

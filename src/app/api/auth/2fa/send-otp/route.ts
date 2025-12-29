@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEventEmailWithHistory } from '@/lib/services/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import connectToDatabase, { Settings, User } from '@/lib/mongodb';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+} from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { otpRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
@@ -9,7 +13,7 @@ import { logger } from '@/lib/logger/logger.server';
 async function handleSendOtp(req: NextRequest) {
   try {
     await connectToDatabase();
-    const { email, organizationId } = await req.json();
+    const { email, organizationId, isCandidate = false } = await req.json();
 
     if (!email || !organizationId) {
       return NextResponse.json(
@@ -36,12 +40,27 @@ async function handleSendOtp(req: NextRequest) {
       settings.mailConfig.brevo_from ||
       settings.mailConfig.smtp_from ||
       'system@hiretrack.com';
-
+    const user = isCandidate
+      ? await CandidateAccount?.findOne({
+          email,
+          organizationId,
+          isDeleted:{$ne: true},
+        }).select('name email role organizationId tokenVersion otp otpExpires').populate({
+          path: 'organizationId',
+          select: 'name', // populate only organization name
+        }).lean()
+      : await User?.findOne({
+          email,
+          organizationId,
+          isDeleted: { $ne: true },
+        }).select('name email role organizationId tokenVersion otp otpExpires').populate({
+          path: 'organizationId',
+          select: 'name', // populate only organization name
+        }).lean();
+        console.log("isCandidate",isCandidate,user,"user")
+    const organizationName =
+      (user?.organizationId as unknown as { name: string })?.name || '';
     // Check if user has an existing OTP and its generation time
-    const user = await User?.findOne({ email, organizationId }).populate({
-      path: 'organizationId',
-      select: 'name', // populate only organization name
-    });
 
     if (user && user.otp && user.otpExpires) {
       const currentTime = new Date();
@@ -65,13 +84,20 @@ async function handleSendOtp(req: NextRequest) {
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Update user with new OTP and expiration
-    await User?.updateOne(
-      { email, organizationId },
-      { $set: { otp, otpExpires } },
-      { upsert: true }, // Create user if not found
-    );
-    const organizationName =
-      typeof user?.organizationId === 'object' ? user.organizationId.name : '';
+
+    if (isCandidate) {
+      await CandidateAccount?.updateOne(
+        { email, organizationId },
+        { $set: { otp, otpExpires } },
+        { upsert: true }, // Create user if not found
+      );
+    } else {
+      await User?.updateOne(
+        { email, organizationId },
+        { $set: { otp, otpExpires } },
+        { upsert: true }, // Create user if not found
+      );
+    }
     // Send email with the OTP
     const { emailContent, emailSubject } = await getMappedEmailTemplate(
       'send-otp',
@@ -79,7 +105,7 @@ async function handleSendOtp(req: NextRequest) {
         otpCode: otp,
         expirationTime: otpExpires.toISOString(),
         organizationName: organizationName || '',
-        userName: user?.name || '',
+        userName: (user?.name || '') + (user?.role || ''),
       },
       organizationId,
     );
@@ -111,6 +137,8 @@ async function handleSendOtp(req: NextRequest) {
           eventType: '2fa_authentication',
         },
       },
+      null,
+      isCandidate,
     );
 
     if (mailResult.status === 200) {
@@ -119,11 +147,11 @@ async function handleSendOtp(req: NextRequest) {
     // If email service is down, 2FA is not possible.
     // We should also invalidate the current OTP attempt.
 
-    await Settings?.findOneAndUpdate(
-      { organizationId },
-      { $set: { 'twoFA.enable2FA': false } },
-      { new: true },
-    );
+    // await Settings?.findOneAndUpdate(
+    //   { organizationId },
+    //   { $set: { 'twoFA.enable2FA': false } },
+    //   { new: true },
+    // );
     return NextResponse.json(
       {
         message: 'Email service is currently unavailable. 2FA disabled',

@@ -73,7 +73,6 @@ const obfuscationOptions = {
 
     // Authentication and security
     "signToken",
-    "verifyToken",
     "verifyAndDecryptSSE",
     "getDecodedSSE",
     "jwt",

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { User } from '@/lib/mongodb';
 import {
   getAuthenticatedUser,
-  signToken,
+  signAccessToken,
   type AuthenticatedUser,
 } from '@/app/actions/auth';
 import { updateAccessToken } from '@/lib/authCookies';
@@ -74,7 +74,7 @@ const refreshAndReAssignToken = async (
   orgId: string,
   request: NextRequest,
 ) => {
-  const newToken = await signToken(data, orgId);
+  const newToken = await signAccessToken(data, orgId);
 
   const response = NextResponse.json({ message: 'User updated successfully' });
 

@@ -143,6 +143,7 @@ export const useHandleLoginSubmit = ({
             await sendOtp({
               email: values.email.toLowerCase().trim(),
               organizationId,
+              isCandidate: response.isCandidate,
             }).unwrap();
 
             toast({
@@ -151,7 +152,7 @@ export const useHandleLoginSubmit = ({
               variant: 'default',
             });
             router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}`,
+              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}${response.isCandidate ? '&isCandidate=true' : ''}`,
             );
           } catch (error) {
             logger.error(error);
@@ -166,24 +167,22 @@ export const useHandleLoginSubmit = ({
               variant: 'destructive',
             });
           }
-          return;
-        }
-        // Handle Redirects & Redux State
-        const redirectUrl = getRedirectUrl();
-
-        if (isAuthenticated) {
-          if (redirectUrl !== '/') {
-            router.push(redirectUrl);
+        } else {
+          // Handle Redirects & Redux State
+          const redirectUrl = getRedirectUrl();
+          dispatch(fetchUserFromToken());
+          if (isAuthenticated) {
+            if (redirectUrl !== '/') {
+              router.push(redirectUrl);
+            }
+            setUserLoggedIn(true);
+            toast({
+              title: 'Success',
+              description: 'Login successful',
+              variant: 'default',
+            });
           }
-          setUserLoggedIn(true);
-          toast({
-            title: 'Success',
-            description: 'Login successful',
-            variant: 'default',
-          });
         }
-
-        dispatch(fetchUserFromToken());
       } catch (err: unknown) {
         logger.error(err);
         const errorMessage =
