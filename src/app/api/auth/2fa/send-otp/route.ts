@@ -137,7 +137,7 @@ async function handleSendOtp(req: NextRequest) {
           eventType: '2fa_authentication',
         },
       },
-      null,
+      undefined,
       isCandidate,
     );
 
@@ -147,11 +147,11 @@ async function handleSendOtp(req: NextRequest) {
     // If email service is down, 2FA is not possible.
     // We should also invalidate the current OTP attempt.
 
-    // await Settings?.findOneAndUpdate(
-    //   { organizationId },
-    //   { $set: { 'twoFA.enable2FA': false } },
-    //   { new: true },
-    // );
+    await Settings?.findOneAndUpdate(
+      { organizationId },
+      { $set: { 'twoFA.enable2FA': false } },
+      { new: true },
+    );
     return NextResponse.json(
       {
         message: 'Email service is currently unavailable. 2FA disabled',
