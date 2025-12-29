@@ -13,14 +13,13 @@ async function handleVerifyOtp(req: NextRequest) {
     await connectToDatabase();
 
     const { email, otp, isCandidate = false } = await req.json();
-    console.log('req.body', email, otp, isCandidate);
     if (!email || !otp) {
       return NextResponse.json(
         { message: 'Email and OTP are required' },
         { status: 400 },
       );
     }
-
+    console.log("isCandidate",isCandidate,email,otp,"isCandidate,email,otp")
     const user = isCandidate
       ? await CandidateAccount?.findOne({
           email,
@@ -37,6 +36,7 @@ async function handleVerifyOtp(req: NextRequest) {
         })
           .select('name email role organizationId tokenVersion')
           .lean();
+    console.log("user",user,"user")
     if (!user) {
       return NextResponse.json(
         { message: 'Invalid or expired OTP' },
@@ -54,15 +54,17 @@ async function handleVerifyOtp(req: NextRequest) {
     ]);
     const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
 
+    const userWithTokenVersion = user as typeof user & { tokenVersion?: number };
     const response = await returnTokenBasedResponse({
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      organizationId: user.organizationId.toString(),
-      tokenVersion: user.tokenVersion,
+      id: userWithTokenVersion._id.toString(),
+      name: userWithTokenVersion.name,
+      email: userWithTokenVersion.email,
+      role: userWithTokenVersion.role,
+      organizationId: userWithTokenVersion.organizationId.toString(),
+      tokenVersion: userWithTokenVersion.tokenVersion,
       fileStorage,
     });
+
 
     return response;
   } catch (error) {

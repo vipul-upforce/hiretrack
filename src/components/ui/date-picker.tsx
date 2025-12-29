@@ -14,14 +14,26 @@ function PickerActionsPlugin({
   onDone,
   showNow,
   position,
+  isRange,
 }: {
-  onChange: (date: Date | null) => void;
+  onChange: (date: Date | Date[] | null) => void;
   onDone: () => void;
   showNow: boolean;
   position: 'bottom' | 'top';
+  isRange?: boolean;
 }) {
   const handleClear = () => {
     onChange(null);
+  };
+
+  const handleToday = () => {
+    const today = new Date(new Date().setHours(0, 0, 0, 0));
+    if (isRange) {
+      // For range mode, set today as both start and end
+      onChange([today, today]);
+    } else {
+      onChange(today);
+    }
   };
 
   return (
@@ -34,7 +46,7 @@ function PickerActionsPlugin({
         <button
           type="button"
           className="flex items-center gap-1 rounded border border-border bg-background px-1.5 py-1 text-[0.7rem] font-medium transition hover:bg-muted"
-          onClick={() => onChange(new Date(new Date().setHours(0, 0, 0, 0)))}
+          onClick={handleToday}
         >
           <Calendar className="h-3 w-3" /> Today
         </button>
@@ -72,8 +84,8 @@ function PickerActionsPlugin({
 PickerActionsPlugin.position = 'bottom';
 
 interface DatePickerProps {
-  value: Date | null;
-  onChange: (date: Date | null) => void;
+  value: Date | Date[] | null;
+  onChange: (date: Date | Date[] | null) => void;
   format?: string;
   placeholder?: string;
   className?: string;
@@ -132,6 +144,7 @@ export function DatePicker({
         if (pickerRef.current) pickerRef.current.closeCalendar();
       }}
       showNow={!!showTimePicker && showNowButton}
+      isRange={range}
     />,
   ];
 
@@ -168,18 +181,35 @@ export function DatePicker({
       return;
     }
     if (Array.isArray(date)) {
-      // For range mode, take the first date
-      onChange(date[0]?.toDate() || null);
+      // For range mode, convert all dates in the array
+      if (range) {
+        const dateArray = date
+          .map((d) => d?.toDate())
+          .filter((d): d is Date => d !== undefined && d !== null);
+        onChange(dateArray.length > 0 ? dateArray : null);
+      } else {
+        // For non-range mode with array, take the first date
+        onChange(date[0]?.toDate() || null);
+      }
       return;
     }
     onChange(date.toDate());
   };
 
+  // Convert value to format expected by MultiDatePicker
+  const pickerValue = (() => {
+    if (value === null) return null;
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return value;
+  })();
+
   return (
     <div ref={pickerContainerRef} className={cn('relative', className)}>
       <MultiDatePicker
         ref={pickerRef}
-        value={value}
+        value={pickerValue}
         onChange={handleChange}
         format={format}
         placeholder={placeholder}

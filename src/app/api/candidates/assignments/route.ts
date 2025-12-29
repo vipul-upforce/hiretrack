@@ -11,9 +11,11 @@ import { Types } from 'mongoose';
 import { parseGMTOffset, getTimeZoneDates } from '@/lib/utils/dateHelpers';
 import type { PipelineStage } from 'mongoose';
 import { logger } from '@/lib/logger/logger.server';
+import { ICandidate } from '@/lib/models/candidate';
 
 export async function GET(req: NextRequest) {
   try {
+    debugger;
     // Connect to database and authenticate in parallel
     const [userData] = await Promise.all([
       getAuthenticatedUser(req, ['admin', 'hr', 'interviewer']),
@@ -475,7 +477,7 @@ export async function GET(req: NextRequest) {
         .filter((label: any): label is string => typeof label === 'string');
 
       // Filter in-memory (no DB calls)
-      candidatesWithPrivateCF = candidates.data.map((candidate) => {
+      candidatesWithPrivateCF = candidates.data.map((candidate: ICandidate) => {
         const filteredCustomFields = Object.fromEntries(
           Object.entries(candidate.customFields || {}).filter(
             ([key]) => !privateFieldLabels.includes(key),

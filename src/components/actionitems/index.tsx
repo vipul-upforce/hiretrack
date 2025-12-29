@@ -13,10 +13,10 @@ function ActionItems({
   setAssignments,
   assignments,
 }: {
-  assignment: Assignment | Candidate;
+  assignment: Candidate;
   fetchAssignments: () => void;
-  setAssignments: any;
-  assignments: (Assignment | Candidate)[];
+  setAssignments: (a: Candidate[]) => void;
+  assignments: Candidate[];
 }) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
@@ -36,13 +36,11 @@ function ActionItems({
       setCandidate(updatedCandidate);
 
       const updatedAssignments = !updatedCandidate.assignment
-        ? assignments.filter(
-            (assignment) => assignment._id !== updatedCandidate._id,
-          )
-        : assignments.map((assignment) =>
-            assignment._id === updatedCandidate._id
-              ? { ...assignment, ...updatedCandidate } // merge updated data
-              : assignment,
+        ? assignments.filter((a) => a._id !== updatedCandidate._id)
+        : assignments.map((a) =>
+            a._id === updatedCandidate._id
+              ? { ...a, ...updatedCandidate } // merge updated data
+              : a,
           );
       setAssignments(updatedAssignments);
       toast({
@@ -65,7 +63,7 @@ function ActionItems({
         setCandidate(assignment as Candidate);
       } else {
         const transformedCandidate: Candidate = {
-          _id: assignment._id || assignment.id,
+          _id: assignment._id,
           jobId: {
             _id: assignment.jobId._id || '',
             title: assignment.jobId.title,
@@ -84,7 +82,7 @@ function ActionItems({
           resume: assignment.resume,
           remarks: Array.isArray(assignment.remarks)
             ? assignment.remarks
-            : ([assignment.remarks].filter(Boolean) as Remark[]),
+            : ([assignment.remarks].filter(Boolean) as unknown as Remark[]),
           attachments: assignment.attachments || [],
           status: assignment.status as CandidateStatus,
           tracking: assignment.tracking,
@@ -98,7 +96,7 @@ function ActionItems({
           tags: assignment.tags,
           assignment: (assignment as Candidate).assignment || null,
           history: (assignment as Candidate).history || [],
-          email: (assignment as Candidate).email || undefined,
+          email: (assignment as Candidate).email,
           scores: (assignment as Candidate).scores || undefined,
           organizationId: assignment.organizationId || undefined,
           isDeleted: (assignment as Candidate).isDeleted || false,

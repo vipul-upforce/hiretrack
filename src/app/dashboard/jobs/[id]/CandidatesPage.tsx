@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  ChevronDown, Filter, LayoutList, LayoutGrid,
-} from 'lucide-react';
+import { ChevronDown, Filter, LayoutList, LayoutGrid } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -18,33 +16,42 @@ export default function CandidatesPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl p-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           {/* All Jobs Dropdown */}
-          <button className="border px-4 py-2 rounded-md flex items-center gap-2 shadow-sm">
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-md border px-4 py-2 shadow-sm"
+          >
             <span>All Jobs (156)</span>
             <ChevronDown size={16} />
           </button>
 
           {/* View Toggle */}
-          <div className="bg-muted p-1 rounded-md flex gap-1">
+          <div className="flex gap-1 rounded-md bg-muted p-1">
             <button
+              type="button"
               onClick={() => setView('board')}
               className={cn(
-                'px-3 py-1 rounded-md flex items-center gap-1 text-sm',
-                view === 'board' ? 'bg-white shadow text-black' : 'text-muted-foreground',
+                'flex items-center gap-1 rounded-md px-3 py-1 text-sm',
+                view === 'board'
+                  ? 'bg-white text-black shadow'
+                  : 'text-muted-foreground',
               )}
             >
               <LayoutGrid size={16} />
               Board
             </button>
             <button
+              type="button"
               onClick={() => setView('list')}
               className={cn(
-                'px-3 py-1 rounded-md flex items-center gap-1 text-sm',
-                view === 'list' ? 'bg-white shadow text-black' : 'text-muted-foreground',
+                'flex items-center gap-1 rounded-md px-3 py-1 text-sm',
+                view === 'list'
+                  ? 'bg-white text-black shadow'
+                  : 'text-muted-foreground',
               )}
             >
               <LayoutList size={16} />
@@ -56,7 +63,8 @@ export default function CandidatesPage() {
         {/* Filter Button */}
         <div className="relative">
           <button
-            className="border px-4 py-2 rounded-md flex items-center gap-2 shadow-sm"
+            type="button"
+            className="flex items-center gap-2 rounded-md border px-4 py-2 shadow-sm"
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter size={16} />
@@ -64,13 +72,15 @@ export default function CandidatesPage() {
           </button>
 
           {showFilters && (
-            <div className="absolute right-0 mt-2 w-72 bg-background shadow-lg rounded-lg p-4 border z-10">
-              <h4 className="font-medium mb-2">Filter Candidates</h4>
+            <div className="absolute right-0 z-10 mt-2 w-72 rounded-lg border bg-background p-4 shadow-lg">
+              <h4 className="mb-2 font-medium">Filter Candidates</h4>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-muted-foreground">Assigned To</label>
+                  <label className="text-sm text-muted-foreground">
+                    Assigned To
+                  </label>
                   <Select>
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger className="mt-1 w-full">
                       <SelectValue placeholder="All Assignees" />
                     </SelectTrigger>
                     <SelectContent>
@@ -79,9 +89,11 @@ export default function CandidatesPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">AI Score Range</label>
+                  <label className="text-sm text-muted-foreground">
+                    AI Score Range
+                  </label>
                   <Select>
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger className="mt-1 w-full">
                       <SelectValue placeholder="All Scores" />
                     </SelectTrigger>
                     <SelectContent>
@@ -90,9 +102,11 @@ export default function CandidatesPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm text-muted-foreground">Application Date</label>
+                  <label className="text-sm text-muted-foreground">
+                    Application Date
+                  </label>
                   <Select>
-                    <SelectTrigger className="w-full mt-1">
+                    <SelectTrigger className="mt-1 w-full">
                       <SelectValue placeholder="All Time" />
                     </SelectTrigger>
                     <SelectContent>
@@ -107,7 +121,7 @@ export default function CandidatesPage() {
       </div>
 
       {/* Content Placeholder */}
-      <div className="border-2 border-dashed h-64 rounded-md flex items-center justify-center text-gray-400">
+      <div className="flex h-64 items-center justify-center rounded-md border-2 border-dashed text-gray-400">
         {view === 'board' ? 'Board View Content' : 'List View Content'}
       </div>
     </div>

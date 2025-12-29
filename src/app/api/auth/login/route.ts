@@ -13,56 +13,6 @@ import { emailLoginRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 import { returnTokenBasedResponse } from '@/lib/refreshToken';
 
-async function handleLogin(req: NextRequest) {
-  try {
-    await connectToDatabase();
-    const { email, password, orgId } = await req.json();
-
-    if (!User || !Organization || !Settings || !CandidateAccount) {
-      return NextResponse.json(
-        { error: 'Database not connected' },
-        { status: 500 },
-      );
-    }
-
-    // Find all organizations with the same email
-    const users = await User.find({
-      email,
-      isDeleted: {
-        $ne: true,
-      },
-    });
-    const candidates = await CandidateAccount.find({ email }).lean();
-    console.log('users', users , "candidates", candidates);
-    // Check if email exists in either collection
-    if (users.length === 0 && candidates.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    if (users.length > 0 && candidates.length > 0) {
-      return await checkMultipleOrgs(orgId, users, candidates, password, req);
-    }
-
-    // Check if user exists in User collection
-    if (users.length > 0) {
-      return await userLogin(users, orgId, password, req);
-    }
-
-    // Check if candidate exists
-    if (candidates && candidates.length > 0) {
-      return await candidateLogin(candidates, orgId, password, req);
-    }
-
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-  } catch (error) {
-    logger.error({ error }, 'Error during login');
-
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-  }
-}
-
 const userLogin = async (
   users: IUser[],
   orgId: string,
@@ -188,8 +138,6 @@ const candidateLogin = async (
 ) => {
   const candidate = candidates[0];
   if (orgId) {
-    console.log('orgId is provided', orgId);
-    
     const candidateInOrg = candidates.find(
       (c) => c.organizationId.toString() === orgId,
     );
@@ -217,7 +165,7 @@ const candidateLogin = async (
       .lean();
     const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
     const twoFA = fileStorageResult?.twoFA?.enable2FA as boolean;
-    
+
     if (twoFA) {
       const response = NextResponse.json({
         message: 'Continuing to next step for 2fa',
@@ -473,20 +421,20 @@ const checkMultipleOrgs = async (
 
   // Add organizations from User collection
   for (const user of users) {
-    const orgId = user.organizationId.toString();
+    const userOrgId = user.organizationId.toString();
     const orgInfo = await Organization!
       .findById(user.organizationId)
       .select('name _id');
 
-    if (!orgMap.has(orgId)) {
-      orgMap.set(orgId, {
-        orgId,
+    if (!orgMap.has(userOrgId)) {
+      orgMap.set(userOrgId, {
+        userOrgId,
         name: orgInfo?.name,
         isCandidate: false,
         accountTypes: ['user'],
       });
     } else {
-      const org = orgMap.get(orgId);
+      const org = orgMap.get(userOrgId);
       if (!org.accountTypes.includes('user')) {
         org.accountTypes.push('user');
       }
@@ -495,20 +443,20 @@ const checkMultipleOrgs = async (
 
   // Add organizations from CandidateAccount collection
   for (const candidate of candidates) {
-    const orgId = candidate.organizationId.toString();
+    const candidateOrgId = candidate.organizationId.toString();
     const orgInfo = await Organization!
       .findById(candidate.organizationId)
       .select('name _id');
 
-    if (!orgMap.has(orgId)) {
-      orgMap.set(orgId, {
-        orgId,
+    if (!orgMap.has(candidateOrgId)) {
+      orgMap.set(candidateOrgId, {
+        candidateOrgId,
         name: orgInfo?.name,
         isCandidate: true,
         accountTypes: ['candidate'],
       });
     } else {
-      const org = orgMap.get(orgId);
+      const org = orgMap.get(candidateOrgId);
       if (!org.accountTypes.includes('candidate')) {
         org.accountTypes.push('candidate');
       }
@@ -530,9 +478,58 @@ const checkMultipleOrgs = async (
     { status: 200 },
   );
 };
+async function handleLogin(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const { email, password, orgId } = await req.json();
 
+    if (!User || !Organization || !Settings || !CandidateAccount) {
+      return NextResponse.json(
+        { error: 'Database not connected' },
+        { status: 500 },
+      );
+    }
+
+    // Find all organizations with the same email
+    const users = await User.find({
+      email,
+      isDeleted: {
+        $ne: true,
+      },
+    });
+    const candidates = await CandidateAccount.find({ email }).lean();
+    console.log('users', users, 'candidates', candidates);
+    // Check if email exists in either collection
+    if (users.length === 0 && candidates.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (users.length > 0 && candidates.length > 0) {
+      return await checkMultipleOrgs(orgId, users, candidates, password, req);
+    }
+
+    // Check if user exists in User collection
+    if (users.length > 0) {
+      return await userLogin(users, orgId, password, req);
+    }
+
+    // Check if candidate exists
+    if (candidates && candidates.length > 0) {
+      return await candidateLogin(candidates, orgId, password, req);
+    }
+
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  } catch (error) {
+    logger.error({ error }, 'Error during login');
+
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+  }
+}
 // Export with email-based rate limiting
 export async function POST(req: NextRequest) {
   // SECURITY FIX: Apply email-based rate limiting to prevent brute force attacks
-  return await emailLoginRateLimiter(req, handleLogin);
+  // return await emailLoginRateLimiter(req, handleLogin);
+  return emailLoginRateLimiter(req, handleLogin);
 }

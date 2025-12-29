@@ -5,18 +5,17 @@
 
 import React from 'react';
 import { Candidate } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import { scoreColors } from '@/lib/constants';
 import { QuickTooltip } from '@/components/ui/tooltip';
 import { Trophy, Bell, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAppSelector } from '@/lib/redux/hooks';
 import ResumeEvaluationDetails from '../../Candidate/ResumeEvaluationDetails';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
 import { useFollowUpParsing } from '../../../hooks/useFollowUpParsing';
 
 interface CandidateOverviewTabProps {
   candidate: Candidate;
-  user: User | null;
   onEditFollowUp: () => void;
   onRemoveFollowUp: () => void;
   isReEvaluating: boolean;
@@ -95,19 +94,17 @@ function ScoreCard({
  */
 interface FollowUpSectionProps {
   candidate: Candidate;
-  user: User | null;
   onEdit: () => void;
   onRemove: () => void;
 }
 
 function FollowUpSection({
   candidate,
-  user,
   onEdit,
   onRemove,
 }: FollowUpSectionProps) {
   const parsed = useFollowUpParsing(candidate);
-
+  const { user } = useAppSelector((state) => state.auth);
   if (!candidate.followUp?.date && !candidate.followUp?.note) {
     return null;
   }
@@ -466,7 +463,6 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
  */
 export function CandidateOverviewTab({
   candidate,
-  user,
   onEditFollowUp,
   onRemoveFollowUp,
   isReEvaluating,
@@ -478,7 +474,6 @@ export function CandidateOverviewTab({
       {/* Follow-up Section */}
       <FollowUpSection
         candidate={candidate}
-        user={user}
         onEdit={onEditFollowUp}
         onRemove={onRemoveFollowUp}
       />

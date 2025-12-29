@@ -45,7 +45,7 @@ async function handleSendOtp(req: NextRequest) {
           email,
           organizationId,
           isDeleted:{$ne: true},
-        }).select('name email role organizationId tokenVersion').populate({
+        }).select('name email role organizationId tokenVersion otp otpExpires').populate({
           path: 'organizationId',
           select: 'name', // populate only organization name
         }).lean()
@@ -53,11 +53,11 @@ async function handleSendOtp(req: NextRequest) {
           email,
           organizationId,
           isDeleted: { $ne: true },
-        }).select('name email role organizationId tokenVersion').populate({
+        }).select('name email role organizationId tokenVersion otp otpExpires').populate({
           path: 'organizationId',
           select: 'name', // populate only organization name
         }).lean();
-
+        console.log("isCandidate",isCandidate,user,"user")
     const organizationName =
       (user?.organizationId as unknown as { name: string })?.name || '';
     // Check if user has an existing OTP and its generation time
@@ -137,6 +137,8 @@ async function handleSendOtp(req: NextRequest) {
           eventType: '2fa_authentication',
         },
       },
+      null,
+      isCandidate,
     );
 
     if (mailResult.status === 200) {
@@ -145,11 +147,11 @@ async function handleSendOtp(req: NextRequest) {
     // If email service is down, 2FA is not possible.
     // We should also invalidate the current OTP attempt.
 
-    await Settings?.findOneAndUpdate(
-      { organizationId },
-      { $set: { 'twoFA.enable2FA': false } },
-      { new: true },
-    );
+    // await Settings?.findOneAndUpdate(
+    //   { organizationId },
+    //   { $set: { 'twoFA.enable2FA': false } },
+    //   { new: true },
+    // );
     return NextResponse.json(
       {
         message: 'Email service is currently unavailable. 2FA disabled',

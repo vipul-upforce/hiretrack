@@ -1,0 +1,422 @@
+next.config.ts(44,7): error TS6133: 'webpack' is declared but its value is never read.
+src/app/api/auth/2fa/verify-otp/route.ts(106,66): error TS6133: 'req' is declared but its value is never read.
+src/app/api/auth/login/route.ts(24,16): error TS7030: Not all code paths return a value.
+src/app/api/auth/login/route.ts(109,9): error TS18047: 'orgSettings' is possibly 'null'.
+src/app/api/auth/login/route.ts(109,9): error TS18048: 'orgSettings.twoFA' is possibly 'undefined'.
+src/app/api/auth/login/route.ts(539,51): error TS6133: 'req' is declared but its value is never read.
+src/app/api/auth/login/route.ts(603,43): error TS2345: Argument of type '(req: NextRequest) => Promise<NextResponse<{ error: string; }> | NextResponse<{ accounts: ({ id: string; name: string; email: string; role: "hr" | "candidate" | "admin" | "interviewer" | "system"; ... 4 more ...; appliedApplications?: undefined; } | { ...; })[]; message: string; }> | ... 5 more ... | undefined>' is not assignable to parameter of type '(req: NextRequest) => Promise<NextResponse<unknown>>'.
+  Type 'Promise<NextResponse<{ error: string; }> | NextResponse<{ accounts: ({ id: string; name: string; email: string; role: "hr" | "candidate" | "admin" | "interviewer" | "system"; organizationId: string; isCandidate: boolean; organizationInfo: (Document<...> & ... 2 more ... & { ...; }) | null; fileStorage: string | unde...' is not assignable to type 'Promise<NextResponse<unknown>>'.
+    Type 'NextResponse<{ error: string; }> | NextResponse<{ accounts: ({ id: string; name: string; email: string; role: "hr" | "candidate" | "admin" | "interviewer" | "system"; organizationId: string; isCandidate: boolean; organizationInfo: (Document<...> & ... 2 more ... & { ...; }) | null; fileStorage: string | undefined; a...' is not assignable to type 'NextResponse<unknown>'.
+      Type 'undefined' is not assignable to type 'NextResponse<unknown>'.
+src/app/api/auth/me/route.ts(7,11): error TS6133: 'token' is declared but its value is never read.
+src/app/api/auth/me/route.ts(8,11): error TS6133: 'orgId' is declared but its value is never read.
+src/app/api/auth/me/route.ts(11,11): error TS6133: 'defaultCandidateUser' is declared but its value is never read.
+src/app/api/auth/refresh/route.ts(64,24): error TS18047: 'User' is possibly 'null'.
+src/app/api/auth/refresh/route.ts(71,22): error TS18047: 'CandidateAccount' is possibly 'null'.
+src/app/api/auth/refresh/route.ts(113,10): error TS2454: Variable 'userId' is used before being assigned.
+src/app/api/auth/refresh/route.ts(143,15): error TS18047: 'CandidateAccount' is possibly 'null'.
+src/app/api/auth/refresh/route.ts(146,15): error TS18047: 'User' is possibly 'null'.
+src/app/api/auth/refresh/route.ts(154,31): error TS18047: 'Settings' is possibly 'null'.
+src/app/api/candidates/[id]/submit-checklist/route.ts(214,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/api/candidates/[id]/submit-checklist/route.ts(233,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/api/candidates/[id]/submit-checklist/route.ts(239,28): error TS2322: Type '{ description: string; date: string; rating?: number | undefined; userId: ObjectId; } | { id?: string | undefined; isPrivate?: boolean | undefined; description: string; date: string; rating?: number | undefined; userId: { ...; }; } | undefined' is not assignable to type '{ description: string; date: string; rating?: number | undefined; userId: ObjectId; }'.
+  Type 'undefined' is not assignable to type '{ description: string; date: string; rating?: number | undefined; userId: ObjectId; }'.
+src/app/api/candidates/[id]/submit-checklist/route.ts(239,58): error TS2322: Type '{ id?: string | undefined; isPrivate?: boolean | undefined; description: string; date: string; rating?: number | undefined; userId: { _id: string; name: string; email: string; }; } | undefined' is not assignable to type '{ description: string; date: string; rating?: number | undefined; userId: ObjectId; }'.
+  Type 'undefined' is not assignable to type '{ description: string; date: string; rating?: number | undefined; userId: ObjectId; }'.
+src/app/api/candidates/assignments/route.ts(478,54): error TS7006: Parameter 'candidate' implicitly has an 'any' type.
+src/app/api/candidates/bulk-archive/route.ts(102,25): error TS18049: 'userCookie.user' is possibly 'null' or 'undefined'.
+src/app/api/candidates/evaluate/utils/settings-utils.ts(59,30): error TS2345: Argument of type 'IAIProviders' is not assignable to parameter of type 'ProvidersConfig'.
+  Index signature for type 'string' is missing in type 'IAIProviders'.
+src/app/api/candidates/getJob/[jobId]/route.ts(4,23): error TS7030: Not all code paths return a value.
+src/app/api/candidates/getJob/[jobId]/route.ts(5,3): error TS6133: 'request' is declared but its value is never read.
+src/app/api/candidates/history/route.ts(26,23): error TS7030: Not all code paths return a value.
+src/app/api/candidates/history/route.ts(64,7): error TS18047: 'JobLaneConfig' is possibly 'null'.
+src/app/api/candidates/history/route.ts(207,24): error TS18048: 'item._id' is possibly 'undefined'.
+src/app/api/candidates/job/[id]/route.ts(4,23): error TS7030: Not all code paths return a value.
+src/app/api/candidates/share-pdf/route.ts(9,23): error TS7016: Could not find a declaration file for module 'jsdom'. '/Users/Upforce1/Documents/Hiretrack-6Nov1205/hiretrack/node_modules/jsdom/lib/api.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/jsdom` if it exists or add a new declaration (.d.ts) file containing `declare module 'jsdom';`
+src/app/api/candidates/signup/route.ts(8,23): error TS7030: Not all code paths return a value.
+src/app/api/settings/ai-providers/route.ts(59,5): error TS2322: Type 'ProvidersConfig | null | undefined' is not assignable to type 'FlattenMaps<{ activeProvider: "openai" | "anthropic" | "gemini" | "perplexity"; gemini: { api_key: string; model: string; customModel: string; }; openai: { api_key: string; model: string; customModel: string; }; anthropic: { ...; }; perplexity: { ...; }; }>'.
+  Type 'undefined' is not assignable to type 'FlattenMaps<{ activeProvider: "openai" | "anthropic" | "gemini" | "perplexity"; gemini: { api_key: string; model: string; customModel: string; }; openai: { api_key: string; model: string; customModel: string; }; anthropic: { ...; }; perplexity: { ...; }; }>'.
+src/app/api/shared-files/[shareId]/route.ts(84,7): error TS2554: Expected 2 arguments, but got 3.
+src/app/dashboard/analytics/components/header-controls.tsx(84,15): error TS2322: Type 'Date[] | null' is not assignable to type 'Date | null'.
+  Type 'Date[]' is missing the following properties from type 'Date': toDateString, toTimeString, toLocaleDateString, toLocaleTimeString, and 37 more.
+src/app/dashboard/analytics/components/header-controls.tsx(86,30): error TS2345: Argument of type 'Date | null' is not assignable to parameter of type 'SetStateAction<Date[] | null>'.
+  Type 'Date' is not assignable to type 'SetStateAction<Date[] | null>'.
+    Type 'Date' is missing the following properties from type 'Date[]': length, pop, push, concat, and 35 more.
+src/app/dashboard/calendar/hooks/useCalendarData.ts(41,38): error TS2339: Property 'data' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/hooks/useCalendarData.ts(41,64): error TS2339: Property 'data' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(20,1): error TS6133: 'useRoles' is declared but its value is never read.
+src/app/dashboard/calendar/page.tsx(127,5): error TS2345: Argument of type 'string' is not assignable to parameter of type '(candidate: Candidate | CustomCalendarEvent | null) => void'.
+src/app/dashboard/calendar/page.tsx(151,36): error TS2339: Property 'data' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(151,62): error TS2339: Property 'data' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(167,33): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/calendar/page.tsx(183,42): error TS2339: Property 'data' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(195,31): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/calendar/page.tsx(205,5): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: CandidateAssignment | null, index: number, array: (CandidateAssignment | null)[]) => value is CandidateAssignment | null, thisArg?: any): (CandidateAssignment | null)[]', gave the following error.
+    Argument of type '(assignment: CandidateAssignment) => boolean' is not assignable to parameter of type '(value: CandidateAssignment | null, index: number, array: (CandidateAssignment | null)[]) => value is CandidateAssignment | null'.
+      Types of parameters 'assignment' and 'value' are incompatible.
+        Type 'CandidateAssignment | null' is not assignable to type 'CandidateAssignment'.
+          Type 'null' is not assignable to type 'CandidateAssignment'.
+  Overload 2 of 2, '(predicate: (value: CandidateAssignment | null, index: number, array: (CandidateAssignment | null)[]) => unknown, thisArg?: any): (CandidateAssignment | null)[]', gave the following error.
+    Argument of type '(assignment: CandidateAssignment) => boolean' is not assignable to parameter of type '(value: CandidateAssignment | null, index: number, array: (CandidateAssignment | null)[]) => unknown'.
+      Types of parameters 'assignment' and 'value' are incompatible.
+        Type 'CandidateAssignment | null' is not assignable to type 'CandidateAssignment'.
+          Type 'null' is not assignable to type 'CandidateAssignment'.
+src/app/dashboard/calendar/page.tsx(215,29): error TS18047: 'user' is possibly 'null'.
+src/app/dashboard/calendar/page.tsx(267,9): error TS2322: Type '{ id: string; title: string; start: Date | null; startStr: string; end: Date | null; endStr: string; allDay: false; display: string; backgroundColor: string; borderColor: string; url: string; extendedProps: { ...; }; }[]' is not assignable to type 'CustomCalendarEvent[]'.
+  Type '{ id: string; title: string; start: Date | null; startStr: string; end: Date | null; endStr: string; allDay: false; display: string; backgroundColor: string; borderColor: string; url: string; extendedProps: { ...; }; }' is not assignable to type 'CustomCalendarEvent'.
+    Types of property 'start' are incompatible.
+      Type 'Date | null' is not assignable to type 'Date | undefined'.
+        Type 'null' is not assignable to type 'Date | undefined'.
+src/app/dashboard/calendar/page.tsx(269,7): error TS2345: Argument of type '(candidate: CandidateAssignment, index: number) => { id: string; title: string; start: Date | null; startStr: string; end: Date | null; endStr: string; allDay: false; display: string; backgroundColor: string; borderColor: string; url: string; extendedProps: { ...; }; }' is not assignable to parameter of type '(value: CandidateAssignment | null, index: number, array: (CandidateAssignment | null)[]) => { id: string; title: string; start: Date | null; ... 8 more ...; extendedProps: { ...; }; }'.
+  Types of parameters 'candidate' and 'value' are incompatible.
+    Type 'CandidateAssignment | null' is not assignable to type 'CandidateAssignment'.
+      Type 'null' is not assignable to type 'CandidateAssignment'.
+src/app/dashboard/calendar/page.tsx(375,15): error TS2322: Type 'Assignment | { interviewerId: string; time: string; assignedAt: string; status: string; }' is not assignable to type 'Assignment | null'.
+  Object literal may only specify known properties, and 'status' does not exist in type 'Assignment'.
+src/app/dashboard/calendar/page.tsx(678,30): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(681,38): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(682,35): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(683,35): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(685,31): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(687,31): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(690,35): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(693,31): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(696,31): error TS2339: Property 'start' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'start' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(699,31): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(703,33): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(713,47): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/calendar/page.tsx(719,36): error TS2339: Property 'extendedProps' does not exist on type 'Candidate | CustomCalendarEvent'.
+  Property 'extendedProps' does not exist on type 'Candidate'.
+src/app/dashboard/jobs-board/components/create-job-dialog.tsx(201,37): error TS6133: 'touched' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(72,19): error TS6133: 'setLoading' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(80,11): error TS6133: 'isLoading' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(80,22): error TS6133: 'isError' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(80,31): error TS6133: 'error' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(82,30): error TS6133: 'isSaving' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(306,23): error TS7006: Parameter 'provided' implicitly has an 'any' type.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(306,33): error TS7006: Parameter 'snapshot' implicitly has an 'any' type.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(322,31): error TS7006: Parameter 'provided' implicitly has an 'any' type.
+src/app/dashboard/jobs-board/components/DefaultLanesButton.tsx(322,41): error TS7006: Parameter 'snapshot' implicitly has an 'any' type.
+src/app/dashboard/jobs-board/components/edit-job-form.tsx(3,24): error TS6133: 'FormikErrors' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/job-card.tsx(406,43): error TS2339: Property 'base64' does not exist on type 'FileData | File'.
+  Property 'base64' does not exist on type 'File'.
+src/app/dashboard/jobs-board/components/job-details-fields.tsx(11,1): error TS6133: 'ExpandableDescription' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/job-form.tsx(63,25): error TS6133: 'props' is declared but its value is never read.
+src/app/dashboard/jobs-board/components/job-form.tsx(410,47): error TS2339: Property 'skills' does not exist on type 'boolean'.
+src/app/dashboard/jobs-board/components/job-form.tsx(410,83): error TS2339: Property 'skills' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(411,83): error TS2339: Property 'skills' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(433,47): error TS2339: Property 'experience' does not exist on type 'boolean'.
+src/app/dashboard/jobs-board/components/job-form.tsx(433,87): error TS2339: Property 'experience' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(434,83): error TS2339: Property 'experience' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(456,47): error TS2339: Property 'affordability' does not exist on type 'boolean'.
+src/app/dashboard/jobs-board/components/job-form.tsx(456,90): error TS2339: Property 'affordability' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(457,83): error TS2339: Property 'affordability' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(479,47): error TS2339: Property 'overall' does not exist on type 'boolean'.
+src/app/dashboard/jobs-board/components/job-form.tsx(479,84): error TS2339: Property 'overall' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/job-form.tsx(480,83): error TS2339: Property 'overall' does not exist on type 'string'.
+src/app/dashboard/jobs-board/components/JobAnalyticsModal.tsx(236,23): error TS2322: Type 'Date[] | null' is not assignable to type 'Date | null'.
+  Type 'Date[]' is missing the following properties from type 'Date': toDateString, toTimeString, toLocaleDateString, toLocaleTimeString, and 37 more.
+src/app/dashboard/jobs-board/components/JobAnalyticsModal.tsx(238,38): error TS2345: Argument of type 'Date | null' is not assignable to parameter of type 'SetStateAction<Date[] | null>'.
+  Type 'Date' is not assignable to type 'SetStateAction<Date[] | null>'.
+    Type 'Date' is missing the following properties from type 'Date[]': length, pop, push, concat, and 35 more.
+src/app/dashboard/jobs-board/components/jobs-table/index.tsx(34,9): error TS2322: Type '{ label: string; showOnCard: boolean | undefined; jobId: string | undefined; }[]' is not assignable to type 'CustomFieldDef[]'.
+  Type '{ label: string; showOnCard: boolean | undefined; jobId: string | undefined; }' is not assignable to type 'CustomFieldDef'.
+    Types of property 'showOnCard' are incompatible.
+      Type 'boolean | undefined' is not assignable to type 'boolean'.
+        Type 'undefined' is not assignable to type 'boolean'.
+src/app/dashboard/jobs-board/components/table-skeleton.tsx(65,40): error TS6133: 'field' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Candidate/candidate-form-components/CandidateAssignmentSection.tsx(1,10): error TS6133: 'useField' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Candidate/candidate-form-components/CandidateProfessionalDetailsSection.tsx(8,39): error TS6133: 'errors' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Candidate/candidate-form-components/CandidateResumeSection.tsx(23,28): error TS7030: Not all code paths return a value.
+src/app/dashboard/jobs/[id]/components/Candidate/HistoryEntry/components/ChecklistResponseViewer.tsx(25,5): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(predicate: (value: [string, ChecklistHistoryResponseItem], index: number, array: [string, ChecklistHistoryResponseItem][]) => value is [...], thisArg?: any): [...][]', gave the following error.
+    Argument of type '([, resp]: [string, { visibleInHistory: string[]; }]) => boolean' is not assignable to parameter of type '(value: [string, ChecklistHistoryResponseItem], index: number, array: [string, ChecklistHistoryResponseItem][]) => value is [...]'.
+      Types of parameters '__0' and 'value' are incompatible.
+        Type '[string, ChecklistHistoryResponseItem]' is not assignable to type '[string, { visibleInHistory: string[]; }]'.
+          Type at position 1 in source is not compatible with type at position 1 in target.
+            The types of 'visibleInHistory' are incompatible between these types.
+              Type 'string[] | undefined' is not assignable to type 'string[]'.
+                Type 'undefined' is not assignable to type 'string[]'.
+  Overload 2 of 2, '(predicate: (value: [string, ChecklistHistoryResponseItem], index: number, array: [string, ChecklistHistoryResponseItem][]) => unknown, thisArg?: any): [...][]', gave the following error.
+    Argument of type '([, resp]: [string, { visibleInHistory: string[]; }]) => boolean' is not assignable to parameter of type '(value: [string, ChecklistHistoryResponseItem], index: number, array: [string, ChecklistHistoryResponseItem][]) => unknown'.
+      Types of parameters '__0' and 'value' are incompatible.
+        Type '[string, ChecklistHistoryResponseItem]' is not assignable to type '[string, { visibleInHistory: string[]; }]'.
+          Type at position 1 in source is not compatible with type at position 1 in target.
+            The types of 'visibleInHistory' are incompatible between these types.
+              Type 'string[] | undefined' is not assignable to type 'string[]'.
+                Type 'undefined' is not assignable to type 'string[]'.
+src/app/dashboard/jobs/[id]/components/Candidate/HistoryEntry/components/EntryOptionsMenu.tsx(75,11): error TS2322: Type '{ type: "remark"; remarkId: string; isPrivate: boolean; onTogglePrivacy: (id: string, isPrivate: boolean) => Promise<void>; onEdit: () => void; isOpen: boolean; setIsOpen: (open: any) => void; }' is not assignable to type 'IntrinsicAttributes & RemarkOptionsMenuProps'.
+  Property 'setIsOpen' does not exist on type 'IntrinsicAttributes & RemarkOptionsMenuProps'. Did you mean 'isOpen'?
+src/app/dashboard/jobs/[id]/components/Candidate/HistoryEntry/components/EntryOptionsMenu.tsx(75,23): error TS7006: Parameter 'open' implicitly has an 'any' type.
+src/app/dashboard/jobs/[id]/components/Candidate/HistoryEntry/components/EntryOptionsMenu.tsx(102,11): error TS2322: Type '{ type: "note"; remarkId: string; onEdit: () => void; isOpen: boolean; setIsOpen: (open: any) => void; }' is not assignable to type 'IntrinsicAttributes & RemarkOptionsMenuProps'.
+  Property 'setIsOpen' does not exist on type 'IntrinsicAttributes & RemarkOptionsMenuProps'. Did you mean 'isOpen'?
+src/app/dashboard/jobs/[id]/components/Candidate/HistoryEntry/components/EntryOptionsMenu.tsx(102,23): error TS7006: Parameter 'open' implicitly has an 'any' type.
+src/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog.tsx(7,1): error TS6133: 'Cookies' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog.tsx(154,13): error TS2322: Type 'number | null' is not assignable to type 'string | number | undefined'.
+  Type 'null' is not assignable to type 'string | number | undefined'.
+src/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog.tsx(231,28): error TS6133: 'e' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog.tsx(54,28): error TS6133: 'candidateData' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog.tsx(87,10): error TS2345: Argument of type 'Dispatch<SetStateAction<Candidate | null>>' is not assignable to parameter of type '(candidate: Candidate | CustomCalendarEvent | null) => void'.
+  Types of parameters 'value' and 'candidate' are incompatible.
+    Type 'Candidate | CustomCalendarEvent | null' is not assignable to type 'SetStateAction<Candidate | null>'.
+      Type 'CustomCalendarEvent' is not assignable to type 'SetStateAction<Candidate | null>'.
+        Type 'CustomCalendarEvent' is missing the following properties from type 'Candidate': _id, jobId, name, email, and 10 more.
+src/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog.tsx(401,11): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog.tsx(451,11): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog.tsx(463,11): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/ChecklistFieldRenderer.tsx(178,13): error TS2322: Type 'Date | undefined' is not assignable to type 'Date | null'.
+  Type 'undefined' is not assignable to type 'Date | null'.
+src/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-dialog.tsx(571,15): error TS2322: Type '{ newRemark: string; setNewRemark: Dispatch<SetStateAction<string>>; remarkRating: number | null; setRemarkRating: Dispatch<SetStateAction<number | null>>; ... 5 more ...; user: ILocalUser | null; }' is not assignable to type 'IntrinsicAttributes & ChecklistRemarksSectionProps'.
+  Property 'user' does not exist on type 'IntrinsicAttributes & ChecklistRemarksSectionProps'.
+src/app/dashboard/jobs/[id]/components/Dialogs/manage-tags-dialog.tsx(332,49): error TS2322: Type '{ w: number; }' is not assignable to type 'IntrinsicAttributes & { width?: number | undefined; }'.
+  Property 'w' does not exist on type 'IntrinsicAttributes & { width?: number | undefined; }'.
+src/app/dashboard/jobs/[id]/components/Dialogs/tabs/CandidateDetailsTabs.tsx(116,13): error TS2322: Type '{ candidate: Candidate; user: ILocalUser | null; candidateHistory: ICandidateHistory[] | undefined; isHistoryLoading: boolean; isRemarkSubmitting: boolean; ... 4 more ...; historyLoaded: boolean; }' is not assignable to type 'IntrinsicAttributes & CandidateHistoryTabProps'.
+  Property 'user' does not exist on type 'IntrinsicAttributes & CandidateHistoryTabProps'.
+src/app/dashboard/jobs/[id]/components/Dialogs/tabs/CandidateDetailsTabs.tsx(131,13): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/components/Dialogs/tabs/CandidateHistoryTab.tsx(11,1): error TS6133: 'User' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/components/Dialogs/tabs/CandidateHistoryTab.tsx(72,21): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/components/Dialogs/tags-dialog.tsx(118,27): error TS2322: Type '{ w: number; }' is not assignable to type 'IntrinsicAttributes & { width?: number | undefined; }'.
+  Property 'w' does not exist on type 'IntrinsicAttributes & { width?: number | undefined; }'.
+src/app/dashboard/jobs/[id]/components/Dialogs/tags-dialog.tsx(159,41): error TS2322: Type '{ w: number; }' is not assignable to type 'IntrinsicAttributes & { width?: number | undefined; }'.
+  Property 'w' does not exist on type 'IntrinsicAttributes & { width?: number | undefined; }'.
+src/app/dashboard/jobs/[id]/components/Lanes/KanbanColumn.tsx(255,34): error TS2339: Property 'appliedDate' does not exist on type 'Candidate'.
+src/app/dashboard/jobs/[id]/components/Lanes/KanbanColumn.tsx(256,40): error TS2339: Property 'appliedDate' does not exist on type 'Candidate'.
+src/app/dashboard/jobs/[id]/hooks/useJobProgressPage.ts(153,5): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/hooks/useJobProgressPage.ts(157,5): error TS2322: Type '() => QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' is not assignable to type '() => Promise<void>'.
+  Call signature return types 'QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' and 'Promise<void>' are incompatible.
+    The types of 'then' are incompatible between these types.
+      Type '<TResult1 = ({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }...' is not assignable to type '<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | null | undefined) => Promise<...>'.
+        Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+          Types of parameters 'value' and 'value' are incompatible.
+            Type '({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; })' is not assignable to type 'void'.
+              Type '{ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }' is not assignable to type 'void'.
+src/app/dashboard/jobs/[id]/hooks/useJobProgressPage.ts(173,5): error TS2322: Type 'ILocalUser | null' is not assignable to type 'User | null'.
+  Type 'ILocalUser' is not assignable to type 'User'.
+    Types of property '_id' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/jobs/[id]/hooks/useJobProgressPage.ts(181,5): error TS2322: Type '() => QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' is not assignable to type '() => Promise<void>'.
+  Call signature return types 'QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' and 'Promise<void>' are incompatible.
+    The types of 'then' are incompatible between these types.
+      Type '<TResult1 = ({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }...' is not assignable to type '<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | null | undefined) => Promise<...>'.
+        Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+          Types of parameters 'value' and 'value' are incompatible.
+            Type '({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; })' is not assignable to type 'void'.
+              Type '{ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }' is not assignable to type 'void'.
+src/app/dashboard/jobs/[id]/hooks/useNormalizedCandidates.ts(41,5): error TS2554: Expected 2-3 arguments, but got 4.
+src/app/dashboard/jobs/[id]/page.tsx(55,1): error TS6192: All imports in import declaration are unused.
+src/app/dashboard/jobs/[id]/page.tsx(55,50): error TS2307: Cannot find module '../../calendar/types' or its corresponding type declarations.
+src/app/dashboard/jobs/[id]/page.tsx(167,5): error TS2345: Argument of type '(candidate: Candidate | null) => void' is not assignable to parameter of type '(candidate: Candidate | CustomCalendarEvent | null) => void'.
+  Types of parameters 'candidate' and 'candidate' are incompatible.
+    Type 'Candidate | CustomCalendarEvent | null' is not assignable to type 'Candidate | null'.
+      Type 'CustomCalendarEvent' is missing the following properties from type 'Candidate': _id, jobId, name, email, and 10 more.
+src/app/dashboard/jobs/[id]/page.tsx(188,12): error TS6133: 'jobLanesError' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/page.tsx(233,5): error TS2322: Type '() => QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' is not assignable to type '() => Promise<void>'.
+  Call signature return types 'QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' and 'Promise<void>' are incompatible.
+    The types of 'then' are incompatible between these types.
+      Type '<TResult1 = ({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }...' is not assignable to type '<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | null | undefined) => Promise<...>'.
+        Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+          Types of parameters 'value' and 'value' are incompatible.
+            Type '({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; })' is not assignable to type 'void'.
+              Type '{ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }' is not assignable to type 'void'.
+src/app/dashboard/jobs/[id]/page.tsx(256,5): error TS2322: Type '() => QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' is not assignable to type '() => Promise<void>'.
+  Call signature return types 'QueryActionCreatorResult<QueryDefinition<string, BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError>, "Users" | "Jobs" | "Candidates" | "Organizations" | ... 30 more ... | "EmailNotificationUser", Candidate[], "baseApi", unknown>>' and 'Promise<void>' are incompatible.
+    The types of 'then' are incompatible between these types.
+      Type '<TResult1 = ({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }...' is not assignable to type '<TResult1 = void, TResult2 = never>(onfulfilled?: ((value: void) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | null | undefined) => Promise<...>'.
+        Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+          Types of parameters 'value' and 'value' are incompatible.
+            Type '({ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; }) | ({ ...; } & { ...; })' is not assignable to type 'void'.
+              Type '{ status: QueryStatus.uninitialized; originalArgs?: undefined; data?: undefined; error?: undefined; requestId?: undefined; endpointName?: string | undefined; startedTimeStamp?: undefined; fulfilledTimeStamp?: undefined; } & { ...; }' is not assignable to type 'void'.
+src/app/dashboard/jobs/[id]/page.tsx(477,34): error TS18048: 'job' is possibly 'undefined'.
+src/app/dashboard/jobs/[id]/page.tsx(550,23): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/app/dashboard/jobs/[id]/types/candidate.types.ts(9,1): error TS6133: 'Attachment' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/utils/candidateAccessors.ts(130,8): error TS18049: 'candidate' is possibly 'null' or 'undefined'.
+src/app/dashboard/jobs/[id]/utils/candidateNormalizer.ts(10,3): error TS6133: 'hasValidTracking' is declared but its value is never read.
+src/app/dashboard/jobs/[id]/utils/candidateNormalizer.ts(287,5): error TS2322: Type '{} | null' is not assignable to type '{ id: string; name: string; url: string; type: string; size: number; } | null'.
+  Type '{}' is missing the following properties from type '{ id: string; name: string; url: string; type: string; size: number; }': id, name, url, type, size
+src/app/dashboard/layout.tsx(460,13): error TS2322: Type 'PortalConfigData | undefined' is not assignable to type 'PortalConfigData | null'.
+  Type 'undefined' is not assignable to type 'PortalConfigData | null'.
+src/app/dashboard/layout.tsx(495,15): error TS2322: Type 'PortalConfigData | undefined' is not assignable to type 'PortalConfigData | null'.
+  Type 'undefined' is not assignable to type 'PortalConfigData | null'.
+src/app/dashboard/page.tsx(559,32): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/components/actionitems/index.tsx(4,1): error TS6133: 'Assignment' is declared but its value is never read.
+src/components/actionitems/index.tsx(4,10): error TS2614: Module '"@/app/dashboard/page"' has no exported member 'Assignment'. Did you mean to use 'import Assignment from "@/app/dashboard/page"' instead?
+src/components/actionitems/index.tsx(12,3): error TS6133: 'fetchAssignments' is declared but its value is never read.
+src/components/forms/candidate-search.tsx(153,25): error TS2345: Argument of type '{ organizationId: string | Organization; page: number; limit: number; name?: string; skills?: string[]; location?: string; minExpectedCTC?: number; maxExpectedCTC?: number; ... 7 more ...; customFields?: CandidateField | null; }' is not assignable to parameter of type 'SetStateAction<SearchFilter>'.
+  Type '{ organizationId: string | Organization; page: number; limit: number; name?: string; skills?: string[]; location?: string; minExpectedCTC?: number; maxExpectedCTC?: number; ... 7 more ...; customFields?: CandidateField | null; }' is not assignable to type 'SearchFilter'.
+    Types of property 'organizationId' are incompatible.
+      Type 'string | Organization' is not assignable to type 'string | undefined'.
+        Type 'Organization' is not assignable to type 'string'.
+src/components/forms/candidate-search.tsx(177,25): error TS2345: Argument of type '{ organizationId: string | Organization; page: number; name?: string; skills?: string[]; location?: string; minExpectedCTC?: number; maxExpectedCTC?: number; minExperience?: number; ... 7 more ...; customFields?: CandidateField | null; }' is not assignable to parameter of type 'SetStateAction<SearchFilter>'.
+  Type '{ organizationId: string | Organization; page: number; name?: string; skills?: string[]; location?: string; minExpectedCTC?: number; maxExpectedCTC?: number; minExperience?: number; ... 7 more ...; customFields?: CandidateField | null; }' is not assignable to type 'SearchFilter'.
+    Types of property 'organizationId' are incompatible.
+      Type 'string | Organization' is not assignable to type 'string | undefined'.
+        Type 'Organization' is not assignable to type 'string'.
+src/components/forms/candidate-search.tsx(194,25): error TS2345: Argument of type '{ organizationId: string | Organization; limit: number; page: number; name?: string; skills?: string[]; location?: string; minExpectedCTC?: number; maxExpectedCTC?: number; ... 7 more ...; customFields?: CandidateField | null; }' is not assignable to parameter of type 'SetStateAction<SearchFilter>'.
+  Type '{ organizationId: string | Organization; limit: number; page: number; name?: string; skills?: string[]; location?: string; minExpectedCTC?: number; maxExpectedCTC?: number; ... 7 more ...; customFields?: CandidateField | null; }' is not assignable to type 'SearchFilter'.
+    Types of property 'organizationId' are incompatible.
+      Type 'string | Organization' is not assignable to type 'string | undefined'.
+        Type 'Organization' is not assignable to type 'string'.
+src/components/forms/search-filters/basic-search-section.tsx(35,3): error TS6133: 'errors' is declared but its value is never read.
+src/components/forms/search-filters/basic-search-section.tsx(36,3): error TS6133: 'touched' is declared but its value is never read.
+src/components/forms/search-filters/date-range-filter.tsx(120,15): error TS2322: Type 'Date[] | null' is not assignable to type 'Date | null'.
+  Type 'Date[]' is missing the following properties from type 'Date': toDateString, toTimeString, toLocaleDateString, toLocaleTimeString, and 37 more.
+src/components/forms/search-filters/salary-experience-section.tsx(31,3): error TS6133: 'errors' is declared but its value is never read.
+src/components/forms/search-filters/salary-experience-section.tsx(32,3): error TS6133: 'touched' is declared but its value is never read.
+src/components/forms/search-results.tsx(125,22): error TS18048: 'candidate.scores.overall' is possibly 'undefined'.
+src/components/forms/search-results.tsx(145,31): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/components/forms/search-results.tsx(149,31): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+src/components/ui/Resume-table.tsx(52,20): error TS2345: Argument of type 'ResumeEducation' is not assignable to parameter of type '{ [key: string]: unknown; }'.
+  Index signature for type 'string' is missing in type 'ResumeEducation'.
+src/components/ui/Resume-table.tsx(56,20): error TS2345: Argument of type 'ResumeWorkExperience' is not assignable to parameter of type '{ [key: string]: unknown; }'.
+  Index signature for type 'string' is missing in type 'ResumeWorkExperience'.
+src/components/ui/Resume-table.tsx(81,38): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(82,38): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(83,35): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(84,36): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(87,15): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(100,39): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(101,41): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(102,36): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/components/ui/Resume-table.tsx(105,15): error TS2322: Type 'unknown' is not assignable to type 'string | string[]'.
+src/Custom_Fields/Components/AddCustomFieldButton.tsx(27,20): error TS18047: 'searchParams' is possibly 'null'.
+src/Custom_Fields/Components/AddSpecificCustomFieldButton.tsx(18,3): error TS6133: 'onSave' is declared but its value is never read.
+src/Custom_Fields/Components/AddSpecificCustomFieldForm.tsx(8,33): error TS6133: 'FormikProps' is declared but its value is never read.
+src/Custom_Fields/Components/AddSpecificCustomFieldForm.tsx(10,14): error TS6133: 'useRef' is declared but its value is never read.
+src/Custom_Fields/Components/AddSpecificCustomFieldForm.tsx(17,1): error TS6133: 'Checkbox' is declared but its value is never read.
+src/Custom_Fields/Components/AddSpecificCustomFieldForm.tsx(89,5): error TS6133: 'existingFields' is declared but its value is never read.
+src/Custom_Fields/Components/AddSpecificCustomFieldForm.tsx(92,7): error TS6133: 'handleAddCustomField' is declared but its value is never read.
+src/Custom_Fields/Components/AddSpecificCustomFieldForm.tsx(93,7): error TS6133: 'handleEditCustomField' is declared but its value is never read.
+src/Custom_Fields/Components/Breadcrums/index.tsx(3,1): error TS6192: All imports in import declaration are unused.
+src/Custom_Fields/Components/CustomFields/index.tsx(4,10): error TS6133: 'FieldMetaProps' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/index.tsx(4,26): error TS6133: 'useField' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/index.tsx(9,1): error TS6133: 'CustomField' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/index.tsx(103,9): error TS6133: 'fieldHooks' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/index.tsx(121,9): error TS6133: 'allFieldStates' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/index.tsx(174,15): error TS6133: 'shouldValidate' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/RenderField.tsx(108,3): error TS6133: 'isEditMode' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/RenderField.tsx(293,28): error TS18046: 'e.toDate' is of type 'unknown'.
+src/Custom_Fields/Components/CustomFields/RenderField.tsx(301,52): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string | boolean | string[] | Dayjs | FileData[]'.
+  Type 'null' is not assignable to type 'string | boolean | string[] | Dayjs | FileData[]'.
+src/Custom_Fields/Components/CustomFields/RenderField.tsx(327,11): error TS2322: Type '{ value: Dayjs | null; onChange: (e: Dayjs | null) => void; onBlur: () => void; }' is not assignable to type 'IntrinsicAttributes & DateTimePickerProps'.
+  Property 'onBlur' does not exist on type 'IntrinsicAttributes & DateTimePickerProps'.
+src/Custom_Fields/Components/CustomFields/RenderFieldInFilter.tsx(83,3): error TS6133: 'error' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/RenderFieldInFilter.tsx(84,3): error TS6133: 'min' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/RenderFieldInFilter.tsx(85,3): error TS6133: 'max' is declared but its value is never read.
+src/Custom_Fields/Components/CustomFields/RenderFieldInFilter.tsx(328,17): error TS2322: Type '{ value: Dayjs | undefined; onChange: (date: Dayjs | null) => void; placeholder: string; onBlur: () => void; }' is not assignable to type 'IntrinsicAttributes & DateTimePickerProps'.
+  Property 'onBlur' does not exist on type 'IntrinsicAttributes & DateTimePickerProps'.
+src/Custom_Fields/Components/CustomFields/RenderFieldInFilter.tsx(363,17): error TS2322: Type '{ value: Dayjs | undefined; onChange: (date: Dayjs | null) => void; placeholder: string; onBlur: () => void; }' is not assignable to type 'IntrinsicAttributes & DateTimePickerProps'.
+  Property 'onBlur' does not exist on type 'IntrinsicAttributes & DateTimePickerProps'.
+src/Custom_Fields/Components/Form/CustomFieldForm.tsx(24,1): error TS6133: 'Checkbox' is declared but its value is never read.
+src/Custom_Fields/Components/Form/FormCard.tsx(13,3): error TS6133: 'Settings2' is declared but its value is never read.
+src/Custom_Fields/Components/Form/FormCard.tsx(18,1): error TS6133: 'Badge' is declared but its value is never read.
+src/Custom_Fields/Components/List/CustomFieldList.tsx(3,32): error TS6133: 'CardContent' is declared but its value is never read.
+src/Custom_Fields/Components/List/CustomFieldList.tsx(23,3): error TS6133: 'Eye' is declared but its value is never read.
+src/Custom_Fields/Components/List/CustomFieldList.tsx(26,3): error TS6133: 'Users' is declared but its value is never read.
+src/Custom_Fields/Components/List/CustomFieldList.tsx(27,3): error TS6133: 'Star' is declared but its value is never read.
+src/Custom_Fields/Components/Stepper/index.tsx(8,21): error TS6133: 'customFields' is declared but its value is never read.
+src/Custom_Fields/Components/Stepper/index.tsx(8,35): error TS6133: 'selectedFormId' is declared but its value is never read.
+src/hooks/useNotificationSSE.ts(266,16): error TS2339: Property 'jobId' does not exist on type '{ type?: string | undefined; count?: number | undefined; notification?: string | undefined; notifications?: unknown[] | undefined; candidate?: unknown; candidates?: unknown; lanes?: string[] | undefined; clients?: number | undefined; error?: string | undefined; }'.
+src/hooks/useNotificationSSE.ts(267,16): error TS2339: Property 'laneRenamed' does not exist on type '{ type?: string | undefined; count?: number | undefined; notification?: string | undefined; notifications?: unknown[] | undefined; candidate?: unknown; candidates?: unknown; lanes?: string[] | undefined; clients?: number | undefined; error?: string | undefined; }'.
+src/hooks/useSSE.ts(78,54): error TS2339: Property '_def' does not exist on type 'Candidate'.
+src/lib/api/baseApi.ts(142,22): error TS2345: Argument of type 'AsyncThunkAction<{ id: string; name: string; email: string; role: string; organizationId: string; organizationInfo: null; appliedApplications: never[]; fileStorage: null; } | ILocalUser, void, AsyncThunkConfig>' is not assignable to parameter of type 'AnyAction'.
+src/lib/fileShareUtils.ts(144,7): error TS2345: Argument of type 'Ifs' is not assignable to parameter of type 'FileStorageValues'.
+  Types of property 'cloudinaryCloudName' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/licenseUtils.ts(152,47): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(arg0: "Failed to get machine ID:", ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(arg0: "Failed to get machine ID:", msg?: undefined, ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 3 of 3, '(arg0: "Failed to get machine ID:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/lib/licenseUtils.ts(173,49): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(arg0: "Error reading license data:", ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(arg0: "Error reading license data:", msg?: undefined, ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 3 of 3, '(arg0: "Error reading license data:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/lib/licenseUtils.ts(191,48): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(arg0: "Error reading config data:", ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(arg0: "Error reading config data:", msg?: undefined, ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 3 of 3, '(arg0: "Error reading config data:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/lib/licenseUtils.ts(262,51): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(arg0: "License validation API error:", ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(arg0: "License validation API error:", msg?: undefined, ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 3 of 3, '(arg0: "License validation API error:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/lib/licenseUtils.ts(302,47): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(arg0: "License validation error:", ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 2 of 3, '(arg0: "License validation error:", msg?: undefined, ...args: undefined[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+  Overload 3 of 3, '(arg0: "License validation error:", msg?: undefined, ...args: unknown[]): void', gave the following error.
+    Argument of type 'unknown' is not assignable to parameter of type 'undefined'.
+src/lib/parse-resume-from-pdf/extract-resume-from-sections/extract-skills.ts(253,36): error TS2345: Argument of type 'FeaturedSkill[]' is not assignable to parameter of type '{ [key: string]: unknown; }'.
+  Index signature for type 'string' is missing in type 'FeaturedSkill[]'.
+src/lib/parse-resume-from-pdf/extract-resume-from-sections/extract-skills.ts(255,5): error TS2571: Object is of type 'unknown'.
+src/lib/parse-resume-from-pdf/extract-resume-from-sections/extract-skills.ts(261,5): error TS2740: Type '{ [key: string]: unknown; }' is missing the following properties from type 'FeaturedSkill[]': length, pop, push, concat, and 35 more.
+src/lib/redux/resumeSlice.ts(146,23): error TS7030: Not all code paths return a value.
+src/lib/redux/resumeSlice.ts(163,24): error TS7030: Not all code paths return a value.
+src/lib/redux/resumeSlice.ts(199,17): error TS6133: 'draft' is declared but its value is never read.

@@ -98,7 +98,7 @@ export const useClientSideChecklistValidation = (
         }
 
         // Check if checklist is already completed
-        const candidateChecklistData = candidate.checklistData?.get?.(laneId);
+        const candidateChecklistData = candidate.checklistData?.[laneId];
         const checklistData =
           movementType === 'incoming'
             ? candidateChecklistData?.incoming

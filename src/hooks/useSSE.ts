@@ -75,7 +75,7 @@ export const useSSE = (
       if (pathname?.includes('/calendar')) {
         currentSelectedId =
           (currentSelected as CustomCalendarEvent)?.extendedProps?.candidate
-            ?._id || (currentSelected as Candidate)?._def?.publicId; // eslint-disable-line no-underscore-dangle
+            ?._id || (currentSelected as CustomCalendarEvent)?._def?.publicId; // eslint-disable-line no-underscore-dangle
       } else {
         currentSelectedId = (currentSelected as Candidate)?._id;
       }

@@ -246,7 +246,7 @@ export function EditCandidateDialog({
         ) {
           updatedCandidate.assignment = {
             // assignment: values.assignment.assignment,
-            ...values.assignment.assignment,
+            ...values.assignment,
             interviewerId:
               typeof values.assignment.interviewerId === 'string'
                 ? values.assignment.interviewerId
@@ -394,7 +394,7 @@ export function EditCandidateDialog({
     }
   }
 
-  const initialValues = {
+  const initialValues: Candidate = {
     ...candidate,
     resume: candidate.resume,
     attachments: candidate.attachments,
@@ -402,8 +402,8 @@ export function EditCandidateDialog({
     assignment:
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
-            assignment: candidate.assignment,
-            interviewerId,
+            ...candidate.assignment,
+            interviewerId: interviewerId || '',
             time: candidate.assignment.time,
             assignedAt: candidate.assignment.assignedAt,
           }

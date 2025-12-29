@@ -4,7 +4,7 @@ import { useSSE } from '@/hooks/useSSE';
 import useRoles from '@/hooks/useRoles';
 import { useSelector } from 'react-redux';
 import { Candidate } from '@/types/candidate';
-import { CandidateAssignment, CustomCalendarEvent } from '../types';
+import { CandidateAssignment, CustomCalendarEvent } from '../page';
 
 export function useCalendarData(
   setSelectedEvent: () => void,

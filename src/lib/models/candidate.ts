@@ -35,7 +35,7 @@ export interface ICandidate {
     size: number;
   };
   remarks: Array<{
-    text: string;
+    description: string;
     date: string;
     rating?: number;
     userId: mongoose.Schema.Types.ObjectId;

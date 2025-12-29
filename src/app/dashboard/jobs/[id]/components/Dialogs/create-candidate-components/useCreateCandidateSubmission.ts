@@ -270,7 +270,9 @@ export function useCreateCandidateSubmission({
 
       if (typeof error === 'object' && error !== null) {
         if ('data' in error) {
-          const errorData = (error as { data?: any }).data;
+          const errorData = (
+            error as { data?: { error?: string; message?: string } }
+          ).data;
           if (errorData?.error) {
             errorMessage = errorData.error;
           } else if (errorData?.message) {
@@ -280,9 +282,9 @@ export function useCreateCandidateSubmission({
           }
         } else if (
           'message' in error &&
-          typeof (error as any).message === 'string'
+          typeof (error as Error).message === 'string'
         ) {
-          errorMessage = (error as any).message;
+          errorMessage = (error as Error).message;
         }
       }
 

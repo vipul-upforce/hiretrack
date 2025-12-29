@@ -5,6 +5,7 @@
 
 import { Button } from '@/components/ui/button';
 import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
 
 interface EditCandidateDialogFooterProps {
   candidateId: string;
@@ -13,7 +14,7 @@ interface EditCandidateDialogFooterProps {
   hasErrors: boolean;
   onCancel: () => void;
   onApply: () => void;
-  onAddCustomField: (newField: any, formId: string | null) => void;
+  onAddCustomField: (newField: CustomField, formId: string | null) => void;
   selectedFormId: string | null;
 }
 

@@ -372,7 +372,6 @@ export default function CalendarPage() {
               interviewerId: '',
               time: '',
               assignedAt: new Date().toISOString(),
-              status: '',
             },
             tracking: {
               createdAt: new Date().toISOString(),

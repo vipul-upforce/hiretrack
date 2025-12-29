@@ -10,6 +10,7 @@ interface NotificationSSEClient {
   controller: ReadableStreamDefaultController;
 }
 
+// /* eslint-disable vars-on-top, no-var */
 declare global {
   var sseNotificationClients: Map<string, Map<number, NotificationSSEClient>>;
 }
@@ -36,11 +37,14 @@ export async function GET(req: NextRequest) {
         // Close after sending error
         setTimeout(() => {
           try {
-            if (typeof controller.desiredSize === 'number' && controller.desiredSize !== null) {
+            if (
+              typeof controller.desiredSize === 'number' &&
+              controller.desiredSize !== null
+            ) {
               controller.close();
             }
           } catch (error) {
-            logger.error({error}, 'SSE controller close error');
+            logger.error({ error }, 'SSE controller close error');
           }
         }, 100);
       },

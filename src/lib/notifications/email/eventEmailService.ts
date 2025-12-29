@@ -1,5 +1,9 @@
 import mongoose from 'mongoose';
-import connectToDatabase, { User, Candidate } from '@/lib/mongodb';
+import connectToDatabase, {
+  User,
+  Candidate,
+  CandidateAccount,
+} from '@/lib/mongodb';
 import { sendMail as sendMailWithContext } from './emailService';
 import {
   validateObjectId,
@@ -30,7 +34,9 @@ export async function sendEventEmailWithHistory(
     };
   },
   triggererEmail?: string,
+  isCandidate: boolean = false,
 ): Promise<{ status: number; message: string }> {
+  console.log(emails, 'emails-34');
   try {
     const mailConfig = await getMailConfig(organizationId);
     if (!mailConfig) {
@@ -63,14 +69,22 @@ export async function sendEventEmailWithHistory(
             .select('_id name email')
             .lean()
         : null;
-
-    const recipients = await User?.find({
-      email: { $in: filteredEmails },
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-    })
-      .select('_id name email')
-      .lean();
-
+    console.log(candidateRecipient, 'candidateRecipient-72');
+    console.log(isCandidate, 'isCandidate-73');
+    const recipients = isCandidate
+      ? await CandidateAccount?.find({
+          email: filteredEmails[0],
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+        })
+          .select('_id name email')
+          .lean()
+      : await User?.find({
+          email: filteredEmails[0],
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+        })
+          .select('_id name email')
+          .lean();
+    console.log(recipients, 'recipients-74');
     const filteredRecipients = isAuthEmail
       ? recipients || []
       : await filterRecipientsByNotificationSettings(
@@ -80,11 +94,11 @@ export async function sendEventEmailWithHistory(
           context.metadata?.jobId,
           context.sentBy,
         );
-
+    console.log(filteredRecipients, 'filteredRecipients-84');
     const allRecipients = candidateRecipient
       ? [candidateRecipient, ...filteredRecipients]
       : filteredRecipients;
-
+    console.log(allRecipients, 'allRecipients-88');
     if (allRecipients.length === 0) {
       return {
         status: 404,

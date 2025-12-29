@@ -4,6 +4,7 @@ import {
   DragDropContext,
   Droppable,
   DroppableProvided,
+  DropResult,
 } from '@hello-pangea/dnd';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useParams } from 'next/navigation';
@@ -53,6 +54,7 @@ import { MigrationDialog } from './components/Dialogs/MigrationDialog';
 import CandidateCustomFieldsDialog from './components/customFields/candidateCustomFieldsDialog';
 import { GlobalRemarksDialog } from './components/Dialogs/global-remarks-dialog';
 import { CustomCalendarEvent, Interviewer } from '../../calendar/types';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface FilterState {
   search: string;
@@ -107,7 +109,7 @@ export default function JobProgressPage() {
   const [filterConditions, setFilterConditions] = useState<FilterState | null>(
     null,
   );
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
 
   const {
     ref: scrollRef,
@@ -164,10 +166,7 @@ export default function JobProgressPage() {
 
   // Get SSE lanes separately (still needed for lane updates)
   const { lanes: updatedLanes } = useSSE(
-    user?.role || '',
-    setSelectedCandidate as (
-      candidate: Candidate | CustomCalendarEvent | null,
-    ) => void,
+    setSelectedCandidate as (candidate: Candidate | CustomCalendarEvent | null) => void,
     selectedCandidate,
     id,
   );
@@ -188,7 +187,6 @@ export default function JobProgressPage() {
   const {
     data: jobLanes,
     isLoading: isJobLanesLoading,
-    error: jobLanesError,
   } = useGetJobLanesQuery(id as string, { skip: !id });
   const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
     { userId: user?.id, jobId: id as string },
@@ -287,7 +285,7 @@ export default function JobProgressPage() {
                 skill.toLowerCase().includes(searchLower),
               ) ||
               candidate.experience.toString().includes(searchLower) ||
-              (candidate.assignment?.interviewerId as any)?.name
+              (candidate.assignment?.interviewerId as Interviewer)?.name
                 ?.toLowerCase()
                 .includes(searchLower) ||
               candidate.location.toLowerCase().includes(searchLower);
@@ -298,63 +296,63 @@ export default function JobProgressPage() {
           const activeFilters = [
             {
               key: 'topCandidates',
-              filter: (candidate: Candidate) =>
-                candidate.scores?.overall && candidate.scores.overall >= 7,
+              filter: (c: Candidate) =>
+                c.scores?.overall && c.scores.overall >= 7,
             },
             {
               key: 'appliedThisWeek',
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const oneWeekAgo = new Date();
                 oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-                return new Date(candidate.tracking.createdAt) >= oneWeekAgo;
+                return new Date(c.tracking.createdAt) >= oneWeekAgo;
               },
             },
             {
               key: 'appliedToday',
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const tomorrow = new Date(today);
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 return (
-                  new Date(candidate.tracking.createdAt) >= today &&
-                  new Date(candidate.tracking.createdAt) < tomorrow
+                  new Date(c.tracking.createdAt) >= today &&
+                  new Date(c.tracking.createdAt) < tomorrow
                 );
               },
             },
             {
               key: 'appliedIn15Days',
-              filter: (candidate: Candidate) => {
-                if (!candidate.tracking?.createdAt) return false;
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
                 const fifteenDaysAgo = new Date();
                 fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-                return new Date(candidate.tracking.createdAt) >= fifteenDaysAgo;
+                return new Date(c.tracking.createdAt) >= fifteenDaysAgo;
               },
             },
             {
               key: 'toFollowUp',
-              filter: (candidate: Candidate) =>
-                candidate.followUp && candidate.followUp.note,
+              filter: (c: Candidate) =>
+                c.followUp && c.followUp.note,
             },
             {
               key: 'assigned',
-              filter: (candidate: Candidate) => candidate.assignment,
+              filter: (c: Candidate) => c.assignment,
             },
             {
               key: 'notAssigned',
-              filter: (candidate: Candidate) => !candidate.assignment,
+              filter: (c: Candidate) => !c.assignment,
             },
             {
               key: 'withRemarks',
-              filter: (candidate: Candidate) =>
-                candidate.remarks && candidate.remarks.length > 0,
+              filter: (c: Candidate) =>
+                c.remarks && c.remarks.length > 0,
             },
             {
               key: 'withoutRemarks',
-              filter: (candidate: Candidate) =>
-                !candidate.remarks || candidate.remarks.length === 0,
+              filter: (c: Candidate) =>
+                !c.remarks || c.remarks.length === 0,
             },
           ].filter(
             (filter) =>
@@ -477,7 +475,7 @@ export default function JobProgressPage() {
                     <div className="mx-4 mb-2 mt-1 flex items-center gap-2">
                       <Checkbox
                         id="promptForStatusChangeReason"
-                        checked={job.promptForStatusChangeReason}
+                        checked={job?.promptForStatusChangeReason || false}
                         disabled={isLoading}
                         onCheckedChange={(checked: boolean) => {
                           setPendingPromptValue(checked);
@@ -550,7 +548,7 @@ export default function JobProgressPage() {
           onDragStart={() => {
             setIsDndDragging(true);
           }}
-          onDragEnd={(result) => {
+          onDragEnd={(result: DropResult) => {
             // Remove the class when drag ends
             document.body.classList.remove('dnd-dragging');
             setIsDndDragging(false);

@@ -17,6 +17,7 @@ import { validateLicense } from '@/lib/licenseUtils';
 import { UserRole } from '@/lib/models/JobLaneConfig';
 import { IUser } from '@/lib/models/user';
 import { clearAuthTokens, setAuthCookies } from '@/lib/authCookies';
+import { apiRateLimiter } from '@/lib/rateLimiter';
 
 async function handleRefreshToken(req: NextRequest) {
   try {
@@ -130,12 +131,12 @@ async function handleRefreshToken(req: NextRequest) {
 
     if (!verification.valid) {
       console.log(verification, 'verification-failed-131');
-    //  const res =
-    // clearAuthTokens(res);
-    return  NextResponse.json(
+     const res = NextResponse.json(
       { error: 'Invalid or expired refresh token' },
       { status: 401 },
     );
+    clearAuthTokens(res);
+    return res;
     }
 
     // STEP 4: Get user data
@@ -147,7 +148,9 @@ async function handleRefreshToken(req: NextRequest) {
           .select('tokenVersion name _id role email organizationId isDeleted ')
           
     if (!user || user.isDeleted) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      const res = NextResponse.json({ error: 'User not found' }, { status: 404 });
+      clearAuthTokens(res);
+      return res;
     }
 
     const fileStorage = await Settings!.findOne({ organizationId: orgId })
@@ -215,5 +218,5 @@ async function handleRefreshToken(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  return handleRefreshToken(req as NextRequest);
+  return apiRateLimiter(req as NextRequest, handleRefreshToken);
 }

@@ -7,12 +7,11 @@ import {
 import { useSendUnassignMailMutation } from '@/lib/features/org/orgApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
-import { User } from '@/lib/features/users/usersApi';
 import { usePathname } from 'next/navigation';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 export const useUnassignHandlers = (
   localCandidate: Candidate | null,
-  user: User | null,
   refetch: () => Promise<void>,
   setLocalCandidate: (candidate: Candidate) => void,
   // unassignNote?: string | null,
@@ -26,8 +25,8 @@ export const useUnassignHandlers = (
   const [isUnassigning, setIsUnassigning] = useState(false);
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [sendUnassignEmail, { isLoading: isSendingEmail }] = useSendUnassignMailMutation();
-
+  const [sendUnassignEmail] = useSendUnassignMailMutation();
+  const user = useAppSelector((state) => state.auth.user);
   const handleUnassign = () => {
     setConfirmUnassignOpen(true);
   };
@@ -53,9 +52,10 @@ export const useUnassignHandlers = (
           refetchAssignment?.();
         }
         // debugger;
-        const previousInterviewerId = typeof localCandidate?.assignment?.interviewerId === 'object'
-          ? Object(localCandidate.assignment.interviewerId._id)
-          : null;
+        const previousInterviewerId =
+          typeof localCandidate?.assignment?.interviewerId === 'object'
+            ? Object(localCandidate.assignment.interviewerId._id)
+            : null;
         const newHistoryEntry: ICandidateHistory = {
           dateTime: new Date().toISOString(),
           currentInterviewer: null,
@@ -101,9 +101,9 @@ export const useUnassignHandlers = (
       }
     } catch (error: unknown) {
       toast({
-        title:
-          `Error: ${
-            error instanceof Error ? error.message : 'Unknown error'}`,
+        title: `Error: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
         description: 'Failed to unassign interviewer',
         variant: 'destructive',
       });

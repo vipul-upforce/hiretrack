@@ -1,6 +1,6 @@
 'use client';
 
-import { Draggable } from '@hello-pangea/dnd';
+import { Draggable, DraggableProvided } from '@hello-pangea/dnd';
 import { Job } from '@/types/job';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,11 +30,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import useCustomForm, { FileData } from '@/Custom_Fields/hooks/useCustomForm';
 import { formatDistanceToNow } from 'date-fns';
 import logger from '@/lib/logger';
-import { useSelector } from 'react-redux';
-import { User } from '@/lib/features/org/orgApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 import ConfirmationDialog from '../../jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { JobAnalyticsModal } from './JobAnalyticsModal';
 import AttachmentsPopover from '../../jobs/[id]/components/Remarks/attachments-popover';
@@ -65,16 +64,14 @@ function JobCard({
   const [organizationId, setOrganizationId] = useState<string>('');
   const { formNameObject } = useCustomForm('Job Position');
   const router = useRouter();
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
 
   // Get user's organization ID
   useEffect(() => {
     const getUserOrganization = async () => {
       try {
         if (user) {
-          setOrganizationId(user.organizationId);
+          setOrganizationId(user.organizationId as string);
         }
       } catch (error) {
         logger.error('Error getting user organization:', error);
@@ -87,8 +84,10 @@ function JobCard({
   return (
     <>
       <Draggable key={job._id} draggableId={job._id} index={index}>
-        {(provided: any) => (
+        {(provided: DraggableProvided) => (
           <div
+            role="button"
+            tabIndex={0}
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
@@ -322,9 +321,9 @@ function JobCard({
                     </span>
                   </div>
                   <div className="ml-6 flex flex-wrap gap-2">
-                    {job.skills.slice(0, 4).map((skill, index) => (
+                    {job.skills.slice(0, 4).map((skill) => (
                       <Badge
-                        key={`${job._id}-skill-${index}-${skill}`}
+                        key={`${job._id}-skill-${skill}`}
                         variant="secondary"
                         className="max-w-full truncate border border-gray-200 bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-gray-700 dark:bg-black dark:text-gray-300"
                         title={skill}
@@ -379,40 +378,46 @@ function JobCard({
                         (!Array.isArray(value) || value.length > 0)
                       );
                     })
-                    .map(([key, value], i) => (
-                      <div key={i} className="text-sm">
+                    .map(([key, value]) => (
+                      <div key={`${key}`} className="text-sm">
                         <span className="mr-1 truncate text-gray-600 dark:text-gray-400">
                           {key.split(' |||||(')[0]}
                         </span>
-                        {typeof value === 'string' ? (
-                          <span className="font-semibold capitalize text-orange-700 dark:text-orange-400">
-                            {value}
-                          </span>
-                        ) : Array.isArray(value) && value.length > 0 ? (
-                          <AttachmentsPopover
-                            attachments={value.map((file, index) => {
-                              if (typeof file === 'string') {
-                                return {
-                                  id: '',
-                                  name: '',
-                                  url: '',
-                                  type: '',
-                                  size: 0,
-                                };
-                              }
-                              return {
-                                id: `${key}-${index}-${file.name}`,
-                                name: file.name,
-                                url: file.base64 || '#',
-                                type: file.type || 'unknown',
-                                size: file.size || 0,
-                              };
-                            })}
-                            onMoreClick={() => null}
-                          />
-                        ) : (
-                          'default'
-                        )}
+                        {(() => {
+                          if (typeof value === 'string') {
+                            return (
+                              <span className="font-semibold capitalize text-orange-700 dark:text-orange-400">
+                                {value}
+                              </span>
+                            );
+                          }
+                          if (Array.isArray(value) && value.length > 0) {
+                            return (
+                              <AttachmentsPopover
+                                attachments={value.map((file, idx) => {
+                                  if (typeof file === 'string') {
+                                    return {
+                                      id: '',
+                                      name: '',
+                                      url: '',
+                                      type: '',
+                                      size: 0,
+                                    };
+                                  }
+                                  return {
+                                    id: `${key}-${idx}-${file.name}`,
+                                    name: file.name,
+                                    url: (file as FileData).base64 || '#',
+                                    type: file.type || 'unknown',
+                                    size: file.size || 0,
+                                  };
+                                })}
+                                onMoreClick={() => null}
+                              />
+                            );
+                          }
+                          return 'default';
+                        })()}
                       </div>
                     ))}
                 </div>

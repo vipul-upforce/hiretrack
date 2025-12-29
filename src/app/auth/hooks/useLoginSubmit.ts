@@ -167,23 +167,22 @@ export const useHandleLoginSubmit = ({
               variant: 'destructive',
             });
           }
-          return;
-        }
-        // Handle Redirects & Redux State
-        const redirectUrl = getRedirectUrl();      
-        dispatch(fetchUserFromToken());
-        if (isAuthenticated) {
-          if (redirectUrl !== '/') {
-            router.push(redirectUrl);
+        } else {
+          // Handle Redirects & Redux State
+          const redirectUrl = getRedirectUrl();
+          dispatch(fetchUserFromToken());
+          if (isAuthenticated) {
+            if (redirectUrl !== '/') {
+              router.push(redirectUrl);
+            }
+            setUserLoggedIn(true);
+            toast({
+              title: 'Success',
+              description: 'Login successful',
+              variant: 'default',
+            });
           }
-          setUserLoggedIn(true);
-          toast({
-            title: 'Success',
-            description: 'Login successful',
-            variant: 'default',
-          });
         }
-
       } catch (err: unknown) {
         logger.error(err);
         const errorMessage =

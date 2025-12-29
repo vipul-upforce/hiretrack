@@ -24,11 +24,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useRouter } from 'next/navigation';
-import { User } from '@/lib/features/org/orgApi';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface JobActionsCellProps {
   job: Job;
-  user: User;
   onSetSelectedJob: (job: Job) => void;
   onEdit: () => void;
   onDuplicate: (job: Job) => void;
@@ -40,7 +39,6 @@ interface JobActionsCellProps {
 
 export function JobActionsCell({
   job,
-  user,
   onSetSelectedJob,
   onEdit,
   onDuplicate,
@@ -51,6 +49,8 @@ export function JobActionsCell({
 }: JobActionsCellProps) {
   const router = useRouter();
 
+  const { user } = useAppSelector((state) => state.auth || {});
+
   return (
     <div className="flex items-center justify-end gap-1">
       <TooltipProvider>
@@ -59,7 +59,7 @@ export function JobActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+              className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
               onClick={(e) => {
                 e.stopPropagation();
                 router.push(`/dashboard/jobs/${job._id}`);
@@ -80,7 +80,7 @@ export function JobActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+              className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
               onClick={(e) => {
                 e.stopPropagation();
                 onSetSelectedJob(job);
@@ -102,7 +102,7 @@ export function JobActionsCell({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+              className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
               onClick={(e) => {
                 e.stopPropagation();
                 onDuplicate(job);
@@ -122,7 +122,7 @@ export function JobActionsCell({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-gray-600 hover:text-gray-900 hover:bg-gray-200 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700"
+            className="h-8 w-8 text-gray-600 hover:bg-gray-200 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -135,7 +135,7 @@ export function JobActionsCell({
                 onAnalytics(job);
               }}
             >
-              <BarChart3 className="h-4 w-4 mr-2" />
+              <BarChart3 className="mr-2 h-4 w-4" />
               View Analytics
             </DropdownMenuItem>
           )}
@@ -146,7 +146,7 @@ export function JobActionsCell({
               onDetails();
             }}
           >
-            <Info className="h-4 w-4 mr-2" />
+            <Info className="mr-2 h-4 w-4" />
             View Details
           </DropdownMenuItem>
           {onEmailSettings && (
@@ -156,7 +156,7 @@ export function JobActionsCell({
                 onEmailSettings(job);
               }}
             >
-              <Mail className="h-4 w-4 mr-2" />
+              <Mail className="mr-2 h-4 w-4" />
               Email Settings
             </DropdownMenuItem>
           )}
@@ -168,7 +168,7 @@ export function JobActionsCell({
               }}
               className="text-red-600 focus:text-red-600"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="mr-2 h-4 w-4" />
               Archive Job
             </DropdownMenuItem>
           ) : (
@@ -180,7 +180,7 @@ export function JobActionsCell({
               }}
               className="text-blue-600 focus:text-blue-600"
             >
-              <ArchiveRestore className="h-4 w-4 mr-2" />
+              <ArchiveRestore className="mr-2 h-4 w-4" />
               Unarchive Job
             </DropdownMenuItem>
           )}

@@ -30,8 +30,6 @@ const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
     '/api/file-proxy',
     '/api/file',
     '/api/shared-files',
-    { url: '/api/organization/tags', methods: ['GET'] },
-    // GET is public, but PUT/POST/DELETE require auth
     { url: '/api/settings/portal', methods: ['GET'] },
     { url: '/api/settings/captcha', methods: ['GET'] },
     '/api/license-validate',
@@ -46,12 +44,24 @@ function isPublicEndpoint(url: string, method?: string): boolean {
   if (typeof url !== 'string') return false;
 
   const normalizedMethod = method?.toUpperCase();
+  
+  // Remove query params and normalize trailing slashes for comparison
+  const normalizeUrl = (urlStr: string) => {
+    const withoutQuery = urlStr.split('?')[0];
+    return withoutQuery.endsWith('/') ? withoutQuery.slice(0, -1) : withoutQuery;
+  };
+  
+  const normalizedRequestUrl = normalizeUrl(url);
 
   return PUBLIC_API_PATTERNS.some((pattern) => {
     // Handle object-based patterns with method restrictions
     if (typeof pattern === 'object') {
-      const matchesUrl = url.includes(pattern.url);
-      if (!matchesUrl) return false;
+      const normalizedPatternUrl = normalizeUrl(pattern.url);
+      
+      // Exact match only - prevents sub-paths from matching
+      if (normalizedRequestUrl !== normalizedPatternUrl) {
+        return false;
+      }
 
       // If methods are specified, check if current method is in the list
       if (pattern.methods && normalizedMethod) {
@@ -65,7 +75,9 @@ function isPublicEndpoint(url: string, method?: string): boolean {
     }
 
     // Handle string-based patterns (all methods are public)
-    return url.includes(pattern);
+    // Use exact match to prevent sub-path matching
+    const normalizedPattern = normalizeUrl(pattern);
+    return normalizedRequestUrl === normalizedPattern;
   });
 }
 

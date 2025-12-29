@@ -5,10 +5,10 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserIcon, MessageSquare, Clock } from 'lucide-react';
-import { User } from '@/lib/features/users/usersApi';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 import { Dispatch, SetStateAction } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { CandidateOverviewTab } from './CandidateOverviewTab';
 import { CandidateHistoryTab } from './CandidateHistoryTab';
 import { CandidateLogsTab } from './CandidateLogsTab';
@@ -16,7 +16,6 @@ import { IEditRemark } from '../../../schemas/EditRemarkDialog';
 
 interface CandidateDetailsTabsProps {
   candidate: Candidate;
-  user: User | null;
   activeTab: string;
   onTabChange: (tab: string) => void;
   // Overview tab props
@@ -46,7 +45,6 @@ interface CandidateDetailsTabsProps {
  */
 export function CandidateDetailsTabs({
   candidate,
-  user,
   activeTab,
   onTabChange,
   onEditFollowUp,
@@ -63,6 +61,7 @@ export function CandidateDetailsTabs({
   setIsEditRemarkDialogOpen,
   historyLoaded,
 }: CandidateDetailsTabsProps) {
+  const { user } = useAppSelector((state) => state.auth);
   return (
     <Tabs
       value={activeTab}
@@ -103,7 +102,6 @@ export function CandidateDetailsTabs({
         <TabsContent value="overview" className="mt-0 space-y-6">
           <CandidateOverviewTab
             candidate={candidate}
-            user={user}
             onEditFollowUp={onEditFollowUp}
             onRemoveFollowUp={onRemoveFollowUp}
             isReEvaluating={isReEvaluating}

@@ -7,7 +7,11 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { getUserRole } from '@/lib/utils/checklistVisibility';
 import type { UserRole } from '@/lib/models/JobLaneConfig';
-import connectToDatabase, { CandidateAccount, Settings, User } from '@/lib/mongodb';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+} from '@/lib/mongodb';
 
 export interface OrganizationTag {
   title: string;

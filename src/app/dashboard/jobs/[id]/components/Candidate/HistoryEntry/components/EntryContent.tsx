@@ -40,3 +40,7 @@ export function EntryContent({ interview }: EntryContentProps) {
   );
 }
 
+
+
+
+

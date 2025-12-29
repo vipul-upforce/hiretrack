@@ -13,7 +13,8 @@ declare global {
 }
 
 // Initialize global sseClients
-global.sseClients = global.sseClients || new Map<string, Map<number, SSEClient>>();
+global.sseClients =
+  global.sseClients || new Map<string, Map<number, SSEClient>>();
 
 export async function GET(req: NextRequest) {
   // Authenticate user and get organization info
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
     global.sseClients.set(orgId, new Map<number, SSEClient>());
   }
 
-  const orgClients = global.sseClients?.get(orgId)!;
+  const orgClients = global.sseClients.get(orgId)!;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -53,10 +54,10 @@ export async function GET(req: NextRequest) {
 
       const heartbeat = setInterval(() => {
         // THIS IS TO KEEP THE CONNECTION ALIVE - fixes sse timeout and its related issues.
-        const clientsCount = orgClients.size;
+        const currentClientsCount = orgClients.size;
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`,
+            `data: ${JSON.stringify({ type: 'clients', clients: currentClientsCount, orgId })}\n\n`,
           ),
         );
       }, 20000);

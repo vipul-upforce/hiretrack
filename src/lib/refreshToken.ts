@@ -174,9 +174,10 @@ export async function storeRefreshToken(
 export async function cleanupExpiredTokens(
   userId: string,
   isCandidate: boolean = false,
+  beforeDate?: Date | null, // Optional date to filter tokens before
 ): Promise<void> {
 
-  const now = new Date();
+  const now = beforeDate || new Date();
 
   if (isCandidate) {
     await CandidateAccount!.findByIdAndUpdate(userId, {
@@ -230,12 +231,14 @@ export async function verifyRefreshToken(
   // Cleanup expired tokens before verification
   const now = new Date();
   const validTokens = user.refreshTokens.filter((rt) => rt.expiry > now);
-
+  console.log(validTokens?.length, 'validTokens-233');
   if (validTokens.length < user.refreshTokens.length) {
-    await cleanupExpiredTokens(userId, isCandidate);
+    await cleanupExpiredTokens(userId, isCandidate, now);
   }
   // Find matching token from valid tokens
+
   const tokenEntry = validTokens.find((rt) => rt.token === tokenHash);
+  console.log(tokenEntry, 'tokenEntry-239 from fimding and send error');
   if (!tokenEntry) {
     return { valid: false };
   }
