@@ -13,10 +13,10 @@ export function RenderAttachments({
 }) {
   return (
     <div className="space-y-2">
-      <div className="space-y-2 contents">
+      <div className="contents space-y-2">
         <Label className={labelClass}>Attachments</Label>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           <ImageGallery
             images={localCandidate.attachments.filter((file) => {
               const fileExtension = file.name.split('.').pop()?.toLowerCase();
@@ -46,8 +46,8 @@ export function RenderAttachments({
               fileExtension || '',
             );
           })
-          .map((file, i) => (
-            <RenderOtherFileType key={i} file={file} />
+          .map((file) => (
+            <RenderOtherFileType key={file.id} file={file} />
           ))}
       </div>
     </div>

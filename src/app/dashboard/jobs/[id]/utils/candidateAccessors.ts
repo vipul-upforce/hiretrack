@@ -12,7 +12,9 @@ import {
 /**
  * Get job ID from candidate (handles both string and object)
  */
-export function getJobId(candidate: Candidate | null | undefined): string | null {
+export function getJobId(
+  candidate: Candidate | null | undefined,
+): string | null {
   if (!candidate?.jobId) {
     return null;
   }
@@ -31,7 +33,9 @@ export function getJobId(candidate: Candidate | null | undefined): string | null
 /**
  * Get job title from candidate
  */
-export function getJobTitle(candidate: Candidate | null | undefined): string | null {
+export function getJobTitle(
+  candidate: Candidate | null | undefined,
+): string | null {
   if (!candidate?.jobId) {
     return null;
   }
@@ -90,7 +94,7 @@ export function getInterviewerId(
  * Get tracking date (createdAt or updatedAt)
  */
 function isDateObject(value: unknown): value is Date {
-  return value instanceof Date && !isNaN(value.getTime());
+  return value instanceof Date && !Number.isNaN(value.getTime());
 }
 
 export function getTrackingDate(
@@ -108,7 +112,7 @@ export function getTrackingDate(
 
   if (typeof value === 'string') {
     const date = new Date(value);
-    return isNaN(date.getTime()) ? null : date;
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   return null;
@@ -117,16 +121,19 @@ export function getTrackingDate(
 /**
  * Check if candidate has a valid assignment
  */
-export function hasAssignment(candidate: Candidate | null | undefined): boolean {
+export function hasAssignment(
+  candidate: Candidate | null | undefined,
+): boolean {
   return candidate?.assignment !== null && candidate?.assignment !== undefined;
 }
 
 /**
  * Check if candidate has Google Meet
  */
-export function hasGoogleMeet(candidate: Candidate | null | undefined): boolean {
+export function hasGoogleMeet(
+  candidate: Candidate | null | undefined,
+): boolean {
   return (
-    hasAssignment(candidate)
-    && candidate.assignment?.googleMeet !== undefined
+    hasAssignment(candidate) && candidate?.assignment?.googleMeet !== undefined
   );
 }

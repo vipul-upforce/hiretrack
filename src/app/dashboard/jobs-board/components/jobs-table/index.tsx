@@ -1,13 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import {
-  Table, TableBody, TableCell, TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
-import { User } from '@/lib/features/org/orgApi';
 import { Job } from '@/types/job';
+import { useAppSelector } from '@/lib/redux/hooks';
 import ConfirmationDialog from '../../../jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { JobAnalyticsModal } from '../JobAnalyticsModal';
 import { JobsTableProps, CustomFieldDef } from './types';
@@ -18,28 +15,30 @@ import { JobsTableRow } from './jobs-table-row';
 export function JobsTableView(props: JobsTableProps) {
   const { jobs, setSelectedJob, setDuplicate } = props;
 
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
+  const { user } = useAppSelector((state) => state.auth || {});
 
   const { formNameObject } = useCustomForm('Job Position');
 
   // Local state for modals
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
-  const [selectedJobForDuplicate, setSelectedJobForDuplicate] = useState<Job | null>(null);
+  const [selectedJobForDuplicate, setSelectedJobForDuplicate] =
+    useState<Job | null>(null);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [selectedJobForAnalytics, setSelectedJobForAnalytics] = useState<Job | null>(null);
+  const [selectedJobForAnalytics, setSelectedJobForAnalytics] =
+    useState<Job | null>(null);
 
   // Get all available custom fields
-  const availableCustomFields: CustomFieldDef[] = useMemo(() => (
-    formNameObject?.fields
-      .filter((field) => field.showOnCard && !field.jobId)
-      .map((field) => ({
-        label: field.label,
-        showOnCard: field.showOnCard,
-        jobId: field.jobId,
-      })) || []
-  ), [formNameObject]);
+  const availableCustomFields: CustomFieldDef[] = useMemo(
+    () =>
+      formNameObject?.fields
+        .filter((field) => field.showOnCard && !field.jobId)
+        .map((field) => ({
+          label: field.label,
+          showOnCard: field.showOnCard,
+          jobId: field.jobId,
+        })) || [],
+    [formNameObject],
+  );
 
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set());
 
@@ -61,18 +60,28 @@ export function JobsTableView(props: JobsTableProps) {
     setIsAnalyticsOpen(true);
   };
 
+  const {
+    setIsDetailsOpen,
+    setIsEditMode,
+    handleDeleteClick,
+    onEmailSettingsClick,
+    sortField,
+    sortDirection,
+    onSort,
+  } = props;
+
   const rowActions = {
     setSelectedJob,
-    setIsDetailsOpen: props.setIsDetailsOpen,
-    setIsEditMode: props.setIsEditMode,
-    handleDeleteClick: props.handleDeleteClick,
+    setIsDetailsOpen,
+    setIsEditMode,
+    handleDeleteClick,
     handleDuplicateClick,
     handleAnalyticsClick,
-    onEmailSettingsClick: props.onEmailSettingsClick,
+    onEmailSettingsClick,
   };
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="flex h-full flex-col gap-4">
       {/* Controls Bar (Column Selector) */}
       <div className="flex justify-end">
         <ColumnsSelector
@@ -82,13 +91,13 @@ export function JobsTableView(props: JobsTableProps) {
         />
       </div>
 
-      <div className="h-full  overflow-y-scroll my-1">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-black overflow-hidden">
+      <div className="my-1 h-full overflow-y-scroll">
+        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-black">
           <Table>
             <JobsTableHeader
-              sortField={props.sortField}
-              sortDirection={props.sortDirection}
-              onSort={props.onSort}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={onSort}
               visibleColumns={visibleColumns}
               customFields={availableCustomFields}
             />
@@ -98,7 +107,7 @@ export function JobsTableView(props: JobsTableProps) {
                   {/* Calculate colSpan dynamically based on visible columns + 4 mandatory */}
                   <TableCell
                     colSpan={4 + visibleColumns.size}
-                    className="text-center h-32"
+                    className="h-32 text-center"
                   >
                     <p className="text-gray-500 dark:text-gray-400">
                       No jobs found
@@ -110,7 +119,6 @@ export function JobsTableView(props: JobsTableProps) {
                   <JobsTableRow
                     key={job._id}
                     job={job}
-                    user={user}
                     visibleColumns={visibleColumns}
                     customFields={availableCustomFields}
                     actions={rowActions}
@@ -150,7 +158,7 @@ export function JobsTableView(props: JobsTableProps) {
             setSelectedJobForAnalytics(null);
           }}
           job={selectedJobForAnalytics}
-          organizationId={user.organizationId}
+          organizationId={user?.organizationId as string}
         />
       )}
     </div>

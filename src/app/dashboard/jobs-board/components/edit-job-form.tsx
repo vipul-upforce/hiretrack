@@ -1,6 +1,6 @@
 'use client';
 
-import { Formik, Form, FormikErrors } from 'formik';
+import { Formik, Form } from 'formik';
 import { Button } from '@/components/ui/button';
 import { useUpdateJobMutation } from '@/lib/features/job/jobApi';
 import { useToast } from '@/hooks/use-toast';
@@ -229,9 +229,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === 'object'
-          && errorData !== null
-          && 'error' in errorData
+          typeof errorData === 'object' &&
+          errorData !== null &&
+          'error' in errorData
         ) {
           toast({
             title: 'Error',
@@ -256,11 +256,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       validationSchema={jobSchema(validationSchema)}
       onSubmit={onSubmit}
     >
-      {({
-        isSubmitting, setFieldValue, values, errors,
-      }) => (
-        <Form className="flex flex-col border-t pt-4 mb-[70px] overflow-y-hidden sticky top-0">
-          <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
+      {({ isSubmitting, setFieldValue, values, errors }) => (
+        <Form className="sticky top-0 mb-[70px] flex flex-col overflow-y-hidden border-t pt-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4 pt-0">
             <JobForm
               job={job}
               onRemoveExistingFile={(fileId) => {
@@ -280,7 +278,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
             <CustomFields formName={formName} jobId={job._id} />
           </div>
 
-          <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 fixed bottom-0 w-full">
+          <div className="fixed bottom-0 flex w-full justify-between space-x-2 border-t bg-background px-6 py-4">
             <div>
               <AddSpecificCustomFieldButton
                 jobId={job._id}
@@ -291,19 +289,21 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
               />
             </div>
             <div className="flex flex-row gap-4">
-              <div className="items-top flex space-x-2 items-center">
+              <div className="items-top flex items-center space-x-2">
                 <Checkbox
                   id="publish"
                   name="publish"
                   checked={values?.isPublished}
-                  onCheckedChange={(checked) => setFieldValue('isPublished', checked)}
+                  onCheckedChange={(checked) =>
+                    setFieldValue('isPublished', checked)
+                  }
                 />
-                <div className="grid gap-1.5 leading-none ">
+                <div className="grid gap-1.5 leading-none">
                   <label
                     htmlFor="publish"
                     className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-              Publish
+                    Publish
                   </label>
                 </div>
               </div>

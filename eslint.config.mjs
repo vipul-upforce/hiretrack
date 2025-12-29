@@ -57,6 +57,7 @@ const eslintConfig = [
       'import/no-cycle': 'off',
       'no-restricted-syntax': 'off',
       'no-await-in-loop': 'off',
+      'no-useless-escape': 'off',
       // --- SENIOR'S REQUIRED OVERRIDES (From provided preset) ---
       'react/jsx-filename-extension': 'off',
       'import/extensions': 'off',

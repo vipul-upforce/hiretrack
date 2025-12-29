@@ -29,7 +29,7 @@ export interface Remark {
   };
 }
 
-interface Assignment {
+export interface Assignment {
   interviewerId:
     | string
     | { _id: string; name: string; email: string; duration: string };

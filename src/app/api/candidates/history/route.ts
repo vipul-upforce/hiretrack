@@ -12,13 +12,17 @@ import {
 } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { v4 as uuidv4 } from 'uuid';
-import mongoose, { Types } from 'mongoose';
+import mongoose, { FilterQuery, Types, UpdateQuery } from 'mongoose';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 import { filterChecklistResponses } from '@/lib/utils/checklistVisibility';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { UserRole } from '@/lib/models/JobLaneConfig';
+import {
+  IChecklistField,
+  ILaneConfig,
+  UserRole,
+} from '@/lib/models/JobLaneConfig';
 import { sendRemarkNotificationWithMentions } from '@/lib/services/unifiedEmailService';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { logger } from '@/lib/logger/logger.server';
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
       })
         .populate(populateFields)
         .lean(),
-      JobLaneConfig.findOne({ jobId: data.jobId }).lean().exec(),
+      JobLaneConfig?.findOne({ jobId: data.jobId }).lean().exec(),
     ]);
 
     if (!historyEntry) {
@@ -72,50 +76,56 @@ export async function POST(request: NextRequest) {
     }
 
     // Filter checklist responses in history based on user role visibility
-    const filteredHistory = historyEntry.history.map((entry: any) => {
-      if (!entry.checklistForm) {
-        return entry;
-      }
+    const filteredHistory = historyEntry.history.map(
+      (entry: ICandidateHistory) => {
+        if (!entry.checklistForm) {
+          return entry;
+        }
 
-      // Find the checklist configuration to get field visibility settings
-      let checklistFields: any[] = [];
-      if (laneConfig) {
-        const targetLane = laneConfig.laneConfigs.find(
-          (lc: any) => lc.laneId === entry.checklistForm.laneId,
-        );
-        if (targetLane) {
-          const checklist =
-            entry.checklistForm.checklistType === 'incoming'
-              ? targetLane.incomingChecklist
-              : targetLane.outgoingChecklist;
+        // Find the checklist configuration to get field visibility settings
+        let checklistFields: IChecklistField[] = [];
+        if (laneConfig) {
+          const targetLane = laneConfig.laneConfigs.find(
+            (lc: ILaneConfig) => lc.laneId === entry.checklistForm?.laneId,
+          );
+          if (targetLane) {
+            const checklist =
+              entry.checklistForm.checklistType === 'incoming'
+                ? targetLane.incomingChecklist
+                : targetLane.outgoingChecklist;
 
-          if (checklist && checklist.fields) {
-            checklistFields = checklist.fields;
+            if (checklist && checklist.fields) {
+              checklistFields = checklist.fields;
+            }
           }
         }
-      }
 
-      // Filter the responses based on user role and field visibility
-      const filteredResponses = filterChecklistResponses(
-        entry.checklistForm.responses,
-        checklistFields,
-        userData.role as UserRole,
-      );
+        // Filter the responses based on user role and field visibility
+        const filteredResponses = filterChecklistResponses(
+          entry.checklistForm.responses,
+          checklistFields,
+          userData.role as UserRole,
+        );
 
-      return {
-        ...entry,
-        checklistForm: {
-          ...entry.checklistForm,
-          responses: filteredResponses,
-        },
-      };
-    });
+        return {
+          ...entry,
+          checklistForm: {
+            ...entry.checklistForm,
+            responses: filteredResponses,
+          },
+        };
+      },
+    );
 
     return NextResponse.json(filteredHistory);
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 }
 
@@ -143,8 +153,10 @@ export async function PATCH(request: NextRequest) {
 
     const isRemark = !!remarkExists;
 
-    const filter: any = {};
-    const updateFields: any = {};
+    const filter: FilterQuery<ICandidateHistory> = {};
+    const updateFields: UpdateQuery<
+      ICandidate & { history?: ICandidateHistory[] }
+    > = {};
 
     if (isRemark) {
       // 🔹 Update remark
@@ -204,7 +216,7 @@ export async function PATCH(request: NextRequest) {
     const updatedItem = populatedHistory.history.find((item) =>
       isRemark
         ? item.remark && item.remark.id === id
-        : item.note && item?._id.toString() === id,
+        : item.note && item?._id?.toString() === id,
     );
 
     if (!updatedItem) {
@@ -429,7 +441,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const transformedHistory = (historyEntry.history || []).map(
-      (historyItem: any) => {
+      (historyItem: ICandidateHistory) => {
         if (historyItem.checklistForm?.responses) {
           return {
             ...historyItem,

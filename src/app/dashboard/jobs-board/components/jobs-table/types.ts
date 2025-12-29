@@ -17,6 +17,6 @@ export type ColumnId = 'applications' | 'experience' | 'skills' | string; // str
 
 export interface CustomFieldDef {
   label: string;
-  showOnCard: boolean;
+  showOnCard?: boolean;
   jobId?: string;
 }

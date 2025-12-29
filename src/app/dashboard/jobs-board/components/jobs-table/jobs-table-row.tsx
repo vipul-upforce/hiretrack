@@ -9,14 +9,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { User } from '@/lib/features/org/orgApi';
 import { formatReadableDate } from '@/lib/formate-redable-date';
 import { CustomFieldDef } from './types';
 import { JobActionsCell } from './jobs-actions-cell';
 
 interface JobsTableRowProps {
   job: Job;
-  user: User;
   visibleColumns: Set<string>;
   customFields: CustomFieldDef[];
   actions: {
@@ -32,7 +30,6 @@ interface JobsTableRowProps {
 
 export function JobsTableRow({
   job,
-  user,
   visibleColumns,
   customFields,
   actions,
@@ -41,7 +38,7 @@ export function JobsTableRow({
 
   return (
     <TableRow
-      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer transition-colors"
+      className="cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-900"
       onClick={() => router.push(`/dashboard/jobs/${job._id}`)}
     >
       {/* Title */}
@@ -52,7 +49,7 @@ export function JobsTableRow({
               <TooltipProvider>
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
-                    <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 text-amber-500" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Candidates cannot apply until this job is published.</p>
@@ -77,11 +74,7 @@ export function JobsTableRow({
           </div>
           {job.experience !== undefined && (
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              {job.experience}
-              {' '}
-              {job.experience === 1 ? 'year' : 'years'}
-              {' '}
-              exp
+              {job.experience} {job.experience === 1 ? 'year' : 'years'} exp
               required
             </span>
           )}
@@ -90,15 +83,7 @@ export function JobsTableRow({
 
       {/* Status */}
       <TableCell className="py-4">
-        <Badge
-          variant={
-            job.status === 'open'
-              ? 'default'
-              : job.status === 'closed'
-                ? 'secondary'
-                : 'outline'
-          }
-        >
+        <Badge variant={job.status === 'open' ? 'default' : 'secondary'}>
           {job.status}
         </Badge>
       </TableCell>
@@ -106,7 +91,7 @@ export function JobsTableRow({
       {/* Applications */}
       {visibleColumns.has('applications') && (
         <TableCell className="py-4">
-          <span className="text-gray-900 dark:text-gray-100 font-medium">
+          <span className="font-medium text-gray-900 dark:text-gray-100">
             {job.candidateCount || 0}
           </span>
         </TableCell>
@@ -129,9 +114,9 @@ export function JobsTableRow({
           <div className="flex flex-wrap gap-1">
             {job.skills && job.skills.length > 0 ? (
               <>
-                {job.skills.slice(0, 2).map((skill, index) => (
+                {job.skills.slice(0, 2).map((skill) => (
                   <Badge
-                    key={`${job._id}-skill-${index}`}
+                    key={`${job._id}-skill`}
                     variant="secondary"
                     className="text-xs font-normal"
                   >
@@ -140,8 +125,7 @@ export function JobsTableRow({
                 ))}
                 {job.skills.length > 2 && (
                   <Badge variant="secondary" className="text-xs font-normal">
-                    +
-                    {job.skills.length - 2}
+                    +{job.skills.length - 2}
                   </Badge>
                 )}
               </>
@@ -158,19 +142,23 @@ export function JobsTableRow({
         const value = job.customFields?.[field.label];
         return (
           <TableCell key={field.label} className="py-4">
-            {value && typeof value === 'string' ? (
-              <span className="text-sm text-gray-600 dark:text-gray-400 capitalize">
-                {value}
-              </span>
-            ) : Array.isArray(value) && value.length > 0 ? (
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {value.length}
-                {' '}
-                files
-              </span>
-            ) : (
-              <span className="text-gray-400">-</span>
-            )}
+            {(() => {
+              if (value && typeof value === 'string') {
+                return (
+                  <span className="text-sm capitalize text-gray-600 dark:text-gray-400">
+                    {value}
+                  </span>
+                );
+              }
+              if (Array.isArray(value) && value.length > 0) {
+                return (
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {value.length} files
+                  </span>
+                );
+              }
+              return <span className="text-gray-400">-</span>;
+            })()}
           </TableCell>
         );
       })}
@@ -186,7 +174,6 @@ export function JobsTableRow({
       <TableCell className="py-4">
         <JobActionsCell
           job={job}
-          user={user}
           onSetSelectedJob={actions.setSelectedJob}
           onEdit={() => {
             actions.setIsDetailsOpen(true);

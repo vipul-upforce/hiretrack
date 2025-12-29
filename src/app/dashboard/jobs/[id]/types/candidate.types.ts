@@ -6,7 +6,6 @@
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import { ICandidateHistory } from '@/lib/models/history';
 import { ITag } from '@/lib/models/organization';
-import { Attachment } from '@/app/api/candidates/route';
 import { JobObject } from '../utils/candidateTypeGuards';
 import { NormalizedInterviewer } from '../utils/candidateNormalizer';
 
@@ -114,7 +113,6 @@ export interface CandidateAssignment {
     }>;
     lastSyncedAt?: Date | string;
   };
-  status?: string;
   jobId?: string | JobObject;
 }
 
