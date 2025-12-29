@@ -110,14 +110,6 @@ export function CreateJobDialog({
     const fileNames = values.files.map((file) => file.name);
     const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
-    const convertFileToBase64 = (file: File): Promise<string> =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
-      });
-
     if (hasDuplicates) {
       toast({
         title: 'Alert',
