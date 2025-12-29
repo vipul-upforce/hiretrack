@@ -22,7 +22,10 @@ import {
 import { CandidateFunnelChart } from '@/app/dashboard/analytics/components/candidate-funnel/CandidateFunnelChart';
 import { InterviewAssignmentChart } from '@/app/dashboard/analytics/components/interview-assignment/InterviewAssignmentChart';
 import { ApplicationTrendsChart } from '@/app/dashboard/analytics/components/trends/ApplicationTrendsChart';
-import { exportToCSV } from '@/app/dashboard/analytics/utils/export';
+import {
+  exportToCSV,
+  type ExportData,
+} from '@/app/dashboard/analytics/utils/export';
 import {
   useCandidateFunnel,
   useInterviewAssignments,
@@ -45,18 +48,31 @@ export function JobAnalyticsModal({
   organizationId,
 }: JobAnalyticsModalProps) {
   // Helper function to safely convert date values to Date objects
-  const toDate = (dateValue: any): Date | null => {
+  const toDate = (
+    dateValue:
+      | Date
+      | string
+      | number
+      | { toDate?: () => Date; toISOString?: () => string }
+      | null
+      | undefined,
+  ): Date | null => {
     if (!dateValue) return null;
     if (dateValue instanceof Date) return dateValue;
     if (typeof dateValue === 'string' || typeof dateValue === 'number') {
       const date = new Date(dateValue);
-      return isNaN(date.getTime()) ? null : date;
+      return Number.isNaN(date.getTime()) ? null : date;
     }
-    if (dateValue.toDate && typeof dateValue.toDate === 'function') {
-      return dateValue.toDate();
-    }
-    if (dateValue.toISOString && typeof dateValue.toISOString === 'function') {
-      return new Date(dateValue.toISOString());
+    if (dateValue && typeof dateValue === 'object') {
+      if ('toDate' in dateValue && typeof dateValue.toDate === 'function') {
+        return dateValue.toDate();
+      }
+      if (
+        'toISOString' in dateValue &&
+        typeof dateValue.toISOString === 'function'
+      ) {
+        return new Date(dateValue.toISOString());
+      }
     }
     return null;
   };
@@ -121,7 +137,7 @@ export function JobAnalyticsModal({
 
   const handleExport = () => {
     try {
-      const exportData: any[] = [];
+      const exportData: ExportData[] = [];
 
       // Add header with job information
       exportData.push({
@@ -231,11 +247,19 @@ export function JobAnalyticsModal({
               {showDatePicker ? (
                 <div className="relative">
                   {/* FIXED: Prevent auto-close by fully controlling the popover */}
-                  <div className="flex flex-col gap-3 rounded-md border bg-white p-3 shadow-md">
+                  <div className="flex flex-col gap-3 rounded-md border bg-card p-3 shadow-md">
                     <DatePicker
                       value={tempRange}
                       onChange={(newRange) => {
-                        setTempRange(newRange); // Live update only
+                        // Normalize the value: convert single Date to array, or keep array/null
+                        if (newRange === null) {
+                          setTempRange(null);
+                        } else if (Array.isArray(newRange)) {
+                          setTempRange(newRange);
+                        } else {
+                          // Single date selected - convert to array (user will select second date)
+                          setTempRange([newRange]);
+                        }
                       }}
                       range
                       showTimePicker={false}

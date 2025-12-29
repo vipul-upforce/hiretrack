@@ -328,8 +328,11 @@ export default function DashboardLayout({
     const g = Math.round(rgb.g * factor);
     const b = Math.round(rgb.b * factor);
 
-    // Ensure we always return a valid 6-digit hex
-    const result = (r * 16 + g * 8 + b).toString(16).padStart(6, '0');
+    // Convert each RGB component to 2-digit hex and concatenate
+    const result =
+      r.toString(16).padStart(2, '0') +
+      g.toString(16).padStart(2, '0') +
+      b.toString(16).padStart(2, '0');
     return `#${result}`;
   };
 
@@ -342,8 +345,11 @@ export default function DashboardLayout({
     const g = Math.round(rgb.g + (255 - rgb.g) * factor);
     const b = Math.round(rgb.b + (255 - rgb.b) * factor);
 
-    // Ensure we always return a valid 6-digit hex
-    const result = (r * 16 + g * 8 + b).toString(16).padStart(6, '0');
+    // Convert each RGB component to 2-digit hex and concatenate
+    const result =
+      r.toString(16).padStart(2, '0') +
+      g.toString(16).padStart(2, '0') +
+      b.toString(16).padStart(2, '0');
     return `#${result}`;
   };
 
@@ -457,7 +463,7 @@ export default function DashboardLayout({
             isCollapsed={isCollapsed}
             onToggleCollapse={handleToggleCollapse}
             userData={userData}
-            portalConfigData={portalConfigData}
+            portalConfigData={portalConfigData ?? null}
             isLoading={isLoading}
             theme={theme}
             sidebarItems={sidebarItems}
@@ -492,7 +498,7 @@ export default function DashboardLayout({
               isCollapsed={false}
               onToggleCollapse={handleToggleCollapse}
               userData={userData}
-              portalConfigData={portalConfigData}
+              portalConfigData={portalConfigData ?? null}
               isLoading={isLoading}
               theme={theme}
               sidebarItems={sidebarItems}

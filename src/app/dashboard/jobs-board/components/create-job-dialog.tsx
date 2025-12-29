@@ -96,7 +96,13 @@ export function CreateJobDialog({
     },
     promptForStatusChangeReason: true,
   };
-
+  const convertFileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
   const handleSubmit = async (
     values: JobFormValues,
     { resetForm, setSubmitting }: FormikHelpers<JobFormValues>,
