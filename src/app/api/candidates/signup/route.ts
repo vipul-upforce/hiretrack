@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import connectToDatabase, { CandidateAccount, Organization, User } from '@/lib/mongodb';
+import connectToDatabase, {
+  CandidateAccount,
+  Organization,
+  User,
+} from '@/lib/mongodb';
 import {
-  validateInput, VALIDATION_PATTERNS, MAX_LENGTHS, sanitizeString,
+  validateInput,
+  VALIDATION_PATTERNS,
+  MAX_LENGTHS,
+  sanitizeString,
 } from '@/lib/inputValidation';
 
 export async function POST(req: NextRequest) {
@@ -98,6 +105,15 @@ export async function POST(req: NextRequest) {
 
     const existingCandidate = await CandidateAccount.findOne({ email });
     if (existingCandidate) {
+      if (existingCandidate.isDeleted) {
+        return NextResponse.json(
+          {
+            error:
+              'Candidate already exists in this organization, but is deactivated.',
+          },
+          { status: 400 },
+        );
+      }
       return NextResponse.json(
         { error: 'Candidate already exists in an organization' },
         { status: 400 },
@@ -110,13 +126,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              'Candidate already exists in this organization, but is deactivated.',
+              'This email already exists in this organization, but is deactivated.',
           },
           { status: 400 },
         );
       }
       return NextResponse.json(
-        { error: 'Candidate alredy exists in this organization as a Member.' },
+        { error: 'This email already exists in this organization as a Member.' },
         { status: 400 },
       );
     }

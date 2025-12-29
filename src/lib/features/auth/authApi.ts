@@ -19,6 +19,8 @@ interface User {
   email: string;
   role: string;
   organizationInfo?: OrgInfo;
+  tokenVersion?: number;
+  fileStorage?: string;
 }
 
 interface AuthResponse {
@@ -26,6 +28,7 @@ interface AuthResponse {
   user: User;
   _id?: string;
   twofa?: boolean;
+  isCandidate?: boolean;
   organizationId?: string;
   organizations?: OneOfMulOrganization[];
 }
@@ -38,6 +41,7 @@ interface VerifyOtpRequest {
 interface SendOtpRequest {
   email: string;
   organizationId?: string | null;
+  isCandidate?: boolean;
 }
 
 interface LicenseResponse {

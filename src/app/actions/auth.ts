@@ -93,9 +93,7 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
           path: 'organizationId',
           select: '-customFields',
         })
-        .select(
-          'name email role organizationId tokenVersion appliedApplications',
-        )
+        .select('name email role organizationId tokenVersion appliedApplications isDeleted')
         .lean();
     } else {
       // Fetch regular user info by userId
@@ -105,17 +103,17 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
           path: 'organizationId',
           select: '-customFields',
         })
-        .select('name email role organizationId tokenVersion')
+        .select('name email role organizationId tokenVersion isDeleted')
         .lean();
     }
-    // console.log(user, "user-106");
     // File storage is always per-organization, so fetch regardless of user type
     const fileStorage = await Settings!
       .findOne({ organizationId })
       .select('fileStorage')
       .lean();
 
-    if (!user) {
+
+    if (!user || user?.isDeleted) {
       return { success: false, error: 'User not found' };
     }
 

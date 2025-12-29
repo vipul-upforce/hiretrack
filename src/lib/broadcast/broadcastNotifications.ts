@@ -1,4 +1,4 @@
-import { signToken } from '@/app/actions/auth';
+import { signAccessToken } from '@/app/actions/auth';
 import { INotification } from '@/lib/models/notification';
 import logger from '../logger';
 
@@ -11,7 +11,7 @@ export async function broadcastNotification(
   if (!orgClients) return;
 
   const encoder = new TextEncoder();
-  const encoded = await signToken(notification, orgId);
+  const encoded = await signAccessToken(notification, orgId);
 
   orgClients.forEach((client) => {
     if (client.userId !== recipientId) return;
@@ -44,7 +44,7 @@ export async function broadcastNotifications(
   if (!orgClients) return;
 
   for (const [recipientId, items] of recipients.entries()) {
-    const encoded = await signToken(items, orgId);
+    const encoded = await signAccessToken(items, orgId);
     orgClients.forEach((client) => {
       if (client.userId !== recipientId) return;
       try {

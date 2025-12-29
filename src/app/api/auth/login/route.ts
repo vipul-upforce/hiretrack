@@ -10,77 +10,251 @@ import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { IUser } from '@/lib/models/user';
 import { IUCandidateAccount } from '@/lib/models/candidateAccount';
 import { emailLoginRateLimiter } from '@/lib/rateLimiter';
-import { UserWithoutCF } from '@/types/login';
 import { logger } from '@/lib/logger/logger.server';
-import {
-  cleanupExpiredTokens,
-  generateRefreshToken,
-  hashRefreshToken,
-  storeRefreshToken,
-} from '@/lib/refreshToken';
-import { signToken } from '@/lib/jwt';
-import { setAuthCookies } from '@/lib/authCookies';
+import { returnTokenBasedResponse } from '@/lib/refreshToken';
 
-const returnTokenBasedResponse = async (obj: any, req?: NextRequest) => {
-  const userWithoutCustomFields: UserWithoutCF = {
-    ...obj,
-  };
-  if (userWithoutCustomFields.organizationInfo) {
-    userWithoutCustomFields.organizationInfo = {
-      ...userWithoutCustomFields.organizationInfo,
+const userLogin = async (
+  users: IUser[],
+  orgId: string,
+  password: string,
+  req: NextRequest,
+) => {
+  const user = users[0];
+  if (orgId) {
+    const userInOrg = users.find((u) => u.organizationId.toString() === orgId);
+    if (!userInOrg) {
+      return NextResponse.json(
+        { error: 'Invalid organization ID' },
+        { status: 401 },
+      );
+    }
+
+    // Check password for the specified organization
+    const isPasswordValid = await bcrypt.compare(password, userInOrg.password);
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 },
+      );
+    }
+
+    const orgSettings = await Settings!
+      .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
+      .select('fileStorage twoFA')
+      .lean();
+
+    if (orgSettings && orgSettings.twoFA && orgSettings.twoFA.enable2FA) {
+      const response = NextResponse.json({
+        message: 'Continuing to next step for 2fa',
+        twofa: true,
+        organizationId: orgId,
+        isCandidate: false,
+      });
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      // response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+      response.headers.set(
+        'Referrer-Policy',
+        'strict-origin-when-cross-origin',
+      );
+
+      return response;
+    }
+
+    const userTokenObj = {
+      id: userInOrg._id.toString(),
+      name: userInOrg.name,
+      email: userInOrg.email,
+      role: userInOrg.role,
+      tokenVersion: userInOrg.tokenVersion,
+      organizationId: userInOrg.organizationId.toString(),
+      fileStorage: orgSettings?.fileStorage?.storageType,
     };
-    delete userWithoutCustomFields.organizationInfo.customFields;
+
+    const response = await returnTokenBasedResponse(userTokenObj);
+    return response;
   }
 
-  // Generate short-lived access token (15 minutes)
-  const accessToken = await signToken(
-    userWithoutCustomFields,
-    obj.organizationId.toString(),
-  );
-  const userId = obj.id || obj._id.toString();
-  const { role } = obj;
-  const isCandidate = role === 'candidate';
-  const orgId = obj.organizationId.toString();
+  // Collect organization info
+  const orgs = [];
+  for (const user1 of users) {
+    const orgInfo = await Organization!
+      .findById(user1.organizationId)
+      .select('name _id')
+      .lean();
+    orgs.push({
+      orgId: user1.organizationId,
+      name: orgInfo?.name,
+      isCandidate: false,
+    });
+  }
 
-  // Cleanup expired tokens before storing new one (keeps array clean)
-  await cleanupExpiredTokens(userId, isCandidate);
+  // If user exists in multiple organizations, return the organizations
+  if (orgs.length > 1) {
+    return NextResponse.json(
+      {
+        organizations: orgs,
+        message:
+          'User exists in multiple organizations. Please specify the organization to login.',
+      },
+      { status: 200 },
+    );
+  }
+  if (orgs.length === 1 && users.length === 1) {
+    return userLogin(users, orgs[0].orgId.toString(), password, req);
+  }
 
-  // Generate refresh token using JWT (same method as access token)
-  const refreshTokenPayload = {
-    userId,
-    role,
-    orgId,
-    isCandidate,
-    tokenVersion: obj.tokenVersion,
+  // If user exists in a single organization, proceed to check password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  }
+
+  const fileStorage = await Settings!
+    .findOne({ organizationId: user.organizationId }, { _id: 0 })
+    .select('fileStorage')
+    .lean();
+
+  const tokenObj = {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    organizationId: user.organizationId.toString(),
+    tokenVersion: user.tokenVersion,
+
+    fileStorage: fileStorage?.fileStorage?.storageType,
   };
-
-  const refreshToken = generateRefreshToken(refreshTokenPayload, orgId);
-  const refreshTokenHash = hashRefreshToken(refreshToken);
-
-  // Store hashed refresh token in database
-  await storeRefreshToken(
-    userId,
-    refreshTokenHash,
-    isCandidate,
-    7, // 7 days
-  );
-
-  const response = NextResponse.json({
-    message: 'Logged In Successfully',
-    user: accessToken,
-    refreshToken, // Return JWT refresh token to client
-  });
-
-  // Centralized auth cookie handling
-  setAuthCookies({
-    response,
-    accessToken,
-    refreshToken,
-    orgId: obj.organizationId.toString(),
-  });
-
+  const response = await returnTokenBasedResponse(tokenObj);
   return response;
 };
+
+const candidateLogin = async (
+  candidates: IUCandidateAccount[],
+  orgId: string,
+  password: string,
+  req: NextRequest,
+) => {
+  const candidate = candidates[0];
+  if (orgId) {
+    const candidateInOrg = candidates.find(
+      (c) => c.organizationId.toString() === orgId,
+    );
+    if (!candidateInOrg) {
+      return NextResponse.json(
+        { error: 'Invalid organization ID' },
+        { status: 401 },
+      );
+    }
+
+    // Check password for the specified organization
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      candidateInOrg.password,
+    );
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 },
+      );
+    }
+    const fileStorageResult = await Settings!
+      .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
+      .select('fileStorage twoFA')
+      .lean();
+    const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
+    const twoFA = fileStorageResult?.twoFA?.enable2FA as boolean;
+
+    if (twoFA) {
+      const response = NextResponse.json({
+        message: 'Continuing to next step for 2fa',
+        twofa: true,
+        organizationId: orgId,
+        isCandidate: true,
+      });
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      // response.headers.set('X-Frame-Options', 'DENY');
+      response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+      response.headers.set('X-XSS-Protection', '1; mode=block');
+      response.headers.set(
+        'Referrer-Policy',
+        'strict-origin-when-cross-origin',
+      );
+
+      return response;
+    }
+
+    const tokenObj = {
+      id: candidateInOrg._id.toString(),
+      name: candidateInOrg.name,
+      email: candidateInOrg.email,
+      appliedApplications: candidateInOrg.appliedApplications,
+      role: 'candidate',
+      organizationId: candidateInOrg.organizationId.toString(),
+      fileStorage,
+      tokenVersion: undefined,
+    };
+    const response = await returnTokenBasedResponse(tokenObj);
+    return response;
+  }
+
+  // Collect organization info
+  const orgs = [];
+  for (const c of candidates) {
+    const orgInfo = await Organization!
+      .findById(c.organizationId)
+      ?.select('name _id')
+      .lean();
+    orgs.push({
+      orgId: c.organizationId.toString(),
+      name: orgInfo?.name,
+      isCandidate: true,
+    });
+  }
+
+  // If candidate exists in multiple organizations, return the organizations
+  if (orgs.length > 1) {
+    return NextResponse.json(
+      {
+        organizations: orgs,
+        message:
+          'Candidate exists in multiple organizations. Please specify the organization for login.',
+      },
+      { status: 200 },
+    );
+  }
+
+  if (orgs.length === 1 && candidates.length === 1) {
+    return candidateLogin(candidates, orgs[0].orgId.toString(), password, req);
+  }
+
+  const [fileStorageResult, isPasswordValid] = await Promise.all([
+    Settings!
+      .findOne({ organizationId: candidate.organizationId }, { _id: 0 })
+      .select('fileStorage')
+      .lean(),
+    bcrypt.compare(password, candidate.password),
+  ]);
+  const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
+  if (!isPasswordValid) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  }
+
+  const tokenObj = {
+    id: candidate._id.toString(),
+    name: candidate.name,
+    email: candidate.email,
+    appliedApplications: candidate.appliedApplications,
+    role: 'candidate',
+    organizationId: candidate.organizationId.toString(),
+    fileStorage,
+    tokenVersion: undefined,
+  };
+  const response = await returnTokenBasedResponse(tokenObj);
+  return response;
+};
+
 const checkMultipleOrgs = async (
   orgId: string,
   users: IUser[],
@@ -130,9 +304,6 @@ const checkMultipleOrgs = async (
         );
       }
 
-      // Get organization info
-      const orgInfo = await Organization!.findById(orgId);
-
       // Add user account if password is valid
       if (isUserPasswordValid) {
         const fileStorage = await Settings!
@@ -147,7 +318,7 @@ const checkMultipleOrgs = async (
           role: userInOrg.role,
           organizationId: userInOrg.organizationId.toString(),
           isCandidate: false,
-          organizationInfo: orgInfo,
+
           fileStorage: fileStorage?.fileStorage?.storageType,
         });
       }
@@ -162,7 +333,7 @@ const checkMultipleOrgs = async (
           organizationId: candidateInOrg.organizationId.toString(),
           isCandidate: true,
           appliedApplications: candidateInOrg.appliedApplications,
-          organizationInfo: orgInfo,
+          tokenVersion: undefined,
         });
       }
 
@@ -191,9 +362,6 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!
-        .findById(userInOrg.organizationId)
-        .lean();
       const fileStorage = await Settings!
         .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
         .select('fileStorage')
@@ -204,13 +372,12 @@ const checkMultipleOrgs = async (
         name: userInOrg.name,
         email: userInOrg.email,
         role: userInOrg.role,
-        organizationId: userInOrg.organizationId,
-        organizationInfo: orgInfo,
+        organizationId: userInOrg.organizationId.toString(),
         fileStorage: fileStorage?.fileStorage?.storageType,
         tokenVersion: userInOrg.tokenVersion,
       };
 
-      const response = await returnTokenBasedResponse(tokenObj, req);
+      const response = await returnTokenBasedResponse(tokenObj);
       return response;
     }
 
@@ -232,25 +399,18 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const orgInfo = await Organization!
-        .findById(candidateInOrg.organizationId, {
-          adminId: 0,
-          lanes: 0,
-        })
-        .lean();
-
       const tokenObj = {
         id: candidateInOrg._id.toString(),
         name: candidateInOrg.name,
         email: candidateInOrg.email,
         appliedApplications: candidateInOrg.appliedApplications,
         role: 'candidate',
-        organizationId: candidateInOrg.organizationId,
-        organizationInfo: orgInfo,
+        organizationId: candidateInOrg.organizationId.toString(),
         fileStorage: fileStorage?.fileStorage?.storageType,
+        tokenVersion: undefined,
       };
 
-      const response = await returnTokenBasedResponse(tokenObj, req);
+      const response = await returnTokenBasedResponse(tokenObj);
       return response;
     }
   }
@@ -261,18 +421,20 @@ const checkMultipleOrgs = async (
 
   // Add organizations from User collection
   for (const user of users) {
-    const checkorgId = user.organizationId.toString();
-    const orgInfo = await Organization!.findById(user.organizationId);
+    const userOrgId = user.organizationId.toString();
+    const orgInfo = await Organization!
+      .findById(user.organizationId)
+      .select('name _id');
 
-    if (!orgMap.has(checkorgId)) {
-      orgMap.set(checkorgId, {
-        checkorgId,
+    if (!orgMap.has(userOrgId)) {
+      orgMap.set(userOrgId, {
+        userOrgId,
         name: orgInfo?.name,
         isCandidate: false,
         accountTypes: ['user'],
       });
     } else {
-      const org = orgMap.get(checkorgId);
+      const org = orgMap.get(userOrgId);
       if (!org.accountTypes.includes('user')) {
         org.accountTypes.push('user');
       }
@@ -281,18 +443,20 @@ const checkMultipleOrgs = async (
 
   // Add organizations from CandidateAccount collection
   for (const candidate of candidates) {
-    const checkorgId = candidate.organizationId.toString();
-    const orgInfo = await Organization!.findById(candidate.organizationId);
+    const candidateOrgId = candidate.organizationId.toString();
+    const orgInfo = await Organization!
+      .findById(candidate.organizationId)
+      .select('name _id');
 
-    if (!orgMap.has(checkorgId)) {
-      orgMap.set(checkorgId, {
-        orgId,
+    if (!orgMap.has(candidateOrgId)) {
+      orgMap.set(candidateOrgId, {
+        candidateOrgId,
         name: orgInfo?.name,
         isCandidate: true,
         accountTypes: ['candidate'],
       });
     } else {
-      const org = orgMap.get(orgId);
+      const org = orgMap.get(candidateOrgId);
       if (!org.accountTypes.includes('candidate')) {
         org.accountTypes.push('candidate');
       }
@@ -314,238 +478,6 @@ const checkMultipleOrgs = async (
     { status: 200 },
   );
 };
-
-const userLogin = async (
-  users: IUser[],
-  orgId: string,
-  password: string,
-  req: NextRequest,
-) => {
-  const user = users[0];
-  if (orgId) {
-    const userInOrg = users.find(
-      (checkuser) => checkuser.organizationId.toString() === orgId,
-    );
-    if (!userInOrg) {
-      return NextResponse.json(
-        { error: 'Invalid organization ID' },
-        { status: 401 },
-      );
-    }
-
-    // Check password for the specified organization
-    const isPasswordValid = await bcrypt.compare(password, userInOrg.password);
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 },
-      );
-    }
-
-    const orgInfo = await Organization!
-      .findById(userInOrg.organizationId)
-      .lean();
-    const orgSettings = await Settings!
-      .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-      .select('fileStorage twoFA')
-      .lean();
-
-    if (orgSettings?.twoFA?.enable2FA) {
-      const response = NextResponse.json({
-        message: 'Continuing to next step for 2fa',
-        twofa: true,
-        organizationId: orgId,
-      });
-      response.headers.set('X-Content-Type-Options', 'nosniff');
-      // response.headers.set('X-Frame-Options', 'DENY');
-      response.headers.set('X-Frame-Options', 'SAMEORIGIN');
-      response.headers.set('X-XSS-Protection', '1; mode=block');
-      response.headers.set(
-        'Referrer-Policy',
-        'strict-origin-when-cross-origin',
-      );
-
-      return response;
-    }
-
-    const userTokenObj = {
-      id: userInOrg._id.toString(),
-      name: userInOrg.name,
-      email: userInOrg.email,
-      role: userInOrg.role,
-      tokenVersion: userInOrg.tokenVersion,
-      organizationId: userInOrg.organizationId,
-      organizationInfo: orgInfo,
-      fileStorage: orgSettings?.fileStorage?.storageType,
-    };
-
-    const response = await returnTokenBasedResponse(userTokenObj, req);
-    return response;
-  }
-
-  // Collect organization info
-  const orgs = [];
-  for (const user1 of users) {
-    const orgInfo = await Organization!
-      .findById(user1.organizationId)
-      .select('name _id')
-      .lean();
-    orgs.push({
-      orgId: user1.organizationId,
-      name: orgInfo?.name,
-      isCandidate: false,
-    });
-  }
-
-  // If user exists in multiple organizations, return the organizations
-  if (orgs.length > 1) {
-    return NextResponse.json(
-      {
-        organizations: orgs,
-        message:
-          'User exists in multiple organizations. Please specify the organization to login.',
-      },
-      { status: 200 },
-    );
-  }
-  if (orgs.length === 1 && users.length === 1) {
-    return userLogin(users, orgs[0].orgId.toString(), password, req);
-  }
-
-  // If user exists in a single organization, proceed to check password
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!isPasswordValid) {
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-  }
-
-  const orgInfo = await Organization!.findById(user.organizationId).lean();
-  const fileStorage = await Settings!
-    .findOne({ organizationId: user.organizationId }, { _id: 0 })
-    .select('fileStorage')
-    .lean();
-
-  const tokenObj = {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    organizationId: user.organizationId,
-    tokenVersion: user.tokenVersion,
-    organizationInfo: orgInfo,
-    fileStorage: fileStorage?.fileStorage?.storageType,
-  };
-  const response = await returnTokenBasedResponse(tokenObj, req);
-  return response;
-};
-
-const candidateLogin = async (
-  candidates: IUCandidateAccount[],
-  orgId: string,
-  password: string,
-  req: NextRequest,
-) => {
-  const candidate = candidates[0];
-  if (orgId) {
-    const candidateInOrg = candidates.find(
-      (checkcandidate) => checkcandidate.organizationId.toString() === orgId,
-    );
-    if (!candidateInOrg) {
-      return NextResponse.json(
-        { error: 'Invalid organization ID' },
-        { status: 401 },
-      );
-    }
-    const fileStorage = await Settings!
-      .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
-      .select('fileStorage')
-      .lean();
-
-    // Check password for the specified organization
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      candidateInOrg.password,
-    );
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 },
-      );
-    }
-
-    const orgInfo = await Organization!
-      .findById(candidateInOrg.organizationId, {
-        adminId: 0,
-        lanes: 0,
-      })
-      .lean();
-    const tokenObj = {
-      id: candidateInOrg._id.toString(),
-      name: candidateInOrg.name,
-      email: candidateInOrg.email,
-      appliedApplications: candidateInOrg.appliedApplications,
-      role: 'candidate',
-      organizationId: candidateInOrg.organizationId,
-      organizationInfo: orgInfo,
-      fileStorage: fileStorage?.fileStorage?.storageType,
-    };
-    const response = await returnTokenBasedResponse(tokenObj, req);
-    return response;
-  }
-
-  // Collect organization info
-  const orgs = [];
-  for (const checkcandidate of candidates) {
-    const orgInfo = await Organization!.findById(checkcandidate.organizationId);
-    orgs.push({
-      orgId: checkcandidate.organizationId,
-      name: orgInfo?.name,
-      isCandidate: true,
-    });
-  }
-  const fileStorage = await Settings!
-    .findOne({ organizationId: candidate.organizationId }, { _id: 0 })
-    .select('fileStorage')
-    .lean();
-
-  // If candidate exists in multiple organizations, return the organizations
-  if (orgs.length > 1) {
-    return NextResponse.json(
-      {
-        organizations: orgs,
-        message:
-          'Candidate exists in multiple organizations. Please specify the organization for login.',
-      },
-      { status: 200 },
-    );
-  }
-
-  // If candidate exists in a single organization, proceed to check password
-  const isPasswordValid = await bcrypt.compare(password, candidate.password);
-  if (!isPasswordValid) {
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-  }
-
-  const orgInfo = await Organization!
-    .findById(candidate.organizationId, {
-      adminId: 0,
-      lanes: 0,
-    })
-    .lean();
-
-  const tokenObj = {
-    id: candidate._id.toString(),
-    name: candidate.name,
-    email: candidate.email,
-    appliedApplications: candidate.appliedApplications,
-    role: 'candidate',
-    organizationId: candidate.organizationId,
-    organizationInfo: orgInfo,
-    fileStorage: fileStorage?.fileStorage?.storageType,
-  };
-  const response = await returnTokenBasedResponse(tokenObj, req);
-  return response;
-};
-
 async function handleLogin(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -566,7 +498,7 @@ async function handleLogin(req: NextRequest) {
       },
     });
     const candidates = await CandidateAccount.find({ email }).lean();
-
+    console.log('users', users, 'candidates', candidates);
     // Check if email exists in either collection
     if (users.length === 0 && candidates.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -594,12 +526,7 @@ async function handleLogin(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
   }
-  return NextResponse.json(
-    { error: 'An unexpected error occurred' },
-    { status: 500 },
-  );
 }
-
 // Export with email-based rate limiting
 export async function POST(req: NextRequest) {
   // SECURITY FIX: Apply email-based rate limiting to prevent brute force attacks
