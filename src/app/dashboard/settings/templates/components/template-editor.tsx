@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-// import type { Dispatch, SetStateAction } from 'react';
-import { Code, RotateCcw, Edit2 } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
+import { Code, RotateCcw, Edit2, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ interface TemplateEditorProps {
   ) => void;
   resetToDefault: (id: string) => void;
   previewMode: boolean;
-  // setPreviewMode: Dispatch<SetStateAction<boolean>>;
+  setPreviewMode: Dispatch<SetStateAction<boolean>>;
   renderPreview: (content: string, variables: string[]) => string;
   theme: string | undefined;
 }
@@ -29,15 +29,12 @@ export function TemplateEditor(props: TemplateEditorProps) {
     updateTemplate,
     resetToDefault,
     previewMode,
-    // setPreviewMode,
+    setPreviewMode,
     renderPreview,
     theme,
   } = props;
   const [editorMode, setEditorMode] = useState<'code' | 'visual'>('visual');
 
-  // console.log('editorMode', editorMode);
-  // console.log('previewMode', previewMode);
-  // console.log('currentTemplate', currentTemplate);
   let editorContent;
 
   if (previewMode) {
@@ -110,25 +107,43 @@ export function TemplateEditor(props: TemplateEditorProps) {
                   Reset to Default
                 </Button>
               )}
+              <Button
+                variant={previewMode ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setPreviewMode(!previewMode)}
+                className="h-8"
+              >
+                {previewMode ? (
+                  <>
+                    <EyeOff className="mr-1 h-4 w-4" />
+                    Exit Preview
+                  </>
+                ) : (
+                  <>
+                    <Eye className="mr-1 h-4 w-4" />
+                    Preview
+                  </>
+                )}
+              </Button>
               {!previewMode && (
                 <>
                   <Button
-                    variant={editorMode === 'visual' ? 'default' : 'outline'}
+                    variant={editorMode === 'visual' ? 'primary' : 'outline'}
                     size="sm"
                     onClick={() => setEditorMode('visual')}
                     className="h-8"
                   >
                     <Edit2 className="mr-1 h-3 w-3" />
-                    Preview
+                    Template Editor
                   </Button>
                   <Button
-                    variant={editorMode === 'code' ? 'default' : 'outline'}
+                    variant={editorMode === 'code' ? 'primary' : 'outline'}
                     size="sm"
                     onClick={() => setEditorMode('code')}
                     className="h-8"
                   >
                     <Code className="mr-1 h-4 w-4" />
-                    Edit HTML
+                    HTML Editor
                   </Button>
                 </>
               )}
@@ -139,14 +154,23 @@ export function TemplateEditor(props: TemplateEditorProps) {
           {/* Subject Line */}
           <div className="space-y-2">
             <Label htmlFor="subject">Subject Line</Label>
-            <Input
-              id="subject"
-              value={currentTemplate.subject}
-              onChange={(e) =>
-                updateTemplate(currentTemplate.id, 'subject', e.target.value)
-              }
-              placeholder="Email sditubject line"
-            />
+            {previewMode ? (
+              <div className="rounded-md border bg-muted p-2 text-sm">
+                {renderPreview(
+                  currentTemplate.subject,
+                  currentTemplate.variables,
+                )}
+              </div>
+            ) : (
+              <Input
+                id="subject"
+                value={currentTemplate.subject}
+                onChange={(e) =>
+                  updateTemplate(currentTemplate.id, 'subject', e.target.value)
+                }
+                placeholder="Email subject line"
+              />
+            )}
           </div>
 
           {/* Content Editor */}
