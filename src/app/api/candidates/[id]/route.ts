@@ -329,30 +329,106 @@ export async function PUT(
         data.followUp,
       );
       updateObj.$set.followUp = data.followUp;
+      const oldFollowUp = existingCandidate.followUp;
+      const newFollowUp = data?.followUp;
+      console.log(oldFollowUp, 'oldFollowUp');
+      console.log(newFollowUp, 'newFollowUp');
+      try {
+        const jobInfo = existingCandidate.jobId as IFJob;
+
+        // Follow-up notifications
+        // if ("followUp" in data) {
+        // Case 1: Follow-up Added
+        if (!oldFollowUp && newFollowUp && newFollowUp.note !== null) {
+          await NotificationService.notifyFollowUpAdded({
+            organizationId,
+            candidateId: existingCandidate._id?.toString() || '',
+            candidateName: existingCandidate.name,
+            jobId:
+              jobInfo?._id?.toString() ||
+              existingCandidate.jobId?.toString() ||
+              '',
+            jobTitle: jobInfo?.title || 'Unknown Job',
+            followupNote: newFollowUp.note || '',
+            followupDate: newFollowUp.date
+              ? new Date(newFollowUp.date)
+              : undefined,
+            triggerUserId: userData?.id || '',
+            triggerUserName: userData?.name || '',
+          });
+        }
+        // Case 2: Follow-up Updated
+        else if (
+          oldFollowUp &&
+          newFollowUp &&
+          newFollowUp.note !== null &&
+          newFollowUp.note !== oldFollowUp.note &&
+          newFollowUp.date !== oldFollowUp.date
+        ) {
+          await NotificationService.notifyFollowupUpdated({
+            organizationId,
+            candidateId: existingCandidate._id?.toString() || '',
+            candidateName: existingCandidate.name,
+            jobId:
+              jobInfo?._id?.toString() ||
+              existingCandidate.jobId?.toString() ||
+              '',
+            jobTitle: jobInfo?.title || 'Unknown Job',
+            triggerUserId: userData?.id || '',
+            triggerUserName: userData?.name || '',
+          });
+        }
+        // Case 3: Follow-up Removed
+        else if (
+          oldFollowUp &&
+          oldFollowUp !== undefined &&
+          (oldFollowUp.note !== null || oldFollowUp.date !== null) &&
+          newFollowUp &&
+          newFollowUp.note === null &&
+          newFollowUp.date === null
+        ) {
+          await NotificationService.notifyFollowupRemoved({
+            organizationId,
+            candidateId: existingCandidate._id?.toString() || '',
+            candidateName: existingCandidate.name,
+            jobId:
+              jobInfo?._id?.toString() ||
+              existingCandidate.jobId?.toString() ||
+              '',
+            jobTitle: jobInfo?.title || 'Unknown Job',
+            triggerUserId: userData?.id || '',
+            triggerUserName: userData?.name || '',
+          });
+        }
+        // }
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: request.url },
+          'Failed to send follow-up notifications',
+        );
+        // Continue execution even if notification fails
+      }
     }
+    // Assignment completed follow-up notifications
     if (assignmentCompletedFollowUp) {
       const completionNote = `${userData?.name || 'Unknown User'} has completed the last step.`;
-
+      const oldAssignment = existingCandidate.assignment;
       if ('followUp' in data && data.followUp && data.followUp.note) {
         // Split on ||||| and trim each note
-        const noteArr = data.followUp.note
+        const noteArr: string[] = data.followUp.note
           .split('|||||')
           .map((n: string) => n.trim())
           .filter(Boolean);
 
-        console.log(noteArr, 'split notes');
-
         // 🛠 Look for an existing completion note (from ANY user)
-        const completionIndex = noteArr.findIndex((n: string) =>
+        const completionIndex = noteArr.findIndex((n) =>
           n.endsWith('has completed the last step.'),
         );
-        console.log(completionIndex, 'completionIndex');
 
         if (completionIndex !== -1) {
           // 🗑 Remove existing completion note
           noteArr.splice(completionIndex, 1);
         }
-        console.log(noteArr, 'noteArr after remove acisting');
 
         // ➕ Always add new completion note at the end
         noteArr.push(completionNote);
@@ -365,10 +441,7 @@ export async function PUT(
           assignmentCompletedFollowUp.userId || data.followUp.userId;
 
         updateObj.$set.followUp = data.followUp;
-
-        console.log(data.followUp.note, 'updated follow-up note');
-      } else {
-        // No existing followUp → set new, wrapped properly
+      } else if (oldAssignment && oldAssignment !== null) {
         updateObj.$set.followUp = {
           note: `${completionNote}`,
           date: null,
@@ -376,41 +449,6 @@ export async function PUT(
         };
       }
     }
-    // const whatWasUpdated: string[] = [];
-    // if ("attachments" in data) {
-    //   if (data.attachment === null) {
-    //     updateObj.$unset = { attachments: 1 };
-    //   } else {
-    //     if (
-    //       JSON.stringify(existingCandidate.attachments) !==
-    //       JSON.stringify(data.attachments)
-    //     ) {
-    //       whatWasUpdated.push("attachments");
-    //     }
-    //     updateObj.$set.attachments = data.attachments;
-    //   }
-    // }
-    // if ("resume" in data) {
-    //   if (data.resume === null) {
-    //     updateObj.$unset = { resume: 1 };
-    //   } else {
-    //     updateObj.$set.resume = data.resume;
-    //   }
-    // }
-    // if ("customFields" in data) {
-    //   if (data.customFields === null) {
-    //     updateObj.$unset = { customFields: 1 };
-    //   } else {
-    //     updateObj.$set.customFields = data.customFields;
-    //   }
-    // }
-
-    // if ("skills" in data) {
-    //   updateObj.$set.skills = data.skills;
-    // }
-    // if ("scores" in data) {
-    //   updateObj.$set.scores = data.scores;
-    // }
 
     if (
       'remarks' in data &&
@@ -471,59 +509,6 @@ export async function PUT(
       }
     });
 
-    // fieldsToTrack.forEach((key) => {
-    //   if (
-    //     key in data &&
-    //     key == "resume" &&
-    //     JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
-    //   ) {
-    //     whatWasUpdated.push(key);
-    //   }
-    //   if (
-    //     key in data &&
-    //     key == "customFields" &&
-    //     JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
-    //   ) {
-    //     // console.log("######### CUSTOM FIELDS: ", data.customFields);
-    //     // const customKeys = Object.keys(data.customFields);
-    //     // whatWasUpdated.push(...customKeys);
-    //     const customKeys = Object.keys(data.customFields);
-
-    //     customKeys.forEach((key) => {
-    //       const oldValue = existingCandidate.customFields?.[key];
-    //       const newValue = data.customFields[key];
-    //       if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-    //         whatWasUpdated.push(key);
-    //       }
-    //     });
-    //   }
-    //   if (
-    //     key in data &&
-    //     key !== "resume" &&
-    //     key !== "customFields" &&
-    //     key !== "tags"
-    //   ) {
-    //     if (
-    //       (key === "currentCTC" || key === "expectedCTC") &&
-    //       userData.role &&
-    //       userData.role === "interviewer"
-    //     ) {
-    //       return;
-    //     }
-    //     if (
-    //       JSON.stringify(existingCandidate[key]) !== JSON.stringify(data[key])
-    //     ) {
-    //       whatWasUpdated.push(key);
-    //       updateObj.$set[key] = data[key];
-    //       updates.push({
-    //         title: `Updated ${key.charAt(0).toUpperCase() + key.slice(1)}`,
-    //         previousValue: existingCandidate[key],
-    //         currentValue: data[key],
-    //       });
-    //     }
-    //   }
-    // });
-
     if (!Candidate || !History) {
       return NextResponse.json(
         { error: 'Database not connected' },
@@ -573,27 +558,6 @@ export async function PUT(
       // let candidateHistory = null;
 
       if (updates.length > 0) {
-        // let combined_Description = updates
-        //   .map((item) => {
-        //     if (item.attachments) return;
-        //     const label = item.title?.startsWith("Updated ")
-        //       ? item.title.slice("Updated ".length)
-        //       : item.title;
-
-        //     return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
-        //   })
-        //   .join("\n");
-        // let combined_Description = updates
-        //   .map((item) => {
-        //     if (item.attachments) return;
-        //     const label = item.title?.startsWith("Updated ")
-        //       ? item.title.slice("Updated ".length)
-        //       : item.title;
-
-        //     return `${label.charAt(0).toUpperCase() + label.slice(1)}: ${JSON.stringify(item.previousValue).replaceAll('"', "")} → ${JSON.stringify(item.currentValue).replaceAll('"', "")}`;
-        //   })
-        //   .join("\n");
-
         const historyEntry = {
           dateTime: data.dateTime || new Date(),
           title: `Updated ${whatWasUpdated.join(' & ')}`,
@@ -764,107 +728,6 @@ export async function PUT(
           }
         }
 
-        try {
-          const jobInfo2 = existingCandidate.jobId as IFJob;
-          const oldFollowUp = existingCandidate.followUp;
-          const newFollowUp = data?.followUp;
-          const hadNoOldFollowUp =
-            oldFollowUp?.note == null && oldFollowUp?.date == null;
-
-          const hasNewNote =
-            typeof newFollowUp?.note === 'string' &&
-            newFollowUp.note.trim() !== '';
-
-          const hasNewDate =
-            typeof newFollowUp?.date === 'string' &&
-            newFollowUp.date.trim() !== '';
-
-          // Follow-up notifications
-          if ('followUp' in data) {
-            // Case 1: Follow-up Added
-            if (hadNoOldFollowUp && (hasNewNote || hasNewDate)) {
-              await NotificationService.notifyFollowUpAdded({
-                organizationId,
-                candidateId: existingCandidate._id?.toString() || '',
-                candidateName: existingCandidate.name,
-                jobId:
-                  jobInfo?._id?.toString() ||
-                  existingCandidate.jobId?.toString() ||
-                  '',
-                jobTitle: jobInfo2?.title || 'Unknown Job',
-                followupNote: newFollowUp.note || '',
-                followupDate: newFollowUp.date
-                  ? new Date(newFollowUp.date)
-                  : undefined,
-                triggerUserId: userData?.id?.toString() || '',
-                triggerUserName: userData?.name || '',
-              });
-            }
-            // Case 2: Follow-up Updated
-            else if (
-              oldFollowUp &&
-              newFollowUp &&
-              newFollowUp.note !== null &&
-              newFollowUp.note !== oldFollowUp.note &&
-              newFollowUp.date !== oldFollowUp.date
-            ) {
-              await NotificationService.notifyFollowupUpdated({
-                organizationId,
-                candidateId: existingCandidate._id?.toString() || '',
-                candidateName: existingCandidate.name,
-                jobId:
-                  jobInfo?._id?.toString() ||
-                  existingCandidate.jobId?.toString() ||
-                  '',
-                jobTitle: jobInfo?.title || 'Unknown Job',
-                triggerUserId: userData?.id?.toString() || '',
-                triggerUserName: userData?.name || '',
-              });
-            }
-            // Case 3: Follow-up Removed
-            else if (
-              oldFollowUp &&
-              oldFollowUp !== undefined &&
-              oldFollowUp.note !== null &&
-              newFollowUp &&
-              newFollowUp.note === null &&
-              newFollowUp.date === null
-            ) {
-              await NotificationService.notifyFollowupRemoved({
-                organizationId,
-                candidateId: existingCandidate._id?.toString() || '',
-                candidateName: existingCandidate.name,
-                jobId:
-                  jobInfo?._id?.toString() ||
-                  existingCandidate.jobId?.toString() ||
-                  '',
-                jobTitle: jobInfo?.title || 'Unknown Job',
-                triggerUserId: userData?.id?.toString() || '',
-                triggerUserName: userData?.name || '',
-              });
-            }
-          }
-        } catch (notificationError) {
-          logger.error(
-            'Failed to send follow-up notifications:',
-            notificationError as Error,
-          );
-          // Continue execution even if notification fails
-        }
-        // General candidate details update notification
-        // if (updates.length > 0) {
-        //   // Only send if there are significant updates (not just tracking fields)
-        //   const significantUpdates = updates.filter(
-        //     (update) =>
-        //       !update.title.includes("Updated tracking") &&
-        //       !update.title.includes("Updated _id")
-        //   );
-
-        //   if (significantUpdates.length > 0) {
-        //     // This could be enhanced to send a general "candidate details updated" notification
-        //     // For now, we'll rely on the specific update types above
-        //   }
-        // }
         if (updates.length > 0) {
           // Only send if there are significant updates (not just tracking fields)
           const significantUpdates = updates.filter(
@@ -908,7 +771,7 @@ export async function PUT(
 
     return NextResponse.json(existingCandidate);
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
