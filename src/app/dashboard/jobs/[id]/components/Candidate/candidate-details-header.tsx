@@ -1,5 +1,8 @@
+'use client';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Popover,
   PopoverContent,
@@ -44,6 +47,9 @@ export default function DetailsDialogHeader({
   onAssignClick,
 }: DetailsDialogHeaderProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
 
   const handlePopoverContentClick = (e: React.MouseEvent) => {
@@ -59,6 +65,18 @@ export default function DetailsDialogHeader({
       link.click();
       document.body.removeChild(link);
     }
+  };
+
+  const handleJobRedirect = () => {
+    // if user's role is neither admin nor hr then dont redirect.
+    if (user?.role !== 'admin' && user?.role !== 'hr') return;
+
+    const jobUrl = `/dashboard/jobs/${candidate.jobId._id}`;
+
+    // avoid redirect if already on same page
+    if (pathname === jobUrl) return;
+
+    router.push(jobUrl);
   };
 
   const handleInterviewerClick = () => {
@@ -243,9 +261,24 @@ export default function DetailsDialogHeader({
               <div className="mr-0 mt-4">
                 <CandidateStatusBadge status={candidate?.status} />
               </div>
-              <p className="mt-1 max-w-[300px] truncate text-end text-xs text-gray-500">
-                {candidate?.jobId?.title}
-              </p>
+              {user?.role === 'admin' || user?.role === 'hr' ? (
+                <button
+                  type="button"
+                  onClick={handleJobRedirect}
+                  disabled={user?.role !== 'admin' && user?.role !== 'hr'}
+                  className={`mt-1 max-w-[300px] truncate text-end text-xs ${
+                    user?.role === 'admin' || user?.role === 'hr'
+                      ? 'cursor-pointer text-gray-500 hover:underline'
+                      : 'cursor-not-allowed text-gray-400'
+                  } `}
+                >
+                  {candidate?.jobId?.title}
+                </button>
+              ) : (
+                <span className="mt-1 max-w-[300px] truncate text-end text-xs text-gray-400">
+                  {candidate?.jobId?.title}
+                </span>
+              )}
 
               {/* Interview Details */}
               {candidate?.assignment &&
