@@ -58,7 +58,7 @@ export async function sendQueuedEmail(
     settings.mailConfig.resend_from ||
     settings.mailConfig.brevo_from ||
     settings.mailConfig.smtp_from ||
-    'system@hiretrack.com';
+    '';
 
   const timeZoneOffset = `${settings.timeZone?.offset || ''} ${settings.timeZone?.name || ''}`;
 
