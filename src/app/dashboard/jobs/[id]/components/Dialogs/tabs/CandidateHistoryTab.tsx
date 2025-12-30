@@ -8,7 +8,6 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { MessageSquare } from 'lucide-react';
 import React from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { User } from '@/lib/features/users/usersApi';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
 import { HistoryTimelineSkeleton } from '../../Candidate/history-timeine-skeleton';
 import { IEditRemark } from '../../../schemas/EditRemarkDialog';
@@ -69,7 +68,6 @@ export function CandidateHistoryTab({
                   { ...candidate, history: validTimeLineItems },
                   {
                     id: 'candidate-history',
-                    user,
                     timeLineItems: validTimeLineItems,
                     handleRemarkUpdate,
                     setEditingRemark,

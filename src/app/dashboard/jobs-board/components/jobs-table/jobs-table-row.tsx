@@ -42,7 +42,7 @@ export function JobsTableRow({
       onClick={() => router.push(`/dashboard/jobs/${job._id}`)}
     >
       {/* Title */}
-      <TableCell className="py-4">
+      <TableCell className="px-4 py-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
             {!job.isPublished && job.status === 'open' && (
@@ -116,7 +116,7 @@ export function JobsTableRow({
               <>
                 {job.skills.slice(0, 2).map((skill) => (
                   <Badge
-                    key={`${job._id}-skill`}
+                    key={`${job._id}-skill-${skill}`}
                     variant="secondary"
                     className="text-xs font-normal"
                   >

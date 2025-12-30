@@ -36,7 +36,10 @@ interface CustomFieldsDialogProps {
     cols: Record<string, string | number | boolean | string[]>[],
   ) => void;
   values: SearchFilter;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: (
+    field: string,
+    value: string | number | boolean | string[],
+  ) => void;
   handleSearch: (values: SearchFilter) => void;
   updateSelectedMetaFields: (fieldId: string, colId: string) => void;
   updateColValue: (id: string, value: string) => void;
@@ -243,7 +246,7 @@ export function CustomFieldsDialog({
             variant="outline"
             onClick={() => {
               setCols([]);
-              setFieldValue('customFields', {});
+              setFieldValue('customFields', '');
             }}
             disabled={cols.length === 0}
           >

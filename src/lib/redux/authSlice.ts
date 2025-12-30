@@ -1,4 +1,9 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+  WritableDraft,
+} from '@reduxjs/toolkit';
 import {
   EmailNotificationSettings,
   Organization,
@@ -101,12 +106,24 @@ const authSlice = createSlice({
       localStorage.removeItem('persist:organization');
       localStorage.removeItem('user');
     },
-    updateUser: (state, action: PayloadAction<any>) => {
+    /**
+     * Updates the authenticated user in the Redux state.
+     * Handles immutability and type issues around organizationId/organizationInfo by assigning fields instead of replacing the user object,
+     * to satisfy Immer's WritableDraft typing and prevent assignment errors on union types.
+     * Ensures idempotency and minimizes impact on drafts.
+     */
+    updateUser: (state, action: PayloadAction<ILocalUser>) => {
       if (state.user && (state.user.id || state.user.email)) {
-        state.user = { ...state.user, ...action.payload };
+        // Only update the fields from the payload explicitly to avoid Immer typing issues
+        Object.entries(action.payload).forEach(([key, value]) => {
+          // @ts-expect-error Index signature for spreading Zoned types not available
+          // This mutation is safe within Immer's draft
+          state.user![key as keyof ILocalUser] =
+            value as WritableDraft<ILocalUser>[keyof ILocalUser];
+        });
       } else {
-        // If no user exists, set the payload as the new user
-        state.user = action.payload;
+        // Create user from payload without replacing full object, to keep Immer draft intact
+        state.user = { ...action.payload } as WritableDraft<ILocalUser>;
         state.isAuthenticated = true;
       }
     },

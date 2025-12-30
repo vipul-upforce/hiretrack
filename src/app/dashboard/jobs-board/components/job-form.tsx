@@ -7,7 +7,7 @@ import { ChipInput } from '@/components/ui/chip-input';
 import { FileUpload } from '@/components/ui/file-upload';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  LinkIcon, ChevronDown, ChevronUp, Info,
-} from 'lucide-react';
+import { LinkIcon, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import RichTextEditor from '@/components/ui/rte/RichTextEditor';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
@@ -37,30 +35,20 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { JobFormValues } from '../schemas/job-schema';
 
-interface JobFormProps {
-  job?: {
-    attachments: {
-      files: Array<{
-        id: string;
-        name: string;
-        url: string;
-        type: 'pdf';
-        size: number;
-      }>;
-      images: Array<{
-        id: string;
-        name: string;
-        url: string;
-        type: 'image';
-        size: number;
-      }>;
-    };
-  };
-  onRemoveExistingFile?: (fileId: string) => void;
-  onRemoveExistingImage?: (imageId: string) => void;
+type EvaluationWeightsErrors = {
+  skills?: string;
+  experience?: string;
+  affordability?: string;
+  overall?: string;
+};
+
+function isEvaluationWeightsErrorObject(
+  error: string | EvaluationWeightsErrors | undefined,
+): error is EvaluationWeightsErrors {
+  return typeof error === 'object' && error !== null && !Array.isArray(error);
 }
 
-export function JobForm(props: JobFormProps) {
+export function JobForm() {
   const {
     values,
     errors,
@@ -78,7 +66,7 @@ export function JobForm(props: JobFormProps) {
 
   const handleAddLink = () => {
     try {
-      new URL(newLink); // Validate URL
+      URL.canParse(newLink); // Validate URL
       const updatedLinks = [...values.links, newLink];
       setFieldValue('links', updatedLinks);
       setNewLink('');
@@ -96,9 +84,7 @@ export function JobForm(props: JobFormProps) {
     <div className="space-y-4 pt-0">
       <div className="space-y-2">
         <Label htmlFor="title" className="font-semibold">
-          Job Title
-          {' '}
-          <span className="text-red-500">*</span>
+          Job Title <span className="text-red-500">*</span>
         </Label>
         <Input
           id="title"
@@ -115,9 +101,7 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="status" className="font-semibold">
-          Status
-          {' '}
-          <span className="text-red-500">*</span>
+          Status <span className="text-red-500">*</span>
         </Label>
         <Select
           value={values.status}
@@ -139,9 +123,7 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="description" className="font-semibold">
-          Description
-          {' '}
-          <span className="text-red-500">*</span>
+          Description <span className="text-red-500">*</span>
         </Label>
         <RichTextEditor
           id="description"
@@ -160,8 +142,7 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2" id="skills">
         <Label className="font-semibold">
-          Required Skills (Hit Enter to add)
-          {' '}
+          Required Skills (Hit Enter to add){' '}
           <span className="text-red-500">*</span>
         </Label>
         <ChipInput
@@ -187,9 +168,7 @@ export function JobForm(props: JobFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="experience" className="font-semibold">
-          Experience (years)
-          {' '}
-          <span className="text-red-500">*</span>
+          Experience (years) <span className="text-red-500">*</span>
         </Label>
         <Input
           id="experience"
@@ -199,7 +178,10 @@ export function JobForm(props: JobFormProps) {
           value={values.experience}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
             const value = parseFloat(e.target.value);
-            setFieldValue('experience', value && !isNaN(value) ? value : '');
+            setFieldValue(
+              'experience',
+              value && !Number.isNaN(value) ? value : '',
+            );
           }}
           onBlur={handleBlur}
           placeholder="e.g., 5"
@@ -211,7 +193,7 @@ export function JobForm(props: JobFormProps) {
       </div>
       <div className="space-y-2">
         <Label className="font-semibold">Salary</Label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <Input
               id="salary.inText"
@@ -224,7 +206,7 @@ export function JobForm(props: JobFormProps) {
               min="0"
             />
           </div>
-          <div className=" flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Checkbox
               id="salary.isPrivate"
               checked={values.salary?.isPrivate === true}
@@ -233,7 +215,7 @@ export function JobForm(props: JobFormProps) {
               }}
               onBlur={handleBlur}
             />
-            <Label className="m-0 p-0 mt-0" htmlFor="salary.isPrivate">
+            <Label className="m-0 mt-0 p-0" htmlFor="salary.isPrivate">
               Keep Salary Private
             </Label>
           </div>
@@ -243,8 +225,8 @@ export function JobForm(props: JobFormProps) {
       <div className="space-y-2">
         <Label className="font-semibold">Job Links</Label>
         <div className="space-y-2">
-          {values.links.map((link, index) => (
-            <div key={index} className="flex items-center gap-2">
+          {values.links.map((link) => (
+            <div key={`${link}`} className="flex items-center gap-2">
               <LinkIcon className="h-4 w-4" />
               <span className="text-sm">{link}</span>
               <Button
@@ -253,7 +235,7 @@ export function JobForm(props: JobFormProps) {
                 size="sm"
                 onClick={() => {
                   const newLinks = [...values.links];
-                  newLinks.splice(index, 1);
+                  newLinks.splice(newLinks.indexOf(link), 1);
                   setFieldValue('links', newLinks);
                 }}
               >
@@ -330,9 +312,10 @@ export function JobForm(props: JobFormProps) {
             setFieldValue('files', [
               ...(values.files || []),
               ...sanitizedFiles.filter(
-                (file) => !(values.files || []).some(
-                  (existingFile) => existingFile.name === file.name,
-                ),
+                (file) =>
+                  !(values.files || []).some(
+                    (existingFile) => existingFile.name === file.name,
+                  ),
               ),
             ]);
           }}
@@ -348,7 +331,7 @@ export function JobForm(props: JobFormProps) {
 
       {role === 'admin' && (
         <div className="space-y-2">
-          <div className=" flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Checkbox
               id="promptForStatusChangeReason"
               checked={values.promptForStatusChangeReason === true}
@@ -367,9 +350,9 @@ export function JobForm(props: JobFormProps) {
       {role === 'admin' && (
         <div className="space-y-2 border-t pt-4">
           <Collapsible open={showWeights} onOpenChange={setShowWeights}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+            <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted">
               <div className="flex items-center gap-2">
-                <Label className="font-semibold cursor-pointer">
+                <Label className="cursor-pointer font-semibold">
                   AI Evaluation - Weighted Scoring (Optional)
                 </Label>
               </div>
@@ -379,16 +362,17 @@ export function JobForm(props: JobFormProps) {
                 <ChevronDown className="h-4 w-4" />
               )}
             </CollapsibleTrigger>
-            <CollapsibleContent className="pt-4 space-y-4">
+            <CollapsibleContent className="space-y-4 pt-4">
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Customize how much each evaluation dimension contributes to the final candidate score.
-                  Values will be automatically normalized. Leave all at default (25) for equal weighting.
+                  Customize how much each evaluation dimension contributes to
+                  the final candidate score. Values will be automatically
+                  normalized. Leave all at default (25) for equal weighting.
                 </AlertDescription>
               </Alert>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="evaluationWeights.skills">
                     Skills Weight (%)
@@ -401,14 +385,18 @@ export function JobForm(props: JobFormProps) {
                     max="100"
                     value={values.evaluationWeights?.skills ?? 25}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
+                      const value = parseInt(e.target.value, 10) || 0;
                       setFieldValue('evaluationWeights.skills', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
                   />
-                  {touched.evaluationWeights?.skills && errors.evaluationWeights?.skills && (
-                    <p className="text-sm text-red-500">{errors.evaluationWeights.skills}</p>
+                  {touched.evaluationWeights && errors.evaluationWeights && (
+                    <p className="text-sm text-red-500">
+                      {isEvaluationWeightsErrorObject(errors.evaluationWeights)
+                        ? errors.evaluationWeights.skills || ''
+                        : String(errors.evaluationWeights)}
+                    </p>
                   )}
                 </div>
 
@@ -424,14 +412,18 @@ export function JobForm(props: JobFormProps) {
                     max="100"
                     value={values.evaluationWeights?.experience ?? 25}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
+                      const value = parseInt(e.target.value, 10) || 0;
                       setFieldValue('evaluationWeights.experience', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
                   />
-                  {touched.evaluationWeights?.experience && errors.evaluationWeights?.experience && (
-                    <p className="text-sm text-red-500">{errors.evaluationWeights.experience}</p>
+                  {touched.evaluationWeights && errors.evaluationWeights && (
+                    <p className="text-sm text-red-500">
+                      {isEvaluationWeightsErrorObject(errors.evaluationWeights)
+                        ? errors.evaluationWeights.experience || ''
+                        : String(errors.evaluationWeights)}
+                    </p>
                   )}
                 </div>
 
@@ -447,14 +439,18 @@ export function JobForm(props: JobFormProps) {
                     max="100"
                     value={values.evaluationWeights?.affordability ?? 25}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
+                      const value = parseInt(e.target.value, 10) || 0;
                       setFieldValue('evaluationWeights.affordability', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
                   />
-                  {touched.evaluationWeights?.affordability && errors.evaluationWeights?.affordability && (
-                    <p className="text-sm text-red-500">{errors.evaluationWeights.affordability}</p>
+                  {touched.evaluationWeights && errors.evaluationWeights && (
+                    <p className="text-sm text-red-500">
+                      {isEvaluationWeightsErrorObject(errors.evaluationWeights)
+                        ? errors.evaluationWeights.affordability || ''
+                        : String(errors.evaluationWeights)}
+                    </p>
                   )}
                 </div>
 
@@ -470,27 +466,28 @@ export function JobForm(props: JobFormProps) {
                     max="100"
                     value={values.evaluationWeights?.overall ?? 25}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
+                      const value = parseInt(e.target.value, 10) || 0;
                       setFieldValue('evaluationWeights.overall', value);
                     }}
                     onBlur={handleBlur}
                     placeholder="25"
                   />
-                  {touched.evaluationWeights?.overall && errors.evaluationWeights?.overall && (
-                    <p className="text-sm text-red-500">{errors.evaluationWeights.overall}</p>
+                  {touched.evaluationWeights && errors.evaluationWeights && (
+                    <p className="text-sm text-red-500">
+                      {isEvaluationWeightsErrorObject(errors.evaluationWeights)
+                        ? errors.evaluationWeights.overall || ''
+                        : String(errors.evaluationWeights)}
+                    </p>
                   )}
                 </div>
               </div>
 
               <div className="text-sm text-muted-foreground">
-                Total:
-                {' '}
-                {
-                  (values.evaluationWeights?.skills ?? 25)
-                  + (values.evaluationWeights?.experience ?? 25)
-                  + (values.evaluationWeights?.affordability ?? 25)
-                  + (values.evaluationWeights?.overall ?? 25)
-                }
+                Total:{' '}
+                {(values.evaluationWeights?.skills ?? 25) +
+                  (values.evaluationWeights?.experience ?? 25) +
+                  (values.evaluationWeights?.affordability ?? 25) +
+                  (values.evaluationWeights?.overall ?? 25)}
                 % (will be normalized to 100%)
               </div>
             </CollapsibleContent>

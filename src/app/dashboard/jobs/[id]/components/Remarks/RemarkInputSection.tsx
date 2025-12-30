@@ -5,10 +5,10 @@ import { Switch } from '@/components/ui/switch';
 import { Eye, EyeOff } from 'lucide-react';
 import Rating from '@mui/material/Rating';
 
-import { User } from '@/lib/features/users/usersApi';
 import { Candidate } from '@/types/candidate';
 import { Checkbox } from '@/components/ui/checkbox';
 import React, { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface MentionUser {
   _id: string;
@@ -25,7 +25,6 @@ interface RemarkInputSectionProps {
   setRemarkRatingHistory: (value: number | null) => void;
   isSubRemarkPrivate: boolean;
   setIsSubRemarkPrivate: (value: boolean) => void;
-  user: User | null;
   handleAddRemark: (selectedMentionUserIds?: string[]) => void;
   localCandidate: Candidate | null;
   handleRemoveFollowUp: () => void;
@@ -40,12 +39,12 @@ export default function RemarkInputSection({
   setRemarkRatingHistory,
   isSubRemarkPrivate,
   setIsSubRemarkPrivate,
-  user,
   isRemarkSubmitting,
   handleAddRemark,
   localCandidate,
   handleRemoveFollowUp,
 }: RemarkInputSectionProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const hasFollowUp =
     localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
   const [removeFU, setRemoveFU] = useState(false);

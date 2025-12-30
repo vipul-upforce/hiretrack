@@ -272,7 +272,7 @@ export const candidateSchema = new Schema(
           const Organization = mongoose.model('Organization');
 
           try {
-            const job = await Job.findById(this.jobId);
+            const job = await Job.findById(this.jobId as string);
             if (!job) return true; // Allow if job not found (will be handled elsewhere)
 
             // Check if job uses custom lanes

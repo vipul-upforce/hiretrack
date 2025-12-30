@@ -16,7 +16,6 @@ export function RenderHistoryEntry({
   interview,
   indexKey,
   localCandidate,
-  user,
   timeDate,
   timeTime,
   handleRemarkUpdate,
@@ -54,13 +53,9 @@ export function RenderHistoryEntry({
 
         <EntryOptionsMenu
           interview={interview}
-          user={user}
           isRemarkOptionsOpen={entryOptions.isRemarkOptionsOpen}
           isRemarkOpsOpenFor={entryOptions.isRemarkOpsOpenFor}
           isNoteOpsOpenFor={entryOptions.isNoteOpsOpenFor}
-          setIsRemarkOptionsOpen={entryOptions.setIsRemarkOptionsOpen}
-          setIsRemarkOpsOpenFor={entryOptions.setIsRemarkOpsOpenFor}
-          setIsNoteOpsOpenFor={entryOptions.setIsNoteOpsOpenFor}
           handleRemarkUpdate={handleRemarkUpdate}
           setEditingRemark={setEditingRemark}
           setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
@@ -94,8 +89,3 @@ export function RenderHistoryEntry({
 }
 
 export default RenderHistoryEntry;
-
-
-
-
-

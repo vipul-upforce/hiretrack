@@ -1,4 +1,5 @@
 import useRoles from '@/hooks/useRoles';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { RemarkOptionsMenu } from '../../../Remarks/remark-options-menu';
 import { EntryOptionsMenuProps } from '../types';
 
@@ -7,17 +8,14 @@ import { EntryOptionsMenuProps } from '../types';
  */
 export function EntryOptionsMenu({
   interview,
-  user,
   isRemarkOptionsOpen,
   isRemarkOpsOpenFor,
   isNoteOpsOpenFor,
-  setIsRemarkOptionsOpen,
-  setIsRemarkOpsOpenFor,
-  setIsNoteOpsOpenFor,
   handleRemarkUpdate,
   setEditingRemark,
   setIsEditRemarkDialogOpen,
 }: EntryOptionsMenuProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const role = useRoles();
 
   const showRemarkOptions =
@@ -72,10 +70,6 @@ export function EntryOptionsMenu({
           isOpen={
             isRemarkOptionsOpen && interview.remark?.id === isRemarkOpsOpenFor
           }
-          setIsOpen={(open) => {
-            setIsRemarkOptionsOpen(open);
-            setIsRemarkOpsOpenFor(open ? interview.remark?.id || '' : '');
-          }}
         />
       )}
 
@@ -99,11 +93,6 @@ export function EntryOptionsMenu({
             }
           }}
           isOpen={interview._id === isNoteOpsOpenFor}
-          setIsOpen={(open) => {
-            setIsRemarkOptionsOpen(open);
-            const noteId = interview._id ?? null;
-            setIsNoteOpsOpenFor(open ? noteId : null);
-          }}
         />
       )}
     </div>

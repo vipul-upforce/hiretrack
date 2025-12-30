@@ -19,7 +19,7 @@ import {
 } from '@/lib/features/lane/laneApi';
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { Checkbox } from '@/components/ui/checkbox';
-import NoDataFound from '@/app/not-found';
+import { NoDataFound } from '@/app/not-found';
 import { useSSE } from '@/hooks/useSSE';
 import { mergeRefs } from 'react-merge-refs';
 import { Button } from '@/components/ui/button';
@@ -30,8 +30,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
-import { useSelector } from 'react-redux';
 import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { Interviewer } from '@/lib/features/user/userApi';
 import { CreateCandidateDialog } from './components/Dialogs/create-candidate-dialog';
 import { CreateLaneDialog } from './components/Dialogs/create-lane-dialog';
 import { CandidateDetailsDialog } from './components/Dialogs/candidate-details-dialog';
@@ -53,8 +54,7 @@ import { LaneChecklistConfigDialog } from './components/Dialogs/lane-checklist-c
 import { MigrationDialog } from './components/Dialogs/MigrationDialog';
 import CandidateCustomFieldsDialog from './components/customFields/candidateCustomFieldsDialog';
 import { GlobalRemarksDialog } from './components/Dialogs/global-remarks-dialog';
-import { CustomCalendarEvent, Interviewer } from '../../calendar/types';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { CustomCalendarEvent } from '../../calendar/page';
 
 interface FilterState {
   search: string;
@@ -166,7 +166,9 @@ export default function JobProgressPage() {
 
   // Get SSE lanes separately (still needed for lane updates)
   const { lanes: updatedLanes } = useSSE(
-    setSelectedCandidate as (candidate: Candidate | CustomCalendarEvent | null) => void,
+    setSelectedCandidate as (
+      candidate: Candidate | CustomCalendarEvent | null,
+    ) => void,
     selectedCandidate,
     id,
   );
@@ -184,10 +186,10 @@ export default function JobProgressPage() {
 
   const [updateJob, { isLoading }] = useUpdateJobMutation();
   // NEW: Use job-specific lanes with fallback to user lanes
-  const {
-    data: jobLanes,
-    isLoading: isJobLanesLoading,
-  } = useGetJobLanesQuery(id as string, { skip: !id });
+  const { data: jobLanes, isLoading: isJobLanesLoading } = useGetJobLanesQuery(
+    id as string,
+    { skip: !id },
+  );
   const { data: userLanes, isLoading: isUserLanesLoading } = useGetLanesQuery(
     { userId: user?.id, jobId: id as string },
     { skip: !user?.id || !id },
@@ -227,11 +229,10 @@ export default function JobProgressPage() {
   } = useKanbanBoard({
     columns,
     setColumns,
-    user,
     jobId: id, // NEW: Pass jobId for job-specific operations
     setIsConfirmLaneDeleteOpen,
     setIsLaneEditOpen,
-    refetch,
+    refetch: () => Promise.resolve(),
   });
 
   const {
@@ -246,7 +247,6 @@ export default function JobProgressPage() {
   } = useCandidate({
     columns,
     setColumns,
-    user,
     setOpenRemarksFor,
     setIsDialogOpen,
     setDroppedFileData,
@@ -254,7 +254,7 @@ export default function JobProgressPage() {
     setIsDeleteDialogOpen,
     setSelectedCandidate,
     selectedCandidate,
-    refetch,
+    refetch: () => Promise.resolve(),
     candidateToDelete,
     jobLaneConfig,
     job,
@@ -333,8 +333,7 @@ export default function JobProgressPage() {
             },
             {
               key: 'toFollowUp',
-              filter: (c: Candidate) =>
-                c.followUp && c.followUp.note,
+              filter: (c: Candidate) => c.followUp && c.followUp.note,
             },
             {
               key: 'assigned',
@@ -346,13 +345,11 @@ export default function JobProgressPage() {
             },
             {
               key: 'withRemarks',
-              filter: (c: Candidate) =>
-                c.remarks && c.remarks.length > 0,
+              filter: (c: Candidate) => c.remarks && c.remarks.length > 0,
             },
             {
               key: 'withoutRemarks',
-              filter: (c: Candidate) =>
-                !c.remarks || c.remarks.length === 0,
+              filter: (c: Candidate) => !c.remarks || c.remarks.length === 0,
             },
           ].filter(
             (filter) =>

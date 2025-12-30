@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +22,6 @@ import {
   DragDropContext,
   Droppable,
   Draggable,
-  DropResult,
   DroppableProvided,
   DraggableStateSnapshot,
   DroppableStateSnapshot,
@@ -37,7 +36,6 @@ import {
   Save,
   Settings,
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,219 +46,40 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  useGetDefaultLanesQuery,
-  useUpdateDefaultLanesMutation,
-  useAddDefaultLaneMutation,
-  useDeleteDefaultLaneMutation,
-} from '@/lib/features/lane/laneApi';
+import { useDefaultLanes } from '@/app/dashboard/jobs-board/hooks/useDefaultLanes';
 
 interface DefaultLanesButtonProps {
   userRole?: string;
 }
 
-interface LaneRestrictions {
-  nonEditable: string[];
-  nonDeletable: string[];
-}
-
 function DefaultLanesButton({ userRole }: DefaultLanesButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [defaultLanes, setDefaultLanes] = useState<string[]>([]);
-  const [laneRestrictions, setLaneRestrictions] = useState<LaneRestrictions>({
-    nonEditable: ['applied', 'accepted', 'rejected'],
-    nonDeletable: ['applied', 'accepted', 'rejected'],
-  });
-  // const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
-    null,
-  );
-
-  // RTK query hooks and states
-  const { data, isLoading } = useGetDefaultLanesQuery(undefined);
-  const [updateDefaultLanes] = useUpdateDefaultLanesMutation();
-  const [addDefaultLane] = useAddDefaultLaneMutation();
-  const [deleteDefaultLane] = useDeleteDefaultLaneMutation();
-
-  // Editing state
-  const [editingLane, setEditingLane] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [newLaneName, setNewLaneName] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  // Delete confirmation
-  const [deleteConfirm, setDeleteConfirm] = useState<{
-    lane: string;
-    show: boolean;
-  }>({ lane: '', show: false });
-
-  // Check if user has permission to manage default lanes
-  const canManage = userRole === 'admin' || userRole === 'hr';
-
-  // Set up portal container
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setPortalContainer(document.body);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (data) {
-      setDefaultLanes(data.defaultLanes || []);
-      setLaneRestrictions(
-        data.laneRestrictions || {
-          nonEditable: ['applied', 'accepted', 'rejected'],
-          nonDeletable: ['applied', 'accepted', 'rejected'],
-        },
-      );
-    }
-  }, [data]);
-
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-
-    const newLanes = Array.from(defaultLanes);
-    const [reorderedItem] = newLanes.splice(result.source.index, 1);
-    newLanes.splice(result.destination.index, 0, reorderedItem);
-
-    setDefaultLanes(newLanes);
-  };
-
-  const startEdit = (lane: string) => {
-    if (laneRestrictions.nonEditable.includes(lane)) {
-      toast({
-        title: 'Cannot Edit',
-        description: `The "${lane}" lane cannot be edited as it's a system requirement.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    setEditingLane(lane);
-    setEditValue(lane);
-  };
-
-  const saveEdit = () => {
-    if (!editValue.trim()) {
-      toast({
-        title: 'Invalid Name',
-        description: 'Lane name cannot be empty',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (
-      editValue.trim() !== editingLane &&
-      defaultLanes.includes(editValue.trim())
-    ) {
-      toast({
-        title: 'Duplicate Name',
-        description: 'A lane with this name already exists',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const newLanes = defaultLanes.map((lane) =>
-      lane === editingLane ? editValue.trim() : lane,
-    );
-    setDefaultLanes(newLanes);
-    setEditingLane(null);
-    setEditValue('');
-  };
-
-  const cancelEdit = () => {
-    setEditingLane(null);
-    setEditValue('');
-  };
-
-  const confirmDelete = (lane: string) => {
-    if (laneRestrictions.nonDeletable.includes(lane)) {
-      toast({
-        title: 'Cannot Delete',
-        description: `The "${lane}" lane cannot be deleted as it's a system requirement.`,
-        variant: 'destructive',
-      });
-      return;
-    }
-    setDeleteConfirm({ lane, show: true });
-  };
-
-  const saveDefaultLanes = async () => {
-    try {
-      setSaving(true);
-      await updateDefaultLanes(defaultLanes).unwrap();
-      toast({
-        title: 'Success',
-        description: 'Default lanes updated successfully',
-      });
-      setIsOpen(false);
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description:
-          typeof err === 'object' &&
-          err !== null &&
-          'data' in err &&
-          typeof (err as unknown as { data?: { message?: string } }).data
-            ?.message === 'string'
-            ? (err as unknown as { data?: { message?: string } }).data?.message
-            : 'Failed to save default lanes',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // --- Replace add and delete functions similarly ---
-  const addNewLane = async () => {
-    try {
-      await addDefaultLane(newLaneName.trim()).unwrap();
-      setNewLaneName('');
-      toast({ title: 'Success', description: 'Lane added successfully' });
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description:
-          typeof err === 'object' &&
-          err !== null &&
-          'data' in err &&
-          typeof (err as unknown as { data?: { message?: string } }).data
-            ?.message === 'string'
-            ? (err as unknown as { data?: { message?: string } }).data?.message
-            : 'Failed to add lane',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const deleteLane = async () => {
-    try {
-      await deleteDefaultLane(deleteConfirm.lane).unwrap();
-      toast({ title: 'Success', description: 'Lane removed successfully' });
-      setDeleteConfirm({ lane: '', show: false });
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description:
-          typeof err === 'object' &&
-          err !== null &&
-          'data' in err &&
-          typeof (err as unknown as { data?: { message?: string } }).data
-            ?.message === 'string'
-            ? (err as unknown as { data?: { message?: string } }).data?.message
-            : 'Failed to delete lane',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const isRestricted = (lane: string, type: 'edit' | 'delete') =>
-    type === 'edit'
-      ? laneRestrictions.nonEditable.includes(lane)
-      : laneRestrictions.nonDeletable.includes(lane);
+  const {
+    isOpen,
+    setIsOpen,
+    defaultLanes,
+    saving,
+    portalContainer,
+    editingLane,
+    editValue,
+    setEditValue,
+    newLaneName,
+    setNewLaneName,
+    showAddForm,
+    setShowAddForm,
+    deleteConfirm,
+    setDeleteConfirm,
+    isLoading,
+    canManage,
+    handleDragEnd,
+    startEdit,
+    saveEdit,
+    cancelEdit,
+    confirmDelete,
+    saveDefaultLanes,
+    addNewLane,
+    deleteLane,
+    isRestricted,
+  } = useDefaultLanes({ userRole });
 
   if (!canManage) {
     return null; // Don't show button if user doesn't have permission
@@ -343,7 +162,7 @@ function DefaultLanesButton({ userRole }: DefaultLanesButtonProps) {
                                       zIndex: 9999,
                                       pointerEvents: 'none',
                                       transform:
-                                        provided.draggableProps.style
+                                        draggableProvided.draggableProps.style
                                           ?.transform || 'none',
                                     }),
                                   }}
@@ -364,7 +183,7 @@ function DefaultLanesButton({ userRole }: DefaultLanesButtonProps) {
                                     <div className="p-3">
                                       <div className="flex items-center gap-2">
                                         <div
-                                          {...provided.dragHandleProps}
+                                          {...draggableProvided.dragHandleProps}
                                           className="cursor-grab rounded p-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground active:cursor-grabbing"
                                         >
                                           <GripVertical className="h-4 w-4" />

@@ -35,6 +35,16 @@ export interface EmailAttachment {
   shareUrl: string;
 }
 
+/**
+ * An entry representing the assignment count for a specific interviewer.
+ */
+export interface InterviewerAssignmentCountEntry {
+  interviewerId: string; // User _id as string
+  name: string;
+  email: string;
+  count: number;
+}
+
 export interface SendEmailToCandidateRequest {
   candidateId: string;
   subject: string;
@@ -164,7 +174,31 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['CandidateApplication'],
     }),
-    fetchAssignedCandidates: builder.query<Candidate[], void>({
+
+    /**
+     * Fetches assigned candidates along with assignment statistics and interviewer mapping.
+     *
+     * The returned data structure:
+     * {
+     *   data: CandidateAssignmentWithExtras[];
+     *   totalInterviews: number;
+     *   todaysInterviews: number;
+     *   thisweeksInterviews: number;
+     *   assignmentCount: InterviewerAssignmentCountEntry[];
+     * }
+     */
+    fetchAssignedCandidates: builder.query<
+      [
+        {
+          data: Candidate[];
+          totalInterviews: number;
+          todaysInterviews: number;
+          thisweeksInterviews: number;
+          assignmentCount: InterviewerAssignmentCountEntry[];
+        },
+      ],
+      void
+    >({
       query: () => '/candidates/assignments',
       providesTags: ['Candidate'],
     }),

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
-import { User } from '@/lib/features/users/usersApi';
+import { ILocalUser } from '@/lib/redux/authSlice';
 import { formatDate, formatTime } from '../../../../hooks/dateTimeFormatting';
 
 export interface LogTableRowData {
@@ -20,7 +20,7 @@ export interface LogTableRowData {
  */
 export function useLogsTableData(
   timeLineItems: ICandidateHistory[],
-  user: User | null,
+  user: ILocalUser | null,
 ): LogTableRowData[] {
   const tableRowsData = useMemo(
     () =>

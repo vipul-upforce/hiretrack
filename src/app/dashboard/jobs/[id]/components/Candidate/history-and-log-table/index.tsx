@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { HistoryAndLogTableProps } from './types';
 import { useHistoryAndLogState } from './hooks/useHistoryAndLogState';
 import { useHistoryFiltering } from './hooks/useHistoryFiltering';
@@ -21,7 +22,6 @@ import { HistoryTimeline } from './components/HistoryTimeline';
  */
 export function HistoryAndLogTable({
   candidate,
-  user,
   timeLineItems,
   handleRemarkUpdate,
   setEditingRemark,
@@ -29,6 +29,7 @@ export function HistoryAndLogTable({
   showHeader = true,
 }: HistoryAndLogTableProps) {
   const { showLogTable, setShowLogTable } = useHistoryAndLogState();
+  const { user } = useAppSelector((state) => state.auth);
   const filteredTimelineItems = useHistoryFiltering(timeLineItems, user);
   const logsTableData = useLogsTableData(timeLineItems, user);
 
@@ -45,7 +46,6 @@ export function HistoryAndLogTable({
       {showHeader && (
         <HistoryTimelineHeader
           showLogTable={showLogTable}
-          user={user}
           onToggle={handleToggle}
         />
       )}
@@ -93,7 +93,6 @@ export function HistoryAndLogTable({
         <HistoryTimeline
           timeLineItems={filteredTimelineItems}
           candidate={candidate}
-          user={user}
           handleRemarkUpdate={handleRemarkUpdate}
           setEditingRemark={setEditingRemark}
           setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}

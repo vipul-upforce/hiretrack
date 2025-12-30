@@ -1,6 +1,5 @@
 import { toast } from '@/hooks/use-toast';
 import { CandidateColumn, CandidateStatus } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import {
   useUpdateLanesMutation,
   useDeleteLaneMutation,
@@ -9,11 +8,11 @@ import {
   useRenameJobLaneMutation,
 } from '@/lib/features/lane/laneApi';
 import { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface UseKanbanBoardProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
-  user: User | null;
   jobId?: string; // NEW: Add jobId for job-specific operations
   setIsConfirmLaneDeleteOpen: (open: boolean) => void;
   setIsLaneEditOpen: (open: boolean) => void;
@@ -23,7 +22,6 @@ interface UseKanbanBoardProps {
 export const useKanbanBoard = ({
   columns,
   setColumns,
-  user,
   jobId,
   setIsConfirmLaneDeleteOpen,
   setIsLaneEditOpen,
@@ -37,6 +35,8 @@ export const useKanbanBoard = ({
   const [migrationLanes, setMigrationLanes] = useState<string[]>([]);
   const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
   const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
+
+  const { user } = useAppSelector((state) => state.auth);
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
     const lansArray = newColumns.map((column) => column.id);

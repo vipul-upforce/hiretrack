@@ -1,28 +1,21 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { useFetchAssignedCandidatesQuery } from '@/lib/features/candidate/candidateApi';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
-import { useEffect, useState, useRef } from 'react';
-import { EventClickArg } from '@fullcalendar/core';
-import { useAppSelector } from '@/lib/redux/hooks';
-
-import interactionPlugin, { DateClickArg } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X, Calendar as CalendarIcon } from 'lucide-react';
-import { Candidate, CandidateStatus } from '@/types/candidate';
-import { Assignment } from '@/types/assignment';
-import { useSSE } from '@/hooks/useSSE';
-import useRoles from '@/hooks/useRoles';
+import { CandidateStatus, Assignment, Candidate } from '@/types/candidate';
 import LoaderSkeletonCalender from './components/loader-skeleton-calender';
 import { formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
 import { CandidateDetailsDialog } from '../jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { StatsCards } from './components/stats-cards';
 import { CalendarSidebar } from './components/calendar-sidebar';
+import { useCalendar } from './hooks/useCalendar';
 import './calendar.css';
 
 interface Interviewer {
@@ -105,331 +98,31 @@ export interface CustomCalendarEvent {
 
 export default function CalendarPage() {
   const {
-    data: assignments,
-    isLoading,
-    refetch,
-  } = useFetchAssignedCandidatesQuery();
-  const [selectedEvent, setSelectedEvent] = useState<
-    CustomCalendarEvent | Candidate | null
-  >(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const calendarRef = useRef<FullCalendar>(null);
-  const [searchText, setSearchText] = useState('');
-  const [filterText, setFilterText] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<
-    'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek'
-  >('dayGridMonth');
-
-  const { user } = useAppSelector((state) => state.auth);
-  const role = user?.role || '';
-  const { candidates: sseCandidates } = useSSE(
-    role,
-    setSelectedEvent,
     selectedEvent,
-  );
-
-  useEffect(() => {
-    refetch();
-  }, []);
-
-  useEffect(() => {
-    if (!isDetailsOpen) {
-      setSelectedEvent(null);
-    }
-  }, [isDetailsOpen]);
-
-  const applyFilter = () => {
-    setFilterText(searchText.trim());
-  };
-
-  const sseUpdatesMap = new Map(
-    sseCandidates.map((c: CandidateAssignment) => [c._id, c]),
-  );
-
-  const mergedAssignments = (
-    assignments && assignments[0]?.data ? [...assignments[0].data] : []
-  )
-    .map((assignment: CandidateAssignment) => {
-      // Check if there's an SSE update for this assignment
-      const sseUpdate = sseUpdatesMap.get(assignment._id);
-
-      // If there's an SSE update, use it (it's fresher data)
-      if (sseUpdate) {
-        // For interviewers, verify they're still assigned
-        if (role === 'interviewer') {
-          const interviewerId =
-            typeof sseUpdate.assignment?.interviewerId === 'object'
-              ? sseUpdate.assignment?.interviewerId?._id
-              : sseUpdate.assignment?.interviewerId;
-
-          // Only use SSE update if interviewer is still assigned
-          if (interviewerId === user.id) {
-            return sseUpdate;
-          }
-          // If interviewer was unassigned via SSE, filter out later
-          return null;
-        }
-        return sseUpdate;
-      }
-
-      // No SSE update? Keep original assignment
-      return assignment;
-    })
-    .filter(Boolean); // Remove nulls (unassigned interviews)
-
-  // Add NEW assignments that came via SSE but aren't in DB yet
-  sseCandidates.forEach((sseCandidate: CandidateAssignment) => {
-    const existsInDb = assignments?.[0]?.data?.some(
-      (a: CandidateAssignment) => a._id === sseCandidate._id,
-    );
-
-    if (!existsInDb) {
-      // For interviewers, only add if assigned to them
-      if (role === 'interviewer') {
-        const interviewerId =
-          typeof sseCandidate.assignment?.interviewerId === 'object'
-            ? sseCandidate.assignment?.interviewerId?._id
-            : sseCandidate.assignment?.interviewerId;
-
-        if (interviewerId === user.id) {
-          mergedAssignments.push(sseCandidate);
-        }
-      } else {
-        mergedAssignments.push(sseCandidate);
-      }
-    }
-  });
-  // debugger;
-  const filteredAssignments = mergedAssignments.filter(
-    (assignment: CandidateAssignment) => {
-      // If the current role is interviewer, only include assignments assigned to the current interviewer
-      if (role === 'interviewer') {
-        // debugger;
-        const interviewerId =
-          typeof assignment?.assignment?.interviewerId === 'object'
-            ? assignment?.assignment?.interviewerId?._id
-            : assignment?.assignment?.interviewerId;
-        if (
-          !assignment?.assignment ||
-          interviewerId !== user.id ||
-          !interviewerId
-        ) {
-          return false;
-        }
-      }
-
-      if (!filterText) return true;
-      const searchRegex = new RegExp(filterText, 'i');
-
-      const jobSkills =
-        (typeof assignment.jobId === 'object' && assignment.jobId?.skills) ||
-        [];
-      const assignmentSkills = assignment.skills || [];
-      const assignmentJobSkills =
-        (typeof assignment.assignment?.jobId !== 'string' &&
-          assignment.assignment?.jobId?.skills) ||
-        [];
-      const allSkills = [
-        ...jobSkills,
-        ...assignmentSkills,
-        ...assignmentJobSkills,
-      ];
-
-      return (
-        searchRegex.test(assignment.name || '') ||
-        searchRegex.test(
-          assignment.jobId && typeof assignment.jobId === 'object'
-            ? assignment.jobId.title
-            : '',
-        ) ||
-        searchRegex.test(
-          (typeof assignment?.assignment?.interviewerId === 'object' &&
-            assignment?.assignment?.interviewerId?.name) ||
-            '',
-        ) ||
-        (allSkills.length > 0 &&
-          allSkills.some((skill) => searchRegex.test(skill || '')))
-      );
-    },
-  );
-
-  // Event color palette for better visual distinction
-  const eventColors = [
-    { bg: '#3b82f6', border: '#2563eb' }, // blue
-    { bg: '#10b981', border: '#059669' }, // green
-    { bg: '#8b5cf6', border: '#7c3aed' }, // purple
-    { bg: '#14b8a6', border: '#0d9488' }, // teal
-    { bg: '#f59e0b', border: '#d97706' }, // amber
-    { bg: '#ec4899', border: '#db2777' }, // pink
-  ];
-
-  const events: CustomCalendarEvent[] =
-    filteredAssignments?.map(
-      (candidate: CandidateAssignment, index: number) => {
-        // Start time
-        const startTime = candidate?.assignment?.time
-          ? new Date(candidate.assignment.time)
-          : null;
-        // End time = start + 1 sec
-        const endTime = startTime ? new Date(startTime.getTime() + 1000) : null;
-
-        const hasGoogleMeet = candidate?.assignment?.googleMeet;
-
-        const baseTitle =
-          candidate?.jobId && typeof candidate.jobId === 'object'
-            ? candidate.jobId.title
-            : 'Unknown';
-
-        const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
-
-        // Colors
-        const colorIndex = index % eventColors.length;
-        const color = hasGoogleMeet
-          ? { bg: '#3b82f6', border: '#1d4ed8' }
-          : eventColors[colorIndex];
-
-        return {
-          id: candidate._id,
-          title,
-          start: startTime,
-          startStr: startTime?.toISOString() || '',
-          end: calendarView === 'dayGridMonth' ? endTime : startTime,
-          endStr:
-            calendarView === 'dayGridMonth' ? endTime?.toISOString() || '' : '',
-          allDay: false,
-          display: 'auto',
-          backgroundColor: color.bg,
-          borderColor: color.border,
-          url: '',
-          extendedProps: {
-            candidate: {
-              ...candidate,
-              jobId:
-                typeof candidate?.jobId === 'string'
-                  ? candidate?.jobId
-                  : (candidate?.jobId as Job)?._id,
-              jobDetails:
-                typeof candidate?.jobId === 'string'
-                  ? undefined
-                  : {
-                      title: (candidate?.jobId as Job)?.title,
-                      description: (candidate?.jobId as Job)?.description,
-                    },
-            },
-            interviewer:
-              typeof candidate?.assignment?.interviewerId === 'string'
-                ? {
-                    _id: candidate?.assignment?.interviewerId,
-                    name: 'Unknown',
-                    email: 'Unknown',
-                  }
-                : candidate?.assignment?.interviewerId || {
-                    _id: '',
-                    name: 'Unknown',
-                    email: 'Unknown',
-                  },
-          },
-        };
-      },
-    ) || [];
-
-  const handleEventClick = (arg: EventClickArg) => {
-    const { event } = arg;
-    if (event.extendedProps?.candidate && event.extendedProps?.interviewer) {
-      const calendarEvent = event as unknown as CustomCalendarEvent;
-      setSelectedEvent(calendarEvent);
-      setIsDetailsOpen(true);
-    }
-  };
-
-  const handleSidebarEventClick = (event: CustomCalendarEvent) => {
-    setSelectedEvent(event);
-    setIsDetailsOpen(true);
-  };
-
-  const handleDateClick = (arg: DateClickArg) => {
-    const eventsOnDate = events.filter(
-      (event) => event?.start?.toISOString().split('T')[0] === arg?.dateStr,
-    );
-
-    if (eventsOnDate.length === 1) {
-      const eventDate = new Date(eventsOnDate[0].start!);
-      const event: CustomCalendarEvent = {
-        id: eventsOnDate[0].id,
-        title: eventsOnDate[0].title,
-        start: eventDate,
-        end: eventDate,
-        allDay: false,
-        startStr: eventDate.toISOString(),
-        endStr: eventDate.toISOString(),
-        url: '',
-        display: 'auto',
-        extendedProps: {
-          candidate: {
-            ...eventsOnDate[0].extendedProps.candidate,
-            assignment: eventsOnDate[0].extendedProps.candidate.assignment || {
-              interviewerId: '',
-              time: '',
-              assignedAt: new Date().toISOString(),
-            },
-            tracking: {
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          },
-          interviewer: eventsOnDate[0].extendedProps.interviewer,
-        },
-      };
-
-      setSelectedEvent(event);
-      setIsDetailsOpen(true);
-    }
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    calendarRef.current?.getApi().gotoDate(date);
-  };
-
-  const handleViewChange = (
-    view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek',
-  ) => {
-    setCalendarView(view);
-    calendarRef.current?.getApi().changeView(view);
-  };
-
-  // Calculate stats
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const todayCount = events.filter((event) => {
-    if (!event.start) return false;
-    const eventDate = new Date(event.start);
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate.getTime() === today.getTime();
-  }).length;
-
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-  const thisWeekCount = events.filter((event) => {
-    if (!event.start) return false;
-    const eventDate = new Date(event.start);
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate >= startOfWeek && eventDate <= endOfWeek;
-  }).length;
-
-  const totalInterviews = events.length;
-
-  const upcomingCount = events.filter((event) => {
-    if (!event.start) return false;
-    const eventDate = new Date(event.start);
-    eventDate.setHours(0, 0, 0, 0);
-    return eventDate.getTime() > today.getTime();
-  }).length;
+    isDetailsOpen,
+    setIsDetailsOpen,
+    calendarRef,
+    searchText,
+    setSearchText,
+    filterText,
+    setFilterText,
+    selectedDate,
+    setSelectedDate,
+    calendarView,
+    isLoading,
+    events,
+    todayCount,
+    thisWeekCount,
+    totalInterviews,
+    upcomingCount,
+    applyFilter,
+    handleEventClick,
+    handleSidebarEventClick,
+    handleDateClick,
+    handleDateSelect,
+    handleViewChange,
+    handleUpdate,
+  } = useCalendar();
 
   if (isLoading) {
     return <LoaderSkeletonCalender />;
@@ -588,14 +281,20 @@ export default function CalendarPage() {
                   eventTextColor="#fff"
                   slotMinTime="00:00:00"
                   slotMaxTime="24:00:00"
+                  // eslint-disable-next-line react/jsx-no-bind, react/no-unstable-nested-components
                   eventContent={(arg) => {
                     if (calendarView === 'listWeek') {
                       // List view has its own rendering
                       return null;
                     }
 
-                    const { candidate } = arg.event._def.extendedProps;
-                    const { interviewer } = arg.event._def.extendedProps;
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
+                    // eslint-disable-next-line no-underscore-dangle
+                    const extendedProps = arg.event._def.extendedProps as {
+                      candidate: CandidateAssignment;
+                      interviewer: { _id: string; name: string; email: string };
+                    };
+                    const { candidate, interviewer } = extendedProps;
                     const jobTitle =
                       typeof candidate.jobId !== 'string' &&
                       candidate.jobId?.title
@@ -671,56 +370,47 @@ export default function CalendarPage() {
       </div>
 
       {/* Candidate Dialog */}
-      {selectedEvent && (
+      {selectedEvent && 'extendedProps' in selectedEvent && (
         <CandidateDetailsDialog
-          candidate={{
-            ...selectedEvent.extendedProps.candidate,
-            jobId: {
-              _id:
-                typeof selectedEvent.extendedProps.candidate.jobId === 'string'
-                  ? selectedEvent.extendedProps.candidate.jobId
-                  : selectedEvent.extendedProps.candidate.jobId?._id,
-              title:
-                selectedEvent.extendedProps.candidate.jobDetails?.title || '',
-              description:
-                selectedEvent.extendedProps.candidate.jobDetails?.description ||
-                '',
-            },
-            status: selectedEvent.extendedProps.candidate.status || 'applied',
-            assignment: {
-              interviewerId:
-                selectedEvent.extendedProps.candidate.assignment
-                  ?.interviewerId || '',
-              time:
-                selectedEvent.start?.toISOString() || new Date().toISOString(),
-              assignedAt: new Date().toISOString(),
-              googleMeet:
-                selectedEvent.extendedProps.candidate.assignment?.googleMeet ||
-                null,
-              assignment: {
-                status:
-                  selectedEvent.extendedProps.candidate.assignment?.assignment
-                    ?.status || '',
+          candidate={
+            {
+              ...selectedEvent.extendedProps.candidate,
+              email: '',
+              contact: '',
+              jobId: {
+                _id:
+                  typeof selectedEvent.extendedProps.candidate.jobId ===
+                  'string'
+                    ? selectedEvent.extendedProps.candidate.jobId
+                    : selectedEvent.extendedProps.candidate.jobId?._id || '',
+                title:
+                  selectedEvent.extendedProps.candidate.jobDetails?.title || '',
+                description:
+                  selectedEvent.extendedProps.candidate.jobDetails
+                    ?.description || '',
               },
-            },
-          }}
+              status: selectedEvent.extendedProps.candidate.status || 'applied',
+              assignment: {
+                ...selectedEvent.extendedProps.candidate.assignment,
+                interviewerId:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.interviewerId || '',
+                time:
+                  selectedEvent.start?.toISOString() ||
+                  selectedEvent.extendedProps.candidate.assignment?.time ||
+                  new Date().toISOString(),
+                assignedAt:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.assignedAt || new Date().toISOString(),
+                googleMeet:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.googleMeet || undefined,
+              } as Assignment,
+            } as unknown as Candidate
+          }
           isOpen={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
-          onUpdate={async () => {
-            const { data } = await refetch();
-            const updatedCandidate = data?.find(
-              (c) => c._id === selectedEvent?.extendedProps.candidate._id,
-            );
-            if (updatedCandidate) {
-              setSelectedEvent({
-                ...selectedEvent,
-                extendedProps: {
-                  ...selectedEvent.extendedProps,
-                  candidate: updatedCandidate,
-                },
-              });
-            }
-          }}
+          onUpdate={handleUpdate}
           hideEditButton
         />
       )}

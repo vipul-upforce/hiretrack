@@ -26,26 +26,32 @@ export function SearchFilters({
   const [isSalaryExpanded, setIsSalaryExpanded] = useState(false);
   const [isAdvancedExpanded, setIsAdvancedExpanded] = useState(false);
 
-  const {
-    values, errors, touched, setFieldValue, handleChange, handleBlur,
-  } = useFormikContext<SearchFilter>();
+  const { values, errors, touched, setFieldValue, handleChange, handleBlur } =
+    useFormikContext<SearchFilter>();
   const user = useCookie();
   const [getCustomField] = useLazyGetCustomFieldsQuery();
 
-  const hasError = (fieldName: string) => !!(
-    errors[fieldName as keyof typeof errors]
-      && touched[fieldName as keyof typeof touched]
-  );
+  const hasError = (fieldName: string) =>
+    !!(
+      errors[fieldName as keyof typeof errors] &&
+      touched[fieldName as keyof typeof touched]
+    );
 
   const getErrorMessage = (fieldName: string) => {
     const error = errors[fieldName as keyof typeof errors];
-    return hasError(fieldName) ? (typeof error === 'string' ? error : '') : '';
+    if (!hasError(fieldName)) {
+      return '';
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    return '';
   };
 
   useEffect(() => {
     if (
-      !values.customFields
-      || Object.keys(values.customFields || {}).length === 0
+      !values.customFields ||
+      Object.keys(values.customFields || {}).length === 0
     ) {
       setCols([]);
     }
@@ -55,9 +61,10 @@ export function SearchFilters({
     (async () => {
       if (user?.organizationId) {
         const data = await getCustomField(user?.organizationId);
-        const metaFieldsData = (Object.values(data?.data || {}) as FormObject[]).find(
-          (form) => form.formName === 'Candidate',
-        )?.fields || [];
+        const metaFieldsData =
+          (Object.values(data?.data || {}) as FormObject[]).find(
+            (form) => form.formName === 'Candidate',
+          )?.fields || [];
         setMetaFields(metaFieldsData as CustomField[] | []);
       }
     })();
@@ -73,30 +80,38 @@ export function SearchFilters({
     if (existsElsewhere) {
       return;
     }
-    const newCols = cols.map((col) => (col.id === colId
-      ? {
-        ...col,
-        fieldId,
-        label: selectedField.label,
-        type: selectedField.type,
-        options: selectedField.options as string[],
-        name: selectedField.label,
-        value: selectedField ? '' : (col.value ?? ''),
-      }
-      : col));
+    const newCols = cols.map((col) =>
+      col.id === colId
+        ? {
+            ...col,
+            fieldId,
+            label: selectedField.label,
+            type: selectedField.type,
+            options: selectedField.options as string[],
+            name: selectedField.label,
+            value: selectedField ? '' : (col.value ?? ''),
+          }
+        : col,
+    );
     setCols(newCols);
     setFieldValue(
       'customFields',
-      Object.fromEntries(newCols.map(({ label, value }) => [label, value])),
+      Object.fromEntries(
+        newCols.map(({ label, value: _value }) => [label, _value]),
+      ),
     );
   };
 
   const updateColValue = (id: string, value: string) => {
-    const newCols = cols.map((col) => (col.id === id ? { ...col, value } : col));
+    const newCols = cols.map((col) =>
+      col.id === id ? { ...col, value } : col,
+    );
     setCols(newCols);
     setFieldValue(
       'customFields',
-      Object.fromEntries(newCols.map(({ label, value }) => [label, value])),
+      Object.fromEntries(
+        newCols.map(({ label, value: _value }) => [label, _value]),
+      ),
     );
   };
 
@@ -109,8 +124,6 @@ export function SearchFilters({
       {/* Basic Search Section */}
       <BasicSearchSection
         values={values}
-        errors={errors}
-        touched={touched}
         handleChange={handleChange}
         handleBlur={handleBlur}
         setFieldValue={setFieldValue}
@@ -121,8 +134,6 @@ export function SearchFilters({
       {/* Salary & Experience Section */}
       <SalaryExperienceSection
         values={values}
-        errors={errors}
-        touched={touched}
         handleChange={handleChange}
         handleBlur={handleBlur}
         isSalaryExpanded={isSalaryExpanded}

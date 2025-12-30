@@ -182,7 +182,7 @@ export async function POST(
     );
 
     // Get user details for history
-    const userId = decoded.id;
+    const userId = decoded.id as string;
     const user = await User!.findById(userId);
 
     // Create history entry

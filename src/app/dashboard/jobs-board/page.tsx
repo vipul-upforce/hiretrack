@@ -2,15 +2,7 @@
 
 import { DragDropContext } from '@hello-pangea/dnd';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
-import { Job } from '@/types/job';
-import {
-  useCreateJobMutation,
-  useDeleteJobMutation,
-  useFetchJobsQuery,
-  useUpdateJobStatusMutation,
-} from '@/lib/features/job/jobApi';
-import { toast } from '@/hooks/use-toast';
+import { useState, useEffect, useContext, useCallback } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -27,40 +19,18 @@ import { Mail, Settings2 } from 'lucide-react';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
 import CustomFieldDialog from '@/Custom_Fields/Components/Common/CustomFieldDialog';
 import Stepper from '@/Custom_Fields/Components/Stepper';
-import { useSelector } from 'react-redux';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
 import { GlobalEmailNotificationSettingsDialog } from '@/components/dialogs/GlobalEmailNotificationSettingsDialog';
-import {
-  startOfWeek,
-  startOfMonth,
-  startOfQuarter,
-  isAfter,
-  isSameDay,
-} from 'date-fns';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { ViewToggle } from './components/view-toggle';
 import { JobsTableView } from './components/jobs-table';
-import {
-  JobsFilters,
-  StatusFilterValue,
-  DateFilterValue,
-} from './components/jobs-filters';
+import { JobsFilters } from './components/jobs-filters';
 import DefaultLanesButton from './components/DefaultLanesButton';
 import KanbanColumn from './components/kanban-column';
-import { initialColumns } from './data/initial-data';
 import { JobDetailsDialog } from './components/job-details-dialog';
 import { CreateJobDialog } from './components/create-job-dialog';
 import JobsSkeleton from './components/jobs-board-skeleton';
-
-interface User {
-  role: string;
-  organizationId: string;
-}
-
-interface KanbanColumn {
-  id: string;
-  title: string;
-  jobs: Job[];
-}
+import { useJobsBoard } from './hooks/useJobsBoard';
 
 // Dialog component that auto-selects job position form
 function JobCustomFieldsDialog({
@@ -123,407 +93,50 @@ function JobCustomFieldsDialog({
 }
 
 function KanbanPage() {
-  const [columns, setColumns] = useState<KanbanColumn[]>(initialColumns);
-  // const [user, setUser] = useState<User | null>(null);
-  const { user }: { user: User } = useSelector(
-    (state: any) => state.auth || {},
-  );
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [showArchived, setShowArchived] = useState(false);
-  const [createJob] = useCreateJobMutation();
   const {
-    data: jobs,
-    error,
-    isLoading,
-    refetch,
-  } = useFetchJobsQuery(undefined, {
-    skip: !user,
-  });
-  const [updateJobStatus] = useUpdateJobStatusMutation();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
-  const [deleteJob] = useDeleteJobMutation();
-  const [isCreatingJob, setIsCreatingJob] = useState(false);
-  const [duplicate, setDuplicate] = useState(false);
-  const [isCustomFieldsOpen, setIsCustomFieldsOpen] = useState(false);
-  const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
-  const [isGlobalEmailSettingsOpen, setIsGlobalEmailSettingsOpen] =
-    useState(false); // New state for global settings dialog
-  const [selectedJobForEmailSettings, setSelectedJobForEmailSettings] =
-    useState<Job | null>(null);
-
-  // View mode and filters state with localStorage persistence
-  const [viewMode, setViewMode] = useState<'board' | 'table'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('jobs-board-view-mode');
-      return (saved as 'board' | 'table') || 'board';
-    }
-    return 'board';
-  });
-
-  const [statusFilters, setStatusFilters] = useState<StatusFilterValue[]>(
-    () => {
-      if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('jobs-board-status-filters');
-        try {
-          return saved ? JSON.parse(saved) : [];
-        } catch {
-          return [];
-        }
-      }
-      return [];
-    },
-  );
-
-  const [dateFilters, setDateFilters] = useState<DateFilterValue[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('jobs-board-date-filters');
-      try {
-        return saved ? JSON.parse(saved) : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  });
-
-  const [sortField, setSortField] = useState<string | null>(
-    'tracking.createdAt',
-  );
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      refetch(); // Refetch jobs when user changes
-    }
-  }, [user, refetch]);
-  useEffect(() => {
-    if (selectedJob && duplicate) {
-      handleJobCreated({ ...selectedJob, status: 'draft', isPublished: false });
-      setDuplicate(false);
-    }
-  }, [selectedJob, duplicate]);
-
-  useEffect(() => {
-    if (jobs) {
-      const initialColumnsWithJobs = initialColumns.map((column) => ({
-        ...column,
-        jobs: jobs.filter(
-          (job) =>
-            job.status === column.id &&
-            (showArchived ? job.isDeleted : !job.isDeleted),
-        ),
-      }));
-      setColumns(initialColumnsWithJobs);
-    }
-  }, [jobs, showArchived]);
-
-  const handleJobCreated = async (newJob: Omit<Job, 'id'>) => {
-    setIsCreatingJob(true);
-    const job: Job = {
-      ...newJob,
-      _id: Math.random().toString(36).substr(2, 9),
-      organizationId: user!.organizationId,
-      candidateCount: 0,
-    };
-
-    try {
-      toast({
-        title: 'Uploading Documents',
-        description: 'It can take while if its big file',
-      });
-      const res = (await createJob(job).unwrap()) as unknown;
-
-      if (res) {
-        await refetch(); // Wait for refetch to complete
-        toast({
-          title: 'Success',
-          description: 'Job created successfully',
-        });
-      }
-    } catch {
-      toast({
-        title: 'Error',
-        description: 'Failed to create job',
-      });
-    } finally {
-      setIsCreatingJob(false);
-    }
-  };
-
-  const handleEmailSettingsClick = (job: Job) => {
-    setSelectedJobForEmailSettings(job);
-    setIsEmailSettingsOpen(true);
-  };
-
-  // Save view mode to localStorage when it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('jobs-board-view-mode', viewMode);
-    }
-  }, [viewMode]);
-
-  // Save status filters to localStorage when they change
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        'jobs-board-status-filters',
-        JSON.stringify(statusFilters),
-      );
-    }
-  }, [statusFilters]);
-
-  // Save date filters to localStorage when they change
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(
-        'jobs-board-date-filters',
-        JSON.stringify(dateFilters),
-      );
-    }
-  }, [dateFilters]);
-
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  // Filter and sort jobs for table view
-  const filteredAndSortedJobs = useMemo(() => {
-    if (!jobs || viewMode === 'board') return [];
-
-    let filtered = jobs.filter((job) =>
-      showArchived ? job.isDeleted : !job.isDeleted,
-    );
-
-    // Apply search query filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (job) =>
-          job.title.toLowerCase().includes(query) ||
-          job.description?.toLowerCase().includes(query) ||
-          job.skills?.some((skill) => skill.toLowerCase().includes(query)),
-      );
-    }
-
-    // Apply status filters (OR logic - show if matches any selected status)
-    if (statusFilters.length > 0) {
-      filtered = filtered.filter((job) =>
-        statusFilters.includes(job.status as StatusFilterValue),
-      );
-    }
-
-    // Apply date filters (OR logic - show if matches any selected date range)
-    if (dateFilters.length > 0 && filtered.length > 0) {
-      const now = new Date();
-      filtered = filtered.filter((job) => {
-        if (!job.tracking?.createdAt) return false;
-        const createdDate = new Date(job.tracking.createdAt);
-
-        return dateFilters.some((filter) => {
-          switch (filter) {
-            case 'today':
-              return isSameDay(createdDate, now);
-            case 'week':
-              return (
-                isAfter(createdDate, startOfWeek(now)) ||
-                isSameDay(createdDate, startOfWeek(now))
-              );
-            case 'month':
-              return (
-                isAfter(createdDate, startOfMonth(now)) ||
-                isSameDay(createdDate, startOfMonth(now))
-              );
-            case 'quarter':
-              return (
-                isAfter(createdDate, startOfQuarter(now)) ||
-                isSameDay(createdDate, startOfQuarter(now))
-              );
-            default:
-              return false;
-          }
-        });
-      });
-    }
-
-    // Apply sorting based on column clicks
-    if (sortField) {
-      const sorted = [...filtered].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-
-        if (sortField === 'createdAt') {
-          aValue = new Date(a.tracking?.createdAt || 0).getTime();
-          bValue = new Date(b.tracking?.createdAt || 0).getTime();
-        } else if (sortField === 'candidateCount') {
-          aValue = a.candidateCount || 0;
-          bValue = b.candidateCount || 0;
-        } else if (sortField === 'experience') {
-          aValue = a.experience || 0;
-          bValue = b.experience || 0;
-        } else {
-          aValue = a[sortField as keyof Job];
-          bValue = b[sortField as keyof Job];
-        }
-
-        // Handle string comparison
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc'
-            ? aValue.localeCompare(bValue)
-            : bValue.localeCompare(aValue);
-        }
-
-        // Handle numeric comparison
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-        }
-
-        return 0;
-      });
-
-      return sorted;
-    }
-
-    return filtered;
-  }, [
-    jobs,
-    viewMode,
+    columns,
+    selectedJob,
+    setSelectedJob,
+    isDetailsOpen,
+    setIsDetailsOpen,
+    isEditMode,
+    setIsEditMode,
     showArchived,
-    searchQuery,
+    setShowArchived,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    isCreatingJob,
+    setDuplicate,
+    isCustomFieldsOpen,
+    setIsCustomFieldsOpen,
+    isEmailSettingsOpen,
+    setIsEmailSettingsOpen,
+    isGlobalEmailSettingsOpen,
+    setIsGlobalEmailSettingsOpen,
+    selectedJobForEmailSettings,
+    viewMode,
+    setViewMode,
     statusFilters,
+    setStatusFilters,
     dateFilters,
+    setDateFilters,
     sortField,
     sortDirection,
-  ]);
+    searchQuery,
+    setSearchQuery,
+    isLoading,
+    error,
+    filteredAndSortedJobs,
+    handleJobCreated,
+    handleEmailSettingsClick,
+    handleSort,
+    onDragEnd,
+    handleJobUpdate,
+    handleDeleteClick,
+    handleDeleteConfirm,
+  } = useJobsBoard();
 
-  const onDragEnd = async (result: any) => {
-    const { destination, source, draggableId } = result;
-
-    if (
-      !destination ||
-      (destination.droppableId === source.droppableId &&
-        destination.index === source.index)
-    ) {
-      return;
-    }
-
-    const sourceColumn = columns.find((col) => col.id === source.droppableId);
-    const destColumn = columns.find(
-      (col) => col.id === destination.droppableId,
-    );
-
-    if (!sourceColumn || !destColumn) return;
-
-    // Update local state first
-    const newColumns = [...columns];
-    const sourceJobs = [...sourceColumn.jobs];
-
-    const destJobs =
-      source.droppableId === destination.droppableId
-        ? sourceJobs
-        : [...destColumn.jobs];
-
-    const [removed] = sourceJobs.splice(source.index, 1);
-    const updatedJob = {
-      ...removed,
-      status: destination.droppableId,
-    };
-
-    destJobs.splice(destination.index, 0, updatedJob);
-
-    newColumns.forEach((col) => {
-      if (col.id === source.droppableId) {
-        col.jobs = sourceJobs;
-      }
-      if (col.id === destination.droppableId) {
-        col.jobs = destJobs;
-      }
-    });
-
-    setColumns(newColumns);
-
-    if (showArchived) {
-      return;
-    }
-    // Then update the database
-    try {
-      await updateJobStatus({
-        id: draggableId,
-        status: destination.droppableId,
-        openJobCardsOrder:
-          newColumns
-            .find((col) => col.id === 'open')
-            ?.jobs.map((job) => job._id) || [],
-      }).unwrap();
-    } catch {
-      // Revert the local state if the API call fails
-      const revertColumns = [...columns];
-      setColumns(revertColumns);
-
-      toast({
-        title: 'Error',
-        description: 'Failed to update job status',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleJobUpdate = (updatedJob: Job) => {
-    const newColumns = columns.map((column) => ({
-      ...column,
-      jobs: column.jobs.map((job) =>
-        job._id === updatedJob._id
-          ? { ...updatedJob, candidateCount: updatedJob.candidateCount || 0 }
-          : job,
-      ),
-    }));
-
-    setColumns(newColumns);
-  };
-
-  const handleDeleteClick = (jobId: string) => {
-    setJobToDelete(jobId);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!jobToDelete) return;
-
-    try {
-      await deleteJob(jobToDelete).unwrap();
-
-      setSelectedJob(null);
-      toast({
-        title: 'Success',
-        description: 'Job Action Applied successfully.',
-      });
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        toast({
-          title: 'Error',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to delete job position',
-          variant: 'destructive',
-        });
-      }
-    } finally {
-      setIsDeleteDialogOpen(false);
-      setJobToDelete(null);
-    }
-  };
+  const { user } = useAppSelector((state) => state.auth || {});
 
   if (isLoading) return <JobsSkeleton />;
 

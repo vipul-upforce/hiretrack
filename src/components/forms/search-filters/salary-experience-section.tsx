@@ -4,21 +4,17 @@ import { Label } from '@/components/ui/label';
 import type React from 'react';
 
 import { Input } from '@/components/ui/input';
-import {
-  CardContent, CardHeader, CardTitle, Card,
-} from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle, Card } from '@/components/ui/card';
 import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import type { SearchFilter } from '../candidate-search';
 
 interface SalaryExperienceSectionProps {
   values: SearchFilter;
-  errors: Record<string, any>;
-  touched: Record<string, any>;
   handleChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   handleBlur: (
-    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   isSalaryExpanded: boolean;
   setIsSalaryExpanded: (expanded: boolean) => void;
@@ -28,8 +24,6 @@ interface SalaryExperienceSectionProps {
 
 export function SalaryExperienceSection({
   values,
-  errors,
-  touched,
   handleChange,
   handleBlur,
   isSalaryExpanded,
@@ -41,7 +35,7 @@ export function SalaryExperienceSection({
     <Card>
       <CardHeader className="pb-6">
         <CardTitle
-          className="flex items-center justify-between gap-2 text-base cursor-pointer hover:text-primary transition-colors px-0 mx-0"
+          className="mx-0 flex cursor-pointer items-center justify-between gap-2 px-0 text-base transition-colors hover:text-primary"
           onClick={() => setIsSalaryExpanded(!isSalaryExpanded)}
         >
           <div className="flex items-center gap-2">
@@ -56,8 +50,8 @@ export function SalaryExperienceSection({
         </CardTitle>
       </CardHeader>
       {isSalaryExpanded && (
-        <CardContent className="pt-0 pb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="pb-6 pt-0">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Expected CTC Range */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Expected CTC Range</Label>

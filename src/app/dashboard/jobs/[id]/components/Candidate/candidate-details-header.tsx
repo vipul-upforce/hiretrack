@@ -20,9 +20,9 @@ import {
   FileDown,
 } from 'lucide-react';
 import { Candidate } from '@/types/candidate';
-import { User as UserType } from '@/lib/features/users/usersApi';
 import TagsList from '@/components/ui/tagsList';
 import React, { useRef, useState } from 'react';
+import { useAuth } from '@/app/hooks/useAuth';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
@@ -31,7 +31,6 @@ import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
   handleCandidateInfoCopy: (info: string) => void;
-  user: UserType | null;
   refetch: () => void;
   onAssignClick?: () => void;
 }
@@ -39,13 +38,12 @@ interface DetailsDialogHeaderProps {
 export default function DetailsDialogHeader({
   candidate,
   handleCandidateInfoCopy,
-  user,
   refetch,
   onAssignClick,
 }: DetailsDialogHeaderProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
-
+  const { userRole: role } = useAuth();
   const handlePopoverContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -62,7 +60,7 @@ export default function DetailsDialogHeader({
   };
 
   const handleInterviewerClick = () => {
-    if (user?.role === 'interviewer') {
+    if (role === 'interviewer') {
       return; // Prevent action for interviewer users
     }
     if (onAssignClick) {
@@ -129,7 +127,7 @@ export default function DetailsDialogHeader({
                   </div>
                 )}
                 <div className="flex items-center gap-1">
-                  {(user?.role === 'admin' || user?.role === 'hr') && (
+                  {(role === 'admin' || role === 'hr') && (
                     <Popover modal>
                       <PopoverTrigger asChild>
                         <Button
@@ -148,7 +146,6 @@ export default function DetailsDialogHeader({
                         className="p-0"
                       >
                         <TagsDialog
-                          user={user}
                           candidate={candidate}
                           refetch={refetch}
                           onClose={() => {
@@ -170,7 +167,7 @@ export default function DetailsDialogHeader({
                       <span className="sr-only">Download CV</span>
                     </Button>
                   )}
-                  {(user?.role === 'admin' || user?.role === 'hr') && (
+                  {(role === 'admin' || role === 'hr') && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -217,7 +214,7 @@ export default function DetailsDialogHeader({
                 candidate.currentCTC !== null) ||
                 (candidate.expectedCTC !== undefined &&
                   candidate.expectedCTC !== null)) &&
-                user?.role !== 'interviewer' && (
+                role !== 'interviewer' && (
                   <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                     <IndianRupee size={12} />
                     Salary:{' '}

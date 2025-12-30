@@ -15,7 +15,7 @@ import withAuthGuard from '../withAuthGuard';
 import { SearchSchema } from './searchSchema';
 
 export interface CandidateField {
-  [key: string]: any;
+  [key: string]: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 export interface SearchFilter {
@@ -150,7 +150,7 @@ function CandidateSearch() {
         page: currentPage,
         limit: currentPageLimit,
       };
-      setCurrentFilters(initialFilters);
+      setCurrentFilters(initialFilters as SearchFilter);
     }
   }, [user]); // Only depend on user
 
@@ -174,7 +174,7 @@ function CandidateSearch() {
         page: pageNumber,
       };
 
-      setCurrentFilters(updatedFilters);
+      setCurrentFilters(updatedFilters as SearchFilter);
     },
     [user, totalPages, currentFilters],
   );
@@ -191,15 +191,15 @@ function CandidateSearch() {
         page: 1, // Reset to first page when changing limit
       };
 
-      setCurrentFilters(updatedFilters);
+      setCurrentFilters(updatedFilters as SearchFilter);
     },
     [user, currentFilters],
   );
 
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
+        let aValue: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        let bValue: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
         // Handle custom sorting fields
         if (sortField === 'overallScore') {
