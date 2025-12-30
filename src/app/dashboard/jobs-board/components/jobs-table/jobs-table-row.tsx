@@ -116,7 +116,7 @@ export function JobsTableRow({
               <>
                 {job.skills.slice(0, 2).map((skill) => (
                   <Badge
-                    key={`${job._id}-skill`}
+                    key={`${skill}-${job._id}`}
                     variant="secondary"
                     className="text-xs font-normal"
                   >

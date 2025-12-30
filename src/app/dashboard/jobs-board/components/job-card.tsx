@@ -380,7 +380,7 @@ function JobCard({
                     })
                     .map(([key, value]) => (
                       <div key={`${key}`} className="text-sm">
-                        <span className="mr-1 truncate text-gray-600 dark:text-gray-400">
+                        <span className="mr-1 text-gray-600 dark:text-gray-400 ">
                           {key.split(' |||||(')[0]}
                         </span>
                         {(() => {
