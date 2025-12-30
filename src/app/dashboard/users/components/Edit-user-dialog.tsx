@@ -81,7 +81,7 @@ export function EditUserDialog({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: `Error: ${
+        description: ` ${
           typeof error === 'object' &&
           error !== null &&
           'data' in error &&

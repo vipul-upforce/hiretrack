@@ -31,7 +31,7 @@ export function JobsTableView(props: JobsTableProps) {
   const availableCustomFields: CustomFieldDef[] = useMemo(
     () =>
       formNameObject?.fields
-        .filter((field) => field.showOnCard && !field.jobId)
+        .filter((field) => field.showOnCard )
         .map((field) => ({
           label: field.label,
           showOnCard: field.showOnCard,
