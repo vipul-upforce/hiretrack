@@ -11,7 +11,7 @@ import { ICandidate } from '@/lib/models/candidate';
 import mongoose from 'mongoose';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import { getAuthenticatedUser } from '@/app/actions/auth';
+// import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { logger } from '@/lib/logger/logger.server';
 
@@ -20,11 +20,11 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const { candidateId } = await req.json();
 
-    // Get user information from token
-    const user = await getAuthenticatedUser(req);
-    const senderEmail = user?.email;
-    const senderUserId = user?.id;
-    const senderName = user?.name;
+    // // Get user information from token
+    // const user = await getAuthenticatedUser(req);
+    // const senderEmail = user?.email;
+    // const senderUserId = user?.id;
+    // const senderName = user?.name;
     if (!Candidate || !User) {
       throw new Error('Database not connected');
     }
@@ -142,31 +142,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const fromEmail =
-      settings.mailConfig.resend_from ||
-      settings.mailConfig.brevo_from ||
-      settings.mailConfig.smtp_from ||
-      'system@hiretrack.com';
+    // const fromEmail =
+    //   settings.mailConfig.resend_from ||
+    //   settings.mailConfig.brevo_from ||
+    //   settings.mailConfig.smtp_from ||
+    //   'system@hiretrack.com';
 
-    const systemUser = await User.findOneAndUpdate(
-      { email: fromEmail, organizationId },
-      {
-        $setOnInsert: {
-          name: 'HireTrack System',
-          email: fromEmail,
-          role: 'system',
-          organizationId,
-        },
-      },
-      { upsert: true, new: true },
-    );
+    // const systemUser = await User.findOneAndUpdate(
+    //   { email: fromEmail, organizationId },
+    //   {
+    //     $setOnInsert: {
+    //       name: 'HireTrack System',
+    //       email: fromEmail,
+    //       role: 'system',
+    //       organizationId,
+    //     },
+    //   },
+    //   { upsert: true, new: true },
+    // );
 
     // Create history record for candidate
     const candidateHistory = await EmailHistory?.create({
       organizationId: organizationObjectId,
-      sentBy: systemUser._id,
-      sentByEmail: systemUser.email,
-      sentByName: systemUser.name,
+      sentBy: candidateId,
+      sentByEmail: candidateData.email,
+      sentByName: candidateData?.name,
       recipientType: 'Candidate',
       recipientId: candidateObjectId,
       recipientEmail: email,
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
       body: candidateEmailContent,
       cc: [],
       bcc: hrEmails,
-      replyTo: systemUser.email,
+      replyTo: candidateData?.email,
       attachments: [],
       status: 'pending',
       provider: settings.mailConfig.mailProvider || 'unknown',
@@ -190,9 +190,9 @@ export async function POST(req: NextRequest) {
       const hrUser = hrUsers.find((u) => u.email === hrEmail);
       return {
         organizationId: organizationObjectId,
-        sentBy: systemUser._id,
-        sentByEmail: systemUser.email,
-        sentByName: systemUser.name,
+        sentBy: candidateId,
+        sentByEmail: candidateData.email,
+        sentByName: candidateData.name,
         recipientType: 'user',
         recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
         recipientEmail: hrEmail,
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
         body: candidateEmailContent,
         cc: [],
         bcc: [],
-        replyTo: systemUser.email,
+        replyTo: candidateData?.email,
         attachments: [],
         status: 'pending',
         provider: settings.mailConfig.mailProvider || 'unknown',
@@ -241,9 +241,9 @@ export async function POST(req: NextRequest) {
         organizationId,
         NotificationType.NEW_APPLICATIONS,
         {
-          triggererUserId: senderUserId || candidateId,
-          triggererEmail: senderEmail,
-          triggererName: senderName,
+          triggererUserId: candidateId,
+          triggererEmail: candidateData?.email,
+          triggererName: candidateData?.name,
           jobId,
           candidateId,
           eventType: 'job_application',

@@ -39,25 +39,31 @@ async function handleSendOtp(req: NextRequest) {
       settings.mailConfig.resend_from ||
       settings.mailConfig.brevo_from ||
       settings.mailConfig.smtp_from ||
-      'system@hiretrack.com';
+      '';
     const user = isCandidate
       ? await CandidateAccount?.findOne({
           email,
           organizationId,
-          isDeleted:{$ne: true},
-        }).select('name email role organizationId tokenVersion otp otpExpires').populate({
-          path: 'organizationId',
-          select: 'name', // populate only organization name
-        }).lean()
+          isDeleted: { $ne: true },
+        })
+          .select('name email role organizationId tokenVersion otp otpExpires')
+          .populate({
+            path: 'organizationId',
+            select: 'name', // populate only organization name
+          })
+          .lean()
       : await User?.findOne({
           email,
           organizationId,
           isDeleted: { $ne: true },
-        }).select('name email role organizationId tokenVersion otp otpExpires').populate({
-          path: 'organizationId',
-          select: 'name', // populate only organization name
-        }).lean();
-        console.log("isCandidate",isCandidate,user,"user")
+        })
+          .select('name email role organizationId tokenVersion otp otpExpires')
+          .populate({
+            path: 'organizationId',
+            select: 'name', // populate only organization name
+          })
+          .lean();
+    console.log('isCandidate', isCandidate, user, 'user');
     const organizationName =
       (user?.organizationId as unknown as { name: string })?.name || '';
     // Check if user has an existing OTP and its generation time

@@ -23,13 +23,13 @@ function getFromEmail(
   } | null,
 ): string {
   if (!settings?.mailConfig) {
-    return 'system@hiretrack.com';
+    return 'undefind';
   }
   return (
     settings.mailConfig.resend_from ||
     settings.mailConfig.brevo_from ||
     settings.mailConfig.smtp_from ||
-    'system@hiretrack.com'
+    ''
   );
 }
 

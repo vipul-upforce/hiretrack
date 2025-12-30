@@ -67,7 +67,7 @@ export async function getFromEmailAndProvider(
     settings?.mailConfig?.resend_from ||
     settings?.mailConfig?.brevo_from ||
     settings?.mailConfig?.smtp_from ||
-    'system@hiretrack.com';
+    '';
 
   const provider = settings?.mailConfig?.mailProvider || 'unknown';
 
@@ -84,7 +84,7 @@ export async function getFromEmail(organizationId: string): Promise<string> {
     settings?.mailConfig?.resend_from ||
     settings?.mailConfig?.brevo_from ||
     settings?.mailConfig?.smtp_from ||
-    'system@hiretrack.com'
+    ''
   );
 }
 
