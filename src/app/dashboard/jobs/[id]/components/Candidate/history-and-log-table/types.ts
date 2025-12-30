@@ -6,7 +6,6 @@ import { IEditRemark } from '../../../schemas/EditRemarkDialog';
 
 export interface HistoryAndLogTableProps {
   candidate: Candidate;
-  user: User | null;
   timeLineItems: ICandidateHistory[];
   handleRemarkUpdate: (
     id: string,

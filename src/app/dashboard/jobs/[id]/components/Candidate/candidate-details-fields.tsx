@@ -34,7 +34,6 @@ type CandidateDetailsRenderArgs =
   | { id: 'attachments' }
   | {
       id: 'candidate-history';
-      user: User | null;
       timeLineItems: ICandidateHistory[];
       handleRemarkUpdate: (
         id: string,
@@ -81,7 +80,6 @@ export const candidateDetailsFields: [
   FieldConfig<{ id: 'attachments' }>,
   FieldConfig<{
     id: 'candidate-history';
-    user: User | null;
     timeLineItems: ICandidateHistory[];
     handleRemarkUpdate: (
       id: string,
@@ -162,7 +160,6 @@ export const candidateDetailsFields: [
     render: (candidate, args) => (
       <HistoryAndLogTable
         candidate={candidate}
-        user={args.user}
         timeLineItems={args.timeLineItems}
         handleRemarkUpdate={args.handleRemarkUpdate}
         setEditingRemark={args.setEditingRemark}

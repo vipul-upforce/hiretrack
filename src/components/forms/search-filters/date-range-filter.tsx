@@ -14,7 +14,10 @@ import { format } from 'date-fns';
 interface DateRangeFilterProps {
   createdAfter: string;
   createdBefore: string;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: (
+    field: string,
+    value: string | number | boolean | string[],
+  ) => void;
   hasError: (fieldName: string) => boolean;
   getErrorMessage: (fieldName: string) => string;
 }
@@ -26,16 +29,23 @@ export function DateRangeFilter({
   hasError,
   getErrorMessage,
 }: DateRangeFilterProps) {
-  const toDate = (dateValue: any): Date | null => {
+  const toDate = (
+    dateValue: Date | string | number | boolean | string[],
+  ): Date | null => {
     if (!dateValue) return null;
 
     if (dateValue instanceof Date) {
       return !Number.isNaN(dateValue.getTime()) ? dateValue : null;
     }
 
-    if (dateValue && typeof dateValue.toDate === 'function') {
+    if (
+      dateValue &&
+      typeof dateValue === 'object' &&
+      'toDate' in dateValue &&
+      typeof dateValue.toDate === 'function'
+    ) {
       try {
-        const date = dateValue.toDate();
+        const date = (dateValue as { toDate: () => Date }).toDate();
         return !Number.isNaN(date.getTime()) ? date : null;
       } catch {
         return null;

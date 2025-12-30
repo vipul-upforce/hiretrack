@@ -259,21 +259,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       {({ isSubmitting, setFieldValue, values, errors }) => (
         <Form className="sticky top-0 mb-[70px] flex flex-col overflow-y-hidden border-t pt-4">
           <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4 pt-0">
-            <JobForm
-              job={job}
-              onRemoveExistingFile={(fileId) => {
-                setFieldValue('removedFiles', [
-                  ...(values.removedFiles ?? []),
-                  fileId,
-                ]);
-              }}
-              onRemoveExistingImage={(imageId) => {
-                setFieldValue('removedImages', [
-                  ...(values.removedImages || []),
-                  imageId,
-                ]);
-              }}
-            />
+            <JobForm />
 
             <CustomFields formName={formName} jobId={job._id} />
           </div>

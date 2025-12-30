@@ -28,7 +28,7 @@ function HeaderCell({
 }) {
   return (
     <TableHead
-      className={`h-12 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-400 ${
+      className={`h-12 px-4 text-xs font-medium uppercase tracking-wider text-gray-600 dark:text-gray-400 ${
         sortable ? 'cursor-pointer' : ''
       } ${className}`}
       onClick={() => (sortable && field ? onSort(field) : undefined)}

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CandidateCard } from '@/app/dashboard/jobs/[id]/components/Candidate/candidate-card';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
-import { Assignment } from '@/app/dashboard/page';
 import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
 import { toast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
@@ -9,12 +8,10 @@ import { useRefetchCandidateMutation } from '@/lib/features/candidate/candidateA
 
 function ActionItems({
   assignment,
-  fetchAssignments,
   setAssignments,
   assignments,
 }: {
   assignment: Candidate;
-  fetchAssignments: () => void;
   setAssignments: (a: Candidate[]) => void;
   assignments: Candidate[];
 }) {

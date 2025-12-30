@@ -28,12 +28,12 @@ export interface InterviewerObject {
  */
 export function isPopulatedJobId(jobId: unknown): jobId is JobObject {
   return (
-    typeof jobId === 'object'
-    && jobId !== null
-    && '_id' in jobId
-    && 'title' in jobId
-    && typeof (jobId as JobObject)._id === 'string'
-    && typeof (jobId as JobObject).title === 'string'
+    typeof jobId === 'object' &&
+    jobId !== null &&
+    '_id' in jobId &&
+    'title' in jobId &&
+    typeof (jobId as JobObject)._id === 'string' &&
+    typeof (jobId as JobObject).title === 'string'
   );
 }
 
@@ -44,12 +44,12 @@ export function isPopulatedInterviewer(
   interviewerId: unknown,
 ): interviewerId is InterviewerObject {
   return (
-    typeof interviewerId === 'object'
-    && interviewerId !== null
-    && '_id' in interviewerId
-    && 'name' in interviewerId
-    && typeof (interviewerId as InterviewerObject)._id === 'string'
-    && typeof (interviewerId as InterviewerObject).name === 'string'
+    typeof interviewerId === 'object' &&
+    interviewerId !== null &&
+    '_id' in interviewerId &&
+    'name' in interviewerId &&
+    typeof (interviewerId as InterviewerObject)._id === 'string' &&
+    typeof (interviewerId as InterviewerObject).name === 'string'
   );
 }
 
@@ -58,15 +58,19 @@ export function isPopulatedInterviewer(
  */
 export function hasValidTracking(
   candidate: unknown,
-): candidate is { tracking: { createdAt: string | Date; updatedAt: string | Date } } {
+): candidate is {
+  tracking: { createdAt: string | Date; updatedAt: string | Date };
+} {
   return (
-    typeof candidate === 'object'
-    && candidate !== null
-    && 'tracking' in candidate
-    && typeof (candidate as { tracking?: unknown }).tracking === 'object'
-    && (candidate as { tracking?: { createdAt?: unknown; updatedAt?: unknown } }).tracking !== null
-    && 'createdAt' in (candidate as { tracking: { createdAt?: unknown } }).tracking
-    && 'updatedAt' in (candidate as { tracking: { updatedAt?: unknown } }).tracking
+    typeof candidate === 'object' &&
+    candidate !== null &&
+    'tracking' in candidate &&
+    typeof (candidate as { tracking?: unknown }).tracking === 'object' &&
+    (candidate as { tracking?: { createdAt?: unknown; updatedAt?: unknown } })
+      .tracking !== null &&
+    'createdAt' in
+      (candidate as { tracking: { createdAt?: unknown } }).tracking &&
+    'updatedAt' in (candidate as { tracking: { updatedAt?: unknown } }).tracking
   );
 }
 
@@ -77,7 +81,7 @@ export function isValidDate(value: unknown): value is string | Date {
   if (value instanceof Date) return true;
   if (typeof value === 'string') {
     const date = new Date(value);
-    return !isNaN(date.getTime());
+    return !Number.isNaN(date.getTime());
   }
   return false;
 }

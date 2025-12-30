@@ -1,7 +1,6 @@
 import { DropResult } from '@hello-pangea/dnd';
 import { toast } from '@/hooks/use-toast';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import { useState } from 'react';
 import {
   useUpdateCandidateMutation,
@@ -13,12 +12,12 @@ import { sentStatusMailHandler } from '@/lib/utils';
 import { Job } from '@/types/job';
 import logger from '@/lib/logger';
 import { IJobLaneConfig } from '@/lib/models/JobLaneConfig';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { useClientSideChecklistValidation } from './useClientSideChecklistValidation';
 
 interface UseCandidateProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
-  user: User | null;
   setOpenRemarksFor: (id: string | null) => void;
   setIsDialogOpen: (open: boolean) => void;
   setDroppedFileData: (file: File | null) => void;
@@ -43,7 +42,6 @@ interface PendingMove {
 export const useCandidate = ({
   columns,
   setColumns,
-  user,
   setOpenRemarksFor,
   setIsDialogOpen,
   setDroppedFileData,
@@ -62,6 +60,8 @@ export const useCandidate = ({
   const [updateLanes] = useUpdateLanesMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
+
+  const { user } = useAppSelector((state) => state.auth);
 
   // Initialize client-side checklist validation
   const { validateCompleteMovement } = useClientSideChecklistValidation(

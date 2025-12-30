@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ICandidateHistory } from '@/lib/models/history';
-import { User } from '@/lib/features/users/usersApi';
+import { ILocalUser } from '@/lib/redux/authSlice';
 
 /**
  * Filters and sorts timeline items based on role visibility and other criteria
@@ -10,7 +10,7 @@ import { User } from '@/lib/features/users/usersApi';
  */
 export function useHistoryFiltering(
   timeLineItems: ICandidateHistory[],
-  user: User | null,
+  user: ILocalUser | null,
 ) {
   const filteredAndSortedItems = useMemo(
     () =>

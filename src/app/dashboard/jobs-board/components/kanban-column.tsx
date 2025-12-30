@@ -1,6 +1,6 @@
 'use client';
 
-import { Droppable } from '@hello-pangea/dnd';
+import { Droppable, DroppableProvided } from '@hello-pangea/dnd';
 import { Job } from '@/types/job';
 import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
 import JobCard from './job-card';
@@ -31,31 +31,31 @@ function KanbanColumn({
   onEmailSettingsClick,
 }: KanbanColumnProps) {
   return (
-    <div className="flex-1 min-w-[30px] px-2">
-      <div className="h-full flex flex-col bg-white/70 dark:bg-black/30 rounded-lg p-3 min-w-0 w-full max-w-full">
-        <div className="py-3 flex-shrink-0 px-2 mb-4">
+    <div className="min-w-[30px] flex-1 px-2">
+      <div className="flex h-full w-full min-w-0 max-w-full flex-col rounded-lg bg-white/70 p-3 dark:bg-black/30">
+        <div className="mb-4 flex-shrink-0 px-2 py-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300 truncate">
+            <h3 className="truncate text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
               {column.title}
             </h3>
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 px-2 py-1 rounded-full min-w-[24px] text-center shadow-sm">
+            <span className="min-w-[24px] rounded-full bg-white px-2 py-1 text-center text-xs font-medium text-gray-500 shadow-sm dark:bg-gray-700 dark:text-gray-400">
               {column.jobs.length}
             </span>
           </div>
         </div>
-        <div className="flex-1 overflow-hidden space-y-3 pr-2 min-w-0">
+        <div className="min-w-0 flex-1 space-y-3 overflow-hidden pr-2">
           <Droppable droppableId={column.id}>
-            {(provided: any) => (
+            {(provided: DroppableProvided) => (
               <CustomScrollbar className="h-full">
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className="h-auto space-y-3 pb-4 min-w-0"
+                  className="h-auto min-w-0 space-y-3 pb-4"
                 >
                   {isCreatingJob && column.id === 'draft' && (
-                    <div className="animate-pulse bg-gray-100 dark:bg-black rounded-xl p-4 shadow-sm">
-                      <div className="h-5 w-2/3 bg-gray-300 dark:bg-gray-700 rounded mb-2" />
-                      <div className="h-4 w-1/3 bg-gray-300 dark:bg-gray-700 rounded" />
+                    <div className="animate-pulse rounded-xl bg-gray-100 p-4 shadow-sm dark:bg-black">
+                      <div className="mb-2 h-5 w-2/3 rounded bg-gray-300 dark:bg-gray-700" />
+                      <div className="h-4 w-1/3 rounded bg-gray-300 dark:bg-gray-700" />
                     </div>
                   )}
 

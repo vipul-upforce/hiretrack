@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useMemo } from 'react';
 
-const getRandom = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const getRandom = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
 
 // Generate a random width class like w-32, w-24, w-40 etc
 const randomWidth = () => {
@@ -24,34 +25,38 @@ const randomWidth = () => {
 };
 
 function LoaderSkeleton() {
-  const columns = useMemo(() => [...Array(3)].map(() => ({
-    cards: [...Array(getRandom(3, 5))].map(() => ({
-      titleWidth: randomWidth(),
-      skills: [...Array(getRandom(1, 5))].map(() => randomWidth()),
-      customFields: [...Array(getRandom(1, 4))].map(() => randomWidth()),
-    })),
-  })), []);
+  const columns = useMemo(
+    () =>
+      [...Array(3)].map(() => ({
+        cards: [...Array(getRandom(3, 5))].map(() => ({
+          titleWidth: randomWidth(),
+          skills: [...Array(getRandom(1, 5))].map(() => randomWidth()),
+          customFields: [...Array(getRandom(1, 4))].map(() => randomWidth()),
+        })),
+      })),
+    [],
+  );
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden w-full animate-pulse">
+    <div className="flex h-screen w-full animate-pulse flex-col overflow-hidden">
       {/* HEADER */}
-      <div className="flex-shrink-0 px-4 border-b border-gray-200 dark:border-gray-700">
-        <Card className="border-0 shadow-none bg-transparent">
-          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+      <div className="flex-shrink-0 border-b border-gray-200 px-4 dark:border-gray-700">
+        <Card className="border-0 bg-transparent shadow-none">
+          <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
             <CardTitle className="text-xl font-bold">
               <Skeleton className="h-6 w-40" />
             </CardTitle>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
               <div className="flex items-center space-x-2">
                 <Skeleton className="h-4 w-4 rounded-md" />
                 <Skeleton className="h-4 w-28" />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <Skeleton className="h-8 w-32 rounded-md" />
                 <Skeleton className="h-8 w-40 rounded-md" />
-                <Skeleton className="h-8 w-50 rounded-md" />
+                <Skeleton className="w-50 h-8 rounded-md" />
                 <Skeleton className="h-8 w-40 rounded-md" />
               </div>
             </div>
@@ -60,8 +65,8 @@ function LoaderSkeleton() {
       </div>
 
       {/* FILTER */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3 flex-1" />
+      <div className="flex items-center gap-3 border-b border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-black">
+        <div className="flex flex-1 items-center gap-3" />
 
         <div className="flex gap-1">
           <Skeleton className="h-8 w-10 rounded-md" />
@@ -70,14 +75,14 @@ function LoaderSkeleton() {
       </div>
 
       {/* KANBAN */}
-      <div className="flex-1 overflow-hidden px-4 pb-4 mt-4">
+      <div className="mt-4 flex-1 overflow-hidden px-4 pb-4">
         <div className="h-full overflow-x-auto overflow-y-hidden">
-          <div className="h-full flex gap-1 min-w-full">
-            {columns.map((column, colIndex) => (
-              <div key={colIndex} className="flex-1 min-w-[300px] px-2">
-                <div className="flex flex-col bg-white/70 dark:bg-black/30 rounded-lg p-3 h-full">
+          <div className="flex h-full min-w-full gap-1">
+            {columns.map((column) => (
+              <div key={Math.random()} className="min-w-[300px] flex-1 px-2">
+                <div className="flex h-full flex-col rounded-lg bg-white/70 p-3 dark:bg-black/30">
                   {/* Column Header */}
-                  <div className="py-3 flex-shrink-0 px-2 mb-4">
+                  <div className="mb-4 flex-shrink-0 px-2 py-3">
                     <div className="flex items-center justify-between">
                       <Skeleton className="h-4 w-24" />
                       <Skeleton className="h-5 w-8 rounded-full" />
@@ -85,59 +90,62 @@ function LoaderSkeleton() {
                   </div>
 
                   {/* Job List */}
-                  <div className="flex-1 overflow-hidden space-y-3 pr-2 min-w-0">
-                    {column.cards.map((card, jobIndex) => (
+                  <div className="min-w-0 flex-1 space-y-3 overflow-hidden pr-2">
+                    {column.cards.map((card) => (
                       <div
-                        key={jobIndex}
-                        className="bg-white dark:bg-black border border-gray-200 dark:border-gray-700 p-5 rounded-xl shadow-sm relative w-full"
+                        key={Math.random()}
+                        className="relative w-full rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-black"
                       >
                         {/* Title row */}
-                        <div className="flex flex-wrap-reverse gap-3 items-center justify-between">
+                        <div className="flex flex-wrap-reverse items-center justify-between gap-3">
                           <Skeleton className={`h-5 ${card.titleWidth} mb-4`} />
 
                           <div className="flex flex-row gap-1">
-                            <Skeleton className="h-5 w-6 mb-4" />
-                            <Skeleton className="h-5 w-6 mb-4" />
-                            <Skeleton className="h-5 w-6 mb-4" />
+                            <Skeleton className="mb-4 h-5 w-6" />
+                            <Skeleton className="mb-4 h-5 w-6" />
+                            <Skeleton className="mb-4 h-5 w-6" />
                           </div>
                         </div>
 
                         <Separator />
 
                         {/* Candidates */}
-                        <div className="flex gap-2 mb-3 mt-4">
+                        <div className="mb-3 mt-4 flex gap-2">
                           <Skeleton className="h-4 w-4 rounded-full" />
                           <Skeleton className="h-4 w-32" />
                         </div>
 
                         {/* Experience */}
-                        <div className="flex gap-2 mb-3">
+                        <div className="mb-3 flex gap-2">
                           <Skeleton className="h-4 w-4 rounded-full" />
                           <Skeleton className="h-4 w-24" />
                         </div>
 
                         {/* Skills */}
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {card.skills.map((w, i) => (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {card.skills.map((w) => (
                             <Skeleton
-                              key={i}
+                              key={Math.random()}
                               className={`h-6 ${w} rounded-md`}
                             />
                           ))}
                         </div>
 
                         {/* Custom Fields */}
-                        <div className="space-y-2 mb-4">
-                          {card.customFields.map((w, i) => (
-                            <Skeleton key={i} className={`h-4 ${w}`} />
+                        <div className="mb-4 space-y-2">
+                          {card.customFields.map((w) => (
+                            <Skeleton
+                              key={Math.random()}
+                              className={`h-4 ${w}`}
+                            />
                           ))}
                         </div>
 
                         <Separator />
 
-                        <div className="w-full flex flex-row justify-between">
+                        <div className="flex w-full flex-row justify-between">
                           <div className="w-36" />
-                          <Skeleton className="h-4 w-32 mt-3" />
+                          <Skeleton className="mt-3 h-4 w-32" />
                         </div>
                       </div>
                     ))}

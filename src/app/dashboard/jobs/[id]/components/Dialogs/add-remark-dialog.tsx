@@ -4,7 +4,6 @@ import {
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
 import { useState } from 'react';
-import Cookies from 'js-cookie';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -23,7 +22,7 @@ import { sentStatusMailHandler } from '@/lib/utils';
 import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
 import { Switch } from '@/components/ui/switch';
 import { Eye, EyeOff } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { getTrackingDate } from '../../utils/candidateAccessors';
 // import { sentRemarkMail } from "@/lib/utils";
 
@@ -52,8 +51,10 @@ function AddRemarksDialog({
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
-  const { user } = useSelector((state: any) => state.auth || {});
-  const [selectedMentions, setSelectedMentions] = useState<Array<{_id: string; name: string; email: string; role: string}>>([]);
+  const { user } = useAppSelector((state) => state.auth || {});
+  const [selectedMentions, setSelectedMentions] = useState<
+    Array<{ _id: string; name: string; email: string; role: string }>
+  >([]);
 
   const handleAddRemark = async () => {
     if (isSubmitting) return;
@@ -88,7 +89,7 @@ function AddRemarksDialog({
             name: user.name,
             email: user.email,
           },
-          selectedMentionUserIds: selectedMentions.map(m => m._id),
+          selectedMentionUserIds: selectedMentions.map((m) => m._id),
         };
 
         // debugger;
@@ -141,17 +142,17 @@ function AddRemarksDialog({
           newEntry: newHistoryEntry,
         }).unwrap();
         const updatedCandidate = await updateCandidate(updateData).unwrap();
-        
+
         // Send status mail if status was recently updated (within 20 seconds)
         // This handles the case where remark dialog was opened after status update
-        const updatedAt = getTrackingDate(candidate, "updatedAt");
+        const updatedAt = getTrackingDate(candidate, 'updatedAt');
         const wasUpdatedRecently =
           updatedAt && Date.now() - updatedAt.getTime() <= 20 * 1000;
 
         if (wasUpdatedRecently) {
           await sentStatusMailHandler(updatedCandidate, sendStatusMail, {
             remark: newRemark.trim(),
-            rating: remarkRating,
+            rating: remarkRating || undefined,
           });
         }
         // sentRemarkMail(result, sendEmail);
@@ -163,7 +164,9 @@ function AddRemarksDialog({
         setRemarkRatingHistory(null);
         setOpenRemarksFor('');
 
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 100);
+        });
         await refetch();
         // debugger;
         onRemarkAdded?.(updatedCandidate);
@@ -192,7 +195,7 @@ function AddRemarksDialog({
       <DialogTrigger asChild>
         <div />
       </DialogTrigger>
-      <DialogContent size="lg" className="p-0  flex flex-col">
+      <DialogContent size="lg" className="flex flex-col p-0">
         <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>
             Add Remarks for
@@ -203,32 +206,32 @@ function AddRemarksDialog({
             include a rating and set privacy preferences.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1  px-6 py-4 space-y-4">
-              <MentionTextarea
-                placeholder="Add a remark... (Alt+Enter to submit)"
-                className="max-h-80 overflow-y-auto"
-                value={newRemark}
-                onChange={setNewRemark}
-                onKeyDown={(e) => {
-                  if (e.altKey && e.key === "Enter") {
-                    e.preventDefault();
-                    if (newRemark.trim() && !isSubmitting) {
-                      handleAddRemark();
-                    }
-                  }
-                }}
-                organizationId={user?.organizationId || ""}
-                currentUserRole={user?.role || ""}
-                rows={4}
-                isRemarkPrivate={isSubRemarkPrivate}
-                onSelectedMentionsChange={setSelectedMentions}
-              />
-          <div className="flex justify-between items-center">
+        <div className="flex-1 space-y-4 px-6 py-4">
+          <MentionTextarea
+            placeholder="Add a remark... (Alt+Enter to submit)"
+            className="max-h-80 overflow-y-auto"
+            value={newRemark}
+            onChange={setNewRemark}
+            onKeyDown={(e) => {
+              if (e.altKey && e.key === 'Enter') {
+                e.preventDefault();
+                if (newRemark.trim() && !isSubmitting) {
+                  handleAddRemark();
+                }
+              }
+            }}
+            organizationId={(user?.organizationId as string) || ''}
+            currentUserRole={user?.role || ''}
+            rows={4}
+            isRemarkPrivate={isSubRemarkPrivate}
+            onSelectedMentionsChange={setSelectedMentions}
+          />
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Label htmlFor="rating">Ratings:</Label>
               <Rating
                 name="half-rating"
-                onChange={(e, value) => {
+                onChange={(_, value) => {
                   setRemarkRating(value || null);
                   setRemarkRatingHistory(value || null);
                 }}
@@ -262,13 +265,15 @@ function AddRemarksDialog({
               <Switch
                 id="privacy-toggle-submit"
                 checked={isSubRemarkPrivate}
-                onCheckedChange={() => setIsSubRemarkPrivate(!isSubRemarkPrivate)}
-                className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
+                onCheckedChange={() =>
+                  setIsSubRemarkPrivate(!isSubRemarkPrivate)
+                }
+                className="border-1 ml-2 h-4 w-8 border border-solid drop-shadow-lg"
               />
             </div>
           </div>
         </div>
-        <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
+        <DialogFooter className="sticky bottom-0 z-10 border-t bg-background px-6 py-4">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             No Remarks
           </Button>
