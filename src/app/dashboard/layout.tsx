@@ -1,5 +1,5 @@
+import DashboardLayoutClient from '@/components/dashboard/dashboard-layout-client';
 import React from 'react';
-import DashboardLayoutClient from './dashboard-layout-client';
 
 export default function DashboardLayout({
   children,
