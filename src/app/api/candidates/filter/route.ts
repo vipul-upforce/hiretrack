@@ -379,9 +379,15 @@ export async function POST(request: NextRequest) {
                     '$assignment',
                     {
                       interviewerId: {
-                        _id: '$interviewer._id',
-                        name: '$interviewer.name',
-                        email: '$interviewer.email',
+                        $cond: {
+                          if: { $gt: ['$interviewer._id', null] },
+                          then: {
+                            _id: '$interviewer._id',
+                            name: '$interviewer.name',
+                            email: '$interviewer.email',
+                          },
+                          else: null,
+                        },
                       },
                     },
                   ],

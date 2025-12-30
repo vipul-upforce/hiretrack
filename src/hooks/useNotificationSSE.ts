@@ -8,7 +8,6 @@ import { useAppDispatch } from '@/lib/redux/hooks';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
-// Singleton SSE connection manager
 type Subscriber = {
   id: string;
   onNotificationCountUpdated?: (count: number) => void;
@@ -23,6 +22,7 @@ type Subscriber = {
   ) => void;
   onClientsUpdate?: (clients: number) => void;
   onConnectionChange?: (connected: boolean) => void;
+  onTabCountUpdate?: (count: number) => void;
 };
 
 class SSEManager {
@@ -79,10 +79,7 @@ class SSEManager {
 
   private async handleUnauthorizedError(): Promise<boolean> {
     // Prevent multiple simultaneous refresh attempts
-    if (this.isRefreshingToken) {
-      return false;
-    }
-
+    if (this.isRefreshingToken) return false;
     this.isRefreshingToken = true;
     try {
       // Attempt to refresh the token
@@ -188,8 +185,6 @@ class SSEManager {
           this.connect();
         }, 1000);
       }
-
-      // If successful connection occurs, elsewhere in `onopen` remember to reset `this.reconnectAttempts = 0`
     };
   }
 
@@ -202,8 +197,18 @@ class SSEManager {
     candidates?: unknown;
     lanes?: string[];
     clients?: number;
+    activeTabs?: number;
     error?: string;
   }) {
+    if (
+      (data?.type === 'connectionStatus' || data?.type === 'connected') &&
+      typeof data.activeTabs === 'number'
+    ) {
+      this.subscribers.forEach((sub) => {
+        sub.onTabCountUpdate?.(data.activeTabs as number);
+      });
+    }
+
     if (
       data?.type === 'notificationCountUpdated' &&
       typeof data.count === 'number'
@@ -299,7 +304,6 @@ class SSEManager {
   }
 }
 
-// Singleton instance
 const sseManager = new SSEManager();
 
 export function useNotificationSSE(
@@ -311,18 +315,21 @@ export function useNotificationSSE(
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [notification, setNotification] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<string[]>([]);
-  // Candidate update state
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [lanes, setLanes] = useState<string[]>();
   const [jobId, setJobId] = useState<string | null>(null);
   const [laneRenamed, setLaneRenamed] = useState<boolean>(false);
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
+  const [activeTabCount, setActiveTabCount] = useState<number>(1);
   const subscriberIdRef = useRef<string>(
     `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
   );
 
-  // Callbacks for SSE events
+  const handleTabCountUpdate = useCallback((count: number) => {
+    setActiveTabCount(count);
+  }, []);
+
   const handleNotificationCountUpdated = useCallback((count: number) => {
     setTotalCount((c) => c + 1);
     setUnreadCount(count);
@@ -404,11 +411,11 @@ export function useNotificationSSE(
       onLanesUpdate: handleLanesUpdate,
       onClientsUpdate: handleClientsUpdate,
       onConnectionChange: handleConnectionChange,
+      onTabCountUpdate: handleTabCountUpdate,
     });
-
+    
     // Set initial connection state
     setIsConnected(sseManager.getConnectionState());
-
     return unsubscribe;
   }, [
     dispatch,
@@ -420,6 +427,7 @@ export function useNotificationSSE(
     handleLanesUpdate,
     handleClientsUpdate,
     handleConnectionChange,
+    handleTabCountUpdate,
   ]);
 
   return {
@@ -434,5 +442,6 @@ export function useNotificationSSE(
     isConnected,
     jobId,
     laneRenamed,
+    activeTabCount,
   };
 }

@@ -16,6 +16,8 @@ export interface IUCandidateAccount {
   refreshTokens?: RefreshTokenEntry[];
   isDeleted?: boolean;
   appliedApplications: [string];
+  otp?: number;
+  otpExpires?: Date;
 }
 
 export const candidateAccountSchema = new Schema<IUCandidateAccount>(
@@ -62,6 +64,14 @@ export const candidateAccountSchema = new Schema<IUCandidateAccount>(
     },
     appliedApplications: {
       type: [String],
+      required: false,
+    },
+    otp: {
+      type: Number,
+      required: false,
+    },
+    otpExpires: {
+      type: Date,
       required: false,
     },
   },

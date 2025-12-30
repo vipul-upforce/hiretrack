@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, LogOut, Link2Icon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -77,6 +77,24 @@ const SidebarContent = memo(
     totalCount,
   }: SidebarContentProps) => {
     const pathname = usePathname();
+    const STORAGE_KEY = 'portal_sidebar_collapsed';
+
+    // Save state to Local Storage whenever isCollapsed changes
+    useEffect(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(isCollapsed));
+    }, [isCollapsed]);
+
+    // Load state from Local Storage on initial mount
+    useEffect(() => {
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      if (savedState !== null) {
+        const shouldBeCollapsed = JSON.parse(savedState);
+        
+        if (shouldBeCollapsed !== isCollapsed) {
+          onToggleCollapse();
+        }
+      }
+    }, []);
 
     const getUserInitials = (name?: string) => {
       if (!name) return 'U';
@@ -306,8 +324,6 @@ const SidebarContent = memo(
     prevProps.onNotificationClick === nextProps.onNotificationClick &&
     prevProps.onPageChange === nextProps.onPageChange &&
     prevProps.onLogout === nextProps.onLogout,
-  // Note: We intentionally ignore notificationsData changes when dropdown is closed
-  // to prevent re-renders during polling
 );
 
 SidebarContent.displayName = 'SidebarContent';

@@ -70,7 +70,7 @@ function UsersPage() {
       });
     } catch (errorMessage: unknown) {
       toast({
-        description: `Error: ${
+        description: `${
           typeof errorMessage === 'object' &&
           errorMessage !== null &&
           'data' in errorMessage &&
