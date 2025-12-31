@@ -60,7 +60,6 @@ export interface NormalizedAssignment {
     }>;
     lastSyncedAt?: Date | string;
   };
-  jobId?: string | JobObject;
 }
 
 /**
@@ -177,7 +176,6 @@ export function normalizeAssignment(
         : undefined,
     assignedAt,
     googleMeet: assignmentObj.googleMeet as NormalizedAssignment['googleMeet'],
-    jobId: assignmentObj.jobId as string | JobObject | undefined,
   };
 }
 

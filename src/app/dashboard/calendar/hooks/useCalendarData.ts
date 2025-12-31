@@ -24,7 +24,7 @@ export function useCalendarData(
     setSelectedEvent as (
       candidate: Candidate | CustomCalendarEvent | null,
     ) => void,
-    selectedEvent as Candidate | CustomCalendarEvent | null,
+    selectedEvent as Candidate | null,
   );
 
   useEffect(() => {
