@@ -42,7 +42,7 @@ export default function CandidateDetailsPage() {
     if (isError) {
       const status = (error as FetchBaseQueryError)?.status;
       if (status === 401) {
-        window.location.href = `/auth/login?redirect=${pathname?.slice(1)}`;
+        window.location.href = `/auth/login?redirect=${pathname}`;
         return;
       }
 
