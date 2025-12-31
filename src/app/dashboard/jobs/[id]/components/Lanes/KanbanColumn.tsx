@@ -252,8 +252,8 @@ const KanbanColumn = memo(
                   ? candidate.skills.length
                   : 0;
               case 'appliedDate':
-                return candidate.appliedDate
-                  ? new Date(candidate.appliedDate).getTime()
+                return candidate.tracking?.createdAt
+                  ? new Date(candidate.tracking?.createdAt as string).getTime()
                   : 0;
               case 'assignmentDate':
                 return candidate.assignment?.time

@@ -150,7 +150,6 @@ export const useJobProgressPage = () => {
   } = useKanbanBoard({
     columns,
     setColumns,
-    user,
     jobId: id,
     setIsConfirmLaneDeleteOpen,
     setIsLaneEditOpen,
@@ -170,7 +169,6 @@ export const useJobProgressPage = () => {
   } = useCandidate({
     columns,
     setColumns,
-    user,
     setOpenRemarksFor,
     setIsDialogOpen,
     setDroppedFileData,

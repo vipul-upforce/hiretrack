@@ -16,7 +16,7 @@ interface UseKanbanBoardProps {
   jobId?: string; // NEW: Add jobId for job-specific operations
   setIsConfirmLaneDeleteOpen: (open: boolean) => void;
   setIsLaneEditOpen: (open: boolean) => void;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<unknown>;
 }
 
 export const useKanbanBoard = ({

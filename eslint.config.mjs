@@ -63,7 +63,7 @@ const eslintConfig = [
         'error',
         {
           props: true,
-          ignorePropertyModificationsFor: ['state', 'draft'],
+          ignorePropertyModificationsFor: ['state', 'draft', 'e'],
         },
       ],
       // --- SENIOR'S REQUIRED OVERRIDES (From provided preset) ---

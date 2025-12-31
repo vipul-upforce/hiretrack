@@ -25,7 +25,7 @@ interface UseCandidateProps {
   setIsDeleteDialogOpen: (open: boolean) => void;
   setSelectedCandidate: (candidate: Candidate | null) => void;
   selectedCandidate: Candidate | null;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<unknown>;
   candidateToDelete: string | null;
   jobLaneConfig?: IJobLaneConfig;
   job?: Job;
