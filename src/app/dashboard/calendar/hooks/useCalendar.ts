@@ -81,7 +81,10 @@ export function useCalendar(): UseCalendarReturn {
   const { user } = useAppSelector((state) => state.auth);
   const role = user?.role || '';
 
-  const { candidates: sseCandidates } = useSSE(setSelectedEvent, selectedEvent);
+  const { candidates: sseCandidates } = useSSE(
+    setSelectedEvent,
+    selectedEvent as Candidate | null,
+  );
 
   // Refetch on mount
   useEffect(() => {
@@ -194,15 +197,11 @@ export function useCalendar(): UseCalendarReturn {
           (typeof assignment.jobId === 'object' && assignment.jobId?.skills) ||
           [];
         const assignmentSkills = assignment.skills || [];
-        const assignmentJobSkills =
-          (typeof assignment.assignment?.jobId !== 'string' &&
-            assignment.assignment?.jobId?.skills) ||
-          [];
-        const allSkills = [
-          ...jobSkills,
-          ...assignmentSkills,
-          ...assignmentJobSkills,
-        ];
+        // const assignmentJobSkills =
+        //   (typeof assignment.assignment?.jobId !== 'string' &&
+        //     assignment.assignment?.jobId?.skills) ||
+        //   [];
+        const allSkills = [...jobSkills, ...assignmentSkills];
 
         return (
           searchRegex.test(assignment.name || '') ||

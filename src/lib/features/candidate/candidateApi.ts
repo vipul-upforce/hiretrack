@@ -84,7 +84,15 @@ export const candidateApi = baseApi.injectEndpoints({
       providesTags: ['Candidate'],
     }),
     fetchAssignments: builder.query<
-      any,
+      [
+        {
+          data: Candidate[];
+          totalInterviews: number;
+          todaysInterviews: number;
+          thisweeksInterviews: number;
+          assignmentCount: InterviewerAssignmentCountEntry[];
+        },
+      ],
       {
         isPagination?: boolean;
         page?: number;

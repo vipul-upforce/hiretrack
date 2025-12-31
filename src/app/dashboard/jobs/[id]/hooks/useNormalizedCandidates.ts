@@ -7,11 +7,13 @@ import { useMemo } from 'react';
 import { useFetchCandidatesQuery } from '@/lib/features/candidate/candidateApi';
 import { useSSE } from '@/hooks/useSSE';
 import { Candidate } from '@/types/candidate';
-import { normalizeCandidate, NormalizedCandidate } from '../utils/candidateNormalizer';
+import {
+  normalizeCandidate,
+  NormalizedCandidate,
+} from '../utils/candidateNormalizer';
 
 interface UseNormalizedCandidatesProps {
   jobId: string;
-  role: string;
   setSelectedCandidate: (candidate: Candidate | null) => void;
   selectedCandidate: Candidate | null;
 }
@@ -22,7 +24,6 @@ interface UseNormalizedCandidatesProps {
  */
 export function useNormalizedCandidates({
   jobId,
-  role,
   setSelectedCandidate,
   selectedCandidate,
 }: UseNormalizedCandidatesProps) {
@@ -35,8 +36,7 @@ export function useNormalizedCandidates({
 
   // Get SSE candidates (only if setSelectedCandidate is provided)
   const { candidates: sseCandidates } = useSSE(
-    role || '',
-    setSelectedCandidate || (() => {}),
+    setSelectedCandidate,
     selectedCandidate || null,
     jobId,
   );

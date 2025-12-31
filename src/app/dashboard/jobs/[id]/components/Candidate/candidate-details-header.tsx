@@ -49,6 +49,7 @@ export default function DetailsDialogHeader({
   const router = useRouter();
   const pathname = usePathname();
 
+  const { user } = useAppSelector((state) => state.auth);
   const [isDownloadDialogOpen, setIsDownloadDialogOpen] = useState(false);
   const { userRole: role } = useAuth();
   const handlePopoverContentClick = (e: React.MouseEvent) => {
