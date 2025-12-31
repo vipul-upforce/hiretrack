@@ -5,6 +5,7 @@ import './globals.css';
 import AuthInitializer from '@/components/AuthInitializer';
 import React, { Suspense } from 'react';
 import { getPortalMetadata } from '@/lib/getPortalMetadata';
+import { generatePortalMetadata } from '@/lib/utils/generatePortalMetadata';
 import { Providers } from './providers';
 import { ClientLayout } from './client-layout';
 import LoadingScreen from './loading-screen';
@@ -27,57 +28,9 @@ const geistMono = Geist_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const portalData = await getPortalMetadata();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-
-  // Construct absolute URLs for images
-  const logoUrl = portalData.portalLogo?.url
-    ? `${baseUrl}${portalData.portalLogo.url}`
-    : undefined;
-  const faviconUrl = portalData.portalFavicon?.url
-    ? `${baseUrl}${portalData.portalFavicon.url}`
-    : undefined;
-
-  const title = portalData.portalName;
-  const description = `${portalData.portalName} - Streamline your recruitment process with our modern applicant tracking system.`;
-
-  return {
-    title: {
-      default: title,
-      template: `%s - ${title}`,
-    },
-    description,
-    openGraph: {
-      title,
-      description,
-      siteName: portalData.portalName,
-      locale: 'en_US',
-      type: 'website',
-      ...(logoUrl && {
-        images: [
-          {
-            url: logoUrl,
-            width: 1200,
-            height: 630,
-            alt: `${portalData.portalName} Logo`,
-          },
-        ],
-      }),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      ...(logoUrl && {
-        images: [logoUrl],
-      }),
-    },
-    ...(faviconUrl && {
-      icons: {
-        icon: faviconUrl,
-        apple: faviconUrl,
-      },
-    }),
-  };
+  return generatePortalMetadata(portalData, {
+    description: `${portalData.portalName} - Streamline your recruitment process with our modern applicant tracking system.`,
+  });
 }
 
 export default function RootLayout({
@@ -105,6 +58,25 @@ export default function RootLayout({
                   console.warn('Failed to initialize theme:', e);
                 }
               })();
+            `,
+            }}
+          />
+          <style
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html: `
+              :root {
+                --portal-primary: #6366f1;
+                --portal-secondary: #8b5cf6;
+                --portal-primary-rgb: 99, 102, 241;
+                --portal-secondary-rgb: 139, 92, 246;
+                --portal-primary-hover: #4f46e5;
+                --portal-primary-light: #818cf8;
+                --portal-secondary-hover: #7c3aed;
+                --portal-secondary-light: #a78bfa;
+                --focus-ring-color: rgba(99, 102, 241, 0.2);
+                --input-border-focus: #6366f1;
+              }
             `,
             }}
           />
