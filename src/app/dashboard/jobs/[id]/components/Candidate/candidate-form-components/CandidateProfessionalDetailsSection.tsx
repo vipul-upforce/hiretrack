@@ -5,13 +5,17 @@ import { useState, useEffect } from 'react';
 import { normalizeCTCToLPA, formatCTCAsLPA } from '@/lib/ctc-normalizer';
 
 export function CandidateProfessionalDetailsSection() {
-  const { setFieldValue, submitCount, errors } = useFormikContext();
+  const { setFieldValue, submitCount } = useFormikContext();
   const [expectedCTCField, expectedCTCMeta] = useField('expectedCTC');
   const [currentCTCField, currentCTCMeta] = useField('currentCTC');
   const [noticePeriodField, noticePeriodMeta] = useField('noticePeriod');
 
-  const [convertedExpectedCTC, setConvertedExpectedCTC] = useState<number | null>(null);
-  const [convertedCurrentCTC, setConvertedCurrentCTC] = useState<number | null>(null);
+  const [convertedExpectedCTC, setConvertedExpectedCTC] = useState<
+    number | null
+  >(null);
+  const [convertedCurrentCTC, setConvertedCurrentCTC] = useState<number | null>(
+    null,
+  );
   const [showExpectedCTCWarning, setShowExpectedCTCWarning] = useState(false);
   const [showCurrentCTCWarning, setShowCurrentCTCWarning] = useState(false);
 
@@ -28,22 +32,20 @@ export function CandidateProfessionalDetailsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="pb-2 border-b border-gray-200 dark:border-gray-700 hidden lg:block">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <div className="w-2 h-2 bg-purple-500 rounded-full" />
+      <div className="hidden border-b border-gray-200 pb-2 dark:border-gray-700 lg:block">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100">
+          <div className="h-2 w-2 rounded-full bg-purple-500" />
           Professional Details
         </h3>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="space-y-2" data-form-field="expectedCTC">
           <div className="flex flex-col">
             <Label
               htmlFor="expectedCTC"
               className="text-sm font-semibold text-gray-900 dark:text-gray-100"
             >
-              Expected CTC (LPA)
-              {' '}
-              <span className="text-red-500">*</span>
+              Expected CTC (LPA) <span className="text-red-500">*</span>
             </Label>
           </div>
           <Input
@@ -75,23 +77,23 @@ export function CandidateProfessionalDetailsSection() {
               expectedCTCField.onBlur(e);
             }}
             className={`h-9 px-3 transition-all duration-200 ${
-              expectedCTCMeta.error && (expectedCTCMeta.touched || submitCount > 0)
+              expectedCTCMeta.error &&
+              (expectedCTCMeta.touched || submitCount > 0)
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 dark:border-gray-600'
             }`}
           />
-          {(expectedCTCMeta.touched || submitCount > 0) && expectedCTCMeta.error && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <span className="w-1 h-1 bg-red-500 rounded-full" />
-              {expectedCTCMeta.error}
-            </p>
-          )}
+          {(expectedCTCMeta.touched || submitCount > 0) &&
+            expectedCTCMeta.error && (
+              <p className="flex items-center gap-1 text-sm text-red-500">
+                <span className="h-1 w-1 rounded-full bg-red-500" />
+                {expectedCTCMeta.error}
+              </p>
+            )}
           {showExpectedCTCWarning && convertedExpectedCTC !== null && (
-            <p className="text-sm text-orange-500 flex items-center gap-1 mt-1">
-              <span className="w-1 h-1 bg-orange-500 rounded-full" />
-              Will be saved as
-              {' '}
-              {formatCTCAsLPA(convertedExpectedCTC)}
+            <p className="mt-1 flex items-center gap-1 text-sm text-orange-500">
+              <span className="h-1 w-1 rounded-full bg-orange-500" />
+              Will be saved as {formatCTCAsLPA(convertedExpectedCTC)}
             </p>
           )}
         </div>
@@ -102,9 +104,7 @@ export function CandidateProfessionalDetailsSection() {
               htmlFor="currentCTC"
               className="text-sm font-semibold text-gray-900 dark:text-gray-100"
             >
-              Current CTC (LPA)
-              {' '}
-              <span className="text-red-500">*</span>
+              Current CTC (LPA) <span className="text-red-500">*</span>
             </Label>
           </div>
           <Input
@@ -136,56 +136,56 @@ export function CandidateProfessionalDetailsSection() {
               currentCTCField.onBlur(e);
             }}
             className={`h-9 px-3 transition-all duration-200 ${
-              currentCTCMeta.error && (currentCTCMeta.touched || submitCount > 0)
+              currentCTCMeta.error &&
+              (currentCTCMeta.touched || submitCount > 0)
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 dark:border-gray-600'
             }`}
           />
-          {(currentCTCMeta.touched || submitCount > 0) && currentCTCMeta.error && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <span className="w-1 h-1 bg-red-500 rounded-full" />
-              {currentCTCMeta.error}
-            </p>
-          )}
+          {(currentCTCMeta.touched || submitCount > 0) &&
+            currentCTCMeta.error && (
+              <p className="flex items-center gap-1 text-sm text-red-500">
+                <span className="h-1 w-1 rounded-full bg-red-500" />
+                {currentCTCMeta.error}
+              </p>
+            )}
           {showCurrentCTCWarning && convertedCurrentCTC !== null && (
-            <p className="text-sm text-orange-500 flex items-center gap-1 mt-1">
-              <span className="w-1 h-1 bg-orange-500 rounded-full" />
-              Will be saved as
-              {' '}
-              {formatCTCAsLPA(convertedCurrentCTC)}
+            <p className="mt-1 flex items-center gap-1 text-sm text-orange-500">
+              <span className="h-1 w-1 rounded-full bg-orange-500" />
+              Will be saved as {formatCTCAsLPA(convertedCurrentCTC)}
             </p>
           )}
         </div>
 
         <div
-          className="space-y-2 col-span-1 lg:col-span-2"
+          className="col-span-1 space-y-2 lg:col-span-2"
           data-form-field="noticePeriod"
         >
           <Label
             htmlFor="noticePeriod"
             className="text-sm font-semibold text-gray-900 dark:text-gray-100"
           >
-            Notice Period (days)
-            {' '}
-            <span className="text-red-500">*</span>
+            Notice Period (days) <span className="text-red-500">*</span>
           </Label>
           <Input
             id="noticePeriod"
             placeholder="Enter notice period in days"
             type="number"
             {...noticePeriodField}
-            className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${
-              noticePeriodMeta.error && (noticePeriodMeta.touched || submitCount > 0)
+            className={`h-9 w-full px-3 transition-all duration-200 lg:max-w-xs ${
+              noticePeriodMeta.error &&
+              (noticePeriodMeta.touched || submitCount > 0)
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 dark:border-gray-600'
             }`}
           />
-          {(noticePeriodMeta.touched || submitCount > 0) && noticePeriodMeta.error && (
-            <p className="text-sm text-red-500 flex items-center gap-1">
-              <span className="w-1 h-1 bg-red-500 rounded-full" />
-              {noticePeriodMeta.error}
-            </p>
-          )}
+          {(noticePeriodMeta.touched || submitCount > 0) &&
+            noticePeriodMeta.error && (
+              <p className="flex items-center gap-1 text-sm text-red-500">
+                <span className="h-1 w-1 rounded-full bg-red-500" />
+                {noticePeriodMeta.error}
+              </p>
+            )}
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ import {
   useDeleteCandidateMutation,
   useBulkArchiveCandidatesMutation,
 } from '@/lib/features/candidate/candidateApi';
+import { Job } from '@/types/job';
 import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { SearchResultsSkeletonLoader } from './search-results/skeleton-loader';
 import { ResultsHeader } from './search-results/results-header';
@@ -58,7 +59,7 @@ export function SearchResults({
     null,
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isJobDialogOpen, setIsJobDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [candidateToEdit, setCandidateToEdit] = useState<Candidate | null>(
@@ -121,11 +122,13 @@ export function SearchResults({
       return candidates.filter((candidate) =>
         filters.every((filter) => {
           switch (filter) {
-            case 'top-scorer':
+            case 'top-scorer': {
+              if (!candidate.scores?.overall) return false;
               return candidate.scores?.overall >= 7;
+            }
             case 'unassigned':
               return !candidate.jobId || typeof candidate.jobId !== 'object';
-            case 'interview-scheduled':
+            case 'interview-scheduled': {
               const hasValidInterviewer =
                 candidate.assignment &&
                 candidate.assignment.interviewerId &&
@@ -133,20 +136,25 @@ export function SearchResults({
                 candidate.assignment.interviewerId._id &&
                 candidate.assignment.interviewerId.name;
               return hasValidInterviewer;
+            }
             case 'exp-1+':
               return candidate.experience >= 1;
             case 'exp-3+':
               return candidate.experience >= 3;
             case 'exp-5+':
               return candidate.experience >= 5;
-            case 'applied-this-week':
+            case 'applied-this-week': {
               const oneWeekAgo = new Date();
               oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+              if (!candidate.createdAt) return false;
               return new Date(candidate.createdAt) >= oneWeekAgo;
-            case 'applied-this-month':
+            }
+            case 'applied-this-month': {
               const oneMonthAgo = new Date();
               oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-              return new Date(candidate.createdAt) >= oneMonthAgo;
+              if (!candidate.createdAt) return false;
+              return new Date(candidate.createdAt as string) >= oneMonthAgo;
+            }
             case 'archived':
               return candidate.isDeleted === true;
             default:
@@ -457,7 +465,7 @@ export function SearchResults({
     setIsAddRemarkOpen(true);
   }, []);
 
-  const handleJobClick = useCallback((job: any) => {
+  const handleJobClick = useCallback((job: Job) => {
     setSelectedJob(job);
     setIsJobDialogOpen(true);
   }, []);

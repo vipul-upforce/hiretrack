@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { User } from '@/lib/mongodb';
+import connectToDatabase, { CandidateAccount, User } from '@/lib/mongodb';
 import {
   getAuthenticatedUser,
   signAccessToken,
@@ -129,6 +129,17 @@ export async function PUT(
       if (existingUser) {
         return NextResponse.json(
           { error: 'Email already exists for another user' },
+          { status: 400 },
+        );
+      }
+
+      const existingCandidate = await CandidateAccount?.findOne({
+        email: userData.email
+      });
+
+      if(existingCandidate){
+        return NextResponse.json(
+          { error: 'Email already exists for candidate.' },
           { status: 400 },
         );
       }

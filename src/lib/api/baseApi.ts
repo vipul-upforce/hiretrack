@@ -13,7 +13,6 @@ const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
     '/api/auth/login',
     '/api/auth/signup',
     '/api/auth/forgot-password',
-    '/api/auth/reset-password',
     '/api/auth/2fa/send-otp',
     '/api/auth/2fa/verify-otp',
     { url: 'api/jobs/open', methods: ['GET'] },

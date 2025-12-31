@@ -6,15 +6,14 @@ import { useToast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
 import { useUpdateCandidateMutation } from '@/lib/features/candidate/candidateApi';
 import { useFetchOrgTagsQuery } from '@/lib/features/org/orgApi';
-import { User } from '@/lib/features/users/usersApi';
 import { ITag } from '@/lib/models/organization';
 import { Candidate } from '@/types/candidate';
 import { Settings } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import ManageTagsDialog from './manage-tags-dialog';
 
 interface TagsDialogProps {
-  user: User | null;
   candidate: Candidate;
   refetch: () => void;
   onClose: () => void;
@@ -22,12 +21,12 @@ interface TagsDialogProps {
 }
 
 function TagsDialog({
-  user,
   candidate,
   refetch,
   onClose,
   isDialog,
 }: TagsDialogProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const orgId: string =
     user && typeof user.organizationId === 'string' ? user?.organizationId : '';
   const {
@@ -115,7 +114,7 @@ function TagsDialog({
       </div>
       {isLoading && (
         <div className="flex justify-center">
-          <LoadingSpinner w={4} />
+          <LoadingSpinner width={4} />
         </div>
       )}
       {!isLoading && (error || candidateError) && (
@@ -156,7 +155,7 @@ function TagsDialog({
           disabled={isUpdating || !hasChanges}
           className="min-w-[80px]"
         >
-          {isUpdating ? <LoadingSpinner w={4} /> : 'Save'}
+          {isUpdating ? <LoadingSpinner width={4} /> : 'Save'}
         </Button>
       </div>
       {isManageTagsOpen && (

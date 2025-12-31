@@ -50,6 +50,7 @@ const eslintConfig = [
 
   // 4. RULES & SETTINGS
   {
+    files: ['**/*.ts', '**/*.tsx'],
     rules: {
       // -- IGNORED RULE BY US
       'security/detect-non-literal-fs-filename': 'off',
@@ -58,6 +59,13 @@ const eslintConfig = [
       'no-restricted-syntax': 'off',
       'no-await-in-loop': 'off',
       'no-useless-escape': 'off',
+      'no-param-reassign': [
+        'error',
+        {
+          props: true,
+          ignorePropertyModificationsFor: ['state', 'draft'],
+        },
+      ],
       // --- SENIOR'S REQUIRED OVERRIDES (From provided preset) ---
       'react/jsx-filename-extension': 'off',
       'import/extensions': 'off',

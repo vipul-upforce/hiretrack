@@ -2,9 +2,9 @@ import { useField, useFormikContext } from 'formik';
 import { Label } from '@/components/ui/label';
 import { FileUpload } from '@/components/ui/file-upload';
 import { MobileFileUpload } from '@/components/ui/file-upload-mobile';
-import { useSelector } from 'react-redux';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
 import { toast } from '@/hooks/use-toast';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface CandidateResumeSectionProps {
   setTempResumeUrl: (url: string) => void;
@@ -17,48 +17,64 @@ export function CandidateResumeSection({
 }: CandidateResumeSectionProps) {
   const { setFieldValue, setTouched, submitCount } = useFormikContext();
   const [resumeField, resumeMeta] = useField('resume');
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
 
-  const handleFileSelect = async (files: File[]) => {
+  /**
+   * Handles candidate file selection, including file size/rule enforcement and preview.
+   * Always returns a value to satisfy async return contract for event handlers
+   */
+  const handleFileSelect = async (files: File[]): Promise<false | void> => {
     const sanitizedFiles = sanitizeFiles(files);
-    if (!user && files[0].size > 3 * 1024 * 1024) {
+
+    // Return early if no file is present after sanitization
+    if (!sanitizedFiles || sanitizedFiles.length === 0) return false;
+
+    const selectedFile = sanitizedFiles[0];
+
+    // Guest: 3MB max
+    if (!user && selectedFile.size > 3 * 1024 * 1024) {
       toast({
-        title: `File "${files[0].name}" exceeds 3MB. Please upload a smaller file.`,
+        title: `File "${selectedFile.name}" exceeds 3MB. Please upload a smaller file.`,
         variant: 'destructive',
       });
       return false;
     }
+    // Candidate: 3MB max
     if (
-      user
-      && (user.role === 'candidate' || user.role === '')
-      && files[0].size > 3 * 1024 * 1024
+      user &&
+      (user.role === 'candidate' || user.role === '') &&
+      selectedFile.size > 3 * 1024 * 1024
     ) {
       toast({
         title: 'File size exceeds 3MB. Please upload a smaller file.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
+    // HR/admin/interviewer: 50MB max
     if (
-      user
-      && ['hr', 'admin', 'interviewer'].includes(user.role)
-      && files[0].size > 50 * 1024 * 1024
+      user &&
+      ['hr', 'admin', 'interviewer'].includes(user.role) &&
+      selectedFile.size > 50 * 1024 * 1024
     ) {
       toast({
-        title: 'File size exceeds 3MB. Please upload a smaller file.',
+        title: 'File size exceeds 50MB. Please upload a smaller file.',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
-    setFieldValue('resume', sanitizedFiles[0]);
+
+    setFieldValue('resume', selectedFile);
 
     // Create a temporary blob URL for immediate client-side preview
-    setTempResumeUrl(URL.createObjectURL(sanitizedFiles[0]));
+    setTempResumeUrl(URL.createObjectURL(selectedFile));
 
+    // Await upload if consumer passed in a handler
     if (onFileUpload) {
-      await onFileUpload(sanitizedFiles[0]);
+      await onFileUpload(selectedFile);
     }
+
     setTimeout(() => {
       setTouched({
         name: false,
@@ -72,19 +88,25 @@ export function CandidateResumeSection({
         email: false,
       });
     }, 100);
+
+    // Explicitly return undefined to satisfy all code paths
+    return undefined;
   };
 
+  /**
+   * Simple setter for resume field with sanitization, non-async
+   */
   const handleSetter = (files: File[]) => {
     const sanitizedFiles = sanitizeFiles(files);
-    setFieldValue('resume', sanitizedFiles[0]);
+    if (sanitizedFiles && sanitizedFiles.length > 0) {
+      setFieldValue('resume', sanitizedFiles[0]);
+    }
   };
 
   return (
     <div className="space-y-3" data-form-field="resume">
       <Label className="font-semibold">
-        Resume
-        {' '}
-        <span className="text-red-500">*</span>
+        Resume <span className="text-red-500">*</span>
       </Label>
 
       {/* Mobile Upload */}

@@ -17,23 +17,22 @@ import type { SearchFilter } from '../candidate-search';
 
 interface BasicSearchSectionProps {
   values: SearchFilter;
-  errors: Record<string, any>;
-  touched: Record<string, any>;
   handleChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   handleBlur: (
-    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
-  setFieldValue: (field: string, value: any) => void;
+  setFieldValue: (
+    field: string,
+    value: string | number | boolean | string[],
+  ) => void;
   hasError: (fieldName: string) => boolean;
   getErrorMessage: (fieldName: string) => string;
 }
 
 export function BasicSearchSection({
   values,
-  errors,
-  touched,
   handleChange,
   handleBlur,
   setFieldValue,
@@ -43,7 +42,7 @@ export function BasicSearchSection({
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {/* Candidate Name */}
           <div className="space-y-1">
             <Label htmlFor="name" className="text-sm font-medium">
@@ -93,9 +92,16 @@ export function BasicSearchSection({
               placeholder="Type and press Enter to add skills"
               fullWidth
               value={values.skills}
-              onChange={(skills: any) => setFieldValue('skills', skills)}
-              onSuggestionClick={(suggestion: any) => {
-                setFieldValue('skills', [...(values.skills || []), suggestion]);
+              onChange={(skills: string | number | boolean | string[]) =>
+                setFieldValue('skills', skills)
+              }
+              onSuggestionClick={(
+                suggestion: string | number | boolean | string[],
+              ) => {
+                setFieldValue('skills', [
+                  ...(values.skills || []),
+                  suggestion as string,
+                ]);
               }}
             />
           </div>

@@ -5,11 +5,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Candidate } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
+import { useAuth } from '@/app/hooks/useAuth';
 
 interface CandidateDetailsActionsProps {
   candidate: Candidate;
-  user: User | null;
   fromFilter: boolean;
   hideEditButton: boolean;
   hideCloseButtons: boolean;
@@ -26,7 +25,6 @@ interface CandidateDetailsActionsProps {
  */
 export function CandidateDetailsActions({
   candidate,
-  user,
   fromFilter,
   hideEditButton,
   hideCloseButtons,
@@ -37,6 +35,7 @@ export function CandidateDetailsActions({
   onClose,
   onAssignJob,
 }: CandidateDetailsActionsProps) {
+  const { userRole, email } = useAuth();
   if (fromFilter) {
     return (
       <div>
@@ -48,21 +47,25 @@ export function CandidateDetailsActions({
   }
 
   return (
-    <div className="flex justify-between w-full">
-      {user?.role !== 'candidate' && (
+    <div className="flex w-full justify-between">
+      {userRole !== 'candidate' && (
         <div className="flex gap-2">
           <Button
-            className={user?.role === 'interviewer' ? 'hidden' : ''}
+            className={userRole === 'interviewer' ? 'hidden' : ''}
             variant="primary"
             onClick={onAssign}
           >
             Assign To
           </Button>
-          <Button onClick={onUnassign} disabled={!candidate.assignment} variant="outline">
+          <Button
+            onClick={onUnassign}
+            disabled={!candidate.assignment}
+            variant="outline"
+          >
             Mark As Done
           </Button>
 
-          {user?.role !== 'interviewer' && (
+          {userRole !== 'interviewer' && (
             <Button onClick={onAddFollowUp} variant="outline">
               {candidate?.followUp?.note || candidate?.followUp?.date
                 ? 'Edit Follow Up'
@@ -72,11 +75,9 @@ export function CandidateDetailsActions({
         </div>
       )}
       <div className="flex gap-2">
-        {!hideEditButton && user?.role !== 'interviewer' && (
+        {!hideEditButton && userRole !== 'interviewer' && (
           <Button
-            disabled={
-              user?.role === 'candidate' && user.email !== candidate?.email
-            }
+            disabled={userRole === 'candidate' && email !== candidate?.email}
             variant="secondary"
             onClick={onEdit}
           >

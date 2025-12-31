@@ -2,16 +2,16 @@ import { useField, useFormikContext } from 'formik';
 import { Label } from '@/components/ui/label';
 import { FileUpload } from '@/components/ui/file-upload'; // Assuming desktop version used on desktop
 import { MobileFileUpload } from '@/components/ui/file-upload-mobile'; // Assuming mobile used on mobile
-import { useSelector } from 'react-redux';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
 import { toast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
+import { useAppSelector } from '@/lib/redux/hooks';
 // import { useMediaQuery } from "@/hooks/use-media-query"; // Assuming we might need this, or just use hidden classes
 
 export function CandidateAttachmentsSection() {
   const { setFieldValue } = useFormikContext();
   const [attachmentsField] = useField('attachments');
-  const { user } = useSelector((state: any) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
 
   // We can determine layout via CSS classes (hidden lg:block etc)
@@ -32,9 +32,9 @@ export function CandidateAttachmentsSection() {
           return false;
         }
         if (
-          user
-          && (user.role === 'candidate' || user.role === '')
-          && file.size > 3 * 1024 * 1024
+          user &&
+          (user.role === 'candidate' || user.role === '') &&
+          file.size > 3 * 1024 * 1024
         ) {
           toast({
             title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
@@ -43,9 +43,9 @@ export function CandidateAttachmentsSection() {
           return false;
         }
         if (
-          user
-          && ['hr', 'admin', 'interviewer'].includes(user.role)
-          && file.size > 50 * 1024 * 1024
+          user &&
+          ['hr', 'admin', 'interviewer'].includes(user.role) &&
+          file.size > 50 * 1024 * 1024
         ) {
           toast({
             title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
@@ -73,9 +73,9 @@ export function CandidateAttachmentsSection() {
 
     const updatedFileSelection = [...currentFiles, ...newFiles];
     if (
-      user
-      && updatedFileSelection.length > 2
-      && (user.role === 'candidate' || user.role === '')
+      user &&
+      updatedFileSelection.length > 2 &&
+      (user.role === 'candidate' || user.role === '')
     ) {
       toast({
         title: 'Maximum 2 files are allowed',
@@ -93,9 +93,9 @@ export function CandidateAttachmentsSection() {
 
   return (
     <div className="space-y-4">
-      <div className="pb-2 border-b border-gray-200 dark:border-gray-700 hidden lg:block">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <div className="w-2 h-2 bg-cyan-500 rounded-full" />
+      <div className="hidden border-b border-gray-200 pb-2 dark:border-gray-700 lg:block">
+        <h3 className="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-gray-100">
+          <div className="h-2 w-2 rounded-full bg-cyan-500" />
           Additional Documents
         </h3>
       </div>
@@ -108,8 +108,7 @@ export function CandidateAttachmentsSection() {
         <MobileFileUpload
           accept={{}}
           maxFiles={
-            (user && (user.role === 'candidate' || user.role === ''))
-            || !user
+            (user && (user.role === 'candidate' || user.role === '')) || !user
               ? 2
               : 30
           }
@@ -125,8 +124,7 @@ export function CandidateAttachmentsSection() {
         <FileUpload
           accept={{}}
           maxFiles={
-            (user && (user.role === 'candidate' || user.role === ''))
-            || !user
+            (user && (user.role === 'candidate' || user.role === '')) || !user
               ? 2
               : 30
           }

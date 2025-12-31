@@ -18,6 +18,7 @@ import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
 import { followUpSepretorPatternRegex } from '@/lib/constants';
 import { useSSE } from '@/hooks/useSSE';
 import { evaluateCandidate } from '@/app/apply-jobs/utils/guestApplicationUtils';
+import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
 import { EditCandidateDialog } from './edit-candidate-dialog';
 import { AssignCandidateDialog } from './assign-candidate-dialog';
 import { AssignJobDialog } from './assign-job-dialog';
@@ -51,8 +52,7 @@ export function CandidateDetailsDialog({
   const pathname = usePathname();
   const id = useParams()?.id as string;
 
-  const [refetchCandidate, { data: candidateData }] =
-    useLazyFetchCandidatesQuery();
+  const [refetchCandidate] = useLazyFetchCandidatesQuery();
   const [
     fetchHistory,
     {
@@ -84,7 +84,20 @@ export function CandidateDetailsDialog({
   const [isRefetching, setIsRefetching] = useState(false);
 
   // useSSE already handles updating localCandidate when SSE updates arrive
-  useSSE(setLocalCandidate, localCandidate || null, id);
+  // Fix: ensure setLocalCandidate matches required fn signature expected by useSSE
+  useSSE(
+    (candidateOrEvent: Candidate | CustomCalendarEvent | null) => {
+      // Only update state if the type really is Candidate
+      if (
+        candidateOrEvent &&
+        (candidateOrEvent as Candidate)._id !== undefined
+      ) {
+        setLocalCandidate(candidateOrEvent as Candidate);
+      }
+    },
+    localCandidate || null,
+    id,
+  );
 
   // Load history when history tab is activated
   useEffect(() => {
@@ -201,7 +214,7 @@ export function CandidateDetailsDialog({
     setIsRefetching(true);
     const jobId = (id as string) || getJobId(candidate) || '';
     const result = await refetchCandidate(jobId);
-    const updatedCandidate = result.data!.find(
+    const updatedCandidate = result.data?.find(
       (c) => c._id === localCandidate?._id,
     );
 
@@ -398,7 +411,6 @@ export function CandidateDetailsDialog({
         <DetailsDialogHeader
           candidate={localCandidate}
           handleCandidateInfoCopy={handleCandidateInfoCopy}
-          user={user}
           refetch={async () => {
             if (
               pathname !== '/dashboard' &&
@@ -448,7 +460,6 @@ export function CandidateDetailsDialog({
           setRemarkRatingHistory={setRemarkRatingHistory}
           isSubRemarkPrivate={isSubRemarkPrivate}
           setIsSubRemarkPrivate={setIsSubRemarkPrivate}
-          user={user}
           localCandidate={candidate}
           handleRemoveFollowUp={handleRemoveFollowUp}
           handleAddRemark={handleAddRemark}
@@ -460,7 +471,6 @@ export function CandidateDetailsDialog({
       <div className="flex space-x-2 border-t border-gray-200 pt-4 dark:border-gray-700">
         <CandidateDetailsActions
           candidate={localCandidate}
-          user={user}
           fromFilter={fromFilter || false}
           hideEditButton={hideEditButton}
           hideCloseButtons={hideCloseButtons}

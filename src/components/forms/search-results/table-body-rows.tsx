@@ -28,6 +28,7 @@ import { CompactCircularScores } from '@/app/dashboard/jobs/[id]/components/Util
 import { memo, useCallback, useRef, useState, useEffect } from 'react';
 import type { Candidate } from '@/types/candidate';
 import { cn } from '@/lib/utils';
+import { Job } from '@/types/job';
 
 interface TableBodyRowsProps {
   candidates: Candidate[];
@@ -40,7 +41,7 @@ interface TableBodyRowsProps {
   onAssignJob: (candidate: Candidate) => void;
   onDelete: (candidate: Candidate) => void;
   onAddRemark: (candidate: Candidate) => void;
-  onJobClick: (job: any) => void;
+  onJobClick: (job: Job) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -167,7 +168,7 @@ export const TableBodyRows = memo(
     );
 
     const handleJobClick = useCallback(
-      (job: any, e: React.MouseEvent) => {
+      (job: Job, e: React.MouseEvent) => {
         e.stopPropagation();
         onJobClick(job);
       },
@@ -277,7 +278,9 @@ export const TableBodyRows = memo(
                       <Badge
                         variant="outline"
                         className="cursor-pointer border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40"
-                        onClick={(e) => handleJobClick(candidate.jobId, e)}
+                        onClick={(e) =>
+                          handleJobClick(candidate.jobId as Job, e)
+                        }
                       >
                         {jobInfo.jobTitle}
                       </Badge>
@@ -353,13 +356,17 @@ export const TableBodyRows = memo(
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={(e) => handleViewDetails(candidate, e as any)}
+                        onClick={(e) =>
+                          handleViewDetails(candidate, e as React.MouseEvent)
+                        }
                       >
                         <Info className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={(e) => handleEdit(candidate, e as any)}
+                        onClick={(e) =>
+                          handleEdit(candidate, e as React.MouseEvent)
+                        }
                       >
                         <Edit className="mr-2 h-4 w-4" />
                         Edit
@@ -369,7 +376,10 @@ export const TableBodyRows = memo(
                         candidate.jobId.title && (
                           <DropdownMenuItem
                             onClick={(e) =>
-                              handleAssignInterviewer(candidate, e as any)
+                              handleAssignInterviewer(
+                                candidate,
+                                e as React.MouseEvent,
+                              )
                             }
                           >
                             <UserPlus className="mr-2 h-4 w-4" />
@@ -377,13 +387,17 @@ export const TableBodyRows = memo(
                           </DropdownMenuItem>
                         )}
                       <DropdownMenuItem
-                        onClick={(e) => handleAssignJob(candidate, e as any)}
+                        onClick={(e) =>
+                          handleAssignJob(candidate, e as React.MouseEvent)
+                        }
                       >
                         <Briefcase className="mr-2 h-4 w-4" />
                         Assign Job
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={(e) => handleDelete(candidate, e as any)}
+                        onClick={(e) =>
+                          handleDelete(candidate, e as React.MouseEvent)
+                        }
                       >
                         <Archive className="mr-2 h-4 w-4" />
                         {candidate.isDeleted ? 'Unarchived' : 'Archive'}
@@ -395,7 +409,10 @@ export const TableBodyRows = memo(
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={(e) =>
-                                handleAddRemark(candidate, e as any)
+                                handleAddRemark(
+                                  candidate,
+                                  e as React.MouseEvent,
+                                )
                               }
                             >
                               <Plus className="mr-2 h-4 w-4" />

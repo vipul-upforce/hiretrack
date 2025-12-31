@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DashboardSkeleton } from '@/components/skeletons/dashboard-skeleton';
 import logger from '@/lib/logger';
+import { INotification } from '@/lib/notifications';
 import DashboardCards from './components/DashboardCards';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
@@ -440,7 +441,7 @@ export default function DashboardPage() {
   }, [isActivitiesSidebarOpen]);
 
   // Notification handlers
-  const handleNotificationClick = async (notification: any) => {
+  const handleNotificationClick = async (notification: INotification) => {
     if (!notification.isRead) {
       markAsRead(notification._id);
     }
@@ -556,7 +557,7 @@ export default function DashboardPage() {
           }`}
         >
           {isLoading || !assignments ? (
-            <DashboardSkeleton role={user?.role} />
+            <DashboardSkeleton role={user?.role || null} />
           ) : (
             <>
               <DashboardCards assignmentsCounts={assignmentsCounts} />
@@ -592,7 +593,6 @@ export default function DashboardPage() {
                               })()}
                               assignments={assignments}
                               setAssignments={setAssignments}
-                              fetchAssignments={() => {}}
                             />
                           </div>
                         ))}
