@@ -992,6 +992,18 @@ export async function GET(
       );
     }
 
+    if (userData.role === 'candidate') {
+      const candidateEmail = candidate.email?.toLowerCase();
+      const userEmail = userData.email?.toLowerCase();
+
+      if (candidateEmail !== userEmail) {
+        return NextResponse.json(
+          { error: "You cannot view other candidate's profile" },
+          { status: 403 },
+        );
+      }
+    }
+
     // Extract jobId for history query
     const jobId =
       typeof candidate.jobId === 'object' &&
