@@ -18,7 +18,7 @@ interface LoginFormProps {
     setSubmitting: (isSubmitting: boolean) => void,
   ) => void;
   isLoading: boolean;
-  isSuccess: boolean; // Added isSuccess prop
+  isSuccess: boolean;
   showCompanyField?: boolean;
   captchaEnabled?: boolean;
   captchaSiteKey: string | null;
@@ -28,13 +28,15 @@ interface LoginFormProps {
   onOrgClick: () => void;
   selectedOrgId?: string;
   organizations: OneOfMulOrganization[];
+  showCandidateSignup?: boolean;
+  onSignupClick?: () => void;
 }
 
 export function LoginForm({
   branding,
   onSubmit,
   isLoading,
-  isSuccess, // Destructure isSuccess
+  isSuccess,
   showCompanyField,
   captchaEnabled,
   captchaSiteKey,
@@ -44,6 +46,8 @@ export function LoginForm({
   onOrgClick,
   selectedOrgId,
   organizations,
+  showCandidateSignup,
+  onSignupClick,
 }: LoginFormProps) {
   const { theme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +64,6 @@ export function LoginForm({
     },
     validationSchema: loginSchema,
     onSubmit: (values, { setSubmitting }) => {
-      // Pass values AND the setSubmitting helper to the parent
       onSubmit(values, setSubmitting);
     },
   });
@@ -77,10 +80,7 @@ export function LoginForm({
     (o) => o.orgId === selectedOrgId,
   )?.name;
 
-  // Combine parent loading state and local formik submitting state
   const isBusy = isLoading || formik.isSubmitting;
-
-  // Disable if busy, OR if login was successful (redirecting), OR if captcha is enabled but token is missing
   const isDisabled = isBusy || isSuccess || (captchaEnabled && !captchaToken);
 
   return (
@@ -278,6 +278,31 @@ export function LoginForm({
               'Sign In'
             )}
           </motion.button>
+
+          {showCandidateSignup && (
+            <div className="pt-2 duration-300 animate-in fade-in zoom-in slide-in-from-top-2">
+              <div className="relative mb-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Don&apos;t have an account?
+                  </span>
+                </div>
+              </div>
+              <motion.button
+                type="button"
+                onClick={onSignupClick}
+                disabled={isDisabled}
+                className="border-primary/50 hover:bg-primary/5 w-full rounded-lg border-2 py-2.5 text-sm font-medium text-foreground transition-all hover:border-primary disabled:opacity-50"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                Sign Up as Candidate
+              </motion.button>
+            </div>
+          )}
         </form>
       </div>
     </motion.div>

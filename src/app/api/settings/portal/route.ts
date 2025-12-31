@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
 import { handleSingleFile } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import path from 'path';
 import fs from 'fs';
+import path from 'path';
 import https from 'https';
 import http from 'http';
 import { pipeline } from 'stream';
@@ -44,101 +44,73 @@ async function saveFavicon(
       fs.mkdirSync(destDir, { recursive: true });
     }
 
-    const downloadImage = async (
-      url: string,
-      outputPath: string,
-      authToken?: string,
-    ): Promise<void> => {
-      const protocol = url.startsWith('https') ? https : http;
-
-      return new Promise((resolve, reject) => {
-        const options = {
-          headers: authToken ? { Cookie: `token=${authToken}` } : {},
-        };
-
-        protocol
-          .get(url, options, (res) => {
-            if (res.statusCode !== 200) {
-              reject(
-                new Error(
-                  `Failed to download image: HTTP status ${res.statusCode}`,
-                ),
-              );
-              return;
-            }
-
-            const contentType = res.headers['content-type']?.toLowerCase();
-            if (!contentType?.startsWith('image/')) {
-              reject(
-                new Error(`Invalid content type: ${contentType || 'unknown'}`),
-              );
-              return;
-            }
-
-            const writeStream = fs.createWriteStream(outputPath);
-            writeStream.on('finish', () => {
-              writeStream.close(() => resolve());
-            });
-            writeStream.on('error', (err) => {
-              writeStream.close();
-              reject(new Error(`Failed to write image: ${err.message}`));
-            });
-
-            streamPipeline(res, writeStream).catch((err) => {
-              writeStream.close();
-              reject(new Error(`Stream pipeline error: ${err.message}`));
-            });
-          })
-          .on('error', (err) =>
-            reject(new Error(`Network error: ${err.message}`)),
-          );
-      });
-    };
-
     const isRemote =
       sourceUrl.startsWith('http') || sourceUrl.startsWith('/api/');
-    const tempImagePath = path.join(
-      process.cwd(),
-      'temp',
-      `favicon-${Date.now()}.tmp`,
-    );
 
-    let inputImagePath = sourceUrl;
+    // CASE A: Remote File (URL or Internal API)
     if (isRemote) {
+      // Resolve full URL if it's an internal API path
+      let fullUrl = sourceUrl;
       const parsedUrl = parse(sourceUrl, true);
       const pathName = parsedUrl.query.pathName as string | undefined;
-
       const baseUrl =
         process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-      let fullUrl = sourceUrl;
+
       if (pathName) {
         const normalizedPath = path.posix
           .normalize(decodeURI(pathName))
           .replace(/\\/g, '/');
         fullUrl = `${baseUrl}/api/files?pathName=${encodeURIComponent(normalizedPath)}`;
-      } else if (!sourceUrl.startsWith('http')) {
+      } else if (sourceUrl.startsWith('/api/')) {
+        // Handle direct /api/ paths that might not have pathName params
         fullUrl = `${baseUrl}${sourceUrl}`;
       }
 
-      const tempDir = path.dirname(tempImagePath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
+      // Stream directly from Network -> Final File
+      await new Promise<void>((resolve, reject) => {
+        const protocol = fullUrl.startsWith('https') ? https : http;
+        const options = {
+          headers: token ? { Cookie: `token=${token}` } : {},
+        };
 
-      await downloadImage(fullUrl, tempImagePath, token);
-      inputImagePath = tempImagePath;
-    } else {
-      inputImagePath = path.resolve(process.cwd(), decodeURI(sourceUrl));
+        const request = protocol.get(fullUrl, options, (res) => {
+          if (res.statusCode !== 200) {
+            reject(
+              new Error(
+                `Failed to download image: HTTP status ${res.statusCode}`,
+              ),
+            );
+            return;
+          }
+
+          // Create the write stream directly to the final destination
+          const fileWriteStream = fs.createWriteStream(finalDestPath);
+
+          // pipeline to manage flow and errors automatically
+          streamPipeline(res, fileWriteStream)
+            .then(() => resolve())
+            .catch((err) => {
+              // close stream on error
+              fileWriteStream.end();
+              reject(new Error(`Stream pipeline error: ${err.message}`));
+            });
+        });
+
+        request.on('error', (err) =>
+          reject(new Error(`Network error: ${err.message}`)),
+        );
+      });
+    }
+    // CASE B: Local File
+    else {
+      const inputImagePath = path.resolve(process.cwd(), decodeURI(sourceUrl));
+
       if (!fs.existsSync(inputImagePath)) {
         throw new Error(`Local source file does not exist: ${inputImagePath}`);
       }
-    }
 
-    // Instead of resizing/converting, just copy the file as-is
-    await fs.promises.copyFile(inputImagePath, finalDestPath);
-
-    if (isRemote && fs.existsSync(tempImagePath)) {
-      await fs.promises.unlink(tempImagePath);
+      // Simple copy for local files (highly optimized by OS)
+      await fs.promises.copyFile(inputImagePath, finalDestPath);
     }
   } catch (error) {
     logger.error({ error }, `saveFavicon error`);

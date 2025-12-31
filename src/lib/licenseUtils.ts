@@ -4,7 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
 import os from 'os';
-import { logger } from '@/lib/logger/logger.server';
+import logger from '@/lib/logger/';
 
 // License file path (in project root parent directory)
 export const LICENSE_PATH = path.join(process.cwd(), '..', 'license.json');

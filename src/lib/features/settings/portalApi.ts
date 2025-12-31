@@ -52,21 +52,46 @@ export const portalApi = baseApi.injectEndpoints({
       providesTags: ['Assets'],
     }),
     downloadAssets: builder.mutation<DownloadAssetsResponse, void>({
-      query: () => ({
-        url: '/download/assets',
-        method: 'GET',
-        responseHandler: async (response) => {
-          const blob = await response.blob();
-          const contentDisposition = response.headers.get(
-            'Content-Disposition',
-          );
-          const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-          const filename = fileNameMatch
-            ? fileNameMatch[1]
-            : `assets-${Date.now()}.tar.gz`;
-          return { blob, filename };
-        },
-      }),
+      queryFn: async (_arg, _api, _extraOptions, baseQuery) => {
+        const result = await baseQuery({
+          url: '/download/assets',
+          method: 'GET',
+          responseHandler: (response) =>
+            response.ok ? response.blob() : response.json(),
+        });
+
+        // 1. Handle Network Errors
+        if (result.error) {
+          return { error: result.error };
+        }
+
+        const { data, meta } = result;
+        const response = (meta as { response?: Response })?.response;
+
+        // 2. Handle API Errors
+        if (!response?.ok) {
+          return {
+            error: {
+              status: response?.status ?? 500,
+              data,
+            },
+          } 
+        }
+
+        // 3. Handle Success
+        const contentDisposition = response.headers.get('Content-Disposition');
+        const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
+        const filename = fileNameMatch
+          ? fileNameMatch[1]
+          : `assets-${Date.now()}.tar.gz`;
+
+        return {
+          data: {
+            blob: data as Blob,
+            filename,
+          },
+        };
+      },
       invalidatesTags: ['Assets'],
     }),
     getMailTemplates: builder.query({

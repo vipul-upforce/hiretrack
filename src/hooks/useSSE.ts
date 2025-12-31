@@ -30,10 +30,8 @@ export async function getDecodedCaptcha(encodedData: string, orgId: string) {
 }
 export const useSSE = (
   // role: string,
-  setSelectedCandidate: (
-    candidate: Candidate | CustomCalendarEvent | null,
-  ) => void,
-  selectedCandidate: Candidate | CustomCalendarEvent | null,
+  setSelectedCandidate: (candidate: Candidate | null) => void,
+  selectedCandidate: Candidate | null,
   jobId?: string,
 ) => {
   // Use the consolidated notification SSE connection

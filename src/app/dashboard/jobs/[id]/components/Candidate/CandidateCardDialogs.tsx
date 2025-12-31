@@ -5,7 +5,6 @@
 
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Candidate } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { Dispatch, SetStateAction } from 'react';
 import { EditCandidateDialog } from '../Dialogs/edit-candidate-dialog';
@@ -22,7 +21,6 @@ import { getJobTitle } from '../../utils/candidateAccessors';
 
 interface CandidateCardDialogsProps {
   candidate: Candidate;
-  user: User | null;
   // Dialog states
   isEditing: boolean;
   setIsEditing: (open: boolean) => void;
@@ -66,7 +64,6 @@ interface CandidateCardDialogsProps {
 
 export function CandidateCardDialogs({
   candidate,
-  user,
   isEditing,
   setIsEditing,
   isAssigning,
@@ -124,7 +121,6 @@ export function CandidateCardDialogs({
         <DialogContent className="w-[330px]">
           <div className="h-full">
             <TagsDialog
-              user={user}
               isDialog
               candidate={candidate}
               refetch={() => {

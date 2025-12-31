@@ -134,7 +134,6 @@ export default function JobProgressPage() {
     refetch,
   } = useNormalizedCandidates({
     jobId: id,
-    role: user?.role || '',
     setSelectedCandidate: setTempSelectedCandidate,
     selectedCandidate: tempSelectedCandidate,
   });
