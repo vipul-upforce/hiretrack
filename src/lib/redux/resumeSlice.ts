@@ -93,7 +93,7 @@ export const resumeSlice = createSlice({
     ) => {
       const { idx, field, value } = action.payload;
       const workExperience = draft.workExperiences[idx];
-      workExperience[field] = value as any;
+      workExperience[field] = value as string[] & string;
     },
     changeEducations: (
       draft,
@@ -103,7 +103,7 @@ export const resumeSlice = createSlice({
     ) => {
       const { idx, field, value } = action.payload;
       const education = draft.educations[idx];
-      education[field] = value as any;
+      education[field] = value as string[] & string;
     },
     changeProjects: (
       draft,
@@ -111,7 +111,7 @@ export const resumeSlice = createSlice({
     ) => {
       const { idx, field, value } = action.payload;
       const project = draft.projects[idx];
-      project[field] = value as any;
+      project[field] = value as string[] & string;
     },
     changeSkills: (
       draft,
@@ -158,6 +158,9 @@ export const resumeSlice = createSlice({
           draft.projects.push(structuredClone(initialProject));
           return draft;
         }
+        default: {
+          return draft;
+        }
       }
     },
     moveSectionInForm: (
@@ -186,6 +189,7 @@ export const resumeSlice = createSlice({
           draft[form][idx + 1] = section;
         }
       }
+      return draft;
     },
     deleteSectionInFormByIdx: (
       draft,
@@ -196,7 +200,7 @@ export const resumeSlice = createSlice({
         draft[form].splice(idx, 1);
       }
     },
-    setResume: (draft, action: PayloadAction<Resume>) => action.payload,
+    setResume: (_draft, action: PayloadAction<Resume>) => action.payload,
   },
 });
 

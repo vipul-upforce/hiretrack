@@ -261,7 +261,7 @@ export const candidateSchema = new Schema(
     status: {
       type: String,
       validate: {
-        async validator(status: string) {
+        async validator(this: ICandidate, status: string) {
           // Skip validation if no status is provided
           if (!status) return true;
 
@@ -272,7 +272,7 @@ export const candidateSchema = new Schema(
           const Organization = mongoose.model('Organization');
 
           try {
-            const job = await Job.findById(this.jobId as string);
+            const job = await Job.findById(this.jobId);
             if (!job) return true; // Allow if job not found (will be handled elsewhere)
 
             // Check if job uses custom lanes

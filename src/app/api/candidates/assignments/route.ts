@@ -15,7 +15,6 @@ import { ICandidate } from '@/lib/models/candidate';
 
 export async function GET(req: NextRequest) {
   try {
-    debugger;
     // Connect to database and authenticate in parallel
     const [userData] = await Promise.all([
       getAuthenticatedUser(req, ['admin', 'hr', 'interviewer']),
