@@ -95,6 +95,7 @@ const userLogin = async (
     return NextResponse.json(
       {
         organizations: orgs,
+        loggedIn: false,
         message:
           'User exists in multiple organizations. Please specify the organization to login.',
       },
@@ -428,7 +429,7 @@ const checkMultipleOrgs = async (
 
     if (!orgMap.has(userOrgId)) {
       orgMap.set(userOrgId, {
-        userOrgId,
+        orgId:userOrgId.toString(),
         name: orgInfo?.name,
         isCandidate: false,
         accountTypes: ['user'],
@@ -450,7 +451,7 @@ const checkMultipleOrgs = async (
 
     if (!orgMap.has(candidateOrgId)) {
       orgMap.set(candidateOrgId, {
-        candidateOrgId,
+        orgId:candidateOrgId.toString(),
         name: orgInfo?.name,
         isCandidate: true,
         accountTypes: ['candidate'],
@@ -497,8 +498,12 @@ async function handleLogin(req: NextRequest) {
         $ne: true,
       },
     });
-    const candidates = await CandidateAccount.find({ email }).lean();
-    console.log('users', users, 'candidates', candidates);
+    const candidates = await CandidateAccount.find({
+      email,
+      isDeleted: {
+        $ne: true,
+      },
+    }).lean();
     // Check if email exists in either collection
     if (users.length === 0 && candidates.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

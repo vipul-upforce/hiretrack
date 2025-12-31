@@ -4,6 +4,7 @@ import { OrgInfo } from '@/lib/models/user';
 import { NextResponse } from 'next/server';
 import { fetchUserFromToken, ILocalUser, logout } from '@/lib/redux/authSlice';
 import logger from '@/lib/logger';
+import { portalApi } from '../settings';
 
 interface AuthRequest {
   email: string;
@@ -25,6 +26,7 @@ interface User {
 
 interface AuthResponse {
   message: string;
+  loggedIn?: boolean;
   user: User;
   _id?: string;
   twofa?: boolean;
@@ -36,6 +38,7 @@ interface AuthResponse {
 interface VerifyOtpRequest {
   email: string;
   otp: string;
+  isCandidate?: boolean;
 }
 
 interface SendOtpRequest {
@@ -67,7 +70,28 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ['Users'],
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const result = await queryFulfilled;
+          // Only invalidate tags if login was successful
+          if (result.data.loggedIn === true) {
+            // Manually invalidate the Users tag only on successful login
+            dispatch(
+              authApi.util.invalidateTags(['Users'])
+            );
+            dispatch(
+              portalApi.util.invalidateTags(['Settings'])
+            );
+            // dispatch(
+            //   portalApi.endpoints.getPortalConfigs.initiate(undefined, { forceRefetch: true })
+            // );
+
+          }
+        } catch (error) {
+          // Don't invalidate on error
+          logger.error('Login failed:', error);
+        }
+      },
     }),
     signup: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
@@ -75,7 +99,6 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ['Users'],
     }),
     verifyOtp: builder.mutation<AuthResponse, VerifyOtpRequest>({
       query: (data) => ({
