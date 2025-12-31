@@ -281,36 +281,54 @@ export default function CalendarPage() {
                   eventTextColor="#fff"
                   slotMinTime="00:00:00"
                   slotMaxTime="24:00:00"
-                  // eslint-disable-next-line react/jsx-no-bind, react/no-unstable-nested-components
+                  // eslint-disable-next-line react/no-unstable-nested-components
                   eventContent={(arg) => {
-                    if (calendarView === 'listWeek') {
-                      // List view has its own rendering
-                      return null;
-                    }
-
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/naming-convention
-                    // eslint-disable-next-line no-underscore-dangle
-                    const extendedProps = arg.event._def.extendedProps as {
+                    const extendedProps = arg.event.extendedProps as {
                       candidate: CandidateAssignment;
                       interviewer: { _id: string; name: string; email: string };
                     };
                     const { candidate, interviewer } = extendedProps;
+
                     const jobTitle =
                       typeof candidate.jobId !== 'string' &&
                       candidate.jobId?.title
                         ? candidate.jobId.title
                         : candidate.jobDetails?.title || '';
 
+                    const currentView = arg.view.type;
+
+                    if (currentView === 'listWeek') {
+                      return (
+                        <div className="flex flex-col gap-0.5 py-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">
+                              {candidate.name}
+                            </span>
+                            {jobTitle && (
+                              <span className="text-xs text-muted-foreground">
+                                • {jobTitle}
+                              </span>
+                            )}
+                          </div>
+                          {interviewer.name &&
+                            interviewer.name !== 'Unknown' && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <span className="font-medium">
+                                  Interviewer:
+                                </span>
+                                {interviewer.name}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    }
+
                     if (
-                      calendarView === 'timeGridWeek' ||
-                      calendarView === 'timeGridDay'
+                      currentView === 'timeGridWeek' ||
+                      currentView === 'timeGridDay'
                     ) {
-                      // Time grid view
                       return (
                         <div className="h-full w-full overflow-hidden break-words px-2 py-1">
-                          {/* <div className="font-semibold text-xs truncate overflow-hidden max-w-full">
-                                            {candidate.name}
-                                          </div> */}
                           <div className="mb-0.5 flex max-w-full items-center gap-1 overflow-hidden">
                             <div className="min-w-0 flex-1 overflow-hidden truncate text-[11px] font-medium">
                               {candidate.name}

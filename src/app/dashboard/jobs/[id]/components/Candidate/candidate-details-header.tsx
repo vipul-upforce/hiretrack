@@ -26,6 +26,7 @@ import { Candidate } from '@/types/candidate';
 import TagsList from '@/components/ui/tagsList';
 import React, { useRef, useState } from 'react';
 import { useAuth } from '@/app/hooks/useAuth';
+import { useAppSelector } from '@/lib/redux/hooks';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
@@ -53,6 +54,8 @@ export default function DetailsDialogHeader({
   const handlePopoverContentClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
+
+  const { user } = useAppSelector((state) => state.auth);
 
   const handleDownloadCV = () => {
     if (candidate.resume?.url) {
