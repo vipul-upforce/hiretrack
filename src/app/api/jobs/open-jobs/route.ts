@@ -82,8 +82,9 @@ const handleGetOpenJobs = async (request: NextRequest) => {
 
     const customFields = await Organization?.findById(organizationId);
 
-    const organization = await Organization?.findById(organizationId);
-    const openJobCardsOrder = organization?.openJobCards;
+    // const organization = await Organization?.findById(organizationId);
+    // const openJobCardsOrder = organization?.openJobCards;
+
     const jobs = await Job!
       .find(
         {
@@ -107,12 +108,12 @@ const handleGetOpenJobs = async (request: NextRequest) => {
         },
       )
       .lean();
-    const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
-    const sortedJobs =
-      openJobCardsOrder
-        ?.map((id) => jobsMap.get(id.toString()))
-        .filter(Boolean) || [];
+    // const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
+    // console.log('jobsMap ==============++++++++++++++++++', jobsMap);
+    // const sortedJobs =
+    //   openJobCardsOrder?.map((id) => jobsMap.get(id.toString())).filter(Boolean) || [];
 
+    // console.log('sortedJobs ==============++++++++++++++++++', sortedJobs);
     const jobPositionFields =
       Object.values(customFields?.customFields || {}).find(
         (field) => field.formName === 'Job Position',
@@ -122,7 +123,7 @@ const handleGetOpenJobs = async (request: NextRequest) => {
       ?.filter((field: CustomField) => !field.private)
       ?.map((data: CustomField) => data.label);
 
-    const filteredJobs = sortedJobs?.map((job) => ({
+    const filteredJobs = jobs?.map((job) => ({
       ...job,
       salary: job?.salary && !job?.salary?.isPrivate ? job?.salary : undefined,
       customFields: Object.fromEntries(

@@ -117,6 +117,7 @@ export async function sendSmartNotification(
     ) {
       context.candidateId = undefined;
     }
+    console.log(context, 'context in smart notification');
 
     const { allRecipients, mentionedUsers, eligibleUsers } =
       await processSmartNotificationRecipients(
@@ -161,7 +162,7 @@ export async function sendSmartNotification(
         emailContent.html,
         {
           sentBy: context.triggererUserId || 'system',
-          sentByEmail: context.triggererEmail || 'system@hiretrack.com',
+          sentByEmail: context.triggererEmail || '',
           sentByName: context.triggererName || 'System',
           metadata: {
             jobId: context.jobId,

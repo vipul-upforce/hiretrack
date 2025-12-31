@@ -17,12 +17,12 @@ import {
   MAX_LENGTHS,
   sanitizeString,
 } from '@/lib/inputValidation';
-import { NotificationService } from '@/lib/notifications/notificationService';
+// import { NotificationService } from '@/lib/notifications/notificationService';
 // import { sendSmartNotification } from "@/lib/unifiedEmailService";
-import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
-import { logger } from '@/lib/logger/logger.server';
+// import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
+// import { NotificationType } from '@/lib/services/emailDecisionEngine';
+// import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
+// import { logger } from '@/lib/logger/logger.server';
 import { Attachment } from '../route';
 
 export async function POST(request: NextRequest) {
@@ -243,65 +243,65 @@ export async function POST(request: NextRequest) {
     });
 
     // Trigger notification for candidate application (guest apply)
-    try {
-      await NotificationService.notifyCandidateApplied({
-        organizationId: organizationId.toString(),
-        candidateId: candidate._id.toString(),
-        candidateName: candidateData.name,
-        candidateEmail: candidateData.email,
-        jobId: jobId._id,
-        jobTitle: job.title || 'Unknown Job',
-        // No trigger user for guest applications
-      });
+    // try {
+    //   await NotificationService.notifyCandidateApplied({
+    //     organizationId: organizationId.toString(),
+    //     candidateId: candidate._id.toString(),
+    //     candidateName: candidateData.name,
+    //     candidateEmail: candidateData.email,
+    //     jobId: jobId._id,
+    //     jobTitle: job.title || 'Unknown Job',
+    //     // No trigger user for guest applications
+    //   });
 
-      // Send email notification to admin and HR users
-      try {
-        const { emailContent, emailSubject } = await getMappedEmailTemplate(
-          'job-application-hr',
-          {
-            jobTitle: job.title || 'Unknown Job',
-            candidateName: candidateData.name,
-            candidateEmail: candidateData.email,
-            candidatePhone: candidateData.contact || 'N/A',
-            applicationDate: new Date().toLocaleDateString(),
-            dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${jobId._id}?candidateId=${candidate._id}`,
-          },
-          organizationId.toString(),
-        );
+    //   // Send email notification to admin and HR users
+    //   try {
+    //     const { emailContent, emailSubject } = await getMappedEmailTemplate(
+    //       'job-application-hr',
+    //       {
+    //         jobTitle: job.title || 'Unknown Job',
+    //         candidateName: candidateData.name,
+    //         candidateEmail: candidateData.email,
+    //         candidatePhone: candidateData.contact || 'N/A',
+    //         applicationDate: new Date().toLocaleDateString(),
+    //         dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${jobId._id}?candidateId=${candidate._id}`,
+    //       },
+    //       organizationId.toString(),
+    //     );
 
-        // Get admin and HR user IDs for email notification
-        const adminHrIds = await NotificationService.getUsersByRole(
-          organizationId.toString(),
-          ['admin', 'hr'],
-        );
+    //     // Get admin and HR user IDs for email notification
+    //     const adminHrIds = await NotificationService.getUsersByRole(
+    //       organizationId.toString(),
+    //       ['admin', 'hr'],
+    //     );
 
-        if (adminHrIds.length > 0) {
-          await sendSmartNotification(
-            organizationId.toString(),
-            // "newApplications",
-            NotificationType.NEW_APPLICATIONS,
-            {
-              jobId: jobId._id,
-              candidateId: candidate._id.toString(),
-              eventType: 'job_application',
-              templateUsed: 'job-application-hr',
-            },
-            {
-              subject: emailSubject,
-              html: emailContent,
-            },
-            adminHrIds,
-          );
-        }
-      } catch (emailError) {
-        logger.error(
-          { emailError },
-          'Failed to send guest email notification:',
-        );
-      }
-    } catch (notificationError) {
-      logger.error({ notificationError }, 'Failed to send guest notification');
-    }
+    //     if (adminHrIds.length > 0) {
+    //       await sendSmartNotification(
+    //         organizationId.toString(),
+    //         // "newApplications",
+    //         NotificationType.NEW_APPLICATIONS,
+    //         {
+    //           jobId: jobId._id,
+    //           candidateId: candidate._id.toString(),
+    //           eventType: 'job_application',
+    //           templateUsed: 'job-application-hr',
+    //         },
+    //         {
+    //           subject: emailSubject,
+    //           html: emailContent,
+    //         },
+    //         adminHrIds,
+    //       );
+    //     }
+    //   } catch (emailError) {
+    //     logger.error(
+    //       { emailError },
+    //       'Failed to send guest email notification:',
+    //     );
+    //   }
+    // } catch (notificationError) {
+    //   logger.error({ notificationError }, 'Failed to send guest notification');
+    // }
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error: unknown) {

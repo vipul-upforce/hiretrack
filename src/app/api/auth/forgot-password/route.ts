@@ -68,17 +68,16 @@ async function handlePasswordReset(
       settings.mailConfig.resend_from ||
       settings.mailConfig.brevo_from ||
       settings.mailConfig.smtp_from ||
-      'system@hiretrack.com';
+      '';
 
     // Find the correct user with both email and organizationId
     let user;
-    let resolvedIsCandidate: boolean;
+    let resolvedIsCandidate = isCandidate ?? false;
     if (!CandidateAccount || !User) {
       throw new Error('Database not connected');
     }
     if (isCandidate !== undefined) {
       // If we explicitly know if it's a candidate or not
-      resolvedIsCandidate = isCandidate;
       if (isCandidate) {
         user = await CandidateAccount.findOne({
           email,
@@ -92,7 +91,6 @@ async function handlePasswordReset(
       }
     } else {
       // Try regular user first, then candidate
-      resolvedIsCandidate = false;
       user = await User.findOne({ email, organizationId }).populate(
         'organizationId',
       );

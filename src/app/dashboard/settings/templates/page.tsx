@@ -29,6 +29,7 @@ export default function EmailTemplatesPage() {
     selectedTemplate,
     setSelectedTemplate,
     previewMode,
+    setPreviewMode,
     isLoading,
     showAddDialog,
     setShowAddDialog,
@@ -81,6 +82,7 @@ export default function EmailTemplatesPage() {
               updateTemplate={updateTemplate}
               resetToDefault={resetToDefault}
               previewMode={previewMode}
+              setPreviewMode={setPreviewMode}
               renderPreview={renderPreview}
               theme={theme}
             />

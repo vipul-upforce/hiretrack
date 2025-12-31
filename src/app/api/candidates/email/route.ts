@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       settings.mailConfig.smtp_from ||
       settings.mailConfig.resend_from ||
       settings.mailConfig.brevo_from ||
-      'noreply@hiretrack.com';
+      '';
 
     const emailData = {
       to: candidateEmail,

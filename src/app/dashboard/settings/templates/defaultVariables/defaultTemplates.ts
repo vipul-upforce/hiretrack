@@ -4,7 +4,7 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: 'job-application-hr',
     name: 'Job Application (HR Notification)',
-    subject: 'New Job Application - {{jobTitle}}',
+    subject: 'New Application: {{candidateName}} | {{jobTitle}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
@@ -67,7 +67,7 @@ export const defaultTemplates: EmailTemplate[] = [
     id: 'interview-assignment',
     name: 'Interview Assignment Event',
     subject:
-      'Interview Assigned: {{candidateName}} for the {{jobTitle}} Position — Assigned to {{interviewerName}}',
+      'Interview Assigned: {{candidateName}} | {{jobTitle}} | Assigned To: {{interviewerName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -126,7 +126,7 @@ export const defaultTemplates: EmailTemplate[] = [
     id: 'status-update',
     name: 'Status Update Notification',
     subject:
-      'Application Status Update for {{jobTitle}} position for candidate: {{candidateName}}',
+      'Status Update: {{candidateName}} | {{jobTitle}} | {{nextSteps}} ➜ {{newStatus}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -174,7 +174,7 @@ export const defaultTemplates: EmailTemplate[] = [
         <h2 style="color: #2c3e50; margin-top: 0;">New Remark Added</h2>
         <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
 
-        <p style="margin: 0 0 15px 0;">New feedback has been added for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
+        <p style="margin: 0 0 15px 0;">New Remark has been added for candidate <strong>{{candidateName}}</strong> applying for the <strong>{{jobTitle}}</strong> position.</p>
 
         <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
             <h3 style="margin-top: 0; color: #495057;">Remark Details</h3>
@@ -211,7 +211,7 @@ export const defaultTemplates: EmailTemplate[] = [
     id: 'step-completed',
     name: 'Step Completed',
     subject:
-      'Interview Step Completed — {{candidateName}} | Step {{stepName}} completed by {{completedBy}}',
+      'Step Completed: {{candidateName}} | {{jobTitle}} | {{stepName}} by {{completedBy}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
@@ -278,7 +278,7 @@ export const defaultTemplates: EmailTemplate[] = [
         <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107;">
             <p style="margin: 0 0 10px 0;"><strong>Important:</strong></p>
             <ul style="margin: 10px 0; padding-left: 20px;">
-                <li style="margin: 5px 0;">This OTP is valid for {{expirationTime}} minutes only</li>
+                <li style="margin: 5px 0;">This OTP is valid for 1 minutes only</li>
                 <li style="margin: 5px 0;">Do not share this code with anyone</li>
                 <li style="margin: 5px 0;">If you didn't request this OTP, please ignore this email</li>
             </ul>

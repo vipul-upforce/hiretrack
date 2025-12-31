@@ -19,7 +19,13 @@ async function handleVerifyOtp(req: NextRequest) {
         { status: 400 },
       );
     }
-    console.log("isCandidate",isCandidate,email,otp,"isCandidate,email,otp")
+    console.log(
+      'isCandidate',
+      isCandidate,
+      email,
+      otp,
+      'isCandidate,email,otp',
+    );
     const user = isCandidate
       ? await CandidateAccount?.findOne({
           email,
@@ -36,7 +42,6 @@ async function handleVerifyOtp(req: NextRequest) {
         })
           .select('name email role organizationId tokenVersion')
           .lean();
-    console.log("user",user,"user")
     if (!user) {
       return NextResponse.json(
         { message: 'Invalid or expired OTP' },
@@ -54,7 +59,9 @@ async function handleVerifyOtp(req: NextRequest) {
     ]);
     const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
 
-    const userWithTokenVersion = user as typeof user & { tokenVersion?: number };
+    const userWithTokenVersion = user as typeof user & {
+      tokenVersion?: number;
+    };
     const response = await returnTokenBasedResponse({
       id: userWithTokenVersion._id.toString(),
       name: userWithTokenVersion.name,
@@ -64,7 +71,6 @@ async function handleVerifyOtp(req: NextRequest) {
       tokenVersion: userWithTokenVersion.tokenVersion,
       fileStorage,
     });
-
 
     return response;
   } catch (error) {

@@ -23,15 +23,23 @@ function validateEmail(email: string): boolean {
 /**
  * Get from email from settings
  */
-function getFromEmail(settings: { mailConfig?: { resend_from?: string; brevo_from?: string; smtp_from?: string } } | null): string {
+function getFromEmail(
+  settings: {
+    mailConfig?: {
+      resend_from?: string;
+      brevo_from?: string;
+      smtp_from?: string;
+    };
+  } | null,
+): string {
   if (!settings?.mailConfig) {
-    return 'system@hiretrack.com';
+    return 'undefined';
   }
   return (
     settings.mailConfig.resend_from ||
     settings.mailConfig.brevo_from ||
     settings.mailConfig.smtp_from ||
-    'system@hiretrack.com'
+    ''
   );
 }
 
