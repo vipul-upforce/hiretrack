@@ -10,8 +10,6 @@ import {
 } from '@/lib/features/lane/laneApi';
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { useSSE } from '@/hooks/useSSE';
-import { Candidate } from '@/types/candidate';
-import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
 import { useNormalizedCandidates } from './useNormalizedCandidates';
 import { useCandidateState } from './useCandidateState';
 
@@ -67,9 +65,7 @@ export function useJobPageData() {
 
   // SSE lanes
   const { lanes: updatedLanes } = useSSE(
-    candidateState.setSelectedCandidate as (
-      candidate: Candidate | CustomCalendarEvent | null,
-    ) => void,
+    candidateState.setSelectedCandidate,
     candidateState.selectedCandidate,
     id,
   );

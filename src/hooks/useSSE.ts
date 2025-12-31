@@ -1,10 +1,8 @@
 import logger from '@/lib/logger';
 import { verifyAndDecrypCaptcha, verifyAndDecryptSSE } from '@/lib/auth';
 import { Candidate } from '@/types/candidate';
-import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
-import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
 
 import { useNotificationSSE } from './useNotificationSSE';
 
@@ -28,11 +26,20 @@ export async function getDecodedCaptcha(encodedData: string, orgId: string) {
     return null;
   }
 }
-export const useSSE = (
-  // role: string,
-  setSelectedCandidate: (candidate: Candidate | null) => void,
-  selectedCandidate: Candidate | null,
+/**
+ * Optional callback to transform a Candidate update into a different type.
+ * Used by calendar page to convert Candidate to CustomCalendarEvent.
+ */
+export type TransformCandidateCallback<T = Candidate> = (
+  updatedCandidate: Candidate,
+  currentSelected: T | null,
+) => T | null;
+
+export const useSSE = <T = Candidate>(
+  setSelectedCandidate: (candidate: T | null) => void,
+  selectedCandidate: T | null,
   jobId?: string,
+  transformCandidate?: TransformCandidateCallback<T>,
 ) => {
   // Use the consolidated notification SSE connection
   const {
@@ -49,97 +56,71 @@ export const useSSE = (
   if (jobId && sseJobId && sseJobId !== jobId) {
     lanes = undefined;
   }
-  const pathname = usePathname();
 
   // Use refs to store the latest setSelectedCandidate and selectedCandidate
-  const selectedCandidateRef = useRef<Candidate | CustomCalendarEvent | null>(
-    selectedCandidate,
-  );
+  const selectedCandidateRef = useRef<T | null>(selectedCandidate);
   const setSelectedCandidateRef = useRef(setSelectedCandidate);
+  const transformCandidateRef = useRef(transformCandidate);
 
-  // Update refs whenever selectedCandidate or setSelectedCandidate changes
+  // Update refs whenever values change
   useEffect(() => {
     selectedCandidateRef.current = selectedCandidate;
     setSelectedCandidateRef.current = setSelectedCandidate;
-  }, [selectedCandidate, setSelectedCandidate]);
+    transformCandidateRef.current = transformCandidate;
+  }, [selectedCandidate, setSelectedCandidate, transformCandidate]);
 
   // Handle selectedCandidate updates when candidates change
   useEffect(() => {
     const currentSelected = selectedCandidateRef.current;
     if (!currentSelected || candidates.length === 0) return;
 
+    // Get the candidate ID - handle both Candidate and transformed types
+    // Check if it's a Candidate (has _id directly) or a transformed type (has extendedProps.candidate._id)
     let currentSelectedId: string | undefined;
-    if (currentSelected) {
-      if (pathname?.includes('/calendar')) {
-        currentSelectedId = (currentSelected as CustomCalendarEvent)
-          ?.extendedProps?.candidate?._id;
-      } else {
-        currentSelectedId = (currentSelected as Candidate)?._id;
-      }
+
+    // Type guard: check if it's a Candidate
+    if (
+      typeof currentSelected === 'object' &&
+      currentSelected !== null &&
+      '_id' in currentSelected &&
+      typeof (currentSelected as { _id?: unknown })._id === 'string'
+    ) {
+      // It's a Candidate
+      currentSelectedId = (currentSelected as unknown as Candidate)._id;
+    } else if (
+      typeof currentSelected === 'object' &&
+      currentSelected !== null &&
+      'extendedProps' in currentSelected
+    ) {
+      // It's a transformed type (like CustomCalendarEvent)
+      const extendedProps = (
+        currentSelected as {
+          extendedProps?: { candidate?: { _id?: string } };
+        }
+      )?.extendedProps;
+      currentSelectedId = extendedProps?.candidate?._id;
     }
+
+    if (!currentSelectedId) return;
 
     // Find if the selected candidate was updated
     const updatedCandidate = candidates.find(
       (c) => c._id === currentSelectedId,
     );
     if (updatedCandidate && currentSelectedId === updatedCandidate._id) {
-      if (!pathname?.includes('/calendar')) {
-        setSelectedCandidateRef.current(updatedCandidate);
+      // Use transform callback if provided, otherwise use candidate directly
+      const transform = transformCandidateRef.current;
+      if (transform) {
+        const transformed = transform(updatedCandidate, currentSelected);
+        if (transformed !== null) {
+          setSelectedCandidateRef.current(transformed);
+        }
       } else {
-        // Construct calendar event for calendar views
-        const currentEvent = currentSelected as CustomCalendarEvent;
-        const startTime = updatedCandidate?.assignment?.time
-          ? new Date(updatedCandidate?.assignment?.time)
-          : currentEvent?.start || new Date();
-        const endTime = updatedCandidate?.assignment?.time
-          ? new Date(new Date(startTime).setHours(startTime.getHours() + 1)) // Default to 1-hour duration
-          : currentEvent?.end || new Date();
-
-        const updatedEvent: CustomCalendarEvent = {
-          ...currentEvent,
-          id: updatedCandidate._id,
-          title:
-            typeof updatedCandidate.jobId === 'object'
-              ? updatedCandidate.jobId?.title || 'Unknown'
-              : 'Unknown',
-          start: startTime,
-          end: endTime,
-          startStr: startTime.toISOString(),
-          endStr: endTime.toISOString(),
-          extendedProps: {
-            ...currentEvent?.extendedProps,
-            candidate: {
-              ...updatedCandidate,
-              jobId:
-                typeof updatedCandidate.jobId === 'string'
-                  ? updatedCandidate.jobId
-                  : updatedCandidate.jobId?._id,
-              jobDetails:
-                typeof updatedCandidate.jobId === 'object'
-                  ? {
-                      title: updatedCandidate.jobId?.title || '',
-                      description: updatedCandidate.jobId?.description || '',
-                    }
-                  : undefined,
-            },
-            interviewer:
-              typeof updatedCandidate?.assignment?.interviewerId === 'string'
-                ? {
-                    _id: updatedCandidate?.assignment?.interviewerId,
-                    name: 'Unknown',
-                    email: 'Unknown',
-                  }
-                : updatedCandidate?.assignment?.interviewerId || {
-                    _id: '',
-                    name: 'Unknown',
-                    email: 'Unknown',
-                  },
-          },
-        };
-        setSelectedCandidateRef.current(updatedEvent);
+        // Default: just pass the candidate (for job pages)
+        setSelectedCandidateRef.current(updatedCandidate as T);
       }
     }
-  }, [candidates, pathname]);
+  }, [candidates]);
 
   return {
     candidates,

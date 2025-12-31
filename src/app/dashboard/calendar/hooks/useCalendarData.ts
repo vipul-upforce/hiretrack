@@ -3,12 +3,11 @@ import { useFetchAssignedCandidatesQuery } from '@/lib/features/candidate/candid
 import { useSSE } from '@/hooks/useSSE';
 import useRoles from '@/hooks/useRoles';
 import { useSelector } from 'react-redux';
-import { Candidate } from '@/types/candidate';
-import { CandidateAssignment, CustomCalendarEvent } from '../page';
+import { CandidateAssignment } from '../page';
 
 export function useCalendarData(
-  setSelectedEvent: () => void,
-  selectedEvent: unknown,
+  _setSelectedEvent: () => void,
+  _selectedEvent: unknown,
 ) {
   const {
     data: assignments,
@@ -20,11 +19,10 @@ export function useCalendarData(
     (state: { auth?: { user?: unknown } }) => state.auth || {},
   );
   const role = useRoles();
+  // Get SSE candidates - calendar event updates should be handled by the caller
   const { candidates: sseCandidates } = useSSE(
-    setSelectedEvent as (
-      candidate: Candidate | CustomCalendarEvent | null,
-    ) => void,
-    selectedEvent as Candidate | null,
+    () => {}, // No-op callback - calendar event updates handled separately
+    null,
   );
 
   useEffect(() => {

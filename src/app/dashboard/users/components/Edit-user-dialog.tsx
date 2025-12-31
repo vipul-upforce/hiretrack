@@ -32,6 +32,10 @@ interface SelectedUser {
   email: string;
   role: string;
   isDeleted?: boolean;
+  organizationId?: string;
+  password?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface EditUserDialogProps {
@@ -57,7 +61,7 @@ export function EditUserDialog({
     setIsLoading(true);
     try {
       await updateUser({
-        id: selectedUser?.id,
+        id: selectedUser?.id || '',
         ...values,
         email: values.email.toLowerCase().trim(),
         name: values.name.trim(),
@@ -71,6 +75,11 @@ export function EditUserDialog({
             ...values,
             email: values.email.toLowerCase().trim(),
             name: values.name.trim(),
+            id: selectedUser?.id || '',
+            organizationId: selectedUser?.organizationId || '',
+            password: selectedUser?.password || '',
+            createdAt: selectedUser?.createdAt || new Date(),
+            updatedAt: selectedUser?.updatedAt || new Date(),
           }),
         );
       }

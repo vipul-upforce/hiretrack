@@ -81,9 +81,86 @@ export function useCalendar(): UseCalendarReturn {
   const { user } = useAppSelector((state) => state.auth);
   const role = user?.role || '';
 
-  const { candidates: sseCandidates } = useSSE(
+  /**
+   * Transform a Candidate update into a CustomCalendarEvent
+   * This is used by useSSE to update calendar events when candidates change
+   */
+  const transformCandidateToEvent = useMemo(
+    () =>
+      (
+        updatedCandidate: Candidate,
+        currentSelected: CustomCalendarEvent | Candidate | null,
+      ): CustomCalendarEvent | null => {
+        // If currentSelected is not a CustomCalendarEvent, we can't transform
+        if (!currentSelected || !('extendedProps' in currentSelected)) {
+          return null;
+        }
+
+        const currentEvent = currentSelected as CustomCalendarEvent;
+        const startTime = updatedCandidate?.assignment?.time
+          ? new Date(updatedCandidate.assignment.time)
+          : currentEvent?.start || new Date();
+        const endTime = updatedCandidate?.assignment?.time
+          ? new Date(new Date(startTime).setHours(startTime.getHours() + 1))
+          : currentEvent?.end || new Date();
+
+        const hasGoogleMeet = updatedCandidate?.assignment?.googleMeet;
+        const baseTitle =
+          updatedCandidate?.jobId && typeof updatedCandidate.jobId === 'object'
+            ? updatedCandidate.jobId.title
+            : 'Unknown';
+        const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+
+        return {
+          ...currentEvent,
+          id: updatedCandidate._id,
+          title,
+          start: startTime,
+          end: endTime,
+          startStr: startTime.toISOString(),
+          endStr: endTime.toISOString(),
+          extendedProps: {
+            ...currentEvent.extendedProps,
+            candidate: {
+              ...updatedCandidate,
+              jobId:
+                typeof updatedCandidate.jobId === 'string'
+                  ? updatedCandidate.jobId
+                  : (updatedCandidate.jobId as Job)?._id,
+              jobDetails:
+                typeof updatedCandidate.jobId === 'string'
+                  ? undefined
+                  : {
+                      title: (updatedCandidate.jobId as Job)?.title,
+                      description: (updatedCandidate.jobId as Job)?.description,
+                    },
+            },
+            interviewer:
+              typeof updatedCandidate?.assignment?.interviewerId === 'string'
+                ? {
+                    _id: updatedCandidate.assignment.interviewerId,
+                    name: 'Unknown',
+                    email: 'Unknown',
+                  }
+                : updatedCandidate?.assignment?.interviewerId || {
+                    _id: '',
+                    name: 'Unknown',
+                    email: 'Unknown',
+                  },
+          },
+        };
+      },
+    [],
+  );
+
+  const { candidates: sseCandidates } = useSSE<CustomCalendarEvent>(
     setSelectedEvent,
-    selectedEvent as Candidate | null,
+    // Only pass CustomCalendarEvent, filter out Candidate type
+    selectedEvent && 'extendedProps' in selectedEvent
+      ? (selectedEvent as CustomCalendarEvent)
+      : null,
+    undefined, // jobId not needed for calendar
+    transformCandidateToEvent,
   );
 
   // Refetch on mount

@@ -28,7 +28,6 @@ import { QuickSelectAndFilter } from './components/QuickSelectAndFilter';
 import { JobPageHeader } from './components/JobPageHeader';
 import { JobKanbanBoard } from './components/JobKanbanBoard';
 import { JobPageDialogs } from './components/JobPageDialogs';
-import { CustomCalendarEvent } from '../../calendar/page';
 
 interface FilterState {
   search: string;
@@ -127,9 +126,7 @@ export default function JobProgressPage() {
 
   // Get SSE lanes separately (still needed for lane updates)
   const { lanes: updatedLanes } = useSSE(
-    setSelectedCandidate as (
-      candidate: Candidate | CustomCalendarEvent | null,
-    ) => void,
+    setSelectedCandidate,
     selectedCandidate,
     id,
   );
