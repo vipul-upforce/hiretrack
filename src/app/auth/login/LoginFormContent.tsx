@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cx } from '@/lib/cx';
 import packageJson from '@/../package.json';
@@ -35,7 +35,14 @@ export default function LoginFormContent({
   showCompanyField = false,
 }: LoginFormContentProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAppSelector((state) => state.auth || {});
+
+  const redirectPath = searchParams?.get('redirect');
+
+  const showCandidateSignup = redirectPath
+    ? redirectPath.includes('candidate')
+    : false;
 
   // Local State
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
@@ -47,7 +54,7 @@ export default function LoginFormContent({
   const [loginValues, setLoginValues] = useState<LoginFormValues>();
   const [isMultipleOrgs, setIsMultipleOrgs] = useState(false);
 
-  // State to track successful login before redirect
+  const [hasJustLoggedIn, setHasJustLoggedIn] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Custom Hooks
@@ -71,11 +78,18 @@ export default function LoginFormContent({
   // Redirect if logged in
   useEffect(() => {
     if (user?.id && user?.role) {
-      // Set success state to disable button immediately
+      // Guard against stale Redux state triggering infinite loops on 401 redirects
+      if (redirectPath && !hasJustLoggedIn) {
+        return;
+      }
+
       setIsSuccess(true);
-      router.push('/dashboard');
+      const target = redirectPath
+        ? decodeURIComponent(redirectPath)
+        : '/dashboard';
+      router.push(target);
     }
-  }, [user, router]);
+  }, [user, router, redirectPath, hasJustLoggedIn]);
 
   // Determine multiple orgs
   useEffect(() => {
@@ -88,21 +102,19 @@ export default function LoginFormContent({
       // Trigger submission again when org is selected
       handleSubmit(
         { email: loginValues.email, password: loginValues.password },
-        () => {}, // setSubmitting is not needed here as UI will likely unmount or redirect
+        () => {},
         { setStatus: () => {} },
       );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedOrgId]);
 
   const onFormSubmit = (
     data: LoginSchemaType,
     setSubmitting: (isSubmitting: boolean) => void,
   ) => {
-    // Save values in case we need them for Org Dialog
     setLoginValues(data);
+    setHasJustLoggedIn(true);
 
-    // Pass the setSubmitting callback to the handleSubmit hook
     handleSubmit(
       { email: data.email, password: data.password },
       setSubmitting,
@@ -168,7 +180,7 @@ export default function LoginFormContent({
           branding={branding}
           onSubmit={onFormSubmit}
           isLoading={isAuthLoading}
-          isSuccess={isSuccess} // Pass isSuccess state
+          isSuccess={isSuccess}
           showCompanyField={showCompanyField}
           captchaEnabled={isCaptchaEnabled}
           captchaSiteKey={captchaSiteKey}
@@ -181,6 +193,8 @@ export default function LoginFormContent({
           }}
           selectedOrgId={selectedOrgId}
           organizations={organizations}
+          showCandidateSignup={showCandidateSignup}
+          onSignupClick={() => router.push('/signup')}
         />
       </div>
 
