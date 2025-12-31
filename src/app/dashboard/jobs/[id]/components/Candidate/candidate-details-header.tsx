@@ -57,6 +57,8 @@ export default function DetailsDialogHeader({
 
   const { user } = useAppSelector((state) => state.auth);
 
+  const isAdminOrHr = user?.role === 'admin' || user?.role === 'hr';
+
   const handleDownloadCV = () => {
     if (candidate.resume?.url) {
       const link = document.createElement('a');
@@ -70,7 +72,7 @@ export default function DetailsDialogHeader({
 
   const handleJobRedirect = () => {
     // if user's role is neither admin nor hr then dont redirect.
-    if (user?.role !== 'admin' && user?.role !== 'hr') return;
+    if (!isAdminOrHr) return;
 
     const jobUrl = `/dashboard/jobs/${candidate.jobId._id}`;
 
@@ -81,8 +83,8 @@ export default function DetailsDialogHeader({
   };
 
   const handleInterviewerClick = () => {
-    if (role === 'interviewer') {
-      return; // Prevent action for interviewer users
+    if (!isAdminOrHr) {
+      return;
     }
     if (onAssignClick) {
       onAssignClick();
@@ -148,7 +150,7 @@ export default function DetailsDialogHeader({
                   </div>
                 )}
                 <div className="flex items-center gap-1">
-                  {(role === 'admin' || role === 'hr') && (
+                  {isAdminOrHr && (
                     <Popover modal>
                       <PopoverTrigger asChild>
                         <Button
@@ -188,7 +190,7 @@ export default function DetailsDialogHeader({
                       <span className="sr-only">Download CV</span>
                     </Button>
                   )}
-                  {(role === 'admin' || role === 'hr') && (
+                  {isAdminOrHr && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -261,16 +263,12 @@ export default function DetailsDialogHeader({
               <div className="mr-0 mt-4">
                 <CandidateStatusBadge status={candidate?.status} />
               </div>
-              {user?.role === 'admin' || user?.role === 'hr' ? (
+              {isAdminOrHr ? (
                 <button
                   type="button"
                   onClick={handleJobRedirect}
-                  disabled={user?.role !== 'admin' && user?.role !== 'hr'}
-                  className={`mt-1 max-w-[300px] truncate text-end text-xs ${
-                    user?.role === 'admin' || user?.role === 'hr'
-                      ? 'cursor-pointer text-gray-500 hover:underline'
-                      : 'cursor-not-allowed text-gray-400'
-                  } `}
+                  disabled={!isAdminOrHr}
+                  className="mt-1 max-w-[300px] cursor-pointer truncate text-end text-xs text-gray-500 hover:underline"
                 >
                   {candidate?.jobId?.title}
                 </button>
@@ -287,12 +285,19 @@ export default function DetailsDialogHeader({
                 candidate.assignment.interviewerId._id &&
                 candidate.assignment.interviewerId.name && (
                   <div className="mt-2">
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="min-w-[250px] cursor-pointer rounded border border-blue-200 bg-blue-50 px-2 py-1 transition-colors duration-200 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/20 dark:hover:bg-blue-900/30"
-                      onClick={handleInterviewerClick}
-                      title="Click to edit assignment"
+                    <button
+                      type="button"
+                      role={isAdminOrHr ? 'button' : undefined}
+                      tabIndex={isAdminOrHr ? 0 : undefined}
+                      className={`min-w-[250px] rounded border border-blue-200 bg-blue-50 px-2 py-1 dark:border-blue-800 dark:bg-blue-900/20 ${
+                        isAdminOrHr
+                          ? 'cursor-pointer transition-colors duration-200 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                          : 'cursor-default'
+                      }`}
+                      onClick={isAdminOrHr ? handleInterviewerClick : undefined}
+                      title={
+                        isAdminOrHr ? 'Click to edit assignment' : undefined
+                      }
                     >
                       <div className="flex items-center gap-1 text-xs text-blue-900 dark:text-blue-100">
                         <User
@@ -314,7 +319,7 @@ export default function DetailsDialogHeader({
                           {formatTime(candidate?.assignment?.time)}
                         </span>
                       </div>
-                    </div>
+                    </button>
                   </div>
                 )}
             </div>
