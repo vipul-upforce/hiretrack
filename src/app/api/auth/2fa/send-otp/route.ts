@@ -111,7 +111,7 @@ async function handleSendOtp(req: NextRequest) {
         otpCode: otp,
         expirationTime: otpExpires.toISOString(),
         organizationName: organizationName || '',
-        userName: (user?.name || '') + (user?.role || ''),
+        userName: user?.name || '',
       },
       organizationId,
     );

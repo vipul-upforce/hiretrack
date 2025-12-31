@@ -17,6 +17,7 @@ import { fetchUserFromToken } from '@/lib/redux/authSlice';
 import { AppDispatch } from '@/lib/redux/store';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { getRedirectUrlFromSearchParams } from '@/lib/utils/redirectUtils';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -46,37 +47,6 @@ export const useHandleLoginSubmit = ({
   const dispatch = useDispatch<AppDispatch>();
 
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
-
-  const getRedirectUrl = () => {
-    const redirectTo =
-      searchParams?.get('redirect') || searchParams?.get('returnUrl');
-
-    if (redirectTo) {
-      try {
-        const decodedUrl = decodeURIComponent(redirectTo);
-        if (decodedUrl.startsWith('/') && !decodedUrl.startsWith('//')) {
-          return decodedUrl;
-        }
-      } catch (error) {
-        logger.warn('Invalid redirect URL:', redirectTo, error);
-      }
-    }
-
-    if (user?.role === 'candidate') {
-      return isMultiple
-        ? `/apply-jobs?o=${user.organizationInfo?.name}`
-        : '/apply-jobs';
-    }
-    if (
-      user?.role === 'admin' ||
-      user?.role === 'interviewer' ||
-      user?.role === 'hr'
-    ) {
-      return '/dashboard';
-    }
-
-    return '/';
-  };
 
   const handleSubmit = useCallback(
     async (
@@ -140,20 +110,27 @@ export const useHandleLoginSubmit = ({
         if (is2FAEnabled) {
           const { organizationId } = response;
           try {
+            // Ensure URL components are properly encoded to prevent issues with special characters
+            const encodedEmail = encodeURIComponent(
+              values.email.toLowerCase().trim(),
+            );
+            const encodedOrgId = encodeURIComponent(organizationId?.toString() || '');
+            const url =`/auth/2fa/verify?email=${encodedEmail}&orgId=${encodedOrgId}${response?.isCandidate ? '&isCandidate=true' : ''}` as string;
             await sendOtp({
               email: values.email.toLowerCase().trim(),
               organizationId,
               isCandidate: response.isCandidate,
-            }).unwrap();
+            })
+              .unwrap()
+              .then(() => {
+                router.push(url);
+              });
 
             toast({
               title: 'Check your email',
               description: 'An OTP has been sent to your email address.',
               variant: 'default',
             });
-            router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${organizationId}${response.isCandidate ? '&isCandidate=true' : ''}`,
-            );
           } catch (error) {
             logger.error(error);
             const errorMessage =
@@ -167,9 +144,16 @@ export const useHandleLoginSubmit = ({
               variant: 'destructive',
             });
           }
-        } else {
+        }
+
+        // Only proceed if login was successful
+        if (response.loggedIn === true) {
           // Handle Redirects & Redux State
-          const redirectUrl = getRedirectUrl();
+          const redirectUrl = getRedirectUrlFromSearchParams(
+            searchParams,
+            user,
+            isMultiple,
+          );
           dispatch(fetchUserFromToken());
           if (isAuthenticated) {
             if (redirectUrl !== '/') {
@@ -182,6 +166,13 @@ export const useHandleLoginSubmit = ({
               variant: 'default',
             });
           }
+        } else {
+          // Explicitly handle case where loggedIn is false/undefined
+          // This prevents any accidental execution
+          logger.warn('Login response indicates not logged in', { 
+            loggedIn: response.loggedIn,
+            hasOrganizations: !!response.organizations 
+          });
         }
       } catch (err: unknown) {
         logger.error(err);
@@ -212,6 +203,7 @@ export const useHandleLoginSubmit = ({
       router,
       toast,
       searchParams,
+      user,
     ],
   );
 

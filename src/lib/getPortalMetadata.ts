@@ -1,4 +1,5 @@
 import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
+import { cookies } from 'next/headers';
 import logger from './logger';
 
 function getDefaultMetadata() {
@@ -18,7 +19,8 @@ function getDefaultMetadata() {
 export async function getPortalMetadata() {
   try {
     await connectToDatabase();
-
+    const cookieStore = await cookies();
+    const orgId = cookieStore.get('org_id')?.value;
     // Wait for models to initialize (same approach as portal API)
     let retries = 0;
     while ((!Settings || !Organization) && retries < 10) {
@@ -32,25 +34,33 @@ export async function getPortalMetadata() {
       return getDefaultMetadata();
     }
 
-    // Get the first/default organization (for anonymous/public access)
-    const defaultOrg = await Organization.findOne({})
-      .sort({ createdAt: 1 })
-      .lean();
-
-    if (!defaultOrg) {
-      return getDefaultMetadata();
+    let defaultOrg = null;
+    let settings = null;
+    if (orgId) {
+      console.log("orgId found", orgId);
+      settings = await Settings.findOne(
+        { organizationId: orgId },
+        {
+          portalConfigs: 1,
+        },
+      ).lean();
+    } else {
+      console.log("orgId not found, getting default organization");
+      defaultOrg = await Organization.findOne({}).sort({ createdAt: 1 }).select('_id name').lean();
+      if (defaultOrg) {
+        settings = await Settings.findOne(
+          { organizationId: defaultOrg._id.toString() },
+          {
+            portalConfigs: 1,
+          },
+        ).lean();
+      }
     }
 
-    const settings = await Settings.findOne(
-      { organizationId: defaultOrg._id.toString() },
-      {
-        portalConfigs: 1,
-      },
-    ).lean();
 
     if (!settings) {
       return {
-        portalName: defaultOrg.name || 'HireTrack',
+        portalName: defaultOrg?.name || 'HireTrack',
         portalLogo: null,
         portalFavicon: null,
         primaryColor: '#6366f1',
@@ -60,7 +70,7 @@ export async function getPortalMetadata() {
 
     return {
       portalName:
-        settings.portalConfigs?.portalName || defaultOrg.name || 'HireTrack',
+        settings.portalConfigs?.portalName || defaultOrg?.name || 'HireTrack',
       portalLogo: settings.portalConfigs?.portalLogo || null,
       portalFavicon: settings.portalConfigs?.portalFavicon || null,
       primaryColor: settings.portalConfigs?.primaryColor || '#6366f1',

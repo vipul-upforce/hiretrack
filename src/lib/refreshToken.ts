@@ -323,6 +323,7 @@ export const returnTokenBasedResponse = async (obj: IAccessTokenPayload): Promis
 
   const response = NextResponse.json({
     message: 'Logged In Successfully',
+    loggedIn: true,
   });
 
   // Centralized auth cookie handling
