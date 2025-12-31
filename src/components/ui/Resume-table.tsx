@@ -78,13 +78,13 @@ export function ResumeTable({ resume }: { resume: Resume }) {
         {educations.map((education, idx) => (
           /* eslint-disable-next-line react/no-array-index-key */
           <Fragment key={idx}>
-            <TableRow label="School" value={education.school} />
-            <TableRow label="Degree" value={education.degree} />
-            <TableRow label="GPA" value={education.gpa} />
-            <TableRow label="Date" value={education.date} />
+            <TableRow label="School" value={education.school as string} />
+            <TableRow label="Degree" value={education.degree as string} />
+            <TableRow label="GPA" value={education.gpa as string} />
+            <TableRow label="Date" value={education.date as string} />
             <TableRow
               label="Descriptions"
-              value={education.descriptions}
+              value={education.descriptions as string[]}
               className={
                 educations.length - 1 !== 0 &&
                 idx !== educations.length - 1 &&
@@ -97,12 +97,18 @@ export function ResumeTable({ resume }: { resume: Resume }) {
         {workExperiences.map((workExperience, idx) => (
           /* eslint-disable-next-line react/no-array-index-key */
           <Fragment key={idx}>
-            <TableRow label="Company" value={workExperience.company} />
-            <TableRow label="Job Title" value={workExperience.jobTitle} />
-            <TableRow label="Date" value={workExperience.date} />
+            <TableRow
+              label="Company"
+              value={workExperience.company as string}
+            />
+            <TableRow
+              label="Job Title"
+              value={workExperience.jobTitle as string}
+            />
+            <TableRow label="Date" value={workExperience.date as string} />
             <TableRow
               label="Descriptions"
-              value={workExperience.descriptions}
+              value={workExperience.descriptions as string[]}
               className={
                 workExperiences.length - 1 !== 0 &&
                 idx !== workExperiences.length - 1 &&

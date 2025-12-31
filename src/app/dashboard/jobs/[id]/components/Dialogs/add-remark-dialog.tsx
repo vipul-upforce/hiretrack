@@ -197,10 +197,7 @@ function AddRemarksDialog({
       </DialogTrigger>
       <DialogContent size="lg" className="flex flex-col p-0">
         <DialogHeader className="px-6 py-4 pr-12">
-          <DialogTitle>
-            Add Remarks for
-            {candidate.name}
-          </DialogTitle>
+          <DialogTitle>Add Remarks for {candidate.name}</DialogTitle>
           <DialogDescription>
             Add your observations and feedback for this candidate. You can
             include a rating and set privacy preferences.

@@ -59,13 +59,7 @@ const eslintConfig = [
       'no-restricted-syntax': 'off',
       'no-await-in-loop': 'off',
       'no-useless-escape': 'off',
-      'no-param-reassign': [
-        'error',
-        {
-          props: true,
-          ignorePropertyModificationsFor: ['state', 'draft'],
-        },
-      ],
+      'no-param-reassign': 'off',
       // --- SENIOR'S REQUIRED OVERRIDES (From provided preset) ---
       'react/jsx-filename-extension': 'off',
       'import/extensions': 'off',

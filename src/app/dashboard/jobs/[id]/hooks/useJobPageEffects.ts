@@ -1,0 +1,285 @@
+import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
+import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
+import { Interviewer } from '@/lib/features/user/userApi';
+import { initialCandidateColumns } from '../data/initial-data';
+
+interface FilterState {
+  search: string;
+  logicalOperator: 'AND' | 'OR';
+  topCandidates: boolean;
+  appliedThisWeek: boolean;
+  appliedToday: boolean;
+  appliedIn15Days: boolean;
+  toFollowUp: boolean;
+  assigned: boolean;
+  notAssigned: boolean;
+  withRemarks: boolean;
+  withoutRemarks: boolean;
+}
+
+interface UseJobPageEffectsParams {
+  // Candidate state
+  tempSelectedCandidate: Candidate | null;
+  selectedCandidate: Candidate | null;
+  setSelectedCandidate: (candidate: Candidate | null) => void;
+  normalizedCandidates: Candidate[];
+  mergedCandidates: Candidate[];
+
+  // Lane state
+  updatedLanes: string[] | undefined;
+  jobLanes: { lanes: string[] } | undefined;
+  userLanes: { lanes: string[] } | undefined;
+  lanes: { lanes: string[] } | undefined;
+  refetch: () => void;
+
+  // Filter state
+  filterConditions: FilterState | null;
+  showArchived: boolean;
+
+  // Column state
+  setColumns: Dispatch<SetStateAction<CandidateColumn[]>>;
+
+  // Dialog state
+  isDialogOpen: boolean;
+  setDroppedFileData: Dispatch<SetStateAction<File | null>>;
+  isLaneEditOpen: boolean;
+  laneToEdit: string | null;
+  setLaneToEdit: Dispatch<SetStateAction<string | null>>;
+  initialLaneToEdit: string | null;
+  setInitialLaneToEdit: Dispatch<SetStateAction<string | null>>;
+}
+
+/**
+ * Custom hook to manage all side effects for the job progress page.
+ * Consolidates candidate syncing, lane updates, filtering, and column management.
+ *
+ * @param params - All necessary state and setters for side effect management
+ */
+export function useJobPageEffects({
+  tempSelectedCandidate,
+  selectedCandidate,
+  setSelectedCandidate,
+  normalizedCandidates,
+  mergedCandidates,
+  updatedLanes,
+  jobLanes,
+  userLanes,
+  lanes,
+  refetch,
+  filterConditions,
+  showArchived,
+  setColumns,
+  isDialogOpen,
+  setDroppedFileData,
+  isLaneEditOpen,
+  laneToEdit,
+  setLaneToEdit,
+  initialLaneToEdit,
+  setInitialLaneToEdit,
+}: UseJobPageEffectsParams): void {
+  const prevLanesSigRef = useRef<string>('');
+
+  // Effect 1: Sync temp selected candidate with state hook
+  useEffect(() => {
+    if (
+      tempSelectedCandidate &&
+      tempSelectedCandidate._id !== selectedCandidate?._id
+    ) {
+      setSelectedCandidate(tempSelectedCandidate);
+    }
+  }, [tempSelectedCandidate, selectedCandidate, setSelectedCandidate]);
+
+  // Effect 2: Refetch candidates when lanes changed from SSE
+  useEffect(() => {
+    if (!updatedLanes || updatedLanes.length === 0) return;
+
+    const sig = updatedLanes.join('|');
+    if (sig === prevLanesSigRef.current) return;
+    prevLanesSigRef.current = sig;
+
+    refetch();
+  }, [updatedLanes, refetch]);
+
+  // Effect 3: Clear dropped file data when dialog closes
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setDroppedFileData(null);
+    }
+  }, [isDialogOpen, setDroppedFileData]);
+
+  // Effect 4: Filter candidates and update columns based on filters, lanes, etc.
+  useEffect(() => {
+    if (normalizedCandidates && lanes) {
+      let currentCandidates = [...mergedCandidates];
+
+      // Apply filter conditions if they exist
+      if (filterConditions) {
+        currentCandidates = currentCandidates.filter((candidate) => {
+          // Apply text search
+          if (filterConditions.search) {
+            const searchLower = filterConditions.search.toLowerCase();
+            const matchesSearch =
+              candidate.name.toLowerCase().includes(searchLower) ||
+              candidate.skills.some((skill) =>
+                skill.toLowerCase().includes(searchLower),
+              ) ||
+              candidate.experience.toString().includes(searchLower) ||
+              (candidate.assignment?.interviewerId as Interviewer)?.name
+                ?.toLowerCase()
+                .includes(searchLower) ||
+              candidate.location.toLowerCase().includes(searchLower);
+            if (!matchesSearch) return false;
+          }
+
+          // Apply other filters
+          const activeFilters = [
+            {
+              key: 'topCandidates',
+              filter: (c: Candidate) =>
+                c.scores?.overall && c.scores.overall >= 7,
+            },
+            {
+              key: 'appliedThisWeek',
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                return new Date(c.tracking.createdAt) >= oneWeekAgo;
+              },
+            },
+            {
+              key: 'appliedToday',
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return (
+                  new Date(c.tracking.createdAt) >= today &&
+                  new Date(c.tracking.createdAt) < tomorrow
+                );
+              },
+            },
+            {
+              key: 'appliedIn15Days',
+              filter: (c: Candidate) => {
+                if (!c.tracking?.createdAt) return false;
+                const fifteenDaysAgo = new Date();
+                fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+                return new Date(c.tracking.createdAt) >= fifteenDaysAgo;
+              },
+            },
+            {
+              key: 'toFollowUp',
+              filter: (c: Candidate) => c.followUp && c.followUp.note,
+            },
+            {
+              key: 'assigned',
+              filter: (c: Candidate) => c.assignment,
+            },
+            {
+              key: 'notAssigned',
+              filter: (c: Candidate) => !c.assignment,
+            },
+            {
+              key: 'withRemarks',
+              filter: (c: Candidate) => c.remarks && c.remarks.length > 0,
+            },
+            {
+              key: 'withoutRemarks',
+              filter: (c: Candidate) => !c.remarks || c.remarks.length === 0,
+            },
+          ].filter(
+            (filter) =>
+              filterConditions[filter.key as keyof FilterState] === true,
+          );
+
+          if (activeFilters.length > 0) {
+            if (filterConditions.logicalOperator === 'AND') {
+              return activeFilters.every(({ filter }) => filter(candidate));
+            }
+            return activeFilters.some(({ filter }) => filter(candidate));
+          }
+
+          return true;
+        });
+      }
+      // Apply archived filter
+      currentCandidates = currentCandidates.filter(
+        (candidate) => showArchived || !candidate.isDeleted,
+      );
+
+      // Handle different lane data structures
+      let lanesArray: string[];
+      if (updatedLanes) {
+        lanesArray = updatedLanes;
+      } else if (jobLanes?.lanes) {
+        lanesArray = [...jobLanes.lanes];
+      } else if (userLanes?.lanes) {
+        lanesArray = [...userLanes.lanes];
+      } else {
+        lanesArray = [
+          'applied',
+          'screening',
+          'shortlisted',
+          'processing',
+          'accepted',
+          'rejected',
+        ];
+      }
+
+      lanesArray.forEach((lane) => {
+        if (!initialCandidateColumns.find((item) => item.id === lane)) {
+          initialCandidateColumns.push({
+            id: lane as CandidateStatus,
+            title: lane,
+            candidates: [],
+          });
+        }
+      });
+
+      const updatedColumns = lanesArray.map((lane) => {
+        const column = initialCandidateColumns.find((item) => item.id === lane);
+        const candidates = currentCandidates.filter(
+          (candidate) =>
+            candidate.status === lane &&
+            (showArchived ? candidate.isDeleted : !candidate.isDeleted),
+        );
+
+        return {
+          id: lane as CandidateStatus,
+          title: column?.title || lane,
+          candidates,
+        } as CandidateColumn;
+      });
+
+      setColumns(updatedColumns);
+    }
+  }, [
+    normalizedCandidates,
+    lanes,
+    mergedCandidates,
+    updatedLanes,
+    showArchived,
+    filterConditions,
+    jobLanes,
+    userLanes,
+    setColumns,
+  ]);
+
+  // Effect 5: Set initial lane to edit when laneToEdit changes
+  useEffect(() => {
+    if (laneToEdit && initialLaneToEdit === null) {
+      setInitialLaneToEdit(laneToEdit);
+    }
+  }, [laneToEdit, initialLaneToEdit, setInitialLaneToEdit]);
+
+  // Effect 6: Clear lane edit state when dialog closes
+  useEffect(() => {
+    if (!isLaneEditOpen) {
+      setInitialLaneToEdit(null);
+      setLaneToEdit(null);
+    }
+  }, [isLaneEditOpen, setInitialLaneToEdit, setLaneToEdit]);
+}

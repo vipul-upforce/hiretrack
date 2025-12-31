@@ -18,7 +18,6 @@ import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
 import { followUpSepretorPatternRegex } from '@/lib/constants';
 import { useSSE } from '@/hooks/useSSE';
 import { evaluateCandidate } from '@/app/apply-jobs/utils/guestApplicationUtils';
-import { CustomCalendarEvent } from '@/app/dashboard/calendar/page';
 import { EditCandidateDialog } from './edit-candidate-dialog';
 import { AssignCandidateDialog } from './assign-candidate-dialog';
 import { AssignJobDialog } from './assign-job-dialog';
@@ -83,21 +82,8 @@ export function CandidateDetailsDialog({
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
 
-  // useSSE already handles updating localCandidate when SSE updates arrive
-  // Fix: ensure setLocalCandidate matches required fn signature expected by useSSE
-  useSSE(
-    (candidateOrEvent: Candidate | CustomCalendarEvent | null) => {
-      // Only update state if the type really is Candidate
-      if (
-        candidateOrEvent &&
-        (candidateOrEvent as Candidate)._id !== undefined
-      ) {
-        setLocalCandidate(candidateOrEvent as Candidate);
-      }
-    },
-    localCandidate || null,
-    id,
-  );
+  // useSSE handles updating localCandidate when SSE updates arrive
+  useSSE(setLocalCandidate, localCandidate || null, id);
 
   // Load history when history tab is activated
   useEffect(() => {
