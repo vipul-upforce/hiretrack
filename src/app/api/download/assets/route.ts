@@ -120,6 +120,7 @@ export async function GET(req: NextRequest) {
     await fs.rm(tempDir, { recursive: true, force: true });
 
     // Send the archive in the response
+    // eslint-disable-next-line no-undef
     return new NextResponse(archiveBuffer as BodyInit, {
       status: 200,
       headers: {
@@ -135,8 +136,8 @@ export async function GET(req: NextRequest) {
     );
     return NextResponse.json(
       {
-        message: 'Internal server error',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 },
     );

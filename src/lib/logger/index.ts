@@ -12,6 +12,9 @@ const logger = {
   warn: (...args: any) => {
     console.warn(...args);
   },
+  info: (...args: any) => {
+    console.info(...args);
+  },
 };
 
 export default logger;
