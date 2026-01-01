@@ -19,13 +19,6 @@ async function handleVerifyOtp(req: NextRequest) {
         { status: 400 },
       );
     }
-    console.log(
-      'isCandidate',
-      isCandidate,
-      email,
-      otp,
-      'isCandidate,email,otp',
-    );
     const user = isCandidate
       ? await CandidateAccount?.findOne({
           email,
@@ -51,11 +44,8 @@ async function handleVerifyOtp(req: NextRequest) {
 
     // Clear OTP immediately (atomic safety)
     const [_, fileStorageResult] = await Promise.all([
-      User!.updateOne({ _id: user._id }, { $unset: { otp: 1, otpExpires: 1 } }),
-      Settings!
-        .findOne({ organizationId: user.organizationId }, { _id: 0 })
-        .select('fileStorage')
-        .lean(),
+     isCandidate ? CandidateAccount!.updateOne({ _id: user._id }, { $unset: { otp: 1, otpExpires: 1 } }) : User!.updateOne({ _id: user._id }, { $unset: { otp: 1, otpExpires: 1 } }), 
+      Settings!.findOne({ organizationId: user.organizationId }, { _id: 0 }).select('fileStorage').lean(),
     ]);
     const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
 

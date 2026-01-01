@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { usePortalMetadataSync } from '@/lib/hooks/usePortalMetadataSync';
@@ -10,7 +9,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAppSelector((state) => state.auth || {});
   const [uriOrgName, setOrgName] = useState<string>();
   const [isHydrated, setIsHydrated] = useState(false);
-  const pathname = usePathname();
 
   // Use the portal metadata sync hook to handle title, favicon, and colors
   const { portalConfig, isLoading, error } = usePortalMetadataSync({

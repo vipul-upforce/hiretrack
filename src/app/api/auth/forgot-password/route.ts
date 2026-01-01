@@ -171,6 +171,7 @@ async function handlePasswordReset(
           eventType: 'password_reset',
         },
       },
+      undefined,resolvedIsCandidate ?? false
     );
 
     if (emailStatus.status === 200) {

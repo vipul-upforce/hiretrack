@@ -17,7 +17,7 @@ interface User {
   name: string;
   email?: string;
   role?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 export async function auth(request: NextRequest) {
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
