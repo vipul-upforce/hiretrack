@@ -4,6 +4,11 @@ import { handleCustomFieldFiles, handleFileAttachments } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
+import { IJob } from '@/lib/models/job';
+import { Document } from 'mongoose';
+
+// Type for lean (plain object) version of IJob
+type JobLean = Omit<IJob, keyof Document> & { _id: IJob['_id'] };
 
 export async function GET(request: NextRequest) {
   try {
@@ -51,7 +56,7 @@ export async function GET(request: NextRequest) {
     );
 
     const jobsWithCount = [...sortedJobs, ...otherJobs].map((job) => ({
-      ...(job as any),
+      ...(job as JobLean),
       candidateCount: candidateCountMap.get(job._id?.toString()) || 0,
     }));
 
