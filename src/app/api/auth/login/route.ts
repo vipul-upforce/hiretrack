@@ -261,7 +261,6 @@ const checkMultipleOrgs = async (
   users: IUser[],
   candidates: IUCandidateAccount[],
   password: string,
-  req: NextRequest,
 ) => {
   if (orgId) {
     // Find user and candidate in the specified organization
@@ -410,7 +409,6 @@ const checkMultipleOrgs = async (
         .select('fileStorage twoFA')
         .lean();
 
-
       const twoFA = fileStorageResult?.twoFA?.enable2FA as boolean;
       if (twoFA) {
         return NextResponse.json({
@@ -449,7 +447,7 @@ const checkMultipleOrgs = async (
 
     if (!orgMap.has(userOrgId)) {
       orgMap.set(userOrgId, {
-        orgId:userOrgId.toString(),
+        orgId: userOrgId.toString(),
         name: orgInfo?.name,
         isCandidate: false,
         accountTypes: ['user'],
@@ -471,7 +469,7 @@ const checkMultipleOrgs = async (
 
     if (!orgMap.has(candidateOrgId)) {
       orgMap.set(candidateOrgId, {
-        orgId:candidateOrgId.toString(),
+        orgId: candidateOrgId.toString(),
         name: orgInfo?.name,
         isCandidate: true,
         accountTypes: ['candidate'],
@@ -530,7 +528,7 @@ async function handleLogin(req: NextRequest) {
     }
 
     if (users.length > 0 && candidates.length > 0) {
-      return await checkMultipleOrgs(orgId, users, candidates, password, req);
+      return await checkMultipleOrgs(orgId, users, candidates, password);
     }
 
     // Check if user exists in User collection
@@ -550,6 +548,12 @@ async function handleLogin(req: NextRequest) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Return a default error response if error is not an Error instance
+    return NextResponse.json(
+      { error: 'An unexpected error occurred during login' },
+      { status: 500 },
+    );
   }
 }
 // Export with email-based rate limiting
