@@ -5,7 +5,7 @@
 
 import { Button } from '@/components/ui/button';
 import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
-import { CustomField } from '@/Custom_Fields/Types/CustomField';
+// import { CustomField } from '@/Custom_Fields/Types/CustomField';
 
 interface EditCandidateDialogFooterProps {
   candidateId: string;
@@ -14,8 +14,8 @@ interface EditCandidateDialogFooterProps {
   hasErrors: boolean;
   onCancel: () => void;
   onApply: () => void;
-  onAddCustomField: (newField: CustomField, formId: string | null) => void;
-  selectedFormId: string | null;
+  // onAddCustomField: (newField: CustomField, formId: string | null) => void;
+  // selectedFormId: string | null;
 }
 
 export function EditCandidateDialogFooter({
@@ -25,17 +25,17 @@ export function EditCandidateDialogFooter({
   hasErrors,
   onCancel,
   onApply,
-  onAddCustomField,
-  selectedFormId,
+  // onAddCustomField,
+  // selectedFormId,
 }: EditCandidateDialogFooterProps) {
   return (
     <div className="sticky bottom-0 z-10 flex justify-between space-x-2 border-t bg-background px-6 py-4">
       <AddSpecificCustomFieldButton
         candidateId={candidateId}
         candidateName={candidateName}
-        onSave={(newField) => {
-          onAddCustomField(newField, selectedFormId);
-        }}
+        // onSave={(newField) => {
+        //   onAddCustomField(newField, selectedFormId);
+        // }}
       />
       <div className="bottom-0 flex gap-3">
         <Button type="button" variant="outline" onClick={onCancel}>

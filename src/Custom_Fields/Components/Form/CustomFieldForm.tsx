@@ -1,8 +1,10 @@
+/* eslint-disable max-lines */
 import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue, Select,
+  SelectValue,
+  Select,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Formik, FormikHelpers } from 'formik';
@@ -21,7 +23,6 @@ import { toast } from '@/Custom_Fields/hooks/use-toast';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
 import { Label } from '@/components/ui/label';
 import { ChipInput } from '@/components/ui/chip-input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { fieldTypes } from '@/Custom_Fields/utils';
 import { validationSchema } from '@/Custom_Fields/utils/validations';
@@ -58,9 +59,7 @@ const fieldTypeIcons: Record<string, React.ElementType> = {
 };
 
 const CustomFieldForm = memo(
-  ({
-    isOpen, handleClose, initialValue, isEditMode,
-  }: CustomFieldFormProps) => {
+  ({ isOpen, handleClose, initialValue, isEditMode }: CustomFieldFormProps) => {
     const {
       handleAddCustomField,
       handleEditCustomField,
@@ -103,11 +102,12 @@ const CustomFieldForm = memo(
 
         // Check for global field duplicates (original check)
         const globalDuplicate = existingFields?.some(
-          (field) => (field.label.toLowerCase() === trimmedLabel
-              || field.label.toLowerCase() === `${trimmedLabel} |||||(g)`)
-            && !field.candidateId
-            && !field.jobId
-            && field.id !== excludeId,
+          (field) =>
+            (field.label.toLowerCase() === trimmedLabel ||
+              field.label.toLowerCase() === `${trimmedLabel} |||||(g)`) &&
+            !field.candidateId &&
+            !field.jobId &&
+            field.id !== excludeId,
         );
 
         if (globalDuplicate) {
@@ -122,10 +122,11 @@ const CustomFieldForm = memo(
         if (currentJobId) {
           // Check if there's already a field with the same label for this job
           const jobSpecificDuplicate = existingFields?.some(
-            (field) => (field.label.toLowerCase() === trimmedLabel
-                || field.label.toLowerCase() === `${trimmedLabel} |||||(g)`)
-              && field.jobId === currentJobId
-              && field.id !== excludeId,
+            (field) =>
+              (field.label.toLowerCase() === trimmedLabel ||
+                field.label.toLowerCase() === `${trimmedLabel} |||||(g)`) &&
+              field.jobId === currentJobId &&
+              field.id !== excludeId,
           );
 
           if (jobSpecificDuplicate) {
@@ -161,18 +162,20 @@ const CustomFieldForm = memo(
           }
 
           // Handle potential conflicts with other fields
-          selectedFormId
-            && customFields[selectedFormId.formId].fields.some((field) => {
+
+          if (selectedFormId) {
+            customFields[selectedFormId.formId].fields.some((field) => {
               if (
-                (field.jobId || field.candidateId)
-                && field.label === values.label
-                && (!isEditMode || field.id !== initialValue?.id)
+                (field.jobId || field.candidateId) &&
+                field.label === values.label &&
+                (!isEditMode || field.id !== initialValue?.id)
               ) {
                 values.label = `${values.label} |||||(g)`;
-                return true;
+                return true; // Stops the loop once found
               }
               return false;
             });
+          }
         }
 
         try {
@@ -220,7 +223,7 @@ const CustomFieldForm = memo(
         values: CustomField,
         setFieldValue: (
           field: string,
-          value: string | string[] | undefined
+          value: string | string[] | undefined, // eslint-disable-line no-shadow
         ) => void,
       ) => {
         if (value !== values.type) {
@@ -244,7 +247,7 @@ const CustomFieldForm = memo(
       e: React.ChangeEvent<HTMLInputElement>,
       setFieldValue: (
         field: string,
-        value: string | string[] | undefined
+        value: string | string[] | undefined,
       ) => void,
     ) => {
       const { value } = e.target;
@@ -258,7 +261,7 @@ const CustomFieldForm = memo(
         e: React.ChangeEvent<HTMLInputElement>,
         setFieldValue: (
           field: string,
-          value: string | string[] | undefined
+          value: string | string[] | undefined,
         ) => void,
         setFieldError: (field: string, message: string | undefined) => void,
       ) => {
@@ -296,6 +299,7 @@ const CustomFieldForm = memo(
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={onSubmit}
+          enableReinitialize
         >
           {({
             values,
@@ -306,12 +310,12 @@ const CustomFieldForm = memo(
             setFieldValue,
             setFieldError,
           }) => (
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto space-y-8 pb-6 px-1 overflow-x-hidden">
+            <form onSubmit={handleSubmit} className="flex h-full flex-col">
+              <div className="flex-1 space-y-8 overflow-y-auto overflow-x-hidden px-1 pb-6">
                 <div>
                   <Label
                     htmlFor="label"
-                    className="text-lg font-medium flex items-center gap-1 pb-3"
+                    className="flex items-center gap-1 pb-3 text-lg font-medium"
                   >
                     Field Label
                     <span className="text-red-500">*</span>
@@ -319,21 +323,20 @@ const CustomFieldForm = memo(
                   <Input
                     id="label"
                     {...getFieldProps('label')}
-                    onChange={(e) => handleLabelChange(e, setFieldValue, setFieldError)}
-                    className="text-lg py-3 px-4"
+                    onChange={(e) =>
+                      handleLabelChange(e, setFieldValue, setFieldError)
+                    }
+                    className="px-4 py-3 text-lg"
                     placeholder="Enter field label..."
                   />
                   {errors.label && touched.label && (
-                    <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                      <span>⚠️</span>
-                      {' '}
-                      {errors.label}
+                    <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                      <span>⚠️</span> {errors.label}
                     </div>
                   )}
                   {hasDuplicate && touched.label && (
-                    <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                      <span>⚠️</span>
-                      {' '}
+                    <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                      <span>⚠️</span>{' '}
                       {duplicateType === 'job-specific'
                         ? "A field with this label already exists for this job's candidates"
                         : 'Label already exists'}
@@ -345,32 +348,36 @@ const CustomFieldForm = memo(
                   <Label htmlFor="fieldType" className="text-lg font-medium">
                     Field Type
                   </Label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3 px-3">
+                  <div className="mt-3 grid grid-cols-2 gap-3 px-3 md:grid-cols-3 lg:grid-cols-4">
                     {fieldTypes.map((type) => {
                       const IconComponent = fieldTypeIcons[type.value];
                       const isSelected = values.type === type.value;
                       return (
                         <div
+                          tabIndex={0}
+                          role="button"
                           key={type.value}
-                          className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                          className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
                             isSelected
                               ? 'shadow-md'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                              : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                           }`}
                           style={
                             isSelected
                               ? {
-                                borderColor: 'var(--portal-primary, #6366f1)',
-                                backgroundColor:
+                                  borderColor: 'var(--portal-primary, #6366f1)',
+                                  backgroundColor:
                                     'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
-                              }
+                                }
                               : {}
                           }
-                          onClick={() => onValuesChange(type.value, values, setFieldValue)}
+                          onClick={() =>
+                            onValuesChange(type.value, values, setFieldValue)
+                          }
                         >
                           {isSelected && (
                             <div
-                              className="absolute -top-2 -right-2 text-white rounded-full p-1"
+                              className="absolute -right-2 -top-2 rounded-full p-1 text-white"
                               style={{
                                 backgroundColor:
                                   'var(--portal-primary, #6366f1)',
@@ -379,7 +386,7 @@ const CustomFieldForm = memo(
                               <Check className="h-3 w-3" />
                             </div>
                           )}
-                          <div className="flex flex-col items-center text-center gap-2">
+                          <div className="flex flex-col items-center gap-2 text-center">
                             <IconComponent
                               className={`h-6 w-6 ${
                                 isSelected
@@ -419,63 +426,66 @@ const CustomFieldForm = memo(
                   <div>
                     <Label
                       htmlFor="options"
-                      className="text-lg font-medium block pb-3"
+                      className="block pb-3 text-lg font-medium"
                     >
-                      Options
-                      {' '}
+                      Options{' '}
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         (Hit Enter to Add)
                       </span>
                     </Label>
                     <ChipInput
                       value={values.options}
-                      onChange={(newOptions) => setFieldValue(
-                        'options',
-                        newOptions
-                          .map((option) => option.trim())
-                          .filter((option) => option !== ''),
-                      )}
+                      onChange={(newOptions) =>
+                        setFieldValue(
+                          'options',
+                          newOptions
+                            .map((option) => option.trim())
+                            .filter((option) => option !== ''),
+                        )
+                      }
                       placeholder="Type an option and press Enter..."
                       suggestions={[]}
                       showAddButton
                       // className="text-lg"
                     />
                     {errors.options && touched.options && (
-                      <div className="text-red-500 text-sm pt-2 flex items-center gap-1">
-                        <span>⚠️</span>
-                        {' '}
-                        {errors.options}
+                      <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                        <span>⚠️</span> {errors.options}
                       </div>
                     )}
                   </div>
                 )}
 
                 <div>
-                  <Label className="text-lg font-medium mb-4 block">
+                  <Label className="mb-4 block text-lg font-medium">
                     Field Options
                   </Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
                         values.required
                           ? 'shadow-md'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.required
                           ? {
-                            borderColor: 'var(--portal-primary, #6366f1)',
-                            backgroundColor:
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
                                 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
-                          }
+                            }
                           : {}
                       }
-                      onClick={() => setFieldValue('required', !values.required)}
+                      onClick={() =>
+                        setFieldValue('required', !values.required)
+                      }
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
                               values.required
                                 ? ''
                                 : 'border-gray-300 dark:border-gray-600'
@@ -483,11 +493,11 @@ const CustomFieldForm = memo(
                             style={
                               values.required
                                 ? {
-                                  backgroundColor:
+                                    backgroundColor:
                                       'var(--portal-primary, #6366f1)',
-                                  borderColor:
+                                    borderColor:
                                       'var(--portal-primary, #6366f1)',
-                                }
+                                  }
                                 : {}
                             }
                           >
@@ -519,18 +529,20 @@ const CustomFieldForm = memo(
                     </div>
 
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
                         values.private
                           ? 'shadow-md'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.private
                           ? {
-                            borderColor: 'var(--portal-primary, #6366f1)',
-                            backgroundColor:
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
                                 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
-                          }
+                            }
                           : {}
                       }
                       onClick={() => setFieldValue('private', !values.private)}
@@ -538,7 +550,7 @@ const CustomFieldForm = memo(
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
                               values.private
                                 ? ''
                                 : 'border-gray-300 dark:border-gray-600'
@@ -546,11 +558,11 @@ const CustomFieldForm = memo(
                             style={
                               values.private
                                 ? {
-                                  backgroundColor:
+                                    backgroundColor:
                                       'var(--portal-primary, #6366f1)',
-                                  borderColor:
+                                    borderColor:
                                       'var(--portal-primary, #6366f1)',
-                                }
+                                  }
                                 : {}
                             }
                           >
@@ -582,26 +594,30 @@ const CustomFieldForm = memo(
                     </div>
 
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
                         values.privateInt
                           ? 'shadow-md'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.privateInt
                           ? {
-                            borderColor: 'var(--portal-primary, #6366f1)',
-                            backgroundColor:
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
                                 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
-                          }
+                            }
                           : {}
                       }
-                      onClick={() => setFieldValue('privateInt', !values.privateInt)}
+                      onClick={() =>
+                        setFieldValue('privateInt', !values.privateInt)
+                      }
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
                               values.privateInt
                                 ? ''
                                 : 'border-gray-300 dark:border-gray-600'
@@ -609,11 +625,11 @@ const CustomFieldForm = memo(
                             style={
                               values.privateInt
                                 ? {
-                                  backgroundColor:
+                                    backgroundColor:
                                       'var(--portal-primary, #6366f1)',
-                                  borderColor:
+                                    borderColor:
                                       'var(--portal-primary, #6366f1)',
-                                }
+                                  }
                                 : {}
                             }
                           >
@@ -645,26 +661,30 @@ const CustomFieldForm = memo(
                     </div>
 
                     <div
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
                         values.showOnCard
                           ? 'shadow-md'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
                       }`}
                       style={
                         values.showOnCard
                           ? {
-                            borderColor: 'var(--portal-primary, #6366f1)',
-                            backgroundColor:
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
                                 'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
-                          }
+                            }
                           : {}
                       }
-                      onClick={() => setFieldValue('showOnCard', !values.showOnCard)}
+                      onClick={() =>
+                        setFieldValue('showOnCard', !values.showOnCard)
+                      }
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
                               values.showOnCard
                                 ? ''
                                 : 'border-gray-300 dark:border-gray-600'
@@ -672,11 +692,11 @@ const CustomFieldForm = memo(
                             style={
                               values.showOnCard
                                 ? {
-                                  backgroundColor:
+                                    backgroundColor:
                                       'var(--portal-primary, #6366f1)',
-                                  borderColor:
+                                    borderColor:
                                       'var(--portal-primary, #6366f1)',
-                                }
+                                  }
                                 : {}
                             }
                           >
@@ -717,27 +737,29 @@ const CustomFieldForm = memo(
                   'textarea',
                   'password',
                 ].includes(values.type) ? null : (
-                  <>
+                  <div>
                     {['select', 'radio', 'checkbox', 'multiSelect'].includes(
                       values.type,
                     ) ? (
                       <div>
                         <Label
                           htmlFor="defaultValue"
-                          className="text-lg font-medium block pb-3"
+                          className="block pb-3 text-lg font-medium"
                         >
                           Default Value
                         </Label>
-                        {values.type === 'multiSelect'
-                        || values.type === 'checkbox' ? (
+                        {values.type === 'multiSelect' ||
+                        values.type === 'checkbox' ? (
                           <ChipInput
                             value={values.defaultValue as string[]}
-                            onChange={(newOptions) => setFieldValue(
-                              'defaultValue',
-                              newOptions
-                                .map((option) => option.trim())
-                                .filter((option) => option !== ''),
-                            )}
+                            onChange={(newOptions) =>
+                              setFieldValue(
+                                'defaultValue',
+                                newOptions
+                                  .map((option) => option.trim())
+                                  .filter((option) => option !== ''),
+                              )
+                            }
                             onSuggestionClick={(suggestion) => {
                               setFieldValue('defaultValue', [
                                 ...(values.defaultValue as string[]),
@@ -747,93 +769,96 @@ const CustomFieldForm = memo(
                             suggestions={
                               values.options
                                 ?.filter(
-                                  (option) => !values.defaultValue?.includes(option),
+                                  (option) =>
+                                    !values.defaultValue?.includes(option),
                                 )
                                 .map((option) => option.trim())
                                 .filter((option) => option !== '') || []
                             }
                             showAddButton
                           />
-                          ) : (
-                            <Select
-                              {...getFieldProps('defaultValue')}
-                              onValueChange={(value) => {
-                                if (value === '-1') {
-                                  setFieldValue('defaultValue', '');
-                                } else {
-                                  setFieldValue('defaultValue', value.trim());
-                                }
-                              }}
-                              value={String(values.defaultValue || '')}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select default value" />
-                              </SelectTrigger>
-                              <Button
-                                style={{
-                                  marginLeft: '-10px',
-                                  color: '#797979',
-                                }}
-                                variant="link"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setFieldValue('defaultValue', '');
-                                }}
-                              >
-                                Clear
-                              </Button>
-                              <SelectContent>
-                                {values.options?.map((option) => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                      </div>
-                      ) : (
-                        <div>
-                          <Label
-                            htmlFor="defaultValue"
-                            className="text-lg font-medium block pb-3"
+                        ) : (
+                          <Select
+                            {...getFieldProps('defaultValue')}
+                            onValueChange={(value) => {
+                              if (value === '-1') {
+                                setFieldValue('defaultValue', '');
+                              } else {
+                                setFieldValue('defaultValue', value.trim());
+                              }
+                            }}
+                            value={String(values.defaultValue || '')}
                           >
-                            Default Value
-                          </Label>
-                          {values.type === 'number' ? (
-                            <Input
-                              id="defaultValue"
-                              value={values.defaultValue || ''}
-                              onChange={(e) => handleNumberInputChange(e, setFieldValue)}
-                              type="text"
-                              inputMode="numeric"
-                              pattern="[0-9]*"
-                              className="text-lg py-3 px-4"
-                              placeholder="Enter default number..."
-                            />
-                          ) : (
-                            <Input
-                              id="defaultValue"
-                              {...getFieldProps('defaultValue')}
-                              className="text-lg py-3 px-4"
-                              placeholder="Enter default value..."
-                            />
-                          )}
-                        </div>
-                      )}
-                  </>
-                  )}
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select default value" />
+                            </SelectTrigger>
+                            <Button
+                              style={{
+                                marginLeft: '-10px',
+                                color: '#797979',
+                              }}
+                              variant="link"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setFieldValue('defaultValue', '');
+                              }}
+                            >
+                              Clear
+                            </Button>
+                            <SelectContent>
+                              {values.options?.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <Label
+                          htmlFor="defaultValue"
+                          className="block pb-3 text-lg font-medium"
+                        >
+                          Default Value
+                        </Label>
+                        {values.type === 'number' ? (
+                          <Input
+                            id="defaultValue"
+                            value={values.defaultValue || ''}
+                            onChange={(e) =>
+                              handleNumberInputChange(e, setFieldValue)
+                            }
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="px-4 py-3 text-lg"
+                            placeholder="Enter default number..."
+                          />
+                        ) : (
+                          <Input
+                            id="defaultValue"
+                            {...getFieldProps('defaultValue')}
+                            className="px-4 py-3 text-lg"
+                            placeholder="Enter default value..."
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="sticky bottom-0 bg-background border-t border-gray-200 dark:border-gray-600 px-6 py-4 pb-0 ">
+              <div className="sticky bottom-0 border-t border-gray-200 bg-background px-6 py-4 pb-0 dark:border-gray-600">
                 <div className="flex justify-end">
                   <Button
                     type="submit"
                     variant="primary"
                     size="lg"
                     disabled={
-                      !isEditMode
-                      && (hasDuplicate || Object.keys(errors).length > 0)
+                      !isEditMode &&
+                      (hasDuplicate || Object.keys(errors).length > 0)
                     }
                   >
                     {isEditMode ? 'Update Field' : 'Create Field'}

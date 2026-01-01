@@ -27,6 +27,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import React from 'react';
 
 interface FileData {
   base64: string;
@@ -47,7 +48,7 @@ interface RenderFieldProps {
     | [Dayjs, Dayjs]
     | undefined;
   onChange?: (
-    value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]
+    value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs],
   ) => void;
   onBlur?: (
     value:
@@ -57,21 +58,19 @@ interface RenderFieldProps {
       | FileData[]
       | Dayjs
       | [Dayjs, Dayjs]
-      | Date
+      | Date,
   ) => void;
   options?: string[];
-  error?: string;
-  min?: Dayjs | [Dayjs, Dayjs] | undefined;
-  max?: Dayjs | [Dayjs, Dayjs] | undefined;
   name?: string;
 }
 
-const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result as string);
-  reader.onerror = (error) => reject(error);
-});
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
 export function RenderFieldInFilter({
   label,
@@ -80,9 +79,6 @@ export function RenderFieldInFilter({
   onChange,
   onBlur,
   options = [],
-  error,
-  min,
-  max,
   name,
 }: RenderFieldProps) {
   switch (type) {
@@ -91,8 +87,12 @@ export function RenderFieldInFilter({
         <Input
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onBlur?.(e.target.value)
+          }
           placeholder={`Enter ${label}`}
         />
       );
@@ -101,8 +101,12 @@ export function RenderFieldInFilter({
       return (
         <PasswordField
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onBlur?.(e.target.value)
+          }
           name={name as string}
         />
       );
@@ -113,8 +117,12 @@ export function RenderFieldInFilter({
           type="number"
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLInputElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLInputElement>) =>
+            onBlur?.(e.target.value)
+          }
           placeholder={`Enter ${label} in numbers`}
         />
       );
@@ -124,8 +132,12 @@ export function RenderFieldInFilter({
         <Textarea
           id={label}
           value={value as string}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange?.(e.target.value)}
-          onBlur={(e: React.ChangeEvent<HTMLTextAreaElement>) => onBlur?.(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            onChange?.(e.target.value)
+          }
+          onBlur={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+            onBlur?.(e.target.value)
+          }
           placeholder={`Enter ${label}`}
         />
       );
@@ -212,7 +224,7 @@ export function RenderFieldInFilter({
                 }
                 onChange={(date) => {
                   const newRange = [
-                    date ? dayjs(date) : undefined,
+                    date ? dayjs(date as Date) : undefined,
                     (value as [Dayjs, Dayjs])?.[1],
                   ] as [Dayjs, Dayjs];
                   onChange?.(newRange);
@@ -249,7 +261,7 @@ export function RenderFieldInFilter({
                 onChange={(date) => {
                   const newRange = [
                     (value as [Dayjs, Dayjs])?.[0],
-                    date ? dayjs(date) : undefined,
+                    date ? dayjs(date as Date) : undefined,
                   ] as [Dayjs, Dayjs];
                   onChange?.(newRange);
                 }}
@@ -325,7 +337,6 @@ export function RenderFieldInFilter({
                   onChange?.(newRange as [Dayjs, Dayjs]);
                 }}
                 placeholder="Select start date & time"
-                onBlur={() => {}}
               />
             </PopoverContent>
           </Popover>
@@ -360,7 +371,6 @@ export function RenderFieldInFilter({
                   onChange?.(newRange as [Dayjs, Dayjs]);
                 }}
                 placeholder="Select end date & time"
-                onBlur={() => {}}
               />
             </PopoverContent>
           </Popover>
@@ -410,7 +420,8 @@ export function RenderFieldInFilter({
                 }),
               );
               const fileNames = base64Files.map((file) => file.name);
-              const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+              const hasDuplicates =
+                new Set(fileNames).size !== fileNames.length;
               if (hasDuplicates) {
                 return;
               }
@@ -422,11 +433,11 @@ export function RenderFieldInFilter({
           existingFiles={
             Array.isArray(value)
               ? (value as FileData[]).map((file) => ({
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                preview: file.base64,
-              }))
+                  name: file.name,
+                  type: file.type,
+                  size: file.size,
+                  preview: file.base64,
+                }))
               : []
           }
         />

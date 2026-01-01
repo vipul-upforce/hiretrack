@@ -33,6 +33,9 @@ export type CustomFieldsContextType = {
   userLoggedIn: boolean;
   setUserLoggedIn: (user: boolean) => void;
   setSelectedFormId: Dispatch<SetStateAction<SelectedFormObject | null>>;
+  isLoading: boolean;
+  error: Error | null;
+  isReady: boolean;
   // postCustomFields: () => void;
 };
 
@@ -55,5 +58,8 @@ export const CustomFieldsContext = createContext<CustomFieldsContextType>({
   setUserLoggedIn: () => {},
   setSelectedFormId: () => {},
   deleteFormIDAllIndCustomFields: () => {},
+  isLoading: false,
+  error: null,
+  isReady: false,
   // postCustomFields: () => {},
 });

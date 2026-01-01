@@ -139,8 +139,8 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   };
 
   const {
-    handleAddCustomField,
-    selectedFormId,
+    // handleAddCustomField,
+    // selectedFormId,
     customFields,
     setSelectedFormId,
   } = useContext(CustomFieldsContext);
@@ -255,6 +255,7 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       initialValues={initialValues}
       validationSchema={jobSchema(validationSchema)}
       onSubmit={onSubmit}
+      enableReinitialize
     >
       {({ isSubmitting, setFieldValue, values, errors }) => (
         <Form className="sticky top-0 mb-[70px] flex flex-col overflow-y-hidden border-t pt-4">
@@ -269,9 +270,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
               <AddSpecificCustomFieldButton
                 jobId={job._id}
                 jobTitle={job.title}
-                onSave={(newField) => {
-                  handleAddCustomField(newField, selectedFormId?.formId || '');
-                }}
+                // onSave={(newField) => {
+                //   handleAddCustomField(newField, selectedFormId?.formId || '');
+                // }}
               />
             </div>
             <div className="flex flex-row gap-4">

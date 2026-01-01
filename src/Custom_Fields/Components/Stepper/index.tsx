@@ -5,7 +5,7 @@ import FormCustomFieldList from '../List/CustomField';
 
 function Stepper() {
   const context = useContext(CustomFieldsContext);
-  const { stepName, customFields, selectedFormId } = context;
+  const { stepName } = context;
 
   const StepperComponent = useCallback(() => {
     switch (stepName) {

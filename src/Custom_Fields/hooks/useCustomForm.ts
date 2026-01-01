@@ -29,7 +29,7 @@ const useCustomForm = (
   fetchGlobal?: boolean,
 ) => {
   // debugger;
-  const { customFields } = useCustomFields();
+  const { customFields, isLoading, isReady } = useCustomFields();
   const role = useRoles();
 
   let formNameObject: FormObject | undefined;
@@ -38,7 +38,7 @@ const useCustomForm = (
   Object.entries(customFields).forEach((e) => {
     if (e[1].formName === formName) {
       formNameObject = e[1] as FormObject;
-      formId = e[0];
+      [formId] = e;
     }
   });
 
@@ -50,9 +50,9 @@ const useCustomForm = (
     filteredFields = fields.filter(
       (field) =>
         // Include job-specific fields for this job
-        (field.jobId === jobId && !field.candidateId)
+        (field.jobId === jobId && !field.candidateId) ||
         // Include global fields (no jobId, no candidateId)
-        || (!field.jobId && !field.candidateId),
+        (!field.jobId && !field.candidateId),
     );
   }
   // For existing candidates (with candidateId)
@@ -60,11 +60,11 @@ const useCustomForm = (
     filteredFields = fields.filter(
       (field) =>
         // Include candidate-specific fields for this candidate
-        field.candidateId === candidateId
+        field.candidateId === candidateId ||
         // Include job-specific fields if we have a jobId
-        || (jobId && field.jobId === jobId && !field.candidateId)
+        (jobId && field.jobId === jobId && !field.candidateId) ||
         // Include global fields (no jobId, no candidateId)
-        || (!field.jobId && !field.candidateId),
+        (!field.jobId && !field.candidateId),
     );
   }
   // For global fields only (fetchGlobal is true)
@@ -90,7 +90,8 @@ const useCustomForm = (
       } else if (field.type === 'time') {
         acc[field.label] = field.defaultValue || dayjs().format('HH:mm');
       } else if (field.type === 'datetime') {
-        acc[field.label] = field.defaultValue || dayjs().format('YYYY-MM-DDTHH:mm:ss');
+        acc[field.label] =
+          field.defaultValue || dayjs().format('YYYY-MM-DDTHH:mm:ss');
       } else {
         acc[field.label] = field.defaultValue || '';
       }
@@ -103,26 +104,36 @@ const useCustomForm = (
   );
 
   const getDefaultValues = (formValues: CustomFieldValues) => {
-    if (!initialValues) return {};
+    // If context is still loading or not ready, preserve all existing values
+    // This prevents data loss on page reload
+    if (isLoading || !isReady) {
+      return { ...formValues };
+    }
+
+    // If no initial values, return empty object
+    if (!initialValues || filteredFields.length === 0) {
+      // But still preserve existing values if context is ready but no fields defined
+      return { ...formValues };
+    }
 
     // Create a copy of initialValues to avoid modifying the original
-    const filteredValues = { ...initialValues };
+    const filteredValues: CustomFieldValues = { ...initialValues };
 
-    // Only include values for fields that are in our filtered list
-    // This ensures job-specific fields are only included when relevant
-    const fieldLabels = filteredFields.map((field) => field.label);
-
+    // Preserve all existing values to prevent data loss
+    // This handles cases where field was deleted from metadata but still has values
     Object.keys(formValues).forEach((key) => {
-      // Only process this field if it's in our filtered fields list
-      if (fieldLabels.includes(key)) {
-        if (
-          (typeof formValues[key] === 'string' && formValues[key] !== '')
-          || (typeof formValues[key] === 'object'
-            && Object.entries(formValues[key]).length > 0)
-          || (Array.isArray(formValues[key]) && formValues[key].length > 0)
-        ) {
-          filteredValues[key] = formValues[key];
-        }
+      // Check if value is non-empty
+      const hasValue =
+        (typeof formValues[key] === 'string' && formValues[key] !== '') ||
+        (typeof formValues[key] === 'object' &&
+          formValues[key] !== null &&
+          Object.entries(formValues[key]).length > 0) ||
+        (Array.isArray(formValues[key]) && formValues[key].length > 0);
+
+      if (hasValue) {
+        // Preserve value whether it's in metadata or not
+        // This prevents data loss if field was deleted from metadata
+        filteredValues[key] = formValues[key];
       }
     });
 
