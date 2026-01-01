@@ -107,9 +107,9 @@ export async function POST(req: NextRequest) {
       const suffixes = existingTemplates
         .map((t) => {
           const match = t.name.match(/\((\d+)\)$/);
-          return match ? parseInt(match[1]) : 0;
+          return match ? parseInt(match[1], 10) : 0;
         })
-        .filter((num) => !isNaN(num));
+        .filter((num) => !Number.isNaN(num));
 
       const maxSuffix = suffixes.length > 0 ? Math.max(...suffixes) : 0;
       const nextSuffix = maxSuffix + 1;

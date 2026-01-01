@@ -16,6 +16,7 @@ import { useState } from 'react';
 import CustomFields from '@/Custom_Fields/Components/CustomFields';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { scrollToError } from '@/lib/formUtils';
+import { convertFileToBase64 } from '@/app/apply-jobs/utils/guestApplicationUtils';
 import { JobForm } from './job-form';
 import { JobFormValues, jobSchema } from '../schemas/job-schema';
 
