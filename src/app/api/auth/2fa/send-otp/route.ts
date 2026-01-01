@@ -63,7 +63,6 @@ async function handleSendOtp(req: NextRequest) {
             select: 'name', // populate only organization name
           })
           .lean();
-    console.log('isCandidate', isCandidate, user, 'user');
     const organizationName =
       (user?.organizationId as unknown as { name: string })?.name || '';
     // Check if user has an existing OTP and its generation time

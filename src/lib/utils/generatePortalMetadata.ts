@@ -60,12 +60,15 @@ export function generatePortalMetadata(
 
   // Generate title
   const defaultTitle = portalData.portalName;
-  const pageTitle = options.title || defaultTitle;
-  const fullTitle = options.title
-    ? options.titleTemplate
-      ? options.titleTemplate.replace('%s', options.title)
-      : `${options.title} - ${defaultTitle}`
-    : defaultTitle;
+  let fullTitle = defaultTitle;
+  
+  if (options.title) {
+    if (options.titleTemplate) {
+      fullTitle = options.titleTemplate.replace('%s', options.title);
+    } else {
+      fullTitle = `${options.title} - ${defaultTitle}`;
+    }
+  }
 
   // Generate description
   const defaultDescription = `${portalData.portalName} - Streamline your recruitment process with our modern applicant tracking system.`;
