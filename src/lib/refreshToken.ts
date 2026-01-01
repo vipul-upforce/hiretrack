@@ -173,8 +173,8 @@ export async function storeRefreshToken(
  */
 export async function cleanupExpiredTokens(
   userId: string,
-  isCandidate: boolean = false,
   beforeDate?: Date | null, // Optional date to filter tokens before
+  isCandidate: boolean = false,
 ): Promise<void> {
 
   const now = beforeDate || new Date();
@@ -233,7 +233,7 @@ export async function verifyRefreshToken(
   const validTokens = user.refreshTokens.filter((rt) => rt.expiry > now);
   console.log(validTokens?.length, 'validTokens-233');
   if (validTokens.length < user.refreshTokens.length) {
-    await cleanupExpiredTokens(userId, isCandidate, now);
+    await cleanupExpiredTokens(userId, now, isCandidate);
   }
   // Find matching token from valid tokens
 
@@ -300,9 +300,9 @@ export const returnTokenBasedResponse = async (obj: IAccessTokenPayload): Promis
   const isCandidate = role === 'candidate';
   const orgId = obj.organizationId.toString();
   const accessToken = await signAccessToken(obj, orgId);
-
+  const now = new Date();
   // Cleanup expired tokens before storing new one (keeps array clean)
-  await cleanupExpiredTokens(userId, isCandidate);
+  await cleanupExpiredTokens(userId, now, isCandidate);
 
   // Generate refresh token using JWT (same method as access token)
   const refreshTokenPayload = {

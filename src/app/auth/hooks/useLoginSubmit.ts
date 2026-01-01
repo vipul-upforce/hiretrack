@@ -63,8 +63,7 @@ export const useHandleLoginSubmit = ({
         if (!data.valid) {
           throw new Error(data.error || 'License validation failed');
         }
-
-        setIsSubmitting(false);
+        // Keep button disabled during login process - don't set to false here
       } catch (e: unknown) {
         // Handle license check failure
         let errorMessage =
@@ -102,6 +101,7 @@ export const useHandleLoginSubmit = ({
         ) {
           setOrganizations(response.organizations);
           setOrganizationDialogOpen(true);
+          setIsSubmitting(false);
           return;
         }
 
@@ -114,8 +114,13 @@ export const useHandleLoginSubmit = ({
             const encodedEmail = encodeURIComponent(
               values.email.toLowerCase().trim(),
             );
-            const encodedOrgId = encodeURIComponent(organizationId?.toString() || '');
-            const url =`/auth/2fa/verify?email=${encodedEmail}&orgId=${encodedOrgId}${response?.isCandidate ? '&isCandidate=true' : ''}` as string;
+            const encodedOrgId = encodeURIComponent(
+              organizationId?.toString() || '',
+            );
+            const url =
+              `/auth/2fa/verify?email=${encodedEmail}&orgId=${encodedOrgId}${response?.isCandidate ? '&isCandidate=true' : ''}` as string;
+
+            // Keep button disabled during OTP sending - button will be disabled via isLoading state
             await sendOtp({
               email: values.email.toLowerCase().trim(),
               organizationId,
@@ -123,14 +128,14 @@ export const useHandleLoginSubmit = ({
             })
               .unwrap()
               .then(() => {
+                setIsSubmitting(false);
+                toast({
+                  title: 'Check your email',
+                  description: 'An OTP has been sent to your email address.',
+                  variant: 'default',
+                });
                 router.push(url);
               });
-
-            toast({
-              title: 'Check your email',
-              description: 'An OTP has been sent to your email address.',
-              variant: 'default',
-            });
           } catch (error) {
             logger.error(error);
             const errorMessage =
@@ -138,12 +143,14 @@ export const useHandleLoginSubmit = ({
               (error instanceof Error ? error.message : 'Failed to send OTP');
 
             setStatus(errorMessage);
+            setIsSubmitting(false);
             toast({
               title: 'Error',
               description: errorMessage,
               variant: 'destructive',
             });
           }
+          return; // Return early after OTP handling to prevent further execution
         }
 
         // Only proceed if login was successful
@@ -160,6 +167,7 @@ export const useHandleLoginSubmit = ({
               router.push(redirectUrl);
             }
             setUserLoggedIn(true);
+            setIsSubmitting(false);
             toast({
               title: 'Success',
               description: 'Login successful',
@@ -169,10 +177,11 @@ export const useHandleLoginSubmit = ({
         } else {
           // Explicitly handle case where loggedIn is false/undefined
           // This prevents any accidental execution
-          logger.warn('Login response indicates not logged in', { 
+          logger.warn('Login response indicates not logged in', {
             loggedIn: response.loggedIn,
-            hasOrganizations: !!response.organizations 
+            hasOrganizations: !!response.organizations,
           });
+          setIsSubmitting(false);
         }
       } catch (err: unknown) {
         logger.error(err);
@@ -184,6 +193,7 @@ export const useHandleLoginSubmit = ({
             ? (err.data as { error: string }).error
             : 'An unknown error occurred';
         setStatus(errorMessage);
+        setIsSubmitting(false);
         toast({
           title: 'Error',
           description: errorMessage,

@@ -363,18 +363,28 @@ const checkMultipleOrgs = async (
         );
       }
 
-      const fileStorage = await Settings!
+      const fileStorageResult = await Settings!
         .findOne({ organizationId: userInOrg.organizationId }, { _id: 0 })
-        .select('fileStorage')
+        .select('fileStorage twoFA')
         .lean();
+      const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
+      const twoFA = fileStorageResult?.twoFA?.enable2FA as boolean;
 
+      if (twoFA) {
+        return NextResponse.json({
+          message: 'Continuing to next step for 2fa',
+          twofa: true,
+          organizationId: userInOrg.organizationId.toString(),
+          isCandidate: false,
+        });
+      }
       const tokenObj = {
         id: userInOrg._id.toString(),
         name: userInOrg.name,
         email: userInOrg.email,
         role: userInOrg.role,
         organizationId: userInOrg.organizationId.toString(),
-        fileStorage: fileStorage?.fileStorage?.storageType,
+        fileStorage: fileStorage as string,
         tokenVersion: userInOrg.tokenVersion,
       };
 
@@ -388,11 +398,6 @@ const checkMultipleOrgs = async (
         password,
         candidateInOrg.password,
       );
-      const fileStorage = await Settings!
-        .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
-        .select('fileStorage')
-        .lean();
-
       if (!isPasswordValid) {
         return NextResponse.json(
           { error: 'Invalid credentials' },
@@ -400,6 +405,21 @@ const checkMultipleOrgs = async (
         );
       }
 
+      const fileStorageResult = await Settings!
+        .findOne({ organizationId: candidateInOrg.organizationId }, { _id: 0 })
+        .select('fileStorage twoFA')
+        .lean();
+
+
+      const twoFA = fileStorageResult?.twoFA?.enable2FA as boolean;
+      if (twoFA) {
+        return NextResponse.json({
+          message: 'Continuing to next step for 2fa',
+          twofa: true,
+          organizationId: candidateInOrg.organizationId.toString(),
+          isCandidate: true,
+        });
+      }
       const tokenObj = {
         id: candidateInOrg._id.toString(),
         name: candidateInOrg.name,
@@ -407,7 +427,7 @@ const checkMultipleOrgs = async (
         appliedApplications: candidateInOrg.appliedApplications,
         role: 'candidate',
         organizationId: candidateInOrg.organizationId.toString(),
-        fileStorage: fileStorage?.fileStorage?.storageType,
+        fileStorage: fileStorageResult?.fileStorage?.storageType,
         tokenVersion: undefined,
       };
 
