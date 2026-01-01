@@ -19,13 +19,6 @@ async function handleVerifyOtp(req: NextRequest) {
         { status: 400 },
       );
     }
-    console.log(
-      'isCandidate',
-      isCandidate,
-      email,
-      otp,
-      'isCandidate,email,otp',
-    );
     const user = isCandidate
       ? await CandidateAccount?.findOne({
           email,
