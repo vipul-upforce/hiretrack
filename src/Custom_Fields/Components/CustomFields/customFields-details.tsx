@@ -8,6 +8,7 @@ import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 import useRoles from '@/hooks/useRoles';
 import { format } from 'date-fns';
 import { Dayjs } from 'dayjs';
+import { CustomField } from '@/Custom_Fields/Types/CustomField';
 
 interface FileData {
   base64: string;
@@ -63,15 +64,15 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
   const customFields = Object.fromEntries(
     Object.entries(cfWOFormatting).filter(([key, value]) => {
       if (
-        (typeof value === 'string' && value.trim() === '')
-        || (Array.isArray(value) && value.length === 0)
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0)
       ) {
         return false;
       }
 
       if (
-        role === 'interviewer'
-        && fieldsPrivateFromInterviewer.includes(key)
+        role === 'interviewer' &&
+        fieldsPrivateFromInterviewer.includes(key)
       ) {
         return false;
       }
@@ -90,11 +91,12 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
     return null;
   }
 
-  const getFieldType = (fieldName: string): any | undefined => {
+  const getFieldType = (fieldName: string): CustomField | undefined => {
     for (const form of Object.values(cfMetaData)) {
       if (form && typeof form === 'object' && 'fields' in form) {
-        const field = (form as any).fields.find(
-          (f: any) => f.label === fieldName,
+        const formWithFields = form as { fields: CustomField[] };
+        const field = formWithFields.fields.find(
+          (f: CustomField) => f.label === fieldName,
         );
         if (field) {
           return field;
@@ -105,14 +107,14 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
   };
 
   // Helper function to format value based on field type
-  const formatValue = (value: any, fieldName: string): string => {
+  const formatValue = (value: unknown, fieldName: string): string => {
     const fieldType = getFieldType(fieldName);
 
     if (!fieldType) {
       return String(value);
     }
 
-    switch (fieldType) {
+    switch (fieldType.type) {
       case 'date':
         if (typeof value === 'string' && value) {
           try {
@@ -139,7 +141,7 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
             // Handle time format (HH:mm)
             const [hours, minutes] = value.split(':');
             const date = new Date();
-            date.setHours(parseInt(hours), parseInt(minutes));
+            date.setHours(parseInt(hours, 10), parseInt(minutes, 10));
             return format(date, 'h:mm a');
           } catch {
             return String(value);
@@ -167,7 +169,7 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
         return -1;
       }
 
-      return (aField?.renderOrder ?? 0) - (bField?.renderOrder ?? 0);
+      return keyA.localeCompare(keyB);
     },
   );
 
@@ -175,31 +177,33 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
     <div className="flex flex-col gap-4">
       {sortedCustomFields.map(([key, value]) => {
         if (
-          (typeof value === 'string' && value.trim() === '')
-          || (Array.isArray(value) && value.length === 0)
-          || fieldsNotRegisteredHere.includes(key)
+          (typeof value === 'string' && value.trim() === '') ||
+          (Array.isArray(value) && value.length === 0) ||
+          fieldsNotRegisteredHere.includes(key)
         ) {
           return null;
         }
 
         return (
           <div key={key} className="space-y-2">
-            <Label className="font-semibold text-gray-900 dark:text-white capitalize">
+            <Label className="font-semibold capitalize text-gray-900 dark:text-white">
               {key.split(' |||||(')[0]}
             </Label>
             <div className="text-gray-700 dark:text-gray-300">
               {Array.isArray(value) && value.length > 0 && (
                 <>
                   {value.some(
-                    (file): file is FileData | File => typeof file === 'object'
-                      && file !== null
-                      && 'type' in file
-                      && file.type?.endsWith('pdf'),
+                    (file): file is FileData | File =>
+                      typeof file === 'object' &&
+                      file !== null &&
+                      'type' in file &&
+                      file.type?.endsWith('pdf'),
                   ) && (
                     <PDFViewer
                       files={value
                         .filter(
-                          (file): file is FileData => typeof file === 'object' && 'base64' in file,
+                          (file): file is FileData =>
+                            typeof file === 'object' && 'base64' in file,
                         )
                         .filter((file) => file.type.endsWith('pdf'))
                         .map((file) => ({
@@ -211,15 +215,17 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
                     />
                   )}
                   {value.some(
-                    (file): file is FileData | File => typeof file === 'object'
-                      && file !== null
-                      && 'type' in file
-                      && file.type?.startsWith('image'),
+                    (file): file is FileData | File =>
+                      typeof file === 'object' &&
+                      file !== null &&
+                      'type' in file &&
+                      file.type?.startsWith('image'),
                   ) && (
                     <ImageGallery
                       images={value
                         .filter(
-                          (file): file is FileData => typeof file === 'object' && 'base64' in file,
+                          (file): file is FileData =>
+                            typeof file === 'object' && 'base64' in file,
                         )
                         .filter((file) => file.type.startsWith('image'))
                         .map((file) => ({
@@ -230,30 +236,33 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
                     />
                   )}
                   {value.some(
-                    (file): file is FileData | File => typeof file === 'object'
-                      && file !== null
-                      && 'type' in file
-                      && !file.type?.endsWith('pdf')
-                      && !file.type?.startsWith('image'),
+                    (file): file is FileData | File =>
+                      typeof file === 'object' &&
+                      file !== null &&
+                      'type' in file &&
+                      !file.type?.endsWith('pdf') &&
+                      !file.type?.startsWith('image'),
                   ) && (
                     <div className="flex flex-col gap-2">
                       {value
                         .filter(
-                          (file): file is FileData => typeof file === 'object' && 'base64' in file,
+                          (file): file is FileData =>
+                            typeof file === 'object' && 'base64' in file,
                         )
                         .filter(
-                          (file) => !file.type.endsWith('pdf')
-                            && !file.type.startsWith('image'),
+                          (file) =>
+                            !file.type.endsWith('pdf') &&
+                            !file.type.startsWith('image'),
                         )
                         .map((file) => (
                           <div
                             key={file.name}
-                            className="flex items-center justify-between p-3 bg-white dark:bg-black rounded-lg border border-gray-200 dark:border-gray-700"
+                            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-black"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                              <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
                                 <svg
-                                  className="w-5 h-5 text-gray-600 dark:text-gray-400"
+                                  className="h-5 w-5 text-gray-600 dark:text-gray-400"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -272,9 +281,7 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
                                   {file.name}
                                 </span>
                                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {(file.size / 1024).toFixed(1)}
-                                  {' '}
-                                  KB
+                                  {(file.size / 1024).toFixed(1)} KB
                                 </span>
                               </div>
                             </div>
@@ -286,7 +293,7 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
                             >
                               <a href={file.base64} download={file.name}>
                                 <svg
-                                  className="w-4 h-4"
+                                  className="h-4 w-4"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -310,10 +317,10 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
                     (item): item is string => typeof item === 'string',
                   ) && (
                     <div className="flex flex-wrap gap-2">
-                      {value.map((item, index) => (
+                      {value.map((item) => (
                         <span
-                          key={index}
-                          className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm rounded-full border border-gray-200 dark:border-gray-600"
+                          key={item.toString()}
+                          className="rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-sm text-gray-800 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200"
                         >
                           {item}
                         </span>

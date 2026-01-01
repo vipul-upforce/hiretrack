@@ -4,7 +4,7 @@ import {
   hashRefreshToken,
   verifyRefreshToken,
   updateRefreshToken,
-  cleanupExpiredTokens,
+  // cleanupExpiredTokens,
   verifyAndDecryptRefreshToken,
 } from '@/lib/refreshToken';
 import { signAccessToken } from '@/app/actions/auth';
@@ -14,7 +14,6 @@ import connectToDatabase, {
   Settings,
 } from '@/lib/mongodb';
 import { validateLicense } from '@/lib/licenseUtils';
-import { UserRole } from '@/lib/models/JobLaneConfig';
 import { IUser } from '@/lib/models/user';
 import { clearAuthTokens, setAuthCookies } from '@/lib/authCookies';
 import { apiRateLimiter } from '@/lib/rateLimiter';
@@ -55,8 +54,6 @@ async function handleRefreshToken(req: NextRequest) {
     let orgId: string;
     let userId: string;
     let isCandidate: boolean;
-    let tokenVersion: number | undefined;
-    let role: UserRole | undefined;
     // If token is invalid, try to find orgId from database
     if (!tokenVerification.success || !tokenVerification.payload) {
       // Try to find user by hashed token in database to get orgId
@@ -75,7 +72,6 @@ async function handleRefreshToken(req: NextRequest) {
         }).select('+refreshTokens organizationId');
         foundIsCandidate = true;
       }
-      console.log(user, 'user-77');
 
       if (!user) {
         const response = NextResponse.json(
@@ -90,7 +86,6 @@ async function handleRefreshToken(req: NextRequest) {
       orgId = user.organizationId.toString();
       tokenVerification = verifyAndDecryptRefreshToken(refreshToken, orgId);
       if (!tokenVerification.success || !tokenVerification.payload) {
-        console.log(tokenVerification, 'tokenVerification-failed-92');
         const res = NextResponse.json(
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
@@ -100,22 +95,18 @@ async function handleRefreshToken(req: NextRequest) {
       }
 
       isCandidate = foundIsCandidate;
+      const payload = tokenVerification.payload!;
+      userId = payload.userId;
+      orgId = payload.orgId; // This can override the orgId from user if needed
+      isCandidate = payload.isCandidate || foundIsCandidate;
     } else {
       // Token was successfully decrypted
       const payload = tokenVerification.payload!;
-      orgId = payload.orgId;
       userId = payload.userId;
+      orgId = payload.orgId; 
       isCandidate = payload.isCandidate || false;
-      tokenVersion = payload.tokenVersion;
-      role = payload.role as UserRole;
     }
-    console.log(tokenVerification, 'tokenVerification-109');
-    const payload = tokenVerification.payload!;
-    if (!userId) userId = payload.userId;
-    if (!orgId) orgId = payload.orgId;
-    if (isCandidate === undefined) isCandidate = payload.isCandidate || false;
-    if (!tokenVersion) tokenVersion = payload.tokenVersion;
-    if (!role) role = payload.role as UserRole;
+ 
 
     // STEP 3: Verify token exists in database (only if userId is set)
     // if (userId) {
@@ -130,7 +121,6 @@ async function handleRefreshToken(req: NextRequest) {
     );
 
     if (!verification.valid) {
-      console.log(verification, 'verification-failed-131');
      const res = NextResponse.json(
       { error: 'Invalid or expired refresh token' },
       { status: 401 },

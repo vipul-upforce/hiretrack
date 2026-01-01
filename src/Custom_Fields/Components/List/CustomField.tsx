@@ -19,7 +19,13 @@ function FormCustomFieldList() {
   }, [setIsOpen]);
 
   const breadcrumbs = [
-    <div key="custom-fields" onClick={() => setStepName('FormList')}>
+    <div
+      key="custom-fields"
+      onClick={() => setStepName('FormList')}
+      role="button"
+      tabIndex={0}
+      className="cursor-pointer"
+    >
       Personalized Form Fields
     </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,

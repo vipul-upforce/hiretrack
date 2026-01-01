@@ -21,6 +21,7 @@ import TimePicker from '@/components/ui/time-picker';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { wierdFileNamePattern } from '@/lib/constants';
+import React from 'react';
 
 interface FileData {
   base64: string;
@@ -29,15 +30,34 @@ interface FileData {
   size: number;
 }
 
+interface FieldProps {
+  name: string;
+  value: unknown;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => void;
+  onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  error?: string;
+}
+
+interface FieldMeta {
+  touched: boolean;
+  error?: string;
+  initialTouched: boolean;
+  initialError?: string;
+  initialValue?: unknown;
+  value: unknown;
+}
+
 interface RenderFieldProps {
   getFieldProps: (fieldName: string) => {
     name: string;
     value: string;
     onChange: (
-      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => void;
     onBlur: (
-      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => void;
     error?: string;
   };
@@ -45,7 +65,7 @@ interface RenderFieldProps {
   label: string;
   setFieldValue: (
     field: string,
-    value: string | string[] | boolean | FileData[] | Dayjs
+    value: string | string[] | boolean | FileData[] | Dayjs,
   ) => void;
   type: string;
   values: {
@@ -57,44 +77,47 @@ interface RenderFieldProps {
   options: string[] | undefined;
   setFieldError: (field: string, error: string) => void;
   fieldHook?: {
-    fieldProps: any;
-    fieldMeta: any;
+    fieldProps: FieldProps;
+    fieldMeta: FieldMeta;
   };
 }
 
-const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => resolve(reader.result as string);
-  reader.onerror = (error) => reject(error);
-});
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
 
-const sanitizeFiles = (files: any[]): any[] => files.map((file) => {
-  // Handle standard File objects
-  if (file instanceof File) {
-    const sanitizedBaseName = file.name
-      .replace(wierdFileNamePattern, '')
-      .replace('/ /', '_');
-    return new File([file], sanitizedBaseName, {
-      type: file.type,
-      lastModified: file.lastModified,
-    });
-  }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sanitizeFiles = (files: any[]): any[] =>
+  files.map((file) => {
+    // Handle standard File objects
+    if (file instanceof File) {
+      const sanitizedBaseName = file.name
+        .replace(wierdFileNamePattern, '')
+        .replace('/ /', '_');
+      return new File([file], sanitizedBaseName, {
+        type: file.type,
+        lastModified: file.lastModified,
+      });
+    }
 
-  // Handle custom file objects with URL - while renaming
-  if (file && typeof file === 'object' && 'name' in file) {
-    const sanitizedBaseName = file.name
-      .replace(wierdFileNamePattern, '')
-      .replace('/ /', '_');
-    return {
-      ...file,
-      name: sanitizedBaseName,
-    };
-  }
+    // Handle custom file objects with URL - while renaming
+    if (file && typeof file === 'object' && 'name' in file) {
+      const sanitizedBaseName = file.name
+        .replace(wierdFileNamePattern, '')
+        .replace('/ /', '_');
+      return {
+        ...file,
+        name: sanitizedBaseName,
+      };
+    }
 
-  // Fallback: return unchanged if neither type matches
-  return file;
-});
+    // Fallback: return unchanged if neither type matches
+    return file;
+  });
 
 export function RenderField({
   label,
@@ -105,17 +128,19 @@ export function RenderField({
   options,
   setFieldError,
   fieldHook,
-  isEditMode = false,
 }: RenderFieldProps) {
-
   const commonProps = {
     id: `customFields.${label}`,
     'data-field-name': label,
-    autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
+    // autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
     className:
-      fieldHook?.fieldMeta.touched
-      && fieldHook?.fieldMeta.error
-      && 'border-2 border-red-500',
+      fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error
+        ? 'border-2 border-red-500'
+        : undefined,
+
+    autoFocus: Boolean(
+      fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
+    ),
   };
 
   switch (type) {
@@ -183,7 +208,9 @@ export function RenderField({
       return (
         <Select
           value={values.customFields[label] as string}
-          onValueChange={(value: string) => setFieldValue(`customFields.${label}`, value)}
+          onValueChange={(value: string) =>
+            setFieldValue(`customFields.${label}`, value)
+          }
         >
           <SelectTrigger {...commonProps}>
             <SelectValue placeholder={`Select ${label.split(' |||||(')[0]}`} />
@@ -195,7 +222,7 @@ export function RenderField({
               </SelectItem>
             ))}
           </SelectContent>
-          {fieldHook?.fieldProps.required && (
+          {fieldHook?.fieldMeta.value !== '' && (
             <Button
               style={{
                 marginLeft: '-10px',
@@ -253,7 +280,7 @@ export function RenderField({
               />
               <Label
                 htmlFor={`${label}-${option}`}
-                className="capitalize font-medium"
+                className="font-medium capitalize"
               >
                 {option}
               </Label>
@@ -262,26 +289,27 @@ export function RenderField({
         </div>
       );
 
-      // case "date":
-      //   return (
-      //     <DatePicker
-      //       value={new Date(values.customFields[label] as string)}
-      //       onChange={(e) =>
-      //         setFieldValue(
-      //           "customFields." + label,
-      //           e && e instanceof Date ? e.toISOString() : ""
-      //         )
-      //       }
-      //       onClose={() => setFieldTouched("customFields." + label, true)}
-      //     />
-      //   );
+    // case "date":
+    //   return (
+    //     <DatePicker
+    //       value={new Date(values.customFields[label] as string)}
+    //       onChange={(e) =>
+    //         setFieldValue(
+    //           "customFields." + label,
+    //           e && e instanceof Date ? e.toISOString() : ""
+    //         )
+    //       }
+    //       onClose={() => setFieldTouched("customFields." + label, true)}
+    //     />
+    //   );
 
-    case 'date':
+    case 'date': {
       const NewValue = values.customFields[label]
         ? dayjs(values.customFields[label] as string)
         : null;
 
-      const dateValue = NewValue && NewValue.isValid() ? NewValue.toDate() : null;
+      const dateValue =
+        NewValue && NewValue.isValid() ? NewValue.toDate() : null;
 
       return (
         <DatePicker
@@ -290,15 +318,16 @@ export function RenderField({
             let selectedDate: string | null = null;
 
             if (e && typeof e === 'object' && 'toDate' in e) {
-              const date = e.toDate();
-              selectedDate = date && !isNaN(date.getTime())
-                ? dayjs(date).format('MM/DD/YYYY')
-                : null;
-            } else if (e && e instanceof Date && !isNaN(e.getTime())) {
+              const date = (e as { toDate: () => Date }).toDate();
+              selectedDate =
+                date && !Number.isNaN(date.getTime())
+                  ? dayjs(date).format('MM/DD/YYYY')
+                  : null;
+            } else if (e && e instanceof Date && !Number.isNaN(e.getTime())) {
               selectedDate = dayjs(e).format('MM/DD/YYYY');
             }
 
-            setFieldValue(`customFields.${label}`, selectedDate);
+            setFieldValue(`customFields.${label}`, selectedDate || '');
           }}
           onClose={() => setFieldTouched(`customFields.${label}`, true)}
           format="MM/DD/YYYY"
@@ -307,7 +336,7 @@ export function RenderField({
           showNowButton={false}
         />
       );
-
+    }
     case 'datetime':
       return (
         <DateTimePicker
@@ -324,7 +353,6 @@ export function RenderField({
               setFieldValue(`customFields.${label}`, '');
             }
           }}
-          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
         />
       );
 
@@ -345,7 +373,9 @@ export function RenderField({
         <div className="flex items-center gap-4">
           <RadioGroup
             value={values.customFields[label] as string}
-            onValueChange={(value) => setFieldValue(`customFields.${label}`, value)}
+            onValueChange={(value) =>
+              setFieldValue(`customFields.${label}`, value)
+            }
             className="flex flex-col gap-2 md:flex-row md:gap-4"
           >
             {options?.map((option) => (
@@ -353,7 +383,7 @@ export function RenderField({
                 <RadioGroupItem value={option} id={`${label}-${option}`} />
                 <Label
                   htmlFor={`${label}-${option}`}
-                  className="capitalize font-medium "
+                  className="font-medium capitalize"
                 >
                   {option}
                 </Label>
@@ -401,7 +431,8 @@ export function RenderField({
                   }),
                 );
                 const fileNames = base64Files.map((file) => file.name);
-                const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+                const hasDuplicates =
+                  new Set(fileNames).size !== fileNames.length;
                 if (hasDuplicates) {
                   return;
                 }
@@ -410,18 +441,17 @@ export function RenderField({
                 // Handle error
               }
             }}
-           
             existingFiles={
               Array.isArray(values.customFields[label])
                 ? sanitizeFiles(
-                  (values.customFields[label] as FileData[]).map((file) => ({
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    url: file.base64 || '', // Map base64 to url
-                    preview: file.base64,
-                  })),
-                )
+                    (values.customFields[label] as FileData[]).map((file) => ({
+                      name: file.name,
+                      type: file.type,
+                      size: file.size,
+                      url: file.base64 || '', // Map base64 to url
+                      preview: file.base64,
+                    })),
+                  )
                 : []
             }
           />
@@ -445,7 +475,8 @@ export function RenderField({
             onBlur={() => setFieldTouched(`customFields.${label}`, true)}
             placeholder={`Enter ${label.split(' |||||(')[0]}`}
             onSuggestionClick={(suggestion) => {
-              const currentValues = (values.customFields[label] as string[]) || [];
+              const currentValues =
+                (values.customFields[label] as string[]) || [];
               if (suggestion.trim() && !currentValues.includes(suggestion)) {
                 setFieldValue(`customFields.${label}`, [
                   ...currentValues,
@@ -455,7 +486,8 @@ export function RenderField({
             }}
             suggestions={
               options?.filter(
-                (option) => !(values.customFields[label] as string[])?.includes(option),
+                (option) =>
+                  !(values.customFields[label] as string[])?.includes(option),
               ) || []
             }
           />

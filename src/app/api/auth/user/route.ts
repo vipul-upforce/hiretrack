@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(request: NextRequest) {
   try {
-    const userData = await getAuthenticatedUser(request);
+    const userData = await getAuthenticatedUser(request, ['admin', 'hr']);
     if (!userData) {
       return NextResponse.json(
         { message: 'Unauthorised Access' },

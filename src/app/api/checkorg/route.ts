@@ -17,10 +17,13 @@ async function checkOrgInDatabase(organizationId: string) {
 }
 
 const handleGetChekOrg = async (req: NextRequest) => {
-  const { searchParams } = new URL(req.url);
-  const organizationId = searchParams?.get('organizationId');
 
   try {
+    const { searchParams } = new URL(req.url);
+    const organizationId = searchParams?.get('organizationId')|| req.cookies.get('org_id')?.value || null;
+    if (!organizationId) {
+      return NextResponse.json({ exists: false }, { status: 400 });
+    }
     await connectToDatabase();
     const exists = await checkOrgInDatabase(organizationId as string);
 

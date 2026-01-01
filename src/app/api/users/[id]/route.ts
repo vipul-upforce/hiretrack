@@ -30,7 +30,7 @@ export async function DELETE(
     if (userData.id === id) {
       return NextResponse.json(
         { error: 'You cannot delete yourself' },
-        { status: 401 },
+        { status: 400 },
       );
     }
 
@@ -125,6 +125,7 @@ export async function PUT(
       const existingUser = await User.findOne({
         email: userData.email,
         _id: { $ne: id }, // Exclude the current user
+        organizationId: session?.organizationId,
       });
       if (existingUser) {
         return NextResponse.json(
@@ -134,7 +135,8 @@ export async function PUT(
       }
 
       const existingCandidate = await CandidateAccount?.findOne({
-        email: userData.email
+        email: userData.email,
+        organizationId: session?.organizationId,
       });
 
       if(existingCandidate){

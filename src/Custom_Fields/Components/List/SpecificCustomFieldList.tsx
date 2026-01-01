@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useCallback, useContext, useState } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -76,285 +77,6 @@ const fieldTypeLabels: Record<string, string> = {
   password: 'Password',
   file: 'File Upload',
 };
-
-function SpecificCustomFieldList({
-  jobId,
-  candidateId,
-  jobTitle,
-  candidateName,
-}: {
-  jobId?: string;
-  candidateId?: string;
-  jobTitle?: string;
-  candidateName?: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedField, setSelectedField] = useState<CustomField>();
-  const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
-  const [formOpen, setFormOpen] = useState<boolean>(false);
-
-  // Custom function to handle draggable styling
-  const getDraggableStyle = (isDragging: boolean, draggableStyle: any) => {
-    if (!isDragging) {
-      return draggableStyle;
-    }
-
-    return {
-      ...draggableStyle,
-      position: 'fixed' as const,
-      top: draggableStyle?.top,
-      left: draggableStyle?.left,
-      zIndex: 9999,
-      outline: 'none',
-    };
-  };
-
-  const handleOpen = useCallback(() => {
-    setIsOpen(true);
-  }, [setIsOpen]);
-
-  const handleClose = useCallback(() => {
-    setIsOpen(false);
-  }, [setIsOpen]);
-
-  const handleAddField = () => {
-    setFormOpen(true);
-  };
-
-  const {
-    selectedFormId,
-    handleDeleteCustomField,
-    setCustomFields,
-    customFields,
-    handleAddCustomField,
-    handleEditCustomField,
-  } = useContext(CustomFieldsContext);
-
-  React.useEffect(() => {
-    if (selectedFormId?.fields) {
-      const filteredFields = selectedFormId.fields.filter(
-        (field) =>
-          (field.candidateId && field.candidateId === candidateId) ||
-          (field.jobId && field.jobId === jobId),
-      );
-      setOrderedFields(filteredFields);
-    } else {
-      setOrderedFields([]);
-    }
-  }, [selectedFormId?.fields, candidateId, jobId]);
-
-  const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-
-    const items = Array.from(orderedFields);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    if (selectedFormId) {
-      const allFields = customFields[selectedFormId.formId].fields;
-      const matchingFields = allFields.filter(
-        (field) =>
-          (candidateId && field.candidateId === candidateId) ||
-          (jobId && field.jobId === jobId),
-      );
-      const otherFields = allFields.filter(
-        (field) =>
-          !(
-            (candidateId && field.candidateId === candidateId) ||
-            (jobId && field.jobId === jobId)
-          ),
-      );
-      if (
-        JSON.stringify(matchingFields.map((f) => f.id)) !==
-        JSON.stringify(orderedFields.map((f) => f.id))
-      ) {
-        logger.warn(
-          'orderedFields does not match the expected fields for candidateId/jobId',
-          { matchingFields, orderedFields },
-        );
-        return;
-      }
-      // Combine reordered fields with other fields
-      const reorderedFields = [...items, ...otherFields];
-
-      const orderedItems = {
-        ...customFields,
-        [selectedFormId.formId]: {
-          ...selectedFormId,
-          fields: reorderedFields,
-        },
-      };
-      setCustomFields(orderedItems);
-    }
-    setOrderedFields(items);
-  };
-
-  const handleSave = (newField: CustomField) => {
-    selectedFormId &&
-      customFields[selectedFormId.formId].fields.forEach((field) => {
-        if (
-          field.label === newField.label &&
-          !field.jobId &&
-          !field.candidateId &&
-          field.id !== newField.id
-        ) {
-          newField.label += ' |||||(i)';
-        }
-      });
-
-    if (
-      !isEditMode &&
-      selectedFormId?.fields.some(
-        (field) =>
-          field.label === newField.label &&
-          field.id === newField.id &&
-          ((field.jobId && field.jobId === jobId) ||
-            (field.candidateId && field.candidateId === candidateId)),
-      )
-    ) {
-      return;
-    }
-
-    if (isEditMode) {
-      handleEditCustomField(
-        newField as CustomField,
-        selectedFormId?.formId || null,
-      );
-    } else {
-      handleAddCustomField(newField, selectedFormId?.formId || '');
-    }
-    setIsOpen(false);
-    setFormOpen(false);
-  };
-
-  return (
-    <div className="relative w-full">
-      <div className="mb-4 flex justify-end">
-        <Button
-          type="button"
-          variant="primary"
-          onClick={handleAddField}
-          className="flex items-center gap-2"
-        >
-          Add a new field
-        </Button>
-      </div>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="custom-fields">
-          {(provided: DroppableProvided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="mt-2 w-full space-y-2"
-              style={{
-                minHeight: '100px',
-                position: 'relative',
-              }}
-            >
-              {orderedFields.length === 0 ? (
-                <div className="w-full justify-center border-none py-10 text-center text-gray-500 dark:text-gray-400">
-                  No personalized fields
-                </div>
-              ) : (
-                orderedFields.map((field, index) => (
-                  <Draggable
-                    key={field.id}
-                    draggableId={field.id}
-                    index={index}
-                  >
-                    {(
-                      provided: DraggableProvided,
-                      snapshot: DraggableStateSnapshot,
-                    ) => {
-                      const child = (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className="w-full"
-                          style={getDraggableStyle(
-                            snapshot.isDragging,
-                            provided.draggableProps.style,
-                          )}
-                        >
-                          <CustomFieldItem
-                            field={field}
-                            dragHandleProps={provided.dragHandleProps}
-                            isDragging={snapshot.isDragging}
-                            handleEditCustomField={() => {
-                              setSelectedField(field);
-                              setIsEditMode(true);
-                              handleOpen();
-                            }}
-                            handleDeleteCustomField={() => {
-                              if (selectedFormId?.formId) {
-                                handleDeleteCustomField(
-                                  field.id,
-                                  selectedFormId.formId,
-                                );
-                              }
-                            }}
-                          />
-                        </div>
-                      );
-
-                      if (
-                        snapshot.isDragging &&
-                        typeof window !== 'undefined'
-                      ) {
-                        return createPortal(child, document.body);
-                      }
-
-                      return child;
-                    }}
-                  </Draggable>
-                ))
-              )}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-
-      {formOpen && (
-        <AddSpecificCustomFieldForm
-          isOpen
-          handleClose={() => {
-            handleClose();
-            setFormOpen(false);
-          }}
-          isEditMode={false}
-          onSave={handleSave}
-          jobId={jobId}
-          candidateId={candidateId}
-          jobTitle={jobTitle}
-          candidateName={candidateName}
-          existingFields={selectedFormId?.fields}
-        />
-      )}
-
-      {isEditMode && (
-        <AddSpecificCustomFieldForm
-          isOpen={isOpen}
-          handleClose={() => {
-            handleClose();
-            setIsEditMode(false);
-          }}
-          initialValues={selectedField}
-          isEditMode={isEditMode}
-          onSave={handleSave}
-          jobId={jobId}
-          candidateId={candidateId}
-          jobTitle={jobTitle}
-          candidateName={candidateName}
-          existingFields={selectedFormId?.fields}
-        />
-      )}
-    </div>
-  );
-}
-
-export default React.memo(SpecificCustomFieldList);
 
 interface CustomFieldItemProps {
   field: CustomField;
@@ -468,9 +190,9 @@ export const CustomFieldItem = React.memo(
                               {field.options.length !== 1 ? 's' : ''}
                             </span>
                             <div className="ml-2 flex items-center gap-1">
-                              {field.options.slice(0, 3).map((option, idx) => (
+                              {field.options.slice(0, 3).map((option) => (
                                 <span
-                                  key={idx}
+                                  key={option.toString()}
                                   className="rounded-md bg-gradient-to-r from-indigo-50 to-purple-50 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:from-indigo-900/30 dark:to-purple-900/30 dark:text-indigo-300"
                                 >
                                   {option.length > 8
@@ -564,9 +286,9 @@ export const CustomFieldItem = React.memo(
             <DialogHeader>
               <DialogTitle>Delete Personalized Field</DialogTitle>
               <DialogDescription id="delete-field-description">
-                Are you sure you want to delete the field "
+                Are you sure you want to delete the field &quot;
                 {field.label.split(' |||||(')[0]}
-                "? This action cannot be undone.
+                &quot;? This action cannot be undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -595,3 +317,286 @@ export const CustomFieldItem = React.memo(
 );
 
 CustomFieldItem.displayName = 'CustomFieldItem';
+
+function SpecificCustomFieldList({
+  jobId,
+  candidateId,
+  jobTitle,
+  candidateName,
+}: {
+  jobId?: string;
+  candidateId?: string;
+  jobTitle?: string;
+  candidateName?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedField, setSelectedField] = useState<CustomField>();
+  const [orderedFields, setOrderedFields] = useState<CustomField[]>([]);
+  const [formOpen, setFormOpen] = useState<boolean>(false);
+
+  // Custom function to handle draggable styling
+  const getDraggableStyle = (
+    isDragging: boolean,
+    draggableStyle: React.CSSProperties,
+  ) => {
+    if (!isDragging) {
+      return draggableStyle;
+    }
+
+    return {
+      ...draggableStyle,
+      position: 'fixed' as const,
+      top: draggableStyle?.top,
+      left: draggableStyle?.left,
+      zIndex: 9999,
+      outline: 'none',
+    };
+  };
+
+  const handleOpen = useCallback(() => {
+    setIsOpen(true);
+  }, [setIsOpen]);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, [setIsOpen]);
+
+  const handleAddField = () => {
+    setFormOpen(true);
+  };
+
+  const {
+    selectedFormId,
+    handleDeleteCustomField,
+    setCustomFields,
+    customFields,
+    handleAddCustomField,
+    handleEditCustomField,
+  } = useContext(CustomFieldsContext);
+
+  React.useEffect(() => {
+    if (selectedFormId?.fields) {
+      const filteredFields = selectedFormId.fields.filter(
+        (field) =>
+          (field.candidateId && field.candidateId === candidateId) ||
+          (field.jobId && field.jobId === jobId),
+      );
+      setOrderedFields(filteredFields);
+    } else {
+      setOrderedFields([]);
+    }
+  }, [selectedFormId?.fields, candidateId, jobId]);
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(orderedFields);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    if (selectedFormId) {
+      const allFields = customFields[selectedFormId.formId].fields;
+      const matchingFields = allFields.filter(
+        (field) =>
+          (candidateId && field.candidateId === candidateId) ||
+          (jobId && field.jobId === jobId),
+      );
+      const otherFields = allFields.filter(
+        (field) =>
+          !(
+            (candidateId && field.candidateId === candidateId) ||
+            (jobId && field.jobId === jobId)
+          ),
+      );
+      if (
+        JSON.stringify(matchingFields.map((f) => f.id)) !==
+        JSON.stringify(orderedFields.map((f) => f.id))
+      ) {
+        logger.warn(
+          'orderedFields does not match the expected fields for candidateId/jobId',
+          { matchingFields, orderedFields },
+        );
+        return;
+      }
+      // Combine reordered fields with other fields
+      const reorderedFields = [...items, ...otherFields];
+
+      const orderedItems = {
+        ...customFields,
+        [selectedFormId.formId]: {
+          ...selectedFormId,
+          fields: reorderedFields,
+        },
+      };
+      setCustomFields(orderedItems);
+    }
+    setOrderedFields(items);
+  };
+
+  const handleSave = (newField: CustomField) => {
+    if (selectedFormId) {
+      customFields[selectedFormId.formId].fields.forEach((field) => {
+        if (
+          field.label === newField.label &&
+          !field.jobId &&
+          !field.candidateId &&
+          field.id !== newField.id
+        ) {
+          newField.label += ' |||||(i)';
+        }
+      });
+    }
+
+    if (
+      !isEditMode &&
+      selectedFormId?.fields.some(
+        (field) =>
+          field.label === newField.label &&
+          field.id === newField.id &&
+          ((field.jobId && field.jobId === jobId) ||
+            (field.candidateId && field.candidateId === candidateId)),
+      )
+    ) {
+      return;
+    }
+
+    if (isEditMode) {
+      handleEditCustomField(
+        newField as CustomField,
+        selectedFormId?.formId || null,
+      );
+    } else {
+      handleAddCustomField(newField, selectedFormId?.formId || '');
+    }
+    setIsOpen(false);
+    setFormOpen(false);
+  };
+
+  return (
+    <div className="relative w-full">
+      <div className="mb-4 flex justify-end">
+        <Button
+          type="button"
+          variant="primary"
+          onClick={handleAddField}
+          className="flex items-center gap-2"
+        >
+          Add a new field
+        </Button>
+      </div>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="custom-fields">
+          {(provided: DroppableProvided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="mt-2 w-full space-y-2"
+              style={{
+                minHeight: '100px',
+                position: 'relative',
+              }}
+            >
+              {orderedFields.length === 0 ? (
+                <div className="w-full justify-center border-none py-10 text-center text-gray-500 dark:text-gray-400">
+                  No personalized fields
+                </div>
+              ) : (
+                orderedFields.map((field, index) => (
+                  <Draggable
+                    key={field.id}
+                    draggableId={field.id}
+                    index={index}
+                  >
+                    {(
+                      draggableProvided: DraggableProvided,
+                      snapshot: DraggableStateSnapshot,
+                    ) => {
+                      const child = (
+                        <div
+                          ref={draggableProvided.innerRef}
+                          {...draggableProvided.draggableProps}
+                          className="w-full"
+                          style={getDraggableStyle(
+                            snapshot.isDragging,
+                            draggableProvided.draggableProps.style,
+                          )}
+                        >
+                          <CustomFieldItem
+                            field={field}
+                            dragHandleProps={draggableProvided.dragHandleProps}
+                            isDragging={snapshot.isDragging}
+                            handleEditCustomField={() => {
+                              setSelectedField(field);
+                              setIsEditMode(true);
+                              handleOpen();
+                            }}
+                            handleDeleteCustomField={() => {
+                              if (selectedFormId?.formId) {
+                                handleDeleteCustomField(
+                                  field.id,
+                                  selectedFormId.formId,
+                                );
+                              }
+                            }}
+                          />
+                        </div>
+                      );
+
+                      if (
+                        snapshot.isDragging &&
+                        typeof window !== 'undefined'
+                      ) {
+                        return createPortal(child, document.body);
+                      }
+
+                      return child;
+                    }}
+                  </Draggable>
+                ))
+              )}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      {formOpen && (
+        <AddSpecificCustomFieldForm
+          isOpen
+          handleClose={() => {
+            handleClose();
+            setFormOpen(false);
+          }}
+          isEditMode={false}
+          onSave={handleSave}
+          jobId={jobId}
+          candidateId={candidateId}
+          jobTitle={jobTitle}
+          candidateName={candidateName}
+          existingFields={selectedFormId?.fields}
+        />
+      )}
+
+      {isEditMode && (
+        <AddSpecificCustomFieldForm
+          isOpen={isOpen}
+          handleClose={() => {
+            handleClose();
+            setIsEditMode(false);
+          }}
+          initialValues={selectedField}
+          isEditMode={isEditMode}
+          onSave={handleSave}
+          jobId={jobId}
+          candidateId={candidateId}
+          jobTitle={jobTitle}
+          candidateName={candidateName}
+          existingFields={selectedFormId?.fields}
+        />
+      )}
+    </div>
+  );
+}
+
+export default React.memo(SpecificCustomFieldList);

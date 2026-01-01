@@ -102,11 +102,11 @@ export function EditCandidateDialog({
   const pathname = usePathname();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
   // const [user, setuser] = useState<User | null>(null);
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state.auth);
   const { formikRef, handleApply } = useApplyHandler<Candidate>();
   const {
-    handleAddCustomField,
-    selectedFormId,
+    // handleAddCustomField,
+    // selectedFormId,
     setStepName,
     customFields,
     setSelectedFormId,
@@ -476,6 +476,7 @@ export function EditCandidateDialog({
           initialValues={initialValues}
           validationSchema={candidateSchema(validationSchema)}
           onSubmit={handleSubmit}
+          enableReinitialize
         >
           {({ isSubmitting, errors, setFieldValue }) => (
             // <Form className='flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t '>
@@ -495,12 +496,12 @@ export function EditCandidateDialog({
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   candidateName={candidate.name}
-                  onSave={(newField) => {
-                    handleAddCustomField(
-                      newField,
-                      selectedFormId?.formId || null,
-                    );
-                  }}
+                  // onSave={(newField) => {
+                  //   handleAddCustomField(
+                  //     newField,
+                  //     selectedFormId?.formId || null,
+                  //   );
+                  // }}
                 />
                 <div className="bottom-0 flex gap-3">
                   <Button

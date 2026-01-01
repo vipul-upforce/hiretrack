@@ -62,7 +62,7 @@ export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getMe: builder.query<GetMeResponse, void>({
       query: () => '/auth/me',
-      providesTags: ['Users'],
+      providesTags: ['Profile'],
     }),
     login: builder.mutation<AuthResponse, AuthRequest>({
       query: (credentials) => ({
@@ -77,15 +77,11 @@ export const authApi = baseApi.injectEndpoints({
           if (result.data.loggedIn === true) {
             // Manually invalidate the Users tag only on successful login
             dispatch(
-              authApi.util.invalidateTags(['Users'])
+              authApi.util.invalidateTags(['Profile'])
             );
             dispatch(
               portalApi.util.invalidateTags(['Settings'])
             );
-            // dispatch(
-            //   portalApi.endpoints.getPortalConfigs.initiate(undefined, { forceRefetch: true })
-            // );
-
           }
         } catch (error) {
           // Don't invalidate on error
