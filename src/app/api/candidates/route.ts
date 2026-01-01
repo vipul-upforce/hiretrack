@@ -72,14 +72,39 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const data = await request.json();
     const userData = await getAuthenticatedUser(request);
+
     if (userData) {
       const { organizationId, fileStorage } = userData as AuthenticatedUser;
+
+      if (data.resume && data.resume.size) {
+        const fileSize = data.resume.size;
+        const userRole = userData.role || '';
+
+        // Candidate or empty role (3MB limit)
+        if (userRole === 'candidate' || userRole === '') {
+          if (fileSize > 3 * 1024 * 1024) {
+            return NextResponse.json(
+              { error: 'File size exceeds 3MB limit.' },
+              { status: 400 },
+            );
+          }
+        }
+        // HR, Admin, Interviewer (50MB limit)
+        else if (['hr', 'admin', 'interviewer'].includes(userRole)) {
+          if (fileSize > 50 * 1024 * 1024) {
+            return NextResponse.json(
+              { error: 'File size exceeds 50MB limit.' },
+              { status: 400 },
+            );
+          }
+        }
+      }
+      
       const organizationInfo = await Organization?.findById(
         new mongoose.Types.ObjectId(organizationId),
       );

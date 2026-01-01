@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { useAppSelector } from '@/lib/redux/hooks';
 
 interface CandidateResumeSectionProps {
-  setTempResumeUrl: (url: string) => void;
+  setTempResumeUrl: (url: string | null) => void;
   onFileUpload?: (file: File) => Promise<string | void>;
 }
 
@@ -89,14 +89,21 @@ export function CandidateResumeSection({
       });
     }, 100);
 
-    // Explicitly return undefined to satisfy all code paths
     return undefined;
   };
 
   /**
-   * Simple setter for resume field with sanitization, non-async
+   * Setter for resume field.
+   * Handles both Sanitization (on add) and Removal (on empty array).
    */
   const handleSetter = (files: File[]) => {
+    if (files.length === 0) {
+      setFieldValue('resume', null); // Clear Formik value
+      setTempResumeUrl(null); // Clear Preview
+      return;
+    }
+
+    // 2. Handle Addition: Sanitize and set
     const sanitizedFiles = sanitizeFiles(files);
     if (sanitizedFiles && sanitizedFiles.length > 0) {
       setFieldValue('resume', sanitizedFiles[0]);
