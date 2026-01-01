@@ -64,7 +64,6 @@ export function MobileFileUpload({
     isExisting: false,
   });
   const { user } = useAppSelector((state) => state.auth);
-  const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = (newName: string) => {
@@ -78,16 +77,11 @@ export function MobileFileUpload({
         );
         setter?.(updatedFiles);
       } else {
-        // Assuming renameFile.file is an object with a url property
         const updatedFiles = files.map((f) =>
           f === renameFile.file ? { ...f, name: newName } : f,
         );
         setter?.(updatedFiles);
       }
-      setDroppedFiles((prev) => {
-        const combined = [...prev, newName];
-        return Array.from(new Set(combined));
-      });
     }
   };
 
@@ -96,7 +90,6 @@ export function MobileFileUpload({
       (file) => file?.name !== fileNameToRemove,
     );
     setter(updatedFiles);
-    setDroppedFiles((prev) => prev.filter((name) => name !== fileNameToRemove));
   };
 
   const handleFileInputChange = (
@@ -105,10 +98,6 @@ export function MobileFileUpload({
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length > 0) {
       onFileSelect(selectedFiles);
-      setDroppedFiles((prev) => {
-        const combined = [...prev, ...selectedFiles.map((file) => file?.name)];
-        return Array.from(new Set(combined));
-      });
     }
     // Reset the input value to allow selecting the same file again
     if (fileInputRef.current) {
@@ -207,6 +196,13 @@ export function MobileFileUpload({
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
+              <button
+                type="button"
+                className="rounded-md p-2 transition-colors hover:bg-destructive/20"
+                aria-label="Remove file"
+              >
+                <X className="h-4 w-4 text-destructive" />
+              </button>
             </div>
           </div>
         ))}
@@ -243,16 +239,14 @@ export function MobileFileUpload({
                   <Pencil className="h-4 w-4 text-primary" />
                 </button>
               )}
-              {droppedFiles?.includes(file?.name) && (
-                <button
-                  type="button"
-                  className="rounded-md p-2 transition-colors hover:bg-destructive/20"
-                  onClick={() => handleRemoveFile(file?.name)}
-                  aria-label="Remove file"
-                >
-                  <X className="h-4 w-4 text-destructive" />
-                </button>
-              )}
+              <button
+                type="button"
+                className="rounded-md p-2 transition-colors hover:bg-destructive/20"
+                onClick={() => handleRemoveFile(file?.name)}
+                aria-label="Remove file"
+              >
+                <X className="h-4 w-4 text-destructive" />
+              </button>
             </div>
           </div>
         ))}

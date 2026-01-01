@@ -150,6 +150,33 @@ export async function createFileShare(
       return { success: false, error: uploadResult.error };
     }
 
+    // Calculate expiration date
+    const expiresAt = new Date();
+    if (options.expiresInHours) {
+      expiresAt.setHours(expiresAt.getHours() + options.expiresInHours);
+    } else {
+      // Default to 7 days if not specified
+      expiresAt.setDate(expiresAt.getDate() + 7);
+    }
+
+    // Save metadata to MongoDB
+    await FileShare!.create({
+      shareId,
+      organizationId,
+      uploadedBy: userId,
+      originalFileName: file.fileName,
+      storedFileName: file.fileName,
+      fileSize,
+      mimeType: file.mimeType,
+      storageProvider: storageConfig.storageType,
+      storagePath: uploadResult.url,
+      isPublic: options.isPublic ?? false,
+      maxDownloads: options.maxDownloads,
+      currentDownloads: 0,
+      expiresAt,
+      metadata: options.metadata,
+      createdAt: new Date(),
+    });
     // Generate share URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const shareUrl = `${baseUrl}/api/shared-files/${shareId}`;
@@ -177,7 +204,7 @@ export async function getFileShare(shareId: string) {
     const fileShare = await FileShare!
       .findOne({ shareId })
       .select(
-        'originalFileName organizationId storagePath storageProvider isPublic  mimeType',
+        'originalFileName organizationId storagePath storageProvider isPublic  mimeType fileSize',
       )
       .lean()
       .exec();

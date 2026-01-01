@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { User , Organization } from '@/lib/mongodb';
+import connectToDatabase, { User, Organization } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
 import { getAuthenticatedUser } from '@/app/actions/auth';
@@ -19,8 +19,10 @@ export async function GET(req: NextRequest) {
     // Give models a moment to initialize if they haven't already
     let retries = 0;
     while (!User && retries < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      retries++;
+      await new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
+      retries += 1;
     }
 
     if (!User) {
@@ -83,11 +85,14 @@ export async function PUT(req: Request) {
   // Give models a moment to initialize if they haven't already
   let retries = 0;
   while ((!User || !Organization) && retries < 5) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    retries++;
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+    retries += 1;
   }
 
   try {
+    // eslint-disable-next-line prefer-const
     let { adminId, organizationId } = await req.json();
     organizationId = new mongoose.Types.ObjectId(organizationId);
     if (!adminId || !organizationId) {
