@@ -57,22 +57,14 @@ export default function VerifyOtpForm() {
           setCooldownSeconds(0);
         }
       } else {
-        // No stored timestamp - this is first time on page (OTP was just sent)
-
-        // Start the 60-second cooldown timer and store timestamp
-
-        const now = Date.now();
-
-        localStorage.setItem(storageKey, now.toString());
-
-        setCooldownSeconds(60);
+        setCooldownSeconds(0);
       }
 
       setIsInitializing(false);
     };
 
     initializeCooldown();
-  }, [email, organizationId]);
+  }, [email, organizationId, storageKey]);
 
   // Countdown timer effect
   useEffect(() => {
