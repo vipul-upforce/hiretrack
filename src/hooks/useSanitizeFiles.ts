@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 
 export const useSanitizeFiles = () => {
   const sanitizeFiles = useCallback(
-    (files: any[]): any[] =>
+    (files: File[]): File[] =>
       files.map((file) => {
         // Handle standard File objects
         if (file instanceof File) {

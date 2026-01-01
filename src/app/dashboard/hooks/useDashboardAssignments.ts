@@ -1,9 +1,8 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { Candidate } from '@/types/candidate';
 import logger from '@/lib/logger';
 import {
   useLazyFetchAssignmentsQuery,
-  useLazyFetchCandidateByIdQuery,
 } from '@/lib/features/candidate/candidateApi';
 
 interface UseDashboardAssignmentsParams {

@@ -2,11 +2,11 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import CryptoJS from 'crypto-js';
 import { User, CandidateAccount } from '@/lib/mongodb';
-import { generateOrgJwtSecret } from './jwtSecretGenerator';
-import { UserRole } from './models/JobLaneConfig';
 import { signAccessToken } from '@/app/actions/auth';
 import { IAccessTokenPayload } from '@/types/login';
 import { NextResponse } from 'next/server';
+import { UserRole } from './models/JobLaneConfig';
+import { generateOrgJwtSecret } from './jwtSecretGenerator';
 import { setAuthCookies } from './authCookies';
 
 export interface RefreshTokenPayload {
@@ -176,7 +176,6 @@ export async function cleanupExpiredTokens(
   isCandidate: boolean = false,
   beforeDate?: Date | null, // Optional date to filter tokens before
 ): Promise<void> {
-
   const now = beforeDate || new Date();
 
   if (isCandidate) {
@@ -231,14 +230,12 @@ export async function verifyRefreshToken(
   // Cleanup expired tokens before verification
   const now = new Date();
   const validTokens = user.refreshTokens.filter((rt) => rt.expiry > now);
-  console.log(validTokens?.length, 'validTokens-233');
   if (validTokens.length < user.refreshTokens.length) {
     await cleanupExpiredTokens(userId, isCandidate, now);
   }
   // Find matching token from valid tokens
 
   const tokenEntry = validTokens.find((rt) => rt.token === tokenHash);
-  console.log(tokenEntry, 'tokenEntry-239 from fimding and send error');
   if (!tokenEntry) {
     return { valid: false };
   }
@@ -290,10 +287,9 @@ export async function updateRefreshToken(
   }
 }
 
-
-
-
-export const returnTokenBasedResponse = async (obj: IAccessTokenPayload): Promise<NextResponse> => {
+export const returnTokenBasedResponse = async (
+  obj: IAccessTokenPayload,
+): Promise<NextResponse> => {
   // Generate short-lived access token (15 minutes)
   const userId = obj.id;
   const { role } = obj;

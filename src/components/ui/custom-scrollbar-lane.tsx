@@ -96,12 +96,16 @@ const CustomScrollbarLane = forwardRef<HTMLDivElement, CustomScrollbarProps>(
     // Clone children and pass scrollerRef if it's a Virtuoso component
     const childrenWithProps = React.Children.map(children, (child) => {
       if (React.isValidElement(child) && scrollerRef) {
-        // Check if this is a Virtuoso component by checking for scrollerRef prop
+        const props = child.props as Record<string, unknown>;
+
         if (
-          'scrollerRef' in (child.props as object) ||
+          'scrollerRef' in props ||
           child.type?.toString().includes('Virtuoso')
         ) {
-          return React.cloneElement(child as any, { scrollerRef: setRefs });
+          return React.cloneElement(
+            child as React.ReactElement<{ scrollerRef: typeof setRefs }>,
+            { scrollerRef: setRefs },
+          );
         }
       }
       return child;
