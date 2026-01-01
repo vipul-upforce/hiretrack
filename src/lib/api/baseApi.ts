@@ -284,6 +284,7 @@ export const baseApi = createApi({
     'organizationSettings',
     'EmailNotificationJob',
     'EmailNotificationUser',
+    'Profile',
   ],
   endpoints: () => ({}),
 });

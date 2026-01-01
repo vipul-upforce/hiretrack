@@ -18,6 +18,7 @@ export interface IUCandidateAccount {
   appliedApplications: [string];
   otp?: number;
   otpExpires?: Date;
+  tokenVersion?: number;
 }
 
 export const candidateAccountSchema = new Schema<IUCandidateAccount>(
@@ -72,6 +73,11 @@ export const candidateAccountSchema = new Schema<IUCandidateAccount>(
     },
     otpExpires: {
       type: Date,
+      required: false,
+    },
+    tokenVersion: {
+      type: Number,
+      default: 1,
       required: false,
     },
   },
