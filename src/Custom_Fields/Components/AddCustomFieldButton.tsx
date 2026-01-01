@@ -1,12 +1,8 @@
 'use client';
 
-import React, {
-  useContext, useEffect, useState, useCallback,
-} from 'react';
+import React, { useContext, useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import {
-  Card, CardContent, CardHeader, CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FolderOpen } from 'lucide-react';
 import Stepper from './Stepper';
 import { CustomFieldsContext } from '../Context';
@@ -24,7 +20,7 @@ function AddCustomFields() {
   };
 
   useEffect(() => {
-    const config = searchParams.get('config');
+    const config = searchParams?.get('config');
     if (config === 'cf') {
       setIsOpen(true);
     }
@@ -35,19 +31,22 @@ function AddCustomFields() {
     setIsOpen(false);
   }, [setStepName]);
 
-  useEffect(() => () => {
-    handleClose();
-  }, [handleClose]);
+  useEffect(
+    () => () => {
+      handleClose();
+    },
+    [handleClose],
+  );
 
   return (
     <div className="group">
       <Card
-        className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-lg bg-white dark:bg-black"
+        className="h-full cursor-pointer border border-gray-200 bg-white transition-all duration-200 hover:border-gray-300 hover:shadow-lg dark:border-gray-800 dark:bg-black dark:hover:border-gray-600"
         onClick={onClick}
       >
         <CardHeader className="pb-3">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+            <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
               <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </div>
             <div className="flex-1">
@@ -58,7 +57,7 @@ function AddCustomFields() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
             Configure global metadata fields for your organization
           </p>
         </CardContent>

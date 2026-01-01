@@ -36,6 +36,9 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
     const [stepName, setStepName] = useState<string>('FormList');
     const [selectedFormId, setSelectedFormId] =
       useState<SelectedFormObject | null>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [error, setError] = useState<Error | null>(null);
+    const [hasAttemptedLoad, setHasAttemptedLoad] = useState<boolean>(false);
     const [updateCustomFields] = useUpdateCustomFieldsMutation();
     const [getCustomField] = useLazyGetCustomFieldsQuery();
     const [getCustomFieldsByOrgName] = useLazyGetCustomFieldsByOrgNameQuery();
@@ -51,51 +54,91 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
         pathname?.endsWith('dashboard')
       ) {
         const orgId = user?.organizationId;
-        updateCustomFields({
-          orgId,
-          customFields,
-        });
-      }
-    }, [customFields, updateCustomFields, pathname]);
-
-    const getCustomFields = useCallback(async () => {
-      if (user && user.role !== '' && user.role !== 'candidate') {
-        const userObject = user;
-        const orgId = userObject.organizationId;
-        const data = await getCustomField(orgId);
-        if (data.data) setCustomFields(data.data);
-      } else if (pathname?.includes('/apply-jobs')) {
-        const orgParam = getOrgParamFromUrl();
-        try {
-          const data = await getCustomFieldsByOrgName(orgParam);
-          if (data.data) setCustomFields(data.data);
-        } catch (error) {
-          logger.error('Error fetching custom fields by org name:', error);
+        if (orgId) {
+          try {
+            await updateCustomFields({
+              orgId,
+              customFields,
+            }).unwrap();
+          } catch (err) {
+            logger.error('Error saving custom fields:', err);
+          }
         }
       }
-    }, [getCustomField, getCustomFieldsByOrgName, pathname]);
+    }, [customFields, updateCustomFields, pathname, user]);
 
-    const getAndSetCustomFields = useCallback(async () => {
-      if (Object.keys(customFields).length === 0) {
-        await getCustomFields();
-      } else {
-        postCustomFields();
+    const loadCustomFields = useCallback(async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        if (user && user.role !== '' && user.role !== 'candidate') {
+          const orgId = user.organizationId;
+          if (orgId) {
+            const data = await getCustomField(orgId);
+            if (data.data) {
+              setCustomFields(data.data);
+            }
+          }
+        } else if (pathname?.includes('/apply-jobs')) {
+          const orgParam = getOrgParamFromUrl();
+          if (orgParam) {
+            const data = await getCustomFieldsByOrgName(orgParam);
+            if (data.data) {
+              setCustomFields(data.data);
+            }
+          }
+        }
+        setHasAttemptedLoad(true);
+      } catch (err) {
+        const fetchError =
+          err instanceof Error
+            ? err
+            : new Error('Failed to load custom fields');
+        setError(fetchError);
+        logger.error('Error fetching custom fields:', err);
+      } finally {
+        setIsLoading(false);
       }
-    }, [customFields, userLoggedIn, getCustomFields, postCustomFields]);
+    }, [getCustomField, getCustomFieldsByOrgName, pathname, user]);
 
+    // Separate effect for loading custom fields
     useEffect(() => {
       const isApplyJobsPage = pathname?.includes('/apply-jobs');
 
-      if (userLoggedIn || isApplyJobsPage) {
-        getAndSetCustomFields();
+      if (
+        (userLoggedIn || isApplyJobsPage) &&
+        !hasAttemptedLoad &&
+        !isLoading
+      ) {
+        loadCustomFields();
       } else if (
         !userLoggedIn &&
         !isApplyJobsPage &&
         Object.keys(customFields).length > 0
       ) {
         setCustomFields({});
+        setHasAttemptedLoad(false);
       }
-    }, [pathname, userLoggedIn, getAndSetCustomFields]);
+    }, [
+      pathname,
+      userLoggedIn,
+      hasAttemptedLoad,
+      isLoading,
+      loadCustomFields,
+      customFields,
+    ]);
+
+    // Separate effect for saving custom fields when they change
+    useEffect(() => {
+      if (
+        hasAttemptedLoad &&
+        !isLoading &&
+        Object.keys(customFields).length > 0
+      ) {
+        postCustomFields();
+      }
+    }, [customFields, hasAttemptedLoad, isLoading, postCustomFields]);
 
     const handleAddFormId = useCallback((formName: string) => {
       const randomId = Math.random().toString(36).substr(2, 9);
@@ -109,7 +152,7 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       (formName: string, formId: string | null) => {
         setCustomFields((prev) => {
           const newFields = { ...prev };
-          if (formId) {
+          if (formId && prev[formId]) {
             newFields[formId] = { fields: prev[formId].fields, formName };
           }
           return newFields;
@@ -164,119 +207,145 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
 
     const handleEditCustomField = useCallback(
       (customField: CustomField, formId: string | null) => {
-        const formIdObject = formId && customFields[formId];
-        if (formIdObject) {
-          setCustomFields((prev) => ({
-            ...prev,
-            [formId]: {
-              ...formIdObject,
-              fields: formIdObject.fields.map((field) =>
-                field.id === customField.id ? customField : field,
-              ),
-            },
-          }));
-          setSelectedFormId((prev) => ({
-            ...prev,
-            fields: formIdObject.fields.map((field) =>
+        if (!formId) return;
+
+        setCustomFields((prev) => {
+          const formIdObject = prev[formId];
+          if (formIdObject) {
+            const updatedFields = formIdObject.fields.map((field) =>
               field.id === customField.id ? customField : field,
-            ),
-            formId,
-            formName: formIdObject.formName,
-          }));
-        }
+            );
+            const updatedForm = {
+              ...formIdObject,
+              fields: updatedFields,
+            };
+
+            // Update selectedFormId if it matches
+            setSelectedFormId((currentSelected) => {
+              if (currentSelected?.formId === formId) {
+                return {
+                  ...currentSelected,
+                  fields: updatedFields,
+                  formId,
+                  formName: updatedForm.formName,
+                };
+              }
+              return currentSelected;
+            });
+
+            return {
+              ...prev,
+              [formId]: updatedForm,
+            };
+          }
+          return prev;
+        });
       },
-      [customFields],
+      [],
     );
 
     const handleDeleteCustomField = useCallback(
       (customFieldID: string, formId: string | null) => {
         if (!formId) return;
-        const formIdObject = customFields[formId];
-        if (formIdObject) {
-          const newFields = formIdObject.fields.filter(
-            (field) => field.id !== customFieldID,
-          );
-          setCustomFields((prev) => ({
-            ...prev,
-            [formId]: {
+
+        setCustomFields((prev) => {
+          const formIdObject = prev[formId];
+          if (formIdObject) {
+            const newFields = formIdObject.fields.filter(
+              (field) => field.id !== customFieldID,
+            );
+            const updatedForm = {
               ...formIdObject,
               fields: newFields,
-            },
-          }));
-          setSelectedFormId((prev) => ({
-            ...prev,
-            fields: newFields,
-            formId,
-            formName: formIdObject.formName,
-          }));
-        }
+            };
+
+            // Update selectedFormId if it matches
+            setSelectedFormId((currentSelected) => {
+              if (currentSelected?.formId === formId) {
+                return {
+                  ...currentSelected,
+                  fields: newFields,
+                  formId,
+                  formName: updatedForm.formName,
+                };
+              }
+              return currentSelected;
+            });
+
+            return {
+              ...prev,
+              [formId]: updatedForm,
+            };
+          }
+          return prev;
+        });
       },
-      [customFields],
+      [],
     );
 
-    const deleteFormIDAllCustomFields = useCallback(
-      (formId: string) => {
-        const formIdObject = customFields[formId];
+    const deleteFormIDAllCustomFields = useCallback((formId: string) => {
+      setCustomFields((prev) => {
+        const formIdObject = prev[formId];
         if (formIdObject) {
           const individualCustomFields = formIdObject.fields.filter(
             (field) => field.candidateId || field.jobId,
           );
-          setCustomFields((prev) => ({
+          return {
             ...prev,
             [formId]: {
               ...formIdObject,
               fields: [...individualCustomFields],
             },
-          }));
-
-          // Update selected form ID state if it matches the cleared form
-          if (selectedFormId?.formId === formId) {
-            setSelectedFormId(
-              (prev) =>
-                prev && {
-                  ...prev,
-                  fields: [],
-                  formId: prev.formId,
-                  formName: prev.formName,
-                },
-            );
-          }
+          };
         }
-      },
-      [customFields, selectedFormId],
-    );
+        return prev;
+      });
 
-    const deleteFormIDAllIndCustomFields = useCallback(
-      (formId: string) => {
-        const formIdObject = customFields[formId];
+      setSelectedFormId((prev) => {
+        if (prev?.formId === formId) {
+          return {
+            ...prev,
+            fields: [],
+            formId: prev.formId,
+            formName: prev.formName,
+          };
+        }
+        return prev;
+      });
+    }, []);
+
+    const deleteFormIDAllIndCustomFields = useCallback((formId: string) => {
+      setCustomFields((prev) => {
+        const formIdObject = prev[formId];
         if (formIdObject) {
           const globalCustomFields = formIdObject.fields.filter(
             (field) => !field.candidateId && !field.jobId,
           );
-          setCustomFields((prev) => ({
+          return {
             ...prev,
             [formId]: {
               ...formIdObject,
               fields: [...globalCustomFields],
             },
-          }));
-
-          // Update selected form ID state if it matches the cleared form
-          if (selectedFormId?.formId === formId) {
-            setSelectedFormId(
-              (prev) =>
-                prev && {
-                  ...prev,
-                  fields: [],
-                  formId: prev.formId,
-                  formName: prev.formName,
-                },
-            );
-          }
+          };
         }
-      },
-      [customFields, selectedFormId],
-    );
+        return prev;
+      });
+
+      setSelectedFormId((prev) => {
+        if (prev?.formId === formId) {
+          return {
+            ...prev,
+            fields: [],
+            formId: prev.formId,
+            formName: prev.formName,
+          };
+        }
+        return prev;
+      });
+    }, []);
+
+    const isReady = !isLoading && hasAttemptedLoad;
 
     return (
       <CustomFieldsContext.Provider
@@ -299,6 +368,9 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
             setUserLoggedIn,
             setSelectedFormId,
             deleteFormIDAllIndCustomFields,
+            isLoading,
+            error,
+            isReady,
           }),
           [
             customFields,
@@ -318,6 +390,9 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
             setUserLoggedIn,
             setSelectedFormId,
             deleteFormIDAllIndCustomFields,
+            isLoading,
+            error,
+            isReady,
           ],
         )}
       >

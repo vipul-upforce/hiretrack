@@ -175,16 +175,18 @@ export function ChecklistFieldRenderer({
       case 'date':
         return (
           <DatePicker
-            value={value ? new Date(String(value)) : undefined}
+            value={value ? new Date(String(value)) : null}
             onChange={(date) => {
               // DatePicker may return different object types, handle multiple cases
               let isoString = '';
               if (date) {
                 if (date instanceof Date) {
                   isoString = date.toISOString();
-                } else if (typeof (date as Date).toISOString === 'function') {
+                } else if (
+                  typeof (date as unknown as Date).toISOString === 'function'
+                ) {
                   // Handle other date-like objects with toISOString method
-                  isoString = (date as Date).toISOString();
+                  isoString = (date as unknown as Date).toISOString();
                 } else if (typeof date === 'string') {
                   // Handle string dates
                   try {
@@ -195,7 +197,7 @@ export function ChecklistFieldRenderer({
                 } else if (date && typeof date === 'object') {
                   // Handle other date-like objects
                   try {
-                    isoString = new Date(date as Date).toISOString();
+                    isoString = new Date(date as unknown as Date).toISOString();
                   } catch {
                     isoString = '';
                   }

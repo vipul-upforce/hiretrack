@@ -1,6 +1,4 @@
-import React, {
-  useCallback, useContext, useEffect, useState,
-} from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { Button } from '@/components/ui/button'; // Adjust the import based on your UI components
@@ -10,8 +8,9 @@ import { AddFormIDProps } from '@/Custom_Fields/Types';
 import CustomFieldDialog from '../Common/CustomFieldDialog';
 import { CustomFieldsContext } from '../../Context';
 
-const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
-  const { handleAddFormId, handleEditFormId, customFields } = useContext(CustomFieldsContext);
+function AddFormID({ isOpen, setIsOpen, formId }: AddFormIDProps) {
+  const { handleAddFormId, handleEditFormId, customFields } =
+    useContext(CustomFieldsContext);
 
   const [initialValues, setInitialValues] = useState({
     formName: '',
@@ -67,7 +66,7 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
         touched,
         handleChange,
         handleBlur,
-        handleSubmit,
+        handleSubmit: formikHandleSubmit,
         resetForm,
       }) => (
         <CustomFieldDialog
@@ -80,7 +79,10 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
           }}
           title={formId ? 'Edit Form ID' : 'Add Form ID'}
         >
-          <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+          <form
+            onSubmit={formikHandleSubmit}
+            className="flex flex-col space-y-4"
+          >
             <div>
               <Label htmlFor="formName" className="text-base font-medium">
                 Form Name
@@ -103,7 +105,11 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
                 <div className="text-red-500">{errors.formName}</div>
               ) : null}
             </div>
-            <Button type="submit" variant="success" className="rounded px-4 py-2">
+            <Button
+              type="submit"
+              variant="success"
+              className="rounded px-4 py-2"
+            >
               {formId ? 'Update Form' : 'Add Form'}
             </Button>
           </form>
@@ -111,6 +117,6 @@ const AddFormID: React.FC<AddFormIDProps> = ({ isOpen, setIsOpen, formId }) => {
       )}
     </Formik>
   );
-};
+}
 
 export default React.memo(AddFormID);
