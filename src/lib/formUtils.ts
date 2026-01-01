@@ -1,5 +1,10 @@
 import { FormikErrors } from 'formik';
 
+interface FormValues {
+  customFields?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 /**
  * Scrolls to and focuses the first error field in a form.
  * Handles both top-level fields and nested customFields errors.
@@ -9,8 +14,8 @@ import { FormikErrors } from 'formik';
  * @param options.scrollBlock - Scroll position: "nearest" | "center" | "start" | "end"
  * @param options.preventScrollOnFocus - Whether to prevent scroll when focusing (default: true)
  */
-export const scrollToError = (
-  errors: FormikErrors<any>,
+export const scrollToError = <T extends FormValues = FormValues>(
+  errors: FormikErrors<T>,
   options?: {
     scrollBlock?: 'nearest' | 'center' | 'start' | 'end';
     preventScrollOnFocus?: boolean;
@@ -31,9 +36,14 @@ export const scrollToError = (
   let element: HTMLElement | null = null;
 
   // Handle nested customFields errors
-  if (firstErrorKey === 'customFields' && errors.customFields) {
-    const customFieldErrors = errors.customFields as Record<string, any>;
+  if (
+    firstErrorKey === 'customFields' &&
+    errors.customFields &&
+    typeof errors.customFields === 'object'
+  ) {
+    const customFieldErrors = errors.customFields as Record<string, unknown>;
     const cfKey = Object.keys(customFieldErrors)[0];
+
     if (cfKey) {
       // Try multiple selector strategies for custom fields
       element =

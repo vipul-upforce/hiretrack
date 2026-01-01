@@ -1,5 +1,3 @@
-import { OrgInfo } from '@/lib/models/user';
-
 export interface LoginFormValues {
   email: string;
   password: string;
@@ -10,9 +8,9 @@ export interface UserWithoutCF {
   email: string;
   role: string;
   organizationId?: string;
-  tokenVersion?: number| undefined | null;
-  fileStorage?: string| undefined | null;
-  appliedApplications?: string[]| undefined | null;
+  tokenVersion?: number | undefined | null;
+  fileStorage?: string | undefined | null;
+  appliedApplications?: string[] | undefined | null;
 }
 export interface IAccessTokenPayload {
   id: string;
@@ -20,9 +18,8 @@ export interface IAccessTokenPayload {
   email: string;
   role: string;
   organizationId: string;
-  tokenVersion?: number| undefined | null;
-  fileStorage?: string| undefined | null;
+  tokenVersion?: number | undefined | null;
+  fileStorage?: string | undefined | null;
   isCandidate?: boolean;
-  appliedApplications?: string[]| undefined | null;
-
+  appliedApplications?: string[] | undefined | null;
 }

@@ -78,8 +78,45 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
     const data = await request.json();
     const userData = await getAuthenticatedUser(request);
+
     if (userData) {
       const { organizationId, fileStorage } = userData as AuthenticatedUser;
+
+      //  File Size Validation (Resume & Attachments)
+      const userRole = userData.role || '';
+
+      // Determine limit: 3MB for Candidates/Guests, 50MB for others
+      const maxFileSize =
+        userRole === 'candidate' || userRole === ''
+          ? 3 * 1024 * 1024 // 3MB
+          : 50 * 1024 * 1024; // 50MB
+
+      const limitLabel = maxFileSize === 3 * 1024 * 1024 ? '3MB' : '50MB';
+
+      // Validate Resume
+      if (data.resume && data.resume.size) {
+        if (data.resume.size > maxFileSize) {
+          return NextResponse.json(
+            { error: `Resume size exceeds ${limitLabel} limit.` },
+            { status: 400 },
+          );
+        }
+      }
+
+      // Validate Attachments
+      if (data.attachments && Array.isArray(data.attachments)) {
+        for (const attachment of data.attachments) {
+          if (attachment.size && attachment.size > maxFileSize) {
+            return NextResponse.json(
+              {
+                error: `File "${attachment.name}" exceeds ${limitLabel} limit.`,
+              },
+              { status: 400 },
+            );
+          }
+        }
+      }
+
       const organizationInfo = await Organization?.findById(
         new mongoose.Types.ObjectId(organizationId),
       );
@@ -94,7 +131,7 @@ export async function POST(request: NextRequest) {
       ).includes('applied')
         ? 'applied'
         : (organizationInfo.defaultLanes || ['applied'])[0];
-      // resume
+
       if (data.attachments) {
         const images = data.attachments.filter((attachment: Attachment) =>
           attachment.type.startsWith('image'),
