@@ -47,7 +47,9 @@ function isPublicEndpoint(url: string, method?: string): boolean {
   // Remove query params and normalize trailing slashes for comparison
   const normalizeUrl = (urlStr: string) => {
     const withoutQuery = urlStr.split('?')[0];
-    return withoutQuery.endsWith('/') ? withoutQuery.slice(0, -1) : withoutQuery;
+    return withoutQuery.endsWith('/')
+      ? withoutQuery.slice(0, -1)
+      : withoutQuery;
   };
   
   const normalizedRequestUrl = normalizeUrl(url);
@@ -86,6 +88,7 @@ function isPublicEndpoint(url: string, method?: string): boolean {
  */
 let refreshPromise: Promise<void> | null = null;
 let refreshAbortController: AbortController | null = null;
+let isRefreshing = false;
 
 /**
  * Refresh access token using httpOnly cookie
@@ -97,9 +100,13 @@ export async function refreshAccessToken(
   dispatch?: AppDispatch,
 ): Promise<void> {
   // If a refresh is already in progress, wait for it instead of starting a new one
-  if (refreshPromise) {
+  // Check both conditions to prevent race conditions
+  if (isRefreshing && refreshPromise) {
     return refreshPromise;
   }
+
+  // Set flag immediately to prevent race conditions (before creating promise)
+  isRefreshing = true;
 
   // Create new AbortController with timeout
   refreshAbortController = new AbortController();
@@ -145,20 +152,23 @@ export async function refreshAccessToken(
       }
 
       // Token refresh successful - new tokens are set in httpOnly cookies by the server
-      // Dispatch fetchUserFromToken to update user state
+      // Dispatch fetchUserFromToken to update user state (but delay it to avoid cascading 401s)
       if (dispatch && typeof window !== 'undefined') {
-        // Use dynamic import to avoid circular dependency
-        import('@/lib/redux/authSlice')
-          .then(({ fetchUserFromToken }) => {
-            dispatch(fetchUserFromToken());
-          })
-          .catch((error) => {
-            // Log error but don't throw - token refresh was successful
-            logger.error(
-              'Failed to dispatch fetchUserFromToken after token refresh:',
-              error,
-            );
-          });
+        // Delay fetchUserFromToken slightly to ensure all pending requests can use new token
+        setTimeout(() => {
+          // Use dynamic import to avoid circular dependency
+          import('@/lib/redux/authSlice')
+            .then(({ fetchUserFromToken }) => {
+              dispatch(fetchUserFromToken());
+            })
+            .catch((error) => {
+              // Log error but don't throw - token refresh was successful
+              logger.error(
+                'Failed to dispatch fetchUserFromToken after token refresh:',
+                error,
+              );
+            });
+        }, 100); // Small delay to let pending requests complete
       }
     } catch (error) {
       clearTimeout(timeoutId);
@@ -176,6 +186,7 @@ export async function refreshAccessToken(
       // Clean up singleton state
       refreshPromise = null;
       refreshAbortController = null;
+      isRefreshing = false;
     }
   })();
 
@@ -213,19 +224,64 @@ const baseQueryWithReauth: BaseQueryFn<
     !isPublic &&
     !fullUrl.includes('/auth/refresh')
   ) {
-    try {
-      // Attempt to refresh the token using httpOnly cookie
-      // Pass dispatch to trigger fetchUserFromToken after successful refresh
-      await refreshAccessToken(api.dispatch);
-      result = await baseQuery(args, api, extraOptions);
-    } catch (error) {
-      // Handle timeout/abort errors gracefully
-      if (error instanceof Error && error.message === 'Token refresh timeout') {
-        // Return the original 401 - don't redirect on timeout
+    // Prevent multiple concurrent refresh attempts
+    if (isRefreshing && refreshPromise) {
+      // Wait for the ongoing refresh to complete
+      try {
+        await refreshPromise;
+        // Retry the original request after refresh completes
+        result = await baseQuery(args, api, extraOptions);
+      } catch {
+        // If refresh failed, return the original error
         return result;
       }
-      // Refresh failed - redirect to login (already handled in refreshAccessToken)
-      return result; // Return the original 401 error
+    } else {
+      try {
+        // Attempt to refresh the token using httpOnly cookie
+        // Only pass dispatch on the first refresh attempt to avoid cascading calls
+        await refreshAccessToken(api.dispatch);
+        // Retry the original request with new token
+        result = await baseQuery(args, api, extraOptions);
+      } catch (error) {
+        // Handle timeout/abort errors gracefully
+        if (
+          error instanceof Error &&
+          error.message === 'Token refresh timeout'
+        ) {
+          // Return the original 401 - don't redirect on timeout
+          return result;
+        }
+        // Refresh failed - redirect to login (already handled in refreshAccessToken)
+        return result; // Return the original 401 error
+      }
+    }
+  }
+
+  // Handle aborted/cancelled requests gracefully
+  if (result.error) {
+    // Check if request was aborted
+    if (
+      'status' in result.error &&
+      (result.error.status === 'FETCH_ERROR' ||
+        result.error.status === 'PARSING_ERROR')
+    ) {
+      const errorMessage = result.error.error || 'Request failed';
+      // Check if it's an abort error
+      if (
+        typeof errorMessage === 'string' &&
+        (errorMessage.includes('aborted') ||
+          errorMessage.includes('cancelled') ||
+          errorMessage.includes('Failed to fetch'))
+      ) {
+        logger.warn('Request was aborted or cancelled:', fullUrl);
+        // Return a more user-friendly error
+        return {
+          error: {
+            status: 'CUSTOM',
+            data: { message: 'Request was cancelled. Please try again.' },
+          },
+        };
+      }
     }
   }
 

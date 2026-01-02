@@ -35,7 +35,7 @@ async function handleRefreshToken(req: NextRequest) {
     // STEP 1: Validate license BEFORE refreshing token (runs every 15 min)
     const licenseValidation = await validateLicense();
     if (!licenseValidation.valid) {
-      return NextResponse.json(
+      const res = NextResponse.json(
         {
           error: 'License validation failed',
           licenseError: licenseValidation.error,
@@ -43,6 +43,8 @@ async function handleRefreshToken(req: NextRequest) {
         },
         { status: 403 },
       );
+      clearAuthTokens(res);
+      return res;
     }
 
     // STEP 2: Try to get orgId from cookie first (most common case)
@@ -59,17 +61,21 @@ async function handleRefreshToken(req: NextRequest) {
       // Try to find user by hashed token in database to get orgId
       const tokenHash = hashRefreshToken(refreshToken);
 
-      let user = await User!.findOne({
-        'refreshTokens.token': tokenHash,
-        'refreshTokens.expiry': { $gt: new Date() },
-      }).select('+refreshTokens organizationId');
+      let user = await User!
+        .findOne({
+          'refreshTokens.token': tokenHash,
+          'refreshTokens.expiry': { $gt: new Date() },
+        })
+        .select('+refreshTokens organizationId');
 
       let foundIsCandidate = false;
       if (!user) {
-        user = await CandidateAccount!.findOne({
-          'refreshTokens.token': tokenHash,
-          'refreshTokens.expiry': { $gt: new Date() },
-        }).select('+refreshTokens organizationId');
+        user = await CandidateAccount!
+          .findOne({
+            'refreshTokens.token': tokenHash,
+            'refreshTokens.expiry': { $gt: new Date() },
+          })
+          .select('+refreshTokens organizationId');
         foundIsCandidate = true;
       }
 
@@ -103,10 +109,9 @@ async function handleRefreshToken(req: NextRequest) {
       // Token was successfully decrypted
       const payload = tokenVerification.payload!;
       userId = payload.userId;
-      orgId = payload.orgId; 
+      orgId = payload.orgId;
       isCandidate = payload.isCandidate || false;
     }
- 
 
     // STEP 3: Verify token exists in database (only if userId is set)
     // if (userId) {
@@ -121,29 +126,34 @@ async function handleRefreshToken(req: NextRequest) {
     );
 
     if (!verification.valid) {
-     const res = NextResponse.json(
-      { error: 'Invalid or expired refresh token' },
-      { status: 401 },
-    );
-    clearAuthTokens(res);
-    return res;
-    }
-
-    // STEP 4: Get user data
-    const user = isCandidate
-      ? await CandidateAccount!.findById(userId)
-          .select('name _id role email organizationId isDeleted ')
-          
-      : await User!.findById(userId)
-          .select('tokenVersion name _id role email organizationId isDeleted ')
-          
-    if (!user || user.isDeleted) {
-      const res = NextResponse.json({ error: 'User not found' }, { status: 404 });
+      const res = NextResponse.json(
+        { error: 'Invalid or expired refresh token' },
+        { status: 401 },
+      );
       clearAuthTokens(res);
       return res;
     }
 
-    const fileStorage = await Settings!.findOne({ organizationId: orgId })
+    // STEP 4: Get user data
+    const user = isCandidate
+      ? await CandidateAccount!
+          .findById(userId)
+          .select('name _id role email organizationId isDeleted ')
+      : await User!
+          .findById(userId)
+          .select('tokenVersion name _id role email organizationId isDeleted ');
+
+    if (!user || user.isDeleted) {
+      const res = NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 },
+      );
+      clearAuthTokens(res);
+      return res;
+    }
+
+    const fileStorage = await Settings!
+      .findOne({ organizationId: orgId })
       .select('fileStorage')
       .lean();
 
@@ -156,7 +166,7 @@ async function handleRefreshToken(req: NextRequest) {
       role: user.role,
       organizationId: orgId,
       tokenVersion: !isCandidate
-        ? (user as IUser)?.tokenVersion as number | undefined | null
+        ? ((user as IUser)?.tokenVersion as number | undefined | null)
         : undefined,
       fileStorage: fileStorage?.fileStorage?.storageType as string,
     };
