@@ -10,7 +10,7 @@ import {
 import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
 
 import { LoginFormValues } from '@/types/login';
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { useDispatch } from 'react-redux';
 import { fetchUserFromToken } from '@/lib/redux/authSlice';
@@ -47,6 +47,8 @@ export const useHandleLoginSubmit = ({
   const dispatch = useDispatch<AppDispatch>();
 
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+    // Cache license check result to prevent duplicate calls
+    const licenseCheckCache = useRef<{ checked: boolean; valid: boolean } | null>(null);
 
   const handleSubmit = useCallback(
     async (
@@ -56,35 +58,76 @@ export const useHandleLoginSubmit = ({
     ) => {
       setLoginFormValues(values);
 
-      // firstly check the license
-      try {
-        const data = await triggerLicenseCheck().unwrap();
+      // // firstly check the license
+      // try {
+      //   const data = await triggerLicenseCheck().unwrap();
 
-        if (!data.valid) {
-          throw new Error(data.error || 'License validation failed');
+      //   if (!data.valid) {
+      //     throw new Error(data.error || 'License validation failed');
+      //   }
+      //   // Keep button disabled during login process - don't set to false here
+      // } catch (e: unknown) {
+      //   // Handle license check failure
+      //   let errorMessage =
+      //     'License not verified. Please contact support or try re-installing the platform.';
+
+      //   if (e && typeof e === 'object' && 'data' in e) {
+      //     const errorData = e as { data?: { message?: string } };
+      //     errorMessage = errorData.data?.message || 'License check failed';
+      //   } else if (e instanceof Error) {
+      //     errorMessage = e.message;
+      //   }
+
+      //   toast({
+      //     title: 'Error',
+      //     description: errorMessage,
+      //     variant: 'destructive',
+      //   });
+      //   setIsSubmitting(false);
+      //   return;
+      // }
+         // Check license only once per login session
+         if (!licenseCheckCache.current) {
+          try {
+            const data = await triggerLicenseCheck().unwrap();
+  
+            if (!data.valid) {
+              licenseCheckCache.current = { checked: true, valid: false };
+              throw new Error(data.error || 'License validation failed');
+            }
+            
+            // Cache successful license check
+            licenseCheckCache.current = { checked: true, valid: true };
+          } catch (e: unknown) {
+            // Handle license check failure
+            let errorMessage =
+              'License not verified. Please contact support or try re-installing the platform.';
+  
+            if (e && typeof e === 'object' && 'data' in e) {
+              const errorData = e as { data?: { message?: string } };
+              errorMessage = errorData.data?.message || 'License check failed';
+            } else if (e instanceof Error) {
+              errorMessage = e.message;
+            }
+  
+            toast({
+              title: 'Error',
+              description: errorMessage,
+              variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } else if (!licenseCheckCache.current.valid) {
+          // If license was already checked and invalid, return early
+          toast({
+            title: 'Error',
+            description: 'License validation failed',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
         }
-        // Keep button disabled during login process - don't set to false here
-      } catch (e: unknown) {
-        // Handle license check failure
-        let errorMessage =
-          'License not verified. Please contact support or try re-installing the platform.';
-
-        if (e && typeof e === 'object' && 'data' in e) {
-          const errorData = e as { data?: { message?: string } };
-          errorMessage = errorData.data?.message || 'License check failed';
-        } else if (e instanceof Error) {
-          errorMessage = e.message;
-        }
-
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
       // Login
       try {
         const response = await login({
