@@ -22,8 +22,7 @@ export default function VerifyOtpForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const [otp, setOtp] = useState('');
-  const [cooldownSeconds, setCooldownSeconds] = useState(60);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
   const email = searchParams?.get('email');
   const organizationId = searchParams?.get('orgId');
@@ -36,55 +35,32 @@ export default function VerifyOtpForm() {
 
   const isLoading = isVerifying || isSending;
   const storageKey = `otp_cooldown_${email}_${organizationId}`;
-  const storedTimestamp = localStorage.getItem(storageKey);
-  // Initialize cooldown from localStorage on mount
   useEffect(() => {
-    const initializeCooldown = () => {
-      if (!email || !organizationId) {
-        setIsInitializing(false);
+    if (!email || !organizationId) return;
+  
+    const tick = () => {
+      const ts = localStorage.getItem(storageKey);
+  
+      if (!ts) {
+        setCooldownSeconds(0);
         return;
       }
-      if (storedTimestamp) {
-        const sentTime = parseInt(storedTimestamp, 10);
-        const elapsed = Math.floor((Date.now() - sentTime) / 1000);
-        const remaining = Math.max(0, 60 - elapsed);
-
-        if (remaining > 0) {
-          setCooldownSeconds(remaining);
-        } else {
-          // Clean up expired entry
-          localStorage.removeItem(storageKey);
-          setCooldownSeconds(0);
-        }
-      } else {
-        setCooldownSeconds(0);
+  
+      const elapsed = Math.floor((Date.now() - Number(ts)) / 1000);
+      const remaining = Math.max(0, 60 - elapsed);
+  
+      if (remaining === 0) {
+        localStorage.removeItem(storageKey);
       }
-
-      setIsInitializing(false);
+      setCooldownSeconds(remaining);
     };
-
-    initializeCooldown();
+  
+    tick(); // run immediately on mount
+    const interval = setInterval(tick, 1000);
+  
+    return () => clearInterval(interval);
   }, [email, organizationId, storageKey]);
 
-  // Countdown timer effect
-  useEffect(() => {
-    if (cooldownSeconds <= 0 || isInitializing) return undefined;
-
-    const timer = setInterval(() => {
-      setCooldownSeconds((prev) => {
-        if (prev <= 1) {
-          // Clean up localStorage when cooldown expires
-          if (email && organizationId) {
-            localStorage.removeItem(storageKey);
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [cooldownSeconds, isInitializing, email, organizationId]);
 
   // Redirect after successful authentication
   useEffect(() => {
@@ -165,7 +141,6 @@ export default function VerifyOtpForm() {
         localStorage.setItem(storageKey, Date.now().toString());
       }
 
-      setCooldownSeconds(60); // Reset cooldown to 1 minute
     } catch (err) {
       const errorMessage =
         (err as { data?: { message: string } })?.data?.message ||
@@ -211,9 +186,6 @@ export default function VerifyOtpForm() {
   };
 
   function renderResendSection() {
-    if (isInitializing) {
-      return <p className="text-muted-foreground">Loading...</p>;
-    }
 
     if (cooldownSeconds > 0) {
       return (
