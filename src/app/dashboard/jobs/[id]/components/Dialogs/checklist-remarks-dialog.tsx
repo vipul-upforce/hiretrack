@@ -57,6 +57,7 @@ interface ChecklistRemarksDialogProps {
   onChecklistSuccess?: (candidateId: string) => void;
   onChecklistCancel?: (candidateId: string) => void;
 }
+/* eslint-disable max-lines */
 
 function ChecklistRemarksDialog({
   candidate,
@@ -568,7 +569,6 @@ function ChecklistRemarksDialog({
               setIsSubRemarkPrivate={setIsSubRemarkPrivate}
               handleSubmit={handleSubmit}
               isSubmitting={isSubmitting}
-              user={user}
             />
           </div>
         </div>
