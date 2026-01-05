@@ -1,9 +1,16 @@
 import { wierdFileNamePattern } from '@/lib/constants';
 import { useCallback } from 'react';
 
+type CustomFile = {
+  name: string;
+  [key: string]: unknown;
+};
+
+type FileInput = File | CustomFile;
+
 export const useSanitizeFiles = () => {
   const sanitizeFiles = useCallback(
-    (files: File[]): File[] =>
+    (files: FileInput[]): FileInput[] =>
       files.map((file) => {
         // Handle standard File objects
         if (file instanceof File) {
