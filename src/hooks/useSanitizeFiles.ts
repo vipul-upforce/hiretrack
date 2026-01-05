@@ -10,17 +10,18 @@ type FileInput = File | CustomFile;
 
 export const useSanitizeFiles = () => {
   const sanitizeFiles = useCallback(
-    (files: FileInput[]): FileInput[] =>
+    <T extends FileInput>(files: T[]): T[] =>
       files.map((file) => {
         // Handle standard File objects
         if (file instanceof File) {
           const sanitizedBaseName = file.name
             .replace(wierdFileNamePattern, '')
             .replace('/ /', '_');
+
           return new File([file], sanitizedBaseName, {
             type: file.type,
             lastModified: file.lastModified,
-          });
+          }) as unknown as T;
         }
 
         // Handle custom file objects with URL - while renaming
@@ -31,10 +32,10 @@ export const useSanitizeFiles = () => {
           return {
             ...file,
             name: sanitizedBaseName,
-          };
+          } as T;
         }
 
-        // Fallback: return unchanged if neither type matches
+        // Fallback
         return file;
       }),
     [],

@@ -45,7 +45,7 @@ export function CandidateResumeSection({
     const selectedFile = sanitizedFiles[0];
 
     // Validate File Size
-    if (selectedFile.size > maxFileSize) {
+    if (selectedFile?.size > maxFileSize) {
       const msg = `File "${selectedFile.name}" exceeds ${maxFileSizeLabel}. Please upload a smaller file.`;
       setErrorMsg(msg);
       toast({
