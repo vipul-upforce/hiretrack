@@ -1,12 +1,14 @@
+'use client';
+
+import { useState } from 'react';
 import { useField, useFormikContext } from 'formik';
 import { Label } from '@/components/ui/label';
-import { FileUpload } from '@/components/ui/file-upload'; // Assuming desktop version used on desktop
-import { MobileFileUpload } from '@/components/ui/file-upload-mobile'; // Assuming mobile used on mobile
+import { FileUpload } from '@/components/ui/file-upload';
+import { MobileFileUpload } from '@/components/ui/file-upload-mobile';
 import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
 import { toast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
 import { useAppSelector } from '@/lib/redux/hooks';
-// import { useMediaQuery } from "@/hooks/use-media-query"; // Assuming we might need this, or just use hidden classes
 
 export function CandidateAttachmentsSection() {
   const { setFieldValue } = useFormikContext();
@@ -14,43 +16,42 @@ export function CandidateAttachmentsSection() {
   const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
 
-  // We can determine layout via CSS classes (hidden lg:block etc)
-  // duplicating the components slightly or making one component handle both if possible.
-  // FileUpload and MobileFileUpload have different props structure.
+  // Local state for handling validation errors inline
+  const [errorMsg, setErrorMsg] = useState<string>('');
+
+  const isCandidateOrGuest =
+    !user || user.role === 'candidate' || user.role === '';
+  const maxAllowedFiles = isCandidateOrGuest ? 2 : 30;
+  const maxFileSize = isCandidateOrGuest ? 3 * 1024 * 1024 : 50 * 1024 * 1024;
+  const maxFileSizeLabel = isCandidateOrGuest ? '3MB' : '50MB';
 
   const handleFileSelect = (files: File[]) => {
+    setErrorMsg('');
+
     const sanitizedFiles = sanitizeFiles(files);
     const currentFiles = attachmentsField.value || [];
 
+    const totalFilesAfterUpload = currentFiles.length + sanitizedFiles.length;
+
+    if (totalFilesAfterUpload > maxAllowedFiles) {
+      const msg = `Maximum ${maxAllowedFiles} files are allowed.`;
+      setErrorMsg(msg);
+      toast({
+        title: 'Limit Exceeded',
+        description: msg,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    let hasSizeError = false;
+
     const newFiles = sanitizedFiles
       .filter((file) => {
-        if (!user && file.size > 3 * 1024 * 1024) {
-          toast({
-            title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-            variant: 'destructive',
-          });
-          return false;
-        }
-        if (
-          user &&
-          (user.role === 'candidate' || user.role === '') &&
-          file.size > 3 * 1024 * 1024
-        ) {
-          toast({
-            title: `File "${file.name}" exceeds 3MB. Please upload a smaller file.`,
-            variant: 'destructive',
-          });
-          return false;
-        }
-        if (
-          user &&
-          ['hr', 'admin', 'interviewer'].includes(user.role) &&
-          file.size > 50 * 1024 * 1024
-        ) {
-          toast({
-            title: `File "${file.name}" exceeds 50MB. Please upload a smaller file.`,
-            variant: 'destructive',
-          });
+        if (file.size > maxFileSize) {
+          const msg = `File "${file.name}" exceeds ${maxFileSizeLabel}.`;
+          setErrorMsg(msg);
+          hasSizeError = true;
           return false;
         }
         return true;
@@ -71,22 +72,14 @@ export function CandidateAttachmentsSection() {
         return new File([file], newFileName, { type: file.type });
       });
 
-    const updatedFileSelection = [...currentFiles, ...newFiles];
-    if (
-      user &&
-      updatedFileSelection.length > 2 &&
-      (user.role === 'candidate' || user.role === '')
-    ) {
-      toast({
-        title: 'Maximum 2 files are allowed',
-        variant: 'destructive',
-      });
-      return;
+    if (!hasSizeError && newFiles.length > 0) {
+      const updatedFileSelection = [...currentFiles, ...newFiles];
+      setFieldValue('attachments', updatedFileSelection);
     }
-    setFieldValue('attachments', updatedFileSelection);
   };
 
   const handleSetter = (files: File[]) => {
+    setErrorMsg('');
     const sanitizedFiles = sanitizeFiles(files);
     setFieldValue('attachments', sanitizedFiles);
   };
@@ -107,15 +100,13 @@ export function CandidateAttachmentsSection() {
       <div className="lg:hidden">
         <MobileFileUpload
           accept={{}}
-          maxFiles={
-            (user && (user.role === 'candidate' || user.role === '')) || !user
-              ? 2
-              : 30
-          }
+          maxFiles={maxAllowedFiles}
           onFileSelect={handleFileSelect}
-          files={attachmentsField.value}
+          files={attachmentsField.value || []}
           setter={handleSetter}
           buttonText="Add Attachments"
+          maxFileSizeLabel={maxFileSizeLabel}
+          errorMessage={errorMsg}
         />
       </div>
 
@@ -123,15 +114,13 @@ export function CandidateAttachmentsSection() {
       <div className="hidden lg:block">
         <FileUpload
           accept={{}}
-          maxFiles={
-            (user && (user.role === 'candidate' || user.role === '')) || !user
-              ? 2
-              : 30
-          }
+          maxFiles={maxAllowedFiles}
           isEdit
           onFileSelect={handleFileSelect}
-          files={attachmentsField.value}
+          files={attachmentsField.value || []}
           setter={handleSetter}
+          maxFileSizeLabel={maxFileSizeLabel}
+          errorMessage={errorMsg}
         />
       </div>
     </div>

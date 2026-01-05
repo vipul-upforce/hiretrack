@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { useField, useFormikContext } from 'formik';
 import { Label } from '@/components/ui/label';
 import { FileUpload } from '@/components/ui/file-upload';
@@ -20,11 +23,20 @@ export function CandidateResumeSection({
   const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
 
+  // Local state for inline error messages
+  const [errorMsg, setErrorMsg] = useState<string>('');
+
+  const isCandidateOrGuest =
+    !user || user.role === 'candidate' || user.role === '';
+  const maxFileSize = isCandidateOrGuest ? 3 * 1024 * 1024 : 50 * 1024 * 1024;
+  const maxFileSizeLabel = isCandidateOrGuest ? '3MB' : '50MB';
+
   /**
    * Handles candidate file selection, including file size/rule enforcement and preview.
-   * Always returns a value to satisfy async return contract for event handlers
    */
   const handleFileSelect = async (files: File[]): Promise<false | void> => {
+    setErrorMsg('');
+
     const sanitizedFiles = sanitizeFiles(files);
 
     // Return early if no file is present after sanitization
@@ -32,34 +44,13 @@ export function CandidateResumeSection({
 
     const selectedFile = sanitizedFiles[0];
 
-    // Guest: 3MB max
-    if (!user && selectedFile.size > 3 * 1024 * 1024) {
+    // Validate File Size
+    if (selectedFile.size > maxFileSize) {
+      const msg = `File "${selectedFile.name}" exceeds ${maxFileSizeLabel}. Please upload a smaller file.`;
+      setErrorMsg(msg);
       toast({
-        title: `File "${selectedFile.name}" exceeds 3MB. Please upload a smaller file.`,
-        variant: 'destructive',
-      });
-      return false;
-    }
-    // Candidate: 3MB max
-    if (
-      user &&
-      (user.role === 'candidate' || user.role === '') &&
-      selectedFile.size > 3 * 1024 * 1024
-    ) {
-      toast({
-        title: 'File size exceeds 3MB. Please upload a smaller file.',
-        variant: 'destructive',
-      });
-      return false;
-    }
-    // HR/admin/interviewer: 50MB max
-    if (
-      user &&
-      ['hr', 'admin', 'interviewer'].includes(user.role) &&
-      selectedFile.size > 50 * 1024 * 1024
-    ) {
-      toast({
-        title: 'File size exceeds 50MB. Please upload a smaller file.',
+        title: 'File size limit exceeded',
+        description: msg,
         variant: 'destructive',
       });
       return false;
@@ -97,13 +88,15 @@ export function CandidateResumeSection({
    * Handles both Sanitization (on add) and Removal (on empty array).
    */
   const handleSetter = (files: File[]) => {
+    setErrorMsg(''); // Clear error on change
+
     if (files.length === 0) {
       setFieldValue('resume', null); // Clear Formik value
       setTempResumeUrl(null); // Clear Preview
       return;
     }
 
-    // 2. Handle Addition: Sanitize and set
+    // Handle Addition: Sanitize and set
     const sanitizedFiles = sanitizeFiles(files);
     if (sanitizedFiles && sanitizedFiles.length > 0) {
       setFieldValue('resume', sanitizedFiles[0]);
@@ -124,6 +117,8 @@ export function CandidateResumeSection({
           files={resumeField.value ? [resumeField.value] : []}
           setter={handleSetter}
           buttonText="Add Resume"
+          maxFileSizeLabel={maxFileSizeLabel}
+          errorMessage={errorMsg}
         />
       </div>
 
@@ -138,6 +133,8 @@ export function CandidateResumeSection({
           onFileSelect={handleFileSelect}
           files={resumeField.value ? [resumeField.value] : []}
           setter={handleSetter}
+          maxFileSizeLabel={maxFileSizeLabel}
+          errorMessage={errorMsg}
         />
       </div>
 

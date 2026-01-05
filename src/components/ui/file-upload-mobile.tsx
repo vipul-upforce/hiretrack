@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { File as FileIcon, Pencil, X, Plus } from 'lucide-react';
+import { File as FileIcon, Pencil, X, Plus, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAppSelector } from '@/lib/redux/hooks';
 import { RenameFileDialog } from './rename-file-dialog';
 
 interface MobileFileUploadProps {
@@ -23,6 +22,8 @@ interface MobileFileUploadProps {
   id?: string;
   buttonText?: string;
   showFileLimit?: boolean;
+  maxFileSizeLabel?: string;
+  errorMessage?: string;
 }
 
 interface RenameFileState {
@@ -58,12 +59,14 @@ export function MobileFileUpload({
   isEdit = true,
   buttonText = 'Add Files',
   showFileLimit = true,
+  maxFileSizeLabel = '3MB',
+  errorMessage,
 }: MobileFileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
   });
-  const { user } = useAppSelector((state) => state.auth);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = (newName: string) => {
@@ -142,23 +145,23 @@ export function MobileFileUpload({
           {buttonText}
         </Button>
 
-        {/* File limit and size information */}
+        {/* Dynamic Helper Text */}
         {showFileLimit && (
-          <div className="space-y-1 text-center text-xs text-muted-foreground">
-            {user &&
-              (user.role === 'candidate' || user.role === '') &&
-              maxFiles > 1 && (
-                <p>
-                  Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
-                </p>
-              )}
-            {user && (user.role === 'candidate' || user.role === '') && (
-              <p>File size limit: 3MB per file</p>
+          <div className="flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+            {maxFiles > 1 && (
+              <p>
+                Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
+              </p>
             )}
-            {user &&
-              ['hr', 'admin', 'interviewer'].includes(user.role || '') && (
-                <p>File size limit: 50MB per file</p>
-              )}
+            <p>File size limit: {maxFileSizeLabel} per file</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="flex items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>{errorMessage}</span>
           </div>
         )}
       </div>
