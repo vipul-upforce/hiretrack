@@ -1,8 +1,9 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Paperclip, X, Upload } from 'lucide-react';
-import { toast } from 'sonner';
+import { Paperclip, X, Upload, AlertCircle } from 'lucide-react';
 import { FileAttachment } from './types';
 
 interface EmailAttachmentsProps {
@@ -19,6 +20,8 @@ export function EmailAttachments({
   setAttachments,
   sending,
 }: EmailAttachmentsProps) {
+  const [error, setError] = useState<string>('');
+
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -28,16 +31,24 @@ export function EmailAttachments({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
 
+    e.target.value = '';
+    setError('');
+
+    if (files.length === 0) return;
+
     if (attachments.length + files.length > MAX_ATTACHMENTS) {
-      toast.error(`Maximum ${MAX_ATTACHMENTS} attachments allowed`);
+      setError(`Maximum ${MAX_ATTACHMENTS} attachments allowed.`);
       return;
     }
 
     const newAttachments: FileAttachment[] = [];
+    let sizeErrorFound = false;
 
     for (const file of files) {
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`${file.name} exceeds 5MB limit`);
+        setError(`${file.name} exceeds the 5MB limit.`);
+        sizeErrorFound = true;
+        break;
       } else {
         newAttachments.push({
           file,
@@ -48,15 +59,14 @@ export function EmailAttachments({
       }
     }
 
-    if (newAttachments.length > 0) {
+    // Only update state if no size errors were found and we have valid files
+    if (!sizeErrorFound && newAttachments.length > 0) {
       setAttachments([...attachments, ...newAttachments]);
     }
-
-    // Clear the input so the same file can be selected again
-    e.target.value = '';
   };
 
   const removeAttachment = (index: number) => {
+    setError('');
     setAttachments(attachments.filter((_, i) => i !== index));
   };
 
@@ -70,6 +80,7 @@ export function EmailAttachments({
         Attachments ({attachments.length}/{MAX_ATTACHMENTS})
       </Label>
 
+      {/* Attachment List */}
       {attachments.length > 0 && (
         <div className="mb-2 space-y-2">
           {attachments.map((att, index) => (
@@ -97,29 +108,42 @@ export function EmailAttachments({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <input
-          type="file"
-          id="file-upload"
-          multiple
-          onChange={handleFileSelect}
-          className="hidden"
-          accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.gif,.bmp"
-          disabled={attachments.length >= MAX_ATTACHMENTS}
-        />
-        <label
-          htmlFor="file-upload"
-          className={cn(
-            'inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2',
-            'hover:bg-accent hover:text-accent-foreground',
-            attachments.length >= MAX_ATTACHMENTS &&
-              'cursor-not-allowed opacity-50',
-          )}
-        >
-          <Upload className="h-4 w-4" />
-          Choose Files
-        </label>
-        <span className="text-xs text-muted-foreground">Max 5MB per file</span>
+      {/* Upload Controls */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            id="file-upload"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+            accept=".pdf,.zip,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.gif,.bmp"
+            disabled={attachments.length >= MAX_ATTACHMENTS || sending}
+          />
+          <label
+            htmlFor="file-upload"
+            className={cn(
+              'inline-flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2',
+              'hover:bg-accent hover:text-accent-foreground',
+              (attachments.length >= MAX_ATTACHMENTS || sending) &&
+                'cursor-not-allowed opacity-50',
+            )}
+          >
+            <Upload className="h-4 w-4" />
+            Choose Files
+          </label>
+          <span className="text-xs text-muted-foreground">
+            Max 5MB per file
+          </span>
+        </div>
+
+        {/* Inline Error Display */}
+        {error && (
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>{error}</span>
+          </div>
+        )}
       </div>
     </div>
   );

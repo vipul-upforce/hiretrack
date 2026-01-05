@@ -14,8 +14,6 @@ import { useTheme } from '@/components/theme-provider';
 import { useGetEmailTemplatesQuery } from '@/lib/features/settings/configApi';
 import { useSendEmailToCandidateMutation } from '@/lib/features/candidate/candidateApi';
 import { useUploadFilesMutation } from '@/lib/features/files/fileSharesApi';
-
-// Import sub-components
 import {
   DEFAULT_TEMPLATE_IDS,
   DEFAULT_VARIABLES,
@@ -59,20 +57,19 @@ export function EmailCandidateDialog({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('none');
   const [contentMode, setContentMode] = useState<'rich' | 'html'>('rich');
 
-  // Redux state
+  const [isGlobalSubmitting, setIsGlobalSubmitting] = useState(false);
+
   const { user } = useAppSelector((state) => state.auth || {});
 
-  // RTK Query hooks
   const {
     data: templatesData,
     isLoading: templateLoading,
     error: templatesError,
   } = useGetEmailTemplatesQuery(undefined, { skip: !isOpen });
 
-  const [sendEmail, { isLoading: sending }] = useSendEmailToCandidateMutation();
+  const [sendEmail] = useSendEmailToCandidateMutation();
   const [uploadFiles] = useUploadFilesMutation();
 
-  // Derived state from user
   const userEmail = user?.email || '';
   const userName = user?.name || userEmail;
   const organizationName = user?.organizationInfo?.name || 'HireTrack';
@@ -101,11 +98,10 @@ export function EmailCandidateDialog({
         isDefault,
       };
     });
-
     // Filter to show only custom templates (suitable for manual emails to candidates)
     return loadedTemplates.filter((template) => template.isCustom);
   }, [templatesData]);
-
+  
   // Initialize user-related state
   useEffect(() => {
     if (user?.email) {
@@ -113,7 +109,6 @@ export function EmailCandidateDialog({
     }
   }, [user]);
 
-  // Replace template variables with actual values
   const replaceVariables = (content: string): string =>
     content
       .replace(/{{SenderName}}/g, userName || userEmail)
@@ -121,7 +116,6 @@ export function EmailCandidateDialog({
       .replace(/{{PortalName}}/g, organizationName)
       .replace(/{{jobTitle}}/g, candidate.jobTitle || '');
 
-  // Handle template selection
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);
 
@@ -135,12 +129,10 @@ export function EmailCandidateDialog({
     if (template) {
       setSubject(replaceVariables(template.subject));
       setBody(replaceVariables(template.content));
-      // Reset to rich text mode when selecting a template for better UX
       setContentMode('rich');
     }
   };
 
-  // Reset form state
   const resetForm = () => {
     setSubject('');
     setBody('');
@@ -151,17 +143,21 @@ export function EmailCandidateDialog({
     setEmailError('');
     setSelectedTemplate('none');
     setContentMode('rich');
+    setIsGlobalSubmitting(false);
   };
 
   const handleSend = async () => {
+    setEmailError('');
+    setEmailSent(false);
+
     if (!subject.trim() || !body.trim()) {
-      toast.error('Subject and body are required');
+      const errorMsg = 'Subject and body are required';
+      setEmailError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
-    // Clear previous states
-    setEmailError('');
-    setEmailSent(false);
+    setIsGlobalSubmitting(true);
 
     try {
       let uploadedAttachments: Array<{
@@ -171,7 +167,6 @@ export function EmailCandidateDialog({
         shareUrl: string;
       }> = [];
 
-      // Upload files if there are any
       if (attachments.length > 0) {
         const filePromises = attachments.map(async (att) => {
           const base64Promise = new Promise<string>((resolve, reject) => {
@@ -233,7 +228,6 @@ export function EmailCandidateDialog({
           throw new Error(errorMessage);
         }
       }
-
       // Send email using RTK Query
       await sendEmail({
         candidateId: candidate._id,
@@ -248,7 +242,6 @@ export function EmailCandidateDialog({
 
       setEmailSent(true);
       toast.success('Email sent successfully');
-
       // Auto-close after a short delay to show success state
       setTimeout(() => {
         onClose();
@@ -264,6 +257,8 @@ export function EmailCandidateDialog({
       }
       setEmailError(errorMsg);
       toast.error(errorMsg);
+    } finally {
+      setIsGlobalSubmitting(false);
     }
   };
 
@@ -327,7 +322,7 @@ export function EmailCandidateDialog({
             <EmailAttachments
               attachments={attachments}
               setAttachments={setAttachments}
-              sending={sending}
+              sending={isGlobalSubmitting}
             />
           </div>
         </div>
@@ -335,7 +330,7 @@ export function EmailCandidateDialog({
         <EmailDialogFooter
           onClose={onClose}
           onSend={handleSend}
-          sending={sending}
+          sending={isGlobalSubmitting}
           emailSent={emailSent}
           emailError={emailError}
         />
