@@ -27,7 +27,11 @@ export async function GET(req: NextRequest) {
     const isActive = searchParams.get('active') === 'true';
 
     // Build query
-    const query: any = { organizationId: user.organizationId };
+    const query: {
+      organizationId: string;
+      type?: 'incoming' | 'outgoing';
+      isActive?: boolean;
+    } = { organizationId: user.organizationId };
     if (type) query.type = type;
     if (isActive) query.isActive = true;
 
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let { name, description, type, fields } = body;
+    const { name, description, type, fields } = body;
 
     // Validate required fields
     if (!name || !type || !Array.isArray(fields)) {
@@ -113,7 +117,8 @@ export async function POST(req: NextRequest) {
 
       const maxSuffix = suffixes.length > 0 ? Math.max(...suffixes) : 0;
       const nextSuffix = maxSuffix + 1;
-      name = `${baseName} (${nextSuffix})`;
+      const newName = `${baseName} (${nextSuffix})`;
+      throw new Error(`Template with this name already exists: ${newName}`);
     }
 
     // Create template
