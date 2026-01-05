@@ -21,6 +21,7 @@ import TimePicker from '@/components/ui/time-picker';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { wierdFileNamePattern } from '@/lib/constants';
+import { toast } from 'sonner';
 import React from 'react';
 
 interface FileData {
@@ -410,7 +411,15 @@ export function RenderField({
             {...commonProps}
             value={values.customFields[label] as FileData[]}
             onFilesChange={async (files: File[] | FileData[]) => {
+
               const sanitizedFiles = sanitizeFiles(files);
+              if (sanitizedFiles.length > 30) {
+                toast.error('Limit Exceeded', {
+                  description: 'You cannot upload more than 30 files.',
+                });
+                return;
+              }
+
               try {
                 const base64Files = await Promise.all(
                   sanitizedFiles.map(async (file) => {
@@ -430,15 +439,23 @@ export function RenderField({
                     };
                   }),
                 );
+
                 const fileNames = base64Files.map((file) => file.name);
                 const hasDuplicates =
                   new Set(fileNames).size !== fileNames.length;
+
                 if (hasDuplicates) {
+                  toast.error('Duplicate Files', {
+                    description: 'Duplicate file names are not allowed.',
+                  });
                   return;
                 }
+
                 setFieldValue(`customFields.${label}`, base64Files);
               } catch {
-                // Handle error
+                toast.error('Upload Error', {
+                  description: 'Failed to process files.',
+                });
               }
             }}
             existingFiles={
@@ -448,7 +465,7 @@ export function RenderField({
                       name: file.name,
                       type: file.type,
                       size: file.size,
-                      url: file.base64 || '', // Map base64 to url
+                      url: file.base64 || '',
                       preview: file.base64,
                     })),
                   )
