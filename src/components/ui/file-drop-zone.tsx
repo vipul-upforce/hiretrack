@@ -115,7 +115,7 @@ export function FileDropZone({
 
     return () => {
       Object.values(previews).forEach((preview) => {
-        if (preview.startsWith('blob:')) {
+        if (typeof preview === 'string' && preview.startsWith('blob:')) {
           URL.revokeObjectURL(preview);
         }
       });

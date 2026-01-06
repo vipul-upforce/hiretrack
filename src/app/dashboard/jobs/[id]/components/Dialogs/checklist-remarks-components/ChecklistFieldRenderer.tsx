@@ -86,7 +86,7 @@ export function ChecklistFieldRenderer({
           // Multiple checkboxes
           const selectedValues = Array.isArray(value) ? value : [];
           return (
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
               {field.options.map((option) => (
                 <div key={option} className="flex items-center space-x-2">
                   <Checkbox
@@ -124,7 +124,11 @@ export function ChecklistFieldRenderer({
 
       case 'radio':
         return (
-          <RadioGroup value={String(value) || ''} onValueChange={onChange}>
+          <RadioGroup
+            value={String(value) || ''}
+            onValueChange={onChange}
+            className="flex flex-col gap-2"
+          >
             {field.options?.map((option) => (
               <div key={option} className="flex items-center space-x-2">
                 <RadioGroupItem value={option} id={`${fieldId}-${option}`} />
