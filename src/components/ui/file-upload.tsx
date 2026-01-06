@@ -10,8 +10,8 @@ import {
   Paperclip,
   AlertCircle,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { RenameFileDialog } from './rename-file-dialog';
-import { Button } from './button';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -144,7 +144,6 @@ export function FileUpload({
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept,
-    maxFiles,
     noClick: true,
     noKeyboard: true,
   });
@@ -157,7 +156,9 @@ export function FileUpload({
       {dropZone ? (
         <div
           {...getRootProps()}
-          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center ${isDragActive ? 'bg-primary/10 border-primary' : 'border-border'}`}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center ${
+            isDragActive ? 'bg-primary/10 border-primary' : 'border-border'
+          }`}
         >
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
@@ -232,7 +233,7 @@ export function FileUpload({
 
         {/* Error Message Display */}
         {errorMessage && (
-          <div className=" flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
             <AlertCircle className="h-4 w-4" />
             <span>{errorMessage}</span>
           </div>
