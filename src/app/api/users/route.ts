@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { User, Organization } from '@/lib/mongodb';
+import connectToDatabase, { User, Organization } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 
 import { getAuthenticatedUser } from '@/app/actions/auth';

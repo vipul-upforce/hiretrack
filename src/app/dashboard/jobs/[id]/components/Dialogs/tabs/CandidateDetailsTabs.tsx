@@ -113,7 +113,6 @@ export function CandidateDetailsTabs({
         <TabsContent value="history" className="mt-0 space-y-6">
           <CandidateHistoryTab
             candidate={candidate}
-            user={user}
             candidateHistory={candidateHistory}
             isHistoryLoading={isHistoryLoading}
             isRemarkSubmitting={isRemarkSubmitting}
@@ -128,7 +127,6 @@ export function CandidateDetailsTabs({
         <TabsContent value="logs" className="mt-0 space-y-6">
           <CandidateLogsTab
             candidate={candidate}
-            user={user}
             isHistoryLoading={isHistoryLoading}
             historyLoaded={historyLoaded}
             validTimeLineItems={validTimeLineItems}
