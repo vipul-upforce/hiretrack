@@ -39,7 +39,7 @@ import { InterviewerSelector } from './assign-candidate-components/InterviewerSe
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
 import { GoogleMeetIntegration } from './assign-candidate-components/google-meet/GoogleMeetIntegration';
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
-import ConfirmationDialog from './ConfirmationDialog';
+import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 
 function LoadingSpinner({ w = 4 }: { w?: number }) {
@@ -367,14 +367,15 @@ export function AssignCandidateDialog({
             }}
           </Formik>
 
-          <ConfirmationDialog
+          <ConfirmAndRemarkDialog
             isOpen={confirmUnassignOpen}
             setIsOpen={setConfirmUnassignOpen}
-            title="Confirm Mark As Done"
+            title="Mark as Done"
             message="Are you sure you want to Mark As Done this interviewer?"
             onConfirm={confirmUnassign}
             onCancel={() => setConfirmUnassignOpen(false)}
-            className="sm:max-w-[300px]"
+            isLoading={isUnassigning}
+            loadingText="Marking as done..."
           />
         </DialogContent>
       </Dialog>
