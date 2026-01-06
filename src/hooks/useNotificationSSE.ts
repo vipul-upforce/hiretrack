@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Dispatch, AnyAction } from '@reduxjs/toolkit';
 import { Candidate } from '@/types/candidate';
+import { CustomFields } from '@/Custom_Fields/Types/CustomField';
 import logger from '@/lib/logger';
 import { refreshAccessToken } from '@/lib/api/baseApi';
 import { useAppDispatch } from '@/lib/redux/hooks';
@@ -23,6 +24,7 @@ type Subscriber = {
   onClientsUpdate?: (clients: number) => void;
   onConnectionChange?: (connected: boolean) => void;
   onTabCountUpdate?: (count: number) => void;
+  onCustomFieldsUpdate?: (customFields: CustomFields) => void;
 };
 
 class SSEManager {
@@ -196,9 +198,12 @@ class SSEManager {
     candidate?: unknown;
     candidates?: unknown;
     lanes?: string[];
+    jobId?: string;
+    laneRenamed?: boolean;
     clients?: number;
     activeTabs?: number;
     error?: string;
+    customFields?: unknown;
   }) {
     if (
       (data?.type === 'connectionStatus' || data?.type === 'connected') &&
@@ -279,6 +284,26 @@ class SSEManager {
         sub.onClientsUpdate?.(data.clients as number);
       });
     }
+
+    if (data.type === 'customFieldsUpdate' && data.customFields) {
+      const encodedCustomFields = data.customFields;
+      if (typeof encodedCustomFields === 'string') {
+        const decodedCustomFields = await getDecodedSSE(encodedCustomFields);
+        if (
+          decodedCustomFields &&
+          typeof decodedCustomFields === 'object' &&
+          !Array.isArray(decodedCustomFields)
+        ) {
+          this.subscribers.forEach((sub) => {
+            sub.onCustomFieldsUpdate?.(decodedCustomFields as CustomFields);
+          });
+        } else {
+          logger.error(
+            'Invalid custom fields data structure received from SSE',
+          );
+        }
+      }
+    }
   }
 
   private broadcastConnectionChange(connected: boolean) {
@@ -306,6 +331,9 @@ class SSEManager {
 
 const sseManager = new SSEManager();
 
+// Export sseManager for conditional subscription in other components
+export { sseManager };
+
 export function useNotificationSSE(
   initialUnreadCount: number = 0,
   initialTotalCount: number = 0,
@@ -322,6 +350,7 @@ export function useNotificationSSE(
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [activeTabCount, setActiveTabCount] = useState<number>(1);
+  const [customFields, setCustomFields] = useState<CustomFields | null>(null);
   const subscriberIdRef = useRef<string>(
     `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
   );
@@ -389,6 +418,13 @@ export function useNotificationSSE(
     setIsConnected(connected);
   }, []);
 
+  const handleCustomFieldsUpdate = useCallback(
+    (updatedCustomFields: CustomFields) => {
+      setCustomFields(updatedCustomFields);
+    },
+    [],
+  );
+
   useEffect(() => {
     setUnreadCount(initialUnreadCount);
     setTotalCount(initialTotalCount);
@@ -412,8 +448,9 @@ export function useNotificationSSE(
       onClientsUpdate: handleClientsUpdate,
       onConnectionChange: handleConnectionChange,
       onTabCountUpdate: handleTabCountUpdate,
+      onCustomFieldsUpdate: handleCustomFieldsUpdate,
     });
-    
+
     // Set initial connection state
     setIsConnected(sseManager.getConnectionState());
     return unsubscribe;
@@ -428,6 +465,7 @@ export function useNotificationSSE(
     handleClientsUpdate,
     handleConnectionChange,
     handleTabCountUpdate,
+    handleCustomFieldsUpdate,
   ]);
 
   return {
@@ -443,5 +481,6 @@ export function useNotificationSSE(
     jobId,
     laneRenamed,
     activeTabCount,
+    customFields,
   };
 }

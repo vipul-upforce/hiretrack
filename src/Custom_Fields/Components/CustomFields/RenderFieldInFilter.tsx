@@ -177,7 +177,7 @@ export function RenderFieldInFilter({
 
     case 'checkbox':
       return (
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-col gap-2">
           {options?.map((option, index) => (
             <div className="flex items-center space-x-2" key={option}>
               <Checkbox
@@ -382,7 +382,7 @@ export function RenderFieldInFilter({
         <RadioGroup
           value={value as string}
           onValueChange={(newValue) => onChange?.(newValue)}
-          className="flex flex-row gap-4"
+          className="flex flex-col gap-2"
         >
           {options?.map((option) => (
             <div key={option} className="flex items-center space-x-2">

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { broadcastCustomFieldsUpdate } from '@/lib/broadcast/broadcastCustomFields';
+import { logger } from '@/lib/logger/logger.server';
 
 // Handle POST request
 export async function POST(req: NextRequest) {
@@ -28,6 +30,17 @@ export async function POST(req: NextRequest) {
     if (org) {
       org.customFields = customFields;
       await org.save();
+
+      // Broadcast custom fields update to all connected clients
+      try {
+        await broadcastCustomFieldsUpdate(orgId, customFields);
+      } catch (broadcastError) {
+        // Log error but don't fail the API call if broadcast fails
+        logger.error(
+          { error: broadcastError },
+          'Failed to broadcast custom fields update',
+        );
+      }
     }
     if (!org) {
       return NextResponse.json(

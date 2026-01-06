@@ -100,15 +100,22 @@ const CustomFieldForm = memo(
       (label: string, excludeId?: string) => {
         const trimmedLabel = label.trim().toLowerCase();
 
-        // Check for global field duplicates (original check)
-        const globalDuplicate = existingFields?.some(
-          (field) =>
-            (field.label.toLowerCase() === trimmedLabel ||
-              field.label.toLowerCase() === `${trimmedLabel} |||||(g)`) &&
+        // Normalize function to strip the suffix for comparison
+        const normalizeLabel = (fieldLabel: string): string =>
+          fieldLabel.toLowerCase().split(' |||||(')[0].trim();
+
+        const normalizedInputLabel = normalizeLabel(trimmedLabel);
+
+        // Check for global field duplicates
+        const globalDuplicate = existingFields?.some((field) => {
+          const normalizedFieldLabel = normalizeLabel(field.label);
+          return (
+            normalizedFieldLabel === normalizedInputLabel &&
             !field.candidateId &&
             !field.jobId &&
-            field.id !== excludeId,
-        );
+            field.id !== excludeId
+          );
+        });
 
         if (globalDuplicate) {
           setDuplicateType('global');
@@ -116,18 +123,17 @@ const CustomFieldForm = memo(
         }
 
         // Check for job-specific field duplicates
-        // Get the jobId from the initialValue or context
         const currentJobId = initialValue?.jobId;
 
         if (currentJobId) {
-          // Check if there's already a field with the same label for this job
-          const jobSpecificDuplicate = existingFields?.some(
-            (field) =>
-              (field.label.toLowerCase() === trimmedLabel ||
-                field.label.toLowerCase() === `${trimmedLabel} |||||(g)`) &&
+          const jobSpecificDuplicate = existingFields?.some((field) => {
+            const normalizedFieldLabel = normalizeLabel(field.label);
+            return (
+              normalizedFieldLabel === normalizedInputLabel &&
               field.jobId === currentJobId &&
-              field.id !== excludeId,
-          );
+              field.id !== excludeId
+            );
+          });
 
           if (jobSpecificDuplicate) {
             setDuplicateType('job-specific');
@@ -170,7 +176,7 @@ const CustomFieldForm = memo(
                 field.label === values.label &&
                 (!isEditMode || field.id !== initialValue?.id)
               ) {
-                values.label = `${values.label} |||||(g)`;
+                values.label = `${values.label} |||||(${Date.now()})`;
                 return true; // Stops the loop once found
               }
               return false;
