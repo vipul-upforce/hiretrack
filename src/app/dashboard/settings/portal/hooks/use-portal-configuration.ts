@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
-import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
+import {
+  ILocalUser,
+  updateUser as updateUserInState,
+} from '@/lib/redux/authSlice';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import {
@@ -147,7 +150,7 @@ export function usePortalConfiguration() {
         },
       };
       if (user) {
-        dispatch(updateUserInState(updatedUser));
+        dispatch(updateUserInState(updatedUser as ILocalUser));
       }
 
       toast.success('Portal settings saved successfully');

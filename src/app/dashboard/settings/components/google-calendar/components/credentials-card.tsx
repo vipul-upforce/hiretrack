@@ -78,7 +78,7 @@ export function CredentialsCard({
         {!isConnected && (
           <Button
             onClick={onSave}
-            variant="default"
+            variant="primary"
             disabled={
               !formData.clientId || !formData.clientSecret || isUpdating
             }
