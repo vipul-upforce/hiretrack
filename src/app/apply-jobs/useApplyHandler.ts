@@ -11,20 +11,29 @@ export const useApplyHandler = <T extends FormikValues>() => {
 
     const errors = await formik.validateForm();
 
-    const touched: Partial<Record<keyof T, boolean>> = {};
+    const touched: Record<string, unknown> = {};
     for (const key in formik.initialValues) {
-      if (
-        key === 'customFields' &&
-        formik.initialValues.key &&
-        typeof formik.initialValues.key === 'object'
-      ) {
-        // Mark every key inside customFields as true
-        touched[key] = true;
-        Object.keys(
-          formik.initialValues[key] as Record<string, unknown>,
-        ).forEach((subKey) => {
-          (touched[key] as unknown as Record<string, boolean>)[subKey] = true;
+      if (key === 'customFields') {
+        debugger;
+        const customFieldsTouched: Record<string, boolean> = {};
+        const cfValues =
+          ((formik.values as Record<string, unknown>).customFields as Record<
+            string,
+            unknown
+          >) || {};
+        const cfInits =
+          ((formik.initialValues as Record<string, unknown>)
+            .customFields as Record<string, unknown>) || {};
+
+        const allCfKeys = new Set([
+          ...Object.keys(cfInits),
+          ...Object.keys(cfValues),
+        ]);
+
+        allCfKeys.forEach((subKey) => {
+          customFieldsTouched[subKey] = true;
         });
+        touched[key] = customFieldsTouched;
       } else {
         touched[key] = true;
       }
@@ -32,7 +41,22 @@ export const useApplyHandler = <T extends FormikValues>() => {
 
     formik.setTouched(touched as FormikTouched<T>, true);
 
-    if (Object.keys(errors).length > 0) {
+    const hasErrors = (errs: Record<string, unknown>): boolean => {
+      if (!errs || typeof errs !== 'object') return false;
+      return Object.keys(errs).some((key) => {
+        if (
+          key === 'customFields' &&
+          errs[key] &&
+          typeof errs[key] === 'object'
+        ) {
+          const customFieldErrors = errs[key] as Record<string, unknown>;
+          return Object.keys(customFieldErrors).length > 0;
+        }
+        return !!errs[key];
+      });
+    };
+
+    if (hasErrors(errors)) {
       scrollToError(errors);
       return;
     }

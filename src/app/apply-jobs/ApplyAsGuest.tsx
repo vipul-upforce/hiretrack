@@ -60,7 +60,7 @@ export function ApplyAsGuestDialog({
   const formName = 'Candidate';
   const { validationSchema, initialValues: inits } = useCustomForm(
     formName,
-    undefined,
+    jobId,
     undefined,
     true,
   );
@@ -164,9 +164,9 @@ export function ApplyAsGuestDialog({
             }}
             validationSchema={candidateSchema(validationSchema)}
             onSubmit={handleSubmit}
-            enableReinitialize={false}
+            enableReinitialize
           >
-            {({ isSubmitting, errors, setFieldValue }) => (
+            {({ isSubmitting, setFieldValue }) => (
               <Form className="sticky top-0 flex min-h-0 flex-1 flex-col overflow-y-clip">
                 <FormUpdater parsedResumeData={parsedResumeData} />
                 <div className="flex-1 overflow-hidden border-t px-6 py-4">
@@ -202,9 +202,7 @@ export function ApplyAsGuestDialog({
                     Cancel
                   </Button>
                   <Button
-                    type={
-                      Object.keys(errors).length === 0 ? 'button' : 'submit'
-                    }
+                    type="button"
                     onClick={handleApply}
                     variant="primary"
                     disabled={isSubmitting || isSubmittingApplication}
