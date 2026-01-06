@@ -36,31 +36,30 @@ export default function VerifyOtpForm() {
   const isLoading = isVerifying || isSending;
   const storageKey = `otp_cooldown_${email}_${organizationId}`;
   useEffect(() => {
-    if (!email || !organizationId) return;
-  
+    if (!email || !organizationId) return undefined;
+
     const tick = () => {
       const ts = localStorage.getItem(storageKey);
-  
+
       if (!ts) {
         setCooldownSeconds(0);
         return;
       }
-  
+
       const elapsed = Math.floor((Date.now() - Number(ts)) / 1000);
       const remaining = Math.max(0, 60 - elapsed);
-  
+
       if (remaining === 0) {
         localStorage.removeItem(storageKey);
       }
       setCooldownSeconds(remaining);
     };
-  
+
     tick(); // run immediately on mount
     const interval = setInterval(tick, 1000);
-  
+
     return () => clearInterval(interval);
   }, [email, organizationId, storageKey]);
-
 
   // Redirect after successful authentication
   useEffect(() => {
@@ -140,7 +139,6 @@ export default function VerifyOtpForm() {
       if (organizationId) {
         localStorage.setItem(storageKey, Date.now().toString());
       }
-
     } catch (err) {
       const errorMessage =
         (err as { data?: { message: string } })?.data?.message ||
@@ -186,7 +184,6 @@ export default function VerifyOtpForm() {
   };
 
   function renderResendSection() {
-
     if (cooldownSeconds > 0) {
       return (
         <p>
