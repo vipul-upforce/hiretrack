@@ -3,16 +3,15 @@
  * Displays candidate information, skills, custom fields, resume, attachments, and AI scores
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Candidate } from '@/types/candidate';
 import { scoreColors } from '@/lib/constants';
 import { QuickTooltip } from '@/components/ui/tooltip';
-import { Trophy, Bell, Edit, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { Trophy } from 'lucide-react';
 import ResumeEvaluationDetails from '../../Candidate/ResumeEvaluationDetails';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
-import { useFollowUpParsing } from '../../../hooks/useFollowUpParsing';
+import { CandidateCardFollowUp } from '../../Candidate/CandidateCardFollowUp';
+import ConfirmationDialog from '../ConfirmationDialog';
 
 interface CandidateOverviewTabProps {
   candidate: Candidate;
@@ -87,119 +86,6 @@ function ScoreCard({
   }
 
   return cardContent;
-}
-
-/**
- * Follow-up Section Component
- */
-interface FollowUpSectionProps {
-  candidate: Candidate;
-  onEdit: () => void;
-  onRemove: () => void;
-}
-
-function FollowUpSection({
-  candidate,
-  onEdit,
-  onRemove,
-}: FollowUpSectionProps) {
-  const parsed = useFollowUpParsing(candidate);
-  const { user } = useAppSelector((state) => state.auth);
-  if (!candidate.followUp?.date && !candidate.followUp?.note) {
-    return null;
-  }
-
-  if (user?.role === 'interviewer') {
-    return null;
-  }
-
-  return (
-    <div className="rounded-lg border-l-4 border-amber-400 bg-amber-50 p-4 dark:border-amber-500 dark:bg-amber-900/20">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-1 items-start gap-3">
-          <Bell className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-          <div className="flex-1">
-            <div className="mb-2 flex items-center gap-2">
-              <h4 className="font-semibold text-amber-800 dark:text-amber-200">
-                Follow-up Reminder
-              </h4>
-              {candidate.followUp.date && (
-                <span className="rounded bg-amber-100 px-2 py-1 text-xs text-amber-700 dark:bg-amber-800/50 dark:text-amber-300">
-                  {new Date(candidate.followUp.date).toLocaleDateString()} at{' '}
-                  {new Date(candidate.followUp.date).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </span>
-              )}
-            </div>
-            {candidate.followUp.note && (
-              <>
-                {parsed.userNotes.map((note) => (
-                  <div
-                    key={`note-${Math.random().toString(36).substr(2, 9)}`}
-                    className="relative"
-                  >
-                    <p className="line-clamp-2 break-words text-xs leading-tight text-amber-800 dark:text-amber-200">
-                      {note}
-                    </p>
-                  </div>
-                ))}
-                {parsed.completionNote && (
-                  <>
-                    {parsed.userNotes.length > 0 && (
-                      <hr className="my-2 border-t border-amber-300 dark:border-amber-600" />
-                    )}
-                    <div className="relative">
-                      <p className="line-clamp-2 break-words text-xs font-semibold leading-tight text-amber-800 dark:text-amber-200">
-                        {parsed.completionNote}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-            {candidate.followUp.userId && (
-              <div className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                Created by:{' '}
-                <span className="font-bold">
-                  {candidate.followUp.userId.name}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-        {(user?.role === 'admin' || user?.role === 'hr') && (
-          <div className="flex flex-shrink-0 items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-amber-600 hover:bg-amber-100 hover:text-amber-800 dark:text-amber-400 dark:hover:bg-amber-800/30 dark:hover:text-amber-200"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              title="Edit Follow-up"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 text-red-500 hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-800/30 dark:hover:text-red-300"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove();
-              }}
-              title="Remove Follow-up"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 /**
@@ -469,15 +355,43 @@ export function CandidateOverviewTab({
   isEvaluatingFor,
   onReEvaluate,
 }: CandidateOverviewTabProps) {
+  const [confirmRemoveFollowUpOpen, setConfirmRemoveFollowUpOpen] =
+    useState(false);
+
+  const handleRemoveClick = () => {
+    setConfirmRemoveFollowUpOpen(true);
+  };
+
+  const handleConfirmRemove = () => {
+    setConfirmRemoveFollowUpOpen(false);
+    onRemoveFollowUp();
+  };
+
+  const handleCancelRemove = () => {
+    setConfirmRemoveFollowUpOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Follow-up Section */}
-      <FollowUpSection
+      <CandidateCardFollowUp
         candidate={candidate}
         onEdit={onEditFollowUp}
-        onRemove={onRemoveFollowUp}
+        onRemove={handleRemoveClick}
+        variant="detailed"
       />
 
+      {/* Remove Follow-up Confirmation Dialog */}
+      <ConfirmationDialog
+        title="Remove Follow-up?"
+        message="Are you sure you want to remove this follow-up reminder? This action cannot be undone."
+        isOpen={confirmRemoveFollowUpOpen}
+        setIsOpen={setConfirmRemoveFollowUpOpen}
+        onConfirm={handleConfirmRemove}
+        onCancel={handleCancelRemove}
+        buttonName="Remove"
+        className="sm:max-w-[400px]"
+      />
       {/* Skills */}
       {candidate.skills && candidate.skills.length > 0 && (
         <div className="space-y-4">

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
-import { User } from '@/lib/features/users/usersApi';
 import { IEditRemark } from '../../../schemas/EditRemarkDialog';
 
 export interface HistoryAndLogTableProps {
@@ -19,7 +18,6 @@ export interface HistoryAndLogTableProps {
 
 export interface LogsTableProps {
   candidate: Candidate;
-  user: User | null;
   timeLineItems: ICandidateHistory[];
   isLoading: boolean;
 }

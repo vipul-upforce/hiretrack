@@ -55,7 +55,7 @@ function OnboardingWizard() {
       setIsCurrentConfigured(valid);
     };
     validate();
-  }, [currentStep, currentStepData]);
+  }, [currentStep, currentStepData, validateStep]);
 
   // Finish onboarding
   const handleFinish = async () => {

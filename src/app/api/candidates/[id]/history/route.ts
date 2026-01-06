@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { History, JobLaneConfig } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { filterChecklistResponses } from '@/lib/utils/checklistVisibility';
-import type { UserRole } from '@/lib/models/JobLaneConfig';
+import type {
+  IChecklistField,
+  ILaneConfig,
+  UserRole,
+} from '@/lib/models/JobLaneConfig';
 import { logger } from '@/lib/logger/logger.server';
+import { ICandidateHistory } from '@/lib/models/history';
 // Disable static generation for this API route
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -62,20 +67,24 @@ export async function GET(
     // Filter history entries and checklist responses based on user role
     const filteredHistory = history.history
       ? history.history
-          .filter((entry) =>
-            role === 'admin' || role === 'hr'
-              ? true
-              : entry?.remark?.id
-                ? !entry.remark?.isPrivate
-                : true,
-          )
-          .map((entry: any) => {
+          .filter((entry) => {
+            // Admins and HR can see all entries
+            if (role === 'admin' || role === 'hr') {
+              return true;
+            }
+            // For other roles, show entries without remarks or non-private remarks
+            if (entry?.remark?.id) {
+              return !entry.remark?.isPrivate;
+            }
+            return true;
+          })
+          .map((entry: ICandidateHistory) => {
             // If this entry has checklist data, filter the responses based on user role
             if (entry.checklistForm && userData?.role && laneConfig) {
               // Find the checklist configuration to get field visibility settings
-              let checklistFields: any[] = [];
+              let checklistFields: IChecklistField[] = [];
               const targetLane = laneConfig.laneConfigs.find(
-                (lc: any) => lc.laneId === entry.checklistForm.laneId,
+                (lc: ILaneConfig) => lc.laneId === entry.checklistForm?.laneId,
               );
               if (targetLane) {
                 const checklist =

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Input validation utilities for API endpoints
@@ -30,6 +30,24 @@ export const MAX_LENGTHS = {
   mediumText: 500,
 };
 
+/**
+ * Valid input value types that can be validated
+ * Note: Arrays and objects can contain nested values of the same types
+ */
+export type ValidInputValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | ValidInputValue[]
+  | { [key: string]: ValidInputValue };
+
+/**
+ * Validated input data structure (top-level object)
+ */
+export type ValidatedInputData = { [key: string]: ValidInputValue };
+
 export interface ValidationRule {
   required?: boolean;
   type?:
@@ -47,7 +65,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   allowedValues?: (string | number)[];
-  customValidator?: (value: any) => boolean;
+  customValidator?: (value: ValidInputValue) => boolean;
   sanitize?: boolean; // Whether to sanitize HTML/script tags
 }
 
@@ -68,7 +86,7 @@ export class ValidationError extends Error {
 /**
  * Type validation helper
  */
-function validateType(value: any, type: string): boolean {
+function validateType(value: ValidInputValue, type: string): boolean {
   switch (type) {
     case 'string':
       return typeof value === 'string';
@@ -113,18 +131,21 @@ function containsHtmlOrScript(value: string): boolean {
  * Validates input data against a schema
  */
 export function validateInput(
-  data: any,
+  data: ValidInputValue,
   schema: ValidationSchema,
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Check for null/undefined data
-  if (!data || typeof data !== 'object') {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return { isValid: false, errors: ['Invalid request body'] };
   }
 
+  // Type guard: data is now a ValidatedInputData
+  const dataRecord = data as ValidatedInputData;
+
   for (const [field, rules] of Object.entries(schema)) {
-    const value = data[field];
+    const value = dataRecord[field];
 
     // Required field check
     if (
@@ -192,8 +213,16 @@ export function validateInput(
     }
 
     // Allowed values validation
-    if (rules.allowedValues && !rules.allowedValues.includes(value)) {
-      errors.push(`${field} must be one of: ${rules.allowedValues.join(', ')}`);
+    if (rules.allowedValues) {
+      const isValidValue =
+        (typeof value === 'string' || typeof value === 'number') &&
+        rules.allowedValues.includes(value as string | number);
+
+      if (!isValidValue) {
+        errors.push(
+          `${field} must be one of: ${rules.allowedValues.join(', ')}`,
+        );
+      }
     }
 
     // Custom validation
@@ -204,10 +233,6 @@ export function validateInput(
 
   return { isValid: errors.length === 0, errors };
 }
-
-/**
- * Detects potential HTML/script injection
- */
 
 /**
  * Sanitizes string input by removing dangerous HTML
@@ -228,19 +253,33 @@ export function sanitizeString(input: string): string {
 
 /**
  * Validates query parameters
+ * Note: Query params are always strings, so number types will be converted
  */
 export function validateQueryParams(
   searchParams: URLSearchParams,
   schema: ValidationSchema,
-) {
-  const data: Record<string, any> = {};
+): { isValid: boolean; errors: string[]; data?: ValidatedInputData } {
+  const data: ValidatedInputData = {};
 
-  // Convert URLSearchParams to object
+  // Convert URLSearchParams to object and handle type conversions
   for (const [key, value] of searchParams.entries()) {
-    data[key] = value;
+    const rule = schema[key];
+
+    // Convert to number if schema expects a number
+    if (rule?.type === 'number') {
+      const numValue = Number(value);
+      if (!Number.isNaN(numValue)) {
+        data[key] = numValue;
+      } else {
+        data[key] = value; // Keep as string, validation will catch it
+      }
+    } else {
+      data[key] = value;
+    }
   }
 
-  return validateInput(data, schema);
+  const validation = validateInput(data, schema);
+  return { ...validation, data: validation.isValid ? data : undefined };
 }
 
 /**
@@ -248,9 +287,12 @@ export function validateQueryParams(
  */
 export function withInputValidation(
   schema: ValidationSchema,
-  handler: (validatedData: any, req: any) => Promise<NextResponse>,
+  handler: (
+    validatedData: ValidatedInputData,
+    req: NextRequest,
+  ) => Promise<NextResponse>,
 ) {
-  return async (req: any) => {
+  return async (req: NextRequest) => {
     try {
       const body = await req.json();
       const validation = validateInput(body, schema);

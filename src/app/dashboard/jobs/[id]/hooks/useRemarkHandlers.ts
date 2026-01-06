@@ -168,7 +168,7 @@ export const useRemarkHandlers = (
     ) {
       setNewFollowUp(localCandidate.followUp.note);
     } else {
-      handleAddFollowUp();
+      // Only clear state when follow-up is removed, don't auto-create
       setNewFollowUp('');
     }
 
