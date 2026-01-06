@@ -11,7 +11,10 @@ import type { SerializedError } from '@reduxjs/toolkit';
 import useCustomForm, {
   CustomFieldValues,
 } from '@/Custom_Fields/hooks/useCustomForm';
-import { useFetchOrgQuery } from '@/lib/features/org/orgApi';
+import {
+  useFetchOrgQuery,
+  useLazyGetCustomFieldsByOrgNameQuery,
+} from '@/lib/features/org/orgApi';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
@@ -45,7 +48,6 @@ function isFetchBaseQueryError(
 ): error is FetchBaseQueryError {
   return typeof error === 'object' && error !== null && 'status' in error;
 }
-/* eslint-disable max-lines */
 
 export default function ApplyJobsContent({
   showHeaderFooter = true,
@@ -53,11 +55,10 @@ export default function ApplyJobsContent({
   showHeaderFooter?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  
-
   const router = useRouter();
   const isIframe = useIsIframe();
   const searchParams = useSearchParams();
+
   const [orgName, setOrgName] = useState<string>(searchParams?.get('o') || '');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
@@ -65,9 +66,85 @@ export default function ApplyJobsContent({
 
   const { data: orgResponse, isLoading: isOrgLoading } =
     useFetchOrgQuery(undefined);
-
   const { data: portalResponse, isLoading: isPortalLoading } =
     useGetPortalConfigsQuery(undefined);
+  const [triggerGetCustomFields] = useLazyGetCustomFieldsByOrgNameQuery();
+  const { user } = useAppSelector((state) => state.auth);
+  const { toast } = useToast();
+
+  const { setUserLoggedIn, userLoggedIn, setCustomFields } = useCustomFields();
+  const [triggerLogout] = useLogoutUserMutation();
+
+  useEffect(() => {
+    const resolveOrgName = async () => {
+      const urlOrgName = searchParams?.get('o');
+
+      // Priority 1: URL Parameter
+      if (urlOrgName) {
+        setOrgName(urlOrgName);
+        return;
+      }
+
+      // Priority 2: Logged In User
+      if (user) {
+        try {
+          if (user.organizationInfo && user.organizationInfo.name) {
+            setOrgName(user.organizationInfo.name);
+            setUserLoggedIn(true);
+            return;
+          }
+        } catch {
+          setOrgName('');
+          toast({
+            title: 'Authentication Error',
+            description: 'Please log in again',
+            variant: 'destructive',
+          });
+          await triggerLogout();
+          router.push('/auth/login');
+          return;
+        }
+      }
+
+      // Priority 3: Portal Config Default
+      if (!isPortalLoading && portalResponse?.portalName) {
+        setOrgName(portalResponse.portalName);
+        return;
+      }
+
+      // Fallback
+      if (!isPortalLoading && !portalResponse) {
+        setOrgName('');
+      }
+    };
+
+    resolveOrgName();
+  }, [
+    searchParams,
+    user,
+    portalResponse,
+    isPortalLoading,
+    router,
+    toast,
+    triggerLogout,
+    setUserLoggedIn,
+  ]);
+
+  // Manually fetch custom fields if OrgName is resolved but URL param is missing
+  useEffect(() => {
+    const urlOrgParam = searchParams?.get('o');
+
+    if (orgName && !urlOrgParam) {
+      triggerGetCustomFields(orgName)
+        .unwrap()
+        .then((payload) => {
+          setCustomFields(payload);
+        })
+        .catch((err) => {
+          logger.error('Failed to manual fetch custom fields', err);
+        });
+    }
+  }, [orgName, searchParams, triggerGetCustomFields, setCustomFields]);
 
   const hideHeaderParam = searchParams?.get('hideHeader');
   const hideFooterParam = searchParams?.get('hideFooter');
@@ -82,17 +159,16 @@ export default function ApplyJobsContent({
   const shouldShowFooter =
     showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
 
-  const { user } = useAppSelector((state) => state.auth);
   const isCandidate = user?.role === 'candidate';
 
   const shouldSkipQuery =
     !isCandidate && (orgName === '' || authState === 'true');
+
   const { data } = useFetchAppliedApplicationQuery(
     {},
     { skip: shouldSkipQuery || user == null },
   );
-  const { toast } = useToast();
-  const { setUserLoggedIn, userLoggedIn } = useCustomFields();
+
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [queryTitle, setQueryTitle] = useState<string>('');
   const [layoutState, setLayoutState] = useState<{
@@ -107,7 +183,6 @@ export default function ApplyJobsContent({
   const [secondaryColor, setSecondaryColor] = useState<string>('#8b5cf6');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [portalName, setPortalName] = useState<string>('');
-  const [triggerLogout] = useLogoutUserMutation();
 
   const {
     data: jobs,
@@ -115,7 +190,10 @@ export default function ApplyJobsContent({
     error,
   } = useFetchOpenJobQuery(
     { orgName, title: queryTitle },
-    { skip: orgName === null },
+    {
+      skip: !orgName,
+      refetchOnMountOrArgChange: true,
+    },
   ) as {
     data: Job[];
     isLoading: boolean;
@@ -216,6 +294,7 @@ export default function ApplyJobsContent({
   }
   const orgId = Cookies.get('org_id');
   // Add this useEffect to proactively refresh token if refresh_token exists
+
   useEffect(() => {
     const checkAndRefreshToken = async () => {
       // Check if refresh_token exists in cookies
@@ -235,6 +314,7 @@ export default function ApplyJobsContent({
 
     checkAndRefreshToken();
   }, [dispatch, user, orgId, authState]);
+
   useEffect(() => {
     document.documentElement.style.setProperty(
       '--portal-primary',
@@ -259,36 +339,6 @@ export default function ApplyJobsContent({
       checkAllowance();
     }
   }, [orgResponse, portalResponse, searchParams, orgName]);
-
-  const pageInit = async () => {
-    const urlOrgName = searchParams?.get('o');
-    if (user) {
-      try {
-        if (user.organizationInfo && user.organizationInfo.name) {
-          setOrgName(urlOrgName || user.organizationInfo.name);
-          setUserLoggedIn(true);
-        } else {
-          setOrgName(urlOrgName || '');
-        }
-      } catch {
-        setOrgName(urlOrgName || '');
-        toast({
-          title: 'Authentication Error',
-          description: 'Please log in again',
-          variant: 'destructive',
-        });
-        triggerLogout().then(() => {
-          router.push('/auth/login');
-        });
-      }
-    } else {
-      setOrgName(urlOrgName || '');
-    }
-  };
-
-  useEffect(() => {
-    pageInit();
-  }, [searchParams]);
 
   useEffect(() => {
     if (data) {
@@ -398,7 +448,7 @@ export default function ApplyJobsContent({
           />
 
           <JobGrid
-            jobs={jobs}
+            jobs={jobs || []}
             isLoading={isLoading}
             primaryColor={primaryColor}
             formNameObject={formNameObject}
