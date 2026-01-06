@@ -8,6 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { IinfoUpdateLog } from '@/lib/models/history';
+import { useAppSelector } from '@/lib/redux/hooks';
 import AttachmentsPopover from '../../../Remarks/attachments-popover';
 import { formatDate, formatTime } from '../../../../hooks/dateTimeFormatting';
 import { LogsTableSkeleton } from '../../logs-table-skeleton';
@@ -16,7 +17,8 @@ import { LogsTableProps } from '../types';
 /**
  * Standalone logs table component for displaying candidate update logs
  */
-export function LogsTable({ user, timeLineItems, isLoading }: LogsTableProps) {
+export function LogsTable({ timeLineItems, isLoading }: LogsTableProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const tableRows = timeLineItems
     .sort(
       (a, b) =>

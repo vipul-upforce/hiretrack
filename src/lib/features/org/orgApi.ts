@@ -1,5 +1,4 @@
 import { ITag } from '@/lib/models/organization';
-import { runIfCookiePresent } from '@/lib/utils/queryGuards';
 import { baseApi } from '@/lib/api/baseApi';
 
 export interface CreateAdminRequest {
@@ -133,12 +132,11 @@ export const orgApi = baseApi.injectEndpoints({
       }),
     }),
     updateCustomFields: builder.mutation({
-      queryFn: (data, _api, _extraOptions, baseQuery) =>
-        runIfCookiePresent(baseQuery, () => ({
-          url: '/organization/cs',
-          method: 'POST',
-          body: data,
-        })),
+      query: (data) => ({
+        url: '/organization/cs',
+        method: 'POST',
+        body: data,
+      }),
     }),
     getCustomFields: builder.query({
       query: (orgId) => ({

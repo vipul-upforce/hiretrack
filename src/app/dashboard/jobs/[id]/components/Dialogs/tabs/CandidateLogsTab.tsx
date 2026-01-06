@@ -4,13 +4,12 @@
  */
 
 import { Candidate } from '@/types/candidate';
-import { User } from '@/lib/features/users/usersApi';
 import { ICandidateHistory } from '@/lib/models/history';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { LogsTable } from '../../Candidate/history-and-log-table';
 
 interface CandidateLogsTabProps {
   candidate: Candidate;
-  user: User | null;
   isHistoryLoading: boolean;
   historyLoaded: boolean;
   validTimeLineItems: ICandidateHistory[];
@@ -21,16 +20,18 @@ interface CandidateLogsTabProps {
  */
 export function CandidateLogsTab({
   candidate,
-  user,
   isHistoryLoading,
   historyLoaded,
   validTimeLineItems,
 }: CandidateLogsTabProps) {
+  const { user } = useAppSelector((state) => state.auth);
   if (isHistoryLoading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span className="ml-2 text-sm text-muted-foreground">Loading Logs...</span>
+        <span className="ml-2 text-sm text-muted-foreground">
+          Loading Logs...
+        </span>
       </div>
     );
   }
@@ -47,7 +48,6 @@ export function CandidateLogsTab({
       <LogsTable
         isLoading={!historyLoaded}
         candidate={candidate}
-        user={user}
         timeLineItems={validTimeLineItems}
       />
     </div>

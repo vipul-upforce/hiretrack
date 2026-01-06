@@ -36,6 +36,7 @@ import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
 import { CandidateDetailsActions } from './tabs/CandidateDetailsActions';
 import { getJobId } from '../../utils/candidateAccessors';
+/* eslint-disable max-lines */
 
 export function CandidateDetailsDialog({
   candidate,
