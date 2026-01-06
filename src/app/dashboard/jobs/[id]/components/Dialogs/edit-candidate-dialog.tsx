@@ -23,6 +23,7 @@ import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
 import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 import FormUpdater from '../Utils/FormUpdater';
 import { getJobId } from '../../utils/candidateAccessors';
 import { CandidateForm } from '../Candidate/candidate-form';
@@ -90,7 +91,7 @@ export function EditCandidateDialog({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
-  const [isLargeViewport, setIsLargeViewport] = useState(false);
+  const isDesktop = useIsDesktop();
   const [isMaximized, setIsMaximized] = useState(false);
 
   const formName = 'Candidate';
@@ -412,17 +413,6 @@ export function EditCandidateDialog({
   };
 
   useEffect(() => {
-    const checkViewportSize = () => {
-      const isLarge = window.innerWidth >= 1300 && window.innerHeight >= 1000;
-      setIsLargeViewport(isLarge);
-    };
-
-    checkViewportSize();
-    window.addEventListener('resize', checkViewportSize);
-    return () => window.removeEventListener('resize', checkViewportSize);
-  }, []);
-
-  useEffect(() => {
     if (!isOpen) {
       setIsMaximized(false);
     }
@@ -440,34 +430,15 @@ export function EditCandidateDialog({
     >
       <DialogContent
         className={
-          !isLargeViewport || isMaximized
-            ? '!inset-0 !left-0 !top-0 !m-0 flex !h-[100dvh] !max-h-[100dvh] !min-h-[100dvh] !w-screen !min-w-0 !max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden !rounded-none !border-0'
-            : `sm:max-w-[80vw] ${
-                candidate.resume ? 'xl:max-w-[65vw]' : 'xl:max-w-[50vw]'
-              } flex h-[90vh] flex-col justify-between overflow-hidden`
-        }
-        style={
-          !isLargeViewport || isMaximized
-            ? {
-                position: 'fixed' as const,
-                inset: 0,
-                width: '100vw',
-                height: '100dvh',
-                minHeight: '100dvh',
-                maxHeight: '100dvh',
-                maxWidth: 'none',
-                transform: 'none',
-                left: 0,
-                top: 0,
-                margin: 0,
-                border: 0,
-                borderRadius: 0,
-              }
-            : {}
+          !isDesktop || isMaximized
+            ? 'dialog-fullscreen-mode flex flex-col overflow-hidden'
+            : `dialog-modal-mode ${
+                candidate.resume ? 'xl-max-w-65vw' : 'xl-max-w-50vw'
+              } flex flex-col justify-between overflow-hidden`
         }
       >
         <EditCandidateDialogHeader
-          isLargeViewport={isLargeViewport}
+          isLargeViewport={isDesktop}
           isMaximized={isMaximized}
           onToggleMaximize={() => setIsMaximized(!isMaximized)}
         />

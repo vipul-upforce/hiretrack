@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Maximize, Minimize } from 'lucide-react';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 
 interface DetailsDialogProps {
   open: boolean;
@@ -19,24 +20,8 @@ export function DetailsDialog({
   className,
   children,
 }: DetailsDialogProps) {
-  const [isLargeViewport, setIsLargeViewport] = useState(false);
+  const isDesktop = useIsDesktop();
   const [isMaximized, setIsMaximized] = useState(false);
-
-  useEffect(() => {
-    const checkViewportSize = () => {
-      const isLarge = window.innerWidth >= 1100 && window.innerHeight >= 1100;
-      setIsLargeViewport(isLarge);
-    };
-
-    // Check initial size
-    checkViewportSize();
-
-    // Add event listener for resize
-    window.addEventListener('resize', checkViewportSize);
-
-    // Cleanup
-    return () => window.removeEventListener('resize', checkViewportSize);
-  }, []);
 
   // Reset maximize state when dialog opens/closes
   useEffect(() => {
@@ -45,44 +30,27 @@ export function DetailsDialog({
     }
   }, [open]);
 
-  const dialogClassName = isLargeViewport && !isMaximized
-    ? '!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[50vw] overflow-hidden flex flex-col'
-    : '!max-w-none !w-screen !h-[100dvh] !min-h-screen !max-h-[100dvh] !left-0 !top-0 !translate-x-0 !translate-y-0 !min-w-0 !inset-0 !m-0 !border-0 !rounded-none overflow-hidden flex flex-col';
-
-  const dialogStyle = !isLargeViewport || isMaximized
-    ? {
-      position: 'fixed' as const,
-      inset: 0,
-      width: '100vw',
-      height: '100dvh',
-      minHeight: '100dvh',
-      maxHeight: '100dvh',
-      maxWidth: 'none',
-      transform: 'none',
-      left: 0,
-      top: 0,
-      margin: 0,
-      border: 0,
-      borderRadius: 0,
-    }
-    : {};
+  // Determine dialog mode: fullscreen if mobile/tablet OR if maximized, modal if desktop and not maximized
+  const isFullscreen = !isDesktop || isMaximized;
+  const dialogClassName = isFullscreen
+    ? 'dialog-fullscreen-mode flex flex-col overflow-hidden'
+    : 'dialog-modal-mode xl-max-w-50vw flex flex-col overflow-hidden';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={className || dialogClassName}
-        style={dialogStyle}
-        data-fullscreen={!isLargeViewport || isMaximized ? 'true' : 'false'}
+        data-fullscreen={isFullscreen ? 'true' : 'false'}
       >
         <div className="sr-only">
           <DialogTitle>Details</DialogTitle>
         </div>
-        {/* Maximize/Minimize Button */}
-        {isLargeViewport && (
+        {/* Maximize/Minimize Button - Only show on desktop */}
+        {isDesktop && (
           <Button
             variant="ghost"
             size="icon"
-            className={`absolute top-2 right-10  z-[100] h-7 w-7 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${!isLargeViewport ? 'hidden' : ''}`}
+            className="absolute right-10 top-2 z-[100] h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
             onClick={() => setIsMaximized(!isMaximized)}
             title={isMaximized ? 'Restore' : 'Maximize'}
           >
@@ -93,9 +61,9 @@ export function DetailsDialog({
             )}
           </Button>
         )}
-        {!isLargeViewport || isMaximized ? (
+        {isFullscreen ? (
           <div
-            className="h-full flex flex-col"
+            className="flex h-full flex-col"
             style={{ height: '100dvh', minHeight: '100dvh' }}
           >
             {children}

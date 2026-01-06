@@ -1,33 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 import { useOnboarding } from './OnboardingProvider';
 import OnboardingWizard from './OnboardingWizard';
 
 function OnboardingModal() {
   const { isOpen, setIsOpen, isLoading } = useOnboarding();
-  const [isLargeViewport, setIsLargeViewport] = useState(false);
+  const isDesktop = useIsDesktop();
 
-  useEffect(() => {
-    const checkViewportSize = () => {
-      const isLarge = window.innerWidth >= 1200 && window.innerHeight >= 800;
-      setIsLargeViewport(isLarge);
-    };
-
-    checkViewportSize();
-    window.addEventListener('resize', checkViewportSize);
-    return () => window.removeEventListener('resize', checkViewportSize);
-  }, []);
-
-  const dialogClassName = isLargeViewport
-    ? '!max-w-[80vw] !min-w-[950px] !h-[90vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] xl:!max-w-[70vw] overflow-hidden p-0 gap-0 !flex !flex-col'
-    : '!max-w-[95vw] !w-[95vw] !h-[95vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden p-0 gap-0 rounded-lg !flex !flex-col';
+  const dialogClassName = isDesktop
+    ? 'dialog-modal-mode xl-max-w-65vw overflow-hidden p-0 gap-0 flex flex-col'
+    : '!max-w-[95vw] !w-[95vw] !h-[95vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden p-0 gap-0 rounded-lg flex flex-col';
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
