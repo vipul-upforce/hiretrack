@@ -76,12 +76,8 @@ export const authApi = baseApi.injectEndpoints({
           // Only invalidate tags if login was successful
           if (result.data.loggedIn === true) {
             // Manually invalidate the Users tag only on successful login
-            dispatch(
-              authApi.util.invalidateTags(['Profile'])
-            );
-            dispatch(
-              portalApi.util.invalidateTags(['Settings'])
-            );
+            dispatch(authApi.util.invalidateTags(['Profile']));
+            dispatch(portalApi.util.invalidateTags(['Settings']));
           }
         } catch (error) {
           // Don't invalidate on error
@@ -102,6 +98,16 @@ export const authApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          const result = await queryFulfilled;
+          if (result.data.loggedIn === true) {
+            dispatch(portalApi.util.invalidateTags(['Settings']));
+          }
+        } catch (error) {
+          logger.error('Error verifying OTP : ', error);
+        }
+      },
     }),
     sendOtp: builder.mutation<{ message: string }, SendOtpRequest>({
       query: (data) => ({

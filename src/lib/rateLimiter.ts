@@ -201,6 +201,14 @@ export function createEmailPasswordResetLimiter() {
 
 export const passwordResetRateLimiter = createEmailPasswordResetLimiter();
 
+// IP-based rate limiter for password reset token attempts
+// Used when resetting password with a token (no email in request body)
+export const passwordResetTokenRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 5, // 5 attempts per 15 minutes per IP
+  message: 'Too many password reset attempts, please try again later',
+});
+
 // Email-based OTP rate limiter
 export function createEmailOTPLimiter() {
   return async function emailOTPMiddleware(
