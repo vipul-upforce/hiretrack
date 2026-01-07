@@ -14,7 +14,6 @@ export const useApplyHandler = <T extends FormikValues>() => {
     const touched: Record<string, unknown> = {};
     for (const key in formik.initialValues) {
       if (key === 'customFields') {
-        debugger;
         const customFieldsTouched: Record<string, boolean> = {};
         const cfValues =
           ((formik.values as Record<string, unknown>).customFields as Record<
