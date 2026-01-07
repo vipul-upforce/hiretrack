@@ -183,12 +183,11 @@ export const CandidateCard = memo(
               handleAssignJob={handleAssignJob}
               handlePopoverContentClick={handlePopoverContentClick}
             />
-
             <CandidateCardFollowUp
               candidate={localCandidate}
-              user={user as User | null}
               onEdit={() => setIsAddingFollowUp(true)}
               onRemove={() => setRemoveFUOpen(true)}
+              variant="compact"
             />
 
             <CandidateCardInfo

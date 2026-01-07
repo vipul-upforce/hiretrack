@@ -2,10 +2,16 @@
 
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, File as FileIcon, Pencil, X, Paperclip } from 'lucide-react';
-import { useAppSelector } from '@/lib/redux/hooks';
+import {
+  Upload,
+  File as FileIcon,
+  Pencil,
+  X,
+  Paperclip,
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { RenameFileDialog } from './rename-file-dialog';
-import { Button } from './button';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -34,6 +40,8 @@ interface FileUploadProps {
     size: number;
   }>;
   id?: string;
+  maxFileSizeLabel?: string;
+  errorMessage?: string;
 }
 
 interface RenameFileState {
@@ -66,13 +74,16 @@ export function FileUpload({
   id = '',
   setter,
   isEdit = true,
-  colorScheme = 'blue', // Default to blue
-  isResume = false, // Default to false
+  colorScheme = 'blue',
+  isResume = false,
+  maxFileSizeLabel = '3MB',
+  errorMessage,
 }: FileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
   });
+
   const getColorClasses = (scheme: 'blue' | 'green') => {
     switch (scheme) {
       case 'green':
@@ -96,7 +107,6 @@ export function FileUpload({
   };
 
   const colors = getColorClasses(colorScheme);
-  const { user } = useAppSelector((state) => state.auth);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -134,7 +144,6 @@ export function FileUpload({
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept,
-    maxFiles,
     noClick: true,
     noKeyboard: true,
   });
@@ -147,7 +156,9 @@ export function FileUpload({
       {dropZone ? (
         <div
           {...getRootProps()}
-          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center ${isDragActive ? 'bg-primary/10 border-primary' : 'border-border'}`}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center ${
+            isDragActive ? 'bg-primary/10 border-primary' : 'border-border'
+          }`}
         >
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="mt-2 text-sm text-muted-foreground">
@@ -155,18 +166,11 @@ export function FileUpload({
               ? 'Drop the files here...'
               : "Drag 'n' drop files here, or click to select files"}
           </p>
-          {(user?.role === 'candidate' || user?.role === '') && (
-            <>
-              {!accept['application/pdf'] && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Maximum 2 files are allowed
-                </p>
-              )}
-              <p className="mt-2 text-sm text-muted-foreground">
-                File should have less than 3MB size
-              </p>
-            </>
-          )}
+
+          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {maxFiles > 1 && <p>Maximum {maxFiles} files allowed</p>}
+            <p>File size should be less than {maxFileSizeLabel}</p>
+          </div>
         </div>
       ) : (
         <div className="flex items-center gap-3">
@@ -179,20 +183,12 @@ export function FileUpload({
             <Paperclip className="h-4 w-4" />
             {isResume ? 'Resume' : 'Add Documents'}
           </Button>
-          {(user?.role === 'candidate' || user?.role === '') && (
-            <div className="flex items-center gap-2 space-y-1">
-              {!accept['application/pdf'] && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Max 2 files
-                </p>
-              )}
-              <p className="m-0 text-sm text-muted-foreground">3MB per file</p>
-            </div>
-          )}
-          {/* {user && ["hr", "admin", "interviewer"].includes(user.role) && (
-            <p className="text-sm text-muted-foreground">
-              100MB per file            </p>
-          )} */}
+
+          {/* Dynamic Helper Text */}
+          <div className="flex items-center gap-2 space-y-1 text-sm text-muted-foreground">
+            {maxFiles > 1 && <p className="mt-1">Max {maxFiles} files</p>}
+            <p className="m-0">{maxFileSizeLabel} per file</p>
+          </div>
         </div>
       )}
 
@@ -235,6 +231,15 @@ export function FileUpload({
           </div>
         ))}
 
+        {/* Error Message Display */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* New Files List */}
         {files.map((file) => (
           <div
             key={file.name}

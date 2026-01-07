@@ -14,12 +14,6 @@ import {
 } from '../utils';
 import { FunnelData } from '../types';
 
-interface LanesDocument {
-  defaultLanes?: string[];
-  lanes?: string[];
-  _id: Types.ObjectId;
-}
-
 interface StageMetrics {
   stage: string;
   count: number;
@@ -34,90 +28,152 @@ interface AggregationResult {
   createdDates: Date[];
 }
 
+interface JobLaneProjection {
+  lanes?: string[];
+  useCustomLanes?: boolean;
+}
+
+interface OrgLaneProjection {
+  defaultLanes?: string[];
+}
+
+type MatchQuery = {
+  organizationId: string;
+  isDeleted: { $ne: boolean };
+  $or?: Array<Record<string, unknown>>;
+  jobId?: { $in: Types.ObjectId[] };
+  status?: { $in: string[] };
+};
+
 export async function GET(request: NextRequest) {
   return withAnalyticsAuth(request, async (user, req) => {
     try {
       await connectToDatabase();
 
-      if (!Candidate) {
+      if (!Candidate || !Job || !Organization) {
         return createAnalyticsErrorResponse('Database connection failed', 500);
       }
 
       const { organizationId, dateRange, filters } = parseAnalyticsRequest(req);
 
-      let lanesSource: LanesDocument | null | undefined = null;
+      let finalLanes: string[] = [];
 
-      if (filters?.jobIds && filters?.jobIds?.length > 0) {
-        lanesSource = await Job?.findOne({
+      if (filters?.jobIds && filters.jobIds.length > 0) {
+        const jobDoc = await Job.findOne({
           _id: filters.jobIds[0],
           organizationId,
         })
-          .select('lanes')
-          .lean<LanesDocument>();
+          .select('lanes useCustomLanes')
+          .lean<JobLaneProjection>();
+
+        if (jobDoc?.lanes && jobDoc.lanes.length > 0) {
+          finalLanes = jobDoc.lanes;
+        } else {
+          const orgDoc = await Organization.findById(organizationId)
+            .select('defaultLanes')
+            .lean<OrgLaneProjection>();
+          finalLanes = orgDoc?.defaultLanes || [];
+        }
       } else {
-        lanesSource = await Organization?.findById(organizationId)
+        const orgDoc = await Organization.findById(organizationId)
           .select('defaultLanes')
-          .lean<LanesDocument>();
+          .lean<OrgLaneProjection>();
+        const defaults = orgDoc?.defaultLanes || [];
+
+        const allUsedLanes = await Job.distinct('lanes', {
+          organizationId: new Types.ObjectId(organizationId),
+          lanes: { $exists: true, $ne: [] },
+        });
+
+        const laneSet = new Set(defaults);
+        if (Array.isArray(allUsedLanes)) {
+          allUsedLanes.forEach((lane: unknown) => {
+            if (typeof lane === 'string') laneSet.add(lane);
+          });
+        }
+        finalLanes = Array.from(laneSet);
       }
 
-      const defaultLanesFinal: string[] =
-        lanesSource?.defaultLanes || lanesSource?.lanes || [];
+      if (finalLanes.length === 0) {
+        return NextResponse.json(
+          createAnalyticsResponse(
+            {
+              funnelData: [],
+              summary: {
+                totalCandidates: 0,
+                acceptedCandidates: 0,
+                rejectedCandidates: 0,
+                overallConversionRate: 0,
+                avgTimeToHire: 0,
+              },
+            },
+            user.organizationId,
+          ),
+        );
+      }
 
-      // Build aggregation pipeline for candidate funnel analysis
+      const startDate = dateRange ? new Date(dateRange.start) : null;
+      const endDate = dateRange ? new Date(dateRange.end) : null;
+
+      const jobObjectIds =
+        filters?.jobIds
+          ?.map((id) => {
+            try {
+              return new Types.ObjectId(id);
+            } catch {
+              return null;
+            }
+          })
+          .filter((id): id is Types.ObjectId => id !== null) || [];
+
+      const matchStage: MatchQuery = {
+        organizationId,
+        isDeleted: { $ne: true },
+      };
+
+      if (startDate && endDate) {
+        matchStage.$or = [
+          { 'tracking.createdAt': { $gte: startDate, $lte: endDate } },
+          { createdAt: { $gte: startDate, $lte: endDate } },
+        ];
+      }
+
+      if (jobObjectIds.length > 0) {
+        matchStage.jobId = { $in: jobObjectIds };
+      }
+
+      if (filters?.candidateStatuses?.length) {
+        matchStage.status = { $in: filters.candidateStatuses };
+      }
+
       const pipeline = [
-        // Match organization and date range
-        {
-          $match: {
-            organizationId: user.organizationId,
-            ...(dateRange && {
-              'tracking.createdAt': {
-                $gte: dateRange.start,
-                $lte: dateRange.end,
-              },
-            }),
-            ...(filters?.jobIds?.length && {
-              jobId: {
-                $in: filters.jobIds.map((id) => {
-                  try {
-                    return new Types.ObjectId(id);
-                  } catch {
-                    return id; // Keep as string if not a valid ObjectId
-                  }
-                }),
-              },
-            }),
-            ...(filters?.candidateStatuses?.length && {
-              status: { $in: filters.candidateStatuses },
-            }),
-            // Exclude deleted candidates unless specifically requested
-            isDeleted: { $ne: true },
-          },
-        },
-        // Group by status to get counts
+        { $match: matchStage },
         {
           $group: {
             _id: '$status',
             count: { $sum: 1 },
-            // Calculate average time in stage
             avgTimeInStage: {
               $avg: {
-                $subtract: ['$tracking.updatedAt', '$tracking.createdAt'],
+                $subtract: [
+                  {
+                    $ifNull: ['$tracking.updatedAt', '$updatedAt', new Date()],
+                  },
+                  {
+                    $ifNull: ['$tracking.createdAt', '$createdAt', new Date()],
+                  },
+                ],
               },
             },
-            // Collect creation dates for trend analysis
-            createdDates: { $push: '$tracking.createdAt' },
+            createdDates: {
+              $push: { $ifNull: ['$tracking.createdAt', '$createdAt'] },
+            },
           },
-        },
-        // Sort by stage order (we'll handle this in post-processing)
-        {
-          $sort: { _id: 1 },
         },
       ];
 
       const rawResults = await Candidate.collection
         .aggregate(pipeline, {
-          maxTimeMS: 15000, // 15 second timeout
-          allowDiskUse: false, // Use memory only for better performance
+          maxTimeMS: 15000,
         })
         .toArray();
 
@@ -126,9 +182,8 @@ export async function GET(request: NextRequest) {
       const stageData = new Map<string, StageMetrics>();
       let totalCandidates = 0;
 
-      // Initialize all stages with zero counts
-      defaultLanesFinal.forEach((stage) => {
-        stageData.set(stage, {
+      finalLanes.forEach((stage) => {
+        stageData.set(stage.toLowerCase(), {
           stage,
           count: 0,
           avgTimeInDays: 0,
@@ -136,32 +191,34 @@ export async function GET(request: NextRequest) {
         });
       });
 
-      // Populate with actual data
       results.forEach((result) => {
-        if (defaultLanesFinal.includes(result._id)) {
-          stageData.set(result._id, {
-            stage: result._id,
-            count: result.count,
-            avgTimeInDays: result.avgTimeInStage
+        if (!result._id) return;
+
+        const key = result._id.toLowerCase();
+
+        if (stageData.has(key)) {
+          const metrics = stageData.get(key);
+          if (metrics) {
+            metrics.count += result.count;
+            metrics.avgTimeInDays = result.avgTimeInStage
               ? Math.round(result.avgTimeInStage / (1000 * 60 * 60 * 24))
-              : 0,
-            createdDates: result.createdDates,
-          });
-          totalCandidates += result.count;
+              : 0;
+            metrics.createdDates = result.createdDates;
+            totalCandidates += result.count;
+          }
         }
       });
 
-      // Calculate conversion rates and create final funnel data
       const funnelData: FunnelData[] = [];
       let previousStageCount = totalCandidates;
 
-      defaultLanesFinal.forEach((stage, index) => {
-        const stageInfo = stageData.get(stage)!;
-        const currentCount = stageInfo.count;
+      finalLanes.forEach((stage, index) => {
+        const stageInfo = stageData.get(stage.toLowerCase());
+        if (!stageInfo) return;
 
-        // For the first stage (applied), conversion rate is 100%
-        // For subsequent stages, calculate conversion from previous stage
+        const currentCount = stageInfo.count;
         let conversionRate = 0;
+
         if (index === 0) {
           conversionRate = currentCount > 0 ? 100 : 0;
           previousStageCount = totalCandidates;
@@ -198,6 +255,12 @@ export async function GET(request: NextRequest) {
           ? Math.round((acceptedCount / totalCandidates) * 100 * 100) / 100
           : 0;
 
+      const avgTimeToHire =
+        funnelData.length > 0
+          ? funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0) /
+            funnelData.length
+          : 0;
+
       const response = createAnalyticsResponse(
         {
           funnelData,
@@ -206,32 +269,27 @@ export async function GET(request: NextRequest) {
             acceptedCandidates: acceptedCount,
             rejectedCandidates: rejectedCount,
             overallConversionRate,
-            avgTimeToHire:
-              funnelData.reduce((sum, stage) => sum + stage.avgTimeInDays, 0) /
-              (funnelData.length || 1),
+            avgTimeToHire,
           },
         },
         user.organizationId,
-        {
-          totalRecords: totalCandidates,
-          dateRange,
-        },
+        { totalRecords: totalCandidates, dateRange },
       );
 
       return NextResponse.json(response);
     } catch (error: unknown) {
       logger.error(
         { error, url: request.url },
-        ' Candidate funnel analytics error.',
+        'Candidate funnel analytics error.',
       );
 
-      // Handle specific error types with better messages
       if (
-        (error instanceof Error && error.message?.includes('timeout')) ||
-        (error instanceof Error && error.message?.includes('maxTimeMS'))
+        error instanceof Error &&
+        (error.message?.includes('timeout') ||
+          error.message?.includes('maxTimeMS'))
       ) {
         return createAnalyticsErrorResponse(
-          'Query timeout - please try a smaller date range or add job filters',
+          'Query timeout - please try a smaller date range',
           408,
         );
       }

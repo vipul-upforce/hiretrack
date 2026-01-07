@@ -1,11 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { cn } from '@/lib/utils';
 import { Cloud, Pencil, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '@/lib/logger';
+import { toast } from '@/hooks/use-toast';
 import { FilePreviewDialog } from './file-preview-dialog';
 import { RenameFileDialog } from './rename-file-dialog';
 
@@ -75,11 +76,7 @@ export function FileDropZone({
         }),
         {},
       );
-
-      setPreviews((prev) => ({
-        ...prev,
-        ...existingPreviews,
-      }));
+      setPreviews((prev) => ({ ...prev, ...existingPreviews }));
     }
   }, [existingFiles]);
 
@@ -101,21 +98,16 @@ export function FileDropZone({
         logger.log(error);
       }
     }
-
-    setPreviews((prev) => ({
-      ...prev,
-      ...newPreviews,
-    }));
+    setPreviews((prev) => ({ ...prev, ...newPreviews }));
   }, []);
 
   React.useEffect(() => {
     if (files.length > 0) {
       generatePreviews(files);
     }
-
     return () => {
       Object.values(previews).forEach((preview) => {
-        if (preview.startsWith('blob:')) {
+        if (typeof preview === 'string' && preview.startsWith('blob:')) {
           URL.revokeObjectURL(preview);
         }
       });
@@ -137,7 +129,6 @@ export function FileDropZone({
     if (!isFileNameDuplicate(file.name)) {
       return file.name;
     }
-
     const fileExtension = file.name.split('.').pop() || '';
     const baseName = file.name.replace(/\.[^/.]+$/, '');
     return `${baseName}_${uuidv4()}.${fileExtension}`;
@@ -153,7 +144,6 @@ export function FileDropZone({
       const combined = [...prev, newFileName];
       return Array.from(new Set(combined));
     });
-
     return new File([blob], newFileName, {
       type: file.type,
       lastModified: file.lastModified,
@@ -161,7 +151,32 @@ export function FileDropZone({
   };
 
   const onDrop = React.useCallback(
-    async (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+      if (fileRejections.length > 0) {
+        const isSizeError = fileRejections.some((r) =>
+          r.errors.some((e) => e.code === 'file-too-large'),
+        );
+
+        if (isSizeError) {
+          toast({
+            title: 'File Too Large',
+            description: `One or more files exceed the ${(maxSize / 1024 / 1024).toFixed(0)}MB limit.`,
+            variant: 'destructive',
+          });
+        }
+      }
+
+      const totalCount = files.length + acceptedFiles.length;
+
+      if (totalCount > maxFiles) {
+         toast({
+          title: 'Limit Exceeded',
+          description: `You can only upload a maximum of ${maxFiles} files.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const processedFiles = await Promise.all(
         acceptedFiles.map(async (file) => {
           const uniqueFileName = generateUniqueFileName(file);
@@ -172,21 +187,22 @@ export function FileDropZone({
         }),
       );
 
-      const newFiles = [...files, ...processedFiles];
-      setFiles(newFiles);
-      onFilesChange(newFiles);
-      setDroppedFiles((prev) => {
-        const newFileNames = processedFiles.map((file) => file.name);
-        return Array.from(new Set([...prev, ...newFileNames]));
-      });
+      if (processedFiles.length > 0) {
+        const newFiles = [...files, ...processedFiles];
+        setFiles(newFiles);
+        onFilesChange(newFiles);
+        setDroppedFiles((prev) => {
+          const newFileNames = processedFiles.map((file) => file.name);
+          return Array.from(new Set([...prev, ...newFileNames]));
+        });
+      }
     },
-    [files, onFilesChange, existingFiles],
+    [files, onFilesChange, existingFiles, maxFiles, maxSize],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+ const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    maxFiles: maxFiles - files.length,
-    maxSize,
+    maxSize, 
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
       'application/pdf': ['.pdf'],
@@ -224,12 +240,10 @@ export function FileDropZone({
 
   const handleRename = async (newName: string) => {
     if (!renameFile) return;
-
     const fileIndex = files.findIndex((f) => f === renameFile);
     if (fileIndex === -1) return;
 
     const newFile = await renameFileWithUUID(renameFile, newName);
-
     const updatedFiles = [...files];
     updatedFiles[fileIndex] = newFile;
 

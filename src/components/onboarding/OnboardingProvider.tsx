@@ -7,6 +7,8 @@ import React, {
   useState,
   ReactNode,
   useMemo,
+  useCallback,
+  useRef,
 } from 'react';
 import {
   useLazyGetOnboardingStatusQuery,
@@ -57,6 +59,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     useState<OnboardingStatus | null>(null);
   const [progress, setProgress] = useState<OnboardingProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasAutoOpenedRef = useRef(false);
 
   const { user } = useAppSelector((state) => state.auth || {});
 
@@ -65,26 +68,29 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [updateStatusMutation] = useUpdateOnboardingStatusMutation();
   const [validateStepMutation] = useValidateOnboardingStepMutation();
 
-  const refreshProgress = async (status: OnboardingStatus | null) => {
-    try {
-      const data = await fetchValidate().unwrap();
+  const refreshProgress = useCallback(
+    async (status: OnboardingStatus | null) => {
+      try {
+        const data = await fetchValidate().unwrap();
 
-      setProgress(data.progress);
+        setProgress(data.progress);
 
-      // SAFELY MAP STEPS
-      const updatedSteps = getDefaultSteps().map((step) => ({
-        ...step,
-        isCompleted: data.stepStatus[step.id] || false,
-        isSkipped: status?.skippedSteps.includes(step.id) || false,
-      }));
+        // SAFELY MAP STEPS
+        const updatedSteps = getDefaultSteps().map((step) => ({
+          ...step,
+          isCompleted: data.stepStatus[step.id] || false,
+          isSkipped: status?.skippedSteps.includes(step.id) || false,
+        }));
 
-      setSteps(updatedSteps);
-    } catch (error) {
-      logger.error('Error refreshing progress:', error);
-    }
-  };
+        setSteps(updatedSteps);
+      } catch (error) {
+        logger.error('Error refreshing progress:', error);
+      }
+    },
+    [fetchValidate],
+  );
 
-  const fetchOnboardingData = async () => {
+  const fetchOnboardingData = useCallback(async () => {
     try {
       setIsLoading(true);
 
@@ -103,7 +109,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchStatus, refreshProgress]);
 
   // Initialize onboarding data
   useEffect(() => {
@@ -112,10 +118,17 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
     } else {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, fetchOnboardingData]);
 
+  // Auto-open dialog only once on initial load, not when manually opened
   useEffect(() => {
-    if (!isLoading && onboardingStatus && user?.role === 'admin') {
+    if (
+      !isLoading &&
+      onboardingStatus &&
+      user?.role === 'admin' &&
+      !isOpen &&
+      !hasAutoOpenedRef.current
+    ) {
       const shouldShow =
         !onboardingStatus.isCompleted &&
         !onboardingStatus.doNotShowAgain &&
@@ -123,64 +136,77 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         onboardingStatus.currentStep === 0;
 
       if (shouldShow) {
+        hasAutoOpenedRef.current = true;
         setTimeout(() => setIsOpen(true), 1000);
       }
     }
-  }, [isLoading, onboardingStatus, progress, user?.role]);
+  }, [isLoading, onboardingStatus, progress, user?.role, isOpen]);
 
-  const updateOnboardingStatus = async (updates: Partial<OnboardingStatus>) => {
-    try {
-      const updatedStatusResponse =
-        await updateStatusMutation(updates).unwrap();
-      const updatedStatus = updatedStatusResponse.onboardingStatus;
-      if (!updatedStatus) return;
+  const updateOnboardingStatus = useCallback(
+    async (updates: Partial<OnboardingStatus>) => {
+      try {
+        const updatedStatusResponse =
+          await updateStatusMutation(updates).unwrap();
+        const updatedStatus = updatedStatusResponse.onboardingStatus;
+        if (!updatedStatus) return;
 
-      setOnboardingStatus(updatedStatus);
+        setOnboardingStatus(updatedStatus);
 
-      // REFRESH WITH NEWEST STATUS
-      await refreshProgress(updatedStatus);
-    } catch (error) {
-      logger.error('Error updating status:', error);
-    }
-  };
+        // REFRESH WITH NEWEST STATUS
+        await refreshProgress(updatedStatus);
+      } catch (error) {
+        logger.error('Error updating status:', error);
+      }
+    },
+    [updateStatusMutation, refreshProgress],
+  );
 
-  const completeStep = async (stepId: string) => {
-    if (!onboardingStatus) return;
+  const completeStep = useCallback(
+    async (stepId: string) => {
+      if (!onboardingStatus) return;
 
-    const updated = {
-      ...onboardingStatus,
-      completedSteps: Array.from(
-        new Set([...onboardingStatus.completedSteps, stepId]),
-      ),
-      skippedSteps: onboardingStatus.skippedSteps.filter((x) => x !== stepId),
-    };
+      const updated = {
+        ...onboardingStatus,
+        completedSteps: Array.from(
+          new Set([...onboardingStatus.completedSteps, stepId]),
+        ),
+        skippedSteps: onboardingStatus.skippedSteps.filter((x) => x !== stepId),
+      };
 
-    await updateOnboardingStatus(updated);
-  };
+      await updateOnboardingStatus(updated);
+    },
+    [onboardingStatus, updateOnboardingStatus],
+  );
 
-  const skipStep = async (stepId: string) => {
-    if (!onboardingStatus) return;
+  const skipStep = useCallback(
+    async (stepId: string) => {
+      if (!onboardingStatus) return;
 
-    const updated = {
-      ...onboardingStatus,
-      skippedSteps: Array.from(
-        new Set([...onboardingStatus.skippedSteps, stepId]),
-      ),
-      completedSteps: onboardingStatus.completedSteps.filter(
-        (x) => x !== stepId,
-      ),
-    };
+      const updated = {
+        ...onboardingStatus,
+        skippedSteps: Array.from(
+          new Set([...onboardingStatus.skippedSteps, stepId]),
+        ),
+        completedSteps: onboardingStatus.completedSteps.filter(
+          (x) => x !== stepId,
+        ),
+      };
 
-    await updateOnboardingStatus(updated);
-  };
+      await updateOnboardingStatus(updated);
+    },
+    [onboardingStatus, updateOnboardingStatus],
+  );
 
-  const validateStep = async (stepId: string): Promise<boolean> =>
-    (await validateStepMutation({ stepId }).unwrap()).isValid;
+  const validateStep = useCallback(
+    async (stepId: string): Promise<boolean> =>
+      (await validateStepMutation({ stepId }).unwrap()).isValid,
+    [validateStepMutation],
+  );
 
-  const doNotShowAgain = async () => {
+  const doNotShowAgain = useCallback(async () => {
     await updateOnboardingStatus({ doNotShowAgain: true });
     setIsOpen(false);
-  };
+  }, [updateOnboardingStatus]);
 
   const contextValue: OnboardingContextType = useMemo(
     () => ({

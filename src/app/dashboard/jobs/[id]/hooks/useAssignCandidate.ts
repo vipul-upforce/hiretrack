@@ -206,7 +206,10 @@ export const useAssignCandidate = ({
     setConfirmUnassignOpen(true);
   };
 
-  const confirmUnassign = async () => {
+  const confirmUnassign = async (
+    description: string,
+    rating: number | null,
+  ) => {
     if (!user) {
       toast({
         title: 'Error',
@@ -218,9 +221,24 @@ export const useAssignCandidate = ({
 
     setIsUnassigning(true);
     try {
+      const newRemarkObj = {
+        description: description.trim(),
+        date: new Date().toISOString(),
+        rating: rating ? Number(rating) : 0,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+
       const updatedCandidate = {
         ...candidate,
         assignment: null,
+        remarks:
+          newRemarkObj.description || rating
+            ? [...(candidate.remarks || []), newRemarkObj]
+            : candidate.remarks,
       };
       const result = await updateCandidate(updatedCandidate).unwrap();
       onUpdate(result);
@@ -244,12 +262,7 @@ export const useAssignCandidate = ({
         previousInterviewer: previousInterviewerId,
         assignmentBy: user.id,
         title: 'Unassigned',
-        note: {
-          description: '',
-          date: '',
-          rating: 0,
-          userId: null,
-        },
+        note: newRemarkObj,
         attachments: [],
       };
 
@@ -266,7 +279,7 @@ export const useAssignCandidate = ({
         title: candidate.jobId.title || candidate.jobId,
         dateTime: new Date().toISOString(),
         status: candidate?.status,
-        feedback: newHistoryEntry.note,
+        feedback: newRemarkObj,
       });
       toast({
         title: 'Success',
