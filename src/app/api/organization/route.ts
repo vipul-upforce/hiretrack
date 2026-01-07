@@ -26,8 +26,6 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
   let createdOrg = null;
   let admin = null;
-  const userData = await getAuthenticatedUser(req);
-  const organizationId = userData?.organizationId || '';
   try {
     const { name, adminData } = await req.json();
 
@@ -38,13 +36,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (organizationId !== '') {
-      const settings = await Settings.findOne({
-        organizationId,
-      });
-      settings!.portalConfigs!.portalName = name;
-      await settings?.save();
-      if (settings?.multipleOrg === false) {
+    // Check if any organization exists
+    const orgCount = await Organization.countDocuments({}).lean().exec();
+    const isFirstOrg = orgCount === 0;
+
+    if (isFirstOrg) {
+      // Allow creating first organization without authentication
+      // userData can be null
+    } else {
+      // Organization(s) already exist - check multipleOrg setting
+      const firstOrg = await Organization.findOne({}, { _id: 1, createdAt: 1 })
+        .sort({ createdAt: 1 })
+        .lean();
+
+      if (!firstOrg) {
+        return NextResponse.json(
+          { error: 'Failed to retrieve organization settings.' },
+          { status: 500 },
+        );
+      }
+
+      const settings = await Settings.findOne(
+        {
+          organizationId: firstOrg._id.toString(),
+        },
+        { multipleOrg: 1 },
+      ).lean();
+
+      if (!settings?.multipleOrg) {
         return NextResponse.json(
           {
             error:
@@ -53,23 +72,17 @@ export async function POST(req: NextRequest) {
           { status: 401 },
         );
       }
-    } else {
-      const totalOrgs = await Organization.find({}).lean();
-      if (totalOrgs.length === 1) {
-        const settings = await Settings.findOne({
-          organizationId: String(totalOrgs[0]._id),
-        });
-        settings!.portalConfigs!.portalName = name;
-        await settings?.save();
-        if (!settings?.multipleOrg) {
-          return NextResponse.json(
-            {
-              error:
-                'Enable multiple organizations from settings of the first organization.',
-            },
-            { status: 401 },
-          );
-        }
+
+      // Multiple org is enabled - require authentication
+      const userData = await getAuthenticatedUser(req,'admin');
+      if (!userData) {
+        return NextResponse.json(
+          {
+            error:
+              'Authentication required to create additional organizations.',
+          },
+          { status: 400 },
+        );
       }
     }
     await ensureBaseDir();

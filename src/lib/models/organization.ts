@@ -16,52 +16,57 @@ const DEFAULT_TAGS = [
   { title: 'Salary Expectations', color: '#EB2F96' },
   { title: 'Cultural Fit', color: '#722ED1' },
 ];
-const organizationSchema = new Schema({
-  name: {
-    type: String,
-    unique: true,
-  },
-  adminId: {
-    type: Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  defaultLanes: {
-    type: [String],
-    default: DEFAULT_LANES,
-  },
-  laneRestrictions: {
-    type: {
-      nonEditable: [String],
-      nonDeletable: [String],
+const organizationSchema = new Schema(
+  {
+    name: {
+      type: String,
+      unique: true,
     },
-    default: {
-      nonEditable: ['applied', 'accepted', 'rejected'],
-      nonDeletable: ['applied', 'accepted', 'rejected'],
+    adminId: {
+      type: Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
-  },
-  openJobCards: {
-    type: [String],
-    // default: DEFAULT_LANES,
-  },
-  customFields: {
-    type: Schema.Types.Mixed,
-    default: {},
-  },
-  tags: {
-    type: [
-      {
-        title: {
-          type: String,
-        },
-        color: {
-          type: String,
-        },
+    defaultLanes: {
+      type: [String],
+      default: DEFAULT_LANES,
+    },
+    laneRestrictions: {
+      type: {
+        nonEditable: [String],
+        nonDeletable: [String],
       },
-    ],
-    default: DEFAULT_TAGS,
+      default: {
+        nonEditable: ['applied', 'accepted', 'rejected'],
+        nonDeletable: ['applied', 'accepted', 'rejected'],
+      },
+    },
+    openJobCards: {
+      type: [String],
+      // default: DEFAULT_LANES,
+    },
+    customFields: {
+      type: Schema.Types.Mixed,
+      default: {},
+    },
+    tags: {
+      type: [
+        {
+          title: {
+            type: String,
+          },
+          color: {
+            type: String,
+          },
+        },
+      ],
+      default: DEFAULT_TAGS,
+    },
   },
-});
+  {
+    timestamps: true,
+  },
+);
 
 export default organizationSchema;
 
@@ -84,6 +89,8 @@ export interface IOrganization {
   openJobCards: string[];
   customFields: Schema.Types.Mixed;
   tags: ITag[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // export const Organization = mongoose.model("Organization", organizationSchema);
