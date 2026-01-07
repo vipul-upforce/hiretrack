@@ -39,6 +39,15 @@ interface PendingMove {
   targetIndex: number;
 }
 
+interface PendingChecklist {
+  candidateId: string;
+  currentLane: string;
+  targetLane: string;
+  checklist: unknown;
+  isMandatory: boolean;
+  checklistType: 'incoming' | 'outgoing';
+}
+
 export const useCandidate = ({
   columns,
   setColumns,
@@ -60,6 +69,7 @@ export const useCandidate = ({
   const [updateLanes] = useUpdateLanesMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
+  const [pendingChecklists, setPendingChecklists] = useState<PendingChecklist[]>([]);
 
   const { user } = useAppSelector((state) => state.auth);
 
@@ -166,6 +176,39 @@ export const useCandidate = ({
     setPendingMoves((prev) =>
       prev.filter((pm) => pm.candidateId !== candidateId),
     );
+    // Also clear any pending checklists for this candidate
+    setPendingChecklists((prev) =>
+      prev.filter((pc) => pc.candidateId !== candidateId),
+    );
+  };
+
+  // Handler for when a checklist is successfully completed - show next checklist if queued
+  const handleChecklistComplete = (candidateId: string) => {
+    const pendingChecklist = pendingChecklists.find(
+      (pc) => pc.candidateId === candidateId,
+    );
+
+    if (pendingChecklist) {
+      // Remove from pending checklists queue
+      setPendingChecklists((prev) =>
+        prev.filter((pc) => pc.candidateId !== candidateId),
+      );
+
+      // Show the pending checklist dialog
+      const validationInfo = {
+        candidateId: pendingChecklist.candidateId,
+        currentLane: pendingChecklist.currentLane,
+        targetLane: pendingChecklist.targetLane,
+        checklist: pendingChecklist.checklist,
+        isMandatory: pendingChecklist.isMandatory,
+        checklistType: pendingChecklist.checklistType,
+      };
+
+      setOpenRemarksFor(JSON.stringify(validationInfo));
+    } else {
+      // No pending checklist, complete the move
+      completePendingMove(candidateId);
+    }
   };
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
@@ -299,6 +342,29 @@ export const useCandidate = ({
             isMandatory: validationResult.validation.isMandatory,
             checklistType: validationResult.type,
           };
+
+          // Queue pending incoming checklist if both outgoing and incoming are required
+          if (
+            'pendingValidation' in validationResult &&
+            validationResult.pendingValidation?.requiresChecklist &&
+            'pendingType' in validationResult &&
+            validationResult.pendingType
+          ) {
+            setPendingChecklists((prev) => [
+              ...prev,
+              {
+                candidateId: draggableId,
+                currentLane: source.droppableId,
+                targetLane: destination.droppableId,
+                checklist:
+                  'checklist' in validationResult.pendingValidation!
+                    ? validationResult.pendingValidation!.checklist
+                    : null,
+                isMandatory: validationResult.pendingValidation!.isMandatory,
+                checklistType: validationResult.pendingType,
+              },
+            ]);
+          }
 
           if (validationResult.validation.isMandatory) {
             // For MANDATORY checklists: DON'T move the card or update database
@@ -439,5 +505,7 @@ export const useCandidate = ({
     pendingMoves,
     completePendingMove,
     cancelPendingMove,
+    handleChecklistComplete,
+    pendingChecklists,
   };
 };
