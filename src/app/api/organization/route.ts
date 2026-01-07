@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
             error:
               'Enable multiple organizations from settings of the first organization.',
           },
-          { status: 401 },
+          { status: 400 },
         );
       }
 
