@@ -189,8 +189,9 @@ export default function JobProgressPage() {
     handleDeleteClick,
     handleDeleteConfirm,
     pendingMoves,
-    completePendingMove,
+    // completePendingMove,
     cancelPendingMove,
+    handleChecklistComplete,
   } = useCandidate({
     columns,
     setColumns,
@@ -351,7 +352,7 @@ export default function JobProgressPage() {
           setOpenRemarksFor={setOpenRemarksFor}
           columns={columns}
           refetch={refetch}
-          completePendingMove={completePendingMove}
+          handleChecklistComplete={handleChecklistComplete}
           cancelPendingMove={cancelPendingMove}
           checklistConfigLane={checklistConfigLane}
           isChecklistConfigOpen={isChecklistConfigOpen}

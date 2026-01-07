@@ -5,6 +5,7 @@
 
 import { Candidate } from '@/types/candidate';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import { Badge } from '@/components/ui/badge';
 import AttachmentsPopover from '../Remarks/attachments-popover';
 
 interface CandidateCardCustomFieldsProps {
@@ -37,9 +38,9 @@ export function CandidateCardCustomFields({
   return (
     <div className="mb-3 space-y-2">
       {visibleFields.map(([key, value]) => (
-        <div key={key} className="text-sm">
-          <span className="truncate text-gray-600 dark:text-gray-400">
-            {key.split(' |||||(')[0]}:
+        <div key={key} className="flex flex-row items-center gap-1 text-sm">
+          <span className="truncate capitalize text-gray-600 dark:text-gray-400">
+            {key.split(' |||||(')[0]}
           </span>
           {(() => {
             if (typeof value === 'string') {
@@ -50,29 +51,51 @@ export function CandidateCardCustomFields({
               );
             }
 
-            if (Array.isArray(value) && value.length > 0) {
+            // Only treat as attachments if array is of objects with a file shape
+            if (
+              Array.isArray(value) &&
+              value.length > 0 &&
+              value.every(
+                (v) =>
+                  typeof v === 'object' &&
+                  v !== null &&
+                  ('name' in v || 'base64' in v || 'type' in v),
+              )
+            ) {
               return (
-                <AttachmentsPopover
-                  attachments={value.map((file, index) => {
-                    if (typeof file === 'string') {
-                      return {
-                        id: '',
-                        name: '',
-                        url: '',
-                        type: '',
-                        size: 0,
-                      };
-                    }
-                    return {
-                      id: `${key}-${index}-${file.name}`,
-                      name: file.name,
+                <div>
+                  <AttachmentsPopover
+                    attachments={value.map((file, index) => ({
+                      id: `${key}-${index}-${(file as { name?: string }).name || ''}`,
+                      name: (file as { name?: string }).name || '',
                       url: (file as { base64?: string }).base64 || '#',
-                      type: file.type || 'unknown',
-                      size: file.size || 0,
-                    };
-                  })}
-                  onMoreClick={() => null}
-                />
+                      type: (file as { type?: string }).type || 'unknown',
+                      size: (file as { size?: number }).size || 0,
+                    }))}
+                    onMoreClick={() => null}
+                  />
+                </div>
+              );
+            }
+
+            // Array of string (enum, multi-select, etc)
+            if (
+              Array.isArray(value) &&
+              value.length > 0 &&
+              value.every((v) => typeof v === 'string')
+            ) {
+              return (
+                <div className="flex flex-wrap gap-1">
+                  {value.map((item: string) => (
+                    <Badge
+                      key={item}
+                      variant="default"
+                      className="bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200"
+                    >
+                      {item}
+                    </Badge>
+                  ))}
+                </div>
               );
             }
 

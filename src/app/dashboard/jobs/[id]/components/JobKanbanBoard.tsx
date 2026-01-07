@@ -24,7 +24,7 @@ interface JobKanbanBoardProps {
   setLaneToDelete: (laneId: string | null) => void;
   setLaneToEdit: (laneId: string | null) => void;
   refetch: () => void;
-  selectedCandidate: Candidate;
+  selectedCandidate: Candidate | null;
   setSelectedCandidate: (candidate: Candidate | null) => void;
   isDetailsOpen: boolean;
   setIsDetailsOpen: (open: boolean) => void;

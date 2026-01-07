@@ -21,39 +21,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { ILaneConfig } from '@/lib/models/JobLaneConfig';
+
 import CustomScrollbarLane from '@/components/ui/custom-scrollbar-lane';
+import { useAppSelector } from '@/lib/redux/hooks';
 import { getJobId, getTrackingDate } from '../../utils/candidateAccessors';
 import { LaneOptionsMenu } from './lanes-options-menu';
 import { CandidateCard } from '../Candidate/candidate-card';
-
-// --- Types ---
-interface PendingMove {
-  candidateId: string;
-  sourceLaneId: string;
-  targetLaneId: string;
-  sourceIndex: number;
-  targetIndex: number;
-}
-
-interface SortConfig {
-  field: string | null;
-  direction: 'asc' | 'desc';
-  enabled: boolean;
-}
-
-// --- 1. Define Context Interface ---
-// This defines what data the static row renderer needs access to
-interface CandidateContextType {
-  laneId: string;
-  pendingMoves: PendingMove[];
-  refetch: () => void;
-  openRemarksFor: string | null;
-  setOpenRemarksFor: (id: string | null) => void;
-  setSelectedCandidate: (candidate: Candidate | null) => void;
-  handleDeleteClick: (id: string) => void;
-  setIsDetailsOpen: (val: boolean) => void;
-}
+import { CandidateContextType, KanbanColumnProps, SortConfig } from './types';
 
 // --- 2. Extract CandidateRow (Pure Component) ---
 const CandidateRow = memo(
@@ -129,38 +103,6 @@ function renderCandidateItem(
   );
 }
 
-interface KanbanColumnProps {
-  column: {
-    id: string;
-    title: string;
-    candidates: Candidate[];
-  };
-  index: number;
-  isFileOver: boolean;
-  setIsFileOver: (value: boolean) => void;
-  handleFileDrop: (file: File) => void;
-  handleDeleteLane: () => void;
-  handleEditLane: () => void;
-  setLaneToDelete: (laneId: string) => void;
-  setLaneToEdit: (laneId: string) => void;
-  refetch: () => void;
-  selectedCandidate: Candidate | null;
-  setSelectedCandidate: (candidate: Candidate | null) => void;
-  isDetailsOpen: boolean;
-  setIsDetailsOpen: (value: boolean) => void;
-  openRemarksFor: string | null;
-  setOpenRemarksFor: (candidateId: string | null) => void;
-  handleDeleteClick: (candidateId: string) => void;
-  onConfigureChecklist?: (
-    laneId: string,
-    laneName: string,
-    initialTab?: 'incoming' | 'outgoing',
-  ) => void;
-  isDragging?: boolean;
-  pendingMoves?: PendingMove[];
-  laneConfig?: ILaneConfig;
-}
-
 const KanbanColumn = memo(
   ({
     column,
@@ -187,6 +129,7 @@ const KanbanColumn = memo(
     const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(
       null,
     );
+    const user = useAppSelector((state) => state.auth.user);
 
     const [sortConfig, setSortConfig] = useState<SortConfig>({
       field: null,
@@ -389,9 +332,11 @@ const KanbanColumn = memo(
                                 {laneConfig.incomingChecklist.isMandatory &&
                                   ' (Mandatory)'}
                                 <br />
-                                <span className="text-blue-600 dark:text-blue-400">
-                                  Click to configure
-                                </span>
+                                {user?.role !== 'hr' && (
+                                  <span className="text-blue-600 dark:text-blue-400">
+                                    Click to configure
+                                  </span>
+                                )}
                               </p>
                             </TooltipContent>
                           </Tooltip>
@@ -532,5 +477,4 @@ const KanbanColumn = memo(
     );
   },
 );
-
 export { KanbanColumn };

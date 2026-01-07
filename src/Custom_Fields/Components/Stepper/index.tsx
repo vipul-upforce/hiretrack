@@ -9,12 +9,11 @@ function Stepper() {
 
   const StepperComponent = useCallback(() => {
     switch (stepName) {
-      case 'FormList':
-        return <CustomFieldFormList />;
       case 'formCustomFieldList':
         return <FormCustomFieldList />;
+      case 'FormList':
       default:
-        return null;
+        return <CustomFieldFormList />;
     }
   }, [stepName]);
 

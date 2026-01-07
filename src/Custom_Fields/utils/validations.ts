@@ -19,12 +19,26 @@ export const validationSchema = Yup.object({
       }
       return Yup.array().of(Yup.string()).notRequired();
     }),
-  defaultValue: Yup.string().when(['type'], ([type]) => {
+  defaultValue: Yup.mixed().when(['type', 'options'], ([type, options]) => {
+    const availableOptions = (options as string[] | undefined) || [];
     if (['select', 'radio'].includes(type)) {
-      return Yup.string();
+      return Yup.string().test(
+        'valid-option',
+        'Default value must be one of the available options',
+        (value) => !value || availableOptions.includes(value),
+      );
     }
     if (type === 'multiSelect' || type === 'checkbox') {
-      return Yup.array().of(Yup.string());
+      return Yup.array()
+        .of(Yup.string())
+        .test(
+          'valid-options',
+          'All default values must be from the available options',
+          (values) =>
+            !values ||
+            values.length === 0 ||
+            values.every((v) => availableOptions.includes(v as string)),
+        );
     }
     return Yup.string().notRequired();
   }),

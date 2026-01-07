@@ -58,7 +58,7 @@ interface JobPageDialogsProps {
   setOpenRemarksFor: (id: string | null) => void;
   columns: CandidateColumn[];
   refetch: () => void;
-  completePendingMove: (candidateId: string) => void;
+  handleChecklistComplete: (candidateId: string) => void;
   cancelPendingMove: (candidateId: string) => void;
   checklistConfigLane: {
     laneId: string;
@@ -108,7 +108,7 @@ export function JobPageDialogs({
   setOpenRemarksFor,
   columns,
   refetch,
-  completePendingMove,
+  handleChecklistComplete,
   cancelPendingMove,
   checklistConfigLane,
   isChecklistConfigOpen,
@@ -249,12 +249,12 @@ export function JobPageDialogs({
           setOpenRemarksFor={setOpenRemarksFor}
           refetch={refetch}
           checklistInfo={checklistInfo}
-          onChecklistSuccess={completePendingMove}
+          onChecklistSuccess={handleChecklistComplete}
           onChecklistCancel={cancelPendingMove}
         />
       )}
 
-      {checklistConfigLane && (
+      {checklistConfigLane && user?.role !== 'hr' && (
         <LaneChecklistConfigDialog
           isOpen={isChecklistConfigOpen}
           onOpenChange={setIsChecklistConfigOpen}
