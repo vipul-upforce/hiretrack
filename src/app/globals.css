@@ -567,6 +567,71 @@ body {
     padding: var(--space-sm) 0;
   }
 
+  /* Dialog mode utilities - Modal mode for desktop, Fullscreen for mobile/tablet */
+  .dialog-modal-mode {
+    /* Mobile/Tablet: Fullscreen */
+    position: fixed !important;
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    transform: none !important;
+    translate: 0 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+  }
+
+  /* Desktop: Modal mode (centered, constrained width) */
+  @media (min-width: 1025px) {
+    .dialog-modal-mode {
+      left: 50% !important;
+      top: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      height: 90vh !important;
+      max-height: 90vh !important;
+      min-height: 0 !important;
+      width: auto !important;
+      min-width: 950px !important;
+      max-width: 80vw !important;
+      border-radius: var(--dialog-radius) !important;
+      border: 1px solid hsl(var(--border)) !important;
+      margin: var(--space-lg) !important;
+    }
+
+    .dialog-modal-mode.xl-max-w-50vw {
+      max-width: 50vw !important;
+    }
+
+    .dialog-modal-mode.xl-max-w-65vw {
+      max-width: 65vw !important;
+    }
+  }
+
+  /* Fullscreen mode - always fullscreen regardless of screen size */
+  .dialog-fullscreen-mode {
+    position: fixed !important;
+    inset: 0 !important;
+    left: 0 !important;
+    top: 0 !important;
+    margin: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+    width: 100vw !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    transform: none !important;
+    translate: 0 0 !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+  }
+
   /* Tablet adjustments */
   @media (min-width: 641px) and (max-width: 1024px) {
     .dialog-xl,
@@ -740,14 +805,14 @@ body {
   }
 
   /* Apply portal colors to primary buttons - theme aware */
-  button[data-variant="primary"],
-  [data-variant="primary"] {
+  button[data-variant='primary'],
+  [data-variant='primary'] {
     background-color: var(--portal-primary, #6366f1) !important;
     border-color: var(--portal-primary, #6366f1) !important;
     color: white !important;
   }
 
-  [data-variant="primary"]:hover {
+  [data-variant='primary']:hover {
     background-color: var(
       --portal-primary-hover,
       hsl(var(--primary-hover))
@@ -759,26 +824,26 @@ body {
     color: white !important;
   }
 
-  [data-variant="primary"]:focus-visible {
+  [data-variant='primary']:focus-visible {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     outline: 2px solid var(--portal-primary, hsl(var(--primary))) !important;
     outline-offset: 2px;
   }
 
-  [data-variant="primary"]:disabled {
+  [data-variant='primary']:disabled {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     opacity: 0.5 !important;
     color: white !important;
   }
 
   /* Dark theme specific adjustments for portal colors */
-  .dark [data-variant="primary"] {
+  .dark [data-variant='primary'] {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
     color: white !important;
   }
 
-  .dark [data-variant="primary"]:hover {
+  .dark [data-variant='primary']:hover {
     background-color: var(
       --portal-primary-hover,
       hsl(var(--primary-hover))
@@ -791,14 +856,14 @@ body {
   }
 
   /* Apply portal secondary color to info buttons */
-  button[data-variant="info"],
-  [data-variant="info"] {
+  button[data-variant='info'],
+  [data-variant='info'] {
     background-color: var(--portal-secondary, #10b981) !important;
     border-color: var(--portal-secondary, #10b981) !important;
     color: white !important;
   }
 
-  [data-variant="info"]:hover {
+  [data-variant='info']:hover {
     background-color: var(
       --portal-secondary-hover,
       hsl(var(--info-hover))
@@ -810,26 +875,26 @@ body {
     color: white !important;
   }
 
-  [data-variant="info"]:focus-visible {
+  [data-variant='info']:focus-visible {
     background-color: var(--portal-secondary, hsl(var(--info))) !important;
     outline: 2px solid var(--portal-secondary, hsl(var(--info))) !important;
     outline-offset: 2px;
   }
 
-  [data-variant="info"]:disabled {
+  [data-variant='info']:disabled {
     background-color: var(--portal-secondary, hsl(var(--info))) !important;
     opacity: 0.5 !important;
     color: white !important;
   }
 
   /* Dark theme specific adjustments for info buttons */
-  .dark [data-variant="info"] {
+  .dark [data-variant='info'] {
     background-color: var(--portal-secondary, hsl(var(--info))) !important;
     border-color: var(--portal-secondary, hsl(var(--info))) !important;
     color: white !important;
   }
 
-  .dark [data-variant="info"]:hover {
+  .dark [data-variant='info']:hover {
     background-color: var(
       --portal-secondary-hover,
       hsl(var(--info-hover))
@@ -868,18 +933,18 @@ body {
     ) !important;
   }
 
-  button[role="checkbox"][data-state="checked"] {
+  button[role='checkbox'][data-state='checked'] {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: transparent !important;
     border-radius: 18%;
   }
 
-  button[role="switch"][data-state="checked"] {
+  button[role='switch'][data-state='checked'] {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
 
-  button[role="switch"][data-state="checked"]:hover {
+  button[role='switch'][data-state='checked']:hover {
     background-color: var(
       --portal-primary-hover,
       hsl(var(--primary-hover))
@@ -887,29 +952,29 @@ body {
   }
 
   /* Switch Knob */
-  button[role="switch"][data-state="checked"] > span {
+  button[role='switch'][data-state='checked'] > span {
     background-color: white !important;
   }
 
   /* Focus ring on switch only */
-  button[role="switch"]:focus-visible {
+  button[role='switch']:focus-visible {
     box-shadow: 0 0 0 2px rgba(var(--portal-primary-rgb, 99, 102, 241), 0.3) !important;
   }
 
   /* Dark mode */
-  .dark button[role="switch"][data-state="checked"] {
+  .dark button[role='switch'][data-state='checked'] {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
 
   /* Form Control Theming with Portal Colors */
 
   /* Checkbox styling */
-  input[type="checkbox"]:checked {
+  input[type='checkbox']:checked {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
 
-  input[type="checkbox"]:checked:hover {
+  input[type='checkbox']:checked:hover {
     background-color: var(
       --portal-primary-hover,
       hsl(var(--primary-hover))
@@ -920,18 +985,18 @@ body {
     ) !important;
   }
 
-  input[type="checkbox"]:focus {
+  input[type='checkbox']:focus {
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
     box-shadow: 0 0 0 2px rgba(var(--portal-primary-rgb, 99, 102, 241), 0.2) !important;
   }
 
   /* Radio button styling */
-  input[type="radio"]:checked {
+  input[type='radio']:checked {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
 
-  input[type="radio"]:checked:hover {
+  input[type='radio']:checked:hover {
     background-color: var(
       --portal-primary-hover,
       hsl(var(--primary-hover))
@@ -942,7 +1007,7 @@ body {
     ) !important;
   }
 
-  input[type="radio"]:focus {
+  input[type='radio']:focus {
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
     box-shadow: 0 0 0 2px rgba(var(--portal-primary-rgb, 99, 102, 241), 0.2) !important;
   }
@@ -960,12 +1025,12 @@ body {
   }
 
   /* Dark theme adjustments for form controls */
-  .dark input[type="checkbox"]:checked {
+  .dark input[type='checkbox']:checked {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
 
-  .dark input[type="radio"]:checked {
+  .dark input[type='radio']:checked {
     background-color: var(--portal-primary, hsl(var(--primary))) !important;
     border-color: var(--portal-primary, hsl(var(--primary))) !important;
   }
@@ -1266,7 +1331,7 @@ body {
   }
 
   /* Full screen dialog overrides */
-  [data-fullscreen="true"] {
+  [data-fullscreen='true'] {
     position: fixed !important;
     inset: 0 !important;
     width: 100vw !important;
@@ -1284,7 +1349,7 @@ body {
   }
 
   /* Ensure full screen dialog children also use full height */
-  [data-fullscreen="true"] > div {
+  [data-fullscreen='true'] > div {
     height: 100dvh !important;
     min-height: 100dvh !important;
     display: flex !important;
@@ -1300,7 +1365,7 @@ body {
 }
 
 /* Ensure the dragged item looks correct */
-.dnd-dragging [data-rbd-draggable-id][data-rbd-dragging="true"] {
+.dnd-dragging [data-rbd-draggable-id][data-rbd-dragging='true'] {
   transform: translate3d(0, 0, 0) !important;
   transition: none !important;
   z-index: 9999 !important;

@@ -12,6 +12,7 @@ import { Resume } from '@/lib/redux/types';
 import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
 import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
 import FormUpdater from '../Utils/FormUpdater';
 import { CandidateForm } from '../Candidate/candidate-form';
 import { candidateSchema } from '../../schemas/candidate-schema';
@@ -99,7 +100,7 @@ export function CreateCandidateDialog({
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [pendingFormValues, setPendingFormValues] =
     useState<CandidateFormValues | null>(null);
-  const [isLargeViewport, setIsLargeViewport] = useState(false);
+  const isDesktop = useIsDesktop();
   const [isMaximized, setIsMaximized] = useState(false);
 
   const {
@@ -115,16 +116,6 @@ export function CreateCandidateDialog({
 
   useEffect(() => {
     setIsClient(true);
-
-    const checkScreenSize = () => {
-      const isLarge = window.innerWidth >= 1300 && window.innerHeight >= 1000;
-      setIsLargeViewport(isLarge);
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-
-    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
   useEffect(() => {
@@ -194,35 +185,15 @@ export function CreateCandidateDialog({
       </DialogTrigger>
       <DialogContent
         className={
-          !isLargeViewport || isMaximized
-            ? '!min-h-100dvh !inset-0 !left-0 !top-0 !m-0 flex !h-[100dvh] !max-h-[100dvh] !w-screen !min-w-0 !max-w-none !translate-x-0 !translate-y-0 flex-col overflow-hidden !rounded-none !border-0 p-0'
-            : 'flex flex-col overflow-hidden p-0 lg:h-[90vh] lg:max-w-[80vw] lg:rounded-lg lg:border xl:max-w-[65vw]'
-        }
-        style={
-          !isLargeViewport || isMaximized
-            ? {
-                position: 'fixed' as const,
-                inset: 0,
-                width: '100vw',
-                height: '100dvh',
-                minHeight: '100dvh',
-                maxHeight: '100dvh',
-                maxWidth: 'none',
-                transform: 'none',
-                left: 0,
-                top: 0,
-                margin: 0,
-                border: 0,
-                borderRadius: 0,
-                zIndex: 9999,
-              }
-            : undefined
+          !isDesktop || isMaximized
+            ? 'dialog-fullscreen-mode flex flex-col overflow-hidden p-0'
+            : 'dialog-modal-mode xl-max-w-65vw flex flex-col overflow-hidden p-0'
         }
       >
         <CreateCandidateDialogHeader
           userRole={user?.role}
           jobTitle={jobTitle}
-          isLargeViewport={isLargeViewport}
+          isLargeViewport={isDesktop}
           isMaximized={isMaximized}
           onToggleMaximize={() => setIsMaximized(!isMaximized)}
         />

@@ -22,7 +22,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+      'fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className,
     )}
     {...props}
@@ -50,15 +50,14 @@ const dialogVariants = cva(
 );
 
 export interface DialogContentProps
-  extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
-  VariantProps<typeof dialogVariants> { }
+  extends
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
+    VariantProps<typeof dialogVariants> {}
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({
-  className, children, size, ...props
-}, ref) => (
+>(({ className, children, size, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -67,7 +66,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-50">
+      <DialogPrimitive.Close className="absolute right-4 top-4 z-50 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -83,7 +82,7 @@ function DialogHeader({
   return (
     <div
       className={cn(
-        'flex flex-col space-y-2 text-center sm:text-left px-6 py-4 pr-10 border-b border-border/10 rounded-lg flex-shrink-0 sticky top-0 bg-background z-10 overflow-hidden  text-ellipsis',
+        'sticky top-0 z-10 flex flex-shrink-0 flex-col space-y-2 overflow-hidden text-ellipsis rounded-lg border-b border-border/10 bg-background px-6 py-4 pr-10 text-center sm:text-left',
         className,
       )}
       {...props}
@@ -99,7 +98,7 @@ function DialogFooter({
   return (
     <div
       className={cn(
-        'flex flex-col gap-2 sm:flex-row sm:justify-end px-6 py-4 border-t border-border/10 rounded-lg sticky bottom-0 bg-background flex-shrink-0 z-10',
+        'sticky bottom-0 z-10 flex flex-shrink-0 flex-col gap-2 rounded-lg border-t border-border/10 bg-background px-6 py-4 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
@@ -115,7 +114,7 @@ const DialogTitle = React.forwardRef<
   <DialogPrimitive.Title
     ref={ref}
     className={cn(
-      'text-xl font-semibold leading-none tracking-tight text-foreground whitespace-nowrap text-ellipsis overflow-hidden',
+      'overflow-hidden text-ellipsis whitespace-nowrap text-xl font-semibold leading-none tracking-tight text-foreground',
       className,
     )}
     {...props}
