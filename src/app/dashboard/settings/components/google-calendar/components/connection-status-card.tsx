@@ -69,7 +69,7 @@ export function ConnectionStatusCard({
               onClick={onConnect}
               disabled={!isConfigured}
               className="flex-1"
-              variant="default"
+              variant="primary"
             >
               <Calendar className="mr-2 h-4 w-4" />
               Connect Google Calendar

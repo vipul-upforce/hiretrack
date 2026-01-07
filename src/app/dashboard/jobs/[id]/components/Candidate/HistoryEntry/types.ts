@@ -48,3 +48,6 @@ export interface EntryContentProps {
 export interface EntryRatingProps {
   rating: number | undefined;
 }
+
+
+

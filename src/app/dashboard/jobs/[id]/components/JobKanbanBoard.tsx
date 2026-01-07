@@ -5,7 +5,9 @@ import {
   DropResult,
 } from '@hello-pangea/dnd';
 import { mergeRefs } from 'react-merge-refs';
-import { CandidateColumn } from '@/types/candidate';
+import { Candidate, CandidateColumn } from '@/types/candidate';
+import React from 'react';
+import { IJobLaneConfig, ILaneConfig } from '@/lib/models/JobLaneConfig';
 import { KanbanColumn } from './Lanes/KanbanColumn';
 
 interface JobKanbanBoardProps {
@@ -22,8 +24,8 @@ interface JobKanbanBoardProps {
   setLaneToDelete: (laneId: string | null) => void;
   setLaneToEdit: (laneId: string | null) => void;
   refetch: () => void;
-  selectedCandidate: any;
-  setSelectedCandidate: (candidate: any) => void;
+  selectedCandidate: Candidate;
+  setSelectedCandidate: (candidate: Candidate | null) => void;
   isDetailsOpen: boolean;
   setIsDetailsOpen: (open: boolean) => void;
   openRemarksFor: string | null;
@@ -39,8 +41,9 @@ interface JobKanbanBoardProps {
     sourceLaneId: string;
     targetLaneId: string;
     sourceIndex: number;
+    targetIndex: number;
   }>;
-  jobLaneConfig?: any;
+  jobLaneConfig?: IJobLaneConfig;
 }
 
 export function JobKanbanBoard({
@@ -92,7 +95,7 @@ export function JobKanbanBoard({
             >
               {columns.map((column, index) => {
                 const laneConfig = jobLaneConfig?.laneConfigs?.find(
-                  (config: any) => config.laneId === column.id,
+                  (config: ILaneConfig) => config.laneId === column.id,
                 );
 
                 return (
@@ -104,8 +107,8 @@ export function JobKanbanBoard({
                     isFileOver={isFileOver}
                     setIsFileOver={setIsFileOver}
                     handleFileDrop={handleFileDrop}
-                    handleDeleteLane={handleDeleteLane}
-                    handleEditLane={handleEditLane}
+                    handleDeleteLane={() => handleDeleteLane(column.id)}
+                    handleEditLane={() => handleEditLane(column.id)}
                     setLaneToDelete={setLaneToDelete}
                     setLaneToEdit={setLaneToEdit}
                     refetch={refetch}
@@ -130,4 +133,3 @@ export function JobKanbanBoard({
     </div>
   );
 }
-

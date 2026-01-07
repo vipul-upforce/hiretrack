@@ -131,7 +131,9 @@ export const AddSpecificCustomFieldForm = memo(
         return existingFieldsFromContext?.some(
           (field) =>
             (field.label.toLowerCase() === trimmedLabel ||
-              field.label.toLowerCase() === `${trimmedLabel} |||||(i)`) &&
+              // field.label.toLowerCase() === `${trimmedLabel} |||||(i)`) &&
+              field.label.toLowerCase() ===
+                trimmedLabel.split(' |||||(')[0].trim().toLowerCase()) &&
             (jobId
               ? field.jobId === jobId
               : field.candidateId === candidateId) &&
@@ -166,7 +168,7 @@ export const AddSpecificCustomFieldForm = memo(
                 field.label === values.label &&
                 (!isEditMode || field.id !== initialValue?.id)
               ) {
-                values.label = `${values.label} |||||(i)`;
+                values.label = `${values.label} |||||(${Date.now()})`;
                 return true;
               }
               return false;

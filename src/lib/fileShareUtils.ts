@@ -178,7 +178,7 @@ export async function createFileShare(
       createdAt: new Date(),
     });
     // Generate share URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const shareUrl = `${baseUrl}/api/shared-files/${shareId}`;
 
     return {
@@ -270,6 +270,6 @@ export async function cleanupExpiredShares(): Promise<void> {
 }
 
 export function generateShareUrl(shareId: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   return `${baseUrl}/api/shared-files/${shareId}`;
 }
