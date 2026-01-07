@@ -339,7 +339,12 @@ export async function PUT(
         // Follow-up notifications
         // if ("followUp" in data) {
         // Case 1: Follow-up Added
-        if (!oldFollowUp && newFollowUp && newFollowUp.note !== null) {
+        if (
+          !oldFollowUp &&
+          (oldFollowUp === undefined || oldFollowUp === null) &&
+          newFollowUp &&
+          (newFollowUp?.note != null || newFollowUp?.date != null)
+        ) {
           await NotificationService.notifyFollowUpAdded({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -360,6 +365,8 @@ export async function PUT(
         // Case 2: Follow-up Updated
         else if (
           oldFollowUp &&
+          oldFollowUp.note !== null &&
+          oldFollowUp.note !== undefined &&
           newFollowUp &&
           newFollowUp.note !== null &&
           newFollowUp.note !== oldFollowUp.note &&
