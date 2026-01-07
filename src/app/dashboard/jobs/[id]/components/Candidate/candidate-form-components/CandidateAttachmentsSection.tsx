@@ -19,6 +19,8 @@ export function CandidateAttachmentsSection() {
   // Local state for handling validation errors inline
   const [errorMsg, setErrorMsg] = useState<string>('');
 
+  // This will be true either the logged in user is candidate or the user is guest.
+  // For the admin, Hr, and Interviewer this condition will be false.
   const isCandidateOrGuest =
     !user || user.role === 'candidate' || user.role === '';
   const maxAllowedFiles = isCandidateOrGuest ? 2 : 30;
