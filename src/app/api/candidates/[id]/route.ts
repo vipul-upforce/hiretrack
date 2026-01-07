@@ -786,7 +786,7 @@ export async function PUT(
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
               });
-            } else {
+            } else if (newAssignment === null && interviewer) {
               await NotificationService.notifyInterviewCompleted({
                 organizationId,
                 candidateId: updatedCandidate._id?.toString() || '',
