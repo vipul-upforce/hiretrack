@@ -36,9 +36,13 @@ export async function POST(request: NextRequest) {
         required: true,
         type: 'object',
         customValidator: (value) =>
-          value &&
-          typeof value._id === 'string' &&
-          /^[0-9a-fA-F]{24}$/.test(value._id),
+          !!(
+            value &&
+            typeof value === 'object' &&
+            !Array.isArray(value) &&
+            typeof value._id === 'string' &&
+            /^[0-9a-fA-F]{24}$/.test(value._id)
+          ),
       },
       name: {
         required: true,
