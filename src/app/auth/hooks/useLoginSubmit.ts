@@ -178,6 +178,10 @@ export const useHandleLoginSubmit = ({
                   variant: 'default',
                 });
                 router.push(url);
+                localStorage.setItem(
+                  `otp_cooldown_${values.email.toLowerCase().trim()}_${organizationId}`,
+                  Date.now().toString()
+                );
               });
           } catch (error) {
             logger.error(error);

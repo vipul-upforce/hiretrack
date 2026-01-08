@@ -7,7 +7,10 @@ import {
   useGetOrganizationAllowanceQuery,
 } from '@/lib/features/org/orgApi';
 import { useGetCaptchaConfigsQuery } from '@/lib/features/settings';
-import { useLazyValidateLicenseQuery } from '@/lib/features/auth/authApi';
+import {
+  useLazyValidateLicenseQuery,
+  useLogoutUserMutation,
+} from '@/lib/features/auth/authApi';
 import { getDecodedCaptcha } from '@/hooks/useSSE';
 import { OrgFormValues } from './schema';
 
@@ -21,7 +24,7 @@ export const useOrgRegister = () => {
   const { data: allowanceData } = useGetOrganizationAllowanceQuery(undefined);
 
   const [triggerLicenseCheck] = useLazyValidateLicenseQuery();
-
+  const [triggerLogout] = useLogoutUserMutation();
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [decryptedSiteKey, setDecryptedSiteKey] = useState<string | null>(null);
 
@@ -128,6 +131,7 @@ export const useOrgRegister = () => {
             description: 'Organization and Admin account created successfully.',
             variant: 'default',
           });
+          await triggerLogout().unwrap();
           router.push('/auth/login');
         } else {
           throw new Error('Failed to create organization structure.');

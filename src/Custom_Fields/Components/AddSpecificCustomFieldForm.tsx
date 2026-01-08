@@ -485,18 +485,41 @@ export const AddSpecificCustomFieldForm = memo(
                     </Label>
                     <ChipInput
                       value={values.options}
-                      onChange={(newOptions) =>
-                        setFieldValue(
-                          'options',
-                          newOptions
-                            .map((option) => option.trim())
-                            .filter((option) => option !== ''),
-                        )
-                      }
+                      onChange={(newOptions) => {
+                        const cleanedOptions = newOptions
+                          .map((option) => option.trim())
+                          .filter((option) => option !== '');
+                        setFieldValue('options', cleanedOptions);
+
+                        // Clean up default values that are no longer in options
+                        if (
+                          values.type === 'multiSelect' ||
+                          values.type === 'checkbox'
+                        ) {
+                          const currentDefaults =
+                            (values.defaultValue as string[]) || [];
+                          const validDefaults = currentDefaults.filter((def) =>
+                            cleanedOptions.includes(def),
+                          );
+                          if (validDefaults.length !== currentDefaults.length) {
+                            setFieldValue('defaultValue', validDefaults);
+                          }
+                        } else if (
+                          values.type === 'select' ||
+                          values.type === 'radio'
+                        ) {
+                          const currentDefault = values.defaultValue as string;
+                          if (
+                            currentDefault &&
+                            !cleanedOptions.includes(currentDefault)
+                          ) {
+                            setFieldValue('defaultValue', '');
+                          }
+                        }
+                      }}
                       placeholder="Type an option and press Enter..."
                       suggestions={[]}
                       showAddButton
-                      // className="text-lg"
                     />
                     {errors.options && touched.options && (
                       <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
@@ -794,19 +817,25 @@ export const AddSpecificCustomFieldForm = memo(
                         values.type === 'checkbox' ? (
                           <ChipInput
                             value={values.defaultValue as string[]}
-                            onChange={(newOptions) =>
-                              setFieldValue(
-                                'defaultValue',
-                                newOptions
-                                  .map((option) => option.trim())
-                                  .filter((option) => option !== ''),
-                              )
-                            }
+                            onChange={(newOptions) => {
+                              // Only allow values that exist in options
+                              const validOptions = newOptions
+                                .map((option) => option.trim())
+                                .filter(
+                                  (option) =>
+                                    option !== '' &&
+                                    values.options?.includes(option),
+                                );
+                              setFieldValue('defaultValue', validOptions);
+                            }}
                             onSuggestionClick={(suggestion) => {
-                              setFieldValue('defaultValue', [
-                                ...(values.defaultValue as string[]),
-                                suggestion,
-                              ]);
+                              // Only add if it's a valid option
+                              if (values.options?.includes(suggestion)) {
+                                setFieldValue('defaultValue', [
+                                  ...(values.defaultValue as string[]),
+                                  suggestion,
+                                ]);
+                              }
                             }}
                             suggestions={
                               values.options
@@ -817,7 +846,7 @@ export const AddSpecificCustomFieldForm = memo(
                                 .map((option) => option.trim())
                                 .filter((option) => option !== '') || []
                             }
-                            showAddButton
+                            placeholder="Select from options below..."
                           />
                         ) : (
                           <Select
@@ -855,6 +884,11 @@ export const AddSpecificCustomFieldForm = memo(
                               ))}
                             </SelectContent>
                           </Select>
+                        )}
+                        {errors.defaultValue && touched.defaultValue && (
+                          <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                            <span>⚠️</span> {String(errors.defaultValue)}
+                          </div>
                         )}
                       </div>
                     ) : (

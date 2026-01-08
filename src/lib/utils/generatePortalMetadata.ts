@@ -128,12 +128,6 @@ export function generatePortalMetadata(
     ],
     // Add color scheme metadata
     colorScheme: 'light dark',
-    // Add viewport metadata (if not already set in layout)
-    viewport: {
-      width: 'device-width',
-      initialScale: 1,
-      maximumScale: 5,
-    },
     // Merge any additional metadata
     ...options.additionalMetadata,
   };

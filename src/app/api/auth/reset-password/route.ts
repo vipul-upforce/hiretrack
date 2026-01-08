@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import connectToDatabase, { CandidateAccount, User } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import { passwordResetRateLimiter } from '@/lib/rateLimiter';
+import { passwordResetTokenRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 
 async function handleResetPassword(req: NextRequest) {
@@ -90,8 +90,7 @@ async function handleResetPassword(req: NextRequest) {
 
 // Export with rate limiting for POST
 export async function POST(req: Request) {
-  // SECURITY FIX: Apply rate limiting to prevent password reset abuse
-  return passwordResetRateLimiter(req as NextRequest, handleResetPassword);
+  return passwordResetTokenRateLimiter(req as NextRequest, handleResetPassword);
 }
 
 export async function PUT(req: NextRequest) {
