@@ -22,7 +22,7 @@ export function ChecklistResponseViewer({
       : Object.entries(checklistForm.responses || {});
 
   const visibleResponses = responsesArray.filter(
-    ([, resp]: [string, { visibleInHistory: string[] }]) =>
+    ([, resp]: [string, { visibleInHistory?: string[] }]) =>
       Array.isArray(resp?.visibleInHistory)
         ? resp.visibleInHistory.includes(role)
         : true,
@@ -119,12 +119,3 @@ export function ChecklistResponseViewer({
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

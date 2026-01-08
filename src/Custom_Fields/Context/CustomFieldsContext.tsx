@@ -135,20 +135,19 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       customFields,
     ]);
 
-    // Subscribe to SSE custom fields updates - only when logged in and not on auth pages
+    // Subscribe to SSE custom fields updates - for all logged-in non-candidate users
     useEffect(() => {
       const isAuthPage =
         pathname?.includes('/auth/login') || pathname?.includes('/auth/');
+
+      // Subscribe for all logged-in users who are not candidates
+      // This ensures interviewers and other roles receive real-time updates
       const shouldSubscribe =
         !isAuthPage &&
         user &&
         user.id &&
         user.role !== '' &&
-        user.role !== 'candidate' &&
-        (pathname?.includes('jobs-board') ||
-          pathname?.includes('jobs') ||
-          pathname?.includes('settings') ||
-          pathname?.endsWith('dashboard'));
+        user.role !== 'candidate';
 
       if (!shouldSubscribe) {
         return () => {
@@ -163,20 +162,14 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       const unsubscribe = sseManager.subscribe({
         id: subscriberIdRef.current,
         onCustomFieldsUpdate: (updatedCustomFields: CustomFields) => {
-          // Only update if data is actually different
-          setCustomFields((prev) => {
-            const prevFieldsString = JSON.stringify(prev);
-            const sseFieldsString = JSON.stringify(updatedCustomFields);
-            if (prevFieldsString !== sseFieldsString) {
-              isUpdatingFromSSERef.current = true;
-              // Reset flag after update
-              setTimeout(() => {
-                isUpdatingFromSSERef.current = false;
-              }, 100);
-              return updatedCustomFields;
-            }
-            return prev;
-          });
+          // Always update the state with SSE data to ensure real-time reactivity
+          // React will handle whether a re-render is actually needed
+          isUpdatingFromSSERef.current = true;
+          setCustomFields(updatedCustomFields);
+          // Reset flag after React has processed the update
+          setTimeout(() => {
+            isUpdatingFromSSERef.current = false;
+          }, 100);
         },
       });
 

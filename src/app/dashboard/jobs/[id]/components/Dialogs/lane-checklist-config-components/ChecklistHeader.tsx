@@ -1,15 +1,15 @@
 import React from 'react';
 import { CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Save, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface ChecklistHeaderProps {
-  onSaveAsTemplate: () => void;
+  // onSaveAsTemplate: () => void;
   onRemoveChecklist: () => void;
 }
 
 export function ChecklistHeader({
-  onSaveAsTemplate,
+  // onSaveAsTemplate,
   onRemoveChecklist,
 }: ChecklistHeaderProps) {
   return (
@@ -17,10 +17,10 @@ export function ChecklistHeader({
       <div className="flex items-center justify-between">
         <CardTitle className="text-base">Checklist Configuration</CardTitle>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={onSaveAsTemplate}>
+          {/* <Button variant="outline" size="sm" onClick={onSaveAsTemplate}>
             <Save className="mr-2 h-4 w-4" />
             Save as Template
-          </Button>
+          </Button> */}
           <Button variant="outline" size="sm" onClick={onRemoveChecklist}>
             <X className="mr-2 h-4 w-4" />
             Remove Checklist
