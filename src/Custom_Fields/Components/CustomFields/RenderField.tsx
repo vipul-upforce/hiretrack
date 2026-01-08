@@ -22,7 +22,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { wierdFileNamePattern } from '@/lib/constants';
 import { toast } from 'sonner';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { getValidatedValue } from '@/Custom_Fields/utils/fieldValueValidator';
 
 interface FileData {
@@ -136,7 +136,7 @@ export function RenderField({
   const validatedValue = getValidatedValue(rawValue, type);
 
   // If value was invalid and got reset, update the form value
-  React.useEffect(() => {
+  useEffect(() => {
     if (rawValue !== validatedValue && validatedValue === '') {
       setFieldValue(`customFields.${label}`, validatedValue);
     }
@@ -417,7 +417,6 @@ export function RenderField({
             {...commonProps}
             value={fileValue}
             onFilesChange={async (files: File[] | FileData[]) => {
-
               const sanitizedFiles = sanitizeFiles(files);
               if (sanitizedFiles.length > 30) {
                 toast.error('Limit Exceeded', {

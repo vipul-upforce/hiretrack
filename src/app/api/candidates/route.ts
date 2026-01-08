@@ -13,11 +13,11 @@ import {
 import mongoose from 'mongoose';
 import { AuthenticatedUser, getAuthenticatedUser } from '@/app/actions/auth';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
-import { NotificationService } from '@/lib/notifications/notificationService';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
-import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
-import { logger } from '@/lib/logger/logger.server';
+// import { NotificationService } from '@/lib/notifications/notificationService';
+// import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
+// import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
+// import { NotificationType } from '@/lib/services/emailDecisionEngine';
+// import { logger } from '@/lib/logger/logger.server';
 
 export interface Attachment {
   id: string;
@@ -278,82 +278,82 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const job = await Job?.findById(data.jobId);
+      // const job = await Job?.findById(data.jobId);
 
-      // Trigger notification for candidate application
-      if (job) {
-        try {
-          await NotificationService.notifyCandidateApplied({
-            organizationId,
-            candidateId: candidate._id.toString(),
-            candidateName: candidateData.name,
-            candidateEmail: candidateData.email,
-            jobId:
-              typeof data.jobId === 'string' && data.jobId !== ''
-                ? data.jobId
-                : data.jobId._id.toString() || null,
-            jobTitle: job.title || 'Unknown Job',
-            triggerUserId: userData.id,
-            triggerUserName: userData.name,
-          });
+      // // Trigger notification for candidate application
+      // if (job) {
+      //   try {
+      //     await NotificationService.notifyCandidateApplied({
+      //       organizationId,
+      //       candidateId: candidate._id.toString(),
+      //       candidateName: candidateData.name,
+      //       candidateEmail: candidateData.email,
+      //       jobId:
+      //         typeof data.jobId === 'string' && data.jobId !== ''
+      //           ? data.jobId
+      //           : data.jobId._id.toString() || null,
+      //       jobTitle: job.title || 'Unknown Job',
+      //       triggerUserId: userData.id,
+      //       triggerUserName: userData.name,
+      //     });
 
-          // Send email notification to admin and HR users
-          try {
-            const { emailContent, emailSubject } = await getMappedEmailTemplate(
-              'job-application-hr',
-              {
-                jobTitle: job.title || 'Unknown Job',
-                candidateName: candidateData.name,
-                candidateEmail: candidateData.email,
-                candidatePhone: candidateData.contact || 'N/A',
-                applicationDate: new Date().toLocaleDateString(),
-                dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${data.jobId}?candidateId=${candidate._id}`,
-              },
-              organizationId,
-            );
+      //     // Send email notification to admin and HR users
+      //     try {
+      //       const { emailContent, emailSubject } = await getMappedEmailTemplate(
+      //         'job-application-hr',
+      //         {
+      //           jobTitle: job.title || 'Unknown Job',
+      //           candidateName: candidateData.name,
+      //           candidateEmail: candidateData.email,
+      //           candidatePhone: candidateData.contact || 'N/A',
+      //           applicationDate: new Date().toLocaleDateString(),
+      //           dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${data.jobId}?candidateId=${candidate._id}`,
+      //         },
+      //         organizationId,
+      //       );
 
-            // Get admin and HR user IDs for email notification
-            const adminHrIds = await NotificationService.getUsersByRole(
-              organizationId,
-              ['admin', 'hr'],
-            );
-            const filteredAdminHrIds = adminHrIds.filter(
-              (id: string) => id !== userData.id,
-            );
+      //       // Get admin and HR user IDs for email notification
+      //       const adminHrIds = await NotificationService.getUsersByRole(
+      //         organizationId,
+      //         ['admin', 'hr'],
+      //       );
+      //       const filteredAdminHrIds = adminHrIds.filter(
+      //         (id: string) => id !== userData.id,
+      //       );
 
-            if (filteredAdminHrIds.length > 0) {
-              await sendSmartNotification(
-                organizationId,
-                NotificationType.NEW_APPLICATIONS,
-                {
-                  triggererUserId: userData.id,
-                  triggererEmail: userData.email,
-                  triggererName: userData.name,
-                  jobId:
-                    typeof data.jobId === 'string'
-                      ? data.jobId
-                      : data.jobId._id.toString(),
-                  candidateId: candidate._id.toString(),
-                  eventType: 'job_application',
-                  templateUsed: 'job-application-hr',
-                },
-                {
-                  subject: emailSubject,
-                  html: emailContent,
-                },
-                filteredAdminHrIds,
-              );
-            }
-          } catch (emailError) {
-            logger.error({ emailError }, 'Failed to send email notification:');
-          }
-        } catch (notificationError) {
-          logger.error(
-            { notificationError },
-            'Failed to send email notification:',
-          );
-        }
-      }
+      //       if (filteredAdminHrIds.length > 0) {
+      //         await sendSmartNotification(
+      //           organizationId,
+      //           NotificationType.NEW_APPLICATIONS,
+      //           {
+      //             triggererUserId: userData.id,
+      //             triggererEmail: userData.email,
+      //             triggererName: userData.name,
+      //             jobId:
+      //               typeof data.jobId === 'string'
+      //                 ? data.jobId
+      //                 : data.jobId._id.toString(),
+      //             candidateId: candidate._id.toString(),
+      //             eventType: 'job_application',
+      //             templateUsed: 'job-application-hr',
+      //           },
+      //           {
+      //             subject: emailSubject,
+      //             html: emailContent,
+      //           },
+      //           filteredAdminHrIds,
+      //         );
+      //       }
+      //     } catch (emailError) {
+      //       logger.error({ emailError }, 'Failed to send email notification:');
+      //     }
+      //   } catch (notificationError) {
+      //     logger.error(
+      //       { notificationError },
+      //       'Failed to send email notification:',
+      //     );
+      //   }
+      // }
 
       broadcastCandidateUpdate({
         ...sanitizedCandidate,

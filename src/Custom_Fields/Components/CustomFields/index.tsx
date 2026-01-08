@@ -142,20 +142,20 @@ function CustomFields({
                 <span className="text-sm capitalize text-red-500">*</span>
               )}
             </Label>
-            {RenderField({
-              getFieldProps,
-              label: field.label,
-              setFieldValue,
-              setFieldTouched,
-              type: field.type,
-              values: values as FormValues,
-              options: field.options
+            <RenderField
+              getFieldProps={getFieldProps}
+              label={field.label}
+              setFieldValue={setFieldValue}
+              setFieldTouched={setFieldTouched}
+              type={field.type}
+              values={values as FormValues}
+              options={field.options
                 ?.map((opt) => opt.trim())
-                .filter((opt) => opt !== ''),
-              setFieldError,
-              fieldHook: { fieldProps, fieldMeta },
-              isEditMode,
-            })}
+                .filter((opt) => opt !== '')}
+              setFieldError={setFieldError}
+              fieldHook={{ fieldProps, fieldMeta }}
+              isEditMode={isEditMode}
+            />
             {fieldMeta.touched && fieldMeta.error && (
               <div
                 className="text-xs capitalize text-red-500"

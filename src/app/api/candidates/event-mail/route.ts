@@ -14,6 +14,7 @@ import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmail
 // import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { logger } from '@/lib/logger/logger.server';
+import { NotificationService } from '@/lib/notifications';
 
 export async function POST(req: NextRequest) {
   try {
@@ -83,6 +84,11 @@ export async function POST(req: NextRequest) {
         'title' in candidateData.jobId &&
         (candidateData.jobId?.title as string)) ||
       'Not specified';
+    const jobIdString =
+      (typeof candidateData.jobId === 'object' &&
+        '_id' in candidateData.jobId &&
+        (candidateData.jobId?._id as string)) ||
+      'Not specified';
     const candidateName = name;
     const status = 'Applied';
 
@@ -115,6 +121,19 @@ export async function POST(req: NextRequest) {
       false,
       organizationId,
     )) as string;
+    await NotificationService.notifyCandidateApplied({
+      organizationId: organizationId.toString(),
+      candidateId: candidateId.toString(),
+      candidateName: candidateData.name,
+      candidateEmail: candidateData.email,
+      jobId: jobIdString.toString(),
+      jobTitle: jobName || 'Unknown Job',
+      triggerUserId: candidateId,
+      triggerUserName: candidateData.name,
+
+      // No trigger user for guest applications
+    });
+    // Inside the try block where sendSmartNotificationEmail is called
 
     const {
       emailContent: candidateEmailContent,

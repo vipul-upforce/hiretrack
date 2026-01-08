@@ -393,8 +393,6 @@ export default function CalendarPage() {
           candidate={
             {
               ...selectedEvent.extendedProps.candidate,
-              email: '',
-              contact: '',
               jobId: {
                 _id:
                   typeof selectedEvent.extendedProps.candidate.jobId ===
@@ -402,10 +400,28 @@ export default function CalendarPage() {
                     ? selectedEvent.extendedProps.candidate.jobId
                     : selectedEvent.extendedProps.candidate.jobId?._id || '',
                 title:
-                  selectedEvent.extendedProps.candidate.jobDetails?.title || '',
+                  selectedEvent.extendedProps.candidate.jobDetails?.title ||
+                  (typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'object' &&
+                  selectedEvent.extendedProps.candidate.jobId !== null
+                    ? selectedEvent.extendedProps.candidate.jobId.title
+                    : '') ||
+                  '',
                 description:
                   selectedEvent.extendedProps.candidate.jobDetails
-                    ?.description || '',
+                    ?.description ||
+                  (typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'object' &&
+                  selectedEvent.extendedProps.candidate.jobId !== null
+                    ? selectedEvent.extendedProps.candidate.jobId.description
+                    : '') ||
+                  '',
+                skills:
+                  typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'object' &&
+                  selectedEvent.extendedProps.candidate.jobId !== null
+                    ? selectedEvent.extendedProps.candidate.jobId.skills || []
+                    : [],
               },
               status: selectedEvent.extendedProps.candidate.status || 'applied',
               assignment: {
@@ -429,6 +445,7 @@ export default function CalendarPage() {
           isOpen={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
           onUpdate={handleUpdate}
+          refetchAssignment={handleUpdate}
           hideEditButton
         />
       )}

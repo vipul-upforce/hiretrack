@@ -37,7 +37,6 @@ export async function getPortalMetadata() {
     let defaultOrg = null;
     let settings = null;
     if (orgId) {
-      console.log("orgId found", orgId);
       settings = await Settings.findOne(
         { organizationId: orgId },
         {
@@ -45,7 +44,6 @@ export async function getPortalMetadata() {
         },
       ).lean();
     } else {
-      console.log("orgId not found, getting default organization");
       defaultOrg = await Organization.findOne({}).sort({ createdAt: 1 }).select('_id name').lean();
       if (defaultOrg) {
         settings = await Settings.findOne(

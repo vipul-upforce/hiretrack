@@ -175,7 +175,21 @@ export const useClientSideChecklistValidation = (
           };
         }
 
-        // Both allow movement - return the one that requires checklist (if any)
+        // Both allow movement - check if both require checklists
+        if (
+          outgoingValidation.requiresChecklist &&
+          incomingValidation.requiresChecklist
+        ) {
+          // Return outgoing first, with incoming as pending
+          return {
+            validation: outgoingValidation,
+            type: 'outgoing' as const,
+            pendingValidation: incomingValidation,
+            pendingType: 'incoming' as const,
+          };
+        }
+
+        // Only outgoing requires checklist
         if (outgoingValidation.requiresChecklist) {
           return {
             validation: outgoingValidation,
@@ -183,6 +197,7 @@ export const useClientSideChecklistValidation = (
           };
         }
 
+        // Only incoming requires checklist
         if (incomingValidation.requiresChecklist) {
           return {
             validation: incomingValidation,
