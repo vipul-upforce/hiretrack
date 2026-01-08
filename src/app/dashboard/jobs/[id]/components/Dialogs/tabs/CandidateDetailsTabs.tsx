@@ -25,7 +25,6 @@ interface CandidateDetailsTabsProps {
   isEvaluatingFor: string | null;
   onReEvaluate: () => void;
   // History tab props
-  candidateHistory: ICandidateHistory[] | undefined;
   isHistoryLoading: boolean;
   isRemarkSubmitting: boolean;
   validTimeLineItems: ICandidateHistory[];
@@ -52,7 +51,6 @@ export function CandidateDetailsTabs({
   isReEvaluating,
   isEvaluatingFor,
   onReEvaluate,
-  candidateHistory,
   isHistoryLoading,
   isRemarkSubmitting,
   validTimeLineItems,
@@ -113,7 +111,6 @@ export function CandidateDetailsTabs({
         <TabsContent value="history" className="mt-0 space-y-6">
           <CandidateHistoryTab
             candidate={candidate}
-            candidateHistory={candidateHistory}
             isHistoryLoading={isHistoryLoading}
             isRemarkSubmitting={isRemarkSubmitting}
             validTimeLineItems={validTimeLineItems}
