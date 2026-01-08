@@ -60,7 +60,14 @@ export async function handleInterviewAssignment(req: NextRequest) {
     status,
     immediate = false,
     id,
+    eventId,
   } = data;
+  // Skip email notification if eventId is present
+  if (eventId) {
+    return NextResponse.json({
+      message: 'Email notification skipped. Event ID present.',
+    });
+  }
 
   const candidateDetailsPage = `${req.headers.get('origin')}/candidate/${id}`;
   const dashboardLink = `${req.headers.get('origin')}/dashboard`;

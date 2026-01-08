@@ -49,6 +49,7 @@ export interface IScheduledMailRequest {
   candidateName: string;
   status: string;
   jobId?: string;
+  eventId?: string;
   // remark?: string;
   // rating?: number;
 }
