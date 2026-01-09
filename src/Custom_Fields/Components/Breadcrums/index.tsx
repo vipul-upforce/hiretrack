@@ -8,7 +8,7 @@ const Breadcrumbs = memo(({ breadcrumbs }: BreadcrumbsProps) => (
   <div className="mb-6">
     <nav className="flex items-center space-x-2 text-sm">
       {breadcrumbs.map((breadcrumb, index) => (
-        <React.Fragment key={breadcrumb.toString()}>
+        <React.Fragment key={breadcrumb.key}>
           {index === 0 && (
             <div className="flex items-center space-x-2">
               <div
