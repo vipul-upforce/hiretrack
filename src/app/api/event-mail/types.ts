@@ -49,6 +49,7 @@ export interface InterviewAssignmentRequest {
   status?: string;
   immediate?: boolean;
   id: string;
+  eventId?: string;
 }
 
 /**

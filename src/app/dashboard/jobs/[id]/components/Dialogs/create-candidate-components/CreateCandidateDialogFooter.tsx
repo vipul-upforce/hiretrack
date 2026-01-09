@@ -51,7 +51,7 @@ export function CreateCandidateDialogFooter({
         style={{ backgroundColor: primaryColor }}
       >
         {(() => {
-          if (isSubmitting) return 'Saving...';
+          if (isSubmitting || isCreating || isLoading) return 'Saving...';
           if (userRole === 'candidate' || userRole === '') return 'Apply';
           return 'Add Candidate';
         })()}

@@ -1,11 +1,11 @@
 import { IAIProviders, ISettings } from '@/lib/models/settings';
-import { decryptProviderKeys } from '@/lib/encryption';
+import { decryptProviderKeys, ProvidersConfig } from '@/lib/encryption';
 
 /**
  * Handle backward compatibility for legacy Gemini-only installations
  */
 export function handleLegacyGeminiSettings(
-  settingsData: Pick<ISettings, 'aiProviders' | 'gemini'>
+  settingsData: Pick<ISettings, 'aiProviders' | 'gemini'>,
 ): IAIProviders | null {
   if (settingsData.aiProviders) {
     return settingsData.aiProviders;
@@ -47,7 +47,7 @@ export function handleLegacyGeminiSettings(
  */
 export function getDecryptedAIProviders(
   settingsData: Pick<ISettings, 'aiProviders' | 'gemini'>,
-  organizationId: string
+  organizationId: string,
 ): IAIProviders {
   const aiProviders = handleLegacyGeminiSettings(settingsData);
 
@@ -56,15 +56,20 @@ export function getDecryptedAIProviders(
   }
 
   // Decrypt API keys from database
-  return decryptProviderKeys(aiProviders, organizationId) as IAIProviders;
+  return decryptProviderKeys(
+    aiProviders as ProvidersConfig,
+    organizationId,
+  ) as IAIProviders;
 }
 
 /**
  * Get API key for the active provider in a type-safe way
  */
-export function getActiveProviderApiKey(aiProviders: IAIProviders): string | undefined {
+export function getActiveProviderApiKey(
+  aiProviders: IAIProviders,
+): string | undefined {
   const { activeProvider } = aiProviders;
-  
+
   switch (activeProvider) {
     case 'gemini':
       return aiProviders.gemini?.api_key;
@@ -78,4 +83,3 @@ export function getActiveProviderApiKey(aiProviders: IAIProviders): string | und
       return undefined;
   }
 }
-
