@@ -42,17 +42,17 @@ export const useSetInitialStore = () => {
       // We merge the initial state with the stored state to ensure
       // backward compatibility, since new fields might be added to
       // the initial state over time.
-      const mergedResumeState = deepMerge(
+      const mergedResumeState = deepMerge<Resume>(
         initialResumeState,
         state.resume,
-      ) as Resume;
+      );
       dispatch(setResume(mergedResumeState));
     }
     if (state.settings) {
-      const mergedSettingsState = deepMerge(
+      const mergedSettingsState = deepMerge<Settings>(
         initialSettings,
         state.settings,
-      ) as Settings;
+      );
       dispatch(setSettings(mergedSettingsState));
     }
   }, []);

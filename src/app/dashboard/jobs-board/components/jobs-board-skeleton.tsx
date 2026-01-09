@@ -14,6 +14,6 @@ export default function JobsSkeleton() {
     if (mode) setView(mode);
   }, []);
 
-  if (view === 'table') return <TableSkeleton />;
+  if (view === 'table') return <TableSkeleton customFieldColumns={[]} />;
   return <LoaderSkeleton />;
 }

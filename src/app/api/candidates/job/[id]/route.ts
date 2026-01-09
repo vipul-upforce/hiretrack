@@ -14,14 +14,21 @@ export async function GET(
         { status: 404 },
       );
     }
-    const candidates = await Candidate.find({ jobId: id }).sort({
-      'tracking.createdAt': -1,
-    }).lean().exec();
+    const candidates = await Candidate.find({ jobId: id })
+      .sort({
+        'tracking.createdAt': -1,
+      })
+      .lean()
+      .exec();
 
     return NextResponse.json(candidates);
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 }

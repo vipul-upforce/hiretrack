@@ -23,7 +23,7 @@ function getFromEmail(
   } | null,
 ): string {
   if (!settings?.mailConfig) {
-    return undefined;
+    return '';
   }
   return (
     settings.mailConfig.resend_from ||

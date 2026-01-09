@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import { decryptProviderKeys, encryptProviderKeys } from '@/lib/encryption';
+import {
+  decryptProviderKeys,
+  encryptProviderKeys,
+  ProvidersConfig,
+} from '@/lib/encryption';
 import { getDefaultModel } from '@/lib/ai-providers/models-config';
 
 export async function GET(req: NextRequest) {
@@ -21,7 +25,10 @@ export async function GET(req: NextRequest) {
     }
     const settings = await Settings.findOne({
       organizationId,
-    }).select('aiProviders gemini').lean().exec();
+    })
+      .select('aiProviders gemini')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
@@ -31,7 +38,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Return AI providers configuration, with backward compatibility for old gemini field
-    let aiProviders = settings.aiProviders || {
+    const aiProviders = settings.aiProviders || {
       activeProvider: 'gemini',
       gemini: {
         api_key: settings.gemini?.gemini_key || '',
@@ -56,9 +63,19 @@ export async function GET(req: NextRequest) {
     };
 
     // Decrypt API keys before sending to client
-    aiProviders = decryptProviderKeys(aiProviders, userData.organizationId);
+    const decryptedProviders = decryptProviderKeys(
+      aiProviders as ProvidersConfig,
+      userData.organizationId,
+    );
 
-    return NextResponse.json({ aiProviders });
+    if (!decryptedProviders) {
+      return NextResponse.json(
+        { error: 'Failed to decrypt AI providers configuration' },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ aiProviders: decryptedProviders });
   } catch (error) {
     return NextResponse.json(
       {
@@ -89,7 +106,10 @@ export async function PUT(req: NextRequest) {
     }
 
     // Encrypt API keys before storing in database
-    const encryptedProviders = encryptProviderKeys(aiProvidersSetting, userData.organizationId);
+    const encryptedProviders = encryptProviderKeys(
+      aiProvidersSetting,
+      userData.organizationId,
+    );
 
     const updatedUser = await Settings.findOneAndUpdate(
       {

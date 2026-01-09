@@ -15,6 +15,7 @@ import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmail
 import { NotificationType } from '@/lib/services/emailDecisionEngine';
 import { logger } from '@/lib/logger/logger.server';
 import { NotificationService } from '@/lib/notifications';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,10 +23,7 @@ export async function POST(req: NextRequest) {
     const { candidateId } = await req.json();
 
     // // Get user information from token
-    // const user = await getAuthenticatedUser(req);
-    // const senderEmail = user?.email;
-    // const senderUserId = user?.id;
-    // const senderName = user?.name;
+    const user = await getAuthenticatedUser(req);
     if (!Candidate || !User) {
       throw new Error('Database not connected');
     }
@@ -128,8 +126,8 @@ export async function POST(req: NextRequest) {
       candidateEmail: candidateData.email,
       jobId: jobIdString.toString(),
       jobTitle: jobName || 'Unknown Job',
-      triggerUserId: candidateId,
-      triggerUserName: candidateData.name,
+      triggerUserId: user ? user.id : candidateId,
+      triggerUserName: user ? user.name : candidateData.name,
 
       // No trigger user for guest applications
     });

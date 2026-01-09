@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Candidate, History } from '@/lib/mongodb';
-import { auth } from '@/lib/auth';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { logger } from '@/lib/logger/logger.server';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 interface BulkArchiveRequest {
   candidateIds: string[];
@@ -24,9 +24,15 @@ export async function POST(
     await connectToDatabase();
     const body = (await req.json()) as BulkArchiveRequest;
     const { candidateIds, action } = body;
-    const userCookie = await auth(req);
     const dateTime = new Date().toISOString();
 
+    const [user] = await Promise.all([
+      getAuthenticatedUser(req),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     if (!Candidate || !History) {
       return NextResponse.json(
         { error: 'Models not available' },
@@ -99,7 +105,7 @@ export async function POST(
           title: targetIsDeleted ? 'Archived' : 'Unarchived',
           previousInterviewer: null,
           currentInterviewer: null,
-          assignmentBy: userCookie?.user.id,
+          assignmentBy: user?.id || '',
         };
 
         // Update history
