@@ -1,14 +1,42 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { EventClickArg } from '@fullcalendar/core';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from 'react';
+import { EventClickArg, DatesSetArg } from '@fullcalendar/core';
 import { DateClickArg } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
 import { useFetchAssignedCandidatesQuery } from '@/lib/features/candidate/candidateApi';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useSSE } from '@/hooks/useSSE';
 import { Candidate } from '@/types/candidate';
-import { CandidateAssignment, CustomCalendarEvent, Job } from '../page';
+import { CandidateAssignment, CustomCalendarEvent } from '../page';
+import {
+  CalendarViewType,
+  ApiViewType,
+  calculateDateRange,
+  mapFCViewTypeToApiView,
+  mapViewToApiView,
+} from '../utils/dateRangeUtils';
+import {
+  calculateTodayCount,
+  calculateThisWeekCount,
+  calculateUpcomingCount,
+  getTodayMidnight,
+} from '../utils/calendarStats';
+import {
+  transformAssignmentToEvent,
+  createSSETransformer,
+} from '../utils/eventTransformers';
+import {
+  hasDataInCacheForPrimaryMonth,
+  isWithinDateRange as isWithinDateRangeUtil,
+  filterAssignmentsByDateRange,
+} from '../utils/cacheUtils';
 
 export interface UseCalendarReturn {
   // State
@@ -23,19 +51,22 @@ export interface UseCalendarReturn {
   setFilterText: (text: string) => void;
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
-  calendarView: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek';
-  setCalendarView: (
-    view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek',
-  ) => void;
+  calendarView: CalendarViewType;
+  setCalendarView: (view: CalendarViewType) => void;
 
   // Data
   isLoading: boolean;
+  isInitialLoading: boolean;
   refetch: () => void;
   user: { id?: string; role?: string } | null;
   role: string;
 
+  // Date range
+  dateRange: { startDate: Date; endDate: Date };
+
   // Computed
   events: CustomCalendarEvent[];
+  qnEventDates: Date[]; // Quick nav event dates for mini calendar dots
   todayCount: number;
   thisWeekCount: number;
   totalInterviews: number;
@@ -47,25 +78,19 @@ export interface UseCalendarReturn {
   handleSidebarEventClick: (event: CustomCalendarEvent) => void;
   handleDateClick: (arg: DateClickArg) => void;
   handleDateSelect: (date: Date) => void;
-  handleViewChange: (
-    view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek',
-  ) => void;
+  handleViewChange: (view: CalendarViewType) => void;
+  handleDatesSet: (arg: DatesSetArg) => void;
   handleUpdate: () => Promise<void>;
 }
 
 /**
  * Custom hook for managing calendar functionality.
  * Handles all state, API calls, filtering, event creation, and business logic for the calendar.
+ * Implements date-based pagination for efficient loading of calendar events.
  *
  * @returns All state, handlers, and computed values needed by the calendar component
  */
 export function useCalendar(): UseCalendarReturn {
-  const {
-    data: assignments,
-    isLoading,
-    refetch,
-  } = useFetchAssignedCandidatesQuery();
-
   const [selectedEvent, setSelectedEvent] = useState<
     CustomCalendarEvent | Candidate | null
   >(null);
@@ -74,84 +99,131 @@ export function useCalendar(): UseCalendarReturn {
   const [searchText, setSearchText] = useState('');
   const [filterText, setFilterText] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<
-    'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek'
-  >('dayGridMonth');
+  const [calendarView, setCalendarView] =
+    useState<CalendarViewType>('dayGridMonth');
+
+  // ===== FULL CALENDAR STATE =====
+  // Query params for Full calendar (controlled by FC navigation)
+  const [fcQueryParams, setFcQueryParams] = useState<{
+    startDate: string;
+    endDate: string;
+    view: ApiViewType;
+    filterValue: string | undefined;
+  }>(() => {
+    const initialRange = calculateDateRange('dayGridMonth', new Date());
+    return {
+      startDate: initialRange.startDate.toISOString(),
+      endDate: initialRange.endDate.toISOString(),
+      view: 'month',
+      filterValue: undefined,
+    };
+  });
+
+  // ===== QUICK NAV STATE =====
+  // Query params for Quick nav (controlled by mini calendar navigation)
+  const [qnQueryParams, setQnQueryParams] = useState<{
+    startDate: string;
+    endDate: string;
+    view: ApiViewType;
+    filterValue: string | undefined;
+  }>(() => {
+    const initialRange = calculateDateRange('dayGridMonth', new Date());
+    return {
+      startDate: initialRange.startDate.toISOString(),
+      endDate: initialRange.endDate.toISOString(),
+      view: 'month',
+      filterValue: undefined,
+    };
+  });
+
+  // Track the current date range for SSE filtering (uses FC's range)
+  const [dateRange, setDateRange] = useState(() =>
+    calculateDateRange('dayGridMonth', new Date()),
+  );
 
   const { user } = useAppSelector((state) => state.auth);
   const role = user?.role || '';
 
-  /**
-   * Transform a Candidate update into a CustomCalendarEvent
-   * This is used by useSSE to update calendar events when candidates change
-   */
-  const transformCandidateToEvent = useMemo(
+  // Track if we've ever loaded data (for initial skeleton only)
+  const hasLoadedOnce = useRef(false);
+
+  // ===== SHARED DATA CACHE =====
+  // Stores all assignments ever fetched, keyed by ID
+  // Both Full calendar and Quick nav contribute to and read from this cache
+  const [sharedCache, setSharedCache] = useState<
+    Map<string, CandidateAssignment>
+  >(new Map());
+
+  // Check if we have data in cache for the primary month (ignores overflow days)
+  const hasDataInCache = useMemo(
     () =>
-      (
-        updatedCandidate: Candidate,
-        currentSelected: CustomCalendarEvent | Candidate | null,
-      ): CustomCalendarEvent | null => {
-        // If currentSelected is not a CustomCalendarEvent, we can't transform
-        if (!currentSelected || !('extendedProps' in currentSelected)) {
-          return null;
-        }
-
-        const currentEvent = currentSelected as CustomCalendarEvent;
-        const startTime = updatedCandidate?.assignment?.time
-          ? new Date(updatedCandidate.assignment.time)
-          : currentEvent?.start || new Date();
-        const endTime = updatedCandidate?.assignment?.time
-          ? new Date(new Date(startTime).setHours(startTime.getHours() + 1))
-          : currentEvent?.end || new Date();
-
-        const hasGoogleMeet = updatedCandidate?.assignment?.googleMeet;
-        const baseTitle =
-          updatedCandidate?.jobId && typeof updatedCandidate.jobId === 'object'
-            ? updatedCandidate.jobId.title
-            : 'Unknown';
-        const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
-
-        return {
-          ...currentEvent,
-          id: updatedCandidate._id,
-          title,
-          start: startTime,
-          end: endTime,
-          startStr: startTime.toISOString(),
-          endStr: endTime.toISOString(),
-          extendedProps: {
-            ...currentEvent.extendedProps,
-            candidate: {
-              ...updatedCandidate,
-              jobId:
-                typeof updatedCandidate.jobId === 'string'
-                  ? updatedCandidate.jobId
-                  : (updatedCandidate.jobId as Job)?._id,
-              jobDetails:
-                typeof updatedCandidate.jobId === 'string'
-                  ? undefined
-                  : {
-                      title: (updatedCandidate.jobId as Job)?.title,
-                      description: (updatedCandidate.jobId as Job)?.description,
-                    },
-            },
-            interviewer:
-              typeof updatedCandidate?.assignment?.interviewerId === 'string'
-                ? {
-                    _id: updatedCandidate.assignment.interviewerId,
-                    name: 'Unknown',
-                    email: 'Unknown',
-                  }
-                : updatedCandidate?.assignment?.interviewerId || {
-                    _id: '',
-                    name: 'Unknown',
-                    email: 'Unknown',
-                  },
-          },
-        };
-      },
-    [],
+      hasDataInCacheForPrimaryMonth(
+        fcQueryParams.startDate,
+        fcQueryParams.endDate,
+        sharedCache,
+      ),
+    [sharedCache, fcQueryParams.startDate, fcQueryParams.endDate],
   );
+  // ===== FULL CALENDAR QUERY =====
+  const {
+    currentData: fcAssignments,
+    isLoading: fcIsLoading,
+    isFetching: fcIsFetching,
+    refetch: fcRefetch,
+  } = useFetchAssignedCandidatesQuery(fcQueryParams, {
+    skip: hasDataInCache,
+  });
+
+  // ===== QUICK NAV QUERY =====
+  // Quick nav loads silently - we don't use its loading states
+  const { currentData: qnAssignments } =
+    useFetchAssignedCandidatesQuery(qnQueryParams);
+
+  // Merge Full calendar data into shared cache
+  useEffect(() => {
+    if (fcAssignments && fcAssignments[0]?.data) {
+      setSharedCache((prev) => {
+        const newCache = new Map(prev);
+        fcAssignments[0].data.forEach((a: CandidateAssignment) => {
+          newCache.set(a._id, a);
+        });
+        return newCache;
+      });
+    }
+  }, [fcAssignments]);
+
+  // Merge Quick nav data into shared cache
+  useEffect(() => {
+    if (qnAssignments && qnAssignments[0]?.data) {
+      setSharedCache((prev) => {
+        const newCache = new Map(prev);
+        qnAssignments[0].data.forEach((a: CandidateAssignment) => {
+          newCache.set(a._id, a);
+        });
+        return newCache;
+      });
+    }
+  }, [qnAssignments]);
+
+  // Mark as loaded once we have data
+  useEffect(() => {
+    if (fcAssignments && !hasLoadedOnce.current) {
+      hasLoadedOnce.current = true;
+    }
+  }, [fcAssignments]);
+
+  // Initial loading = loading and never had data before
+  const isInitialLoading = fcIsLoading && !hasLoadedOnce.current;
+
+  /**
+   * Refetch Full calendar data (bypasses cache)
+   */
+  const refetch = useCallback(() => {
+    fcRefetch();
+  }, [fcRefetch]);
+
+  // SSE transformer - creates function to transform candidate updates to calendar events
+  const transformCandidateToEvent = useMemo(() => createSSETransformer(), []);
 
   const { candidates: sseCandidates } = useSSE<CustomCalendarEvent>(
     setSelectedEvent,
@@ -163,11 +235,6 @@ export function useCalendar(): UseCalendarReturn {
     transformCandidateToEvent,
   );
 
-  // Refetch on mount
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
   // Clear selected event when dialog closes
   useEffect(() => {
     if (!isDetailsOpen) {
@@ -176,11 +243,64 @@ export function useCalendar(): UseCalendarReturn {
   }, [isDetailsOpen]);
 
   /**
-   * Applies the search filter
+   * Applies the search filter - updates both query params to trigger RTK Query
    */
-  const applyFilter = () => {
-    setFilterText(searchText.trim());
-  };
+  const applyFilter = useCallback(() => {
+    const newFilter = searchText.trim();
+    setFilterText(newFilter);
+    // Update both Full calendar and Quick nav filters
+    setFcQueryParams((prev) => ({
+      ...prev,
+      filterValue: newFilter || undefined,
+    }));
+    setQnQueryParams((prev) => ({
+      ...prev,
+      filterValue: newFilter || undefined,
+    }));
+  }, [searchText]);
+
+  /**
+   * Handles FullCalendar's datesSet event - called when calendar navigates
+   * This is triggered on: initial render, prev/next navigation, view change, today button
+   * Only updates Full calendar's query params (not Quick nav's)
+   */
+  const handleDatesSet = useCallback((arg: DatesSetArg) => {
+    const newStartDate = arg.start.toISOString();
+    const newEndDate = arg.end.toISOString();
+    const apiView = mapFCViewTypeToApiView(arg.view.type);
+    const newView = arg.view.type as CalendarViewType;
+
+    // Only update Full calendar's params (prevents unnecessary fetches)
+    setFcQueryParams((prev) => {
+      if (
+        prev.startDate === newStartDate &&
+        prev.endDate === newEndDate &&
+        prev.view === apiView
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        view: apiView,
+      };
+    });
+
+    // Update local state for SSE filtering and UI
+    setDateRange({ startDate: arg.start, endDate: arg.end });
+    setSelectedDate(arg.start);
+    setCalendarView(newView);
+  }, []);
+
+  /**
+   * Check if an assignment's time falls within the current date range
+   */
+  const isWithinDateRange = useCallback(
+    (assignmentTime: string | undefined): boolean =>
+      isWithinDateRangeUtil(assignmentTime, dateRange),
+    [dateRange],
+  );
 
   // Create SSE updates map
   const sseUpdatesMap = useMemo(
@@ -188,10 +308,20 @@ export function useCalendar(): UseCalendarReturn {
     [sseCandidates],
   );
 
-  // Merge SSE updates with assignments
+  // Get Full calendar assignments from shared cache, filtered by FC's date range
+  const fcCachedAssignments = useMemo(
+    () =>
+      filterAssignmentsByDateRange(
+        Array.from(sharedCache.values()),
+        fcQueryParams.startDate,
+        fcQueryParams.endDate,
+      ),
+    [sharedCache, fcQueryParams.startDate, fcQueryParams.endDate],
+  );
+
+  // Merge SSE updates with Full calendar assignments (from shared cache)
   const mergedAssignments = useMemo(() => {
-    const baseAssignments =
-      assignments && assignments[0]?.data ? [...assignments[0].data] : [];
+    const baseAssignments = [...fcCachedAssignments];
 
     const merged = baseAssignments
       .map((assignment: CandidateAssignment) => {
@@ -200,6 +330,12 @@ export function useCalendar(): UseCalendarReturn {
 
         // If there's an SSE update, use it (it's fresher data)
         if (sseUpdate) {
+          // Check if the updated time is within current date range
+          if (!isWithinDateRange(sseUpdate.assignment?.time)) {
+            // Assignment time moved outside date range, remove it
+            return null;
+          }
+
           // For interviewers, verify they're still assigned
           if (role === 'interviewer') {
             const interviewerId =
@@ -229,6 +365,11 @@ export function useCalendar(): UseCalendarReturn {
       );
 
       if (!existsInDb) {
+        // Only add if within current date range
+        if (!isWithinDateRange(sseCandidate.assignment?.time)) {
+          return;
+        }
+
         // For interviewers, only add if assigned to them
         if (role === 'interviewer') {
           const interviewerId =
@@ -246,7 +387,14 @@ export function useCalendar(): UseCalendarReturn {
     });
 
     return merged;
-  }, [assignments, sseUpdatesMap, sseCandidates, role, user]);
+  }, [
+    fcCachedAssignments,
+    sseUpdatesMap,
+    sseCandidates,
+    role,
+    user,
+    isWithinDateRange,
+  ]);
 
   // Filter assignments based on role and search text
   const filteredAssignments = useMemo(
@@ -299,92 +447,28 @@ export function useCalendar(): UseCalendarReturn {
     [mergedAssignments, role, user, filterText],
   );
 
-  // Event color palette for better visual distinction
-  const eventColors = [
-    { bg: '#3b82f6', border: '#2563eb' }, // blue
-    { bg: '#10b981', border: '#059669' }, // green
-    { bg: '#8b5cf6', border: '#7c3aed' }, // purple
-    { bg: '#14b8a6', border: '#0d9488' }, // teal
-    { bg: '#f59e0b', border: '#d97706' }, // amber
-    { bg: '#ec4899', border: '#db2777' }, // pink
-  ];
-
-  // Create calendar events from filtered assignments
+  // Create calendar events from filtered assignments using extracted transformer
+  // These are for the Full calendar
   const events: CustomCalendarEvent[] = useMemo(
     () =>
       filteredAssignments
-        ?.map((candidate: CandidateAssignment, index: number) => {
-          // Only include valid time values, omitting events without a real date
-          const rawTime = candidate?.assignment?.time;
-          if (!rawTime) {
-            // If no time, do not produce an event object
-            return undefined;
-          }
-          const startTime = new Date(rawTime);
-          // End time = start + 1 sec
-          const endTime = new Date(startTime.getTime() + 1000);
-
-          const hasGoogleMeet = candidate?.assignment?.googleMeet;
-          const baseTitle =
-            candidate?.jobId && typeof candidate.jobId === 'object'
-              ? candidate.jobId.title
-              : 'Unknown';
-          const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
-
-          // Colors
-          const colorIndex = index % eventColors.length;
-          const color = hasGoogleMeet
-            ? { bg: '#3b82f6', border: '#1d4ed8' }
-            : eventColors[colorIndex];
-
-          // Make sure types match: start/end must be Date|undefined (not null)
-          return {
-            id: candidate._id,
-            title,
-            start: startTime as Date,
-            startStr: startTime.toISOString(),
-            end:
-              calendarView === 'dayGridMonth' ? (endTime as Date) : startTime,
-            endStr:
-              calendarView === 'dayGridMonth' ? endTime.toISOString() : '',
-            allDay: false,
-            display: 'auto',
-            backgroundColor: color.bg,
-            borderColor: color.border,
-            url: '',
-            extendedProps: {
-              candidate: {
-                ...candidate,
-                jobId:
-                  typeof candidate?.jobId === 'string'
-                    ? candidate?.jobId
-                    : (candidate?.jobId as Job)?._id,
-                jobDetails:
-                  typeof candidate?.jobId === 'string'
-                    ? undefined
-                    : {
-                        title: (candidate?.jobId as Job)?.title,
-                        description: (candidate?.jobId as Job)?.description,
-                      },
-              },
-              interviewer:
-                typeof candidate?.assignment?.interviewerId === 'string'
-                  ? {
-                      _id: candidate?.assignment?.interviewerId,
-                      name: 'Unknown',
-                      email: 'Unknown',
-                    }
-                  : candidate?.assignment?.interviewerId || {
-                      _id: '',
-                      name: 'Unknown',
-                      email: 'Unknown',
-                    },
-            },
-          } as CustomCalendarEvent;
-        })
+        ?.map((candidate, index) =>
+          transformAssignmentToEvent(candidate, index, calendarView),
+        )
         .filter((event): event is CustomCalendarEvent => !!event) || [],
     [filteredAssignments, calendarView],
   );
+
+  // Create event dates for Quick nav (mini calendar dots)
+  // Uses shared cache filtered by Quick nav's date range
+  const qnEventDates: Date[] = useMemo(() => {
+    const filtered = filterAssignmentsByDateRange(
+      Array.from(sharedCache.values()),
+      qnQueryParams.startDate,
+      qnQueryParams.endDate,
+    );
+    return filtered.map((a) => new Date(a.assignment!.time!));
+  }, [sharedCache, qnQueryParams.startDate, qnQueryParams.endDate]);
 
   /**
    * Handles event click from calendar
@@ -449,91 +533,99 @@ export function useCalendar(): UseCalendarReturn {
   };
 
   /**
-   * Handles date selection
+   * Handles date selection from mini calendar (clicking a day or navigating months)
+   * Only updates Quick nav's query params (not Full calendar's)
+   * Full calendar keeps its own data intact
    */
-  const handleDateSelect = (date: Date) => {
+  const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
-    calendarRef.current?.getApi().gotoDate(date);
-  };
 
-  /**
-   * Handles view change
-   */
-  const handleViewChange = (
-    view: 'dayGridMonth' | 'timeGridWeek' | 'timeGridDay' | 'listWeek',
-  ) => {
-    setCalendarView(view);
-    calendarRef.current?.getApi().changeView(view);
-  };
+    // Calculate the date range for the selected date (always use month view for mini calendar)
+    const newRange = calculateDateRange('dayGridMonth', date);
 
-  /**
-   * Handles candidate update
-   */
-  const handleUpdate = async () => {
-    const { data } = await refetch();
-    const updatedCandidate = data?.[0]?.data?.find(
-      (c) =>
-        c._id ===
-        (selectedEvent as CustomCalendarEvent).extendedProps.candidate._id,
-    );
-    if (updatedCandidate && selectedEvent) {
-      setSelectedEvent({
-        ...selectedEvent,
-        extendedProps: {
-          ...(selectedEvent as CustomCalendarEvent).extendedProps,
-          candidate: updatedCandidate,
-        },
-      });
-    }
-  };
+    // Only update Quick nav's params (Full calendar keeps its data)
+    setQnQueryParams((prev) => {
+      const newStartDate = newRange.startDate.toISOString();
+      const newEndDate = newRange.endDate.toISOString();
 
-  // Calculate stats
-  const today = useMemo(() => {
-    const date = new Date();
-    date.setHours(0, 0, 0, 0);
-    return date;
+      if (prev.startDate === newStartDate && prev.endDate === newEndDate) {
+        return prev;
+      }
+      return {
+        ...prev,
+        startDate: newStartDate,
+        endDate: newEndDate,
+        view: 'month',
+      };
+    });
+    // NOTE: We do NOT update dateRange or Full calendar's params
   }, []);
 
-  const todayCount = useMemo(
-    () =>
-      events.filter((event) => {
-        if (!event.start) return false;
-        const eventDate = new Date(event.start);
-        eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() === today.getTime();
-      }).length,
-    [events, today],
+  /**
+   * Handles view change (Month/Week/Day/Agenda buttons)
+   * Only updates Full calendar's query params
+   */
+  const handleViewChange = useCallback(
+    (viewType: CalendarViewType) => {
+      setCalendarView(viewType);
+
+      // Calculate new date range based on the new view type and current selected date
+      const newRange = calculateDateRange(viewType, selectedDate);
+      const apiView = mapViewToApiView(viewType);
+
+      // Only update Full calendar's params
+      setFcQueryParams((prev) => {
+        const newStartDate = newRange.startDate.toISOString();
+        const newEndDate = newRange.endDate.toISOString();
+
+        if (
+          prev.startDate === newStartDate &&
+          prev.endDate === newEndDate &&
+          prev.view === apiView
+        ) {
+          return prev;
+        }
+        return {
+          ...prev,
+          startDate: newStartDate,
+          endDate: newEndDate,
+          view: apiView,
+        };
+      });
+
+      // Update local date range for SSE filtering
+      setDateRange(newRange);
+
+      // Sync the main FullCalendar view (if available)
+      const calApi = calendarRef.current?.getApi();
+      if (calApi) {
+        calApi.changeView(viewType);
+      }
+    },
+    [selectedDate],
   );
 
-  const thisWeekCount = useMemo(() => {
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay());
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
+  // Refetches data
+  const handleUpdate = useCallback(async () => {
+    refetch();
+  }, [refetch]);
 
-    return events.filter((event) => {
-      if (!event.start) return false;
-      const eventDate = new Date(event.start);
-      eventDate.setHours(0, 0, 0, 0);
-      return eventDate >= startOfWeek && eventDate <= endOfWeek;
-    }).length;
-  }, [events, today]);
-
-  const totalInterviews = events.length;
-
+  // Stats calculations using extracted helpers
+  const today = useMemo(() => getTodayMidnight(), []);
+  const todayCount = useMemo(
+    () => calculateTodayCount(events, today),
+    [events, today],
+  );
+  const thisWeekCount = useMemo(
+    () => calculateThisWeekCount(events, today),
+    [events, today],
+  );
   const upcomingCount = useMemo(
-    () =>
-      events.filter((event) => {
-        if (!event.start) return false;
-        const eventDate = new Date(event.start);
-        eventDate.setHours(0, 0, 0, 0);
-        return eventDate.getTime() > today.getTime();
-      }).length,
+    () => calculateUpcomingCount(events, today),
     [events, today],
   );
 
   return {
-    // State
     selectedEvent,
     setSelectedEvent,
     isDetailsOpen,
@@ -547,27 +639,26 @@ export function useCalendar(): UseCalendarReturn {
     setSelectedDate,
     calendarView,
     setCalendarView,
-
-    // Data
-    isLoading,
+    // Loading state only from Full calendar (Quick nav loads silently)
+    isLoading: fcIsLoading || fcIsFetching,
+    isInitialLoading,
     refetch,
     user,
     role,
-
-    // Computed
+    dateRange,
     events,
+    qnEventDates, // Quick nav event dates for mini calendar dots
     todayCount,
     thisWeekCount,
-    totalInterviews,
+    totalInterviews: events.length,
     upcomingCount,
-
-    // Handlers
     applyFilter,
     handleEventClick,
     handleSidebarEventClick,
     handleDateClick,
     handleDateSelect,
     handleViewChange,
+    handleDatesSet,
     handleUpdate,
   };
 }
