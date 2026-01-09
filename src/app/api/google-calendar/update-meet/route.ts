@@ -6,6 +6,8 @@ import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
+import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { ICandidate } from '@/lib/models/candidate';
 
 interface UpdateMeetRequest {
   candidateId?: string;
@@ -437,6 +439,85 @@ export async function DELETE(req: NextRequest) {
           triggerUserId: userData?.id || '',
           triggerUserName: userData?.name || 'System',
         });
+
+        // Fetch full candidate with populated fields for real-time broadcast
+        try {
+          const fullCandidate = (await Candidate?.findById(candidateId)
+            .populate([
+              {
+                path: 'assignment.interviewerId',
+                select: '_id name email',
+              },
+              {
+                path: 'remarks.userId',
+                select: '_id name email',
+              },
+              {
+                path: 'followUp.userId',
+                select: '_id name email',
+              },
+              {
+                path: 'jobId',
+                select: '_id title description',
+              },
+            ])
+            .lean()) as ICandidate | null;
+
+          if (fullCandidate) {
+            // Extract jobId for history lookup
+            let jobIdForHistory: string | undefined = jobId;
+            if (fullCandidate.jobId) {
+              if (
+                typeof fullCandidate.jobId === 'object' &&
+                '_id' in fullCandidate.jobId
+              ) {
+                jobIdForHistory = fullCandidate.jobId._id.toString();
+              } else {
+                jobIdForHistory = fullCandidate.jobId.toString();
+              }
+            }
+
+            // Fetch and populate candidate history
+            // Use candidateId directly since we fetched by that ID
+            const candidateHistory = await History?.findOne({
+              candidateId,
+              jobId: jobIdForHistory,
+            });
+
+            const candidateHistoryPopulated = candidateHistory
+              ? await candidateHistory.populate([
+                  {
+                    path: 'history.assignmentBy',
+                    select: '_id name email',
+                  },
+                  {
+                    path: 'history.currentInterviewer',
+                    select: '_id name email',
+                  },
+                  {
+                    path: 'history.previousInterviewer',
+                    select: '_id name email',
+                  },
+                  {
+                    path: 'history.note.userId',
+                    select: '_id name email',
+                  },
+                ])
+              : null;
+
+            // Broadcast candidate update for real-time UI updates
+            broadcastCandidateUpdate({
+              ...fullCandidate,
+              history: candidateHistoryPopulated?.history,
+            });
+          }
+        } catch (broadcastError) {
+          logger.error(
+            { error: broadcastError, url: req.url },
+            'Failed to broadcast candidate update after meet cancellation',
+          );
+          // Don't fail the API call if broadcast fails
+        }
       }
     }
 
