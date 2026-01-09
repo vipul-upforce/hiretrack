@@ -1,28 +1,20 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { ClipboardCheck, Plus, BookOpen } from 'lucide-react';
-import { IChecklistTemplate } from '@/lib/models/ChecklistTemplate';
+
+import { ClipboardCheck, Plus } from 'lucide-react';
 
 interface ChecklistEmptyStateProps {
   activeTab: 'incoming' | 'outgoing';
-  filteredTemplates: IChecklistTemplate[];
-  onLoadFromTemplate: (templateId: string) => void;
+  // filteredTemplates: IChecklistTemplate[];
+  // onLoadFromTemplate: (templateId: string) => void;
   onCreateNew: () => void;
 }
 
 export function ChecklistEmptyState({
   activeTab,
-  filteredTemplates,
-  onLoadFromTemplate,
+  // filteredTemplates,
+  // onLoadFromTemplate,
   onCreateNew,
 }: ChecklistEmptyStateProps) {
   return (
@@ -40,7 +32,7 @@ export function ChecklistEmptyState({
 
           <div className="space-y-4">
             {/* Template Selection - Only show when templates exist */}
-            {filteredTemplates.length > 0 && (
+            {/* {filteredTemplates.length > 0 && (
               <>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">
@@ -76,13 +68,14 @@ export function ChecklistEmptyState({
                   <div className="flex-1 border-t border-muted" />
                 </div>
               </>
-            )}
+            )} */}
 
             <Button onClick={onCreateNew}>
               <Plus className="mr-2 h-4 w-4" />
-              {filteredTemplates.length > 0
+              {/* {filteredTemplates.length > 0
                 ? 'Create New Checklist'
-                : 'Create Checklist'}
+                : 'Create Checklist'} */}
+              Create New Checklist
             </Button>
           </div>
         </div>

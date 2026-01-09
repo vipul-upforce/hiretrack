@@ -1,9 +1,11 @@
-import React from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import React, { useState } from 'react';
 
 /**
  * Hook to format checklist field values based on field type
  */
 export function useChecklistFormatting() {
+  const [showPassword, setShowPassword] = useState(false);
   const formatValue = (value: unknown, fieldType: string): React.ReactNode => {
     if (value === null || value === undefined) return 'N/A';
 
@@ -21,8 +23,31 @@ export function useChecklistFormatting() {
         return value ? String(value) : 'N/A';
       case 'datetime':
         return value ? new Date(String(value)).toLocaleString() : 'N/A';
-      case 'password':
-        return value ? '••••••••' : 'N/A';
+      case 'password': {
+        if (!value) return 'N/A';
+
+        const stringValue = String(value);
+        const hiddenPassword = '•'.repeat(stringValue.length);
+
+        return (
+          <span className="inline-flex items-center gap-2">
+            <span>{showPassword ? stringValue : hiddenPassword}</span>
+            <button
+              type="button"
+              className="text-xs text-blue-600 underline hover:no-underline dark:text-blue-400"
+              onClick={() => setShowPassword((prev) => !prev)}
+              tabIndex={0}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </button>
+          </span>
+        );
+      }
       case 'file':
         if (Array.isArray(value) && value.length > 0) {
           return (

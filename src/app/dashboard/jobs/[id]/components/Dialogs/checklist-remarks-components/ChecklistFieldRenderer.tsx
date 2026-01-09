@@ -251,6 +251,7 @@ export function ChecklistFieldRenderer({
           <Input
             id={fieldId}
             type="password"
+            autoComplete="new-password"
             placeholder={field.placeholder}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}

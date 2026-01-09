@@ -131,6 +131,7 @@ export function EditCandidateDialog({
 
     return () => {
       setSelectedFormId(null);
+      setStepName('FormList');
     };
   }, [customFields, setSelectedFormId, setStepName]);
   const convertFileToBase64 = (file: File): Promise<string> =>

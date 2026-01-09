@@ -24,8 +24,8 @@ import {
 import {
   useGetJobLaneConfigQuery,
   useUpdateLaneConfigMutation,
-  useGetChecklistTemplatesQuery,
-  useCreateChecklistTemplateMutation,
+  // useGetChecklistTemplatesQuery,
+  // useCreateChecklistTemplateMutation,
 } from '@/lib/features/checklist/checklistApi';
 import { IChecklistField, IChecklist } from '@/lib/models/JobLaneConfig';
 import { useAppSelector } from '@/lib/redux/hooks';
@@ -37,8 +37,8 @@ import { ChecklistFieldList } from './lane-checklist-config-components/Checklist
 import { ChecklistEmptyState } from './lane-checklist-config-components/ChecklistEmptyState';
 import { ChecklistHeader } from './lane-checklist-config-components/ChecklistHeader';
 import { ChecklistBasicInfo } from './lane-checklist-config-components/ChecklistBasicInfo';
-import { SaveTemplateDialog } from './lane-checklist-config-components/SaveTemplateDialog';
-import { TemplateSelector } from './lane-checklist-config-components/TemplateSelector';
+// import { SaveTemplateDialog } from './lane-checklist-config-components/SaveTemplateDialog';
+// import { TemplateSelector } from './lane-checklist-config-components/TemplateSelector';
 
 interface LaneChecklistConfigDialogProps {
   isOpen: boolean;
@@ -74,14 +74,14 @@ export function LaneChecklistConfigDialog({
   const [isEditMode, setIsEditMode] = useState(false);
 
   const { data: laneConfig, refetch } = useGetJobLaneConfigQuery(jobId);
-  const { data: templates } = useGetChecklistTemplatesQuery({ active: true });
+  // const { data: templates } = useGetChecklistTemplatesQuery({ active: true }); NOTE: CHECKLIST TEMPLATES ARE TEMPORARILY DISABLED
   const [updateLaneConfig] = useUpdateLaneConfigMutation();
-  const [createTemplate] = useCreateChecklistTemplateMutation();
+  // const [createTemplate] = useCreateChecklistTemplateMutation();
 
   // Template-related state
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [templateName, setTemplateName] = useState('');
-  const [templateDescription, setTemplateDescription] = useState('');
+  // const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  // const [templateName, setTemplateName] = useState('');
+  // const [templateDescription, setTemplateDescription] = useState('');
 
   const { user } = useAppSelector((state) => state.auth || {});
 
@@ -208,102 +208,102 @@ export function LaneChecklistConfigDialog({
     });
   };
 
-  const loadFromTemplate = (templateId: string) => {
-    const template = templates?.find(
-      (t) => t._id.toString() === templateId.toString(),
-    );
-    if (!template) return;
+  // const loadFromTemplate = (templateId: string) => {
+  //   const template = templates?.find(
+  //     (t) => t._id.toString() === templateId.toString(),
+  //   );
+  //   if (!template) return;
 
-    const checklistFromTemplate: IChecklist = {
-      id: `checklist_${Date.now()}`,
-      name: template.name,
-      description: template.description || '',
-      fields: template.fields.map((field) => ({
-        ...field,
-        id: `field_${Date.now()}_${field.id}`,
-      })),
-      isMandatory: false,
-      createdBy: null as unknown as Schema.Types.ObjectId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  //   const checklistFromTemplate: IChecklist = {
+  //     id: `checklist_${Date.now()}`,
+  //     name: template.name,
+  //     description: template.description || '',
+  //     fields: template.fields.map((field) => ({
+  //       ...field,
+  //       id: `field_${Date.now()}_${field.id}`,
+  //     })),
+  //     isMandatory: false,
+  //     createdBy: null as unknown as Schema.Types.ObjectId,
+  //     createdAt: new Date(),
+  //     updatedAt: new Date(),
+  //   };
 
-    setCurrentChecklist(checklistFromTemplate);
-    toast({
-      title: 'Template Loaded',
-      description: `Loaded template: ${template.name}`,
-    });
-  };
+  //   setCurrentChecklist(checklistFromTemplate);
+  //   toast({
+  //     title: 'Template Loaded',
+  //     description: `Loaded template: ${template.name}`,
+  //   });
+  // };
 
-  const saveAsTemplate = async () => {
-    const currentChecklist = getCurrentChecklist();
-    if (!currentChecklist || !templateName.trim()) return;
+  // const saveAsTemplate = async () => {
+  //   const currentChecklist = getCurrentChecklist();
+  //   if (!currentChecklist || !templateName.trim()) return;
 
-    try {
-      // Clean the fields by removing MongoDB-specific properties
-      const cleanFields = currentChecklist.fields.map((field) => {
-        const { _id, ...cleanField } = field as IChecklistField & {
-          _id: string;
-        };
-        return {
-          ...cleanField,
-          visibleInHistory: cleanField.visibleInHistory || [],
-          visibleOnForm: cleanField.visibleOnForm || [],
-        };
-      });
+  //   try {
+  //     // Clean the fields by removing MongoDB-specific properties
+  //     const cleanFields = currentChecklist.fields.map((field) => {
+  //       const { _id, ...cleanField } = field as IChecklistField & {
+  //         _id: string;
+  //       };
+  //       return {
+  //         ...cleanField,
+  //         visibleInHistory: cleanField.visibleInHistory || [],
+  //         visibleOnForm: cleanField.visibleOnForm || [],
+  //       };
+  //     });
 
-      await createTemplate({
-        name: templateName,
-        description: templateDescription,
-        type: activeTab,
-        fields: cleanFields,
-      }).unwrap();
+  //     await createTemplate({
+  //       name: templateName,
+  //       description: templateDescription,
+  //       type: activeTab,
+  //       fields: cleanFields,
+  //     }).unwrap();
 
-      toast({
-        title: 'Template Saved',
-        description: `Template "${templateName}" saved successfully`,
-      });
+  //     toast({
+  //       title: 'Template Saved',
+  //       description: `Template "${templateName}" saved successfully`,
+  //     });
 
-      setIsTemplateDialogOpen(false);
-      setTemplateName('');
-      setTemplateDescription('');
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          typeof error === 'object' &&
-          'data' in (error as Error & { data: { error: string } }) &&
-          (error as Error & { data: { error: string } }).data &&
-          typeof (error as Error & { data: { error: string } }).data ===
-            'object' &&
-          'error' in (error as Error & { data: { error: string } }).data
-            ? ((error as Error & { data: { error: string } }).data
-                .error as string)
-            : 'Failed to save template',
-        variant: 'destructive',
-      });
-    }
-  };
+  //     setIsTemplateDialogOpen(false);
+  //     setTemplateName('');
+  //     setTemplateDescription('');
+  //   } catch (error) {
+  //     toast({
+  //       title: 'Error',
+  //       description:
+  //         typeof error === 'object' &&
+  //         'data' in (error as Error & { data: { error: string } }) &&
+  //         (error as Error & { data: { error: string } }).data &&
+  //         typeof (error as Error & { data: { error: string } }).data ===
+  //           'object' &&
+  //         'error' in (error as Error & { data: { error: string } }).data
+  //           ? ((error as Error & { data: { error: string } }).data
+  //               .error as string)
+  //           : 'Failed to save template',
+  //       variant: 'destructive',
+  //     });
+  //   }
+  // };
 
-  const openSaveTemplateDialog = () => {
-    const currentChecklist = getCurrentChecklist();
-    if (!currentChecklist || currentChecklist.fields.length === 0) {
-      toast({
-        title: 'No Content',
-        description: 'Please add some fields before saving as template',
-        variant: 'destructive',
-      });
-      return;
-    }
+  // const openSaveTemplateDialog = () => {
+  //   const currentChecklist = getCurrentChecklist();
+  //   if (!currentChecklist || currentChecklist.fields.length === 0) {
+  //     toast({
+  //       title: 'No Content',
+  //       description: 'Please add some fields before saving as template',
+  //       variant: 'destructive',
+  //     });
+  //     // return;
+  //   }
 
-    setTemplateName(currentChecklist.name);
-    setTemplateDescription(currentChecklist.description || '');
-    setIsTemplateDialogOpen(true);
-  };
+  //   // setTemplateName(currentChecklist.name);
+  //   // setTemplateDescription(currentChecklist.description || '');
+  //   // setIsTemplateDialogOpen(true);
+  // };
 
   // Get filtered templates for current tab
-  const filteredTemplates =
-    templates?.filter((t) => t.type === activeTab) || [];
+  // const filteredTemplates =
+  //   templates?.filter((t) => t.type === activeTab) || [];
 
   const handleSave = async () => {
     if (isSubmitting) return;
@@ -406,26 +406,26 @@ export function LaneChecklistConfigDialog({
 
           <div className="space-y-6 px-6">
             {/* Template Selection */}
-            {currentChecklist && currentChecklist.fields.length > 0 && (
+            {/* {currentChecklist && currentChecklist.fields.length > 0 && (
               <TemplateSelector
                 filteredTemplates={filteredTemplates}
                 onLoadFromTemplate={loadFromTemplate}
                 currentChecklist={currentChecklist}
               />
-            )}
+            )} */}
 
             {/* Checklist Configuration */}
             {!currentChecklist ? (
               <ChecklistEmptyState
                 activeTab={activeTab}
-                filteredTemplates={filteredTemplates}
-                onLoadFromTemplate={loadFromTemplate}
+                // filteredTemplates={filteredTemplates}
+                // onLoadFromTemplate={loadFromTemplate}
                 onCreateNew={createNewChecklist}
               />
             ) : (
               <Card>
                 <ChecklistHeader
-                  onSaveAsTemplate={openSaveTemplateDialog}
+                  // onSaveAsTemplate={openSaveTemplateDialog}
                   onRemoveChecklist={() => setCurrentChecklist(undefined)}
                 />
                 <CardContent className="space-y-4">
@@ -503,7 +503,7 @@ export function LaneChecklistConfigDialog({
       />
 
       {/* Save Template Dialog */}
-      <SaveTemplateDialog
+      {/* <SaveTemplateDialog
         isOpen={isTemplateDialogOpen}
         onOpenChange={setIsTemplateDialogOpen}
         templateName={templateName}
@@ -512,7 +512,7 @@ export function LaneChecklistConfigDialog({
         setTemplateDescription={setTemplateDescription}
         onSave={saveAsTemplate}
         activeTab={activeTab}
-      />
+      /> */}
     </Dialog>
   );
 }
