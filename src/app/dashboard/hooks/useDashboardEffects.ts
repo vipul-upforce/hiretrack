@@ -90,26 +90,62 @@ export function useDashboardEffects({
     }
   }, [isActivitiesSidebarOpen]);
 
+  // Helper to extract interviewer ID from assignment (can be string or object)
+  const getInterviewerId = (
+    interviewerId: string | { _id: string } | null | undefined,
+  ): string | null => {
+    if (!interviewerId) return null;
+    if (typeof interviewerId === 'string') return interviewerId;
+    if (typeof interviewerId === 'object' && '_id' in interviewerId) {
+      return interviewerId._id;
+    }
+    return null;
+  };
+
+  // Helper to check if SSE candidate matches the current interviewer filter
+  const matchesInterviewerFilter = (sseCandidate: Candidate): boolean => {
+    // If no filter applied, all candidates match
+    if (!selectedAssignedTo) return true;
+
+    const interviewerId = getInterviewerId(
+      sseCandidate.assignment?.interviewerId,
+    );
+    return interviewerId === selectedAssignedTo;
+  };
+
   // Effect 4: Update assignments from SSE
   useEffect(() => {
     if (sseCandidates && sseCandidates.length > 0) {
       setAssignments((prevAssignments) => {
         let updatedAssignments: Candidate[] = [...prevAssignments];
+        let addedCount = 0;
+        let removedCount = 0;
+        let addedTodayCount = 0;
+        let removedTodayCount = 0;
+        let addedWeekCount = 0;
+        let removedWeekCount = 0;
 
         (sseCandidates as Candidate[]).forEach((sseCandidate) => {
           if (
             'assignment' in sseCandidate &&
             sseCandidate._id &&
             sseCandidate.assignment &&
-            'assignment.interviewerId' in sseCandidate.assignment
+            'interviewerId' in sseCandidate.assignment
           ) {
             const candidateId = sseCandidate._id;
             const existingIndex = updatedAssignments.findIndex(
               (assignment) => (assignment._id || assignment.id) === candidateId,
             );
 
+            // Check if this candidate matches the current interviewer filter
+            const matchesFilter = matchesInterviewerFilter(sseCandidate);
+
             if (!sseCandidate.assignment) {
               if (existingIndex !== -1) {
+                const removed = updatedAssignments[existingIndex];
+                removedCount += 1;
+                if (isToday(removed)) removedTodayCount += 1;
+                if (isThisWeek(removed)) removedWeekCount += 1;
                 updatedAssignments = updatedAssignments.filter(
                   (_, index) => index !== existingIndex,
                 );
@@ -152,13 +188,42 @@ export function useDashboardEffects({
               };
 
               if (existingIndex !== -1) {
-                updatedAssignments[existingIndex] = {
-                  ...updatedAssignments[existingIndex],
-                  ...assignment,
-                };
-              } else {
+                // Existing candidate - check if interviewer changed and no longer matches filter
+                if (!matchesFilter) {
+                  // Interviewer changed to someone outside filter, remove from list
+                  const removed = updatedAssignments[existingIndex];
+                  removedCount += 1;
+                  if (isToday(removed)) removedTodayCount += 1;
+                  if (isThisWeek(removed)) removedWeekCount += 1;
+                  updatedAssignments = updatedAssignments.filter(
+                    (_, index) => index !== existingIndex,
+                  );
+                } else {
+                  // Update existing - check if date filters changed
+                  const oldAssignment = updatedAssignments[existingIndex];
+                  const wasToday = isToday(oldAssignment);
+                  const wasThisWeek = isThisWeek(oldAssignment);
+                  const isNowToday = isToday(assignment);
+                  const isNowThisWeek = isThisWeek(assignment);
+
+                  if (wasToday && !isNowToday) removedTodayCount += 1;
+                  if (!wasToday && isNowToday) addedTodayCount += 1;
+                  if (wasThisWeek && !isNowThisWeek) removedWeekCount += 1;
+                  if (!wasThisWeek && isNowThisWeek) addedWeekCount += 1;
+
+                  updatedAssignments[existingIndex] = {
+                    ...updatedAssignments[existingIndex],
+                    ...assignment,
+                  };
+                }
+              } else if (matchesFilter) {
+                // New assignment that matches filter - add it
+                addedCount += 1;
+                if (isToday(assignment)) addedTodayCount += 1;
+                if (isThisWeek(assignment)) addedWeekCount += 1;
                 updatedAssignments.push(assignment);
               }
+              // If new assignment doesn't match filter, skip adding it
             }
           } else if (
             !sseCandidate.assignment ||
@@ -170,6 +235,10 @@ export function useDashboardEffects({
               (assignment) => (assignment._id || assignment.id) === candidateId,
             );
             if (existingIndex !== -1) {
+              const removed = updatedAssignments[existingIndex];
+              removedCount += 1;
+              if (isToday(removed)) removedTodayCount += 1;
+              if (isThisWeek(removed)) removedWeekCount += 1;
               updatedAssignments = updatedAssignments.filter(
                 (_, index) => index !== existingIndex,
               );
@@ -177,17 +246,28 @@ export function useDashboardEffects({
           }
         });
 
-        setAssignmentsCounts({
-          totalInterviews: updatedAssignments.length,
-          todaysInterviews: updatedAssignments.filter(isToday).length,
-          thisweeksInterviews: updatedAssignments.filter(isThisWeek).length,
-        });
+        // Incrementally adjust counts instead of replacing them
+        setAssignmentsCounts((prev) => ({
+          totalInterviews: Math.max(
+            0,
+            (prev.totalInterviews || 0) + addedCount - removedCount,
+          ),
+          todaysInterviews: Math.max(
+            0,
+            (prev.todaysInterviews || 0) + addedTodayCount - removedTodayCount,
+          ),
+          thisweeksInterviews: Math.max(
+            0,
+            (prev.thisweeksInterviews || 0) + addedWeekCount - removedWeekCount,
+          ),
+        }));
 
         return [...updatedAssignments];
       });
     }
   }, [
     sseCandidates,
+    selectedAssignedTo,
     filterText,
     setAssignments,
     isToday,
