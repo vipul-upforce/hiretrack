@@ -181,9 +181,9 @@ export async function POST(req: NextRequest) {
     // Create history record for candidate
     const candidateHistory = await EmailHistory?.create({
       organizationId: organizationObjectId,
-      sentBy: candidateId,
-      sentByEmail: candidateData.email,
-      sentByName: candidateData?.name,
+      sentBy: user ? user.id : candidateId,
+      sentByEmail: user ? user.email : candidateData.email,
+      sentByName: user ? user.name : candidateData.name,
       recipientType: 'Candidate',
       recipientId: candidateObjectId,
       recipientEmail: email,
@@ -207,9 +207,9 @@ export async function POST(req: NextRequest) {
       const hrUser = hrUsers.find((u) => u.email === hrEmail);
       return {
         organizationId: organizationObjectId,
-        sentBy: candidateId,
-        sentByEmail: candidateData.email,
-        sentByName: candidateData.name,
+        sentBy: user ? user.id : candidateId,
+        sentByEmail: user ? user.email : candidateData.email,
+        sentByName: user ? user.name : candidateData.name,
         recipientType: 'user',
         recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
         recipientEmail: hrEmail,
@@ -258,9 +258,9 @@ export async function POST(req: NextRequest) {
         organizationId,
         NotificationType.NEW_APPLICATIONS,
         {
-          triggererUserId: candidateId,
-          triggererEmail: candidateData?.email,
-          triggererName: candidateData?.name,
+          triggererUserId: user ? user.id : candidateId,
+          triggererEmail: user ? user.email : candidateData?.email,
+          triggererName: user ? user.name : candidateData?.name,
           jobId,
           candidateId,
           eventType: 'job_application',

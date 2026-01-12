@@ -1,9 +1,5 @@
 import mongoose from 'mongoose';
-import connectToDatabase, {
-  User,
-  Candidate,
-  CandidateAccount,
-} from '@/lib/mongodb';
+import connectToDatabase, { User, Candidate } from '@/lib/mongodb';
 import { sendMail as sendMailWithContext } from './emailService';
 import {
   validateObjectId,
@@ -34,7 +30,6 @@ export async function sendEventEmailWithHistory(
     };
   },
   triggererEmail?: string,
-  isCandidate: boolean = false,
 ): Promise<{ status: number; message: string }> {
   try {
     const mailConfig = await getMailConfig(organizationId);
@@ -62,25 +57,18 @@ export async function sendEventEmailWithHistory(
     const candidateRecipient =
       filteredEmails[0] && context.metadata?.eventType === 'job_application'
         ? await Candidate?.findOne({
-            email: filteredEmails[0],
+            _id: new mongoose.Types.ObjectId(context.metadata?.candidateId),
             organizationId: new mongoose.Types.ObjectId(organizationId),
           })
             .select('_id name email')
             .lean()
         : null;
-    const recipients = isCandidate
-      ? await CandidateAccount?.find({
-          email: filteredEmails[0],
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        })
-          .select('_id name email')
-          .lean()
-      : await User?.find({
-          email: filteredEmails[0],
-          organizationId: new mongoose.Types.ObjectId(organizationId),
-        })
-          .select('_id name email')
-          .lean();
+    const recipients = await User?.find({
+      email: { $in: filteredEmails },
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+    })
+      .select('_id name email')
+      .lean();
     const filteredRecipients = isAuthEmail
       ? recipients || []
       : await filterRecipientsByNotificationSettings(
