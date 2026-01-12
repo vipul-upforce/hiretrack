@@ -267,10 +267,14 @@ export async function handleFileAttachments(
         }
 
         if (realUrl && FileUrlMapping) {
-          await FileUrlMapping.create({
-            fileId: item.id || new mongoose.Types.ObjectId().toHexString(),
-            realUrl,
-          });
+          await FileUrlMapping.findOneAndUpdate(
+            { fileId: item.id || new mongoose.Types.ObjectId().toHexString() },
+            {
+              fileId: item.id || new mongoose.Types.ObjectId().toHexString(),
+              realUrl,
+            },
+            { upsert: true, new: true },
+          );
           const proxiedUrl = `/api/file/${item.id}`;
           processedItems.push({ ...item, url: proxiedUrl });
         } else {
@@ -353,7 +357,11 @@ export async function handleCustomFieldFiles(
             if (realUrl && FileUrlMapping) {
               const fileId =
                 file.id || new mongoose.Types.ObjectId().toHexString();
-              await FileUrlMapping.create({ fileId, realUrl });
+              await FileUrlMapping.findOneAndUpdate(
+                { fileId },
+                { fileId, realUrl },
+                { upsert: true, new: true },
+              );
               const proxiedUrl = `/api/file/${fileId}`;
               processedFiles.push({ ...file, base64: proxiedUrl, id: fileId });
             } else {
@@ -411,7 +419,11 @@ export async function handleSingleFile(
 
     if (realUrl && FileUrlMapping) {
       const fileId = file.id || new mongoose.Types.ObjectId().toHexString();
-      await FileUrlMapping.create({ fileId, realUrl });
+      await FileUrlMapping.findOneAndUpdate(
+        { fileId },
+        { fileId, realUrl },
+        { upsert: true, new: true },
+      );
       const proxiedUrl = `/api/file/${fileId}`;
       return { ...file, url: proxiedUrl, id: fileId };
     }
