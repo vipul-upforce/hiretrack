@@ -30,20 +30,28 @@ export function GeneralTab({ settings, setSettings, user }: GeneralTabProps) {
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
 
-    const isValid = /^[a-zA-Z0-9\s-]*$/.test(value);
+    const isRegexValid = /^[a-zA-Z0-9\s-]*$/.test(value);
 
-    if (isValid) {
-      setError(null);
-      setSettings((prev) => ({
-        ...prev,
-        portalName: value,
-      }));
-    } else {
-      // Updated error message to match the new validation
+    // Check Regex Validity
+    if (!isRegexValid) {
       setError(
         'Portal name can only contain letters, numbers, spaces, and hyphens.',
       );
+      return;
     }
+
+    // Check Character Limit (Max 30)
+    if (value.length > 30) {
+      setError('Portal name cannot exceed 30 characters.');
+      return;
+    }
+
+    // If valid, clear error and update state
+    setError(null);
+    setSettings((prev) => ({
+      ...prev,
+      portalName: value,
+    }));
   };
 
   const handleRestore = () => {
@@ -102,7 +110,7 @@ export function GeneralTab({ settings, setSettings, user }: GeneralTabProps) {
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Allowed characters: Letters, numbers, spaces, hyphens.
+              Max 30 chars. Allowed: Letters, numbers, spaces, hyphens.
             </p>
           )}
         </div>

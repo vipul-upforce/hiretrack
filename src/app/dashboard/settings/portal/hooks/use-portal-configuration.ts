@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { toast } from 'sonner';
 import { useGetOrganizationAllowanceQuery } from '@/lib/features/org/orgApi';
 import {
   ILocalUser,
@@ -15,6 +14,7 @@ import {
   useGetPortalConfigsQuery,
   useUpdatePortalConfigsMutation,
 } from '@/lib/features/settings';
+import { useToast } from '@/hooks/use-toast';
 import { PortalSettings, FileUpload } from '../types';
 
 export function usePortalConfiguration() {
@@ -29,6 +29,7 @@ export function usePortalConfiguration() {
   } = useGetPortalConfigsQuery(undefined);
 
   const { data: allowanceData } = useGetOrganizationAllowanceQuery();
+  const { toast } = useToast();
 
   const [updatePortalConfigs, { isLoading: saving }] =
     useUpdatePortalConfigsMutation();
@@ -91,7 +92,23 @@ export function usePortalConfiguration() {
 
   const handleFileUpload = async (file: File, type: keyof PortalSettings) => {
     if (type === 'portalFavicon' && file.size > 50000) {
-      toast.error('Favicon must be smaller than 50KB');
+      toast({
+        title: 'File too large.',
+        description: 'Favicon must be smaller than 50KB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (
+      (type === 'portalLogo' || type === 'portalLogoDark') &&
+      file.size > 2000000
+    ) {
+      toast({
+        title: 'File too large.',
+        description: 'Portal Logo must be smaller than 3MB',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -115,16 +132,31 @@ export function usePortalConfiguration() {
 
   const handleSave = async () => {
     if (!settings.portalName || settings.portalName.trim() === '') {
-      toast.error('Portal Name cannot be empty.');
+      toast({
+        title: 'Portal Name cannot be empty.',
+        description: 'Please Enter valid portal name',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (settings.portalName.length > 30) {
+      toast({
+        title: 'Portal Name too long.',
+        description: 'Portal name cannot exceed 30 characters.',
+        variant: 'destructive',
+      });
       return;
     }
 
     const nameRegex = /^[a-zA-Z0-9\s-]*$/;
 
     if (!nameRegex.test(settings.portalName)) {
-      toast.error(
-        'Portal name contains invalid characters. Only letters, numbers, spaces, and hyphens are allowed.',
-      );
+      toast({
+        title:
+          'Portal name contains invalid characters. Only letters, numbers, spaces, and hyphens are allowed.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -153,10 +185,18 @@ export function usePortalConfiguration() {
         dispatch(updateUserInState(updatedUser as ILocalUser));
       }
 
-      toast.success('Portal settings saved successfully');
+      toast({
+        title: 'Settings Saved',
+        description: 'Portal settings saved successfully',
+        variant: 'default',
+      });
     } catch (error: unknown) {
       const apiError = error as { data?: { message?: string } };
-      toast.error(apiError?.data?.message || 'Failed to save portal settings');
+      toast({
+        title: apiError?.data?.message || 'Failed to save portal settings',
+        description: 'Something went wrong while saving the settings',
+        variant: 'destructive',
+      });
     }
   };
 
