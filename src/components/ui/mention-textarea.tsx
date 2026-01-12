@@ -318,6 +318,11 @@ export function MentionTextarea({
         value={value}
         onChange={handleTextChange}
         onKeyDown={handleKeyDown}
+        onWheel={(e) => {
+          if (showMentionPicker) {
+            e.stopPropagation();
+          }
+        }}
         placeholder={placeholder}
         className={cn('resize-none', className)}
         disabled={disabled}
@@ -333,6 +338,9 @@ export function MentionTextarea({
           <div
             style={pickerStyle}
             className={cn('transition-all duration-200 ease-in-out')}
+            onWheel={(e) => {
+              e.stopPropagation();
+            }}
           >
             <MentionPicker
               ref={mentionPickerRef}

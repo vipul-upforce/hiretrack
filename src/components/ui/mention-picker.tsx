@@ -365,7 +365,25 @@ export const MentionPicker = forwardRef<
                 </span>
               </div>
             </div>
-            <div ref={scrollAreaRef} className="h-60 overflow-auto">
+            <div
+              ref={scrollAreaRef}
+              className="h-60 overflow-auto scroll-smooth focus:outline-none"
+              style={{
+                scrollbarWidth: 'thin',
+                WebkitOverflowScrolling: 'touch', // For iOS devices
+                scrollBehavior: 'smooth',
+              }}
+              tabIndex={-1}
+              onWheel={(e) => {
+                // Allow natural mouse wheel scrolling and prevent event bubbling
+                e.stopPropagation();
+              }}
+              onMouseEnter={() => {
+                if (scrollAreaRef.current) {
+                  scrollAreaRef.current.focus();
+                }
+              }}
+            >
               {renderContent()}
             </div>
           </div>
