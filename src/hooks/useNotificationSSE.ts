@@ -5,7 +5,7 @@ import { Candidate } from '@/types/candidate';
 import { CustomFields } from '@/Custom_Fields/Types/CustomField';
 import logger from '@/lib/logger';
 import { refreshAccessToken } from '@/lib/api/baseApi';
-import { useAppDispatch } from '@/lib/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
@@ -46,11 +46,12 @@ class SSEManager {
     this.dispatch = dispatch;
   }
 
-  subscribe(subscriber: Subscriber): () => void {
+  subscribe(subscriber: Subscriber, enabled: boolean = true): () => void {
     this.subscribers.set(subscriber.id, subscriber);
 
     // If no connection exists and we're not already connecting, create one
-    if (!this.eventSource && !this.isConnecting) {
+    // Only connect if enabled is true
+    if (enabled && !this.eventSource && !this.isConnecting) {
       this.connect();
     }
 
@@ -339,6 +340,8 @@ export function useNotificationSSE(
   initialTotalCount: number = 0,
 ) {
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth || {});
+  const isCandidate = user?.role === 'candidate';
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
   const [notification, setNotification] = useState<string | null>(null);
@@ -433,29 +436,39 @@ export function useNotificationSSE(
   }, [initialUnreadCount, initialTotalCount]);
 
   useEffect(() => {
+    // Prevent candidates from subscribing to notification SSE
+    if (isCandidate) {
+      setIsConnected(false);
+      return undefined;
+    }
+
     // Set dispatch for token refresh
     sseManager.setDispatch(dispatch);
 
-    // Subscribe to the shared SSE connection
-    const unsubscribe = sseManager.subscribe({
-      id: subscriberIdRef.current,
-      onNotificationCountUpdated: handleNotificationCountUpdated,
-      onNotification: handleNotification,
-      onNotifications: handleNotifications,
-      onCandidateUpdate: handleCandidateUpdate,
-      onMultipleCandidateUpdate: handleMultipleCandidateUpdate,
-      onLanesUpdate: handleLanesUpdate,
-      onClientsUpdate: handleClientsUpdate,
-      onConnectionChange: handleConnectionChange,
-      onTabCountUpdate: handleTabCountUpdate,
-      onCustomFieldsUpdate: handleCustomFieldsUpdate,
-    });
+    // Subscribe to the shared SSE connection (only if not a candidate)
+    const unsubscribe = sseManager.subscribe(
+      {
+        id: subscriberIdRef.current,
+        onNotificationCountUpdated: handleNotificationCountUpdated,
+        onNotification: handleNotification,
+        onNotifications: handleNotifications,
+        onCandidateUpdate: handleCandidateUpdate,
+        onMultipleCandidateUpdate: handleMultipleCandidateUpdate,
+        onLanesUpdate: handleLanesUpdate,
+        onClientsUpdate: handleClientsUpdate,
+        onConnectionChange: handleConnectionChange,
+        onTabCountUpdate: handleTabCountUpdate,
+        onCustomFieldsUpdate: handleCustomFieldsUpdate,
+      },
+      !isCandidate, // enabled = false for candidates
+    );
 
     // Set initial connection state
     setIsConnected(sseManager.getConnectionState());
     return unsubscribe;
   }, [
     dispatch,
+    isCandidate,
     handleNotificationCountUpdated,
     handleNotification,
     handleNotifications,

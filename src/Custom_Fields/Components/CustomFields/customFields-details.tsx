@@ -85,9 +85,22 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
       if (role === 'candidate' && fieldsPrivateFromCandidate.includes(key)) {
         return false;
       }
-      // Track fields that don't exist in metadata
+      // Track fields that don't exist in metadata (deleted fields)
+      const hasMetadata = Object.keys(cfMetaData).length > 0;
+      
       if (!allFieldKeys.has(key)) {
-        deletedFieldsSet.add(key);
+        // Field doesn't exist in metadata - it's deleted
+        if (hasMetadata) {
+          // Only mark as deleted if metadata is loaded
+          // For candidates: hide deleted fields completely
+          if (role === 'candidate') {
+            return false;
+          }
+          // For other roles: mark as deleted but still show them
+          deletedFieldsSet.add(key);
+        }
+        // If metadata not loaded, trust backend filtering and show the field
+        // Backend already filtered private fields, so this field should be visible
       }
       return true;
     }),
