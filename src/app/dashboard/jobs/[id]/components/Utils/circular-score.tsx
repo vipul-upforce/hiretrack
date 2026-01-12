@@ -272,7 +272,6 @@ export function GridCircularScores({
         category="Affordability"
         size="xs"
         showLabel
-        treatZeroAsEmpty
       />
     </div>
   );

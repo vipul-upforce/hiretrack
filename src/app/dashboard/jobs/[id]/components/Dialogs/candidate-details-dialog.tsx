@@ -457,7 +457,6 @@ export function CandidateDetailsDialog({
         isReEvaluating={isReEvaluating}
         isEvaluatingFor={isEvaluatingFor}
         onReEvaluate={() => setConfirmReEvaluateOpen(true)}
-        candidateHistory={timeLineItems}
         isHistoryLoading={isHistoryFetching}
         isRemarkSubmitting={isRemarkSubmitting}
         validTimeLineItems={validTimeLineItems}

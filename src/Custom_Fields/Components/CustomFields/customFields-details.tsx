@@ -202,7 +202,7 @@ function CustomFieldsData({ customFields: cfWOFormatting }: FormValues) {
                 {isDeletedField && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Ban className="mb-1 h-3 w-3 text-gray-600 dark:text-gray-400" />
+                      <Ban className="h-3 w-3 text-gray-600 dark:text-gray-400" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">

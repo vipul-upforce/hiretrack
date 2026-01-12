@@ -1,4 +1,4 @@
-import type { ResumeSkills } from '@/lib/redux/types';
+import type { ResumeSkills, FeaturedSkill } from '@/lib/redux/types';
 import type { ResumeSectionToLines } from '@/lib/parse-resume-from-pdf/types';
 import { deepClone } from '@/lib/deep-clone';
 import { initialFeaturedSkills } from '@/lib/redux/resumeSlice';
@@ -250,7 +250,7 @@ export const extractSkills = (sections: ResumeSectionToLines) => {
   // Remove duplicates while preserving order
   allSkills = [...new Set(allSkills)];
 
-  const featuredSkills = deepClone(initialFeaturedSkills);
+  const featuredSkills: FeaturedSkill[] = deepClone(initialFeaturedSkills);
   allSkills.slice(0, 9).forEach((skill, i) => {
     featuredSkills[i].skill = skill;
   });

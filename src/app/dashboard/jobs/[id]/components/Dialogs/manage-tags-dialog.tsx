@@ -329,7 +329,7 @@ function ManageTagsDialog({
                   className="min-w-[80px]"
                   variant="primary"
                 >
-                  {isUpdating ? <LoadingSpinner w={4} /> : 'Save'}
+                  {isUpdating ? <LoadingSpinner width={4} /> : 'Save'}
                 </Button>
               </div>
             </div>

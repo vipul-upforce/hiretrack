@@ -259,9 +259,7 @@ export function useCreateCandidateSubmission({
       }
 
       onSuccess();
-      if (user?.role === 'candidate' || user?.role === '') {
-        sendAppliedEventMail(candidateId, applicationEventMailMutation);
-      }
+      sendAppliedEventMail(candidateId, applicationEventMailMutation);
     } catch (error) {
       logger.error('Create candidate error:', error);
 

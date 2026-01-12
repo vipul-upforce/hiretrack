@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const [userData, multipleOrg] = await Promise.all([
+    const [userData, body] = await Promise.all([
       getAuthenticatedUser(req, 'admin'),
       req.json(),
       connectToDatabase(),
@@ -73,6 +73,15 @@ export async function PUT(req: NextRequest) {
         { status: 404 },
       );
     }
+
+    const multipleOrg = body?.multipleOrg;
+    if (typeof multipleOrg !== 'boolean') {
+      return NextResponse.json(
+        { error: 'multipleOrg must be a boolean value' },
+        { status: 400 },
+      );
+    }
+
     const totalOrgs = await Organization.countDocuments({}).lean().exec();
     if (totalOrgs > 1) {
       return NextResponse.json(

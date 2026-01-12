@@ -55,7 +55,7 @@ export function DateTimePicker({
   return (
     <DatePicker
       value={dateValue}
-      onChange={handleDateChange}
+      onChange={(date) => handleDateChange(date as Date | null)}
       placeholder={placeholder}
       showTimePicker
       showNowButton
