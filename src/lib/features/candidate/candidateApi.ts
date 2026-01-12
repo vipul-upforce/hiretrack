@@ -185,6 +185,7 @@ export const candidateApi = baseApi.injectEndpoints({
 
     /**
      * Fetches assigned candidates along with assignment statistics and interviewer mapping.
+     * Supports date range filtering for calendar views.
      *
      * The returned data structure:
      * {
@@ -193,6 +194,7 @@ export const candidateApi = baseApi.injectEndpoints({
      *   todaysInterviews: number;
      *   thisweeksInterviews: number;
      *   assignmentCount: InterviewerAssignmentCountEntry[];
+     *   dateRange?: { startDate: string; endDate: string; view: string };
      * }
      */
     fetchAssignedCandidates: builder.query<
@@ -203,11 +205,33 @@ export const candidateApi = baseApi.injectEndpoints({
           todaysInterviews: number;
           thisweeksInterviews: number;
           assignmentCount: InterviewerAssignmentCountEntry[];
+          dateRange?: {
+            startDate: string;
+            endDate: string;
+            view: string;
+          };
         },
       ],
-      void
+      {
+        startDate?: string;
+        endDate?: string;
+        view?: 'month' | 'week' | 'day' | 'agenda';
+        filterValue?: string;
+      } | void
     >({
-      query: () => '/candidates/assignments',
+      query: (params) => {
+        if (!params) return '/candidates/assignments';
+        const { startDate, endDate, view, filterValue } = params;
+        const searchParams = new URLSearchParams();
+        if (startDate) searchParams.set('startDate', startDate);
+        if (endDate) searchParams.set('endDate', endDate);
+        if (view) searchParams.set('view', view);
+        if (filterValue) searchParams.set('filterValue', filterValue);
+        const queryString = searchParams.toString();
+        return queryString
+          ? `/candidates/assignments?${queryString}`
+          : '/candidates/assignments';
+      },
       providesTags: ['Candidate'],
     }),
     filterCandidates: builder.query({
@@ -350,6 +374,7 @@ export const {
   useEvaluateCandidateMutation,
   useUpdateCandidateStatusMutation,
   useFetchAssignedCandidatesQuery,
+  useLazyFetchAssignedCandidatesQuery,
   useFetchAppliedApplicationQuery,
   useUpdateAppliedApplicationMutation,
   useUpdateCandidateHistoryMutation,

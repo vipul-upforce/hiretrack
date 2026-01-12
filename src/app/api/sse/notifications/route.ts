@@ -45,7 +45,7 @@ const getUserConnectionCount = (
 export async function GET(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
 
-  if (!user) {
+  if (!user || user.role === 'candidate') {
     // For SSE, we need to send an error event before closing
     // Create a stream that sends an auth_error event and then closes
     const stream = new ReadableStream({

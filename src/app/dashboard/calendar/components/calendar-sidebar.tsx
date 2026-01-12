@@ -11,6 +11,7 @@ import { formatTime } from '../../jobs/[id]/hooks/dateTimeFormatting';
 
 interface CalendarSidebarProps {
   events: CustomCalendarEvent[];
+  qnEventDates: Date[]; // Quick nav event dates for mini calendar
   selectedDate: Date;
   onDateSelect: (date: Date) => void;
   onEventClick: (event: CustomCalendarEvent) => void;
@@ -18,6 +19,7 @@ interface CalendarSidebarProps {
 
 export function CalendarSidebar({
   events,
+  qnEventDates,
   selectedDate,
   onDateSelect,
   onEventClick,
@@ -199,7 +201,7 @@ export function CalendarSidebar({
             <MiniCalendar
               selectedDate={selectedDate}
               onDateSelect={onDateSelect}
-              eventDates={eventDates}
+              eventDates={qnEventDates}
             />
           </CardContent>
         </Card>

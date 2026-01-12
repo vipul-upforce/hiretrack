@@ -110,7 +110,9 @@ export default function CalendarPage() {
     setSelectedDate,
     calendarView,
     isLoading,
+    isInitialLoading,
     events,
+    qnEventDates,
     todayCount,
     thisWeekCount,
     totalInterviews,
@@ -121,10 +123,12 @@ export default function CalendarPage() {
     handleDateClick,
     handleDateSelect,
     handleViewChange,
+    handleDatesSet,
     handleUpdate,
   } = useCalendar();
 
-  if (isLoading) {
+  // Only show skeleton on INITIAL load, never on navigation
+  if (isInitialLoading) {
     return <LoaderSkeletonCalender />;
   }
 
@@ -238,6 +242,7 @@ export default function CalendarPage() {
             <div className="min-h-0">
               <CalendarSidebar
                 events={events}
+                qnEventDates={qnEventDates}
                 selectedDate={selectedDate}
                 onDateSelect={handleDateSelect}
                 onEventClick={handleSidebarEventClick}
@@ -245,7 +250,18 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar */}
-            <Card className="flex h-full min-h-[500px] flex-col border border-border/50">
+            <Card className="relative flex h-full min-h-[500px] flex-col border border-border/50">
+              {/* Loading overlay - shown during navigation fetches */}
+              {isLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                    <span className="text-sm text-muted-foreground">
+                      Loading...
+                    </span>
+                  </div>
+                </div>
+              )}
               <CardContent className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
                 <FullCalendar
                   ref={calendarRef}
@@ -255,10 +271,11 @@ export default function CalendarPage() {
                     listPlugin,
                     interactionPlugin,
                   ]}
-                  initialView={calendarView}
+                  initialView="dayGridMonth"
                   events={events}
                   eventClick={handleEventClick}
                   dateClick={handleDateClick}
+                  datesSet={handleDatesSet}
                   headerToolbar={{
                     left: 'prev,next today',
                     center: 'title',

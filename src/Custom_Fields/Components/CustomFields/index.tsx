@@ -40,6 +40,7 @@ function CustomFields({
   const {
     values,
     errors,
+    touched,
     setFieldValue,
     setFieldTouched,
     getFieldProps,
@@ -116,7 +117,8 @@ function CustomFields({
         // Get field props directly using getFieldProps instead of useField -- avoids "rules of hooks" violation
         const fieldProps = getFieldProps(`customFields.${field.label}`);
         const fieldError = errors.customFields?.[field.label];
-        const fieldTouched = submitCount > 0;
+        const fieldTouched =
+          touched.customFields?.[field.label] === true || submitCount > 0;
 
         // Create a mock fieldMeta object similar to what useField would return
         const fieldMeta = {
@@ -131,6 +133,8 @@ function CustomFields({
         return (
           <div
             key={field.id}
+            id={`customFields.${field.label}`}
+            data-field-name={field.label}
             className="mt-2 flex flex-col gap-2 md:mt-0"
             ref={(el) => {
               fieldRefs.current[field.label] = el;

@@ -218,12 +218,14 @@ export function ChecklistFieldRenderer({
 
       case 'time':
         return (
-          <TimePicker
-            name={fieldId}
-            value={String(value) || ''}
-            onChange={(time) => onChange(time)}
-            onBlur={() => {}}
-          />
+          <div className="">
+            <TimePicker
+              name={fieldId}
+              value={String(value) || ''}
+              onChange={(time) => onChange(time)}
+              onBlur={() => {}}
+            />
+          </div>
         );
 
       case 'datetime':

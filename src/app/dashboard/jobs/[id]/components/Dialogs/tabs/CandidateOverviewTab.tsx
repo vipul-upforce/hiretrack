@@ -8,6 +8,7 @@ import { Candidate } from '@/types/candidate';
 import { scoreColors } from '@/lib/constants';
 import { QuickTooltip } from '@/components/ui/tooltip';
 import { Trophy } from 'lucide-react';
+import { useAppSelector } from '@/lib/redux/hooks';
 import ResumeEvaluationDetails from '../../Candidate/ResumeEvaluationDetails';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
 import { CandidateCardFollowUp } from '../../Candidate/CandidateCardFollowUp';
@@ -355,6 +356,7 @@ export function CandidateOverviewTab({
   isEvaluatingFor,
   onReEvaluate,
 }: CandidateOverviewTabProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const [confirmRemoveFollowUpOpen, setConfirmRemoveFollowUpOpen] =
     useState(false);
 
@@ -436,18 +438,22 @@ export function CandidateOverviewTab({
       )}
 
       {/* AI Assessment Scores Section */}
-      <AIScoresSection candidate={candidate} />
 
       {/* Detailed AI Evaluation */}
-      <div className="space-y-4">
-        <ResumeEvaluationDetails
-          labelClass="font-semibold text-base"
-          localCandidate={candidate}
-          isReEvaluating={isReEvaluating}
-          isEvaluatingFor={isEvaluatingFor || ''}
-          onReEvaluate={onReEvaluate}
-        />
-      </div>
+      {user?.role !== 'candidate' && (
+        <>
+          <AIScoresSection candidate={candidate} />
+          <div className="space-y-4">
+            <ResumeEvaluationDetails
+              labelClass="font-semibold text-base"
+              localCandidate={candidate}
+              isReEvaluating={isReEvaluating}
+              isEvaluatingFor={isEvaluatingFor || ''}
+              onReEvaluate={onReEvaluate}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

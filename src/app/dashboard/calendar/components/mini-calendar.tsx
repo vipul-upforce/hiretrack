@@ -14,7 +14,8 @@ export function MiniCalendar({
   onDateSelect,
   eventDates = [],
 }: MiniCalendarProps) {
-  const [currentMonth, setCurrentMonth] = useState(new Date(selectedDate));
+  // Mini calendar has its own month state - independent from main calendar
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const monthNames = [
     'January',
@@ -98,15 +99,25 @@ export function MiniCalendar({
   };
 
   const handlePrevMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1),
+    const newMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() - 1,
+      1,
     );
+    setCurrentMonth(newMonth);
+    // Load data for this month (silently, no loading spinner on Full calendar)
+    onDateSelect(newMonth);
   };
 
   const handleNextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1),
+    const newMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      1,
     );
+    setCurrentMonth(newMonth);
+    // Load data for this month (silently, no loading spinner on Full calendar)
+    onDateSelect(newMonth);
   };
 
   const days = getDaysInMonth(currentMonth);

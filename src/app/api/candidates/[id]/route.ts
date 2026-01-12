@@ -13,6 +13,7 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import logger from '@/lib/logger';
+import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
 import { Attachment } from '../route';
 
 // /*  max-lines-per-function max-lines-per-file 300 */
@@ -944,19 +945,36 @@ export async function GET(
       }
     }
 
+    // Filter private custom fields based on role
+    // This ensures candidates only see non-private fields, and interviewers only see non-privateInt fields
+    let filteredCandidate = candidate;
+    if (
+      userData.role === 'candidate' ||
+      userData.role === 'interviewer'
+    ) {
+      const filtered = await getFilterPrivateCFSingle(
+        candidate as ICandidate,
+        userData.role,
+        userData.organizationId,
+      );
+      if (filtered) {
+        filteredCandidate = filtered as typeof candidate;
+      }
+    }
+
     // Extract jobId for history query
     const jobId =
-      typeof candidate.jobId === 'object' &&
-      candidate.jobId !== null &&
-      '_id' in candidate.jobId
-        ? candidate.jobId._id
-        : candidate.jobId;
+      typeof filteredCandidate.jobId === 'object' &&
+      filteredCandidate.jobId !== null &&
+      '_id' in filteredCandidate.jobId
+        ? filteredCandidate.jobId._id
+        : filteredCandidate.jobId;
 
     // Fetch history in parallel (if candidate has jobId)
     const history = jobId
       ? await History.findOne({
           jobId,
-          candidateId: candidate._id.toString(),
+          candidateId: filteredCandidate._id.toString(),
         })
           .populate([
             { path: 'history.currentInterviewer', select: '_id name email' },
@@ -969,7 +987,7 @@ export async function GET(
       : null;
 
     return NextResponse.json({
-      ...candidate,
+      ...filteredCandidate,
       history: history?.history || [],
     });
   } catch (error) {

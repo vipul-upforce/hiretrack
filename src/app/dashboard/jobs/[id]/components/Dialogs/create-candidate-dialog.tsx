@@ -10,6 +10,7 @@ import useCustomForm, {
 } from '@/Custom_Fields/hooks/useCustomForm';
 import { Resume } from '@/lib/redux/types';
 import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
+import { useUnsavedChangesProtection } from '@/app/apply-jobs/useUnsavedChangesProtection';
 import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useIsDesktop } from '@/hooks/useIsDesktop';
@@ -19,6 +20,7 @@ import { candidateSchema } from '../../schemas/candidate-schema';
 import { CreateCandidateDialogHeader } from './create-candidate-components/CreateCandidateDialogHeader';
 import { CreateCandidateDialogFooter } from './create-candidate-components/CreateCandidateDialogFooter';
 import { useCreateCandidateSubmission } from './create-candidate-components/useCreateCandidateSubmission';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface CreateCandidateDialogProps {
   jobId: string;
@@ -104,6 +106,18 @@ export function CreateCandidateDialog({
   const [isMaximized, setIsMaximized] = useState(false);
 
   const {
+    showUnsavedChangesDialog,
+    handleDialogClose,
+    handleCancelClick,
+    handleConfirmClose,
+    handleCancelClose,
+  } = useUnsavedChangesProtection({
+    formikRef,
+    isOpen,
+    setIsOpen,
+  });
+
+  const {
     submitCandidate,
     isCreating,
     isLoading: isSubmissionLoading,
@@ -157,7 +171,7 @@ export function CreateCandidateDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
         {user && (user.role === 'candidate' || user?.role === '') ? (
           <button
@@ -230,7 +244,7 @@ export function CreateCandidateDialog({
                 isLoading={isSubmissionLoading}
                 primaryColor={primaryColor}
                 secondaryColor={secondaryColor}
-                onCancel={() => setIsOpen(false)}
+                onCancel={handleCancelClick}
                 onApply={handleApply}
               />
             </Form>
@@ -246,6 +260,18 @@ export function CreateCandidateDialog({
         }}
         onConfirm={handleTermsConfirm}
         isLoading={isCreating || isSubmissionLoading}
+      />
+
+      <ConfirmationDialog
+        isOpen={showUnsavedChangesDialog}
+        setIsOpen={(open) => {
+          if (!open) handleCancelClose();
+        }}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close? All unsaved data will be lost."
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+        buttonName="Discard Changes"
       />
     </Dialog>
   );

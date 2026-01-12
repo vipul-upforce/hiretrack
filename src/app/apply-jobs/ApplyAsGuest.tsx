@@ -8,8 +8,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Formik, Form } from 'formik';
+import { Formik, Form, FormikProps } from 'formik';
 import { useState, useEffect, type CSSProperties } from 'react';
+import React from 'react';
 import useCustomForm, {
   CustomFieldValues,
 } from '@/Custom_Fields/hooks/useCustomForm';
@@ -18,6 +19,7 @@ import * as pdfjs from 'pdfjs-dist';
 import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
 import { Spinner } from '@/components/ui/spinner';
 import { useApplyHandler } from './useApplyHandler';
+import { useUnsavedChangesProtection } from './useUnsavedChangesProtection';
 import { candidateSchema } from '../dashboard/jobs/[id]/schemas/candidate-schema';
 import FormUpdater from '../dashboard/jobs/[id]/components/Utils/FormUpdater';
 import { CandidateForm } from '../dashboard/jobs/[id]/components/Candidate/candidate-form';
@@ -30,6 +32,7 @@ import { useGuestApplicationSubmit } from './utils/useGuestApplicationSubmit';
 import { useScreenSize } from './utils/useScreenSize';
 import { GuestApplyTrigger } from './components/GuestApplyTrigger';
 import { AlreadyAppliedView } from './components/AlreadyAppliedView';
+import ConfirmationDialog from '../dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 
 if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
   pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -74,6 +77,19 @@ export function ApplyAsGuestDialog({
   const { submitApplication, isSubmitting: isSubmittingApplication } =
     useGuestApplicationSubmit(jobId, parsedResumeData);
 
+  const {
+    showUnsavedChangesDialog,
+    handleDialogClose,
+    handleCancelClick,
+    handleConfirmClose,
+    handleCancelClose,
+  } = useUnsavedChangesProtection({
+    formikRef: formikRef as React.RefObject<FormikProps<CandidateFormValues> | null>,
+    isOpen,
+    setIsOpen,
+    onCloseCallback: closeParent,
+  });
+
   useEffect(() => {
     if (isOpen) {
       setHasAlreadyApplied(hasAppliedAsGuest(jobId));
@@ -108,6 +124,7 @@ export function ApplyAsGuestDialog({
     }
   };
 
+
   const dialogContentStyle = isSmallScreen
     ? ({
         position: 'fixed',
@@ -127,7 +144,7 @@ export function ApplyAsGuestDialog({
     : undefined;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
         <GuestApplyTrigger
           hasAlreadyApplied={hasAlreadyApplied}
@@ -182,7 +199,7 @@ export function ApplyAsGuestDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsOpen(false)}
+                    onClick={handleCancelClick}
                     className="flex-1 transition-all duration-200 hover:shadow-md sm:flex-none"
                     style={{
                       borderColor: '#d1d5db',
@@ -232,6 +249,18 @@ export function ApplyAsGuestDialog({
         }}
         onConfirm={handleTermsConfirm}
         isLoading={isSubmittingApplication}
+      />
+
+      <ConfirmationDialog
+        isOpen={showUnsavedChangesDialog}
+        setIsOpen={(open) => {
+          if (!open) handleCancelClose();
+        }}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close? All unsaved data will be lost."
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+        buttonName="Discard Changes"
       />
     </Dialog>
   );

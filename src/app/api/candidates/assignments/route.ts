@@ -45,6 +45,24 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '48', 10);
     const skip = (page - 1) * limit;
 
+    // Date range filtering for calendar view
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    const calendarView = searchParams.get('view'); // 'month' | 'week' | 'day' | 'agenda'
+
+    // Parse date range if provided
+    let dateRangeFilter: Record<string, unknown> = {};
+    if (startDateParam && endDateParam) {
+      const startDate = new Date(startDateParam);
+      const endDate = new Date(endDateParam);
+      dateRangeFilter = {
+        'assignment.time': {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      };
+    }
+
     // Build interviewer filter
     let interviewerFilter: { $match: Record<string, unknown> };
     if (isInterviewer) {
@@ -108,6 +126,13 @@ export async function GET(req: NextRequest) {
       },
       interviewerFilter,
     ];
+
+    // Add date range filter for calendar view
+    if (Object.keys(dateRangeFilter).length > 0) {
+      candidateMatchPipeline.push({
+        $match: dateRangeFilter,
+      });
+    }
 
     // Add filterValue to candidate pipeline early for better performance
     if (filterValue) {
@@ -506,6 +531,14 @@ export async function GET(req: NextRequest) {
             limit,
             total: totalCandidates,
             totalPages,
+          },
+        }),
+        // Include date range info for calendar
+        ...(calendarView && {
+          dateRange: {
+            startDate: startDateParam,
+            endDate: endDateParam,
+            view: calendarView,
           },
         }),
       },
