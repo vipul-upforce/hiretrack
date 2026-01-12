@@ -352,7 +352,7 @@ export const MentionPicker = forwardRef<
         {isOpen && (
           <div
             className={cn(
-              'absolute left-0 z-[9999] w-full rounded-lg border border-border bg-background shadow-xl backdrop-blur-sm transition-all duration-200 ease-in-out',
+              'absolute left-0 z-[10000] w-full rounded-lg border border-border bg-background shadow-xl backdrop-blur-sm transition-all duration-200 ease-in-out',
               position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
             )}
           >

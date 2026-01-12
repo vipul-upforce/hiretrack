@@ -22,6 +22,8 @@ interface JobPageDialogsProps {
   isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: (open: boolean) => void;
   handleDeleteConfirm: () => void;
+  isAssigning: boolean;
+  setIsAssigning: (open: boolean) => void;
 
   // Lane dialogs
   isLaneEditOpen: boolean;
@@ -78,6 +80,8 @@ export function JobPageDialogs({
   isDeleteDialogOpen,
   setIsDeleteDialogOpen,
   handleDeleteConfirm,
+  isAssigning,
+  setIsAssigning,
   isLaneEditOpen,
   setIsLaneEditOpen,
   laneToEdit,
@@ -150,6 +154,8 @@ export function JobPageDialogs({
         isOpen={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
         onUpdate={handleCandidateUpdate}
+        isAssigning={isAssigning}
+        setIsAssigning={setIsAssigning}
       />
 
       <EditLaneDialog
@@ -265,12 +271,6 @@ export function JobPageDialogs({
         />
       )}
 
-      <GlobalRemarksDialog
-        openRemarksFor={openRemarksFor}
-        setOpenRemarksFor={setOpenRemarksFor}
-        candidates={mergedCandidates}
-        refetch={refetch}
-      />
     </>
   );
 }

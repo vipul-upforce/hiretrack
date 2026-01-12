@@ -9,47 +9,30 @@ interface DateTimePickerProps {
   value?: Dayjs | null;
   onChange: (date: Dayjs | null) => void;
   placeholder?: string;
+  disablePortal?: boolean;
 }
 
 export function DateTimePicker({
   value,
   onChange,
   placeholder = 'MM/DD/YYYY hh:mm aa',
+  disablePortal = false,
 }: DateTimePickerProps) {
-  // Convert Dayjs to Date for the new DatePicker
-  // const dateValue = value ? value.toDate() : null;
   const dateValue = React.useMemo(
     () => (value ? value.toDate() : null),
     [value?.valueOf()],
-  ); // Use valueOf() to compare actual timestamp
+  );
 
-  // const handleDateChange = (date: any) => {
-  //   let normalizedDate: Date | null = null;
-
-  //   if (date && typeof date === "object") {
-  //     if ("toDate" in date) {
-  //       normalizedDate = date.toDate();
-  //     } else if (date instanceof Date) {
-  //       normalizedDate = date;
-  //     }
-  //   }
-
-  //   if (normalizedDate && !isNaN(normalizedDate.getTime())) {
-  //     onChange(dayjs(normalizedDate));
-  //   } else {
-  //     onChange(null);
-  //   }
-
-  //   onBlur?.();
-  // };
   const handleDateChange = React.useCallback(
-    (date: Date | null) => {
+    // 1. Update the type to accept Date[] (to satisfy the DatePicker prop definition)
+    (date: Date | Date[] | null) => {
       let normalizedDate: Date | null = null;
 
-      if (date && typeof date === 'object') {
-        if (date instanceof Date) {
-          normalizedDate = date;
-        }
+      // 2. Check if it's an array (even if we only expect one date)
+      if (Array.isArray(date)) {
+        normalizedDate = date.length > 0 ? date[0] : null;
+      } else if (date instanceof Date) {
+        normalizedDate = date;
       }
 
       // Convert to Dayjs
@@ -78,6 +61,7 @@ export function DateTimePicker({
       showNowButton
       timePickerPosition="right"
       format="MM/DD/YYYY hh:mm A"
+      disablePortal={disablePortal}
     />
   );
 }

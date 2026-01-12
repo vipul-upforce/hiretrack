@@ -82,7 +82,7 @@ function DialogHeader({
   return (
     <div
       className={cn(
-        'sticky top-0 z-10 flex flex-shrink-0 flex-col space-y-2 overflow-hidden text-ellipsis rounded-lg border-b border-border/10 bg-background px-6 py-4 pr-10 text-center sm:text-left',
+        'sticky top-0 z-30 flex flex-shrink-0 flex-col space-y-2 overflow-hidden text-ellipsis rounded-lg border-b border-border/10 bg-background px-6 py-4 pr-10 text-center sm:text-left',
         className,
       )}
       {...props}
@@ -98,7 +98,7 @@ function DialogFooter({
   return (
     <div
       className={cn(
-        'sticky bottom-0 z-10 flex flex-shrink-0 flex-col gap-2 rounded-lg border-t border-border/10 bg-background px-6 py-4 sm:flex-row sm:justify-end',
+        'sticky bottom-0 z-30 flex flex-shrink-0 flex-col gap-2 rounded-lg border-t border-border/10 bg-background px-6 py-4 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}

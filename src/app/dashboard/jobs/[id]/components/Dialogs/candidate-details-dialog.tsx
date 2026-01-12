@@ -18,9 +18,9 @@ import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
 import { followUpSepretorPatternRegex } from '@/lib/constants';
 import { useSSE } from '@/hooks/useSSE';
 import { evaluateCandidate } from '@/app/apply-jobs/utils/guestApplicationUtils';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import { EditCandidateDialog } from './edit-candidate-dialog';
-import { AssignCandidateDialog } from './assign-candidate-dialog';
-import { AssignJobDialog } from './assign-job-dialog';
+import { UnifiedCandidateActionsDialog } from './unified-candidate-actions-dialog';
 import { CandidateDetailsDialogProps } from '../../schemas/candidateDetailsDialogProps';
 import { IEditRemark } from '../../schemas/EditRemarkDialog';
 import EditRemarkDialog from './EditRemarkDialog';
@@ -31,8 +31,6 @@ import RemarkInputSection from '../Remarks/RemarkInputSection';
 import { useRemarkHandlers } from '../../hooks/useRemarkHandlers';
 import { useUnassignHandlers } from '../../hooks/useUnassignHandlers';
 import { DetailsDialog } from './DetailsDialog';
-import AddFollowUpDialog from './add-followup-dialog';
-import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
 import { CandidateDetailsActions } from './tabs/CandidateDetailsActions';
 import { getJobId } from '../../utils/candidateAccessors';
@@ -48,6 +46,7 @@ export function CandidateDetailsDialog({
   fromFilter,
   refetchCandidates,
   hideCloseButtons = false,
+  isAssigning,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -64,9 +63,10 @@ export function CandidateDetailsDialog({
 
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
-  const [isAssigningJob, setIsAssigningJob] = useState(false);
+  const [isUnifiedOpen, setIsUnifiedOpen] = useState(false);
+  const [unifiedInitialAction, setUnifiedInitialAction] = useState<
+    CandidateActionType | undefined
+  >(undefined);
   const { user } = useAppSelector((state) => state.auth || {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
@@ -236,11 +236,8 @@ export function CandidateDetailsDialog({
     handleRemarkUpdate,
     isRemarkSubmitting,
     handleAddRemark,
-    handleAddFollowUp,
     setNewFollowUp,
     setNewFollowUpDate,
-    newFollowUp,
-    newFollowUpDate,
     setMADFollowup,
     handleRemoveFollowUp,
   } = useRemarkHandlers(
@@ -251,13 +248,7 @@ export function CandidateDetailsDialog({
     refetchCandidates,
   );
 
-  const {
-    confirmUnassignOpen,
-    setConfirmUnassignOpen,
-    isLoading,
-    handleUnassign,
-    confirmUnassign,
-  } = useUnassignHandlers(
+  const { isLoading } = useUnassignHandlers(
     localCandidate,
     refetch,
     setLocalCandidate,
@@ -335,35 +326,37 @@ export function CandidateDetailsDialog({
     [],
   );
 
+  const isFollowUpMode =
+    isUnifiedOpen && unifiedInitialAction === 'addFollowUp';
+
   useEffect(() => {
-    if (isAddingFollowUp) {
-      const parts = localCandidate?.followUp?.note
-        ? localCandidate.followUp.note
-            .split(followUpSepretorPatternRegex)
-            .map((p) => p.trim())
-            .filter(Boolean)
-        : [];
+    if (!isFollowUpMode) return;
 
-      const followUpParts = parts.filter((p) => {
-        if (p.endsWith('has completed the last step.')) {
-          setMADFollowup(p);
-          return false;
-        }
-        return true;
-      });
+    const parts = localCandidate?.followUp?.note
+      ? localCandidate.followUp.note
+          .split(followUpSepretorPatternRegex)
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : [];
 
-      // use the most recent follow-up note for editing, or empty string
-      const userNote =
-        followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
-      setNewFollowUp(userNote);
-
-      if (localCandidate?.followUp?.date) {
-        setNewFollowUpDate(dayjs(localCandidate.followUp.date));
-      } else {
-        setNewFollowUpDate(null);
+    const followUpParts = parts.filter((p) => {
+      if (p.endsWith('has completed the last step.')) {
+        setMADFollowup(p);
+        return false;
       }
+      return true;
+    });
+
+    const userNote =
+      followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
+    setNewFollowUp(userNote);
+
+    if (localCandidate?.followUp?.date) {
+      setNewFollowUpDate(dayjs(localCandidate.followUp.date));
+    } else {
+      setNewFollowUpDate(null);
     }
-  }, [isAddingFollowUp, localCandidate]);
+  }, [isFollowUpMode, localCandidate]);
 
   useEffect(() => {
     if (candidate) {
@@ -382,16 +375,50 @@ export function CandidateDetailsDialog({
     }
   }, [candidate, id]);
 
-  // Reset active tab when dialog opens or candidate changes
+  // Check if interviewer can access this candidate
+  const canInterviewerAccess = () => {
+    if (user?.role !== 'interviewer') return true; // Non-interviewers can access
+    if (!localCandidate?.assignment?.interviewerId) return false; // No assignment means can't access
+
+    const interviewerId =
+      typeof localCandidate.assignment.interviewerId === 'object'
+        ? localCandidate.assignment.interviewerId._id
+        : localCandidate.assignment.interviewerId;
+
+    return interviewerId === user.id;
+  };
+
+  // Close dialog if interviewer loses access
   useEffect(() => {
-    if (isOpen) {
-      setActiveTab('overview');
+    if (isOpen && user?.role === 'interviewer' && !canInterviewerAccess()) {
+      onOpenChange(false);
     }
-  }, [isOpen, candidate?._id]);
+  }, [
+    isOpen,
+    user?.role,
+    localCandidate?.assignment?.interviewerId,
+    user?.id,
+    onOpenChange,
+  ]);
 
   if (!localCandidate) return null;
 
-  const validTimeLineItems = timeLineItems.filter((item) => item.title !== '');
+  const validTimeLineItems = timeLineItems
+    .filter((item) => item.title !== '')
+    .map((item) => {
+      if (user?.role !== 'admin' && user?.role !== 'hr') {
+        if (item.note && item.note.isPrivate) {
+          return {
+            ...item,
+            note: {
+              ...item.note,
+              description: '',
+            },
+          };
+        }
+      }
+      return item;
+    });
   const header = (
     <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4">
       {localCandidate && (
@@ -408,7 +435,10 @@ export function CandidateDetailsDialog({
               await refetchAssignment?.();
             }
           }}
-          onAssignClick={() => setIsAssigning(true)}
+          onAssignClick={() => {
+            setUnifiedInitialAction('assignTo');
+            setIsUnifiedOpen(true);
+          }}
         />
       )}
     </DialogHeader>
@@ -419,7 +449,10 @@ export function CandidateDetailsDialog({
         candidate={localCandidate}
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        onEditFollowUp={() => setIsAddingFollowUp(true)}
+        onEditFollowUp={() => {
+          setUnifiedInitialAction('addFollowUp');
+          setIsUnifiedOpen(true);
+        }}
         onRemoveFollowUp={handleRemoveFollowUp}
         isReEvaluating={isReEvaluating}
         isEvaluatingFor={isEvaluatingFor}
@@ -461,9 +494,18 @@ export function CandidateDetailsDialog({
           fromFilter={fromFilter || false}
           hideEditButton={hideEditButton}
           hideCloseButtons={hideCloseButtons}
-          onAssign={() => setIsAssigning(true)}
-          onUnassign={handleUnassign}
-          onAddFollowUp={() => setIsAddingFollowUp(true)}
+          onAssign={() => {
+            setUnifiedInitialAction('assignTo');
+            setIsUnifiedOpen(true);
+          }}
+          onUnassign={() => {
+            setUnifiedInitialAction('markAsDone');
+            setIsUnifiedOpen(true);
+          }}
+          onAddFollowUp={() => {
+            setUnifiedInitialAction('addFollowUp');
+            setIsUnifiedOpen(true);
+          }}
           onEdit={handleEditClick}
           onClose={() => {
             onOpenChange(false);
@@ -471,7 +513,10 @@ export function CandidateDetailsDialog({
             setRemarkRating(null);
             setRemarkRatingHistory(null);
           }}
-          onAssignJob={() => setIsAssigningJob(true)}
+          onAssignJob={() => {
+            setUnifiedInitialAction('switchJob');
+            setIsUnifiedOpen(true);
+          }}
         />
       </div>
     </div>
@@ -480,7 +525,7 @@ export function CandidateDetailsDialog({
   return (
     <>
       <DetailsDialog
-        open={isOpen && !isAssigning && !isEditing}
+        open={isOpen && !isAssigning && !isEditing && canInterviewerAccess()}
         onOpenChange={(e) => {
           setNewRemark('');
           setRemarkRating(null);
@@ -493,54 +538,26 @@ export function CandidateDetailsDialog({
 
         {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
-      {isAssigning && localCandidate && (
-        <AssignCandidateDialog
+      {localCandidate && (
+        <UnifiedCandidateActionsDialog
           candidate={localCandidate}
+          isOpen={isUnifiedOpen}
+          onOpenChange={setIsUnifiedOpen}
+          initialAction={unifiedInitialAction}
           refetch={refetch}
-          isOpen={isAssigning}
-          onOpenChange={setIsAssigning}
           onUpdate={onUpdate || (() => {})}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
-          onSuccess={() => {
-            if (pathname === '/dashboard/calendar') {
-              setIsAssigning(false);
+          onSuccess={async () => {
+            await refetch();
+            setUnifiedInitialAction(undefined);
+            // Close candidate details dialog if interviewer marked as done
+            if (
+              user?.role === 'interviewer' &&
+              unifiedInitialAction === 'markAsDone'
+            ) {
               onOpenChange(false);
-            } else {
-              refetch();
             }
-          }}
-        />
-      )}
-      {isAssigningJob && localCandidate && (
-        <AssignJobDialog
-          candidate={localCandidate}
-          isOpen={isAssigningJob}
-          onOpenChange={setIsAssigningJob}
-          onJobAssignment={() => {
-            refetchCandidates?.();
-            onOpenChange(false);
-            setIsAssigningJob(false);
-          }}
-        />
-      )}
-      {isAddingFollowUp && localCandidate && (
-        <AddFollowUpDialog
-          candidate={localCandidate}
-          handleRemoveFollowUp={handleRemoveFollowUp}
-          isOpen={isAddingFollowUp}
-          onOpenChange={setIsAddingFollowUp}
-          handleAddFollowUp={handleAddFollowUp}
-          setNewFollowUp={setNewFollowUp}
-          setNewFollowUpDate={setNewFollowUpDate}
-          newFollowUp={newFollowUp}
-          newFollowUpDate={newFollowUpDate}
-          isLoading={isLoading}
-          onAddingFollowup={async () => {
-            setIsAddingFollowUp(false);
-            setIsAddingFollowUp(false);
-            setNewFollowUp('');
-            setNewFollowUpDate(null);
           }}
         />
       )}
@@ -559,19 +576,6 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
-      <ConfirmAndRemarkDialog
-        title="Mark as Done"
-        message="Candidate will be Un-Assigned after marking as done."
-        isOpen={confirmUnassignOpen}
-        setIsOpen={setConfirmUnassignOpen}
-        onConfirm={(note, rating) => {
-          confirmUnassign(note, rating);
-        }}
-        onCancel={() => setConfirmUnassignOpen(false)}
-        isLoading={isLoading}
-        loadingText="Marking as done..."
-      />
-
       <ConfirmationDialog
         title="Re-evaluate Candidate with AI?"
         message="This will use your active AI provider to re-analyze the candidate's resume and may incur additional costs based on your AI provider's pricing. The existing evaluation scores will be overwritten with new results."

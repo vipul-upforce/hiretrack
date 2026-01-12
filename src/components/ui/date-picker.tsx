@@ -99,6 +99,7 @@ interface DatePickerProps {
   onOpen?: () => void;
   onClose?: () => void;
   portalContainer?: HTMLElement | null;
+  disablePortal?: boolean;
 }
 
 export function DatePicker({
@@ -116,6 +117,7 @@ export function DatePicker({
   onOpen,
   onClose,
   portalContainer,
+  disablePortal = false,
 }: DatePickerProps) {
   const pickerRef = useRef<{ closeCalendar: () => void } | null>(null);
   const [internalOpen, setInternalOpen] = useState(false);
@@ -154,10 +156,21 @@ export function DatePicker({
   useEffect(() => {
     if (internalOpen && showTimePicker) {
       const handleClick = (event: MouseEvent) => {
-        if (
+        const target = event.target as Node;
+
+        const clickedInsideContainer =
           pickerContainerRef.current &&
-          !pickerContainerRef.current.contains(event.target as Node)
-        ) {
+          pickerContainerRef.current.contains(target);
+        let clickedInsidePortalPicker = false;
+        try {
+          const el = (event.target as Element) || null;
+          clickedInsidePortalPicker =
+            !!el && !!el.closest && !!el.closest('.wren-picker');
+        } catch {
+          clickedInsidePortalPicker = false;
+        }
+
+        if (!clickedInsideContainer && !clickedInsidePortalPicker) {
           allowOutsideClose.current = true;
           if (pickerRef.current) pickerRef.current.closeCalendar();
         }
@@ -205,6 +218,9 @@ export function DatePicker({
     return value;
   })();
 
+  const usePortal = !disablePortal && !!portalContainer;
+  const actualPortalTarget = usePortal ? portalContainer : undefined;
+
   return (
     <div ref={pickerContainerRef} className={cn('relative', className)}>
       <MultiDatePicker
@@ -219,8 +235,8 @@ export function DatePicker({
         plugins={plugins}
         calendarPosition="bottom"
         range={range}
-        portal={!!portalContainer}
-        portalTarget={portalContainer || undefined}
+        portal={usePortal}
+        portalTarget={actualPortalTarget}
         onOpen={() => {
           setInternalOpen(true);
           doneClicked.current = false;

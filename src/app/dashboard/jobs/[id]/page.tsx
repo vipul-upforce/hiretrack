@@ -119,6 +119,8 @@ export default function JobProgressPage() {
     setIsDetailsOpen,
     openRemarksFor,
     setOpenRemarksFor,
+    isAssigning,
+    setIsAssigning,
   } = useCandidateState({
     jobId: id,
     candidates: normalizedCandidates,
@@ -358,6 +360,8 @@ export default function JobProgressPage() {
           isChecklistConfigOpen={isChecklistConfigOpen}
           setIsChecklistConfigOpen={setIsChecklistConfigOpen}
           mergedCandidates={mergedCandidates}
+          isAssigning={isAssigning}
+          setIsAssigning={setIsAssigning}
         />
       )}
     </div>

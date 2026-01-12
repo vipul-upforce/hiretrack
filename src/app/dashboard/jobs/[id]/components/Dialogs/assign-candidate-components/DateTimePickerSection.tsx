@@ -14,6 +14,7 @@ export function DateTimePickerSection() {
           <DateTimePicker
             value={field.value}
             onChange={(date) => setFieldValue('time', date)}
+            disablePortal={false} // Keeping false as default to ensure it works, but can be changed later
           />
         )}
       </Field>

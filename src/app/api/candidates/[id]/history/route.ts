@@ -74,21 +74,32 @@ export async function GET(
             }
             // For other roles, show entries without remarks or non-private remarks
             if (entry?.remark?.id) {
-              return !entry.remark?.isPrivate;
+              return !entry.remark.isPrivate;
             }
             return true;
           })
           .map((entry: ICandidateHistory) => {
+            const modifiedEntry = { ...entry };
+
+            if (role !== 'admin' && role !== 'hr') {
+              if (
+                modifiedEntry.note &&
+                modifiedEntry.note.isPrivate
+              ) {
+                modifiedEntry.note.description = '';
+              }
+            }
             // If this entry has checklist data, filter the responses based on user role
-            if (entry.checklistForm && userData?.role && laneConfig) {
+            if (modifiedEntry.checklistForm && userData?.role && laneConfig) {
               // Find the checklist configuration to get field visibility settings
               let checklistFields: IChecklistField[] = [];
               const targetLane = laneConfig.laneConfigs.find(
-                (lc: ILaneConfig) => lc.laneId === entry.checklistForm?.laneId,
+                (lc: ILaneConfig) =>
+                  lc.laneId === modifiedEntry.checklistForm?.laneId,
               );
               if (targetLane) {
                 const checklist =
-                  entry.checklistForm.checklistType === 'incoming'
+                  modifiedEntry.checklistForm.checklistType === 'incoming'
                     ? targetLane.incomingChecklist
                     : targetLane.outgoingChecklist;
 
@@ -99,21 +110,21 @@ export async function GET(
 
               // Filter the responses based on user role and field visibility
               const filteredResponses = filterChecklistResponses(
-                entry.checklistForm.responses,
+                modifiedEntry.checklistForm.responses,
                 checklistFields,
                 userData?.role as UserRole,
               );
 
               return {
-                ...entry,
+                ...modifiedEntry,
                 checklistForm: {
-                  ...entry.checklistForm,
+                  ...modifiedEntry.checklistForm,
                   responses: filteredResponses,
                 },
               };
             }
 
-            return entry;
+            return modifiedEntry;
           })
       : [];
 

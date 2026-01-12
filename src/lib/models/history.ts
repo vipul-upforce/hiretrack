@@ -75,6 +75,10 @@ const candidateHistory = {
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    }
   },
   attachments: [
     {
@@ -196,6 +200,7 @@ export interface ICandidateHistory {
         }
       | string
       | null;
+    isPrivate?: boolean;
   };
   attachments: {
     id: string;

@@ -51,6 +51,10 @@ export function useSearchResultsLogic({
   const [candidateToAddRemark, setCandidateToAddRemark] =
     useState<Candidate | null>(null);
 
+  const [isAddFollowUpOpen, setIsAddFollowUpOpen] = useState(false);
+  const [candidateToAddFollowUp, setCandidateToAddFollowUp] =
+    useState<Candidate | null>(null);
+
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
@@ -257,6 +261,11 @@ export function useSearchResultsLogic({
     setIsAddRemarkOpen(true);
   }, []);
 
+  const handleAddFollowUp = useCallback((candidate: Candidate) => {
+    setCandidateToAddFollowUp(candidate);
+    setIsAddFollowUpOpen(true);
+  }, []);
+
   const handleJobClick = useCallback((job: Job) => {
     setSelectedJob(job);
     setIsJobDialogOpen(true);
@@ -419,6 +428,10 @@ export function useSearchResultsLogic({
     setIsAddRemarkOpen,
     candidateToAddRemark,
     setCandidateToAddRemark,
+    isAddFollowUpOpen,
+    setIsAddFollowUpOpen,
+    candidateToAddFollowUp,
+    setCandidateToAddFollowUp,
     isConfirmDialogOpen,
     setIsConfirmDialogOpen,
     confirmDialogConfig,
@@ -435,6 +448,7 @@ export function useSearchResultsLogic({
     handleAssignInterviewer,
     handleAssignJob,
     handleAddRemark,
+    handleAddFollowUp,
     handleJobClick,
     handleDelete,
     handleBulkAssignJob,
