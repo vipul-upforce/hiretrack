@@ -3,7 +3,7 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Formik, Form } from 'formik';
+import { Formik, Form, FormikProps } from 'formik';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
@@ -13,13 +13,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { useParams, usePathname } from 'next/navigation';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { ICandidateHistory } from '@/lib/models/history';
-import { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Resume } from '@/lib/redux/types';
 import { parseResumeFromPdf } from '@/lib/parse-resume-from-pdf';
 import { useSendMailMutation } from '@/lib/features/org/orgApi';
 import { sentAssignmentMail } from '@/lib/utils';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { useApplyHandler } from '@/app/apply-jobs/useApplyHandler';
+import { useUnsavedChangesProtection } from '@/app/apply-jobs/useUnsavedChangesProtection';
 import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
 import { useAppSelector } from '@/lib/redux/hooks';
@@ -29,6 +30,7 @@ import { getJobId } from '../../utils/candidateAccessors';
 import { CandidateForm } from '../Candidate/candidate-form';
 import { candidateSchema } from '../../schemas/candidate-schema';
 import { EditCandidateDialogHeader } from './edit-candidate-components/EditCandidateDialogHeader';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface EditCandidateDialogProps {
   candidate: Candidate;
@@ -130,10 +132,25 @@ export function EditCandidateDialog({
     }
 
     return () => {
-      setSelectedFormId(null);
-      setStepName('FormList');
+    setSelectedFormId(null);
+    setStepName('FormList');
     };
   }, [customFields, setSelectedFormId, setStepName]);
+
+  const {
+    showUnsavedChangesDialog,
+    handleDialogClose: handleUnsavedDialogClose,
+    handleCancelClick: handleUnsavedCancelClick,
+    handleConfirmClose: handleUnsavedConfirmClose,
+    handleCancelClose: handleUnsavedCancelClose,
+  } = useUnsavedChangesProtection({
+    formikRef: formikRef as React.RefObject<FormikProps<Candidate> | null>,
+    isOpen,
+    setIsOpen: onOpenChange,
+    onCloseCallback: () => {
+      setSelectedFormId(null);
+    },
+  });
   const convertFileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -357,6 +374,10 @@ export function EditCandidateDialog({
         title: 'Success',
         description: 'Candidate updated successfully',
       });
+      // Reset form after successful submission
+      if (formikRef.current) {
+        formikRef.current.resetForm();
+      }
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'data' in error) {
         const errorData = (error as { data?: { error?: string } }).data;
@@ -419,16 +440,19 @@ export function EditCandidateDialog({
     }
   }, [isOpen]);
 
+  const handleDialogClose = (open: boolean) => {
+    if (!open && !showUnsavedChangesDialog) {
+      setSelectedFormId(null);
+    }
+    handleUnsavedDialogClose(open);
+  };
+
+  const handleCancelClick = () => {
+    handleUnsavedCancelClick();
+  };
+
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        onOpenChange(open);
-        if (!open) {
-          setSelectedFormId(null);
-        }
-      }}
-    >
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent
         className={
           !isDesktop || isMaximized
@@ -479,12 +503,7 @@ export function EditCandidateDialog({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
-                      onOpenChange(false);
-                      // if (reopenDetailsDialog) {
-                      //   reopenDetailsDialog();
-                      // }
-                    }}
+                    onClick={handleCancelClick}
                   >
                     Cancel
                   </Button>
@@ -506,6 +525,18 @@ export function EditCandidateDialog({
           )}
         </Formik>
       </DialogContent>
+
+      <ConfirmationDialog
+        isOpen={showUnsavedChangesDialog}
+        setIsOpen={(open) => {
+          if (!open) handleUnsavedCancelClose();
+        }}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close? All unsaved data will be lost."
+        onConfirm={handleUnsavedConfirmClose}
+        onCancel={handleUnsavedCancelClose}
+        buttonName="Discard Changes"
+      />
     </Dialog>
   );
 }
