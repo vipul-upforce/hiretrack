@@ -6,9 +6,8 @@ import type { Candidate } from '@/types/candidate';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { JobDetailsDialog } from '@/app/dashboard/jobs-board/components/job-details-dialog';
 import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/edit-candidate-dialog';
-import { AssignCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-dialog';
-import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
-import AddRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/add-remark-dialog';
+import { UnifiedCandidateActionsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/unified-candidate-actions-dialog';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { SearchResultsSkeletonLoader } from './search-results/skeleton-loader';
 import { ResultsHeader } from './search-results/results-header';
@@ -140,6 +139,8 @@ export function SearchResults({
           fromFilter
           onOpenChange={logic.setIsDialogOpen}
           refetchCandidates={refetch}
+          isAssigning={false}
+          setIsAssigning={() => {}}
         />
       )}
 
@@ -157,52 +158,63 @@ export function SearchResults({
         />
       )}
 
-      {logic.candidateToAssignInterviewer && (
-        <AssignCandidateDialog
-          candidate={logic.candidateToAssignInterviewer}
-          isOpen={logic.isAssignInterviewerOpen}
-          onOpenChange={logic.setIsAssignInterviewerOpen}
-          refetch={refetch}
-          onUpdate={logic.handleCandidateUpdate}
-          setLocalCandidate={() => {}}
-          onSuccess={() => {
-            logic.setIsAssignInterviewerOpen(false);
-            logic.setCandidateToAssignInterviewer(null);
-          }}
-        />
-      )}
+      {(() => {
+        const unifiedOpen =
+          logic.isAssignInterviewerOpen ||
+          logic.isAssignJobOpen ||
+          logic.isAddRemarkOpen ||
+          logic.isAddFollowUpOpen;
+        const unifiedCandidate =
+          logic.candidateToAssignInterviewer ||
+          logic.candidateToAssignJob ||
+          logic.candidateToAddRemark ||
+          logic.candidateToAddFollowUp;
+        const getUnifiedInitialAction = (): CandidateActionType | undefined => {
+          if (logic.isAssignInterviewerOpen) return 'assignTo';
+          if (logic.isAssignJobOpen) return 'switchJob';
+          if (logic.isAddFollowUpOpen) return 'addFollowUp';
+          if (logic.isAddRemarkOpen) return 'addRemark';
+          return undefined;
+        };
+        const unifiedInitialAction = getUnifiedInitialAction();
 
-      {logic.candidateToAssignJob && (
-        <AssignJobDialog
-          candidate={logic.candidateToAssignJob}
-          isOpen={logic.isAssignJobOpen}
-          onOpenChange={logic.setIsAssignJobOpen}
-          onJobAssignment={(updatedCandidates) => {
-            if (updatedCandidates && onCandidateUpdate) {
-              if (Array.isArray(updatedCandidates)) {
-                updatedCandidates.forEach(onCandidateUpdate);
-              } else {
-                onCandidateUpdate(updatedCandidates);
-              }
-            }
-            logic.setIsAssignJobOpen(false);
-            logic.setCandidateToAssignJob(null);
-            logic.handleSelectAll(false);
-            refetch();
-          }}
-        />
-      )}
+        if (
+          !unifiedOpen ||
+          !unifiedCandidate ||
+          Array.isArray(unifiedCandidate)
+        )
+          return null;
 
-      {logic.candidateToAddRemark && (
-        <AddRemarksDialog
-          candidate={logic.candidateToAddRemark}
-          isOpen={logic.isAddRemarkOpen}
-          onOpenChange={logic.setIsAddRemarkOpen}
-          setOpenRemarksFor={() => {}}
-          refetch={refetch}
-          onRemarkAdded={logic.handleCandidateUpdate}
-        />
-      )}
+        const closeAll = () => {
+          logic.setIsAssignInterviewerOpen(false);
+          logic.setCandidateToAssignInterviewer(null);
+          logic.setIsAssignJobOpen(false);
+          logic.setCandidateToAssignJob(null);
+          logic.setIsAddRemarkOpen(false);
+          logic.setCandidateToAddRemark(null);
+          logic.setIsAddFollowUpOpen(false);
+          logic.setCandidateToAddFollowUp(null);
+        };
+
+        return (
+          <UnifiedCandidateActionsDialog
+            candidate={unifiedCandidate as Candidate}
+            isOpen={unifiedOpen}
+            onOpenChange={(open) => {
+              if (!open) closeAll();
+            }}
+            initialAction={unifiedInitialAction}
+            refetch={refetch}
+            onUpdate={logic.handleCandidateUpdate}
+            setLocalCandidate={() => {}}
+            refetchAssignment={refetch}
+            onSuccess={() => {
+              closeAll();
+              refetch();
+            }}
+          />
+        );
+      })()}
 
       {logic.selectedJob && (
         <JobDetailsDialog

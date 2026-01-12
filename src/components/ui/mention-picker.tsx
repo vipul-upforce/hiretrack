@@ -352,7 +352,7 @@ export const MentionPicker = forwardRef<
         {isOpen && (
           <div
             className={cn(
-              'absolute left-0 z-[9999] w-full rounded-lg border border-border bg-background shadow-xl backdrop-blur-sm transition-all duration-200 ease-in-out',
+              'absolute left-0 z-[10000] w-full rounded-lg border border-border bg-background shadow-xl backdrop-blur-sm transition-all duration-200 ease-in-out',
               position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
             )}
           >
@@ -365,7 +365,25 @@ export const MentionPicker = forwardRef<
                 </span>
               </div>
             </div>
-            <div ref={scrollAreaRef} className="h-60 overflow-auto">
+            <div
+              ref={scrollAreaRef}
+              className="h-60 overflow-auto scroll-smooth focus:outline-none"
+              style={{
+                scrollbarWidth: 'thin',
+                WebkitOverflowScrolling: 'touch', // For iOS devices
+                scrollBehavior: 'smooth',
+              }}
+              tabIndex={-1}
+              onWheel={(e) => {
+                // Allow natural mouse wheel scrolling and prevent event bubbling
+                e.stopPropagation();
+              }}
+              onMouseEnter={() => {
+                if (scrollAreaRef.current) {
+                  scrollAreaRef.current.focus();
+                }
+              }}
+            >
               {renderContent()}
             </div>
           </div>

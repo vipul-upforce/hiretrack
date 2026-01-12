@@ -11,4 +11,6 @@ export interface CandidateDetailsDialogProps {
   fromFilter?: boolean;
   refetchCandidates?: () => void;
   hideCloseButtons?: boolean;
+  isAssigning: boolean;
+  setIsAssigning: (open: boolean) => void;
 }

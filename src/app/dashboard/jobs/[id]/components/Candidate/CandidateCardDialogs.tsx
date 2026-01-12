@@ -7,17 +7,14 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Candidate } from '@/types/candidate';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { Dispatch, SetStateAction } from 'react';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import { EditCandidateDialog } from '../Dialogs/edit-candidate-dialog';
-import { AssignCandidateDialog } from '../Dialogs/assign-candidate-dialog';
-import AddFollowUpDialog from '../Dialogs/add-followup-dialog';
-import ConfirmAndRemarkDialog from '../Dialogs/mark-as-done-dialog';
 import ConfirmationDialog from '../Dialogs/ConfirmationDialog';
-import AddRemarksDialog from '../Dialogs/add-remark-dialog';
 import { EmailCandidateDialog } from '../Dialogs/email-candidate-dialog';
-import { AssignJobDialog } from '../Dialogs/assign-job-dialog';
 import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { getJobTitle } from '../../utils/candidateAccessors';
+import { UnifiedCandidateActionsDialog } from '../Dialogs/unified-candidate-actions-dialog';
 
 interface CandidateCardDialogsProps {
   candidate: Candidate;
@@ -82,23 +79,49 @@ export function CandidateCardDialogs({
   setIsShareDialogOpen,
   isAssignJobOpen,
   setIsAssignJobOpen,
-  candidateToAssignJob,
+  candidateToAssignJob: _candidateToAssignJob,
   setCandidateToAssignJob,
   removeFUOpen,
   setRemoveFUOpen,
   refetch,
   handleRemoveFollowUp,
-  handleAddFollowUp,
-  confirmUnassign,
-  isLoading,
-  isFollowUpSubmitting,
-  newFollowUp,
-  setNewFollowUp,
-  newFollowUpDate,
-  setNewFollowUpDate,
+  handleAddFollowUp: _handleAddFollowUp,
+  confirmUnassign: _confirmUnassign,
+  isLoading: _isLoading,
+  isFollowUpSubmitting: _isFollowUpSubmitting,
+  newFollowUp: _newFollowUp,
+  setNewFollowUp: _setNewFollowUp,
+  newFollowUpDate: _newFollowUpDate,
+  setNewFollowUpDate: _setNewFollowUpDate,
   onDashboard,
   triggerRef,
 }: CandidateCardDialogsProps) {
+  const unifiedOpen =
+    isAssigning ||
+    isAddingFollowUp ||
+    confirmUnassignOpen ||
+    isAssignJobOpen ||
+    isAddRemarkOpen;
+  const getUnifiedInitialAction = (): CandidateActionType | undefined => {
+    if (isAssigning) return 'assignTo';
+    if (isAssignJobOpen) return 'switchJob';
+    if (confirmUnassignOpen) return 'markAsDone';
+    if (isAddingFollowUp) return 'addFollowUp';
+    if (isAddRemarkOpen) return 'addRemark';
+    return undefined;
+  };
+  const unifiedInitialAction: CandidateActionType | undefined =
+    getUnifiedInitialAction();
+
+  const closeUnified = () => {
+    setIsAssigning(false);
+    setIsAddingFollowUp(false);
+    setConfirmUnassignOpen(false);
+    setIsAddRemarkOpen(false);
+    setIsAssignJobOpen(false);
+    setCandidateToAssignJob(null);
+  };
+
   return (
     <>
       {/* Edit Candidate Dialog */}
@@ -135,57 +158,27 @@ export function CandidateCardDialogs({
         </DialogContent>
       </Dialog>
 
-      {/* Assign Candidate Dialog */}
-      {isAssigning && (
-        <AssignCandidateDialog
+      {/* Unified Actions Dialog */}
+      {unifiedOpen && (
+        <UnifiedCandidateActionsDialog
           candidate={candidate}
-          refetch={async () => refetch()}
-          isOpen={isAssigning}
-          onOpenChange={setIsAssigning}
+          isOpen={unifiedOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeUnified();
+            }
+          }}
+          initialAction={unifiedInitialAction}
+          refetch={refetch}
           onUpdate={() => refetch()}
           setLocalCandidate={() => {}}
+          refetchAssignment={() => refetch()}
           onSuccess={() => {
-            setIsAssigning(false);
+            closeUnified();
             refetch();
           }}
         />
       )}
-
-      {/* Add Follow Up Dialog */}
-      {isAddingFollowUp && (
-        <AddFollowUpDialog
-          candidate={candidate}
-          handleRemoveFollowUp={handleRemoveFollowUp}
-          isOpen={isAddingFollowUp}
-          onOpenChange={setIsAddingFollowUp}
-          handleAddFollowUp={handleAddFollowUp}
-          setNewFollowUp={setNewFollowUp}
-          setNewFollowUpDate={setNewFollowUpDate}
-          newFollowUp={newFollowUp}
-          newFollowUpDate={newFollowUpDate}
-          onAddingFollowup={async () => {
-            setIsAddingFollowUp(false);
-            setNewFollowUp('');
-            setNewFollowUpDate(null);
-            refetch();
-          }}
-          isLoading={isFollowUpSubmitting}
-        />
-      )}
-
-      {/* Mark as Done Dialog */}
-      <ConfirmAndRemarkDialog
-        title="Mark as Done"
-        message="Candidate will be Un-Assigned after marking as done."
-        isOpen={confirmUnassignOpen}
-        setIsOpen={setConfirmUnassignOpen}
-        onConfirm={(note, rating) => {
-          confirmUnassign(note, rating as number);
-        }}
-        onCancel={() => setConfirmUnassignOpen(false)}
-        isLoading={isLoading}
-        loadingText="Marking as done..."
-      />
 
       {/* Remove Follow Up Confirmation */}
       {removeFUOpen && (
@@ -205,15 +198,7 @@ export function CandidateCardDialogs({
       )}
 
       {/* Add Remarks Dialog (Dashboard only) */}
-      {onDashboard && isAddRemarkOpen && (
-        <AddRemarksDialog
-          candidate={candidate}
-          isOpen={isAddRemarkOpen}
-          onOpenChange={setIsAddRemarkOpen}
-          setOpenRemarksFor={() => {}}
-          refetch={async () => refetch()}
-        />
-      )}
+      {onDashboard && isAddRemarkOpen && null}
 
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (
@@ -225,20 +210,6 @@ export function CandidateCardDialogs({
             name: candidate.name,
             email: candidate.email,
             jobTitle: getJobTitle(candidate) as string,
-          }}
-        />
-      )}
-
-      {/* Assign Job Dialog */}
-      {candidateToAssignJob && (
-        <AssignJobDialog
-          candidate={candidateToAssignJob}
-          isOpen={isAssignJobOpen}
-          onOpenChange={setIsAssignJobOpen}
-          onJobAssignment={() => {
-            setIsAssignJobOpen(false);
-            setCandidateToAssignJob(null);
-            refetch();
           }}
         />
       )}

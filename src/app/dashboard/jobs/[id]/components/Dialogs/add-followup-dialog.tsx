@@ -82,6 +82,7 @@ function AddFollowUpDialog({
             organizationId={(user?.organizationId as string) || ''}
             currentUserRole={user?.role || ''}
             rows={4}
+            disableMentions
           />
           <div className="relative" style={{ zIndex: 100 }}>
             <DateTimePicker

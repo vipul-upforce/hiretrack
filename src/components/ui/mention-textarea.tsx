@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { User, X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { MentionPicker } from '@/components/ui/mention-picker';
@@ -26,6 +27,7 @@ interface MentionTextareaProps {
   rows?: number;
   isRemarkPrivate?: boolean;
   onSelectedMentionsChange?: (mentions: MentionUser[]) => void;
+  disableMentions?: boolean;
 }
 
 export function MentionTextarea({
@@ -40,6 +42,7 @@ export function MentionTextarea({
   rows = 3,
   isRemarkPrivate = true,
   onSelectedMentionsChange,
+  disableMentions = false,
 }: MentionTextareaProps) {
   const [showMentionPicker, setShowMentionPicker] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
@@ -58,9 +61,10 @@ export function MentionTextarea({
     insertMentionInText,
   } = useMentionPicker();
 
-  // Don't show mention picker for interviewers
+  // Don't show mention picker for interviewers or if mentions are disabled
   const shouldShowMentionPicker =
-    currentUserRole === 'admin' || currentUserRole === 'hr';
+    !disableMentions &&
+    (currentUserRole === 'admin' || currentUserRole === 'hr');
 
   // Calculate optimal position for mention picker
   const calculatePickerPosition = useCallback(() => {
@@ -93,7 +97,10 @@ export function MentionTextarea({
 
     // Check if @ was deleted (backspace detection)
     // If the old value had @ and new value doesn't, or if @ was removed, close picker
-    const oldTextBeforeCursor = oldValue.substring(0, Math.min(cursorPosition, oldValue.length));
+    const oldTextBeforeCursor = oldValue.substring(
+      0,
+      Math.min(cursorPosition, oldValue.length),
+    );
     const newTextBeforeCursor = newValue.substring(0, cursorPosition);
     const hadAt = oldTextBeforeCursor.includes('@');
     const hasAt = newTextBeforeCursor.includes('@');
@@ -158,7 +165,9 @@ export function MentionTextarea({
     const mentionText = `@${user.name} `;
     const firstIndex = value.indexOf(mentionText);
     if (firstIndex !== -1) {
-      const newText = value.slice(0, firstIndex) + value.slice(firstIndex + mentionText.length);
+      const newText =
+        value.slice(0, firstIndex) +
+        value.slice(firstIndex + mentionText.length);
       onChange(newText);
     }
   };
@@ -268,6 +277,40 @@ export function MentionTextarea({
     };
   }, [showMentionPicker, calculatePickerPosition]);
 
+  // Compute picker position coordinates for portal rendering
+  const [pickerStyle, setPickerStyle] = useState<React.CSSProperties | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!showMentionPicker || !textareaRef.current) {
+      setPickerStyle(null);
+      return;
+    }
+
+    const rect = textareaRef.current.getBoundingClientRect();
+    const maxWidth = 320; // match max-w-sm
+    const width = Math.min(rect.width, maxWidth);
+
+    if (pickerPosition === 'bottom') {
+      setPickerStyle({
+        position: 'fixed',
+        left: rect.left,
+        top: rect.bottom + 6,
+        width,
+        zIndex: 10000,
+      });
+    } else {
+      // position from bottom when showing on top
+      setPickerStyle({
+        position: 'fixed',
+        left: rect.left,
+        bottom: window.innerHeight - rect.top + 6,
+        width,
+        zIndex: 10000,
+      });
+    }
+  }, [showMentionPicker, pickerPosition]);
+
   return (
     <div className="relative">
       <Textarea
@@ -275,37 +318,48 @@ export function MentionTextarea({
         value={value}
         onChange={handleTextChange}
         onKeyDown={handleKeyDown}
+        onWheel={(e) => {
+          if (showMentionPicker) {
+            e.stopPropagation();
+          }
+        }}
         placeholder={placeholder}
         className={cn('resize-none', className)}
         disabled={disabled}
         rows={rows}
       />
 
-      {/* Mention picker overlay */}
-      {shouldShowMentionPicker && showMentionPicker && (
-        <div
-          className={cn(
-            'absolute left-0 z-[9999] w-full max-w-sm transition-all duration-200 ease-in-out',
-            pickerPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
-          )}
-        >
-          <MentionPicker
-            ref={mentionPickerRef}
-            onMentionSelect={handleMentionSelect}
-            onMentionRemove={removeMention}
-            selectedMentions={selectedMentions}
-            organizationId={organizationId}
-            currentUserRole={currentUserRole}
-            isOpen={showMentionPicker}
-            onClose={() => setShowMentionPicker(false)}
-            searchQuery={mentionQuery}
-            onSearchQueryChange={setMentionQuery}
-            className="w-full"
-            position={pickerPosition}
-            isRemarkPrivate={isRemarkPrivate}
-          />
-        </div>
-      )}
+      {/* Mention picker portal (renders into document.body) */}
+      {shouldShowMentionPicker &&
+        showMentionPicker &&
+        pickerStyle &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            style={pickerStyle}
+            className={cn('transition-all duration-200 ease-in-out')}
+            onWheel={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <MentionPicker
+              ref={mentionPickerRef}
+              onMentionSelect={handleMentionSelect}
+              onMentionRemove={removeMention}
+              selectedMentions={selectedMentions}
+              organizationId={organizationId}
+              currentUserRole={currentUserRole}
+              isOpen={showMentionPicker}
+              onClose={() => setShowMentionPicker(false)}
+              searchQuery={mentionQuery}
+              onSearchQueryChange={setMentionQuery}
+              className="w-full"
+              position={pickerPosition}
+              isRemarkPrivate={isRemarkPrivate}
+            />
+          </div>,
+          document.body,
+        )}
 
       {/* Selected mentions display */}
       {shouldShowMentionPicker && selectedMentions.length > 0 && (

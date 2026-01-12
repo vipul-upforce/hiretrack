@@ -33,6 +33,7 @@ export function useCandidateState({
   );
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
 
   // Handle candidateId URL parameter to auto-open candidate dialog
   useEffect(() => {
@@ -81,5 +82,7 @@ export function useCandidateState({
     setOpenRemarksFor,
     openCandidateDetails,
     closeCandidateDetails,
+    isAssigning,
+    setIsAssigning,
   };
 }
