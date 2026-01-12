@@ -1,24 +1,21 @@
-import { AIProviderFactory } from "./factory";
-import { AIProviderType } from "./types";
-import { ICandidate } from "../models/candidate";
-import { ISettings, IEvaluationConfig, IAIProviders } from "../models/settings";
-import {
-  JobForEvaluate,
-  EvaluationResult,
-} from "./evaluation-types";
+import { AIProviderFactory } from './factory';
+import { AIProviderType } from './types';
+import { ICandidate } from '../models/candidate';
+import { ISettings, IEvaluationConfig, IAIProviders } from '../models/settings';
+import { JobForEvaluate, EvaluationResult } from './evaluation-types';
 import {
   DEFAULT_EVALUATION_CONFIG,
   DEFAULT_PROVIDER_CONFIGS,
   EVALUATION_CONSTANTS,
-} from "./evaluation-constants";
-import { extractNumericScore, isValidNumber } from "./evaluation-utils";
-import { parseEvaluationResponse } from "./evaluation-parser";
+} from './evaluation-constants';
+import { extractNumericScore, isValidNumber } from './evaluation-utils';
+import { parseEvaluationResponse } from './evaluation-parser';
 import {
   getEvaluationPrompt,
   buildPromptWithCustomTemplate,
-} from "./evaluation-prompts";
-import { getEvaluationMetadata } from "./evaluation-metadata";
-import logger from "../logger";
+} from './evaluation-prompts';
+import { getEvaluationMetadata } from './evaluation-metadata';
+import logger from '../logger';
 
 /**
  * Service for AI-powered candidate resume evaluation
@@ -43,8 +40,6 @@ export class AIEvaluationService {
     candidate: ICandidate,
   ): Promise<EvaluationResult> {
     try {
-      console.log('jobData in evaluation-provider', jobData);
-      console.log('candidate in evaluation-provider', candidate);
       const aiProviders = this.getAIProviders(settings);
       const activeProvider = aiProviders.activeProvider as AIProviderType;
       const apiKey = this.validateAndGetApiKey(aiProviders, activeProvider);
@@ -60,7 +55,6 @@ export class AIEvaluationService {
         selectedModel,
         evaluationConfig.temperature,
       );
- console.log('response in evaluation-provider', prompt);
       let evaluationResult = parseEvaluationResponse(response);
       evaluationResult = this.filterEvaluationBySettings(
         evaluationResult,
@@ -70,17 +64,17 @@ export class AIEvaluationService {
       const evaluationMetadata = await getEvaluationMetadata(
         activeProvider,
         settings,
-        this.modelUsed
+        this.modelUsed,
       );
       evaluationResult.notes = this.appendMetadata(
         evaluationResult.notes,
-        evaluationMetadata
+        evaluationMetadata,
       );
 
       return evaluationResult;
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to evaluate resume";
+        error instanceof Error ? error.message : 'Failed to evaluate resume';
       throw new Error(errorMessage);
     }
   }
@@ -91,28 +85,28 @@ export class AIEvaluationService {
    * @returns AI providers configuration
    */
   private static getAIProviders(
-    settings: ISettings | Partial<ISettings>
+    settings: ISettings | Partial<ISettings>,
   ): IAIProviders {
     let { aiProviders } = settings;
 
     if (!aiProviders) {
-      const legacyGeminiKey = settings.gemini?.gemini_key || "";
+      const legacyGeminiKey = settings.gemini?.gemini_key || '';
       aiProviders = {
-        activeProvider: "gemini",
+        activeProvider: 'gemini',
         gemini: {
           api_key: legacyGeminiKey,
           ...DEFAULT_PROVIDER_CONFIGS.gemini,
         },
         openai: {
-          api_key: "",
+          api_key: '',
           ...DEFAULT_PROVIDER_CONFIGS.openai,
         },
         anthropic: {
-          api_key: "",
+          api_key: '',
           ...DEFAULT_PROVIDER_CONFIGS.anthropic,
         },
         perplexity: {
-          api_key: "",
+          api_key: '',
           ...DEFAULT_PROVIDER_CONFIGS.perplexity,
         },
       };
@@ -130,13 +124,13 @@ export class AIEvaluationService {
    */
   private static validateAndGetApiKey(
     aiProviders: IAIProviders,
-    activeProvider: AIProviderType
+    activeProvider: AIProviderType,
   ): string {
     const apiKey = aiProviders[activeProvider]?.api_key;
 
     if (!apiKey) {
       throw new Error(
-        `API key not found for active provider: ${activeProvider}`
+        `API key not found for active provider: ${activeProvider}`,
       );
     }
 
@@ -149,7 +143,7 @@ export class AIEvaluationService {
    * @returns Evaluation configuration
    */
   private static getEvaluationConfig(
-    settings: ISettings | Partial<ISettings>
+    settings: ISettings | Partial<ISettings>,
   ): IEvaluationConfig {
     return settings.evaluationConfig || DEFAULT_EVALUATION_CONFIG;
   }
@@ -170,7 +164,7 @@ export class AIEvaluationService {
       ? buildPromptWithCustomTemplate(
           evaluationConfig.customPrompt,
           jobData,
-          candidate
+          candidate,
         )
       : getEvaluationPrompt(jobData, candidate);
   }
@@ -183,12 +177,12 @@ export class AIEvaluationService {
    */
   private static getSelectedModel(
     aiProviders: IAIProviders,
-    activeProvider: AIProviderType
+    activeProvider: AIProviderType,
   ): string {
     return (
       aiProviders[activeProvider]?.customModel ||
       aiProviders[activeProvider]?.model ||
-      ""
+      ''
     );
   }
 
@@ -199,7 +193,7 @@ export class AIEvaluationService {
    * @returns Combined notes string
    */
   private static appendMetadata(notes: string, metadata: string): string {
-    const currentNotes = typeof notes === "string" ? notes : "";
+    const currentNotes = typeof notes === 'string' ? notes : '';
     return currentNotes + metadata;
   }
 
@@ -211,10 +205,10 @@ export class AIEvaluationService {
    */
   private static filterEvaluationBySettings(
     evaluation: EvaluationResult,
-    config: IEvaluationConfig | Partial<IEvaluationConfig>
+    config: IEvaluationConfig | Partial<IEvaluationConfig>,
   ): EvaluationResult {
     const filtered = { ...evaluation };
-    
+
     if (config.enableConfidenceScores === false) {
       delete filtered.evidenceLinks;
     }
@@ -293,20 +287,21 @@ export class AIEvaluationService {
 
     if (!isValidNumber(weightedScore)) {
       logger.error(
-        "Invalid weighted score calculated, returning 0. Scores:",
+        'Invalid weighted score calculated, returning 0. Scores:',
         numericScores,
-        "Weights:",
-        numericWeights
+        'Weights:',
+        numericWeights,
       );
       return 0;
     }
 
     return (
-      Math.round(weightedScore * EVALUATION_CONSTANTS.SCORE_DECIMAL_MULTIPLIER) /
-      EVALUATION_CONSTANTS.SCORE_DECIMAL_MULTIPLIER
+      Math.round(
+        weightedScore * EVALUATION_CONSTANTS.SCORE_DECIMAL_MULTIPLIER,
+      ) / EVALUATION_CONSTANTS.SCORE_DECIMAL_MULTIPLIER
     );
   }
 }
 
 // Re-export types for backward compatibility
-export type { JobForEvaluate, EvaluationResult } from "./evaluation-types";
+export type { JobForEvaluate, EvaluationResult } from './evaluation-types';

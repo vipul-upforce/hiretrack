@@ -54,6 +54,7 @@ export async function sendUnifiedMail(
     const toEmails = Array.isArray(options.to) ? options.to : [options.to];
     const [primaryRecipient, ...additionalRecipients] = toEmails;
     const candidateId = validateObjectId(options.metadata?.candidateId);
+    console.log(toEmails, 'toEmails');
 
     let { recipientName } = options;
     if (!recipientName && candidateId) {

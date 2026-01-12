@@ -236,7 +236,6 @@ export async function sendRemarkNotificationWithMentions(
   sentToUsers: string[]; // User IDs who received emails
   mentionedUsers?: string[];
 }> {
-  console.log('context', context);
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     'new-remark',
     {
