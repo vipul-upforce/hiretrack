@@ -10,6 +10,7 @@ interface DateTimePickerProps {
   onChange: (date: Dayjs | null) => void;
   placeholder?: string;
   disablePortal?: boolean;
+  portalContainer?: HTMLElement | null;
 }
 
 export function DateTimePicker({
@@ -17,6 +18,7 @@ export function DateTimePicker({
   onChange,
   placeholder = 'MM/DD/YYYY hh:mm aa',
   disablePortal = false,
+  portalContainer,
 }: DateTimePickerProps) {
   const dateValue = React.useMemo(
     () => (value ? value.toDate() : null),
@@ -62,6 +64,7 @@ export function DateTimePicker({
       timePickerPosition="right"
       format="MM/DD/YYYY hh:mm A"
       disablePortal={disablePortal}
+      portalContainer={portalContainer}
     />
   );
 }
