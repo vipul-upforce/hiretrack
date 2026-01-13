@@ -57,7 +57,7 @@ export function UnifiedCandidateActionsDialog(
           size="xl"
           className="flex max-h-[90vh] flex-col overflow-hidden p-0"
         >
-          <DialogHeader className="border-b bg-gradient-to-r from-background to-muted/20 px-6 py-3">
+          <DialogHeader className="px-6 py-3 border-0">
             <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
               {Array.isArray(candidate) ? (
                 <span>
@@ -69,7 +69,7 @@ export function UnifiedCandidateActionsDialog(
                 </span>
               ) : (
                 <span>
-                  Update{' '}
+                  Update Candidate - {' '}
                   <span className="font-bold text-primary">
                     {candidate.name}
                   </span>
@@ -108,7 +108,7 @@ export function UnifiedCandidateActionsDialog(
                   className="flex flex-1 flex-col overflow-hidden"
                   onKeyDown={handleKeyDown}
                 >
-                  <div className="border-b bg-muted/30 px-6 py-3">
+                  <div className="border-b px-6 py-3">
                     <ActionToggles
                       candidate={candidate}
                       actionCheckboxes={values.enabledActions}
