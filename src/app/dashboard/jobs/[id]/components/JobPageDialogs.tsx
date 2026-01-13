@@ -4,6 +4,7 @@ import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmai
 import { JobAnalyticsModal } from '@/app/dashboard/jobs-board/components/JobAnalyticsModal';
 import { Job } from '@/types/job';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import { CandidateDetailsDialog } from './Dialogs/candidate-details-dialog';
 import EditLaneDialog from './Lanes/edit-lane-dialog';
 import ConfirmationDialog from './Dialogs/ConfirmationDialog';
@@ -11,7 +12,7 @@ import { MigrationDialog } from './Dialogs/MigrationDialog';
 import CandidateCustomFieldsDialog from './customFields/candidateCustomFieldsDialog';
 import ChecklistRemarksDialog from './Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import { LaneChecklistConfigDialog } from './Dialogs/lane-checklist-config-dialog';
-import { GlobalRemarksDialog } from './Dialogs/global-remarks-dialog';
+import { UnifiedCandidateActionsDialog } from './Dialogs/unified-candidate-actions-dialog';
 
 interface JobPageDialogsProps {
   // Candidate dialogs
@@ -147,6 +148,12 @@ export function JobPageDialogs({
     ? openRemarksFor
     : undefined;
 
+  // Find candidate for general remarks (not checklist)
+  const generalRemarksCandidate =
+    openRemarksFor && !checklistInfo
+      ? mergedCandidates.find((c) => c._id === openRemarksFor)
+      : null;
+
   return (
     <>
       <CandidateDetailsDialog
@@ -271,6 +278,19 @@ export function JobPageDialogs({
         />
       )}
 
+      {generalRemarksCandidate && (
+        <UnifiedCandidateActionsDialog
+          candidate={generalRemarksCandidate}
+          isOpen={!!openRemarksFor && !checklistInfo}
+          onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+          initialAction={'addRemark' as CandidateActionType}
+          refetch={refetch}
+          onUpdate={handleCandidateUpdate}
+          setLocalCandidate={() => {}}
+          refetchAssignment={refetch}
+          onSuccess={() => setOpenRemarksFor(null)}
+        />
+      )}
     </>
   );
 }
