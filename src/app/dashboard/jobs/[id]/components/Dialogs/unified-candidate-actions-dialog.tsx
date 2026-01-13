@@ -18,6 +18,7 @@ import { SwitchJobSection } from '@/components/unified-candidate-dialog/switch-j
 import { FollowUpSection } from '@/components/unified-candidate-dialog/followup-section';
 import { RemarkSection } from '@/components/unified-candidate-dialog/remark-section';
 import { CancelMeetingDialog } from '@/components/unified-candidate-dialog/cancel-meeting-dialog';
+import { StatusUpdateSection } from '@/components/unified-candidate-dialog/status-update-section';
 import { useCandidateActions } from '@/components/unified-candidate-dialog/use-candidate-action';
 import {
   validationSchema,
@@ -30,14 +31,16 @@ export function UnifiedCandidateActionsDialog(
   const { candidate, isOpen, onOpenChange } = props;
 
   const {
-    state: {
-      isSubmitting,
-      showCancelMeetDialog,
-      cancelNotes,
-      actionCheckboxes,
-      isCancelling,
+    state: { isSubmitting, showCancelMeetDialog, cancelNotes, isCancelling },
+    data: {
+      user,
+      jobs,
+      interviewers,
+      googleCalendarData,
+      initialValues,
+      jobLanesData,
+      isLoadingLanes,
     },
-    data: { user, jobs, interviewers, googleCalendarData, initialValues },
     handlers: {
       handleSubmit,
       handleCancelMeeting,
@@ -51,8 +54,8 @@ export function UnifiedCandidateActionsDialog(
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent
-          size="lg"
-          className="flex max-h-[90vh] flex-col overflow-hidden"
+          size="xl"
+          className="flex max-h-[85vh] flex-col overflow-hidden"
         >
           <DialogHeader className="px-6 py-4">
             <DialogTitle>
@@ -66,10 +69,19 @@ export function UnifiedCandidateActionsDialog(
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
+            validationSchemaContext={{
+              currentJobId:
+                typeof candidate.jobId === 'object'
+                  ? candidate.jobId?._id
+                  : candidate.jobId,
+              existingFollowUpNote: candidate.followUp?.note,
+            }}
+            validateOnChange
+            validateOnBlur
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({ values, setFieldValue, submitForm }) => {
+            {({ values, setFieldValue, submitForm , setFieldTouched}) => {
               const handleKeyDown = (
                 event: React.KeyboardEvent<HTMLFormElement>,
               ) => {
@@ -86,14 +98,22 @@ export function UnifiedCandidateActionsDialog(
                 >
                   <ActionToggles
                     candidate={candidate}
-                    actionCheckboxes={actionCheckboxes}
-                    onChange={toggleAction}
+                    actionCheckboxes={values.enabledActions}
+                    onChange={(action, checked) =>
+                      toggleAction(
+                        action,
+                        checked,
+                        setFieldValue,
+                        values,
+                        setFieldTouched,
+                      )
+                    }
                     userRole={user?.role}
                     isSubmitting={isSubmitting}
                   />
 
                   <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
-                    {actionCheckboxes.assignTo &&
+                    {values.enabledActions.assignTo &&
                       user?.role !== 'interviewer' && (
                         <AssignSection
                           candidate={candidate}
@@ -107,16 +127,17 @@ export function UnifiedCandidateActionsDialog(
                         />
                       )}
 
-                    {actionCheckboxes.switchJob &&
+                    {values.enabledActions.switchJob &&
                       user?.role !== 'interviewer' && (
                         <SwitchJobSection
+                          candidate={candidate}
                           values={values}
                           setFieldValue={setFieldValue}
                           jobs={jobs}
                         />
                       )}
 
-                    {actionCheckboxes.markAsDone && (
+                    {values.enabledActions.markAsDone && (
                       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
                         <p className="text-sm text-amber-800 dark:text-amber-200">
                           Candidate will be unassigned after marking as done.
@@ -124,7 +145,7 @@ export function UnifiedCandidateActionsDialog(
                       </div>
                     )}
 
-                    {actionCheckboxes.addFollowUp &&
+                    {values.enabledActions.addFollowUp &&
                       user?.role !== 'interviewer' && (
                         <FollowUpSection
                           values={values}
@@ -134,7 +155,7 @@ export function UnifiedCandidateActionsDialog(
                         />
                       )}
 
-                    {actionCheckboxes.addRemark && (
+                    {values.enabledActions.addRemark && (
                       <RemarkSection
                         values={values}
                         setFieldValue={setFieldValue}
@@ -142,6 +163,17 @@ export function UnifiedCandidateActionsDialog(
                         userRole={user?.role}
                       />
                     )}
+
+                    {values.enabledActions.updateStatus &&
+                      !values.enabledActions.switchJob && (
+                        <StatusUpdateSection
+                          candidate={candidate}
+                          values={values}
+                          setFieldValue={setFieldValue}
+                          lanes={jobLanesData?.lanes || []}
+                          isLoadingLanes={isLoadingLanes}
+                        />
+                      )}
                   </div>
 
                   <DialogFooter className="border-t px-6 py-4">

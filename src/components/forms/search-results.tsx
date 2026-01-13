@@ -6,6 +6,7 @@ import type { Candidate } from '@/types/candidate';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { JobDetailsDialog } from '@/app/dashboard/jobs-board/components/job-details-dialog';
 import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/edit-candidate-dialog';
+import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
 import { UnifiedCandidateActionsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/unified-candidate-actions-dialog';
 import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
@@ -215,6 +216,27 @@ export function SearchResults({
           />
         );
       })()}
+
+      {logic.isAssignJobOpen && logic.candidateToAssignJob && (
+        <AssignJobDialog
+          candidate={logic.candidateToAssignJob}
+          isOpen={logic.isAssignJobOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              logic.setIsAssignJobOpen(false);
+              logic.setCandidateToAssignJob(null);
+            }
+          }}
+          onJobAssignment={(updatedCandidates) => {
+            logic.handleCandidateUpdate(
+              Array.isArray(updatedCandidates)
+                ? updatedCandidates[0]
+                : updatedCandidates,
+            );
+            refetch();
+          }}
+        />
+      )}
 
       {logic.selectedJob && (
         <JobDetailsDialog

@@ -1,10 +1,11 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
-import { MentionTextarea } from '@/components/ui/mention-textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Candidate } from '@/types/candidate';
 import { UnifiedFormValues } from './types';
+import { FormError } from './form-errors';
+import { MentionTextarea } from '../ui/mention-textarea';
 
 interface FollowUpSectionProps {
   values: UnifiedFormValues;
@@ -40,6 +41,7 @@ export function FollowUpSection({
               rows={4}
               disableMentions
             />
+            <FormError name="followUpNote" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="followUpDate">Date</Label>

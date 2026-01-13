@@ -38,6 +38,13 @@ export const jobApi = baseApi.injectEndpoints({
       query: (id) => `/jobs/${id}`,
       providesTags: ['Job'],
     }),
+    fetchJobLanes: builder.query<
+      { jobId: string; jobTitle: string; lanes: string[]; useCustomLanes: boolean },
+      string
+    >({
+      query: (id) => `/jobs/${id}/lanes`,
+      providesTags: ['Job'],
+    }),
     updateJobStatus: builder.mutation<
       Job,
       { id: string; status: string; openJobCardsOrder: string[] }
@@ -82,6 +89,7 @@ export const {
   useCreateJobMutation,
   useUpdateJobMutation,
   useFetchJobByIdQuery,
+  useFetchJobLanesQuery,
   useUpdateJobStatusMutation,
   // useFetchAssignmentsQuery,
   useDeleteJobMutation,
