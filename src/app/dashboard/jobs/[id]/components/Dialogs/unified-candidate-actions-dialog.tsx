@@ -55,14 +55,26 @@ export function UnifiedCandidateActionsDialog(
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent
           size="xl"
-          className="flex max-h-[85vh] flex-col overflow-hidden"
+          className="flex max-h-[90vh] flex-col overflow-hidden p-0"
         >
-          <DialogHeader className="px-6 py-4">
-            <DialogTitle>
-              Update Candidate -{' '}
-              {Array.isArray(candidate)
-                ? `${candidate.length} Candidates`
-                : candidate.name}
+          <DialogHeader className="border-b bg-gradient-to-r from-background to-muted/20 px-6 py-3">
+            <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
+              {Array.isArray(candidate) ? (
+                <span>
+                  Update{' '}
+                  <span className="font-bold text-primary">
+                    {candidate.length}
+                  </span>{' '}
+                  Candidates
+                </span>
+              ) : (
+                <span>
+                  Update{' '}
+                  <span className="font-bold text-primary">
+                    {candidate.name}
+                  </span>
+                </span>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -81,7 +93,7 @@ export function UnifiedCandidateActionsDialog(
             onSubmit={handleSubmit}
             enableReinitialize
           >
-            {({ values, setFieldValue, submitForm , setFieldTouched}) => {
+            {({ values, setFieldValue, submitForm, setFieldTouched }) => {
               const handleKeyDown = (
                 event: React.KeyboardEvent<HTMLFormElement>,
               ) => {
@@ -96,23 +108,25 @@ export function UnifiedCandidateActionsDialog(
                   className="flex flex-1 flex-col overflow-hidden"
                   onKeyDown={handleKeyDown}
                 >
-                  <ActionToggles
-                    candidate={candidate}
-                    actionCheckboxes={values.enabledActions}
-                    onChange={(action, checked) =>
-                      toggleAction(
-                        action,
-                        checked,
-                        setFieldValue,
-                        values,
-                        setFieldTouched,
-                      )
-                    }
-                    userRole={user?.role}
-                    isSubmitting={isSubmitting}
-                  />
+                  <div className="border-b bg-muted/30 px-6 py-3">
+                    <ActionToggles
+                      candidate={candidate}
+                      actionCheckboxes={values.enabledActions}
+                      onChange={(action, checked) =>
+                        toggleAction(
+                          action,
+                          checked,
+                          setFieldValue,
+                          values,
+                          setFieldTouched,
+                        )
+                      }
+                      userRole={user?.role}
+                      isSubmitting={isSubmitting}
+                    />
+                  </div>
 
-                  <div className="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+                  <div className="flex-1 space-y-4 overflow-y-auto bg-muted/10 px-6 py-4">
                     {values.enabledActions.assignTo &&
                       user?.role !== 'interviewer' && (
                         <AssignSection
@@ -138,10 +152,17 @@ export function UnifiedCandidateActionsDialog(
                       )}
 
                     {values.enabledActions.markAsDone && (
-                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-                        <p className="text-sm text-amber-800 dark:text-amber-200">
-                          Candidate will be unassigned after marking as done.
-                        </p>
+                      <div className="rounded-xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 shadow-sm dark:border-amber-800/60 dark:from-amber-950/40 dark:to-amber-900/20">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-200 dark:bg-amber-800">
+                            <span className="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                              !
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium leading-relaxed text-amber-900 dark:text-amber-100">
+                            Candidate will be unassigned after marking as done.
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -176,13 +197,14 @@ export function UnifiedCandidateActionsDialog(
                       )}
                   </div>
 
-                  <DialogFooter className="border-t px-6 py-4">
-                    <div className="flex w-full justify-between">
+                  <DialogFooter className="border-t bg-background px-6 py-3">
+                    <div className="flex w-full items-center justify-end gap-3">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                         disabled={isSubmitting}
+                        className="min-w-[100px]"
                       >
                         Cancel
                       </Button>
@@ -190,6 +212,7 @@ export function UnifiedCandidateActionsDialog(
                         type="submit"
                         disabled={isSubmitting}
                         variant="info"
+                        className="min-w-[140px] font-medium shadow-sm transition-all hover:shadow-md"
                       >
                         {isSubmitting && (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

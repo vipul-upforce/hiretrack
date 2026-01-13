@@ -26,23 +26,28 @@ export function AssignSection({
   setShowCancelMeetDialog,
 }: AssignSectionProps) {
   return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Assign To</h3>
-      <InterviewerSelector interviewers={interviewers} />
-      <DateTimePickerSection />
-      {googleCalendarData ? (
-        <GoogleMeetIntegration
+    <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2.5">
+        <div className="h-1 w-1 rounded-full bg-primary" />
+        <h3 className="text-base font-semibold text-foreground">Assign To</h3>
+      </div>
+      <div className="space-y-4">
+        <InterviewerSelector interviewers={interviewers} />
+        <DateTimePickerSection />
+        {googleCalendarData ? (
+          <GoogleMeetIntegration
+            candidate={candidate}
+            interviewers={interviewers}
+            googleCalendarData={googleCalendarData}
+            setShowCancelMeetDialog={setShowCancelMeetDialog}
+          />
+        ) : null}
+        <AttachmentsSection
           candidate={candidate}
-          interviewers={interviewers}
-          googleCalendarData={googleCalendarData}
-          setShowCancelMeetDialog={setShowCancelMeetDialog}
+          values={values}
+          setFieldValue={setFieldValue}
         />
-      ) : null}
-      <AttachmentsSection
-        candidate={candidate}
-        values={values}
-        setFieldValue={setFieldValue}
-      />
+      </div>
     </div>
   );
 }

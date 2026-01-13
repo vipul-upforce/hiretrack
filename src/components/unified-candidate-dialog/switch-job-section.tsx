@@ -32,15 +32,20 @@ export function SwitchJobSection({
     typeof candidate.jobId === 'object' ? candidate.jobId?.title : '';
 
   return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Switch Job</h3>
-      <div className="grid gap-2">
-        <Label htmlFor="jobId">Select Job</Label>
+    <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2.5">
+        <div className="h-1 w-1 rounded-full bg-primary" />
+        <h3 className="text-base font-semibold text-foreground">Switch Job</h3>
+      </div>
+      <div className="grid gap-3">
+        <Label htmlFor="jobId" className="text-sm font-medium">
+          Select Job
+        </Label>
         <Select
           value={values.jobId}
           onValueChange={(v) => setFieldValue('jobId', v)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-10">
             <SelectValue placeholder="Select Job" />
           </SelectTrigger>
           <SelectContent>
@@ -64,15 +69,24 @@ export function SwitchJobSection({
         <FormError name="jobId" />
       </div>
       {currentJobId && values.jobId && values.jobId !== currentJobId && (
-        <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-          Candidate will move from <strong>{currentJobTitle}</strong> to{' '}
-          <strong>{jobs?.find((j) => j._id === values.jobId)?.title}</strong>
+        <div className="rounded-lg border border-blue-200/60 bg-gradient-to-br from-blue-50 to-blue-100/50 p-3 text-sm shadow-sm dark:border-blue-800/60 dark:from-blue-950/40 dark:to-blue-900/20">
+          <p className="font-medium text-blue-900 dark:text-blue-100">
+            Candidate will move from{' '}
+            <strong className="font-semibold">{currentJobTitle}</strong> to{' '}
+            <strong className="font-semibold">
+              {jobs?.find((j) => j._id === values.jobId)?.title}
+            </strong>
+          </p>
         </div>
       )}
       {!currentJobId && values.jobId && (
-        <div className="rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-900/20 dark:text-green-200">
-          Candidate will be assigned to{' '}
-          <strong>{jobs?.find((j) => j._id === values.jobId)?.title}</strong>
+        <div className="rounded-lg border border-green-200/60 bg-gradient-to-br from-green-50 to-green-100/50 p-3 text-sm shadow-sm dark:border-green-800/60 dark:from-green-950/40 dark:to-green-900/20">
+          <p className="font-medium text-green-900 dark:text-green-100">
+            Candidate will be assigned to{' '}
+            <strong className="font-semibold">
+              {jobs?.find((j) => j._id === values.jobId)?.title}
+            </strong>
+          </p>
         </div>
       )}
     </div>
