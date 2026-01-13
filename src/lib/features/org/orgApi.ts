@@ -74,6 +74,7 @@ export interface OrgAllowanceResponse {
 export interface CreateOrgResponse {
   message: string;
   organization: string;
+  logout?: boolean;
   _id?: string;
 }
 

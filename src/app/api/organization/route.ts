@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Multiple org is enabled - require authentication
-      const userData = await getAuthenticatedUser(req,'admin');
+      const userData = await getAuthenticatedUser(req, 'admin');
       if (!userData) {
         return NextResponse.json(
           {
@@ -157,6 +157,7 @@ export async function POST(req: NextRequest) {
           message: 'Organization and Admin Created Successfully',
           organization: createdOrg[0],
           admin: admin[0],
+          logout: !!req.cookies.get('org_id')?.value,
         },
         { status: 201 },
       );
