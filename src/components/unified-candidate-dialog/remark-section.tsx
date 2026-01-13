@@ -5,6 +5,7 @@ import { Rating } from '@mui/material';
 import { Eye, EyeOff } from 'lucide-react';
 import { MentionTextarea } from '@/components/ui/mention-textarea';
 import { UnifiedFormValues, Mention } from './types';
+import { FormError } from './form-errors';
 
 interface RemarkSectionProps {
   values: UnifiedFormValues;
@@ -49,6 +50,7 @@ export function RemarkSection({
           isRemarkPrivate={values.isRemarkPrivate}
           onSelectedMentionsChange={handleMentionsChange}
         />
+        <FormError name="remarkDescription" />
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

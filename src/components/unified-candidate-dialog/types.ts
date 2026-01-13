@@ -8,7 +8,8 @@ export type CandidateActionType =
   | 'switchJob'
   | 'markAsDone'
   | 'addFollowUp'
-  | 'addRemark';
+  | 'addRemark'
+  | 'updateStatus';
 
 export type Mention = {
   _id: string;
@@ -23,6 +24,7 @@ export interface ActionCheckboxes {
   markAsDone: boolean;
   addFollowUp: boolean;
   addRemark: boolean;
+  updateStatus: boolean;
 }
 
 export interface UnifiedFormValues {
@@ -52,6 +54,8 @@ export interface UnifiedFormValues {
   isRemarkPrivate: boolean;
   selectedMentions: Mention[];
   removeFollowUp: boolean;
+  newStatus: string;
+  enabledActions: ActionCheckboxes;
 }
 
 export interface UnifiedCandidateActionsDialogProps {
@@ -67,17 +71,61 @@ export interface UnifiedCandidateActionsDialogProps {
 }
 
 export const validationSchema = Yup.object({
-  interviewerId: Yup.string().optional(),
-  time: Yup.date().min(new Date(), 'Past date is not allowed').nullable(),
-  jobId: Yup.string().optional(),
-  followUpNote: Yup.string().nullable(),
-  followUpDate: Yup.date().nullable(),
-  remarkDescription: Yup.string().nullable(),
-  remarkRating: Yup.number().nullable(),
-  scheduleGoogleMeet: Yup.boolean(),
-  meetDuration: Yup.number().when('scheduleGoogleMeet', {
+  enabledActions: Yup.object(),
+
+  // Switch Job Validation
+  jobId: Yup.string().when('enabledActions.switchJob', {
     is: true,
-    then: (schema) => schema.required('Please select meeting duration'),
-    otherwise: (schema) => schema.nullable(),
+    then: (s) =>
+      s
+        .required('Please select a new job')
+        .test(
+          'is-different',
+          'Candidate is already assigned to this job',
+          function validate(value) {
+            // currentJobId comes from validationSchemaContext in Formik
+            return value !== this.options.context?.currentJobId;
+          },
+        ),
+    otherwise: (s) => s.nullable().notRequired(),
   }),
+
+  // Follow Up Validation
+  followUpNote: Yup.string().when(
+    ['enabledActions.addFollowUp', 'enabledActions.removeFollowUp'],
+    {
+      is: (add: boolean, remove: boolean) => add && !remove,
+      then: (s) => s.required('Follow-up note is required'),
+      otherwise: (s) => s.nullable().notRequired(),
+    },
+  ),
+
+  // Remark Validation
+  remarkDescription: Yup.string().when('enabledActions.addRemark', {
+    is: true,
+    then: (s) => s.required('Remark is required'),
+    otherwise: (s) => s.nullable().notRequired(),
+  }),
+
+  // Status Validation
+  newStatus: Yup.string().when('enabledActions.updateStatus', {
+    is: true,
+    then: (s) => s.required('Please select a status'),
+    otherwise: (s) => s.nullable().notRequired(),
+  }),
+
+  // Assign To Validation
+  interviewerId: Yup.string().when('enabledActions.assignTo', {
+    is: true,
+    then: (s) => s.required('Please select an interviewer'),
+    otherwise: (s) => s.nullable().notRequired(),
+  }),
+  time: Yup.date()
+    .nullable()
+    .when('enabledActions.assignTo', {
+      is: true,
+      then: (s) =>
+        s.required('Time is required').min(new Date(), 'Cannot be in the past'),
+      otherwise: (s) => s.nullable().notRequired(),
+    }),
 });

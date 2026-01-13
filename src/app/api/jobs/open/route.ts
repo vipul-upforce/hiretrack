@@ -127,11 +127,16 @@ export async function POST(req: NextRequest) {
     const previousJob = candidate.jobId
       ? await Job!.findById(candidate.jobId)
       : null;
+
     const nextJob = await Job!.findById(jobId);
 
     if (!nextJob) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
+    candidate.jobId = jobId;
+    candidate.status = 'applied';
+
+    await candidate.save();
 
     // Create a new history entry for the job assignment
     const historyEntry: ICandidateHistory = {
@@ -148,6 +153,7 @@ export async function POST(req: NextRequest) {
       previousInterviewer: null,
       assignmentBy: user.id || null,
     };
+
     // Add this entry to history collection
     await History!.findOneAndUpdate(
       { jobId, candidateId },
@@ -202,8 +208,11 @@ export async function POST(req: NextRequest) {
         select: 'title description ',
       },
     ]);
+
     const candidateObj = populatedCandidate.toObject();
+
     delete candidateObj.jobId;
+
     broadcastCandidateUpdate({
       ...candidateObj,
       jobId: {

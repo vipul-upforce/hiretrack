@@ -13,6 +13,7 @@ import {
 import {
   useAssignJobMutation,
   useFetchOpenJobsQuery,
+  useFetchJobLanesQuery,
 } from '@/lib/features/job/jobApi';
 import { useFetchInterviewersQuery } from '@/lib/features/user/userApi';
 import {
@@ -24,7 +25,7 @@ import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import { useSendMailMutation } from '@/lib/features/org/orgApi';
 import { ICandidateHistory } from '@/lib/models/history';
 import { sentAssignmentMail } from '@/lib/utils';
-import { Candidate } from '@/types/candidate';
+import { Candidate, CandidateStatus } from '@/types/candidate';
 import { getJobId } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
 import {
   UnifiedFormValues,
@@ -64,6 +65,15 @@ export function useCandidateActions({
   const { data: googleCalendarData } =
     useGetGoogleCalendarConfigQuery(undefined);
 
+  const getInitialJobId = useCallback(() => {
+    if (typeof candidate.jobId === 'string') return candidate.jobId;
+    if (candidate.jobId && typeof candidate.jobId === 'object')
+      return candidate.jobId._id;
+    return '';
+  }, [candidate.jobId]);
+
+  const jobId = getInitialJobId();
+
   const shouldFetchInterviewers =
     !!user && user.role !== 'candidate' && user.role !== '';
   const { data: interviewers, refetch: refetchInterviewers } =
@@ -77,7 +87,13 @@ export function useCandidateActions({
     markAsDone: initialAction === 'markAsDone',
     addFollowUp: initialAction === 'addFollowUp',
     addRemark: initialAction === 'addRemark',
+    updateStatus: initialAction === 'updateStatus',
   });
+
+  const { data: jobLanesData, isLoading: isLoadingLanes } =
+    useFetchJobLanesQuery(jobId, {
+      skip: !jobId || !isOpen,
+    });
 
   // Sync checkboxes with initialAction
   useEffect(() => {
@@ -88,17 +104,11 @@ export function useCandidateActions({
         markAsDone: initialAction === 'markAsDone',
         addFollowUp: initialAction === 'addFollowUp',
         addRemark: initialAction === 'addRemark',
+        updateStatus: initialAction === 'updateStatus',
       });
       refetchInterviewers();
     }
   }, [isOpen, initialAction, refetchInterviewers]);
-
-  const getInitialJobId = useCallback(() => {
-    if (typeof candidate.jobId === 'string') return candidate.jobId;
-    if (candidate.jobId && typeof candidate.jobId === 'object')
-      return candidate.jobId._id;
-    return '';
-  }, [candidate.jobId]);
 
   const initialValues = useMemo<UnifiedFormValues>(
     () => ({
@@ -116,7 +126,7 @@ export function useCandidateActions({
         candidate?.assignment?.googleMeet?.meetingAttachments || [],
       additionalGuests: [],
       attachments: [],
-      jobId: getInitialJobId(),
+      jobId,
       followUpNote: candidate?.followUp?.note || '',
       followUpDate: candidate?.followUp?.date
         ? dayjs(candidate.followUp.date)
@@ -127,59 +137,77 @@ export function useCandidateActions({
       isRemarkPrivate: user?.role !== 'interviewer',
       selectedMentions: [],
       removeFollowUp: false,
+      newStatus: '',
+      enabledActions: {
+        assignTo: initialAction === 'assignTo',
+        switchJob: initialAction === 'switchJob',
+        markAsDone: initialAction === 'markAsDone',
+        addFollowUp: initialAction === 'addFollowUp',
+        addRemark: initialAction === 'addRemark',
+        updateStatus: initialAction === 'updateStatus',
+      },
     }),
-    [candidate, user?.role, getInitialJobId],
+    [candidate, user?.role, jobId],
   );
 
-  const toggleAction = (action: CandidateActionType, checked: boolean) => {
-    setActionCheckboxes((prev) => {
+  const toggleAction = useCallback(
+    (
+      action: CandidateActionType,
+      checked: boolean,
+      setFieldValue: (
+        field: string,
+        value: unknown,
+        shouldValidate?: boolean,
+      ) => void,
+      values: UnifiedFormValues,
+      setFieldTouched: (
+        field: string,
+        isTouched: boolean,
+        shouldValidate?: boolean,
+      ) => void,
+    ) => {
+      const currentActions = values.enabledActions;
+
+      // "At least one" logic
       if (!checked) {
-        const isOnlyCheckboxChecked =
-          Object.values(prev).filter((v) => v).length === 1 && prev[action];
-        if (isOnlyCheckboxChecked) {
+        const activeCount = Object.values(currentActions).filter(
+          (v) => v === true,
+        ).length;
+        if (activeCount === 1 && currentActions[action]) {
           toast({
             title: 'Info',
             description: 'At least one action must be selected',
-            variant: 'default',
           });
-          return prev;
+          return;
         }
       }
-      const next = { ...prev, [action]: checked };
-      if (action === 'markAsDone' && checked) next.assignTo = false;
-      return next;
-    });
-  };
 
-  const isFormValid = (values: UnifiedFormValues) => {
-    const hasAnyAction = Object.values(actionCheckboxes).some((v) => v);
-    if (!hasAnyAction) return false;
+      const nextActions = { ...currentActions, [action]: checked };
 
-    if (actionCheckboxes.assignTo && !values.interviewerId) return false;
-    if (actionCheckboxes.switchJob && !values.jobId) return false;
-    if (
-      actionCheckboxes.addFollowUp &&
-      !values.followUpNote.trim() &&
-      !values.followUpDate
-    )
-      return false;
+      // Mutual exclusivity
+      if (action === 'markAsDone' && checked) nextActions.assignTo = false;
+      if (action === 'switchJob' && checked) nextActions.updateStatus = false;
+      if (action === 'updateStatus' && checked) nextActions.switchJob = false;
 
-    // Logic for Remark validation
-    const hasRemarkText = !!values.remarkDescription.trim();
-    if (actionCheckboxes.addRemark) {
-      if (!actionCheckboxes.assignTo && !actionCheckboxes.markAsDone) {
-        if (!hasRemarkText) return false;
+      if (checked) {
+        const fieldsMap: Record<string, string[]> = {
+          assignTo: ['interviewerId', 'time'],
+          switchJob: ['jobId'],
+          updateStatus: ['newStatus'],
+          addFollowUp: ['followUpNote', 'followUpDate'],
+          addRemark: ['remarkDescription'],
+        };
+
+        const fieldsToReset = fieldsMap[action] || [];
+        fieldsToReset.forEach((field) => {
+          setFieldTouched(field, false, false);
+        });
       }
-      if (
-        (actionCheckboxes.markAsDone || actionCheckboxes.assignTo) &&
-        !hasRemarkText
-      ) {
-        return false;
-      }
-    }
 
-    return true;
-  };
+      setFieldValue('enabledActions', nextActions, true);
+    },
+    [],
+  );
 
   const handleAssignTo = async (
     values: UnifiedFormValues,
@@ -323,15 +351,7 @@ export function useCandidateActions({
     values: UnifiedFormValues,
     helpers: FormikHelpers<UnifiedFormValues>,
   ) => {
-    if (!isFormValid(values)) {
-      toast({
-        title: 'Error',
-        description: 'Please fill all required fields.',
-        variant: 'destructive',
-      });
-      helpers.setSubmitting(false);
-      return;
-    }
+    const actions = values.enabledActions;
 
     if (!user) {
       toast({
@@ -372,11 +392,11 @@ export function useCandidateActions({
       const updates: Partial<Candidate> = {};
       const historyEntries: ICandidateHistory[] = [];
 
-      if (actionCheckboxes.assignTo) {
+      if (actions.assignTo) {
         await handleAssignTo(values, updates, historyEntries);
       }
 
-      if (actionCheckboxes.switchJob && values.jobId) {
+      if (actions.switchJob && values.jobId) {
         const already =
           candidate.jobId &&
           (typeof candidate.jobId === 'string'
@@ -390,6 +410,17 @@ export function useCandidateActions({
           if (resp.updatedCandidate && onUpdate)
             onUpdate(resp.updatedCandidate);
         }
+        if (candidate.status !== 'applied') {
+          updates.status = 'applied';
+        }
+      }
+
+      if (
+        actions.updateStatus &&
+        values.newStatus &&
+        values.newStatus !== candidate.status
+      ) {
+        updates.status = values.newStatus as CandidateStatus;
       }
 
       if (values.removeFollowUp) {
@@ -412,7 +443,7 @@ export function useCandidateActions({
           },
           attachments: [],
         });
-      } else if (actionCheckboxes.addFollowUp) {
+      } else if (actions.addFollowUp) {
         updates.followUp = {
           note: values.followUpNote.trim(),
           date: values.followUpDate?.toISOString() || '',
@@ -439,7 +470,7 @@ export function useCandidateActions({
         });
       }
 
-      if (actionCheckboxes.markAsDone) {
+      if (actions.markAsDone) {
         updates.assignment = null;
         const previousInterviewerId =
           typeof candidate.assignment?.interviewerId === 'object' &&
@@ -449,7 +480,7 @@ export function useCandidateActions({
             : null;
 
         const markRemark =
-          actionCheckboxes.addRemark && values.remarkDescription.trim()
+          actions.addRemark && values.remarkDescription.trim()
             ? {
                 description: values.remarkDescription.trim(),
                 date: new Date().toISOString(),
@@ -465,7 +496,7 @@ export function useCandidateActions({
                 isPrivate: values.isRemarkPrivate,
               };
 
-        if (actionCheckboxes.addRemark && values.remarkDescription.trim()) {
+        if (actions.addRemark && values.remarkDescription.trim()) {
           const remark = {
             description: values.remarkDescription.trim(),
             date: new Date().toISOString(),
@@ -487,10 +518,10 @@ export function useCandidateActions({
       }
 
       if (
-        actionCheckboxes.addRemark &&
+        actions.addRemark &&
         values.remarkDescription.trim() &&
-        !actionCheckboxes.assignTo &&
-        !actionCheckboxes.markAsDone
+        !actions.assignTo &&
+        !actions.markAsDone
       ) {
         const remark = {
           description: values.remarkDescription.trim(),
@@ -534,7 +565,7 @@ export function useCandidateActions({
         ...updates,
       } as Candidate).unwrap();
 
-      if (actionCheckboxes.assignTo) sentAssignmentMail(result, sendEmail);
+      if (actions.assignTo) sentAssignmentMail(result, sendEmail);
 
       for (const entry of historyEntries) {
         await updateCandidateHistory({
@@ -614,6 +645,8 @@ export function useCandidateActions({
       interviewers,
       googleCalendarData,
       initialValues,
+      jobLanesData,
+      isLoadingLanes,
     },
     handlers: {
       handleSubmit,

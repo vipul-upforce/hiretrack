@@ -64,7 +64,7 @@ export function ActionToggles({
             <CheckboxItem
               id="switchJob"
               label="Switch Job"
-              disabled={isSubmitting}
+              disabled={isSubmitting || actionCheckboxes.updateStatus}
               checked={actionCheckboxes.switchJob}
               onChange={(v) => onChange('switchJob', v)}
             />
@@ -96,6 +96,13 @@ export function ActionToggles({
           disabled={isSubmitting}
           checked={actionCheckboxes.addRemark}
           onChange={(v) => onChange('addRemark', v)}
+        />
+        <CheckboxItem
+          id="updateStatus"
+          label="Update Status"
+          disabled={isSubmitting || actionCheckboxes.switchJob}
+          checked={actionCheckboxes.updateStatus}
+          onChange={(v) => onChange('updateStatus', v)}
         />
       </div>
     </div>

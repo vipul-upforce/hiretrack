@@ -67,7 +67,6 @@ export function EditUserDialog({
         name: values.name.trim(),
       }).unwrap();
 
-
       // Check if the updated user's email matches the current user's email in state
       if (user && user.id === selectedUser?.id) {
         // Update the Redux state with the new user data
@@ -77,7 +76,7 @@ export function EditUserDialog({
             email: values.email.toLowerCase().trim(),
             name: values.name.trim(),
             id: selectedUser?.id || '',
-            organizationId: selectedUser?.organizationId || '',
+            organizationId: user.organizationId || selectedUser?.organizationId || '',
             password: selectedUser?.password || '',
             createdAt: selectedUser?.createdAt || new Date(),
             updatedAt: selectedUser?.updatedAt || new Date(),

@@ -113,6 +113,7 @@ export function AssignJobDialog({
             title: 'Success',
             description: `Successfully assigned ${candidateIdsToMove.length} candidate(s) to the job`,
           });
+          onOpenChange(false);
         } catch {
           toast({
             title: 'Error',
@@ -139,12 +140,14 @@ export function AssignJobDialog({
             title: 'Success',
             description: 'Candidate assigned successfully',
           });
+          onOpenChange(false);
         } else {
           toast({
             title: 'Error',
             description: 'Candidate is already assigned to this job',
             variant: 'destructive',
           });
+          onOpenChange(false);
         }
       }
     } catch {
@@ -254,7 +257,7 @@ export function AssignJobDialog({
                   </div>
                 </div>
 
-                <div className="relative sticky bottom-0 z-10 flex w-full justify-between space-x-2 border-t bg-background px-6 py-4">
+                <div className="sticky bottom-0 z-10 flex w-full justify-between space-x-2 border-t bg-background px-6 py-4">
                   <Button
                     type="submit"
                     disabled={isSubmitting || loading}
