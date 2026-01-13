@@ -162,6 +162,23 @@ export const CustomFieldsProvider: React.FC<{ children: ReactNode }> = memo(
       const unsubscribe = sseManager.subscribe({
         id: subscriberIdRef.current,
         onCustomFieldsUpdate: (updatedCustomFields: CustomFields) => {
+          // Check if it's an error object before setting state
+          // verifyAndDecryptSSE returns { success: false, error: "..." } on failure
+          if (
+            updatedCustomFields &&
+            typeof updatedCustomFields === 'object' &&
+            ('success' in updatedCustomFields || 'error' in updatedCustomFields)
+          ) {
+            const errorData = updatedCustomFields as { success?: boolean; error?: string };
+            if (errorData.success === false || errorData.error) {
+              logger.error(
+                'Error object received as customFields from SSE, not updating state:',
+                errorData.error || 'Unknown error',
+              );
+              return;
+            }
+          }
+          
           // Always update the state with SSE data to ensure real-time reactivity
           // React will handle whether a re-render is actually needed
           isUpdatingFromSSERef.current = true;

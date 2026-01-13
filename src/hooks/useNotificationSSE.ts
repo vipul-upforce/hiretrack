@@ -295,6 +295,20 @@ class SSEManager {
           typeof decodedCustomFields === 'object' &&
           !Array.isArray(decodedCustomFields)
         ) {
+          // Check if it's an error object (has success: false or error property)
+          const hasError = 
+            'success' in decodedCustomFields && 
+            (decodedCustomFields as { success?: boolean }).success === false;
+          const hasErrorProperty = 'error' in decodedCustomFields;
+          
+          if (hasError || hasErrorProperty) {
+            logger.error(
+              'Invalid custom fields data received from SSE (error object):',
+              decodedCustomFields,
+            );
+            return;
+          }
+          
           this.subscribers.forEach((sub) => {
             sub.onCustomFieldsUpdate?.(decodedCustomFields as CustomFields);
           });

@@ -107,22 +107,22 @@ export function JobAnalyticsModal({
     };
   }, [dateRange?.[0], dateRange?.[1], job._id]);
 
-  // Get analytics data using hooks
+  // Get analytics data using hooks - only load when modal is open
   const {
     data: funnelData,
     loading: funnelLoading,
     refetch: refetchFunnel,
-  } = useCandidateFunnel(filters, organizationId);
+  } = useCandidateFunnel(filters, organizationId, isOpen);
   const {
     data: interviewData,
     loading: interviewLoading,
     refetch: refetchInterview,
-  } = useInterviewAssignments(filters, organizationId);
+  } = useInterviewAssignments(filters, organizationId, isOpen);
   const {
     data: trendsData,
     loading: trendsLoading,
     refetch: refetchTrends,
-  } = useApplicationTrends(filters, organizationId);
+  } = useApplicationTrends(filters, organizationId, isOpen);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

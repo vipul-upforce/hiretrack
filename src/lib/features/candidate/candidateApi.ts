@@ -104,7 +104,7 @@ export const candidateApi = baseApi.injectEndpoints({
       query: ({
         isPagination = true,
         page = 1,
-        limit = 48,
+        limit = 10,
         filterValue = '',
         assignedTo = '',
       }) => {
