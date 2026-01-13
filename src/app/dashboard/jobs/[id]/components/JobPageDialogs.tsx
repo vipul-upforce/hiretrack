@@ -70,7 +70,7 @@ interface JobPageDialogsProps {
   } | null;
   isChecklistConfigOpen: boolean;
   setIsChecklistConfigOpen: (open: boolean) => void;
-  mergedCandidates: Candidate[];
+  // mergedCandidates: Candidate[];
 }
 
 export function JobPageDialogs({
@@ -118,7 +118,7 @@ export function JobPageDialogs({
   checklistConfigLane,
   isChecklistConfigOpen,
   setIsChecklistConfigOpen,
-  mergedCandidates,
+  // mergedCandidates,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   // Find candidate for checklist remarks dialog
@@ -232,18 +232,22 @@ export function JobPageDialogs({
         jobId={jobId}
       />
 
-      {job && user && (
-        <JobAnalyticsModal
-          isOpen={isAnalyticsOpen}
-          onClose={() => setIsAnalyticsOpen(false)}
-          job={job}
-          organizationId={
-            typeof user?.organizationId === 'string'
-              ? user.organizationId
-              : (user?.organizationId?._id as string) || ''
-          }
-        />
-      )}
+      {job &&
+        user &&
+        user.role !== 'candidate' &&
+        user.role !== 'interviewer' &&
+        user.role !== 'hr' && (
+          <JobAnalyticsModal
+            isOpen={isAnalyticsOpen}
+            onClose={() => setIsAnalyticsOpen(false)}
+            job={job}
+            organizationId={
+              typeof user?.organizationId === 'string'
+                ? user.organizationId
+                : (user?.organizationId?._id as string) || ''
+            }
+          />
+        )}
 
       {job && (
         <JobEmailNotificationSettingsDialog

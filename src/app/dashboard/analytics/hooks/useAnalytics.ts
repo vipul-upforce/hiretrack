@@ -224,11 +224,13 @@ export function useAnalytics<T = unknown>({
 export function useCandidateFunnel(
   filters?: AnalyticsFilters,
   organizationId?: string,
+  enabled?: boolean,
 ) {
   return useAnalytics<CandidateFunnelAnalytics>({
     endpoint: 'candidate-funnel',
     filters,
     organizationId,
+    enabled,
   });
 }
 
@@ -246,21 +248,25 @@ export function useJobPerformance(
 export function useInterviewAssignments(
   filters?: AnalyticsFilters,
   organizationId?: string,
+  enabled?: boolean,
 ) {
   return useAnalytics<InterviewAssignmentAnalytics>({
     endpoint: 'interview-assignments',
     filters,
     organizationId,
+    enabled,
   });
 }
 
 export function useApplicationTrends(
   filters?: AnalyticsFilters,
   organizationId?: string,
+  enabled?: boolean,
 ) {
   return useAnalytics<ApplicationTrendsAnalytics>({
     endpoint: 'application-trends',
     filters,
     organizationId,
+    enabled,
   });
 }
