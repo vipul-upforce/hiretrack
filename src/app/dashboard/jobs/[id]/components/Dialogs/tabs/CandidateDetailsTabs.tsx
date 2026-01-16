@@ -73,14 +73,14 @@ export function CandidateDetailsTabs({
       >
         <TabsTrigger
           value="overview"
-          className="flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:border-blue-400 dark:data-[state=active]:text-blue-400"
+          className="flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary dark:data-[state=active]:border-primary dark:data-[state=active]:text-primary"
         >
           <UserIcon className="h-4 w-4" />
           Overview
         </TabsTrigger>
         <TabsTrigger
           value="history"
-          className="flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:border-blue-400 dark:data-[state=active]:text-blue-400"
+          className="flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary dark:data-[state=active]:border-primary dark:data-[state=active]:text-primary"
         >
           <MessageSquare className="h-4 w-4" />
           History
@@ -88,7 +88,7 @@ export function CandidateDetailsTabs({
         {user?.role !== 'candidate' && (
           <TabsTrigger
             value="logs"
-            className={`flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-transparent data-[state=active]:text-blue-600 dark:data-[state=active]:border-blue-400 dark:data-[state=active]:text-blue-400 ${user?.role === 'interviewer' ? 'hidden' : ''}`}
+            className={`flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary dark:data-[state=active]:border-primary dark:data-[state=active]:text-primary ${user?.role === 'interviewer' ? 'hidden' : ''}`}
           >
             <Clock className="h-4 w-4" />
             Logs

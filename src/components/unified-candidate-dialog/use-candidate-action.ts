@@ -340,7 +340,7 @@ export function useCandidateActions({
     }
 
     const assignmentRemark =
-      actionCheckboxes.addRemark && values.remarkDescription.trim()
+      values.enabledActions.addRemark && values.remarkDescription.trim()
         ? {
             description: values.remarkDescription.trim(),
             date: new Date().toISOString(),
@@ -387,7 +387,7 @@ export function useCandidateActions({
     try {
       // Handle bulk operations
       if (Array.isArray(candidate)) {
-        if (actionCheckboxes.switchJob && values.jobId) {
+        if (actions.switchJob && values.jobId) {
           for (const c of candidate) {
             await assignJob({
               jobId: values.jobId,
