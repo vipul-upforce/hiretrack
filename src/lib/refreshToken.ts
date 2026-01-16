@@ -248,6 +248,11 @@ export async function verifyRefreshToken(
 
 /**
  * Update refresh token (for token rotation)
+ * Supports multiple concurrent tabs by:
+ * 1. Adding the new token to the array
+ * 2. Keeping the old token valid for a grace period (30 seconds)
+ *    to allow other tabs to refresh concurrently
+ * 3. The old token will be cleaned up automatically after expiry
  */
 export async function updateRefreshToken(
   userId: string,
@@ -258,32 +263,51 @@ export async function updateRefreshToken(
   const newExpiry = new Date();
   newExpiry.setTime(newExpiry.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
+  // Grace period expiry for old token (30 seconds) to allow concurrent tab refreshes
+  // This gives inactive tabs time to refresh before the old token expires
+  const gracePeriodExpiry = new Date();
+  gracePeriodExpiry.setTime(gracePeriodExpiry.getTime() + 30 * 1000); // 30 seconds
+
+  const newTokenEntry = {
+    token: newTokenHash,
+    expiry: newExpiry,
+    createdAt: new Date(),
+  };
+
   if (isCandidate) {
+    // First, update old token's expiry to grace period
     await CandidateAccount!.findByIdAndUpdate(
       userId,
       {
         $set: {
-          'refreshTokens.$[elem].token': newTokenHash,
-          'refreshTokens.$[elem].expiry': newExpiry,
+          'refreshTokens.$[oldElem].expiry': gracePeriodExpiry,
         },
       },
       {
-        arrayFilters: [{ 'elem.token': oldTokenHash }],
+        arrayFilters: [{ 'oldElem.token': oldTokenHash }],
       },
     );
+    // Then, add new token (separate operation to avoid MongoDB conflict)
+    await CandidateAccount!.findByIdAndUpdate(userId, {
+      $push: { refreshTokens: newTokenEntry },
+    });
   } else {
+    // First, update old token's expiry to grace period
     await User!.findByIdAndUpdate(
       userId,
       {
         $set: {
-          'refreshTokens.$[elem].token': newTokenHash,
-          'refreshTokens.$[elem].expiry': newExpiry,
+          'refreshTokens.$[oldElem].expiry': gracePeriodExpiry,
         },
       },
       {
-        arrayFilters: [{ 'elem.token': oldTokenHash }],
+        arrayFilters: [{ 'oldElem.token': oldTokenHash }],
       },
     );
+    // Then, add new token (separate operation to avoid MongoDB conflict)
+    await User!.findByIdAndUpdate(userId, {
+      $push: { refreshTokens: newTokenEntry },
+    });
   }
 }
 
