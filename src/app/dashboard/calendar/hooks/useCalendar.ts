@@ -514,8 +514,8 @@ export function useCalendar(): UseCalendarReturn {
           candidate: {
             ...eventsOnDate[0].extendedProps.candidate,
             assignment: eventsOnDate[0].extendedProps.candidate.assignment || {
-              interviewerId: '',
-              time: '',
+              interviewerId: null,
+              time: new Date().toISOString(),
               assignedAt: new Date().toISOString(),
             },
             tracking: {

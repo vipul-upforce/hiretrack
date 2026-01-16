@@ -35,7 +35,7 @@ export function useNormalizedCandidates({
   } = useFetchCandidatesQuery(jobId);
 
   // Get SSE candidates (only if setSelectedCandidate is provided)
-  const { candidates: sseCandidates } = useSSE(
+  const { candidates: sseCandidates, lanes: sseLanes } = useSSE(
     setSelectedCandidate,
     selectedCandidate || null,
     jobId,
@@ -74,5 +74,6 @@ export function useNormalizedCandidates({
     candidates: normalizedCandidates,
     isLoading: isCandidatesLoading,
     refetch,
+    sseLanes,
   };
 }

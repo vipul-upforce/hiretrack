@@ -110,7 +110,7 @@ export function AssignCandidateDialog({
     interviewerId:
       typeof candidate.assignment?.interviewerId === 'string'
         ? candidate.assignment.interviewerId
-        : candidate.assignment?.interviewerId?._id || '',
+        : candidate.assignment?.interviewerId?._id || null,
     time: candidate.assignment?.time
       ? dayjs(candidate?.assignment?.time)
       : null,

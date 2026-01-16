@@ -307,6 +307,10 @@ export function normalizeCandidate(
     remarks: Array.isArray(candidateObj.remarks)
       ? candidateObj.remarks
       : undefined,
+    remarksCount:
+      typeof candidateObj.remarksCount === 'number'
+        ? candidateObj.remarksCount
+        : undefined,
     attachments: Array.isArray(candidateObj.attachments)
       ? candidateObj.attachments
       : [],
