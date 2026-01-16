@@ -82,7 +82,7 @@ export function UnifiedCandidateActionsDialog(
                 </span>
               ) : (
                 <span>
-                  Update Candidate - {' '}
+                  Update Candidate -{' '}
                   <span className="font-bold text-primary">
                     {candidate.name}
                   </span>
@@ -197,6 +197,7 @@ export function UnifiedCandidateActionsDialog(
                     )}
 
                     {values.enabledActions.updateStatus &&
+                      user?.role !== 'interviewer' &&
                       !values.enabledActions.switchJob && (
                         <StatusUpdateSection
                           candidate={candidate}
