@@ -22,9 +22,9 @@ import {
   useCancelMeetingMutation,
 } from '@/lib/features/calendar/calendarApi';
 import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
-import { useSendMailMutation } from '@/lib/features/org/orgApi';
+import { useSendMailMutation, useSendStatusMailMutation } from '@/lib/features/org/orgApi';
 import { ICandidateHistory } from '@/lib/models/history';
-import { sentAssignmentMail } from '@/lib/utils';
+import { sentAssignmentMail, sentStatusMailHandler } from '@/lib/utils';
 import { Candidate, CandidateStatus } from '@/types/candidate';
 import { getJobId } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
 import {
@@ -56,6 +56,7 @@ export function useCandidateActions({
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [assignJob] = useAssignJobMutation();
   const [sendEmail] = useSendMailMutation();
+  const [sendStatusMail] = useSendStatusMailMutation();
   const [scheduleMeeting] = useScheduleMeetingMutation();
   const [updateMeeting] = useUpdateMeetingMutation();
   const [cancelMeeting, { isLoading: isCancelling }] =
@@ -566,6 +567,17 @@ export function useCandidateActions({
       } as Candidate).unwrap();
 
       if (actions.assignTo) sentAssignmentMail(result, sendEmail);
+
+      if (actions.updateStatus && values.newStatus && values.newStatus !== candidate.status) {
+        sentStatusMailHandler(
+          { ...result, prev_status: candidate.status },
+          sendStatusMail,
+          {
+            remark: actions.addRemark ? values.remarkDescription : '',
+            rating: actions.addRemark ? values.remarkRating as number : 0,
+          },
+        );
+      }
 
       for (const entry of historyEntries) {
         await updateCandidateHistory({
