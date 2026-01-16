@@ -78,7 +78,7 @@ export default function RemarkInputSection({
           }}
           organizationId={String(user?.organizationId) || ''}
           currentUserRole={user?.role || ''}
-          rows={3}
+          rows={2}
           isRemarkPrivate={isSubRemarkPrivate}
           onSelectedMentionsChange={setSelectedMentions}
         />

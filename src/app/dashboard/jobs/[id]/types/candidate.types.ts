@@ -237,6 +237,7 @@ export interface NormalizedCandidate {
   tags?: ITag[];
   resume: CandidateResume | null;
   remarks?: Remark[];
+  remarksCount?: number; // Count of remarks (from optimized API)
   attachments: FileAttachment[];
   status: CandidateStatus;
   tracking: CandidateTracking;

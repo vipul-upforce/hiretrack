@@ -25,9 +25,10 @@ import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import {
   useSendMailMutation,
   useSendUnassignMailMutation,
+  useSendStatusMailMutation,
 } from '@/lib/features/org/orgApi';
 import { ICandidateHistory } from '@/lib/models/history';
-import { sentAssignmentMail } from '@/lib/utils';
+import { sentAssignmentMail, sentStatusMailHandler } from '@/lib/utils';
 import { Candidate, CandidateStatus } from '@/types/candidate';
 import {
   getJobId,
@@ -39,6 +40,19 @@ import {
   ActionCheckboxes,
   UnifiedCandidateActionsDialogProps,
 } from './types';
+
+/**
+ * Normalizes interviewerId: converts empty string or "-1" to null
+ * This prevents sending empty strings to the server which causes issues
+ */
+const normalizeInterviewerId = (
+  interviewerId: string | null | undefined,
+): string | null => {
+  if (!interviewerId || interviewerId === '' || interviewerId === '-1') {
+    return null;
+  }
+  return interviewerId;
+};
 
 export function useCandidateActions({
   candidate,
@@ -63,6 +77,7 @@ export function useCandidateActions({
   const [assignJob] = useAssignJobMutation();
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
+  const [sendStatusMail] = useSendStatusMailMutation();
   const [scheduleMeeting] = useScheduleMeetingMutation();
   const [updateMeeting] = useUpdateMeetingMutation();
   const [cancelMeeting, { isLoading: isCancelling }] =
@@ -117,12 +132,15 @@ export function useCandidateActions({
     }
   }, [isOpen, initialAction, refetchInterviewers]);
 
-  const initialValues = useMemo<UnifiedFormValues>(
-    () => ({
-      interviewerId:
-        typeof candidate.assignment?.interviewerId === 'string'
-          ? candidate.assignment.interviewerId
-          : candidate.assignment?.interviewerId?._id || '',
+  const initialValues = useMemo<UnifiedFormValues>(() => {
+    // Get interviewerId, use "-1" for "None" option in Select when there's no assignment
+    const interviewerIdValue =
+      typeof candidate.assignment?.interviewerId === 'string'
+        ? candidate.assignment.interviewerId
+        : candidate.assignment?.interviewerId?._id || null;
+
+    return {
+      interviewerId: interviewerIdValue || '-1', // Use "-1" for Select "None" option
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
@@ -153,9 +171,8 @@ export function useCandidateActions({
         addRemark: initialAction === 'addRemark',
         updateStatus: initialAction === 'updateStatus',
       },
-    }),
-    [candidate, user?.role, jobId],
-  );
+    };
+  }, [candidate, user?.role, jobId, initialAction]);
 
   const toggleAction = useCallback(
     (
@@ -299,8 +316,12 @@ export function useCandidateActions({
       ...candidate.attachments,
       ...values.attachments.filter((a) => !existingNames.has(a.name)),
     ];
+    // Normalize interviewerId: convert empty string or "-1" to null
+    const normalizedInterviewerId = normalizeInterviewerId(
+      values.interviewerId as string | null | undefined,
+    );
     updates.assignment = {
-      interviewerId: values.interviewerId,
+      interviewerId: normalizedInterviewerId,
       time: values.time?.toISOString() as string,
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),
@@ -325,7 +346,7 @@ export function useCandidateActions({
     }
 
     const assignmentRemark =
-      actionCheckboxes.addRemark && values.remarkDescription.trim()
+      values.enabledActions.addRemark && values.remarkDescription.trim()
         ? {
             description: values.remarkDescription.trim(),
             date: new Date().toISOString(),
@@ -372,7 +393,7 @@ export function useCandidateActions({
     try {
       // Handle bulk operations
       if (Array.isArray(candidate)) {
-        if (actionCheckboxes.switchJob && values.jobId) {
+        if (actions.switchJob && values.jobId) {
           for (const c of candidate) {
             await assignJob({
               jobId: values.jobId,
@@ -573,6 +594,21 @@ export function useCandidateActions({
       } as Candidate).unwrap();
 
       if (actions.assignTo) sentAssignmentMail(result, sendEmail);
+
+      if (
+        actions.updateStatus &&
+        values.newStatus &&
+        values.newStatus !== candidate.status
+      ) {
+        sentStatusMailHandler(
+          { ...result, prev_status: candidate.status },
+          sendStatusMail,
+          {
+            remark: actions.addRemark ? values.remarkDescription : '',
+            rating: actions.addRemark ? (values.remarkRating as number) : 0,
+          },
+        );
+      }
 
       for (const entry of historyEntries) {
         await updateCandidateHistory({

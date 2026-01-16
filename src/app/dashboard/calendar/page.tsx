@@ -407,6 +407,8 @@ export default function CalendarPage() {
       {/* Candidate Dialog */}
       {selectedEvent && 'extendedProps' in selectedEvent && (
         <CandidateDetailsDialog
+          isAssigning={false}
+          setIsAssigning={() => {}}
           candidate={
             {
               ...selectedEvent.extendedProps.candidate,
@@ -445,7 +447,7 @@ export default function CalendarPage() {
                 ...selectedEvent.extendedProps.candidate.assignment,
                 interviewerId:
                   selectedEvent.extendedProps.candidate.assignment
-                    ?.interviewerId || '',
+                    ?.interviewerId || null,
                 time:
                   selectedEvent.start?.toISOString() ||
                   selectedEvent.extendedProps.candidate.assignment?.time ||

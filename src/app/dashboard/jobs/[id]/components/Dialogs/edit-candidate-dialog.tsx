@@ -132,8 +132,8 @@ export function EditCandidateDialog({
     }
 
     return () => {
-    setSelectedFormId(null);
-    setStepName('FormList');
+      setSelectedFormId(null);
+      setStepName('FormList');
     };
   }, [customFields, setSelectedFormId, setStepName]);
 
@@ -257,19 +257,23 @@ export function EditCandidateDialog({
       };
 
       if (values.assignment) {
-        if (values.assignment.interviewerId === '-1') {
-          delete updatedCandidate.assignment;
-        } else if (
-          typeof values.assignment.interviewerId === 'string' ||
-          typeof values.assignment.interviewerId === 'object'
+        // Normalize interviewerId: convert empty string or "-1" to null/delete assignment
+        const normalizedInterviewerId =
+          typeof values.assignment.interviewerId === 'string'
+            ? values.assignment.interviewerId
+            : values.assignment?.interviewerId?._id?.replace(/"/g, '') || null;
+
+        if (
+          !normalizedInterviewerId ||
+          normalizedInterviewerId === '' ||
+          normalizedInterviewerId === '-1'
         ) {
+          // Delete assignment if interviewerId is empty, null, or "-1"
+          delete updatedCandidate.assignment;
+        } else {
           updatedCandidate.assignment = {
-            // assignment: values.assignment.assignment,
             ...values.assignment,
-            interviewerId:
-              typeof values.assignment.interviewerId === 'string'
-                ? values.assignment.interviewerId
-                : values.assignment?.interviewerId?._id.replace(/"/g, ''),
+            interviewerId: normalizedInterviewerId,
             time: values.assignment.time,
             assignedAt: values.assignment.assignedAt,
           };
@@ -305,7 +309,7 @@ export function EditCandidateDialog({
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === 'object'
-          ? candidate.assignment.interviewerId.name
+          ? candidate.assignment.interviewerId?.name
           : null;
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === 'object'
@@ -314,7 +318,7 @@ export function EditCandidateDialog({
 
       const nextInterviewer =
         result && typeof result.assignment?.interviewerId === 'object'
-          ? result.assignment.interviewerId.name
+          ? result.assignment.interviewerId?.name
           : null;
       const nextInterviewerId =
         result && typeof result.assignment?.interviewerId === 'object'
@@ -406,14 +410,17 @@ export function EditCandidateDialog({
 
   let interviewerId = null;
   if (candidate?.assignment?.interviewerId) {
-    // debugger;
+    // Normalize interviewerId: convert empty string or "-1" to null
     if (typeof candidate.assignment.interviewerId === 'string') {
       interviewerId =
+        !candidate.assignment.interviewerId ||
+        candidate.assignment.interviewerId === '' ||
         candidate.assignment.interviewerId === '-1'
           ? null
           : candidate.assignment.interviewerId;
-    } else if (candidate.assignment.interviewerId._id) {
-      interviewerId = candidate.assignment.interviewerId._id.replace(/"/g, '');
+    } else if (candidate.assignment.interviewerId?._id) {
+      const interviewerIdValue = candidate.assignment.interviewerId._id.replace(/"/g, '');
+      interviewerId = !interviewerIdValue || interviewerIdValue === '' || interviewerIdValue === '-1' ? null : interviewerIdValue;
     }
   }
 
@@ -426,7 +433,7 @@ export function EditCandidateDialog({
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
             ...candidate.assignment,
-            interviewerId: interviewerId || '',
+            interviewerId: interviewerId || null,
             time: candidate.assignment.time,
             assignedAt: candidate.assignment.assignedAt,
           }
