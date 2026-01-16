@@ -43,7 +43,7 @@ export const sentAssignmentMail = async (
       id: result._id,
       email:
         typeof result.assignment.interviewerId === 'object'
-          ? result.assignment.interviewerId.email
+          ? (result.assignment.interviewerId?.email ?? '')
           : '',
       eventTitle:
         result.jobId &&
@@ -62,7 +62,7 @@ export const sentAssignmentMail = async (
           : 'Unknown Job',
       interviewerName:
         typeof result.assignment.interviewerId === 'object'
-          ? result.assignment.interviewerId.name
+          ? (result.assignment.interviewerId?.name ?? '')
           : '',
       candidateName: result.name,
       status: result.status,

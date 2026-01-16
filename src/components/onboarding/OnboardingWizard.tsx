@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, ChevronRight, X, Check, SkipForward } from 'lucide-react';
 import ConfirmationDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
+import logger from '@/lib/logger';
 import { useOnboarding } from './OnboardingProvider';
 import ProgressIndicator from './ProgressIndicator';
 import WelcomeStep from './steps/WelcomeStep';
@@ -26,14 +27,21 @@ function OnboardingWizard() {
     setCurrentStepIndex,
     steps,
     progress,
-    completeStep,
-    skipStep,
+    onboardingStatus,
     validateStep,
     doNotShowAgain,
     updateOnboardingStatus,
+    invalidateStepCache,
   } = useOnboarding();
   const [isCurrentConfigured, setIsCurrentConfigured] = useState(false);
   const [showDismissDialog, setShowDismissDialog] = useState(false);
+  const validationInProgressRef = useRef(false);
+  const lastValidatedStepIdRef = useRef<string | null>(null);
+  const previousConfiguredStateRef = useRef<boolean | null>(null);
+  const autoAdvanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const isManualNavigationRef = useRef(false);
 
   // Total steps including Welcome + Completion
   const totalSteps = steps.length + 2;
@@ -44,26 +52,195 @@ function OnboardingWizard() {
       ? steps[currentStep - 1]
       : null;
 
-  // Validate current step
+  // Validate current step - optimized to prevent duplicate calls
   useEffect(() => {
     const validate = async () => {
       if (!currentStepData) {
         setIsCurrentConfigured(false);
+        lastValidatedStepIdRef.current = null;
+        previousConfiguredStateRef.current = null;
         return;
       }
-      const valid = await validateStep(currentStepData.id);
-      setIsCurrentConfigured(valid);
+
+      const stepId = currentStepData.id;
+
+      // Skip if already validating this step
+      if (validationInProgressRef.current) {
+        return;
+      }
+
+      // If step ID changed, reset validation state and invalidate cache
+      if (lastValidatedStepIdRef.current !== stepId) {
+        lastValidatedStepIdRef.current = stepId;
+        previousConfiguredStateRef.current = null;
+        // Invalidate cache for the new step to ensure fresh validation
+        invalidateStepCache(stepId);
+      }
+
+      validationInProgressRef.current = true;
+      try {
+        // Force refresh when step ID changes to get latest status
+        const forceRefresh = lastValidatedStepIdRef.current !== stepId;
+        const valid = await validateStep(stepId, forceRefresh);
+        setIsCurrentConfigured(valid);
+        lastValidatedStepIdRef.current = stepId;
+      } catch (error) {
+        logger.error('Validation error:', error);
+        setIsCurrentConfigured(false);
+      } finally {
+        validationInProgressRef.current = false;
+      }
     };
-    validate();
-  }, [currentStep, currentStepData, validateStep]);
+
+    // Validate when step ID changes
+    const stepId = currentStepData?.id;
+    if (stepId) {
+      validate();
+    } else {
+      setIsCurrentConfigured(false);
+      lastValidatedStepIdRef.current = null;
+      previousConfiguredStateRef.current = null;
+    }
+  }, [currentStep, currentStepData?.id, validateStep, invalidateStepCache]);
+
+  // Watch for changes in step completion status from the steps array
+  // This catches updates when step components trigger validation and refreshProgress updates
+  useEffect(() => {
+    if (!currentStepData) return;
+
+    const stepCompleted = currentStepData.isCompleted ?? false;
+    const stepId = currentStepData.id;
+
+    // Only update if:
+    // - We're on this step (lastValidatedStepIdRef matches)
+    // - The state actually changed
+    // - Not currently validating (to avoid race conditions)
+    if (
+      lastValidatedStepIdRef.current === stepId &&
+      isCurrentConfigured !== stepCompleted &&
+      !validationInProgressRef.current
+    ) {
+      // Track previous state before updating (only if not already set)
+      if (previousConfiguredStateRef.current === null) {
+        previousConfiguredStateRef.current = isCurrentConfigured;
+      }
+      setIsCurrentConfigured(stepCompleted);
+
+      // If step became configured, invalidate cache to ensure fresh validation
+      if (stepCompleted && !isCurrentConfigured) {
+        invalidateStepCache(stepId);
+      }
+    }
+  }, [
+    currentStepData?.isCompleted,
+    currentStepData?.id,
+    isCurrentConfigured,
+    invalidateStepCache,
+  ]);
+
+  // Auto-advance when step becomes configured
+  useEffect(() => {
+    // Clear any pending auto-advance timeout
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
+    if (
+      currentStep === 0 ||
+      currentStep === totalSteps - 1 ||
+      !isCurrentConfigured ||
+      previousConfiguredStateRef.current === true ||
+      previousConfiguredStateRef.current === null ||
+      isManualNavigationRef.current ||
+      validationInProgressRef.current ||
+      !currentStepData ||
+      !onboardingStatus
+    ) {
+      // Update previous state for next check
+      if (previousConfiguredStateRef.current !== isCurrentConfigured) {
+        previousConfiguredStateRef.current = isCurrentConfigured;
+      }
+      // Reset manual navigation flag after a short delay
+      if (isManualNavigationRef.current) {
+        setTimeout(() => {
+          isManualNavigationRef.current = false;
+        }, 500);
+      }
+      return;
+    }
+
+    // Only auto-advance if transitioning from false to true
+    if (
+      previousConfiguredStateRef.current === false &&
+      isCurrentConfigured === true
+    ) {
+      logger.info(
+        { stepId: currentStepData.id, stepIndex: currentStep },
+        'Step configured, auto-advancing to next step',
+      );
+
+      // Auto-advance after a short delay for better UX
+      autoAdvanceTimeoutRef.current = setTimeout(async () => {
+        const nextStep = currentStep + 1;
+        setCurrentStepIndex(nextStep);
+
+        // Update onboarding status with completed step
+        const updated = {
+          ...onboardingStatus,
+          completedSteps: Array.from(
+            new Set([...onboardingStatus.completedSteps, currentStepData.id]),
+          ),
+          skippedSteps: onboardingStatus.skippedSteps.filter(
+            (x) => x !== currentStepData.id,
+          ),
+          currentStep: nextStep,
+        };
+        await updateOnboardingStatus(updated);
+        // Reset validation ref to allow re-validation on next step
+        lastValidatedStepIdRef.current = null;
+        previousConfiguredStateRef.current = null;
+      }, 1500); // 1.5 second delay for user to see the success state
+    } else {
+      // Update previous state if no transition detected
+      previousConfiguredStateRef.current = isCurrentConfigured;
+    }
+  }, [
+    isCurrentConfigured,
+    currentStep,
+    totalSteps,
+    currentStepData,
+    onboardingStatus,
+    updateOnboardingStatus,
+  ]);
+
+  // Cleanup timeout on unmount
+  useEffect(
+    () => () => {
+      if (autoAdvanceTimeoutRef.current) {
+        clearTimeout(autoAdvanceTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   // Finish onboarding
   const handleFinish = async () => {
     await updateOnboardingStatus({ isCompleted: true });
     setIsOpen(false);
   };
-  // Next button
-  const handleNext = async () => {
+
+  // Next button - optimized to reduce API calls
+  const handleNext = useCallback(async () => {
+    // Clear any pending auto-advance
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
+    // Mark as manual navigation to prevent auto-advance
+    isManualNavigationRef.current = true;
+
     if (currentStep === 0) {
       setCurrentStepIndex(1);
       await updateOnboardingStatus({ currentStep: 1 });
@@ -75,33 +252,114 @@ function OnboardingWizard() {
       return;
     }
 
-    if (currentStepData) {
-      const valid = await validateStep(currentStepData.id);
-      if (valid) await completeStep(currentStepData.id);
-    }
-
+    // Use already validated state instead of calling validateStep again
+    // The useEffect already validates and updates isCurrentConfigured
     const nextStep = currentStep + 1;
     setCurrentStepIndex(nextStep);
-    await updateOnboardingStatus({ currentStep: nextStep });
-  };
+
+    if (currentStepData && onboardingStatus) {
+      if (isCurrentConfigured) {
+        // Batch completion and step update into a single API call
+        const updated = {
+          ...onboardingStatus,
+          completedSteps: Array.from(
+            new Set([...onboardingStatus.completedSteps, currentStepData.id]),
+          ),
+          skippedSteps: onboardingStatus.skippedSteps.filter(
+            (x) => x !== currentStepData.id,
+          ),
+          currentStep: nextStep,
+        };
+        await updateOnboardingStatus(updated);
+      } else {
+        // If not configured, mark as skipped and move to next step
+        const updated = {
+          ...onboardingStatus,
+          skippedSteps: Array.from(
+            new Set([...onboardingStatus.skippedSteps, currentStepData.id]),
+          ),
+          completedSteps: onboardingStatus.completedSteps.filter(
+            (x) => x !== currentStepData.id,
+          ),
+          currentStep: nextStep,
+        };
+        await updateOnboardingStatus(updated);
+        // Reset validation ref to allow re-validation on next step
+        lastValidatedStepIdRef.current = null;
+      }
+    } else {
+      // If no current step data, just move to next step
+      await updateOnboardingStatus({ currentStep: nextStep });
+      // Reset validation ref to allow re-validation on next step
+      lastValidatedStepIdRef.current = null;
+    }
+
+    // Reset previous state for next step
+    previousConfiguredStateRef.current = null;
+  }, [
+    currentStep,
+    totalSteps,
+    currentStepData,
+    isCurrentConfigured,
+    onboardingStatus,
+    updateOnboardingStatus,
+    handleFinish,
+  ]);
 
   // Previous button
   const handlePrevious = async () => {
     if (currentStep === 0) return;
 
+    // Clear any pending auto-advance
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
+    // Mark as manual navigation to prevent auto-advance
+    isManualNavigationRef.current = true;
+
     const prevStep = currentStep - 1;
     setCurrentStepIndex(prevStep);
-    await updateOnboardingStatus({ currentStep: prevStep });
+    // Force immediate refresh when going back to show latest validation status
+    await updateOnboardingStatus({ currentStep: prevStep }, true);
+    // Reset validation ref to allow re-validation when navigating back
+    lastValidatedStepIdRef.current = null;
+    previousConfiguredStateRef.current = null;
   };
 
-  // Skip button
-  const handleSkip = async () => {
-    if (currentStepData) await skipStep(currentStepData.id);
+  // Skip button - optimized to batch updates
+  const handleSkip = useCallback(async () => {
+    if (!currentStepData || !onboardingStatus) return;
+
+    // Clear any pending auto-advance
+    if (autoAdvanceTimeoutRef.current) {
+      clearTimeout(autoAdvanceTimeoutRef.current);
+      autoAdvanceTimeoutRef.current = null;
+    }
+
+    // Mark as manual navigation to prevent auto-advance
+    isManualNavigationRef.current = true;
 
     const nextStep = currentStep + 1;
     setCurrentStepIndex(nextStep);
-    await updateOnboardingStatus({ currentStep: nextStep });
-  };
+
+    // Batch skip and step update into a single API call
+    const updated = {
+      ...onboardingStatus,
+      skippedSteps: Array.from(
+        new Set([...onboardingStatus.skippedSteps, currentStepData.id]),
+      ),
+      completedSteps: onboardingStatus.completedSteps.filter(
+        (x) => x !== currentStepData.id,
+      ),
+      currentStep: nextStep,
+    };
+    await updateOnboardingStatus(updated);
+    // Reset validation ref to allow re-validation on next step
+    lastValidatedStepIdRef.current = null;
+    previousConfiguredStateRef.current = null;
+  }, [currentStep, currentStepData, onboardingStatus, updateOnboardingStatus]);
 
   const renderStepContent = () => {
     if (currentStep === 0) return <WelcomeStep />;

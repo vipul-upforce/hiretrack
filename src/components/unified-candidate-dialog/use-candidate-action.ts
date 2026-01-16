@@ -24,12 +24,16 @@ import {
 import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
 import {
   useSendMailMutation,
+  useSendUnassignMailMutation,
   useSendStatusMailMutation,
 } from '@/lib/features/org/orgApi';
 import { ICandidateHistory } from '@/lib/models/history';
 import { sentAssignmentMail, sentStatusMailHandler } from '@/lib/utils';
 import { Candidate, CandidateStatus } from '@/types/candidate';
-import { getJobId } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
+import {
+  getJobId,
+  getJobTitle,
+} from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
 import {
   UnifiedFormValues,
   CandidateActionType,
@@ -72,6 +76,7 @@ export function useCandidateActions({
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [assignJob] = useAssignJobMutation();
   const [sendEmail] = useSendMailMutation();
+  const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [scheduleMeeting] = useScheduleMeetingMutation();
   const [updateMeeting] = useUpdateMeetingMutation();
@@ -611,6 +616,37 @@ export function useCandidateActions({
           jobId: getJobId(candidate) || '',
           newEntry: entry,
         }).unwrap();
+      }
+
+      // Send step completed email when marking as done
+      if (actions.markAsDone) {
+        const markAsDoneEntry = historyEntries.find(
+          (entry) => entry.title === 'Unassigned',
+        );
+        const feedback = markAsDoneEntry?.note
+          ? {
+              description: markAsDoneEntry.note.description || '',
+              rating:
+                typeof markAsDoneEntry.note.rating === 'number'
+                  ? markAsDoneEntry.note.rating
+                  : undefined,
+            }
+          : undefined;
+
+        try {
+          await sendUnassignEmail({
+            name: result.name,
+            candidateId: candidate._id,
+            jobId: getJobId(candidate) || undefined,
+            title: getJobTitle(candidate) || undefined,
+            dateTime: new Date().toISOString(),
+            status: result.status || candidate.status,
+            feedback,
+          }).unwrap();
+        } catch (_emailError) {
+          // Silently fail email sending - candidate update was successful
+          // Error is logged on the backend if email sending fails
+        }
       }
 
       // Call success callbacks and close dialog immediately

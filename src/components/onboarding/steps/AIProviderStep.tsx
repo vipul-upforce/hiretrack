@@ -1,29 +1,35 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import AIProvidersConfigs from '@/app/dashboard/settings/components/ai-providers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Bot,
-  ExternalLink,
-  Settings,
-  CheckCircle2,
-  XCircle,
-  Zap,
-} from 'lucide-react';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Bot, Settings, CheckCircle2, XCircle, Zap } from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
 function AIProviderStep() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const { validateStep } = useOnboarding();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { validateStep, invalidateStepCache } = useOnboarding();
 
-  const checkConfiguration = async () => {
+  const checkConfiguration = async (forceRefresh = false) => {
     try {
       setIsChecking(true);
-      const isValid = await validateStep('aiProviders');
+      // Invalidate cache before validating to ensure fresh data
+      if (forceRefresh) {
+        invalidateStepCache('aiProviders');
+      }
+      const isValid = await validateStep('aiProviders', forceRefresh);
       setIsConfigured(isValid);
     } catch (error) {
       logger.error('Error checking AI provider configuration:', error);
@@ -36,8 +42,23 @@ function AIProviderStep() {
     checkConfiguration();
   }, []);
 
-  const handleConfigureAI = () => {
-    window.open('/dashboard/settings?config=ai-providers', '_blank');
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = async () => {
+    setIsDialogOpen(false);
+    // Re-validate the step after closing the dialog with force refresh
+    // to ensure we get the latest configuration status
+    await checkConfiguration(true);
+  };
+
+  const handleDialogOpenChange = async (open: boolean) => {
+    if (!open) {
+      await handleCloseDialog();
+    } else {
+      setIsDialogOpen(true);
+    }
   };
 
   const aiProviders = [
@@ -137,17 +158,16 @@ function AIProviderStep() {
             <div className="flex gap-3 pt-4">
               <Button
                 variant="primary"
-                onClick={handleConfigureAI}
+                onClick={handleOpenDialog}
                 className="flex items-center gap-2"
               >
                 <Settings className="h-4 w-4" />
                 Configure AI Providers
-                <ExternalLink className="h-3 w-3" />
               </Button>
 
               <Button
                 variant="outline"
-                onClick={checkConfiguration}
+                onClick={() => checkConfiguration(true)}
                 disabled={isChecking}
               >
                 {isChecking ? 'Checking...' : 'Refresh Status'}
@@ -190,6 +210,24 @@ function AIProviderStep() {
           </div>
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent
+          size="2xl"
+          className="flex max-h-[90vh] flex-col overflow-hidden p-0"
+        >
+          <DialogHeader className="px-6 py-4 pr-12">
+            <DialogTitle>AI Provider Configuration</DialogTitle>
+            <DialogDescription>
+              Enable AI-powered resume processing and candidate scoring.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden overflow-y-auto px-6 py-0">
+            <AIProvidersConfigs onClose={handleCloseDialog} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

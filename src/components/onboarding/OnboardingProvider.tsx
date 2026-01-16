@@ -35,10 +35,14 @@ interface OnboardingContextType {
   onboardingStatus: OnboardingStatus | null;
   progress: OnboardingProgress | null;
   isLoading: boolean;
-  updateOnboardingStatus: (updates: Partial<OnboardingStatus>) => Promise<void>;
+  updateOnboardingStatus: (
+    updates: Partial<OnboardingStatus>,
+    immediateRefresh?: boolean,
+  ) => Promise<void>;
   completeStep: (stepId: string) => Promise<void>;
   skipStep: (stepId: string) => Promise<void>;
-  validateStep: (stepId: string) => Promise<boolean>;
+  validateStep: (stepId: string, forceRefresh?: boolean) => Promise<boolean>;
+  invalidateStepCache: (stepId: string) => void;
   refreshProgress: (status: OnboardingStatus | null) => Promise<void>; // ← UPDATED
   doNotShowAgain: () => Promise<void>;
 }
@@ -67,20 +71,83 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   const [fetchValidate] = useLazyValidateOnboardingQuery();
   const [updateStatusMutation] = useUpdateOnboardingStatusMutation();
   const [validateStepMutation] = useValidateOnboardingStepMutation();
+  const refreshProgressTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const pendingRefreshStatusRef = useRef<OnboardingStatus | null>(null);
+
+  // Cache for step validation results
+  const stepValidationCache = useRef<
+    Map<string, { isValid: boolean; timestamp: number }>
+  >(new Map());
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
   const refreshProgress = useCallback(
-    async (status: OnboardingStatus | null) => {
+    async (status: OnboardingStatus | null, immediate = false) => {
+      // Debounce rapid refreshProgress calls
+      if (!immediate) {
+        pendingRefreshStatusRef.current = status;
+
+        if (refreshProgressTimeoutRef.current) {
+          clearTimeout(refreshProgressTimeoutRef.current);
+        }
+
+        refreshProgressTimeoutRef.current = setTimeout(async () => {
+          const statusToUse = pendingRefreshStatusRef.current;
+          pendingRefreshStatusRef.current = null;
+
+          try {
+            const data = await fetchValidate().unwrap();
+
+            setProgress(data.progress);
+
+            // SAFELY MAP STEPS
+            const updatedSteps = getDefaultSteps().map((step) => {
+              const isValid = data.stepStatus[step.id] || false;
+
+              // Update cache with fresh validation results
+              stepValidationCache.current.set(step.id, {
+                isValid,
+                timestamp: Date.now(),
+              });
+
+              return {
+                ...step,
+                isCompleted: isValid,
+                isSkipped: statusToUse?.skippedSteps.includes(step.id) || false,
+              };
+            });
+
+            setSteps(updatedSteps);
+          } catch (error) {
+            logger.error('Error refreshing progress:', error);
+          }
+        }, 300); // 300ms debounce
+        return;
+      }
+
+      // Immediate refresh (for initial load)
       try {
         const data = await fetchValidate().unwrap();
 
         setProgress(data.progress);
 
         // SAFELY MAP STEPS
-        const updatedSteps = getDefaultSteps().map((step) => ({
-          ...step,
-          isCompleted: data.stepStatus[step.id] || false,
-          isSkipped: status?.skippedSteps.includes(step.id) || false,
-        }));
+        const updatedSteps = getDefaultSteps().map((step) => {
+          const isValid = data.stepStatus[step.id] || false;
+
+          // Update cache with fresh validation results
+          stepValidationCache.current.set(step.id, {
+            isValid,
+            timestamp: Date.now(),
+          });
+
+          return {
+            ...step,
+            isCompleted: isValid,
+            isSkipped: status?.skippedSteps.includes(step.id) || false,
+          };
+        });
 
         setSteps(updatedSteps);
       } catch (error) {
@@ -101,8 +168,8 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         setOnboardingStatus(status);
         setCurrentStepIndex(status.currentStep ?? 0);
 
-        // 2) Always refresh using the latest status
-        await refreshProgress(status);
+        // 2) Always refresh using the latest status (immediate for initial load)
+        await refreshProgress(status, true);
       }
     } catch (error) {
       logger.error('Error loading onboarding:', error);
@@ -110,6 +177,16 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       setIsLoading(false);
     }
   }, [fetchStatus, refreshProgress]);
+
+  // Cleanup timeout on unmount
+  useEffect(
+    () => () => {
+      if (refreshProgressTimeoutRef.current) {
+        clearTimeout(refreshProgressTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   // Initialize onboarding data
   useEffect(() => {
@@ -143,7 +220,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   }, [isLoading, onboardingStatus, progress, user?.role, isOpen]);
 
   const updateOnboardingStatus = useCallback(
-    async (updates: Partial<OnboardingStatus>) => {
+    async (updates: Partial<OnboardingStatus>, immediateRefresh = false) => {
       try {
         const updatedStatusResponse =
           await updateStatusMutation(updates).unwrap();
@@ -153,7 +230,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
         setOnboardingStatus(updatedStatus);
 
         // REFRESH WITH NEWEST STATUS
-        await refreshProgress(updatedStatus);
+        await refreshProgress(updatedStatus, immediateRefresh);
       } catch (error) {
         logger.error('Error updating status:', error);
       }
@@ -198,10 +275,42 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   );
 
   const validateStep = useCallback(
-    async (stepId: string): Promise<boolean> =>
-      (await validateStepMutation({ stepId }).unwrap()).isValid,
+    async (stepId: string, forceRefresh = false): Promise<boolean> => {
+      const cached = stepValidationCache.current.get(stepId);
+      const now = Date.now();
+
+      // Return cached result if valid and not forcing refresh
+      if (!forceRefresh && cached && now - cached.timestamp < CACHE_TTL) {
+        return cached.isValid;
+      }
+
+      // Fetch from API
+      try {
+        const { isValid } = await validateStepMutation({ stepId }).unwrap();
+
+        // Update cache
+        stepValidationCache.current.set(stepId, {
+          isValid,
+          timestamp: now,
+        });
+
+        return isValid;
+      } catch (error) {
+        logger.error('Error validating step:', error);
+        // Return cached value if available, even if stale
+        if (cached) {
+          return cached.isValid;
+        }
+        return false;
+      }
+    },
     [validateStepMutation],
   );
+
+  // Invalidate cache for a specific step
+  const invalidateStepCache = useCallback((stepId: string) => {
+    stepValidationCache.current.delete(stepId);
+  }, []);
 
   const doNotShowAgain = useCallback(async () => {
     await updateOnboardingStatus({ doNotShowAgain: true });
@@ -222,6 +331,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       completeStep,
       skipStep,
       validateStep,
+      invalidateStepCache,
       refreshProgress,
       doNotShowAgain,
     }),
@@ -236,6 +346,7 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
       completeStep,
       skipStep,
       validateStep,
+      invalidateStepCache,
       refreshProgress,
       doNotShowAgain,
     ],

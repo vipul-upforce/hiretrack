@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, {
-  Candidate,
-  History,
-  Settings,
-} from '@/lib/mongodb';
+import connectToDatabase, { Candidate, History, Settings } from '@/lib/mongodb';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
@@ -25,7 +21,10 @@ import {
   normalizeResumeUrl,
 } from './utils/resume-utils';
 import { calculateComparativeRanking } from './utils/ranking-utils';
-import { getDecryptedAIProviders, getActiveProviderApiKey } from './utils/settings-utils';
+import {
+  getDecryptedAIProviders,
+  getActiveProviderApiKey,
+} from './utils/settings-utils';
 import { validatePdfPageCount } from './utils/pdf-utils';
 
 export async function GET(): Promise<NextResponse> {
@@ -45,7 +44,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const data = await request.json() as EvaluateCandidateRequest;
+    const data = (await request.json()) as EvaluateCandidateRequest;
     if (!data || !data.candidateId) {
       return NextResponse.json(
         { error: 'Candidate ID is required' },
@@ -68,16 +67,24 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         { status: 404 },
       );
     }
+    if (!candidate?.jobId) {
+      return NextResponse.json({ error: 'Job ID not found' }, { status: 404 });
+    }
 
-    const candidateJobIdForOrg = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+    const candidateJobIdForOrg = candidate?.jobId as
+      | mongoose.Types.ObjectId
+      | PopulatedJob
+      | undefined;
     const organizationId = extractOrganizationId(candidateJobIdForOrg);
-
-    const settingsData = await Settings.findOne({
+    const settingsData = (await Settings.findOne({
       organizationId,
     })
       .select('aiProviders evaluationConfig fileStorage gemini timeZone')
       .lean()
-      .exec() as Pick<ISettings, 'aiProviders' | 'evaluationConfig' | 'fileStorage' | 'gemini' | 'timeZone'> | null;
+      .exec()) as Pick<
+      ISettings,
+      'aiProviders' | 'evaluationConfig' | 'fileStorage' | 'gemini' | 'timeZone'
+    > | null;
 
     if (!settingsData) {
       return NextResponse.json(
@@ -120,36 +127,40 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     }
 
     // Validate PDF page count if needed
-    const evaluationConfig: IEvaluationConfig = settingsData.evaluationConfig || {
-      autoEvaluateAllCandidates: false,
-      maxPdfPages: 4,
-      temperature: 0.1,
-      customPrompt: null,
-    };
+    const evaluationConfig: IEvaluationConfig =
+      settingsData.evaluationConfig || {
+        autoEvaluateAllCandidates: false,
+        maxPdfPages: 4,
+        temperature: 0.1,
+        customPrompt: null,
+      };
 
     try {
       await validatePdfPageCount(base64Resume, evaluationConfig);
     } catch (pdfError) {
       if (pdfError instanceof Error) {
-        return NextResponse.json(
-          { error: pdfError.message },
-          { status: 400 },
-        );
+        return NextResponse.json({ error: pdfError.message }, { status: 400 });
       }
     }
 
     // Extract job data for evaluation
-    const candidateJobIdForData = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+    const candidateJobIdForData = candidate?.jobId as
+      | mongoose.Types.ObjectId
+      | PopulatedJob
+      | undefined;
     const jobData = extractJobDataForEvaluation(candidateJobIdForData);
 
     // Create settings object with decrypted aiProviders
     const settingsForEvaluation: Partial<ISettings> = {
-      ...settingsData || {},
+      ...(settingsData || {}),
       aiProviders, // Override with decrypted version
     };
 
     // Convert candidate to ICandidate format for AIEvaluationService
-    const candidateJobIdForEval = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+    const candidateJobIdForEval = candidate?.jobId as
+      | mongoose.Types.ObjectId
+      | PopulatedJob
+      | undefined;
     const scores: EvaluationResult = await AIEvaluationService.evaluateResume(
       base64Resume,
       settingsForEvaluation,
@@ -158,7 +169,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     );
 
     // Calculate weighted score if job has custom weights
-    if (isPopulatedJob(candidateJobIdForEval) && candidateJobIdForEval.evaluationWeights) {
+    if (
+      isPopulatedJob(candidateJobIdForEval) &&
+      candidateJobIdForEval.evaluationWeights
+    ) {
       const { evaluationWeights } = candidateJobIdForEval;
       const weightedScore = AIEvaluationService.calculateWeightedScore(
         {
@@ -174,16 +188,20 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     // Calculate comparative ranking if enabled
     if (evaluationConfig.enableComparativeRanking) {
-      const candidateJobIdForRanking = candidate?.jobId as mongoose.Types.ObjectId | PopulatedJob | undefined;
+      const candidateJobIdForRanking = candidate?.jobId as
+        | mongoose.Types.ObjectId
+        | PopulatedJob
+        | undefined;
       let jobIdForRanking: mongoose.Types.ObjectId | string;
-      
+
       if (isPopulatedJob(candidateJobIdForRanking)) {
         const jobIdValue = candidateJobIdForRanking._id;
-        jobIdForRanking = typeof jobIdValue === 'string'
-          ? jobIdValue
-          : jobIdValue;
+        jobIdForRanking =
+          typeof jobIdValue === 'string' ? jobIdValue : jobIdValue;
       } else {
-        jobIdForRanking = candidateJobIdForRanking as mongoose.Types.ObjectId | string;
+        jobIdForRanking = candidateJobIdForRanking as
+          | mongoose.Types.ObjectId
+          | string;
       }
 
       const comparativeRanking = await calculateComparativeRanking(
@@ -199,7 +217,6 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       );
       scores.comparativeRanking = comparativeRanking;
     }
-    console.log('scores in evaluate route', scores);
     // Update candidate scores
     const candidateDocument = await Candidate?.findById(candidate?._id);
     if (!candidateDocument) {
