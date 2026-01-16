@@ -147,7 +147,7 @@ export function useCandidateActions({
         updateStatus: initialAction === 'updateStatus',
       },
     }),
-    [candidate, user?.role, jobId],
+    [candidate, user?.role, jobId, initialAction],
   );
 
   const toggleAction = useCallback(
