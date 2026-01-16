@@ -36,16 +36,18 @@ export function FollowUpSection({
             <Label htmlFor="followUpNote" className="text-sm font-medium">
               Note
             </Label>
-            <MentionTextarea
-              placeholder="Add the note... (Alt+Enter to submit)"
-              className="max-h-80 overflow-y-auto"
-              value={values.followUpNote}
-              onChange={(v) => setFieldValue('followUpNote', v)}
-              organizationId=""
-              currentUserRole={userRole || ''}
-              rows={4}
-              disableMentions
-            />
+            <div id="followUpNote">
+              <MentionTextarea
+                placeholder="Add the note... (Alt+Enter to submit)"
+                className="max-h-80 overflow-y-auto"
+                value={values.followUpNote}
+                onChange={(v) => setFieldValue('followUpNote', v)}
+                organizationId=""
+                currentUserRole={userRole || ''}
+                rows={4}
+                disableMentions
+              />
+            </div>
             <FormError name="followUpNote" />
           </div>
           <div className="space-y-2.5">

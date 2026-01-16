@@ -44,17 +44,19 @@ export function RemarkSection({
         <Label htmlFor="remarkDescription" className="text-sm font-medium">
           Description
         </Label>
-        <MentionTextarea
-          placeholder="Add a remark... (Alt+Enter to submit)"
-          className="max-h-80 overflow-y-auto"
-          value={values.remarkDescription}
-          onChange={handleTextChange}
-          organizationId={organizationId || ''}
-          currentUserRole={userRole || ''}
-          rows={4}
-          isRemarkPrivate={values.isRemarkPrivate}
-          onSelectedMentionsChange={handleMentionsChange}
-        />
+        <div id="remarkDescription">
+          <MentionTextarea
+            placeholder="Add a remark... (Alt+Enter to submit)"
+            className="max-h-80 overflow-y-auto"
+            value={values.remarkDescription}
+            onChange={handleTextChange}
+            organizationId={organizationId || ''}
+            currentUserRole={userRole || ''}
+            rows={4}
+            isRemarkPrivate={values.isRemarkPrivate}
+            onSelectedMentionsChange={handleMentionsChange}
+          />
+        </div>
         <FormError name="remarkDescription" />
       </div>
       <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 px-3 py-2.5">
