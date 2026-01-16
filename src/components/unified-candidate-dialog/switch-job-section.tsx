@@ -41,31 +41,34 @@ export function SwitchJobSection({
         <Label htmlFor="jobId" className="text-sm font-medium">
           Select Job
         </Label>
-        <Select
-          value={values.jobId}
-          onValueChange={(v) => setFieldValue('jobId', v)}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue placeholder="Select Job" />
-          </SelectTrigger>
-          <SelectContent>
-            {jobs?.length ? (
-              jobs.map((job) => (
-                <SelectItem
-                  key={job._id}
-                  value={job._id}
-                  disabled={job._id === currentJobId}
-                >
-                  {job.title}
-                </SelectItem>
-              ))
-            ) : (
-              <div className="px-4 py-2 text-sm text-muted-foreground">
-                No open jobs available
-              </div>
-            )}
-          </SelectContent>
-        </Select>
+        <div id="jobId">
+          <Select
+            value={values.jobId}
+            onValueChange={(v) => setFieldValue('jobId', v)}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Select Job" />
+            </SelectTrigger>
+            <SelectContent>
+              {jobs?.length ? (
+                jobs.map((job) => (
+                  <SelectItem
+                    key={job._id}
+                    value={job._id}
+                    disabled={job._id === currentJobId}
+                    className={job._id === currentJobId ? 'opacity-50' : ''}
+                  >
+                    {job.title} {job._id === currentJobId && '(Current)'}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-4 py-2 text-sm text-muted-foreground">
+                  No open jobs available
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
         <FormError name="jobId" />
       </div>
       {currentJobId && values.jobId && values.jobId !== currentJobId && (

@@ -32,8 +32,12 @@ export function AssignSection({
         <h3 className="text-base font-semibold text-foreground">Assign To</h3>
       </div>
       <div className="space-y-4">
-        <InterviewerSelector interviewers={interviewers} />
-        <DateTimePickerSection />
+        <div id="interviewerId">
+          <InterviewerSelector interviewers={interviewers} />
+        </div>
+        <div id="time">
+          <DateTimePickerSection />
+        </div>
         {googleCalendarData ? (
           <GoogleMeetIntegration
             candidate={candidate}

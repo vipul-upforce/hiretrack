@@ -42,39 +42,41 @@ export function StatusUpdateSection({
         <Label htmlFor="status-select" className="text-sm font-medium">
           Select New Status
         </Label>
-        <Select
-          value={selectedStatus}
-          onValueChange={(value) => setFieldValue('newStatus', value)}
-          disabled={isLoadingLanes}
-        >
-          <SelectTrigger className="h-10">
-            <SelectValue
-              placeholder={
-                isLoadingLanes ? 'Loading lanes...' : 'Select status'
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {lanes.map((lane) => {
-              const isCurrent = lane === currentStatus;
+        <div id="newStatus">
+          <Select
+            value={selectedStatus}
+            onValueChange={(value) => setFieldValue('newStatus', value)}
+            disabled={isLoadingLanes}
+          >
+            <SelectTrigger className="h-10">
+              <SelectValue
+                placeholder={
+                  isLoadingLanes ? 'Loading lanes...' : 'Select status'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {lanes.map((lane) => {
+                const isCurrent = lane === currentStatus;
 
-              return (
-                <SelectItem
-                  key={lane}
-                  value={lane}
-                  disabled={isCurrent}
-                  className={
-                    isCurrent
-                      ? 'cursor-not-allowed bg-blue-100 font-medium opacity-100 dark:bg-blue-900/50 dark:text-blue-100'
-                      : 'cursor-pointer'
-                  }
-                >
-                  {lane} {isCurrent && '(Current)'}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
+                return (
+                  <SelectItem
+                    key={lane}
+                    value={lane}
+                    disabled={isCurrent}
+                    className={
+                      isCurrent
+                        ? 'cursor-not-allowed bg-blue-100 font-medium opacity-100 dark:bg-blue-900/50 dark:text-blue-100'
+                        : 'cursor-pointer'
+                    }
+                  >
+                    {lane} {isCurrent && '(Current)'}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
         <FormError name="newStatus" />
       </div>
 
