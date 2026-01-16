@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Globe,
-  ExternalLink,
   Settings,
   CheckCircle2,
   XCircle,
@@ -17,12 +16,16 @@ import { useOnboarding } from '../OnboardingProvider';
 function PortalConfigStep() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const { validateStep } = useOnboarding();
+  const { validateStep, invalidateStepCache } = useOnboarding();
 
-  const checkConfiguration = async () => {
+  const checkConfiguration = async (forceRefresh = false) => {
     try {
       setIsChecking(true);
-      const isValid = await validateStep('portal');
+      // Invalidate cache before validating to ensure fresh data
+      if (forceRefresh) {
+        invalidateStepCache('portal');
+      }
+      const isValid = await validateStep('portal', forceRefresh);
       setIsConfigured(isValid);
     } catch (error) {
       logger.error('Error checking portal configuration:', error);
@@ -35,8 +38,30 @@ function PortalConfigStep() {
     checkConfiguration();
   }, []);
 
+  // Re-validate when user returns to the page (e.g., after navigating to portal settings)
+  useEffect(() => {
+    const handleFocus = async () => {
+      // Force refresh validation when page regains focus
+      invalidateStepCache('portal');
+      try {
+        setIsChecking(true);
+        const isValid = await validateStep('portal', true);
+        setIsConfigured(isValid);
+      } catch (error) {
+        logger.error('Error checking portal configuration:', error);
+        setIsConfigured(false);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [validateStep, invalidateStepCache]);
+
   const handleConfigurePortal = () => {
-    window.open('/dashboard/settings/portal', '_blank');
+    // Navigate in the same tab instead of opening a new one
+    window.location.href = '/dashboard/settings/portal';
   };
 
   const configurationItems = [
@@ -126,12 +151,11 @@ function PortalConfigStep() {
               >
                 <Settings className="h-4 w-4" />
                 Configure Portal
-                <ExternalLink className="h-3 w-3" />
               </Button>
 
               <Button
                 variant="outline"
-                onClick={checkConfiguration}
+                onClick={() => checkConfiguration(true)}
                 disabled={isChecking}
               >
                 {isChecking ? 'Checking...' : 'Refresh Status'}
