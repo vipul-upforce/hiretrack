@@ -26,16 +26,27 @@ function CheckboxItem({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center space-x-2">
-      <Checkbox
-        id={id}
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(v) => onChange(!!v)}
-      />
-      <Label htmlFor={id} className="cursor-pointer text-sm font-medium">
-        {label}
-      </Label>
+    <div className="group relative">
+      <div
+        className={`flex items-center space-x-2 whitespace-nowrap rounded-lg border px-3 py-1.5 transition-all duration-200 ${
+          checked
+            ? 'bg-primary/5 border-primary shadow-sm'
+            : 'hover:border-primary/50 border-border bg-background hover:bg-muted/50'
+        } ${disabled ? 'cursor-not-allowed opacity-50' : ''} `}
+      >
+        <Checkbox
+          id={id}
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={(v) => onChange(!!v)}
+        />
+        <Label
+          htmlFor={id}
+          className={`cursor-pointer select-none text-sm font-medium leading-none ${checked ? 'text-primary' : 'text-foreground'} ${disabled ? 'cursor-not-allowed' : ''} `}
+        >
+          {label}
+        </Label>
+      </div>
     </div>
   );
 }
@@ -50,8 +61,13 @@ export function ActionToggles({
   const isInterviewer = userRole === 'interviewer';
 
   return (
-    <div className="border-b px-6 py-4">
-      <div className="flex flex-wrap items-center gap-4">
+    <div className="space-y-2">
+      <div className="mb-0.5">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Select Actions
+        </h3>
+      </div>
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
         {!isInterviewer && (
           <>
             <CheckboxItem

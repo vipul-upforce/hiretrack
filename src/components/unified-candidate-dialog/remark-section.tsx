@@ -35,10 +35,15 @@ export function RemarkSection({
   );
 
   return (
-    <div className="space-y-4 rounded-lg border p-4">
-      <h3 className="text-sm font-semibold">Remark</h3>
+    <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border/40 pb-2.5">
+        <div className="h-1 w-1 rounded-full bg-primary" />
+        <h3 className="text-base font-semibold text-foreground">Remark</h3>
+      </div>
       <div className="space-y-2">
-        <Label htmlFor="remarkDescription">Description</Label>
+        <Label htmlFor="remarkDescription" className="text-sm font-medium">
+          Description
+        </Label>
         <MentionTextarea
           placeholder="Add a remark... (Alt+Enter to submit)"
           className="max-h-80 overflow-y-auto"
@@ -52,9 +57,14 @@ export function RemarkSection({
         />
         <FormError name="remarkDescription" />
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="remarkRating">Rating:</Label>
+      <div className="flex items-center justify-between rounded-lg border border-border/40 bg-muted/30 px-3 py-2.5">
+        <div className="flex items-center gap-3">
+          <Label
+            htmlFor="remarkRating"
+            className="text-sm font-medium text-muted-foreground"
+          >
+            Rating:
+          </Label>
           <Rating
             name="remark-rating"
             value={values.remarkRating}
@@ -71,13 +81,16 @@ export function RemarkSection({
           />
         </div>
         {userRole !== 'interviewer' && (
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             {values.isRemarkPrivate ? (
-              <EyeOff className="h-4 w-4 text-gray-500" />
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <Eye className="h-4 w-4 text-gray-500" />
+              <Eye className="h-4 w-4 text-muted-foreground" />
             )}
-            <Label htmlFor="privacy-toggle" className="text-sm">
+            <Label
+              htmlFor="privacy-toggle"
+              className="cursor-pointer text-sm font-medium"
+            >
               {values.isRemarkPrivate ? 'Private' : 'Public'}
             </Label>
             <Switch
