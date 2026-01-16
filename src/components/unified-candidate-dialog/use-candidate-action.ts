@@ -34,6 +34,19 @@ import {
   UnifiedCandidateActionsDialogProps,
 } from './types';
 
+/**
+ * Normalizes interviewerId: converts empty string or "-1" to null
+ * This prevents sending empty strings to the server which causes issues
+ */
+const normalizeInterviewerId = (
+  interviewerId: string | null | undefined,
+): string | null => {
+  if (!interviewerId || interviewerId === '' || interviewerId === '-1') {
+    return null;
+  }
+  return interviewerId;
+};
+
 export function useCandidateActions({
   candidate,
   isOpen,
@@ -111,43 +124,48 @@ export function useCandidateActions({
   }, [isOpen, initialAction, refetchInterviewers]);
 
   const initialValues = useMemo<UnifiedFormValues>(
-    () => ({
-      interviewerId:
+    () => {
+      // Get interviewerId, use "-1" for "None" option in Select when there's no assignment
+      const interviewerIdValue =
         typeof candidate.assignment?.interviewerId === 'string'
           ? candidate.assignment.interviewerId
-          : candidate.assignment?.interviewerId?._id || '',
-      time: candidate.assignment?.time
-        ? dayjs(candidate.assignment.time)
-        : null,
-      scheduleGoogleMeet: !!candidate?.assignment?.googleMeet?.eventId,
-      meetDuration: 60,
-      meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || '',
-      meetingAttachments:
-        candidate?.assignment?.googleMeet?.meetingAttachments || [],
-      additionalGuests: [],
-      attachments: [],
-      jobId,
-      followUpNote: candidate?.followUp?.note || '',
-      followUpDate: candidate?.followUp?.date
-        ? dayjs(candidate.followUp.date)
-        : null,
-      remarkDescription: '',
-      remarkRating: null,
-      remarkRatingHistory: null,
-      isRemarkPrivate: user?.role !== 'interviewer',
-      selectedMentions: [],
-      removeFollowUp: false,
-      newStatus: '',
-      enabledActions: {
-        assignTo: initialAction === 'assignTo',
-        switchJob: initialAction === 'switchJob',
-        markAsDone: initialAction === 'markAsDone',
-        addFollowUp: initialAction === 'addFollowUp',
-        addRemark: initialAction === 'addRemark',
-        updateStatus: initialAction === 'updateStatus',
-      },
-    }),
-    [candidate, user?.role, jobId],
+          : candidate.assignment?.interviewerId?._id || null;
+      
+      return {
+        interviewerId: interviewerIdValue || '-1', // Use "-1" for Select "None" option
+        time: candidate.assignment?.time
+          ? dayjs(candidate.assignment.time)
+          : null,
+        scheduleGoogleMeet: !!candidate?.assignment?.googleMeet?.eventId,
+        meetDuration: 60,
+        meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || '',
+        meetingAttachments:
+          candidate?.assignment?.googleMeet?.meetingAttachments || [],
+        additionalGuests: [],
+        attachments: [],
+        jobId,
+        followUpNote: candidate?.followUp?.note || '',
+        followUpDate: candidate?.followUp?.date
+          ? dayjs(candidate.followUp.date)
+          : null,
+        remarkDescription: '',
+        remarkRating: null,
+        remarkRatingHistory: null,
+        isRemarkPrivate: user?.role !== 'interviewer',
+        selectedMentions: [],
+        removeFollowUp: false,
+        newStatus: '',
+        enabledActions: {
+          assignTo: initialAction === 'assignTo',
+          switchJob: initialAction === 'switchJob',
+          markAsDone: initialAction === 'markAsDone',
+          addFollowUp: initialAction === 'addFollowUp',
+          addRemark: initialAction === 'addRemark',
+          updateStatus: initialAction === 'updateStatus',
+        },
+      };
+    },
+    [candidate, user?.role, jobId, initialAction],
   );
 
   const toggleAction = useCallback(
@@ -292,8 +310,12 @@ export function useCandidateActions({
       ...candidate.attachments,
       ...values.attachments.filter((a) => !existingNames.has(a.name)),
     ];
+    // Normalize interviewerId: convert empty string or "-1" to null
+    const normalizedInterviewerId = normalizeInterviewerId(
+      values.interviewerId,
+    );
     updates.assignment = {
-      interviewerId: values.interviewerId,
+      interviewerId: normalizedInterviewerId,
       time: values.time?.toISOString() as string,
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),

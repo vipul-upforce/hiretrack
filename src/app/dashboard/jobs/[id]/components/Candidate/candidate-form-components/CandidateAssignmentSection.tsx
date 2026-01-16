@@ -33,10 +33,11 @@ export function CandidateAssignmentSection() {
   }
 
   // Get the current interviewer ID safely
+  // Use "-1" for "None" option in Select when there's no interviewerId
   const currentInterviewerId =
     typeof values.assignment?.interviewerId === 'string'
-      ? values.assignment.interviewerId
-      : values.assignment?.interviewerId?._id || '';
+      ? values.assignment.interviewerId || '-1'
+      : values.assignment?.interviewerId?._id || '-1';
 
   return (
     <div className="space-y-4 border-t pt-4 lg:border-t-0 lg:pt-0">
@@ -57,9 +58,12 @@ export function CandidateAssignmentSection() {
           </Label>
           <Select
             value={currentInterviewerId}
-            onValueChange={(value) =>
-              setFieldValue('assignment.interviewerId', value)
-            }
+            onValueChange={(value) => {
+              // Convert "-1" (None) to null, empty string to null
+              const normalizedValue =
+                !value || value === '' || value === '-1' ? null : value;
+              setFieldValue('assignment.interviewerId', normalizedValue);
+            }}
           >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select interviewer" />

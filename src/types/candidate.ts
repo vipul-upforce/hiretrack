@@ -32,7 +32,8 @@ export interface Remark {
 export interface Assignment {
   interviewerId:
     | string
-    | { _id: string; name: string; email: string; duration: string };
+    | { _id: string; name: string; email: string; duration: string }
+    | null;
   time: string;
   duration?: string;
   assignedAt: string;

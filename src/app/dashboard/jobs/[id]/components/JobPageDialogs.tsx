@@ -70,7 +70,7 @@ interface JobPageDialogsProps {
   } | null;
   isChecklistConfigOpen: boolean;
   setIsChecklistConfigOpen: (open: boolean) => void;
-  // mergedCandidates: Candidate[];
+  mergedCandidates: Candidate[];
 }
 
 export function JobPageDialogs({
@@ -118,7 +118,7 @@ export function JobPageDialogs({
   checklistConfigLane,
   isChecklistConfigOpen,
   setIsChecklistConfigOpen,
-  // mergedCandidates,
+  mergedCandidates,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   // Find candidate for checklist remarks dialog

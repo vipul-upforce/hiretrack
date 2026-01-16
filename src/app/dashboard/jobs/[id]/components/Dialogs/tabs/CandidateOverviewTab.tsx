@@ -376,12 +376,14 @@ export function CandidateOverviewTab({
   return (
     <div className="space-y-6">
       {/* Follow-up Section */}
-      <CandidateCardFollowUp
-        candidate={candidate}
-        onEdit={onEditFollowUp}
-        onRemove={handleRemoveClick}
-        variant="detailed"
-      />
+      {user?.role !== 'candidate' && (
+        <CandidateCardFollowUp
+          candidate={candidate}
+          onEdit={onEditFollowUp}
+          onRemove={handleRemoveClick}
+          variant="detailed"
+        />
+      )}
 
       {/* Remove Follow-up Confirmation Dialog */}
       <ConfirmationDialog
