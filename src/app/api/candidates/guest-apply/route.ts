@@ -183,7 +183,11 @@ export async function POST(request: NextRequest) {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
-      ...(data.assignment && data.assignment.interviewerId !== '-1'
+      // Normalize interviewerId: convert empty string or "-1" to null
+      ...(data.assignment &&
+      data.assignment.interviewerId !== '-1' &&
+      data.assignment.interviewerId !== '' &&
+      data.assignment.interviewerId
         ? {
             assignment: {
               interviewerId: data.assignment.interviewerId,

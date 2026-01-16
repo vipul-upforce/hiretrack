@@ -90,6 +90,14 @@ export const useAssignCandidate = ({
         },
       };
 
+      // Normalize interviewerId: convert empty string or "-1" to null
+      const normalizedInterviewerId =
+        !values.interviewerId ||
+        values.interviewerId === '' ||
+        values.interviewerId === '-1'
+          ? null
+          : values.interviewerId;
+
       const updatedCandidate = {
         ...candidate,
         remarks:
@@ -97,7 +105,7 @@ export const useAssignCandidate = ({
             ? [...(candidate.remarks || []), newRemarkObj]
             : candidate.remarks,
         assignment: {
-          interviewerId: values.interviewerId,
+          interviewerId: normalizedInterviewerId,
           time: values?.time?.toISOString(),
           assignedAt: new Date().toISOString(),
           // Include Google Meet data if available

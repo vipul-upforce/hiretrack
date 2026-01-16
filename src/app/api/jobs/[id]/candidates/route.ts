@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Candidate } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import { ICandidate } from '@/lib/models/candidate';
-import { ProjectionType } from 'mongoose';
+import { Types } from 'mongoose';
 
 export async function GET(
   _request: NextRequest,
@@ -25,10 +24,7 @@ export async function GET(
 
     // Validate job ID
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        { error: 'Invalid job ID' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Invalid job ID' }, { status: 400 });
     }
 
     // Connect to database
@@ -40,45 +36,131 @@ export async function GET(
         { status: 500 },
       );
     }
-    const projection: ProjectionType<ICandidate> = userData?.role === 'interviewer'
-      ? {
-        currentCTC: 0,
-        expectedCTC: 0,
-        customFields: 0,
-      }
-      : {};
+    // Use aggregation to efficiently get candidates with remarksCount
+    // Excludes large arrays (history, resume, attachments, remarks) to reduce payload size
+    const jobObjectId = new Types.ObjectId(id);
+    const candidates = await Candidate.aggregate([
+      // Match candidates for this job
+      { $match: { jobId: jobObjectId } },
+      
+      // Add remarksCount field
+      {
+        $addFields: {
+          remarksCount: { $size: { $ifNull: ['$remarks', []] } },
+        },
+      },
+      
+      // Project fields (exclude large arrays)
+      {
+        $project: {
+          history: 0,
+          resume: 0,
+          attachments: 0,
+          remarks: 0, // Exclude full remarks array
+          ...(userData?.role === 'interviewer'
+            ? {
+                currentCTC: 0,
+                expectedCTC: 0,
+                customFields: 0,
+              }
+            : {}),
+        },
+      },
+      
+      // Sort by createdAt
+      { $sort: { 'tracking.createdAt': -1 } },
+      
+      // Lookup interviewer
+      {
+        $lookup: {
+          from: 'users',
+          let: { interviewerId: '$assignment.interviewerId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$interviewerId'] } } },
+            { $project: { _id: 1, name: 1, email: 1 } },
+          ],
+          as: 'interviewerData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$interviewerData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          'assignment.interviewerId': '$interviewerData',
+        },
+      },
+      { $project: { interviewerData: 0 } },
+      
+      // Lookup followUp user
+      {
+        $lookup: {
+          from: 'users',
+          let: { followUpUserId: '$followUp.userId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$followUpUserId'] } } },
+            { $project: { _id: 1, name: 1, email: 1 } },
+          ],
+          as: 'followUpUser',
+        },
+      },
+      {
+        $unwind: {
+          path: '$followUpUser',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          'followUp.userId': '$followUpUser',
+        },
+      },
+      { $project: { followUpUser: 0 } },
+      
+      // Lookup job
+      {
+        $lookup: {
+          from: 'jobs',
+          let: { jobId: '$jobId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$jobId'] } } },
+            { $project: { _id: 1, title: 1, description: 1 } },
+          ],
+          as: 'jobData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$jobData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          jobId: '$jobData',
+        },
+      },
+      { $project: { jobData: 0 } },
+      
+      // Add empty remarks array for compatibility
+      {
+        $addFields: {
+          remarks: [],
+        },
+      },
+    ]).exec();
 
-    // Optimize populate: combine all into single array, remove duplicates
-    // Use lean() for better performance with plain objects
-    const candidates = await Candidate.find({ jobId: id }, projection)
-      .populate([
-        {
-          path: 'assignment.interviewerId',
-          select: '_id name email',
-        },
-        {
-          path: 'remarks.userId',
-          select: 'name email',
-        },
-        {
-          path: 'followUp.userId',
-          select: 'name email',
-        },
-        {
-          path: 'jobId',
-          select: 'title description',
-        },
-      ])
-      .sort({ 'tracking.createdAt': -1 }) // Consistent sorting
-      .lean()
-      .exec();
-
-    return NextResponse.json(candidates);
+    // SAFE OPTIMIZATION: Add cache header (doesn't change response structure)
+    const response = NextResponse.json(candidates);
+    response.headers.set('Cache-Control', 'private, max-age=10'); // 10s cache
+    return response;
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : 'Internal server error',
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
       { status: 500 },
     );

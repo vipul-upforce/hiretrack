@@ -118,11 +118,18 @@ export const validationSchema = Yup.object({
   }),
 
   // Assign To Validation
-  interviewerId: Yup.string().when('enabledActions.assignTo', {
-    is: true,
-    then: (s) => s.required('Please select an interviewer'),
-    otherwise: (s) => s.nullable().notRequired(),
-  }),
+  interviewerId: Yup.string()
+    .nullable()
+    .when('enabledActions.assignTo', {
+      is: true,
+      then: (s) =>
+        s.required('Please select an interviewer').test(
+          'not-empty-or-none',
+          'Please select an interviewer',
+          (value) => value !== null && value !== '' && value !== '-1',
+        ),
+      otherwise: (s) => s.nullable().notRequired(),
+    }),
   time: Yup.date()
     .nullable()
     .when('enabledActions.assignTo', {

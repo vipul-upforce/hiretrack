@@ -283,7 +283,15 @@ export async function PUT(
           userId: userData?.id,
         };
       } else {
-        updateObj.$set.assignment = data.assignment;
+        // Normalize interviewerId: convert empty string or "-1" to null
+        const normalizedAssignment = { ...data.assignment };
+        if (
+          normalizedAssignment.interviewerId === '' ||
+          normalizedAssignment.interviewerId === '-1'
+        ) {
+          normalizedAssignment.interviewerId = null;
+        }
+        updateObj.$set.assignment = normalizedAssignment;
       }
     }
     const whatWasUpdated: string[] = [];

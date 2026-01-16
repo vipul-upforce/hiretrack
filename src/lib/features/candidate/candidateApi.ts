@@ -133,6 +133,18 @@ export const candidateApi = baseApi.injectEndpoints({
       query: (candidateId) => `/candidates/${candidateId}/history`,
       providesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
     }),
+    fetchCandidateDetails: builder.query<
+      {
+        _id: string;
+        resume: Candidate['resume'];
+        attachments: Candidate['attachments'];
+        remarks: Candidate['remarks'];
+      },
+      string
+    >({
+      query: (candidateId) => `/candidates/${candidateId}/details`,
+      providesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
+    }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({
       query: (newCandidate) => ({
         url: '/candidates',
@@ -386,6 +398,7 @@ export const {
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
+  useLazyFetchCandidateDetailsQuery,
   useUpdateCandidateRemarkMutation,
   useSendEmailToCandidateMutation,
   useGenerateCandidatePdfMutation,
