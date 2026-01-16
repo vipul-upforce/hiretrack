@@ -8,6 +8,7 @@ import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
+import { ICandidateHistory } from '@/lib/models/history';
 
 interface UpdateMeetRequest {
   candidateId?: string;
@@ -465,45 +466,63 @@ export async function DELETE(req: NextRequest) {
 
           if (fullCandidate) {
             // Extract jobId for history lookup
-            let jobIdForHistory: string | undefined = jobId;
-            if (fullCandidate.jobId) {
-              if (
-                typeof fullCandidate.jobId === 'object' &&
-                '_id' in fullCandidate.jobId
-              ) {
-                jobIdForHistory = fullCandidate.jobId._id.toString();
-              } else {
-                jobIdForHistory = fullCandidate.jobId.toString();
-              }
+            // let jobIdForHistory: string | undefined = jobId;
+            // if (fullCandidate.jobId) {
+            //   if (
+            //     typeof fullCandidate.jobId === 'object' &&
+            //     '_id' in fullCandidate.jobId
+            //   ) {
+            //     jobIdForHistory = fullCandidate.jobId._id.toString();
+            //   } else {
+            //     jobIdForHistory = fullCandidate.jobId.toString();
+            //   }
+            // }
+
+            // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
+            // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+            const populateFields = [
+              {
+                path: 'history.assignmentBy',
+                select: '_id name email',
+              },
+              {
+                path: 'history.currentInterviewer',
+                select: '_id name email',
+              },
+              {
+                path: 'history.previousInterviewer',
+                select: '_id name email',
+              },
+              {
+                path: 'history.note.userId',
+                select: '_id name email',
+              },
+            ];
+
+            const historyDocuments = await History?.find({
+              candidateId,
+            })
+              .populate(populateFields)
+              .lean()
+              .exec();
+
+            // Merge all history entries from all documents
+            const allHistory: ICandidateHistory[] = [];
+            if (historyDocuments && historyDocuments.length > 0) {
+              historyDocuments.forEach((doc) => {
+                if (doc.history && Array.isArray(doc.history)) {
+                  allHistory.push(...doc.history);
+                }
+              });
+              // Sort by dateTime (newest first)
+              allHistory.sort(
+                (a, b) =>
+                  new Date(b.dateTime ?? 0).getTime() -
+                  new Date(a.dateTime ?? 0).getTime(),
+              );
             }
 
-            // Fetch and populate candidate history
-            // Use candidateId directly since we fetched by that ID
-            const candidateHistory = await History?.findOne({
-              candidateId,
-              jobId: jobIdForHistory,
-            });
-
-            const candidateHistoryPopulated = candidateHistory
-              ? await candidateHistory.populate([
-                  {
-                    path: 'history.assignmentBy',
-                    select: '_id name email',
-                  },
-                  {
-                    path: 'history.currentInterviewer',
-                    select: '_id name email',
-                  },
-                  {
-                    path: 'history.previousInterviewer',
-                    select: '_id name email',
-                  },
-                  {
-                    path: 'history.note.userId',
-                    select: '_id name email',
-                  },
-                ])
-              : null;
+            const candidateHistoryPopulated = { history: allHistory };
 
             // Broadcast candidate update for real-time UI updates
             broadcastCandidateUpdate({

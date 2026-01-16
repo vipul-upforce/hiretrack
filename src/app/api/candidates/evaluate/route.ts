@@ -4,7 +4,7 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
 import { ISettings, IEvaluationConfig } from '@/lib/models/settings';
-import { IHistory } from '@/lib/models/history';
+import { IHistory, ICandidateHistory } from '@/lib/models/history';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
 import mongoose from 'mongoose';
 import logger from '@/lib/logger';
@@ -13,7 +13,6 @@ import {
   isPopulatedJob,
   extractJobDataForEvaluation,
   extractOrganizationId,
-  extractJobIdForHistory,
 } from './utils/candidate-utils';
 import {
   generateBase64,
@@ -254,21 +253,39 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Fetch and populate candidate history
-    const jobIdForHistory = extractJobIdForHistory(fullCandidate.jobId);
-    const candidateHistory = await History?.findOne({
-      candidateId: candidate?._id,
-      jobId: jobIdForHistory,
-    });
+    // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
+    // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+    const populateFields = [
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
+    ];
 
-    const candidateHistoryPopulated = candidateHistory
-      ? await candidateHistory.populate([
-          { path: 'history.assignmentBy', select: '_id name email' },
-          { path: 'history.currentInterviewer', select: '_id name email' },
-          { path: 'history.previousInterviewer', select: '_id name email' },
-          { path: 'history.note.userId', select: '_id name email' },
-        ])
-      : null;
+    const historyDocuments = await History?.find({
+      candidateId: candidate?._id,
+    })
+      .populate(populateFields)
+      .lean()
+      .exec();
+
+    // Merge all history entries from all documents
+    const allHistory: ICandidateHistory[] = [];
+    if (historyDocuments && historyDocuments.length > 0) {
+      historyDocuments.forEach((doc) => {
+        if (doc.history && Array.isArray(doc.history)) {
+          allHistory.push(...doc.history);
+        }
+      });
+      // Sort by dateTime (newest first)
+      allHistory.sort(
+        (a, b) =>
+          new Date(b.dateTime ?? 0).getTime() -
+          new Date(a.dateTime ?? 0).getTime(),
+      );
+    }
+
+    const candidateHistoryPopulated = { history: allHistory };
 
     // Broadcast candidate update
     const dataTobroadcast: ICandidate & { history?: IHistory['history'] } = {

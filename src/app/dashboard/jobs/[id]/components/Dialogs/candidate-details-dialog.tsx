@@ -188,74 +188,142 @@ export function CandidateDetailsDialog({
     if (
       localCandidate?.history &&
       Array.isArray(localCandidate.history) &&
-      localCandidate.history.length > 0 &&
       localCandidate._id === candidate?._id // Only merge if viewing this candidate
     ) {
       setTimeLineItems((prevItems) => {
-        // Create a map of existing items by their unique identifier
-        const existingItemsMap = new Map<string, ICandidateHistory>();
-        prevItems.forEach((item) => {
-          // Use a combination of dateTime and _id/remark.id as unique key
-          const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-          existingItemsMap.set(key, item);
-        });
-
-        if (!localCandidate.history) localCandidate.history = [];
-
-        // Find new items that don't exist in current timeline
-        const newItems = localCandidate.history.filter((newItem) => {
-          const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
-          return !existingItemsMap.has(key);
-        });
-
-        // If there are new items, merge them
-        if (newItems.length > 0) {
-          // Combine existing and new items, then sort by dateTime (newest first)
-          const merged = [...prevItems, ...newItems].sort(
-            (a, b) =>
-              new Date(b.dateTime ?? 0).getTime() -
-              new Date(a.dateTime ?? 0).getTime(),
-          );
-          return merged;
-        }
-
-        // If no new items, check if any existing items were updated (e.g., remark was edited)
-        const updatedItems = localCandidate.history
-          .map((updatedItem) => {
-            const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
-            const existing = existingItemsMap.get(key);
-            if (existing) {
-              // Item exists, return updated version
-              return updatedItem;
-            }
-            return null;
-          })
-          .filter(Boolean) as ICandidateHistory[];
-
-        if (updatedItems.length > 0) {
-          // Replace updated items
-          const updatedMap = new Map<string, ICandidateHistory>();
-          updatedItems.forEach((item) => {
+        // CRITICAL: If history is already loaded and SSE history is smaller, 
+        // it might be incomplete - preserve existing items
+        if (historyLoaded && prevItems.length > 0 && localCandidate.history.length < prevItems.length) {
+          // SSE history is smaller than what we have - likely incomplete
+          // Only merge new/updated items, don't replace everything
+          const existingItemsMap = new Map<string, ICandidateHistory>();
+          prevItems.forEach((item) => {
             const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-            updatedMap.set(key, item);
+            existingItemsMap.set(key, item);
           });
 
-          return prevItems
-            .map((item) => {
-              const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-              return updatedMap.get(key) || item;
-            })
-            .sort(
+          // Find new items that don't exist in current timeline
+          const newItems = localCandidate.history.filter((newItem) => {
+            const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
+            return !existingItemsMap.has(key);
+          });
+
+          // If there are new items, merge them
+          if (newItems.length > 0) {
+            const merged = [...prevItems, ...newItems].sort(
               (a, b) =>
                 new Date(b.dateTime ?? 0).getTime() -
                 new Date(a.dateTime ?? 0).getTime(),
             );
+            return merged;
+          }
+
+          // Check if any existing items were updated
+          const updatedItems = localCandidate.history
+            .map((updatedItem) => {
+              const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
+              const existing = existingItemsMap.get(key);
+              if (existing) {
+                return updatedItem;
+              }
+              return null;
+            })
+            .filter(Boolean) as ICandidateHistory[];
+
+          if (updatedItems.length > 0) {
+            const updatedMap = new Map<string, ICandidateHistory>();
+            updatedItems.forEach((item) => {
+              const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+              updatedMap.set(key, item);
+            });
+
+            return prevItems
+              .map((item) => {
+                const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+                return updatedMap.get(key) || item;
+              })
+              .sort(
+                (a, b) =>
+                  new Date(b.dateTime ?? 0).getTime() -
+                  new Date(a.dateTime ?? 0).getTime(),
+              );
+          }
+
+          // Preserve existing items if SSE history is incomplete
+          return prevItems;
+        }
+
+        // History not loaded yet, or SSE history is complete - use it
+        if (localCandidate.history.length > 0) {
+          // Create a map of existing items
+          const existingItemsMap = new Map<string, ICandidateHistory>();
+          prevItems.forEach((item) => {
+            const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+            existingItemsMap.set(key, item);
+          });
+
+          // Find new items
+          const newItems = localCandidate.history.filter((newItem) => {
+            const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
+            return !existingItemsMap.has(key);
+          });
+
+          if (newItems.length > 0) {
+            const merged = [...prevItems, ...newItems].sort(
+              (a, b) =>
+                new Date(b.dateTime ?? 0).getTime() -
+                new Date(a.dateTime ?? 0).getTime(),
+            );
+            return merged;
+          }
+
+          // Check for updated items
+          const updatedItems = localCandidate.history
+            .map((updatedItem) => {
+              const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
+              const existing = existingItemsMap.get(key);
+              if (existing) {
+                return updatedItem;
+              }
+              return null;
+            })
+            .filter(Boolean) as ICandidateHistory[];
+
+          if (updatedItems.length > 0) {
+            const updatedMap = new Map<string, ICandidateHistory>();
+            updatedItems.forEach((item) => {
+              const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+              updatedMap.set(key, item);
+            });
+
+            return prevItems
+              .map((item) => {
+                const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
+                return updatedMap.get(key) || item;
+              })
+              .sort(
+                (a, b) =>
+                  new Date(b.dateTime ?? 0).getTime() -
+                  new Date(a.dateTime ?? 0).getTime(),
+              );
+          }
+
+          // If SSE history is same or larger, use it (might be complete)
+          if (localCandidate.history.length >= prevItems.length) {
+            return localCandidate.history.sort(
+              (a, b) =>
+                new Date(b.dateTime ?? 0).getTime() -
+                new Date(a.dateTime ?? 0).getTime(),
+            );
+          }
+
+          return prevItems;
         }
 
         return prevItems;
       });
     }
-  }, [localCandidate?.history, localCandidate?._id, candidate?._id]);
+  }, [localCandidate?.history, localCandidate?._id, candidate?._id, historyLoaded]);
 
   // Handle History Error
   useEffect(() => {
@@ -268,13 +336,7 @@ export function CandidateDetailsDialog({
     }
   }, [isHistoryError, isRefetching]);
 
-  // Reset history and details state when candidate changes
-  useEffect(() => {
-    if (candidate?._id !== localCandidate?._id) {
-      setHistoryLoaded(false);
-      setDetailsLoaded(false);
-    }
-  }, [localCandidate?._id, candidate?._id]);
+  // Note: History and details reset is now handled in the candidate prop useEffect below
 
   const refetch = async () => {
     setIsRefetching(true);
@@ -464,24 +526,34 @@ export function CandidateDetailsDialog({
             ? preservedDetailsRef.current.remarks ?? candidate.remarks
             : candidate.remarks,
       });
-      // Reset history and details state when candidate changes
-      setHistoryLoaded(false);
-      // Only reset details if candidate ID actually changed
+      
+      // Only reset history and details state when candidate ID actually changes
       if (!isSameCandidate) {
+        setHistoryLoaded(false);
         setDetailsLoaded(false);
         preservedDetailsRef.current = null;
-      }
-      // If candidate has history from SSE, initialize timeLineItems
-      if (
-        candidate.history &&
-        Array.isArray(candidate.history) &&
-        candidate.history.length > 0
-      ) {
-        setTimeLineItems(candidate.history);
-        setHistoryLoaded(true);
+        // Initialize timeLineItems from candidate history if available
+        if (
+          candidate.history &&
+          Array.isArray(candidate.history) &&
+          candidate.history.length > 0
+        ) {
+          setTimeLineItems(candidate.history);
+          setHistoryLoaded(true);
+        } else {
+          setTimeLineItems([]);
+        }
+      } else {
+        // Same candidate - don't reset historyLoaded or overwrite timeLineItems
+        // The merge logic in the other useEffect will handle SSE updates
+        // Only initialize if history hasn't been loaded yet
+        if (!historyLoaded && candidate.history && Array.isArray(candidate.history) && candidate.history.length > 0) {
+          setTimeLineItems(candidate.history);
+          setHistoryLoaded(true);
+        }
       }
     }
-  }, [candidate, id, localCandidate?._id]);
+  }, [candidate, id, localCandidate?._id, historyLoaded]);
 
   // Check if interviewer can access this candidate
   const canInterviewerAccess = () => {

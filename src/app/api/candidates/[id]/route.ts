@@ -671,16 +671,37 @@ export async function PUT(
           { upsert: true, new: true },
         );
       }
-      const candidateHistory = await History?.findOne({
+      // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
+      // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+      const historyDocuments = await History?.find({
         candidateId: updatedCandidate._id,
-        jobId: updatedCandidate.jobId?._id,
-      });
-      const candidateHistoryPopulated = await candidateHistory?.populate([
-        { path: 'history.assignmentBy', select: '_id name email' },
-        { path: 'history.currentInterviewer', select: '_id name email' },
-        { path: 'history.previousInterviewer', select: '_id name email' },
-        { path: 'history.note.userId', select: '_id name email' },
-      ]);
+      })
+        .populate([
+          { path: 'history.assignmentBy', select: '_id name email' },
+          { path: 'history.currentInterviewer', select: '_id name email' },
+          { path: 'history.previousInterviewer', select: '_id name email' },
+          { path: 'history.note.userId', select: '_id name email' },
+        ])
+        .lean()
+        .exec();
+
+      // Merge all history entries from all documents
+      const allHistory: ICandidateHistory[] = [];
+      if (historyDocuments && historyDocuments.length > 0) {
+        historyDocuments.forEach((doc) => {
+          if (doc.history && Array.isArray(doc.history)) {
+            allHistory.push(...doc.history);
+          }
+        });
+        // Sort by dateTime (newest first)
+        allHistory.sort(
+          (a, b) =>
+            new Date(b.dateTime ?? 0).getTime() -
+            new Date(a.dateTime ?? 0).getTime(),
+        );
+      }
+
+      const candidateHistoryPopulated = { history: allHistory };
 
       // Send notifications for various updates
       try {
@@ -956,10 +977,7 @@ export async function GET(
     // Filter private custom fields based on role
     // This ensures candidates only see non-private fields, and interviewers only see non-privateInt fields
     let filteredCandidate = candidate;
-    if (
-      userData.role === 'candidate' ||
-      userData.role === 'interviewer'
-    ) {
+    if (userData.role === 'candidate' || userData.role === 'interviewer') {
       const filtered = await getFilterPrivateCFSingle(
         candidate as ICandidate,
         userData.role,
@@ -970,33 +988,41 @@ export async function GET(
       }
     }
 
-    // Extract jobId for history query
-    const jobId =
-      typeof filteredCandidate.jobId === 'object' &&
-      filteredCandidate.jobId !== null &&
-      '_id' in filteredCandidate.jobId
-        ? filteredCandidate.jobId._id
-        : filteredCandidate.jobId;
+    // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
+    // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+    const populateFields = [
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
+    ];
 
-    // Fetch history in parallel (if candidate has jobId)
-    const history = jobId
-      ? await History.findOne({
-          jobId,
-          candidateId: filteredCandidate._id.toString(),
-        })
-          .populate([
-            { path: 'history.currentInterviewer', select: '_id name email' },
-            { path: 'history.previousInterviewer', select: '_id name email' },
-            { path: 'history.assignmentBy', select: '_id name email' },
-            { path: 'history.note.userId', select: '_id name email' },
-          ])
-          .lean()
-          .exec()
-      : null;
+    const historyDocuments = await History.find({
+      candidateId: filteredCandidate._id.toString(),
+    })
+      .populate(populateFields)
+      .lean()
+      .exec();
+
+    // Merge all history entries from all documents
+    const allHistory: ICandidateHistory[] = [];
+    if (historyDocuments && historyDocuments.length > 0) {
+      historyDocuments.forEach((doc) => {
+        if (doc.history && Array.isArray(doc.history)) {
+          allHistory.push(...doc.history);
+        }
+      });
+      // Sort by dateTime (newest first)
+      allHistory.sort(
+        (a, b) =>
+          new Date(b.dateTime ?? 0).getTime() -
+          new Date(a.dateTime ?? 0).getTime(),
+      );
+    }
 
     return NextResponse.json({
       ...filteredCandidate,
-      history: history?.history || [],
+      history: allHistory,
     });
   } catch (error) {
     return NextResponse.json(

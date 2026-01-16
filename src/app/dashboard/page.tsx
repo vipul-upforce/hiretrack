@@ -20,7 +20,7 @@ import { DashboardContent } from './components/DashboardContent';
 import { isToday, isThisWeek } from './utils/dateHelpers';
 
 export default function DashboardPage() {
-  const itemsPerPage = 48;
+  const itemsPerPage = 20;
   const { user } = useAppSelector((state) => state.auth || {});
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
   const [triggerFetchAssignments] = useLazyFetchAssignmentsQuery();
@@ -190,6 +190,8 @@ export default function DashboardPage() {
       </div>
 
       <CandidateDetailsDialog
+        isAssigning={false}
+        setIsAssigning={() => {}}
         candidate={state.selectedCandidate}
         isOpen={state.isCandidateDialogOpen}
         onOpenChange={state.setIsCandidateDialogOpen}
