@@ -115,7 +115,7 @@ export function useCandidateActions({
       interviewerId:
         typeof candidate.assignment?.interviewerId === 'string'
           ? candidate.assignment.interviewerId
-          : candidate.assignment?.interviewerId?._id || '',
+          : candidate.assignment?.interviewerId?._id || null,
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
@@ -318,7 +318,7 @@ export function useCandidateActions({
     }
 
     const assignmentRemark =
-      actionCheckboxes.addRemark && values.remarkDescription.trim()
+      values.enabledActions.addRemark && values.remarkDescription.trim()
         ? {
             description: values.remarkDescription.trim(),
             date: new Date().toISOString(),
@@ -365,7 +365,7 @@ export function useCandidateActions({
     try {
       // Handle bulk operations
       if (Array.isArray(candidate)) {
-        if (actionCheckboxes.switchJob && values.jobId) {
+        if (actions.switchJob && values.jobId) {
           for (const c of candidate) {
             await assignJob({
               jobId: values.jobId,

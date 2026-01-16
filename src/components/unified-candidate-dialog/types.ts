@@ -28,7 +28,10 @@ export interface ActionCheckboxes {
 }
 
 export interface UnifiedFormValues {
-  interviewerId: string;
+  interviewerId:
+    | string
+    | null
+    | { _id: string; name: string; email: string; duration: string };
   time: Dayjs | null;
   scheduleGoogleMeet: boolean;
   meetDuration: number;
