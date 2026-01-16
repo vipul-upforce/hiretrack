@@ -1,12 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import SMTPConfigs from '@/app/dashboard/settings/components/mail-config';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
   Mail,
-  ExternalLink,
   Settings,
   CheckCircle2,
   XCircle,
@@ -17,12 +24,17 @@ import { useOnboarding } from '../OnboardingProvider';
 function EmailConfigStep() {
   const [isConfigured, setIsConfigured] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
-  const { validateStep } = useOnboarding();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { validateStep, invalidateStepCache } = useOnboarding();
 
-  const checkConfiguration = async () => {
+  const checkConfiguration = async (forceRefresh = false) => {
     try {
       setIsChecking(true);
-      const isValid = await validateStep('email');
+      // Invalidate cache before validating to ensure fresh data
+      if (forceRefresh) {
+        invalidateStepCache('email');
+      }
+      const isValid = await validateStep('email', forceRefresh);
       setIsConfigured(isValid);
     } catch (error) {
       logger.error('Error checking email configuration:', error);
@@ -35,8 +47,23 @@ function EmailConfigStep() {
     checkConfiguration();
   }, []);
 
-  const handleConfigureEmail = () => {
-    window.open('/dashboard/settings?config=mail', '_blank');
+  const handleOpenDialog = () => {
+    setIsDialogOpen(true);
+  };
+
+  const handleCloseDialog = async () => {
+    setIsDialogOpen(false);
+    // Re-validate the step after closing the dialog with force refresh
+    // to ensure we get the latest configuration status
+    await checkConfiguration(true);
+  };
+
+  const handleDialogOpenChange = async (open: boolean) => {
+    if (!open) {
+      await handleCloseDialog();
+    } else {
+      setIsDialogOpen(true);
+    }
   };
 
   const emailProviders = [
@@ -137,17 +164,16 @@ function EmailConfigStep() {
             <div className="flex gap-3 pt-4">
               <Button
                 variant="primary"
-                onClick={handleConfigureEmail}
+                onClick={handleOpenDialog}
                 className="flex items-center gap-2"
               >
                 <Settings className="h-4 w-4" />
                 Configure Email
-                <ExternalLink className="h-3 w-3" />
               </Button>
 
               <Button
                 variant="outline"
-                onClick={checkConfiguration}
+                onClick={() => checkConfiguration(true)}
                 disabled={isChecking}
               >
                 {isChecking ? 'Checking...' : 'Refresh Status'}
@@ -189,6 +215,23 @@ function EmailConfigStep() {
           </div>
         </div>
       )}
+
+      <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent
+          className="hide-scrollbar flex max-h-[90vh] w-[60vw] flex-col overflow-y-auto p-0"
+        >
+          <DialogHeader className="px-6 py-4 pr-12">
+            <DialogTitle>Email Configuration</DialogTitle>
+            <DialogDescription>
+              Configure automated notifications for candidates and team members.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <SMTPConfigs onClose={handleCloseDialog} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

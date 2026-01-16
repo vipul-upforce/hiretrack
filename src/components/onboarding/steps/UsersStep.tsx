@@ -3,16 +3,33 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Users, CheckCircle2 } from 'lucide-react';
 import { useOnboarding } from '../OnboardingProvider';
 
 function UsersStep() {
   const [isConfigured, setIsConfigured] = useState(false);
-  const { validateStep } = useOnboarding();
+  const { validateStep, invalidateStepCache } = useOnboarding();
 
   useEffect(() => {
     validateStep('users').then(setIsConfigured);
   }, [validateStep]);
+
+  // Re-validate when user returns to the page (e.g., after navigating to users page)
+  useEffect(() => {
+    const handleFocus = () => {
+      // Force refresh validation when page regains focus
+      invalidateStepCache('users');
+      validateStep('users', true).then(setIsConfigured);
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [validateStep, invalidateStepCache]);
+
+  const handleManageUsers = () => {
+    // Navigate in the same tab instead of opening a new one
+    window.location.href = '/dashboard/users';
+  };
 
   return (
     <div className="space-y-4">
@@ -36,11 +53,10 @@ function UsersStep() {
         <CardContent className="p-6">
           <Button
             variant="primary"
-            onClick={() => window.open('/dashboard/users', '_blank')}
+            onClick={handleManageUsers}
             className="flex items-center gap-2"
           >
             Manage Users
-            <ExternalLink className="h-4 w-4" />
           </Button>
 
           {isConfigured && (

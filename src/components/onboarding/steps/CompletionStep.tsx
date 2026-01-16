@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Confetti from 'react-confetti';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,18 +9,52 @@ import { Button } from '@/components/ui/button';
 import { useOnboarding } from '../OnboardingProvider';
 
 function CompletionStep() {
-  const { steps, setIsOpen } = useOnboarding();
+  const { steps, setIsOpen, onboardingStatus, updateOnboardingStatus } =
+    useOnboarding();
   const router = useRouter();
   const [showConfetti, setShowConfetti] = useState(true);
   const [windowDimensions, setWindowDimensions] = useState({
     width: 0,
     height: 0,
   });
+  const hasProcessedUnconfiguredRef = useRef(false);
 
-  const completedSteps = steps.filter((step) => step.isCompleted).length;
-  const skippedSteps = steps.filter((step) => step.isSkipped).length;
-  const remainingSteps = steps.length - completedSteps - skippedSteps;
+  // Ensure all unconfigured steps are marked as skipped (only once)
+  useEffect(() => {
+    if (!onboardingStatus || hasProcessedUnconfiguredRef.current) return;
 
+    const unconfiguredSteps = steps.filter(
+      (step) => !step.isCompleted && !step.isSkipped,
+    );
+
+    if (unconfiguredSteps.length > 0) {
+      hasProcessedUnconfiguredRef.current = true;
+      const updated = {
+        ...onboardingStatus,
+        skippedSteps: Array.from(
+          new Set([
+            ...onboardingStatus.skippedSteps,
+            ...unconfiguredSteps.map((step) => step.id),
+          ]),
+        ),
+      };
+      updateOnboardingStatus(updated, true);
+    } else {
+      hasProcessedUnconfiguredRef.current = true;
+    }
+  }, [steps, onboardingStatus, updateOnboardingStatus]);
+
+  // Calculate counts using useMemo to ensure they update reactively
+  // Use onboardingStatus.skippedSteps as source of truth for skipped count (updates immediately)
+  // Use steps array for completed count (updates after refreshProgress completes)
+  const completedSteps = useMemo(
+    () => steps.filter((step) => step.isCompleted).length,
+    [steps],
+  );
+  const skippedSteps = useMemo(
+    () => onboardingStatus?.skippedSteps.length ?? 0,
+    [onboardingStatus?.skippedSteps],
+  );
   useEffect(() => {
     const handleResize = () => {
       setWindowDimensions({
@@ -82,7 +116,7 @@ function CompletionStep() {
       {/* Progress Summary */}
       <Card className="border-2 border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10">
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 gap-6 text-center md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 text-center md:grid-cols-2">
             <div>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {completedSteps}
@@ -98,12 +132,6 @@ function CompletionStep() {
               <div className="text-sm text-yellow-700 dark:text-yellow-300">
                 Skipped
               </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-muted-foreground">
-                {remainingSteps}
-              </div>
-              <div className="text-sm text-muted-foreground/80">Remaining</div>
             </div>
           </div>
         </CardContent>
@@ -135,7 +163,7 @@ function CompletionStep() {
                 <Settings className="mt-0.5 h-5 w-5 text-purple-500 dark:text-purple-400" />
                 <div>
                   <div className="font-medium text-purple-900 dark:text-purple-100">
-                    Complete Remaining Settings
+                    Complete Skipped Settings
                   </div>
                   <div className="text-sm text-purple-700 dark:text-purple-200">
                     You can always complete skipped configurations from the
@@ -159,7 +187,7 @@ function CompletionStep() {
           <ArrowRight className="h-4 w-4" />
         </Button>
 
-        {remainingSteps > 0 && (
+        {skippedSteps > 0 && (
           <Button
             variant="outline"
             onClick={handleGoToSettings}

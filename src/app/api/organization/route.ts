@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Multiple org is enabled - require authentication
-      const userData = await getAuthenticatedUser(req,'admin');
+      const userData = await getAuthenticatedUser(req, 'admin');
       if (!userData) {
         return NextResponse.json(
           {
