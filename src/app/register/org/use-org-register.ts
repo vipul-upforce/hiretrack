@@ -126,12 +126,14 @@ export const useOrgRegister = () => {
         const orgResponse = await createOrg(payload).unwrap();
 
         if (orgResponse.organization) {
+          if (orgResponse.logout === true) {
+            await triggerLogout().unwrap();
+          }
           toast({
             title: 'Success',
             description: 'Organization and Admin account created successfully.',
             variant: 'default',
           });
-          await triggerLogout().unwrap();
           router.push('/auth/login');
         } else {
           throw new Error('Failed to create organization structure.');
