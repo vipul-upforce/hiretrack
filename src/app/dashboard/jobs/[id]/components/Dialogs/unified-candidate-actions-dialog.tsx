@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useMemo } from 'react';
 import { Formik, Form } from 'formik';
 import {
   Dialog,
@@ -21,14 +21,17 @@ import { CancelMeetingDialog } from '@/components/unified-candidate-dialog/cance
 import { StatusUpdateSection } from '@/components/unified-candidate-dialog/status-update-section';
 import { useCandidateActions } from '@/components/unified-candidate-dialog/use-candidate-action';
 import {
-  validationSchema,
+  getValidationSchema,
   UnifiedCandidateActionsDialogProps,
 } from '@/components/unified-candidate-dialog/types';
+import { ScrollToFormError } from '@/components/ui/scroll-to-error';
 
 export function UnifiedCandidateActionsDialog(
   props: UnifiedCandidateActionsDialogProps,
 ) {
   const { candidate, isOpen, onOpenChange } = props;
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const {
     state: { isSubmitting, showCancelMeetDialog, cancelNotes, isCancelling },
@@ -50,6 +53,16 @@ export function UnifiedCandidateActionsDialog(
     },
   } = useCandidateActions(props);
 
+  const currentJobId =
+    typeof candidate.jobId === 'object'
+      ? candidate.jobId?._id
+      : candidate.jobId;
+
+  const validationSchema = useMemo(
+    () => getValidationSchema(currentJobId),
+    [currentJobId],
+  );
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -57,7 +70,7 @@ export function UnifiedCandidateActionsDialog(
           size="xl"
           className="flex max-h-[90vh] flex-col overflow-hidden p-0"
         >
-          <DialogHeader className="px-6 py-3 border-0">
+          <DialogHeader className="border-0 px-6 py-3">
             <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
               {Array.isArray(candidate) ? (
                 <span>
@@ -81,13 +94,6 @@ export function UnifiedCandidateActionsDialog(
           <Formik
             initialValues={initialValues}
             validationSchema={validationSchema}
-            validationSchemaContext={{
-              currentJobId:
-                typeof candidate.jobId === 'object'
-                  ? candidate.jobId?._id
-                  : candidate.jobId,
-              existingFollowUpNote: candidate.followUp?.note,
-            }}
             validateOnChange
             validateOnBlur
             onSubmit={handleSubmit}
@@ -108,6 +114,8 @@ export function UnifiedCandidateActionsDialog(
                   className="flex flex-1 flex-col overflow-hidden"
                   onKeyDown={handleKeyDown}
                 >
+                  <ScrollToFormError containerRef={scrollContainerRef} />
+
                   <div className="border-b px-6 py-3">
                     <ActionToggles
                       candidate={candidate}
@@ -126,7 +134,10 @@ export function UnifiedCandidateActionsDialog(
                     />
                   </div>
 
-                  <div className="flex-1 space-y-4 overflow-y-auto bg-muted/10 px-6 py-4">
+                  <div
+                    ref={scrollContainerRef}
+                    className="flex-1 space-y-4 overflow-y-auto bg-muted/10 px-6 py-4"
+                  >
                     {values.enabledActions.assignTo &&
                       user?.role !== 'interviewer' && (
                         <AssignSection
