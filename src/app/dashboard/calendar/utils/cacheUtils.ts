@@ -56,18 +56,22 @@ export const hasDataInCacheForPrimaryMonth = (
 
 /**
  * Checks if an assignment's time falls within a date range
+ * Returns true for candidates without scheduled dates (they should be included)
+ * This is used for SSE filtering - candidates without dates are always included
  */
 export const isWithinDateRange = (
   assignmentTime: string | undefined,
   dateRange: { startDate: Date; endDate: Date },
 ): boolean => {
-  if (!assignmentTime) return false;
+  // Include candidates without scheduled dates (they'll be shown in "Not Scheduled" section)
+  if (!assignmentTime) return true;
   const time = new Date(assignmentTime);
   return time >= dateRange.startDate && time <= dateRange.endDate;
 };
 
 /**
  * Filters assignments by date range
+ * Includes candidates with scheduled dates in range OR candidates assigned to interviewer but not scheduled
  */
 export const filterAssignmentsByDateRange = (
   assignments: CandidateAssignment[],
@@ -78,7 +82,18 @@ export const filterAssignmentsByDateRange = (
   const end = new Date(endDate);
 
   return assignments.filter((a) => {
-    if (!a.assignment?.time) return false;
+    // Include candidates assigned to interviewer but not yet scheduled
+    if (!a.assignment?.time) {
+      // Check if they have an assigned interviewer
+      const hasInterviewer =
+        a.assignment?.interviewerId &&
+        (typeof a.assignment.interviewerId === 'object'
+          ? a.assignment.interviewerId?._id
+          : a.assignment.interviewerId);
+      return !!hasInterviewer;
+    }
+
+    // Include candidates with scheduled dates within the range
     const time = new Date(a.assignment.time);
     return time >= start && time <= end;
   });

@@ -7,6 +7,7 @@ import { CalendarViewType, eventColors } from './dateRangeUtils';
 
 /**
  * Transform a single CandidateAssignment into a CustomCalendarEvent
+ * Returns an event even if time is null (for "Not Scheduled" section)
  */
 export const transformAssignmentToEvent = (
   candidate: CandidateAssignment,
@@ -14,10 +15,23 @@ export const transformAssignmentToEvent = (
   calendarView: CalendarViewType,
 ): CustomCalendarEvent | undefined => {
   const rawTime = candidate?.assignment?.time;
-  if (!rawTime) return undefined;
-
-  const startTime = new Date(rawTime);
-  const endTime = new Date(startTime.getTime() + 1000);
+  
+  // If no time is set, create an event without start/end dates for "Not Scheduled" section
+  // Only skip if there's no assignment at all or no interviewer assigned
+  if (!candidate?.assignment) return undefined;
+  
+  const hasInterviewer = candidate.assignment.interviewerId && (
+    typeof candidate.assignment.interviewerId === 'object' 
+      ? candidate.assignment.interviewerId?._id 
+      : candidate.assignment.interviewerId
+  );
+  
+  // Skip if no interviewer is assigned
+  if (!hasInterviewer) return undefined;
+  
+  // If time is null/undefined, create event without start/end for "Not Scheduled"
+  const startTime = rawTime ? new Date(rawTime) : undefined;
+  const endTime = startTime ? new Date(startTime.getTime() + 1000) : undefined;
 
   const hasGoogleMeet = candidate?.assignment?.googleMeet;
   const baseTitle =
@@ -34,10 +48,10 @@ export const transformAssignmentToEvent = (
   return {
     id: candidate._id,
     title,
-    start: startTime,
-    startStr: startTime.toISOString(),
-    end: calendarView === 'dayGridMonth' ? endTime : startTime,
-    endStr: calendarView === 'dayGridMonth' ? endTime.toISOString() : '',
+    start: startTime, // undefined for unscheduled candidates
+    startStr: startTime ? startTime.toISOString() : '',
+    end: startTime ? (calendarView === 'dayGridMonth' ? endTime : startTime) : undefined,
+    endStr: startTime ? (calendarView === 'dayGridMonth' ? endTime?.toISOString() : '') : '',
     allDay: false,
     display: 'auto',
     backgroundColor: color.bg,

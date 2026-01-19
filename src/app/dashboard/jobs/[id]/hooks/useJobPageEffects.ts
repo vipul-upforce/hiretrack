@@ -78,6 +78,7 @@ export function useJobPageEffects({
   setInitialLaneToEdit,
 }: UseJobPageEffectsParams): void {
   const prevLanesSigRef = useRef<string>('');
+  const prevIsLaneEditOpenRef = useRef<boolean>(false);
 
   // Effect 1: Sync temp selected candidate with state hook
   useEffect(() => {
@@ -268,12 +269,21 @@ export function useJobPageEffects({
     setColumns,
   ]);
 
-  // Effect 5: Set initial lane to edit when laneToEdit changes
+  // Effect 5: Set initial lane to edit when dialog opens
+  // This ensures we capture the original lane name before any edits
   useEffect(() => {
-    if (laneToEdit && initialLaneToEdit === null) {
+    const wasClosed = prevIsLaneEditOpenRef.current === false;
+    const isNowOpen = isLaneEditOpen === true;
+    
+    // When dialog transitions from closed to open, capture the original lane name
+    if (wasClosed && isNowOpen && laneToEdit) {
+      // Capture the original lane name immediately when dialog opens
       setInitialLaneToEdit(laneToEdit);
     }
-  }, [laneToEdit, initialLaneToEdit, setInitialLaneToEdit]);
+    
+    // Update ref for next render
+    prevIsLaneEditOpenRef.current = isLaneEditOpen;
+  }, [isLaneEditOpen, laneToEdit, setInitialLaneToEdit]);
 
   // Effect 6: Clear lane edit state when dialog closes
   useEffect(() => {

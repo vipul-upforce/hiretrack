@@ -40,6 +40,8 @@ export const CandidateCard = memo(
     onFollowUpClick: _onFollowUpClick,
     onAddRemarkClick: _onAddRemarkClick,
     isPending = false,
+    onUpdate,
+    refetchAssignment,
   }: CandidateCardProps) => {
     const triggerRef = useRef<HTMLButtonElement>(
       null,
@@ -244,8 +246,7 @@ export const CandidateCard = memo(
 
     return (
       <>
-        {onDashboard ? (
-          <div
+        {onDashboard ? ( <div
             role="button"
             tabIndex={0}
             className={cn(
@@ -314,6 +315,8 @@ export const CandidateCard = memo(
           setNewFollowUpDate={setNewFollowUpDate}
           onDashboard={onDashboard}
           triggerRef={triggerRef}
+          onUpdate={onUpdate}
+          refetchAssignment={refetchAssignment}
         />
       </>
     );

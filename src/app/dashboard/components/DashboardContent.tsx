@@ -65,8 +65,11 @@ export function DashboardContent({
             <div>
               {assignmentsFiltered.length > 0 ? (
                 <div className="flex flex-wrap justify-start gap-6">
-                  {assignmentsFiltered.map((assignment, index) => (
-                    <div
+                  {assignmentsFiltered.map((assignment, index) => {
+                    if(!assignment.assignment?.interviewerId) {
+                      return null;
+                    }
+                    return <div
                       key={assignment.id || assignment._id}
                       ref={
                         index === assignmentsFiltered.length - 1
@@ -84,7 +87,7 @@ export function DashboardContent({
                         setAssignments={setAssignments}
                       />
                     </div>
-                  ))}
+                  })}
                 </div>
               ) : (
                 <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">

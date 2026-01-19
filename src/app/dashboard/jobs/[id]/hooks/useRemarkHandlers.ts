@@ -35,7 +35,7 @@ export const useRemarkHandlers = (
   const [newFollowUpDate, setNewFollowUpDate] = useState<Dayjs | null>(
     localCandidate?.followUp?.date &&
       (localCandidate?.followUp?.date as string).length > 1
-      ? dayjs(localCandidate?.followUp?.date)
+      ? dayjs(localCandidate.followUp.date)
       : null,
   );
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
@@ -108,15 +108,12 @@ export const useRemarkHandlers = (
       };
 
       const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result && pathname !== '/dashboard/calendar') {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 500);
-        });
+      
+      // Update local state with the result - no need to refetch since we have the updated data
+      if (onUpdate && result) {
         onUpdate(result);
       }
-      if (onUpdate && localCandidate) {
-        await onUpdate(localCandidate);
-      }
+      
       if (localCandidate) {
         await updateCandidateHistory({
           candidateId: localCandidate?._id,
@@ -124,22 +121,15 @@ export const useRemarkHandlers = (
           newEntry: newHistoryEntry,
         }).unwrap();
       }
-      if (pathname === '/dashboard/search') {
-        // debugger;
-        await refetchCandidates?.();
-        await refetch();
+      
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      } else if (pathname === '/dashboard/search') {
+        refetchCandidates?.();
       }
-      if (
-        pathname !== '/dashboard' &&
-        !pathname?.endsWith('calendar') &&
-        !pathname?.startsWith('/candidate')
-      ) {
-        await refetch();
-      }
-      if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
-        await refetchAssignment?.();
-        await refetch();
-      }
+      // Note: Removed individual candidate refetch calls - we already have the updated result
       setNewFollowUp('');
       setNewFollowUpDate(null);
 
@@ -195,20 +185,13 @@ export const useRemarkHandlers = (
         rating: remarkRatingHistory,
       }).unwrap();
 
-      if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Note: updateCandidateRemark doesn't return the full candidate, so we can't use onUpdate
+      // The remark update is reflected via RTK Query cache invalidation
+      if (pathname === '/dashboard') {
         refetchAssignment?.();
       }
-      if (
-        pathname !== '/dashboard' &&
-        pathname !== '/dashboard/calendar' &&
-        !pathname?.startsWith('/candidate')
-      ) {
-        await refetch();
-      }
-
-      if (onUpdate && localCandidate) {
-        onUpdate(localCandidate);
-      }
+      // Note: Removed individual candidate refetch - RTK Query cache will handle updates
 
       toast({
         title: 'Success',
@@ -289,30 +272,20 @@ export const useRemarkHandlers = (
       }
 
       const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result && pathname !== '/dashboard/calendar') {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 500);
-        });
+      
+      // Update local state with the result - no need to refetch since we have the updated data
+      if (onUpdate && result) {
         onUpdate(result);
       }
-      if (onUpdate && localCandidate) {
-        await onUpdate(localCandidate);
-      }
 
-      if (pathname === '/dashboard/search') {
-        await refetchCandidates?.();
-        await refetch();
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      } else if (pathname === '/dashboard/search') {
+        refetchCandidates?.();
       }
-      if (
-        pathname !== '/dashboard' &&
-        !pathname?.endsWith('calendar') &&
-        !pathname?.startsWith('/candidate')
-      ) {
-        await refetch();
-      }
-      if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
-        await refetchAssignment?.();
-      }
+      // Note: Removed individual candidate refetch calls - we already have the updated result
       setNewRemark('');
       setRemarkRating(null);
       setRemarkRatingHistory(null);
@@ -383,15 +356,12 @@ export const useRemarkHandlers = (
       };
 
       const result = await updateCandidate(updateData).unwrap();
-      if (onUpdate && result && pathname !== '/dashboard/calendar') {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 500);
-        });
+      
+      // Update local state with the result - no need to refetch since we have the updated data
+      if (onUpdate && result) {
         onUpdate(result);
       }
-      if (onUpdate && localCandidate) {
-        await onUpdate(localCandidate);
-      }
+      
       if (localCandidate) {
         await updateCandidateHistory({
           candidateId: localCandidate?._id,
@@ -399,22 +369,15 @@ export const useRemarkHandlers = (
           newEntry: newHistoryEntry,
         }).unwrap();
       }
-      if (pathname === '/dashboard/search') {
-        // debugger;
-        await refetchCandidates?.();
-        await refetch();
+      
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      } else if (pathname === '/dashboard/search') {
+        refetchCandidates?.();
       }
-      if (
-        pathname !== '/dashboard' &&
-        !pathname?.endsWith('calendar') &&
-        !pathname?.startsWith('/candidate')
-      ) {
-        await refetch();
-      }
-      if (pathname === '/dashboard' && !pathname?.startsWith('/candidate')) {
-        await refetchAssignment?.();
-        await refetch();
-      }
+      // Note: Removed individual candidate refetch calls - we already have the updated result
       setNewFollowUp('');
       setNewFollowUpDate(null);
 

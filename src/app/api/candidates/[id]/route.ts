@@ -295,6 +295,14 @@ export async function PUT(
         ) {
           normalizedAssignment.interviewerId = null;
         }
+
+        // Handle null time explicitly - set time to null directly in the assignment object
+        // MongoDB will store null, and we can filter for it properly
+        if (normalizedAssignment.time === null || normalizedAssignment.time === undefined) {
+          // Explicitly set time to null in the assignment object
+          normalizedAssignment.time = null;
+        }
+        // Set the entire assignment object (with time as null if it was null/undefined)
         updateObj.$set.assignment = normalizedAssignment;
       }
     }

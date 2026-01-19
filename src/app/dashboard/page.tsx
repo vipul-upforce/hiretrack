@@ -120,10 +120,20 @@ export default function DashboardPage() {
     );
   });
 
-  const assignmentsFiltered = (state.assignments || []).filter(
-    (assignment) =>
-      !(assignment.isDeleted || assignment?.assignment?.interviewerId === null),
-  );
+  // Helper function to check if a candidate has a valid assignment
+  const hasValidAssignment = (assignment: Candidate): boolean => {
+    // Exclude deleted candidates
+    if (assignment.isDeleted) return false;
+    
+    // Exclude candidates with no assignment or assignment with null interviewerId
+    if (!assignment.assignment || assignment.assignment.interviewerId === null) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const assignmentsFiltered = (state.assignments || []).filter(hasValidAssignment);
 
   const options = state.assignedInterviewers
     ?.map((usr) => ({
@@ -195,9 +205,11 @@ export default function DashboardPage() {
         candidate={state.selectedCandidate}
         isOpen={state.isCandidateDialogOpen}
         onOpenChange={state.setIsCandidateDialogOpen}
-        onUpdate={() => {
-          if (state.selectedCandidate) {
-            fetchCandidateById(state.selectedCandidate._id);
+        onUpdate={(updatedCandidate) => {
+          // Update local state with the updated candidate instead of refetching
+          // The mutation already returns the updated candidate, so no need to refetch
+          if (updatedCandidate && state.selectedCandidate?._id === updatedCandidate._id) {
+            state.setSelectedCandidate(updatedCandidate);
           }
         }}
         hideEditButton={user?.role === 'interviewer'}

@@ -322,7 +322,8 @@ export function useCandidateActions({
     );
     updates.assignment = {
       interviewerId: normalizedInterviewerId,
-      time: values.time?.toISOString() as string,
+      // Explicitly set time to null if values.time is null/undefined, otherwise convert to ISO string
+      time: values.time ? (values.time.toISOString() as string) : null,
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),
     };
@@ -657,15 +658,17 @@ export function useCandidateActions({
       });
       onOpenChange(false);
 
-      // Trigger refetches in the background
+      // Update local state with the result - no need to refetch individual candidate
+      // since we already have the updated data from the mutation
       onUpdate?.(result);
       setLocalCandidate?.(result);
+      
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
       if (pathname === '/dashboard') {
         refetchAssignment?.();
       }
-      if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
-        refetch?.();
-      }
+      // Note: Removed individual candidate refetch - we already have the updated result
     } catch (error) {
       toast({
         title: 'Error',
