@@ -140,7 +140,7 @@ export function useCandidateActions({
         : candidate.assignment?.interviewerId?._id || null;
 
     return {
-      interviewerId: interviewerIdValue || '-1', // Use "-1" for Select "None" option
+      interviewerId: interviewerIdValue || '',
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
