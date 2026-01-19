@@ -387,9 +387,9 @@ export async function PUT(
           oldFollowUp.note !== null &&
           oldFollowUp.note !== undefined &&
           newFollowUp &&
-          newFollowUp.note !== null 
-          // newFollowUp.note !== oldFollowUp.note &&
-          // newFollowUp.date !== oldFollowUp.date
+          newFollowUp.note !== null &&
+         ( newFollowUp.note !== oldFollowUp.note ||
+          newFollowUp.date !== oldFollowUp.date) 
         ) {
 
           await NotificationService.notifyFollowupUpdated({

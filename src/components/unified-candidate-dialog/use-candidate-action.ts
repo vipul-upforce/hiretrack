@@ -613,7 +613,7 @@ export function useCandidateActions({
       for (const entry of historyEntries) {
         await updateCandidateHistory({
           candidateId: candidate._id,
-          jobId: getJobId(candidate) || '',
+          jobId: candidate.jobId || getJobId(candidate) || '',
           newEntry: entry,
         }).unwrap();
       }

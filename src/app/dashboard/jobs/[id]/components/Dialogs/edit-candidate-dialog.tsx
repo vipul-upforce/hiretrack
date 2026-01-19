@@ -294,21 +294,7 @@ export function EditCandidateDialog({
         });
         return;
       }
-      // sentAssignmentMail(result, sendEmail);
-      // check if assignment has changed before sending email
-      // const prevAssignment = candidate.assignment?.interviewerId;
-      // const newAssignment = result?.assignment?.interviewerId;
-      // debugger;
-      // const prevId =
-      //   typeof prevAssignment === 'object'
-      //     ? prevAssignment?._id
-      //     : prevAssignment;
-      // const newId =
-      //   typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
-
-      // if (prevId !== newId) {
       sentAssignmentMail(result, sendEmail);
-      // }
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === 'object'
@@ -471,7 +457,6 @@ export function EditCandidateDialog({
             setDetailsLoaded(true);
           }
         } catch {
-          // Silently fail - form will still work with existing candidate data
           // Details loading is a background operation and shouldn't disrupt UX
         }
       };
@@ -532,12 +517,6 @@ export function EditCandidateDialog({
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   candidateName={candidate.name}
-                  // onSave={(newField) => {
-                  //   handleAddCustomField(
-                  //     newField,
-                  //     selectedFormId?.formId || null,
-                  //   );
-                  // }}
                 />
                 <div className="bottom-0 flex gap-3">
                   <Button
@@ -553,9 +532,7 @@ export function EditCandidateDialog({
                       handleApply();
                     }}
                     disabled={isSubmitting}
-                    type={
-                      Object.keys(errors).length === 0 ? 'button' : 'submit'
-                    }
+                    type={  Object.keys(errors).length === 0 ? 'button' : 'submit'}
                     variant="primary"
                   >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}
