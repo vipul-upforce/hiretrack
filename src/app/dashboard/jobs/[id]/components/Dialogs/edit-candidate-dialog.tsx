@@ -356,7 +356,7 @@ export function EditCandidateDialog({
       if (nextInterviewer && nextInterviewer !== '') {
         await updateCandidateHistory({
           candidateId: updatedCandidate._id || '',
-          jobId: updatedCandidate?.jobId || '',
+          jobId: updatedCandidate?.jobId || null,
           newEntry: newHistoryEntry,
         }).unwrap();
       }

@@ -9,6 +9,7 @@ import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 import { usePathname } from 'next/navigation';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { getJobId } from '../utils/candidateAccessors';
 
 export const useUnassignHandlers = (
   localCandidate: Candidate | null,
@@ -72,7 +73,7 @@ export const useUnassignHandlers = (
         };
         await updateCandidateHistory({
           candidateId: updatedCandidate._id || '',
-          jobId: localCandidate?.jobId._id || localCandidate?.jobId || '',
+          jobId: getJobId(localCandidate) || null,
           newEntry: newHistoryEntry,
         }).unwrap();
         sendUnassignEmail({

@@ -299,11 +299,26 @@ export async function PUT(request: NextRequest) {
     const fileStorage = userData.fileStorage || 'local';
     const { organizationId } = userData;
     // Extracted history saving feature
-    if (!data || !data.jobId || !data.candidateId) {
+    if (!data || !data.candidateId) {
       return NextResponse.json(
-        { error: 'Job ID and Candidate ID are required' },
+        { error: 'Candidate ID is required' },
         { status: 400 },
       );
+    }
+
+    // CRITICAL FIX: Normalize jobId to prevent history merge issues
+    // Handle: object {_id, title, description}, string, null, or empty string
+    let normalizedJobId: string | null = null;
+    if (data.jobId) {
+      if (typeof data.jobId === 'object' && data.jobId !== null && '_id' in data.jobId) {
+        normalizedJobId = data.jobId._id || null;
+      } else if (typeof data.jobId === 'string' && data.jobId.trim() !== '') {
+        normalizedJobId = data.jobId.trim();
+      }
+    }
+    // Normalize empty string to null for consistency
+    if (normalizedJobId === '') {
+      normalizedJobId = null;
     }
 
     if (data.newEntry.attachments) {
@@ -350,7 +365,7 @@ export async function PUT(request: NextRequest) {
     const [candidateData, historyEntry] = await Promise.all([
       Candidate.findById(candidateId).populate(populateCandidateFields).lean(),
       History?.findOneAndUpdate(
-        { jobId: data.jobId, candidateId: data.candidateId },
+        { jobId: normalizedJobId, candidateId: data.candidateId },
         { $push: { history: data.newEntry } },
         { upsert: true, new: true, runValidators: true },
       )
