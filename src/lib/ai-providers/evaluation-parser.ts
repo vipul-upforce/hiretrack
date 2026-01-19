@@ -1,12 +1,7 @@
-import {
-  EvaluationResult,
-  ParsedEvaluationObject,
-} from "./evaluation-types";
-import {
-  extractNumericScore,
-} from "./evaluation-utils";
-import { EVALUATION_CONSTANTS } from "./evaluation-constants";
-import logger from "../logger";
+import { EvaluationResult, ParsedEvaluationObject } from './evaluation-types';
+import { extractNumericScore } from './evaluation-utils';
+import { EVALUATION_CONSTANTS } from './evaluation-constants';
+import logger from '../logger';
 
 /**
  * Cleans JSON response by removing markdown code blocks and extracting JSON
@@ -15,16 +10,45 @@ import logger from "../logger";
  */
 export function cleanJsonResponse(response: string): string {
   const jsonString = response
-    .replace(/```json\n?/g, "")
-    .replace(/```\n?/g, "")
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
     .trim();
 
+  // Use a more robust regex that matches nested braces
+  // This will match from the first { to the last }, handling nested objects
   const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
   return jsonMatch ? jsonMatch[0] : jsonString;
 }
 
 /**
- * Safely parses JSON with error handling
+ * Attempts to fix common JSON truncation issues
+ * @param jsonString - Potentially truncated JSON string
+ * @returns Fixed JSON string or original if fix not possible
+ */
+function attemptJsonFix(jsonString: string): string {
+  let fixed = jsonString.trim();
+
+  // If JSON ends abruptly, try to close open structures
+  const openBraces = (fixed.match(/\{/g) || []).length;
+  const closeBraces = (fixed.match(/\}/g) || []).length;
+  const openBrackets = (fixed.match(/\[/g) || []).length;
+  const closeBrackets = (fixed.match(/\]/g) || []).length;
+
+  // Close unclosed arrays first (they're inside objects)
+  if (openBrackets > closeBrackets) {
+    fixed += ']'.repeat(openBrackets - closeBrackets);
+  }
+
+  // Close unclosed objects
+  if (openBraces > closeBraces) {
+    fixed += '}'.repeat(openBraces - closeBraces);
+  }
+
+  return fixed;
+}
+
+/**
+ * Safely parses JSON with error handling and truncation detection
  * @param jsonString - JSON string to parse
  * @returns Parsed object or empty object on error
  */
@@ -32,15 +56,43 @@ export function parseJsonSafely(jsonString: string): ParsedEvaluationObject {
   try {
     return JSON.parse(jsonString) as ParsedEvaluationObject;
   } catch (parseError) {
-    logger.error("JSON Parse Error:", parseError);
+    const error = parseError as Error;
+    const isTruncationError =
+      error.message.includes('Expected') &&
+      (error.message.includes('after array element') ||
+        error.message.includes('after property name') ||
+        error.message.includes('end of JSON'));
+
+    logger.error('JSON Parse Error:', error.message);
     logger.error(
-      "Failed JSON string (first 1000 chars):",
-      jsonString.substring(0, 1000)
+      'Failed JSON string (first 1000 chars):',
+      jsonString.substring(0, 1000),
     );
     logger.error(
-      "Failed JSON string (last 500 chars):",
-      jsonString.substring(Math.max(0, jsonString.length - 500))
+      'Failed JSON string (last 500 chars):',
+      jsonString.substring(Math.max(0, jsonString.length - 500)),
     );
+
+    // If it looks like a truncation error, try to fix it
+    if (isTruncationError) {
+      logger.warn(
+        'Detected potential JSON truncation. Attempting to fix by closing open structures...',
+      );
+      try {
+        const fixed = attemptJsonFix(jsonString);
+        const parsed = JSON.parse(fixed) as ParsedEvaluationObject;
+        logger.warn(
+          'Successfully recovered partial JSON from truncated response',
+        );
+        return parsed;
+      } catch (fixError) {
+        logger.error(
+          'Failed to fix truncated JSON. Response may be incomplete.',
+          fixError,
+        );
+      }
+    }
+
     return {} as ParsedEvaluationObject;
   }
 }
@@ -56,8 +108,8 @@ export function normalizeRedFlags(
     severity?: string;
     description: string;
     evidence: string;
-  }>
-): EvaluationResult["redFlags"] {
+  }>,
+): EvaluationResult['redFlags'] {
   if (!Array.isArray(redFlags)) {
     return undefined;
   }
@@ -65,9 +117,9 @@ export function normalizeRedFlags(
   return redFlags.map((flag) => ({
     ...flag,
     severity: flag.severity
-      ? (flag.severity.toLowerCase() as "low" | "medium" | "high")
+      ? (flag.severity.toLowerCase() as 'low' | 'medium' | 'high')
       : undefined,
-  })) as EvaluationResult["redFlags"];
+  })) as EvaluationResult['redFlags'];
 }
 
 /**
@@ -76,8 +128,8 @@ export function normalizeRedFlags(
  * @returns Normalized skills matrix with numeric yearsOfExperience
  */
 export function normalizeSkillsMatrix(
-  skillsMatrix?: ParsedEvaluationObject["skillsMatrix"]
-): EvaluationResult["skillsMatrix"] {
+  skillsMatrix?: ParsedEvaluationObject['skillsMatrix'],
+): EvaluationResult['skillsMatrix'] {
   if (!skillsMatrix) {
     return undefined;
   }
@@ -87,10 +139,7 @@ export function normalizeSkillsMatrix(
     requiredAndPresent: Array.isArray(skillsMatrix.requiredAndPresent)
       ? skillsMatrix.requiredAndPresent.map((skill) => ({
           ...skill,
-          yearsOfExperience: extractNumericScore(
-            skill.yearsOfExperience,
-            0
-          ),
+          yearsOfExperience: extractNumericScore(skill.yearsOfExperience, 0),
         }))
       : [],
     requiredButMissing: Array.isArray(skillsMatrix.requiredButMissing)
@@ -108,22 +157,21 @@ export function normalizeSkillsMatrix(
  * @returns Fallback evaluation result
  */
 export function createFallbackEvaluation(error: unknown): EvaluationResult {
-  const errorMessage =
-    error instanceof Error ? error.message : "Unknown error";
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-  console.error("Failed to parse evaluation response:", error);
+  logger.error('Failed to parse evaluation response:', error);
 
   return {
     overall: EVALUATION_CONSTANTS.DEFAULT_FALLBACK_SCORE,
     experience: EVALUATION_CONSTANTS.DEFAULT_FALLBACK_SCORE,
     skills: EVALUATION_CONSTANTS.DEFAULT_FALLBACK_SCORE,
-    contact: "",
+    contact: '',
     education: 0,
     projects: 0,
     certifications: 0,
-    strengths: ["Could not parse AI response"],
-    areas_for_improvement: ["Could not parse complete AI response"],
-    recommendation: "AI evaluation failed - manual review required",
+    strengths: ['Could not parse AI response'],
+    areas_for_improvement: ['Could not parse complete AI response'],
+    recommendation: 'AI evaluation failed - manual review required',
     notes: `The AI evaluation response could not be fully parsed. Please review the candidate manually. Error: ${errorMessage}`,
   };
 }
@@ -144,7 +192,7 @@ export function parseEvaluationResponse(response: string): EvaluationResult {
       overall: extractNumericScore(parsedObject.overall, 0),
       experience: extractNumericScore(parsedObject.experience, 0),
       skills: extractNumericScore(parsedObject.skills, 0),
-      contact: parsedObject.contact || "",
+      contact: parsedObject.contact || '',
       education: extractNumericScore(parsedObject.education, 0),
       projects: extractNumericScore(parsedObject.projects, 0),
       certifications: extractNumericScore(parsedObject.certifications, 0),
@@ -154,11 +202,11 @@ export function parseEvaluationResponse(response: string): EvaluationResult {
       areas_for_improvement: Array.isArray(parsedObject.areas_for_improvement)
         ? parsedObject.areas_for_improvement
         : [],
-      recommendation: parsedObject.recommendation || "Not Recommended",
-      notes: parsedObject.notes || "",
+      recommendation: parsedObject.recommendation || 'Not Recommended',
+      notes: parsedObject.notes || '',
       affordability: extractNumericScore(
         parsedObject.affordability || parsedObject.salary,
-        0
+        0,
       ),
       confidenceScores: parsedObject.confidenceScores,
       evidenceLinks: parsedObject.evidenceLinks,
@@ -169,4 +217,3 @@ export function parseEvaluationResponse(response: string): EvaluationResult {
     return createFallbackEvaluation(error);
   }
 }
-

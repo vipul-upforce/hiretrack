@@ -519,6 +519,7 @@ export function EditCandidateDialog({
                     onClick={() => {
                       handleApply();
                     }}
+                    disabled={isSubmitting}
                     type={
                       Object.keys(errors).length === 0 ? 'button' : 'submit'
                     }
