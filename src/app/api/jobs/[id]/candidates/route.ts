@@ -90,7 +90,18 @@ export async function GET(
       },
       {
         $addFields: {
-          'assignment.interviewerId': '$interviewerData',
+          assignment: {
+            $cond: {
+              if: { $ne: ['$assignment', null] },
+              then: {
+                $mergeObjects: [
+                  '$assignment',
+                  { interviewerId: '$interviewerData' },
+                ],
+              },
+              else: null,
+            },
+          },
         },
       },
       { $project: { interviewerData: 0 } },

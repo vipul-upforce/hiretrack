@@ -12,7 +12,6 @@ export async function GET(
     const [{ id }, userData] = await Promise.all([
       params,
       getAuthenticatedUser(_request, ['interviewer', 'admin', 'hr']),
-      connectToDatabase(),
     ]);
 
     // Handle authentication errors
@@ -31,6 +30,9 @@ export async function GET(
       );
     }
 
+    // Ensure database connection is established and models are registered
+    await connectToDatabase();
+
     if (!Candidate) {
       return NextResponse.json(
         { error: 'Database model not available' },
@@ -40,91 +42,40 @@ export async function GET(
 
     const candidateObjectId = new Types.ObjectId(id);
 
-    // Fetch only attachments, resume, and remarks with populated userId
-    const candidate = await Candidate.aggregate([
-      { $match: { _id: candidateObjectId } },
-      
-      // Project only the fields we need
-      {
-        $project: {
-          _id: 1,
-          resume: 1,
-          attachments: 1,
-          remarks: 1, // Full remarks array
-        },
-      },
-      
-      // Lookup remark users
-      {
-        $lookup: {
-          from: 'users',
-          let: { remarkUserIds: { $map: { input: '$remarks', as: 'r', in: '$$r.userId' } } },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $in: ['$_id', '$$remarkUserIds'] },
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-              },
-            },
-          ],
-          as: 'remarkUsers',
-        },
-      },
-      
-      // Map remarks with populated userId
-      {
-        $addFields: {
-          remarks: {
-            $map: {
-              input: '$remarks',
-              as: 'remark',
-              in: {
-                $mergeObjects: [
-                  '$$remark',
-                  {
-                    userId: {
-                      $arrayElemAt: [
-                        {
-                          $filter: {
-                            input: '$remarkUsers',
-                            as: 'user',
-                            cond: { $eq: ['$$user._id', '$$remark.userId'] },
-                          },
-                        },
-                        0,
-                      ],
-                    },
-                  },
-                ],
-              },
-            },
-          },
-        },
-      },
-      
-      { $project: { remarkUsers: 0 } },
-    ]).exec();
+    // Fetch candidate exactly like the main GET route - no select(), just populate remarks
+    const candidate = await Candidate.findById(candidateObjectId)
+      .populate({
+        path: 'remarks.userId',
+        select: '_id name email',
+      })
+      .lean()
+      .exec();
 
-    if (!candidate || candidate.length === 0) {
+    if (!candidate) {
       return NextResponse.json(
         { error: 'Candidate not found' },
         { status: 404 },
       );
     }
 
-    const candidateData = candidate[0];
-
+    // Return the fields - if they're null/empty in DB, that's what we'll return
+    // The debug info will help identify if this is a data issue or query issue
     return NextResponse.json({
-      _id: candidateData._id,
-      resume: candidateData.resume || null,
-      attachments: candidateData.attachments || [],
-      remarks: candidateData.remarks || [],
+      _id: candidate._id,
+      resume: candidate.resume || null,
+      attachments: candidate.attachments || [],
+      remarks: candidate.remarks || [],
+      // Debug info to help diagnose
+      ...(process.env.NODE_ENV === 'development' && {
+        _debug: {
+          resumeExists: candidate.resume !== null && candidate.resume !== undefined,
+          resumeValue: candidate.resume,
+          attachmentsCount: candidate.attachments?.length || 0,
+          attachmentsValue: candidate.attachments,
+          remarksCount: candidate.remarks?.length || 0,
+          remarksValue: candidate.remarks,
+        },
+      }),
     });
   } catch (error) {
     return NextResponse.json(

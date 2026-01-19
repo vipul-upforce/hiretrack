@@ -256,7 +256,7 @@ export const candidateApi = baseApi.injectEndpoints({
     updateCandidateHistory: builder.mutation<
       ICandidateHistory[],
       {
-        jobId: string | { _id: string; title: string; description: string };
+        jobId: string | null | { _id: string; title: string; description: string };
         candidateId: string;
         newEntry: ICandidateHistory;
       }

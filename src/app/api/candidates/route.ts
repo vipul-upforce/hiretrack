@@ -168,64 +168,63 @@ export async function POST(request: NextRequest) {
       if (!isJobExisted) {
         return NextResponse.json({ error: 'JobId not found' }, { status: 404 });
       }
-      const candidateData = {
-        jobId: data.jobId,
-        organizationId,
-        name: data.name,
-        email: data.email || '',
-        contact: data.contact || '',
-        location: data.location,
-        experience: data.experience,
-        relevantExperience: data.relevantExperience,
-        skills: data.skills,
-        expectedCTC: data.expectedCTC,
-        currentCTC: data.currentCTC,
-        noticePeriod: data.noticePeriod,
-        status: candidateStatus,
-        remarks: data.remarks || [],
-        tracking: {
-          createdAt: new Date(),
-          updatedAt: new Date(),
+      
+const candidateData = {
+  jobId: data.jobId,
+  organizationId,
+  name: data.name,
+  email: data.email || '',
+  contact: data.contact || '',
+  location: data.location,
+  experience: data.experience,
+  relevantExperience: data.relevantExperience,
+  skills: data.skills,
+  expectedCTC: data.expectedCTC,
+  currentCTC: data.currentCTC,
+  noticePeriod: data.noticePeriod,
+  status: candidateStatus,
+  remarks: data.remarks || [],
+  tracking: {
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  // Handle assignment data - explicitly set to null if invalid
+  assignment:
+    data.assignment &&
+    data.assignment.interviewerId !== '-1' &&
+    data.assignment.interviewerId !== '' &&
+    data.assignment.interviewerId
+      ? {
+          interviewerId: data.assignment.interviewerId,
+          googleMeet: null,
+          assignedAt: new Date(),
+          ...(data.assignment.time && {
+            time: new Date(data.assignment.time),
+          }),
+        }
+      : null,
+  // Handle file data
+  ...(data.resume
+    ? {
+        resume: {
+          id: data.resume.id,
+          name: data.resume.name,
+          url: data.resume.url,
+          type: data.resume.type,
+          size: data.resume.size,
         },
-        // Handle assignment data
-        // Normalize interviewerId: convert empty string or "-1" to null
-        ...(data.assignment &&
-        data.assignment.interviewerId !== '-1' &&
-        data.assignment.interviewerId !== '' &&
-        data.assignment.interviewerId
-          ? {
-              assignment: {
-                interviewerId: data.assignment.interviewerId,
-                googleMeet: null,
-                assignedAt: new Date(),
-                ...(data.assignment.time && {
-                  time: new Date(data.assignment.time),
-                }),
-              },
-            }
-          : null),
-        // Handle file data
-        ...(data.resume
-          ? {
-              resume: {
-                id: data.resume.id,
-                name: data.resume.name,
-                url: data.resume.url,
-                type: data.resume.type,
-                size: data.resume.size,
-              },
-            }
-          : null),
-        // Handle attachments array
-        attachments: data.attachments.map((attachment: Attachment) => ({
-          id: attachment.id,
-          name: attachment.name,
-          url: attachment.url,
-          type: attachment.type,
-          size: attachment.size,
-        })),
-        customFields: data.customFields,
-      };
+      }
+    : null),
+  // Handle attachments array
+  attachments: data.attachments.map((attachment: Attachment) => ({
+    id: attachment.id,
+    name: attachment.name,
+    url: attachment.url,
+    type: attachment.type,
+    size: attachment.size,
+  })),
+  customFields: data.customFields,
+};
 
       if (!Candidate) {
         return NextResponse.json(

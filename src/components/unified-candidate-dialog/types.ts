@@ -136,7 +136,6 @@ export const getValidationSchema = (currentJobId: string | undefined) =>
         is: true,
         then: (s) =>
           s
-            .required('Time is required')
             .min(new Date(), 'Cannot be in the past'),
         otherwise: (s) => s.nullable().notRequired(),
       }),

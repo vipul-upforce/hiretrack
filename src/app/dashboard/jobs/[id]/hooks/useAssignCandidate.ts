@@ -159,7 +159,7 @@ export const useAssignCandidate = ({
       }
       const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: getJobId(candidate) || '',
+        jobId: getJobId(candidate) || null,
         newEntry: newHistoryEntry,
       }).unwrap();
 
@@ -276,7 +276,7 @@ export const useAssignCandidate = ({
 
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: getJobId(candidate) || '',
+        jobId: getJobId(candidate) || null,
         newEntry: newHistoryEntry,
       }).unwrap();
       // sendUnassignEmail({ name: result.name });
