@@ -12,7 +12,6 @@ export async function GET(
     const [{ id }, userData] = await Promise.all([
       params,
       getAuthenticatedUser(_request, ['interviewer', 'admin', 'hr']),
-      connectToDatabase(),
     ]);
 
     // Handle authentication errors
@@ -30,6 +29,9 @@ export async function GET(
         { status: 400 },
       );
     }
+
+    // Ensure database connection is established and models are registered
+    await connectToDatabase();
 
     if (!Candidate) {
       return NextResponse.json(
@@ -50,7 +52,13 @@ export async function GET(
           _id: 1,
           resume: 1,
           attachments: 1,
-          remarks: 1, // Full remarks array
+          remarks: {
+            $cond: {
+              if: { $eq: [{ $type: '$remarks' }, 'array'] },
+              then: '$remarks',
+              else: [],
+            },
+          },
         },
       },
       
@@ -58,7 +66,15 @@ export async function GET(
       {
         $lookup: {
           from: 'users',
-          let: { remarkUserIds: { $map: { input: '$remarks', as: 'r', in: '$$r.userId' } } },
+          let: {
+            remarkUserIds: {
+              $cond: {
+                if: { $gt: [{ $size: '$remarks' }, 0] },
+                then: { $map: { input: '$remarks', as: 'r', in: '$$r.userId' } },
+                else: [],
+              },
+            },
+          },
           pipeline: [
             {
               $match: {
