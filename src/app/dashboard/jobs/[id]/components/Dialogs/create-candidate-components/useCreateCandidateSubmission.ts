@@ -32,6 +32,10 @@ interface CandidateFormValues {
   time: Date | undefined;
   customFields: CustomFieldValues;
   email: string;
+  assignment?: {
+    interviewerId: string | { _id: string; name: string; email: string } | null;
+    time: Date | null;
+  } | null;
 }
 
 interface UseCreateCandidateSubmissionProps {
@@ -148,8 +152,11 @@ export function useCreateCandidateSubmission({
         values.attachments.map((file) => convertFileToBase64(file)),
       );
 
-      const candidateData = {
-        ...values,
+      // Extract assignment, assignee, and time from values to avoid spreading empty objects
+      const { assignment, assignee, time, ...restValues } = values;
+
+      const candidateData: Record<string, unknown> = {
+        ...restValues,
         jobId: {
           _id: jobId,
           title: '',
@@ -165,12 +172,6 @@ export function useCreateCandidateSubmission({
           parseFloat(String(values.noticePeriod)).toFixed(0),
         ),
         email: values.email || parsedResumeData?.profile?.email,
-        ...(values.assignee && values.time
-          ? {
-              assignee: values.assignee === '-1' ? '' : values.assignee,
-              time: values.time,
-            }
-          : {}),
         resume: resumeBase64
           ? {
               id: uuidv4(),
@@ -189,6 +190,35 @@ export function useCreateCandidateSubmission({
         })),
         remarks: [],
       };
+
+      // Handle assignment: prefer assignment object, fallback to assignee/time for backward compatibility
+      if (assignment) {
+        // Normalize interviewerId: convert empty string or "-1" to null
+        const normalizedInterviewerId =
+          typeof assignment.interviewerId === 'string'
+            ? assignment.interviewerId
+            : assignment.interviewerId?._id || null;
+
+        if (
+          normalizedInterviewerId &&
+          normalizedInterviewerId !== '' &&
+          normalizedInterviewerId !== '-1'
+        ) {
+          // Only include assignment if interviewerId is valid
+          candidateData.assignment = {
+            interviewerId: normalizedInterviewerId,
+            time: assignment.time ? new Date(assignment.time) : undefined,
+          };
+        }
+        // If invalid, don't include assignment (it will be undefined)
+      } else if (assignee && assignee !== '-1' && assignee !== '' && time) {
+        // Fallback: handle legacy assignee/time format if assignment object doesn't exist
+        candidateData.assignment = {
+          interviewerId: assignee,
+          time: new Date(time),
+        };
+      }
+      // If neither exists or both are invalid, assignment is not included (undefined)
 
       setIsCreating(true);
 
@@ -253,7 +283,11 @@ export function useCreateCandidateSubmission({
         };
         await updateCandidateHistory({
           candidateId: createdCandidate._id,
-          jobId: candidateData.jobId,
+          jobId: {
+            _id: jobId,
+            title: '',
+            description: '',
+          },
           newEntry: newHistoryEntry,
         }).unwrap();
       }

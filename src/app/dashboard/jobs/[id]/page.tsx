@@ -105,6 +105,7 @@ export default function JobProgressPage() {
     candidates: normalizedCandidates,
     isLoading: isCandidatesLoading,
     refetch,
+    sseLanes:updatedLanes,
   } = useNormalizedCandidates({
     jobId: id,
     setSelectedCandidate: setTempSelectedCandidate,
@@ -127,11 +128,11 @@ export default function JobProgressPage() {
   });
 
   // Get SSE lanes separately (still needed for lane updates)
-  const { lanes: updatedLanes } = useSSE(
-    setSelectedCandidate,
-    selectedCandidate,
-    id,
-  );
+  // const { lanes: updatedLanes } = useSSE(
+  //   setSelectedCandidate,
+  //   selectedCandidate,
+  //   id,
+  // );
 
   const [updateJob, { isLoading }] = useUpdateJobMutation();
   // NEW: Use job-specific lanes with fallback to user lanes

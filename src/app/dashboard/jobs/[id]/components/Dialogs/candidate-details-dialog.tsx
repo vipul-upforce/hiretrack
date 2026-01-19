@@ -115,8 +115,7 @@ export function CandidateDetailsDialog({
       if (preservedDetailsRef.current) {
         setLocalCandidate({
           ...updatedCandidate,
-          resume:
-            preservedDetailsRef.current.resume ?? updatedCandidate.resume,
+          resume: preservedDetailsRef.current.resume ?? updatedCandidate.resume,
           attachments:
             preservedDetailsRef.current.attachments ??
             updatedCandidate.attachments,
@@ -190,10 +189,17 @@ export function CandidateDetailsDialog({
       Array.isArray(localCandidate.history) &&
       localCandidate._id === candidate?._id // Only merge if viewing this candidate
     ) {
+      // Store history in a const to help TypeScript narrow the type
+      const sseHistory = localCandidate.history;
+
       setTimeLineItems((prevItems) => {
-        // CRITICAL: If history is already loaded and SSE history is smaller, 
+        // CRITICAL: If history is already loaded and SSE history is smaller,
         // it might be incomplete - preserve existing items
-        if (historyLoaded && prevItems.length > 0 && localCandidate.history.length < prevItems.length) {
+        if (
+          historyLoaded &&
+          prevItems.length > 0 &&
+          sseHistory.length < prevItems.length
+        ) {
           // SSE history is smaller than what we have - likely incomplete
           // Only merge new/updated items, don't replace everything
           const existingItemsMap = new Map<string, ICandidateHistory>();
@@ -203,7 +209,7 @@ export function CandidateDetailsDialog({
           });
 
           // Find new items that don't exist in current timeline
-          const newItems = localCandidate.history.filter((newItem) => {
+          const newItems = sseHistory.filter((newItem) => {
             const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
             return !existingItemsMap.has(key);
           });
@@ -219,7 +225,7 @@ export function CandidateDetailsDialog({
           }
 
           // Check if any existing items were updated
-          const updatedItems = localCandidate.history
+          const updatedItems = sseHistory
             .map((updatedItem) => {
               const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
               const existing = existingItemsMap.get(key);
@@ -254,7 +260,7 @@ export function CandidateDetailsDialog({
         }
 
         // History not loaded yet, or SSE history is complete - use it
-        if (localCandidate.history.length > 0) {
+        if (sseHistory.length > 0) {
           // Create a map of existing items
           const existingItemsMap = new Map<string, ICandidateHistory>();
           prevItems.forEach((item) => {
@@ -263,7 +269,7 @@ export function CandidateDetailsDialog({
           });
 
           // Find new items
-          const newItems = localCandidate.history.filter((newItem) => {
+          const newItems = sseHistory.filter((newItem) => {
             const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
             return !existingItemsMap.has(key);
           });
@@ -278,7 +284,7 @@ export function CandidateDetailsDialog({
           }
 
           // Check for updated items
-          const updatedItems = localCandidate.history
+          const updatedItems = sseHistory
             .map((updatedItem) => {
               const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
               const existing = existingItemsMap.get(key);
@@ -309,8 +315,8 @@ export function CandidateDetailsDialog({
           }
 
           // If SSE history is same or larger, use it (might be complete)
-          if (localCandidate.history.length >= prevItems.length) {
-            return localCandidate.history.sort(
+          if (sseHistory.length >= prevItems.length) {
+            return sseHistory.sort(
               (a, b) =>
                 new Date(b.dateTime ?? 0).getTime() -
                 new Date(a.dateTime ?? 0).getTime(),
@@ -323,7 +329,12 @@ export function CandidateDetailsDialog({
         return prevItems;
       });
     }
-  }, [localCandidate?.history, localCandidate?._id, candidate?._id, historyLoaded]);
+  }, [
+    localCandidate?.history,
+    localCandidate?._id,
+    candidate?._id,
+    historyLoaded,
+  ]);
 
   // Handle History Error
   useEffect(() => {
@@ -362,8 +373,7 @@ export function CandidateDetailsDialog({
         ...updatedCandidate,
         history: historyData?.history || localCandidate?.history || [],
         // Preserve fetched details if they exist
-        resume:
-          preservedDetailsRef.current?.resume ?? updatedCandidate.resume,
+        resume: preservedDetailsRef.current?.resume ?? updatedCandidate.resume,
         attachments:
           preservedDetailsRef.current?.attachments ??
           updatedCandidate.attachments,
@@ -515,18 +525,18 @@ export function CandidateDetailsDialog({
         // Preserve fetched details if same candidate and details were loaded
         resume:
           isSameCandidate && preservedDetailsRef.current
-            ? preservedDetailsRef.current.resume ?? candidate.resume
+            ? (preservedDetailsRef.current.resume ?? candidate.resume)
             : candidate.resume,
         attachments:
           isSameCandidate && preservedDetailsRef.current
-            ? preservedDetailsRef.current.attachments ?? candidate.attachments
+            ? (preservedDetailsRef.current.attachments ?? candidate.attachments)
             : candidate.attachments,
         remarks:
           isSameCandidate && preservedDetailsRef.current
-            ? preservedDetailsRef.current.remarks ?? candidate.remarks
+            ? (preservedDetailsRef.current.remarks ?? candidate.remarks)
             : candidate.remarks,
       });
-      
+
       // Only reset history and details state when candidate ID actually changes
       if (!isSameCandidate) {
         setHistoryLoaded(false);
@@ -543,14 +553,17 @@ export function CandidateDetailsDialog({
         } else {
           setTimeLineItems([]);
         }
-      } else {
+      } else if (
+        !historyLoaded &&
+        candidate.history &&
+        Array.isArray(candidate.history) &&
+        candidate.history.length > 0
+      ) {
         // Same candidate - don't reset historyLoaded or overwrite timeLineItems
         // The merge logic in the other useEffect will handle SSE updates
         // Only initialize if history hasn't been loaded yet
-        if (!historyLoaded && candidate.history && Array.isArray(candidate.history) && candidate.history.length > 0) {
-          setTimeLineItems(candidate.history);
-          setHistoryLoaded(true);
-        }
+        setTimeLineItems(candidate.history);
+        setHistoryLoaded(true);
       }
     }
   }, [candidate, id, localCandidate?._id, historyLoaded]);

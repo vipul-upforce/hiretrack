@@ -46,6 +46,7 @@ const getInitialValues = (customFields: CustomFieldValues) => ({
   attachments: [] as File[],
   assignee: '',
   time: undefined,
+  assignment: null,
   customFields: { ...customFields },
   email: '',
 });
