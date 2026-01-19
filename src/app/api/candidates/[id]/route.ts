@@ -274,7 +274,11 @@ export async function PUT(
 
     if ('assignment' in data) {
       if (data.assignment === null) {
-        updateObj.$unset = { assignment: 1 };
+        // Initialize $unset if it doesn't exist, then merge
+        if (!updateObj.$unset) {
+          updateObj.$unset = {};
+        }
+        updateObj.$unset.assignment = 1;
 
         // Add follow-up entry to highlight assignment complete
         assignmentCompletedFollowUp = {
@@ -296,8 +300,12 @@ export async function PUT(
     }
     const whatWasUpdated: string[] = [];
     if ('attachments' in data) {
-      if (data.attachment === null) {
-        updateObj.$unset = { attachments: 1 };
+      if (data.attachments === null) {
+        // Initialize $unset if it doesn't exist, then merge
+        if (!updateObj.$unset) {
+          updateObj.$unset = {};
+        }
+        updateObj.$unset.attachments = 1;
       } else {
         if (
           JSON.stringify(existingCandidate.attachments) !==
@@ -310,14 +318,22 @@ export async function PUT(
     }
     if ('resume' in data) {
       if (data.resume === null) {
-        updateObj.$unset = { resume: 1 };
+        // Initialize $unset if it doesn't exist, then merge
+        if (!updateObj.$unset) {
+          updateObj.$unset = {};
+        }
+        updateObj.$unset.resume = 1;
       } else {
         updateObj.$set.resume = data.resume;
       }
     }
     if ('customFields' in data) {
       if (data.customFields === null) {
-        updateObj.$unset = { customFields: 1 };
+        // Initialize $unset if it doesn't exist, then merge
+        if (!updateObj.$unset) {
+          updateObj.$unset = {};
+        }
+        updateObj.$unset.customFields = 1;
       } else {
         updateObj.$set.customFields = data.customFields;
       }
@@ -333,15 +349,9 @@ export async function PUT(
       updateObj.$set.tags = data.tags;
     }
     if ('followUp' in data) {
-      console.log(
-        '☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ FOllow Up in here',
-        data.followUp,
-      );
       updateObj.$set.followUp = data.followUp;
       const oldFollowUp = existingCandidate.followUp;
       const newFollowUp = data?.followUp;
-      console.log(oldFollowUp, 'oldFollowUp');
-      console.log(newFollowUp, 'newFollowUp');
       try {
         const jobInfo = existingCandidate.jobId as IFJob;
 
