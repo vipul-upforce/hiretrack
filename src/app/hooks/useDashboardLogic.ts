@@ -156,15 +156,15 @@ export const useDashboardLogic = () => {
   }, [user]);
 
   // Handle Notification Refresh via SSE
-  useEffect(() => {
-    if (
-      totalCount >= 0 &&
-      notificationCountData &&
-      totalCount !== notificationCountData.totalCount
-    ) {
-      fetchNotifications();
-    }
-  }, [unreadCount]);
+  // useEffect(() => {
+  //   if (
+  //     totalCount >= 0 &&
+  //     notificationCountData &&
+  //     totalCount !== notificationCountData.totalCount
+  //   ) {
+  //     fetchNotifications();
+  //   }
+  // }, [unreadCount]);
 
   // Handle Responsive Sidebar
   useEffect(() => {
