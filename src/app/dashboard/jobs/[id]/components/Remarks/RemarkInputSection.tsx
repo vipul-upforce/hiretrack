@@ -9,6 +9,7 @@ import { Candidate } from '@/types/candidate';
 import { Checkbox } from '@/components/ui/checkbox';
 import React, { useState } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
+import logger from '@/lib/logger';
 
 interface MentionUser {
   _id: string;
@@ -72,7 +73,17 @@ export default function RemarkInputSection({
             if (e.altKey && e.key === 'Enter') {
               e.preventDefault();
               if (newRemark.trim() && !isRemarkSubmitting) {
-                handleAddRemark(selectedMentions.map((m) => m._id));
+                if (removeFU && hasFollowUp) {
+                  // Execute both actions in parallel
+                  Promise.all([
+                    handleAddRemark(selectedMentions.map((m) => m._id)),
+                    handleRemoveFollowUp(),
+                  ]).catch((error) => {
+                    logger.error('Error executing parallel actions:', error);
+                  });
+                } else {
+                  handleAddRemark(selectedMentions.map((m) => m._id));
+                }
               }
             }
           }}
@@ -164,9 +175,21 @@ export default function RemarkInputSection({
             <Button
               variant="primary"
               onClick={() => {
-                if (removeFU) {
+                const hasRemark = newRemark.trim();
+                
+                if (removeFU && hasFollowUp && hasRemark) {
+                  // Execute both actions in parallel when checkbox is checked and remark exists
+                  Promise.all([
+                    handleAddRemark(selectedMentions.map((m) => m._id)),
+                    handleRemoveFollowUp(),
+                  ]).catch((error) => {
+                    logger.error('Error executing parallel actions:', error);
+                  });
+                } else if (removeFU && hasFollowUp) {
+                  // Only remove followup if checkbox is checked but no remark
                   handleRemoveFollowUp();
-                } else {
+                } else if (hasRemark) {
+                  // Only add remark if checkbox is not checked
                   handleAddRemark(selectedMentions.map((m) => m._id));
                 }
               }}
