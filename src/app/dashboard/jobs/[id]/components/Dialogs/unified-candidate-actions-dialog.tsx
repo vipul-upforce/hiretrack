@@ -70,7 +70,7 @@ export function UnifiedCandidateActionsDialog(
           size="xl"
           className="flex max-h-[90vh] flex-col overflow-hidden p-0"
         >
-          <DialogHeader className="border-0 px-6 py-3">
+          <DialogHeader className="border-0 px-6 py-3 pt-5">
             <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
               {Array.isArray(candidate) ? (
                 <span>
