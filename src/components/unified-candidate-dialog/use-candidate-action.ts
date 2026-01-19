@@ -97,7 +97,8 @@ export function useCandidateActions({
   const jobId = getInitialJobId();
 
   const shouldFetchInterviewers =
-    !!user && user.role !== 'candidate' && user.role !== '';
+    user && (user.role === 'admin' || user.role === 'hr');
+
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery(undefined, {
       skip: !shouldFetchInterviewers,
@@ -128,7 +129,9 @@ export function useCandidateActions({
         addRemark: initialAction === 'addRemark',
         updateStatus: initialAction === 'updateStatus',
       });
-      refetchInterviewers();
+      if (shouldFetchInterviewers) {
+        refetchInterviewers();
+      }
     }
   }, [isOpen, initialAction, refetchInterviewers]);
 
