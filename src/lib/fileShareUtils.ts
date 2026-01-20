@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { FileStorageValues } from '@/app/dashboard/settings/components/file-storage/schema';
 import connectToDatabase, { FileShare } from './mongodb';
 import { uploadFileToProvider } from './fileUtils';
 import { IFileShare } from './models/fileshare';
@@ -141,7 +142,7 @@ export async function createFileShare(
     // Upload file to storage provider
     const uploadResult = await uploadFileToProvider(
       file.base64, // Pass original base64 with prefix for provider functions
-      storageConfig,
+      storageConfig as FileStorageValues,
       organizationId,
       `shares/${shareId}/${file.fileName}`,
     );

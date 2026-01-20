@@ -117,12 +117,13 @@ export const useAssignCandidate = ({
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === 'object'
-          ? candidate.assignment.interviewerId.name
-          : '';
+          ? candidate.assignment.interviewerId?.name
+          : null;
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === 'object' &&
-        Object.keys(candidate.assignment?.interviewerId).length > 0
-          ? Object(candidate.assignment.interviewerId._id)
+        candidate.assignment.interviewerId &&
+        Object.keys(candidate.assignment.interviewerId).length > 0
+          ? Object(candidate.assignment.interviewerId?._id)
           : null;
 
       let nextInterviewer = 'No Next interviewer';
@@ -266,7 +267,7 @@ export const useAssignCandidate = ({
 
       const previousInterviewerId =
         typeof candidate.assignment?.interviewerId === 'object'
-          ? Object(candidate.assignment.interviewerId._id)
+          ? Object(candidate.assignment.interviewerId?._id)
           : null;
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),

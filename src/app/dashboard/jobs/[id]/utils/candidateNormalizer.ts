@@ -81,6 +81,7 @@ export interface NormalizedCandidate extends Omit<
   jobId: JobObject | string;
   assignment: NormalizedAssignment | null;
   tracking: NormalizedTracking;
+  remarksCount?: number;
 }
 
 /**
