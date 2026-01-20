@@ -281,11 +281,14 @@ export async function PUT(
         updateObj.$unset.assignment = 1;
 
         // Add follow-up entry to highlight assignment complete
-        assignmentCompletedFollowUp = {
-          note: `${userData?.name || 'Unknown User'} has completed the last step.`,
-          date: null, // No specific follow-up date needed for completion note
-          userId: userData?.id,
-        };
+        if(userData.role === 'interviewer'){
+          assignmentCompletedFollowUp = {
+            note: `${userData?.name || 'Unknown User'} has completed the last step.`,
+            date: null, // No specific follow-up date needed for completion note
+            userId: userData?.id,
+          };
+        }
+       
       } else {
         // Normalize interviewerId: convert empty string or "-1" to null
         const normalizedAssignment = { ...data.assignment };
@@ -722,6 +725,9 @@ export async function PUT(
         if ('assignment' in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
+          console.log(oldAssignment,"oldAssignment");
+          console.log(newAssignment,"newAssignment");
+          
           if (newAssignment) {
             if (
               !oldAssignment ||
