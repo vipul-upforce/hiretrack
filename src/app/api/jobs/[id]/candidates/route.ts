@@ -37,7 +37,8 @@ export async function GET(
       );
     }
     // Use aggregation to efficiently get candidates with remarksCount
-    // Excludes large arrays (history, resume, attachments, remarks) to reduce payload size
+    // Excludes large arrays (history, remarks) to reduce payload size
+    // Includes resume and attachments to prevent data loss when updating candidates
     const jobObjectId = new Types.ObjectId(id);
     const candidates = await Candidate.aggregate([
       // Match candidates for this job
@@ -50,12 +51,11 @@ export async function GET(
         },
       },
       
-      // Project fields (exclude large arrays)
+      // Project fields (exclude large arrays: history and remarks)
+      // Include resume and attachments to prevent null overwrites
       {
         $project: {
           history: 0,
-          resume: 0,
-          attachments: 0,
           remarks: 0, // Exclude full remarks array
           ...(userData?.role === 'interviewer'
             ? {

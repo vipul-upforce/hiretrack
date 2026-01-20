@@ -3,13 +3,12 @@
 import { DialogHeader } from '@/components/ui/dialog';
 import logger from '@/lib/logger';
 import { Candidate } from '@/types/candidate';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 import {
   useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
   useLazyFetchCandidateHistoryQuery,
-  useLazyFetchCandidateDetailsQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { useParams, usePathname } from 'next/navigation';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -61,13 +60,6 @@ export function CandidateDetailsDialog({
       isError: isHistoryError,
     },
   ] = useLazyFetchCandidateHistoryQuery();
-  const [
-    fetchDetails,
-    {
-      data: detailsData,
-      // isFetching: isDetailsFetching,
-    },
-  ] = useLazyFetchCandidateDetailsQuery();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
@@ -91,77 +83,8 @@ export function CandidateDetailsDialog({
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
 
-  // Details loading state (attachments, resume, remarks)
-  const [detailsLoaded, setDetailsLoaded] = useState(false);
-
-  // Store fetched details separately to preserve them during updates
-  const preservedDetailsRef = useRef<{
-    resume: Candidate['resume'];
-    attachments: Candidate['attachments'];
-    remarks: Candidate['remarks'];
-  } | null>(null);
-
-  // Wrapper for setLocalCandidate that preserves fetched details
-  // Handles both (candidate: Candidate | null) => void (for useSSE)
-  // and (candidate: Candidate) => void (for useUnassignHandlers, UnifiedCandidateActionsDialog)
-  const setLocalCandidateWithDetails = useCallback(
-    (updatedCandidate: Candidate | null) => {
-      if (!updatedCandidate) {
-        setLocalCandidate(null);
-        return;
-      }
-
-      // Preserve fetched details if they exist
-      if (preservedDetailsRef.current) {
-        setLocalCandidate({
-          ...updatedCandidate,
-          resume: preservedDetailsRef.current.resume ?? updatedCandidate.resume,
-          attachments:
-            preservedDetailsRef.current.attachments ??
-            updatedCandidate.attachments,
-          remarks:
-            preservedDetailsRef.current.remarks ?? updatedCandidate.remarks,
-        });
-      } else {
-        setLocalCandidate(updatedCandidate);
-      }
-    },
-    [],
-  );
-
   // useSSE handles updating localCandidate when SSE updates arrive
-  // Use wrapper to preserve fetched details
-  useSSE(setLocalCandidateWithDetails, localCandidate || null, id);
-
-  // Load details (attachments, resume, remarks) when dialog opens
-  useEffect(() => {
-    if (isOpen && !detailsLoaded && localCandidate?._id) {
-      fetchDetails(localCandidate._id);
-    }
-  }, [isOpen, detailsLoaded, localCandidate?._id, fetchDetails]);
-
-  // Merge details data into localCandidate and preserve them
-  useEffect(() => {
-    if (detailsData && localCandidate?._id === detailsData._id) {
-      // Store details for preservation during future updates
-      preservedDetailsRef.current = {
-        resume: detailsData.resume,
-        attachments: detailsData.attachments,
-        remarks: detailsData.remarks,
-      };
-
-      setLocalCandidate((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          resume: detailsData.resume,
-          attachments: detailsData.attachments,
-          remarks: detailsData.remarks,
-        };
-      });
-      setDetailsLoaded(true);
-    }
-  }, [detailsData, localCandidate?._id]);
+  useSSE(setLocalCandidate, localCandidate || null, id);
 
   // Load history when history tab is activated
   useEffect(() => {
@@ -367,18 +290,11 @@ export function CandidateDetailsDialog({
       await fetchHistory(localCandidate._id);
     }
 
-    // Update local candidate with the new data, preserving fetched details
+    // Update local candidate with the new data
     if (updatedCandidate) {
       setLocalCandidate({
         ...updatedCandidate,
         history: historyData?.history || localCandidate?.history || [],
-        // Preserve fetched details if they exist
-        resume: preservedDetailsRef.current?.resume ?? updatedCandidate.resume,
-        attachments:
-          preservedDetailsRef.current?.attachments ??
-          updatedCandidate.attachments,
-        remarks:
-          preservedDetailsRef.current?.remarks ?? updatedCandidate.remarks,
       });
     }
     setIsRefetching(false);
@@ -401,7 +317,6 @@ export function CandidateDetailsDialog({
     handleRemoveFollowUp,
   } = useRemarkHandlers(
     localCandidate,
-    refetch,
     refetchAssignment,
     onUpdate,
     refetchCandidates,
@@ -410,7 +325,7 @@ export function CandidateDetailsDialog({
   const { isLoading } = useUnassignHandlers(
     localCandidate,
     refetch,
-    setLocalCandidateWithDetails as (c: Candidate) => void, // Use wrapper to preserve fetched details
+    setLocalCandidate as (c: Candidate) => void,
     onUpdate,
     refetchAssignment,
     onOpenChange,
@@ -520,28 +435,11 @@ export function CandidateDetailsDialog({
   useEffect(() => {
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
-      setLocalCandidate({
-        ...candidate,
-        // Preserve fetched details if same candidate and details were loaded
-        resume:
-          isSameCandidate && preservedDetailsRef.current
-            ? (preservedDetailsRef.current.resume ?? candidate.resume)
-            : candidate.resume,
-        attachments:
-          isSameCandidate && preservedDetailsRef.current
-            ? (preservedDetailsRef.current.attachments ?? candidate.attachments)
-            : candidate.attachments,
-        remarks:
-          isSameCandidate && preservedDetailsRef.current
-            ? (preservedDetailsRef.current.remarks ?? candidate.remarks)
-            : candidate.remarks,
-      });
+      setLocalCandidate(candidate);
 
-      // Only reset history and details state when candidate ID actually changes
+      // Only reset history state when candidate ID actually changes
       if (!isSameCandidate) {
         setHistoryLoaded(false);
-        setDetailsLoaded(false);
-        preservedDetailsRef.current = null;
         // Initialize timeLineItems from candidate history if available
         if (
           candidate.history &&
@@ -738,9 +636,7 @@ export function CandidateDetailsDialog({
           initialAction={unifiedInitialAction}
           refetch={refetch}
           onUpdate={onUpdate || (() => {})}
-          setLocalCandidate={
-            setLocalCandidateWithDetails as (c: Candidate) => void
-          }
+          setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
