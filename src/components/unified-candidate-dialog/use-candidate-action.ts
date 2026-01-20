@@ -326,7 +326,7 @@ export function useCandidateActions({
     updates.assignment = {
       interviewerId: normalizedInterviewerId,
       // Explicitly set time to null if values.time is null/undefined, otherwise convert to ISO string
-      time: values.time ? (values.time.toISOString() as string) : null,
+      time: values.time ? (values.time.toISOString() as string) : '',
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),
     };
@@ -478,7 +478,7 @@ export function useCandidateActions({
       } else if (actions.addFollowUp) {
         updates.followUp = {
           note: values.followUpNote.trim(),
-          date: values.followUpDate?.toISOString() || '',
+          date: values.followUpDate?.toISOString() || null,
           userId: { _id: user.id, name: user.name, email: user.email },
         };
         const followUpTitle =
