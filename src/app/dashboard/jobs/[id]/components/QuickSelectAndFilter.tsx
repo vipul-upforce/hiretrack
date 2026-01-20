@@ -41,7 +41,7 @@ import { Job } from '@/types/job';
 import { Candidate } from '@/types/candidate';
 import { useRouter } from 'next/navigation';
 import { useFetchJobsQuery } from '@/lib/features/job/jobApi';
-import { getInterviewerName } from '../utils/candidateAccessors';
+import { getInterviewerName, isAssigned } from '../utils/candidateAccessors';
 
 interface FilterState {
   search: string;
@@ -156,11 +156,11 @@ export function QuickSelectAndFilter({
       },
       {
         key: 'assigned',
-        filter: (candidate: Candidate) => candidate.assignment && candidate.assignment.interviewerId,
+        filter: (candidate: Candidate) => isAssigned(candidate),
       },
       {
         key: 'notAssigned',
-        filter: (candidate: Candidate) => !candidate.assignment,
+        filter: (candidate: Candidate) => !isAssigned(candidate),
       },
       {
         key: 'withRemarks',

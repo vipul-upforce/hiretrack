@@ -21,6 +21,7 @@ import { initialCandidateColumns } from '../data/initial-data';
 import { useKanbanBoard } from './useKanbanBoard';
 import { useDragToScroll } from './useDragToScroll';
 import { useCandidate } from './useCandidate';
+import { isAssigned } from '../utils/candidateAccessors';
 
 export interface FilterState {
   search: string;
@@ -321,11 +322,11 @@ export const useJobProgressPage = () => {
             },
             {
               key: 'assigned',
-              filter: (c: Candidate) => c.assignment,
+              filter: (c: Candidate) => isAssigned(c),
             },
             {
               key: 'notAssigned',
-              filter: (c: Candidate) => !c.assignment,
+              filter: (c: Candidate) => !isAssigned(c),
             },
             {
               key: 'withRemarks',
