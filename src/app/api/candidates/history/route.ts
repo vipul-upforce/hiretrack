@@ -424,7 +424,7 @@ export async function PUT(request: NextRequest) {
         const remarkFor = candidateData?.name || '';
         const remarkAdder = userData.name;
         const rating = data.newEntry?.remark?.rating || null;
-        const candidateProfileLink = `${process.env.NEXT_PUBLIC_APP_URL}/candidate/${data.candidateId}`;
+        const candidateProfileLink = `${request.headers.get('origin')}/candidate/${data.candidateId}`;
         const organizationName = userData.organizationInfo?.name || 'HireTrack';
         const emailList = (users || []).map((user) => user.email);
         await sendRemarkNotificationWithMentions(

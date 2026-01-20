@@ -295,7 +295,21 @@ export function EditCandidateDialog({
         });
         return;
       }
+      // sentAssignmentMail(result, sendEmail);
+      // check if assignment has changed before sending email
+      const prevAssignment = candidate.assignment?.interviewerId;
+      const newAssignment = result?.assignment?.interviewerId;
+      // debugger;
+      const prevId =
+        typeof prevAssignment === 'object'
+          ? prevAssignment?._id
+          : prevAssignment;
+      const newId =
+        typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
+
+      if (prevId !== newId) {
       sentAssignmentMail(result, sendEmail);
+      }
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === 'object'
