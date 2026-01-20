@@ -143,7 +143,7 @@ export function useCandidateActions({
         : candidate.assignment?.interviewerId?._id || null;
 
     return {
-      interviewerId: interviewerIdValue || '',
+      interviewerId: interviewerIdValue,
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
@@ -592,10 +592,22 @@ export function useCandidateActions({
         return;
       }
 
-      const result = await updateCandidate({
+      const finalCandidatePayload = {
         ...candidate,
         ...updates,
-      } as Candidate).unwrap();
+      };
+
+      if (
+        finalCandidatePayload.assignment &&
+        typeof finalCandidatePayload.assignment === 'object' &&
+        Object.keys(finalCandidatePayload.assignment).length === 0
+      ) {
+        finalCandidatePayload.assignment = null;
+      }
+
+      const result = await updateCandidate(
+        finalCandidatePayload as Candidate,
+      ).unwrap();
 
       if (actions.assignTo) sentAssignmentMail(result, sendEmail);
 
@@ -665,7 +677,7 @@ export function useCandidateActions({
       // since we already have the updated data from the mutation
       onUpdate?.(result);
       setLocalCandidate?.(result);
-      
+
       // Only refetch assignments list for dashboard (to update the list view)
       // Don't refetch individual candidate since we already have the updated result
       if (pathname === '/dashboard') {
