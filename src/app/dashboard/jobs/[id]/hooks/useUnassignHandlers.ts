@@ -9,10 +9,11 @@ import { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 import { usePathname } from 'next/navigation';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { getJobId } from '../utils/candidateAccessors';
 
 export const useUnassignHandlers = (
   localCandidate: Candidate | null,
-  refetch: () => Promise<void>,
+  _refetch: () => Promise<void>, // No longer used - kept for API compatibility
   setLocalCandidate: (candidate: Candidate) => void,
   // unassignNote?: string | null,
   // unassignRating?: number | null,
@@ -44,13 +45,16 @@ export const useUnassignHandlers = (
 
       const result = await updateCandidate(updatedCandidate).unwrap();
       if (result) {
+        // Update local state with the result - no need to refetch individual candidate
         onUpdate?.(result);
         setLocalCandidate(result);
-        if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
-          await refetch();
-        } else {
+        
+        // Only refetch assignments list for dashboard/calendar (to update the list view)
+        // Don't refetch individual candidate since we already have the updated result
+        if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
           refetchAssignment?.();
         }
+        // Note: Removed individual candidate refetch - we already have the updated result
         // debugger;
         const previousInterviewerId =
           typeof localCandidate?.assignment?.interviewerId === 'object'
@@ -72,7 +76,7 @@ export const useUnassignHandlers = (
         };
         await updateCandidateHistory({
           candidateId: updatedCandidate._id || '',
-          jobId: localCandidate?.jobId._id || localCandidate?.jobId || '',
+          jobId: getJobId(localCandidate) || null,
           newEntry: newHistoryEntry,
         }).unwrap();
         sendUnassignEmail({

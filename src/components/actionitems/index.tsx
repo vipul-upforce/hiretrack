@@ -21,7 +21,37 @@ function ActionItems({
 
   const [triggerRefetchCandidate] = useRefetchCandidateMutation();
 
-  // Candidate-specific refetch function
+  // Update local state with updated candidate (without making GET request)
+  const updateCandidate = (updatedCandidate: Candidate) => {
+    if (!updatedCandidate?._id) return;
+
+    setCandidate(updatedCandidate);
+
+    // Check if assignment is null or has null interviewerId - if so, remove from list
+    const hasValidAssignment =
+      updatedCandidate.assignment &&
+      updatedCandidate.assignment.interviewerId !== null &&
+      updatedCandidate.assignment.interviewerId !== undefined;
+
+    const updatedAssignments = !hasValidAssignment
+      ? assignments.filter((a) => a._id !== updatedCandidate._id)
+      : assignments.map((a) =>
+          a._id === updatedCandidate._id
+            ? { ...a, ...updatedCandidate } // merge updated data
+            : a,
+        );
+    setAssignments(updatedAssignments);
+  };
+
+  // Update assignments list (for dashboard list view)
+  const updateAssignments = () => {
+    // This is called to refresh the assignments list view
+    // The individual candidate is already updated via updateCandidate
+    // So we just need to trigger a re-render by updating assignments
+    setAssignments([...assignments]);
+  };
+
+  // Candidate-specific refetch function (only used when we actually need to fetch from server)
   const refetchCandidate = async () => {
     if (!candidate?._id) return;
 
@@ -30,16 +60,7 @@ function ActionItems({
         candidate._id,
       ).unwrap();
 
-      setCandidate(updatedCandidate);
-
-      const updatedAssignments = !updatedCandidate.assignment
-        ? assignments.filter((a) => a._id !== updatedCandidate._id)
-        : assignments.map((a) =>
-            a._id === updatedCandidate._id
-              ? { ...a, ...updatedCandidate } // merge updated data
-              : a,
-          );
-      setAssignments(updatedAssignments);
+      updateCandidate(updatedCandidate);
       toast({
         title: 'Success',
         description: 'Candidate data refreshed successfully',
@@ -103,6 +124,7 @@ function ActionItems({
       }
     }
   }, [assignment]);
+  
 
   return candidate ? (
     <>
@@ -115,6 +137,8 @@ function ActionItems({
         openRemarks={openRemarksFor === candidate._id}
         setOpenRemarksFor={setOpenRemarksFor}
         onDashboard
+        onUpdate={updateCandidate}
+        refetchAssignment={updateAssignments}
         onEditClick={() => {
           // Handle edit - could open edit dialog
         }}

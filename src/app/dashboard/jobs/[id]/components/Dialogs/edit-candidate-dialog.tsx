@@ -7,6 +7,7 @@ import { Formik, Form, FormikProps } from 'formik';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
+  useLazyFetchCandidateDetailsQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
 import { v4 as uuidv4 } from 'uuid';
@@ -93,8 +94,10 @@ export function EditCandidateDialog({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
   const isDesktop = useIsDesktop();
   const [isMaximized, setIsMaximized] = useState(false);
+  const [detailsLoaded, setDetailsLoaded] = useState(false);
 
   const formName = 'Candidate';
   const { getDefaultValues, validationSchema } = useCustomForm(
@@ -274,7 +277,8 @@ export function EditCandidateDialog({
           updatedCandidate.assignment = {
             ...values.assignment,
             interviewerId: normalizedInterviewerId,
-            time: values.assignment.time,
+            // Explicitly set time to null if it's null/undefined, otherwise use the value
+            time: values.assignment.time ?? null,
             assignedAt: values.assignment.assignedAt,
           };
         }
@@ -291,21 +295,7 @@ export function EditCandidateDialog({
         });
         return;
       }
-      // sentAssignmentMail(result, sendEmail);
-      // check if assignment has changed before sending email
-      // const prevAssignment = candidate.assignment?.interviewerId;
-      // const newAssignment = result?.assignment?.interviewerId;
-      // debugger;
-      // const prevId =
-      //   typeof prevAssignment === 'object'
-      //     ? prevAssignment?._id
-      //     : prevAssignment;
-      // const newId =
-      //   typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
-
-      // if (prevId !== newId) {
       sentAssignmentMail(result, sendEmail);
-      // }
 
       const previousInterviewer =
         typeof candidate.assignment?.interviewerId === 'object'
@@ -356,7 +346,7 @@ export function EditCandidateDialog({
       if (nextInterviewer && nextInterviewer !== '') {
         await updateCandidateHistory({
           candidateId: updatedCandidate._id || '',
-          jobId: updatedCandidate?.jobId || '',
+          jobId: updatedCandidate?.jobId || null,
           newEntry: newHistoryEntry,
         }).unwrap();
       }
@@ -444,8 +434,37 @@ export function EditCandidateDialog({
   useEffect(() => {
     if (!isOpen) {
       setIsMaximized(false);
+      setDetailsLoaded(false);
     }
   }, [isOpen]);
+
+  // Fetch candidate details when dialog opens
+  useEffect(() => {
+    if (isOpen && candidate._id && !detailsLoaded) {
+      const loadDetails = async () => {
+        try {
+          const { data: detailsData } = await fetchCandidateDetails(
+            candidate._id,
+          );
+
+          if (detailsData && formikRef.current) {
+            // Update form values with fetched details
+            formikRef.current.setValues((prevValues) => ({
+              ...prevValues,
+              resume: detailsData.resume || prevValues.resume,
+              attachments: detailsData.attachments || prevValues.attachments,
+              remarks: detailsData.remarks || prevValues.remarks,
+            }));
+            setDetailsLoaded(true);
+          }
+        } catch {
+          // Details loading is a background operation and shouldn't disrupt UX
+        }
+      };
+
+      loadDetails();
+    }
+  }, [isOpen, candidate._id, detailsLoaded, fetchCandidateDetails]);
 
   const handleDialogClose = (open: boolean) => {
     if (!open && !showUnsavedChangesDialog) {
@@ -499,12 +518,6 @@ export function EditCandidateDialog({
                 <AddSpecificCustomFieldButton
                   candidateId={candidate._id}
                   candidateName={candidate.name}
-                  // onSave={(newField) => {
-                  //   handleAddCustomField(
-                  //     newField,
-                  //     selectedFormId?.formId || null,
-                  //   );
-                  // }}
                 />
                 <div className="bottom-0 flex gap-3">
                   <Button
@@ -519,9 +532,8 @@ export function EditCandidateDialog({
                     onClick={() => {
                       handleApply();
                     }}
-                    type={
-                      Object.keys(errors).length === 0 ? 'button' : 'submit'
-                    }
+                    disabled={isSubmitting}
+                    type={  Object.keys(errors).length === 0 ? 'button' : 'submit'}
                     variant="primary"
                   >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}

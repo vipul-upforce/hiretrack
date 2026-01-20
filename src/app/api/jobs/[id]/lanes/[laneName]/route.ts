@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { Job, Organization, Candidate } from '@/lib/mongodb';
-import { broadcastLaneUpdate } from '@/lib/broadcast/broadCastCandidate';
+import connectToDatabase, { Job, Organization, Candidate, History } from '@/lib/mongodb';
+import {
+  broadcastLaneUpdate,
+  broadcastMultipleCandidateUpdate,
+} from '@/lib/broadcast/broadCastCandidate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
+import { IHistory } from '@/lib/models/history';
 
 const DEFAULT_LANES = [
   'applied',
@@ -151,7 +155,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!Job || !Organization || !Candidate) {
+    if (!Job || !Organization || !Candidate || !History) {
       return NextResponse.json(
         { error: 'Database not connected' },
         { status: 400 },
@@ -232,7 +236,7 @@ export async function PATCH(
     );
     const { organizationId } = user;
 
-    const [updatedJob] = await Promise.all([
+    const [updatedJob, updateResult] = await Promise.all([
       // Update job
       Job.findByIdAndUpdate(
         jobId,
@@ -255,7 +259,64 @@ export async function PATCH(
       ),
     ]);
 
+    // Broadcast lane update
     broadcastLaneUpdate(organizationId, newLanes, jobId);
+
+    // Fetch and broadcast updated candidates if any were updated
+    if (updateResult.modifiedCount > 0) {
+      const updatedCandidates = await Candidate.find({
+        jobId,
+        organizationId,
+        status: newLaneName,
+      })
+        .populate([
+          {
+            path: 'assignment.interviewerId',
+            select: '_id name email',
+          },
+          {
+            path: 'remarks.userId',
+            select: 'name email',
+          },
+          {
+            path: 'jobId',
+            select: '_id description title',
+          },
+        ])
+        .lean()
+        .exec();
+
+      if (updatedCandidates.length > 0) {
+        const candidateIds = updatedCandidates.map((c) => c._id);
+
+        const candidateHistories: IHistory[] = await History.find({
+          candidateId: {
+            $in: candidateIds,
+          },
+        })
+          .populate([
+            { path: 'history.assignmentBy', select: '_id name email' },
+            { path: 'history.currentInterviewer', select: '_id name email' },
+            { path: 'history.previousInterviewer', select: '_id name email' },
+            { path: 'history.note.userId', select: '_id name email' },
+          ])
+          .lean()
+          .exec();
+
+        const candidatesWithHistory = updatedCandidates.map((candidate) => {
+          const history = candidateHistories.find(
+            (h) => h.candidateId.toString() === candidate._id.toString(),
+          );
+          return {
+            ...candidate,
+            history: history?.history || [],
+          };
+        });
+
+        broadcastMultipleCandidateUpdate(candidatesWithHistory);
+      }
+    }
+
     return NextResponse.json({
       message: 'Lane renamed successfully',
       jobId: updatedJob?._id,

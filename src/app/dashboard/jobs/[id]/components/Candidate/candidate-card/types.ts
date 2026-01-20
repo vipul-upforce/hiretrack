@@ -16,5 +16,8 @@ export interface CandidateCardProps {
   onMarkAsDoneClick?: (candidate: Candidate) => void;
   onFollowUpClick?: (candidate: Candidate) => void;
   onAddRemarkClick?: (candidate: Candidate) => void;
+  // Optional callbacks to update state without refetching
+  onUpdate?: (updatedCandidate: Candidate) => void;
+  refetchAssignment?: () => void;
 }
 

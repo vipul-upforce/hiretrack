@@ -57,6 +57,9 @@ interface CandidateCardDialogsProps {
   onDashboard: boolean;
   // setOpenRemarksFor: (id: string | null) => void;
   triggerRef: React.RefObject<HTMLButtonElement>;
+  // Optional callbacks to update state without refetching
+  onUpdate?: (updatedCandidate: Candidate) => void;
+  refetchAssignment?: () => void;
 }
 
 export function CandidateCardDialogs({
@@ -95,6 +98,8 @@ export function CandidateCardDialogs({
   setNewFollowUpDate: _setNewFollowUpDate,
   onDashboard,
   triggerRef,
+  onUpdate,
+  refetchAssignment: refetchAssignmentProp,
 }: CandidateCardDialogsProps) {
   const unifiedOpen =
     isAssigning ||
@@ -170,12 +175,28 @@ export function CandidateCardDialogs({
           }}
           initialAction={unifiedInitialAction}
           refetch={refetch}
-          onUpdate={() => refetch()}
+          onUpdate={(updatedCandidate) => {
+            // Use onUpdate callback if provided (updates state without GET request)
+            // Otherwise fall back to refetch (for backward compatibility)
+            if (onUpdate) {
+              onUpdate(updatedCandidate);
+            } else {
+              refetch();
+            }
+          }}
           setLocalCandidate={() => {}}
-          refetchAssignment={() => refetch()}
+          refetchAssignment={() => {
+            // Use refetchAssignment callback if provided (updates list without GET request)
+            // Otherwise fall back to refetch (for backward compatibility)
+            if (refetchAssignmentProp) {
+              refetchAssignmentProp();
+            } else {
+              refetch();
+            }
+          }}
           onSuccess={() => {
+            // Just close the dialog - state is already updated via onUpdate/refetchAssignment
             closeUnified();
-            refetch();
           }}
         />
       )}

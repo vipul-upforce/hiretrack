@@ -24,7 +24,7 @@ import { getJobId } from '../utils/candidateAccessors';
 
 export const useAssignCandidate = ({
   candidate,
-  refetch,
+  refetch: _refetch, // No longer used - kept for API compatibility
   onOpenChange,
   onUpdate,
   setLocalCandidate,
@@ -106,7 +106,8 @@ export const useAssignCandidate = ({
             : candidate.remarks,
         assignment: {
           interviewerId: normalizedInterviewerId,
-          time: values?.time?.toISOString(),
+          // Explicitly set time to null if values.time is null/undefined, otherwise convert to ISO string
+          time: values?.time ? values.time.toISOString() : null,
           assignedAt: new Date().toISOString(),
           // Include Google Meet data if available
           ...(values?.googleMeetData && { googleMeet: values?.googleMeetData }),
@@ -159,7 +160,7 @@ export const useAssignCandidate = ({
       }
       const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: getJobId(candidate) || '',
+        jobId: getJobId(candidate) || null,
         newEntry: newHistoryEntry,
       }).unwrap();
 
@@ -169,18 +170,18 @@ export const useAssignCandidate = ({
         setLocalCandidate(result);
       }
 
-      if (pathname === '/dashboard') {
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
         refetchAssignment?.();
       }
+      // Note: Removed individual candidate refetch - we already have the updated result
 
       toast({
         title: 'Success',
         description: 'Candidate assigned successfully',
       });
 
-      if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
-        refetch();
-      }
       onSuccess();
     } catch (error) {
       if (typeof error === 'object' && error !== null && 'data' in error) {
@@ -249,15 +250,18 @@ export const useAssignCandidate = ({
             : candidate.remarks,
       };
       const result = await updateCandidate(updatedCandidate).unwrap();
+      
+      // Update local state with the result - no need to refetch individual candidate
       onUpdate(result);
       onOpenChange(false);
       setLocalCandidate(result);
 
-      if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
-        await refetch();
-      } else {
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
         refetchAssignment?.();
       }
+      // Note: Removed individual candidate refetch - we already have the updated result
       onSuccess();
 
       const previousInterviewerId =
@@ -276,7 +280,7 @@ export const useAssignCandidate = ({
 
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: getJobId(candidate) || '',
+        jobId: getJobId(candidate) || null,
         newEntry: newHistoryEntry,
       }).unwrap();
       // sendUnassignEmail({ name: result.name });

@@ -90,6 +90,19 @@ export function useDashboardEffects({
     }
   }, [isActivitiesSidebarOpen]);
 
+  // Helper function to check if a candidate has a valid assignment
+  const hasValidAssignment = (assignment: Candidate): boolean => {
+    // Exclude deleted candidates
+    if (assignment.isDeleted) return false;
+    
+    // Exclude candidates with no assignment or assignment with null interviewerId
+    if (!assignment.assignment || assignment.assignment.interviewerId === null) {
+      return false;
+    }
+    
+    return true;
+  };
+
   // Helper to extract interviewer ID from assignment (can be string or object)
   const getInterviewerId = (
     interviewerId: string | { _id: string } | null | undefined,
@@ -126,114 +139,18 @@ export function useDashboardEffects({
         let removedWeekCount = 0;
 
         (sseCandidates as Candidate[]).forEach((sseCandidate) => {
-          if (
-            'assignment' in sseCandidate &&
-            sseCandidate._id &&
-            sseCandidate.assignment &&
-            'interviewerId' in sseCandidate.assignment
-          ) {
-            const candidateId = sseCandidate._id;
-            const existingIndex = updatedAssignments.findIndex(
-              (assignment) => (assignment._id || assignment.id) === candidateId,
-            );
+          const candidateId = sseCandidate._id;
+          if (!candidateId) return;
 
-            // Check if this candidate matches the current interviewer filter
-            const matchesFilter = matchesInterviewerFilter(sseCandidate);
+          const existingIndex = updatedAssignments.findIndex(
+            (assignment) => (assignment._id || assignment.id) === candidateId,
+          );
 
-            if (!sseCandidate.assignment) {
-              if (existingIndex !== -1) {
-                const removed = updatedAssignments[existingIndex];
-                removedCount += 1;
-                if (isToday(removed)) removedTodayCount += 1;
-                if (isThisWeek(removed)) removedWeekCount += 1;
-                updatedAssignments = updatedAssignments.filter(
-                  (_, index) => index !== existingIndex,
-                );
-              }
-            } else {
-              const assignment: Candidate = {
-                id: sseCandidate._id!,
-                _id: sseCandidate._id,
-                email: sseCandidate.email,
-                candidateName: sseCandidate.name,
-                contact: sseCandidate.contact,
-                jobTitle: sseCandidate.jobId.title,
-                interviewDate: sseCandidate.assignment.time,
-                status: sseCandidate.status || 'pending',
-                assignment: (sseCandidate as Candidate).assignment,
-                jobId: (sseCandidate as Candidate).jobId,
-                name: (sseCandidate as Candidate).name,
-                resume: (sseCandidate as Candidate).resume,
-                tracking: (sseCandidate as Candidate).tracking,
-                organizationId: sseCandidate.organizationId,
-                location: sseCandidate.location,
-                experience: sseCandidate.experience,
-                relevantExperience: sseCandidate.relevantExperience,
-                skills: sseCandidate.skills,
-                tags: sseCandidate.tags,
-                expectedCTC: sseCandidate.expectedCTC,
-                currentCTC: sseCandidate.currentCTC,
-                noticePeriod: sseCandidate.noticePeriod,
-                remarks: (() => {
-                  const candidateRemarks = (sseCandidate as Candidate).remarks;
-                  if (Array.isArray(candidateRemarks)) {
-                    return candidateRemarks;
-                  }
-                  return candidateRemarks || [];
-                })(),
-                attachments: (sseCandidate as Candidate).attachments,
-                customFields: (sseCandidate as Candidate).customFields,
-                createdAt: sseCandidate.createdAt,
-                updatedAt: sseCandidate.updatedAt,
-              };
+          // Check if candidate has a valid assignment (not null and has interviewerId)
+          const isValid = hasValidAssignment(sseCandidate as Candidate);
 
-              if (existingIndex !== -1) {
-                // Existing candidate - check if interviewer changed and no longer matches filter
-                if (!matchesFilter) {
-                  // Interviewer changed to someone outside filter, remove from list
-                  const removed = updatedAssignments[existingIndex];
-                  removedCount += 1;
-                  if (isToday(removed)) removedTodayCount += 1;
-                  if (isThisWeek(removed)) removedWeekCount += 1;
-                  updatedAssignments = updatedAssignments.filter(
-                    (_, index) => index !== existingIndex,
-                  );
-                } else {
-                  // Update existing - check if date filters changed
-                  const oldAssignment = updatedAssignments[existingIndex];
-                  const wasToday = isToday(oldAssignment);
-                  const wasThisWeek = isThisWeek(oldAssignment);
-                  const isNowToday = isToday(assignment);
-                  const isNowThisWeek = isThisWeek(assignment);
-
-                  if (wasToday && !isNowToday) removedTodayCount += 1;
-                  if (!wasToday && isNowToday) addedTodayCount += 1;
-                  if (wasThisWeek && !isNowThisWeek) removedWeekCount += 1;
-                  if (!wasThisWeek && isNowThisWeek) addedWeekCount += 1;
-
-                  updatedAssignments[existingIndex] = {
-                    ...updatedAssignments[existingIndex],
-                    ...assignment,
-                  };
-                }
-              } else if (matchesFilter) {
-                // New assignment that matches filter - add it
-                addedCount += 1;
-                if (isToday(assignment)) addedTodayCount += 1;
-                if (isThisWeek(assignment)) addedWeekCount += 1;
-                updatedAssignments.push(assignment);
-              }
-              // If new assignment doesn't match filter, skip adding it
-            }
-          } else if (
-            !sseCandidate.assignment ||
-            !sseCandidate.assignment.interviewerId
-          ) {
-            logger.log('No SSE assignment found');
-            const candidateId = sseCandidate._id;
-            const existingIndex = updatedAssignments.findIndex(
-              (assignment) => (assignment._id || assignment.id) === candidateId,
-            );
+          // If assignment is null or invalid, remove from list
+          if (!isValid) {
             if (existingIndex !== -1) {
               const removed = updatedAssignments[existingIndex];
               removedCount += 1;
@@ -243,8 +160,96 @@ export function useDashboardEffects({
                 (_, index) => index !== existingIndex,
               );
             }
+            return; // Skip processing this candidate
+          }
+
+          // Candidate has valid assignment - process it
+          if (
+            'assignment' in sseCandidate &&
+            sseCandidate.assignment &&
+            'interviewerId' in sseCandidate.assignment
+          ) {
+            // Check if this candidate matches the current interviewer filter
+            const matchesFilter = matchesInterviewerFilter(sseCandidate);
+
+            const assignment: Candidate = {
+              id: sseCandidate._id!,
+              _id: sseCandidate._id,
+              email: sseCandidate.email,
+              candidateName: sseCandidate.name,
+              contact: sseCandidate.contact,
+              jobTitle: sseCandidate.jobId.title,
+              interviewDate: sseCandidate.assignment.time,
+              status: sseCandidate.status || 'pending',
+              assignment: (sseCandidate as Candidate).assignment,
+              jobId: (sseCandidate as Candidate).jobId,
+              name: (sseCandidate as Candidate).name,
+              resume: (sseCandidate as Candidate).resume,
+              tracking: (sseCandidate as Candidate).tracking,
+              organizationId: sseCandidate.organizationId,
+              location: sseCandidate.location,
+              experience: sseCandidate.experience,
+              relevantExperience: sseCandidate.relevantExperience,
+              skills: sseCandidate.skills,
+              tags: sseCandidate.tags,
+              expectedCTC: sseCandidate.expectedCTC,
+              currentCTC: sseCandidate.currentCTC,
+              noticePeriod: sseCandidate.noticePeriod,
+              remarks: (() => {
+                const candidateRemarks = (sseCandidate as Candidate).remarks;
+                if (Array.isArray(candidateRemarks)) {
+                  return candidateRemarks;
+                }
+                return candidateRemarks || [];
+              })(),
+              attachments: (sseCandidate as Candidate).attachments,
+              customFields: (sseCandidate as Candidate).customFields,
+              createdAt: sseCandidate.createdAt,
+              updatedAt: sseCandidate.updatedAt,
+            };
+
+            if (existingIndex !== -1) {
+              // Existing candidate - check if interviewer changed and no longer matches filter
+              if (!matchesFilter) {
+                // Interviewer changed to someone outside filter, remove from list
+                const removed = updatedAssignments[existingIndex];
+                removedCount += 1;
+                if (isToday(removed)) removedTodayCount += 1;
+                if (isThisWeek(removed)) removedWeekCount += 1;
+                updatedAssignments = updatedAssignments.filter(
+                  (_, index) => index !== existingIndex,
+                );
+              } else {
+                // Update existing - check if date filters changed
+                const oldAssignment = updatedAssignments[existingIndex];
+                const wasToday = isToday(oldAssignment);
+                const wasThisWeek = isThisWeek(oldAssignment);
+                const isNowToday = isToday(assignment);
+                const isNowThisWeek = isThisWeek(assignment);
+
+                if (wasToday && !isNowToday) removedTodayCount += 1;
+                if (!wasToday && isNowToday) addedTodayCount += 1;
+                if (wasThisWeek && !isNowThisWeek) removedWeekCount += 1;
+                if (!wasThisWeek && isNowThisWeek) addedWeekCount += 1;
+
+                updatedAssignments[existingIndex] = {
+                  ...updatedAssignments[existingIndex],
+                  ...assignment,
+                };
+              }
+            } else if (matchesFilter) {
+              // New assignment that matches filter - add it
+              addedCount += 1;
+              if (isToday(assignment)) addedTodayCount += 1;
+              if (isThisWeek(assignment)) addedWeekCount += 1;
+              updatedAssignments.push(assignment);
+            }
+            // If new assignment doesn't match filter, skip adding it
           }
         });
+
+        // Final cleanup: Remove any candidates with invalid assignments that might have slipped through
+        const cleanedAssignments = updatedAssignments.filter(hasValidAssignment);
 
         // Incrementally adjust counts instead of replacing them
         setAssignmentsCounts((prev) => ({
@@ -262,7 +267,7 @@ export function useDashboardEffects({
           ),
         }));
 
-        return [...updatedAssignments];
+        return cleanedAssignments;
       });
     }
   }, [

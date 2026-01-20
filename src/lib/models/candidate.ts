@@ -308,50 +308,61 @@ export const candidateSchema = new Schema(
       assignedToJobDate: { type: Date, default: Date.now },
     },
     assignment: {
-      interviewerId: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-      },
-      assignedAt: Date,
-      time: Date,
-      googleMeet: {
-        eventId: String,
-        meetingLink: String,
-        htmlLink: String,
-        summary: String,
-        description: String,
-        meetingNotes: String,
-        meetingAttachments: {
-          type: [
-            {
-              id: String,
-              name: String,
-              url: String,
-              type: { type: String, default: 'pdf' },
-              size: Number,
-            },
-          ],
-          default: undefined,
+      type: {
+        interviewerId: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          default: null,
         },
-        attendeeResponses: {
-          type: [
-            {
-              email: String,
-              name: String,
-              responseStatus: {
-                type: String,
-                enum: ['needsAction', 'accepted', 'declined', 'tentative'],
-                default: 'needsAction',
+        assignedAt: {
+          type: Date,
+          default: null,
+        },
+        time: {
+          type: Date,
+          default: null,
+        },
+        googleMeet: {
+          eventId: String,
+          meetingLink: String,
+          htmlLink: String,
+          summary: String,
+          description: String,
+          meetingNotes: String,
+          meetingAttachments: {
+            type: [
+              {
+                id: String,
+                name: String,
+                url: String,
+                type: { type: String, default: 'pdf' },
+                size: Number,
               },
-              comment: String,
-              lastUpdated: Date,
-              notificationSent: Boolean,
-            },
-          ],
-          default: undefined,
+            ],
+            default: undefined,
+          },
+          attendeeResponses: {
+            type: [
+              {
+                email: String,
+                name: String,
+                responseStatus: {
+                  type: String,
+                  enum: ['needsAction', 'accepted', 'declined', 'tentative'],
+                  default: 'needsAction',
+                },
+                comment: String,
+                lastUpdated: Date,
+                notificationSent: Boolean,
+              },
+            ],
+            default: undefined,
+          },
+          lastSyncedAt: Date,
         },
-        lastSyncedAt: Date,
       },
+      default: null,
+      required: false,
     },
     customFields: {
       type: Object,

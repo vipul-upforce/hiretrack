@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,19 @@ function EditLaneDialog({
   handleLaneUpdate,
   isLoading,
 }: EditLaneDialogProps) {
+  // Use local state to prevent parent state from overriding user input
+  const [localEditingValue, setLocalEditingValue] = useState<string>('');
+
+  // Initialize local state when dialog opens or editingLane changes
+  useEffect(() => {
+    if (isEditLaneDialogOpen && editingLane) {
+      setLocalEditingValue(editingLane);
+    } else if (!isEditLaneDialogOpen) {
+      // Reset when dialog closes
+      setLocalEditingValue('');
+    }
+  }, [isEditLaneDialogOpen, editingLane]);
+
   return (
     <Dialog open={isEditLaneDialogOpen} onOpenChange={setIsEditLaneDialogOpen}>
       <DialogContent className="flex flex-col overflow-hidden p-0 sm:max-w-[400px]">
@@ -43,11 +57,13 @@ function EditLaneDialog({
             <Input
               id="lane-name"
               placeholder="Enter lane name..."
-              value={editingLane || ''}
+              value={localEditingValue}
               onChange={(e) => {
                 const newValue = e.target.value;
-                const regex = /^[A-Za-z0-9\s]*$/;
+                const regex = /^[A-Za-z0-9\s\-_]*$/;
                 if (regex.test(newValue)) {
+                  setLocalEditingValue(newValue);
+                  // Also update parent state for consistency, but local state takes precedence
                   setEditingLane(newValue);
                 }
               }}
@@ -62,24 +78,41 @@ function EditLaneDialog({
             Cancel
           </Button>
           <Button
-            disabled={!editingLane?.trim()}
+            disabled={!localEditingValue?.trim() || !prevLane?.trim()}
             variant="primary"
             onClick={() => {
+              const trimmedNewValue = localEditingValue.trim();
+              const trimmedPrevValue = prevLane?.trim() || '';
+              
               if (
-                prevLane &&
-                prevLane.length > 0 &&
-                editingLane &&
-                editingLane.length > 0
+                trimmedPrevValue.length > 0 &&
+                trimmedNewValue.length > 0 &&
+                trimmedPrevValue !== trimmedNewValue // Ensure we're actually changing the name
               ) {
-                handleLaneUpdate(prevLane, editingLane);
+                handleLaneUpdate(trimmedPrevValue, trimmedNewValue);
+                setIsEditLaneDialogOpen(false);
+              } else if (!trimmedPrevValue || trimmedPrevValue.length === 0) {
+                toast({
+                  title: 'Error',
+                  description: 'Original lane name is missing. Please close and try again.',
+                  variant: 'destructive',
+                });
+                // Don't close dialog if there's an error
+              } else if (trimmedPrevValue === trimmedNewValue) {
+                toast({
+                  title: 'No changes',
+                  description: 'Lane name has not been changed.',
+                  variant: 'default',
+                });
+                setIsEditLaneDialogOpen(false);
               } else {
                 toast({
                   title: 'Error',
                   description: 'Something is missing...',
                   variant: 'destructive',
                 });
+                // Don't close dialog if there's an error
               }
-              setIsEditLaneDialogOpen(false);
             }}
           >
             {isLoading ? 'Saving...' : 'Confirm'}
