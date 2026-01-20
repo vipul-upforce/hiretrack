@@ -2,6 +2,7 @@ import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
 import { Interviewer } from '@/lib/features/user/userApi';
 import { initialCandidateColumns } from '../data/initial-data';
+import { isAssigned } from '../utils/candidateAccessors';
 
 interface FilterState {
   search: string;
@@ -74,7 +75,6 @@ export function useJobPageEffects({
   isLaneEditOpen,
   laneToEdit,
   setLaneToEdit,
-  initialLaneToEdit,
   setInitialLaneToEdit,
 }: UseJobPageEffectsParams): void {
   const prevLanesSigRef = useRef<string>('');
@@ -177,11 +177,11 @@ export function useJobPageEffects({
             },
             {
               key: 'assigned',
-              filter: (c: Candidate) => c.assignment,
+              filter: (c: Candidate) => isAssigned(c),
             },
             {
               key: 'notAssigned',
-              filter: (c: Candidate) => !c.assignment,
+              filter: (c: Candidate) => !isAssigned(c),
             },
             {
               key: 'withRemarks',

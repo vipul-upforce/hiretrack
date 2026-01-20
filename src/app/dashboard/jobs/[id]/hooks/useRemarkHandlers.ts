@@ -15,7 +15,7 @@ import { useAppSelector } from '@/lib/redux/hooks';
 
 export const useRemarkHandlers = (
   localCandidate: Candidate | null,
-  refetch: () => void,
+  // refetch: () => void,
   refetchAssignment?: () => void,
   onUpdate?: (candidate: Candidate) => void,
   refetchCandidates?: () => void,

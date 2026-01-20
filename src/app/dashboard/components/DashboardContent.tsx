@@ -127,6 +127,7 @@ export function DashboardContent({
                                 candidate.assignment &&
                                 typeof candidate.assignment.interviewerId ===
                                   'object' &&
+                                candidate.assignment.interviewerId &&
                                 '_id' in candidate.assignment.interviewerId &&
                                 candidate.assignment.interviewerId._id.toString() ===
                                   user?.id?.toString()
@@ -176,6 +177,7 @@ export function DashboardContent({
                                   candidate.assignment &&
                                   typeof candidate.assignment.interviewerId ===
                                     'object' &&
+                                  candidate.assignment.interviewerId &&
                                   '_id' in candidate.assignment.interviewerId &&
                                   candidate.assignment.interviewerId._id.toString() ===
                                     user?.id?.toString(),

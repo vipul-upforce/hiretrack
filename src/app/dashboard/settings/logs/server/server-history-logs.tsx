@@ -87,6 +87,8 @@ export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
       {/* Candidate Details Dialog */}
       {selectedCandidate && (
         <CandidateDetailsDialog
+          isAssigning={false}
+          setIsAssigning={() => {}}
           candidate={selectedCandidate}
           isOpen={!!selectedCandidate}
           onOpenChange={(open: boolean) => {

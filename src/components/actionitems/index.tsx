@@ -156,6 +156,8 @@ function ActionItems({
         }}
       />
       <CandidateDetailsDialog
+        isAssigning={false}
+        setIsAssigning={() => {}}
         candidate={candidate}
         isOpen={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}

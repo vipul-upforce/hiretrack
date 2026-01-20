@@ -128,6 +128,27 @@ export function hasAssignment(
 }
 
 /**
+ * Check if candidate is assigned to an interviewer
+ * A candidate is considered assigned only if they have an assignment with a valid interviewerId
+ */
+export function isAssigned(
+  candidate: Candidate | null | undefined,
+): boolean {
+  if (!candidate?.assignment?.interviewerId) {
+    return false;
+  }
+
+  const { interviewerId } = candidate.assignment;
+
+  if (typeof interviewerId === 'string') {
+    return interviewerId.trim() !== '';
+  }
+
+  // If it's an object, check if _id exists
+  return interviewerId._id != null && interviewerId._id !== '';
+}
+
+/**
  * Check if candidate has Google Meet
  */
 export function hasGoogleMeet(

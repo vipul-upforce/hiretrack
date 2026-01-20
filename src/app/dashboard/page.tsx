@@ -9,6 +9,7 @@ import {
   useLazyFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
 } from '@/lib/features/candidate/candidateApi';
+import { Candidate } from '@/types/candidate';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
 import { useDashboardState } from './hooks/useDashboardState';

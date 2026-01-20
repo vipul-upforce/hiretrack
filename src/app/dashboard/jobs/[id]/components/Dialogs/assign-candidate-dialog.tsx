@@ -33,7 +33,6 @@ import {
   validationSchema,
   FormValues,
   AssignCandidateDialogProps,
-  User,
 } from '../../schemas/AssignCandidateSchema';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
@@ -323,7 +322,6 @@ export function AssignCandidateDialog({
                       )}
 
                       <AssignmentDetailsSection
-                        user={user as User}
                         candidate={candidate}
                       />
                     </div>

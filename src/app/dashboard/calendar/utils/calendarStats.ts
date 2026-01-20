@@ -6,14 +6,12 @@ import { CustomCalendarEvent } from '../page';
 export const calculateTodayCount = (
   events: CustomCalendarEvent[],
   today: Date,
-): number => {
-  return events.filter((e) => {
+): number => events.filter((e) => {
     if (!e.start) return false;
     const d = new Date(e.start);
     d.setHours(0, 0, 0, 0);
     return d.getTime() === today.getTime();
   }).length;
-};
 
 /**
  * Calculate the count of events happening this week
@@ -41,14 +39,14 @@ export const calculateThisWeekCount = (
 export const calculateUpcomingCount = (
   events: CustomCalendarEvent[],
   today: Date,
-): number => {
-  return events.filter((e) => {
+): number => 
+  events.filter((e) => {
     if (!e.start) return false;
     const d = new Date(e.start);
     d.setHours(0, 0, 0, 0);
     return d.getTime() > today.getTime();
   }).length;
-};
+
 
 /**
  * Get today's date at midnight
