@@ -272,7 +272,9 @@ export default function CalendarPage() {
                     interactionPlugin,
                   ]}
                   initialView="dayGridMonth"
-                  events={events}
+                  // Filter out events without start dates (unscheduled candidates)
+                  // These will still appear in the sidebar "Not Scheduled" section
+                  events={events.filter((e) => e.start)}
                   eventClick={handleEventClick}
                   dateClick={handleDateClick}
                   datesSet={handleDatesSet}

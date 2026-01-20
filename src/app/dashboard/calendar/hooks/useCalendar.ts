@@ -179,6 +179,17 @@ export function useCalendar(): UseCalendarReturn {
   const { currentData: qnAssignments } =
     useFetchAssignedCandidatesQuery(qnQueryParams);
 
+  // ===== TOTAL ASSIGNMENTS QUERY =====
+  // Fetch total count of all active assignments (without date range filtering)
+  // This gives us the organization-wide total, not just current month
+  const { currentData: totalAssignmentsData } =
+    useFetchAssignedCandidatesQuery(
+      {
+        filterValue: fcQueryParams.filterValue,
+        // No startDate/endDate - this gets all assignments for the organization
+      },
+    );
+
   // Merge Full calendar data into shared cache
   useEffect(() => {
     if (fcAssignments && fcAssignments[0]?.data) {
@@ -461,13 +472,16 @@ export function useCalendar(): UseCalendarReturn {
 
   // Create event dates for Quick nav (mini calendar dots)
   // Uses shared cache filtered by Quick nav's date range
+  // Only include events with scheduled dates (exclude unscheduled candidates)
   const qnEventDates: Date[] = useMemo(() => {
     const filtered = filterAssignmentsByDateRange(
       Array.from(sharedCache.values()),
       qnQueryParams.startDate,
       qnQueryParams.endDate,
     );
-    return filtered.map((a) => new Date(a.assignment!.time!));
+    return filtered
+      .filter((a) => a.assignment?.time) // Only include scheduled events for calendar dots
+      .map((a) => new Date(a.assignment!.time!));
   }, [sharedCache, qnQueryParams.startDate, qnQueryParams.endDate]);
 
   /**
@@ -625,6 +639,17 @@ export function useCalendar(): UseCalendarReturn {
     [events, today],
   );
 
+  // Total interviews = all active assignments for the organization (not just current month)
+  // Use the total from the API response when no date range is applied
+  const totalInterviews = useMemo(() => {
+    // If we have total assignments data (without date range), use that
+    if (totalAssignmentsData && totalAssignmentsData[0]?.totalInterviews !== undefined) {
+      return totalAssignmentsData[0].totalInterviews;
+    }
+    // Fallback to events.length if total data not available yet
+    return events.length;
+  }, [totalAssignmentsData, events.length]);
+
   return {
     selectedEvent,
     setSelectedEvent,
@@ -650,7 +675,7 @@ export function useCalendar(): UseCalendarReturn {
     qnEventDates, // Quick nav event dates for mini calendar dots
     todayCount,
     thisWeekCount,
-    totalInterviews: events.length,
+    totalInterviews,
     upcomingCount,
     applyFilter,
     handleEventClick,

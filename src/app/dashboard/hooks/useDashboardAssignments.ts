@@ -5,6 +5,22 @@ import {
   useLazyFetchAssignmentsQuery,
 } from '@/lib/features/candidate/candidateApi';
 
+/**
+ * Helper function to check if a candidate has a valid assignment
+ * Valid assignment means: assignment exists, is not null, and has a non-null interviewerId
+ */
+const hasValidAssignment = (assignment: Candidate): boolean => {
+  // Exclude deleted candidates
+  if (assignment.isDeleted) return false;
+  
+  // Exclude candidates with no assignment or assignment with null interviewerId
+  if (!assignment.assignment || assignment.assignment.interviewerId === null) {
+    return false;
+  }
+  
+  return true;
+};
+
 interface UseDashboardAssignmentsParams {
   itemsPerPage: number;
   filterText: string;
@@ -86,10 +102,14 @@ export function useDashboardAssignments({
           thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
         }));
         setAssignedInterviewers([...data[0].assignmentCount]);
+        
+        // Filter out candidates with null assignments or null interviewerId
+        const validAssignments = (data[0]?.data || []).filter(hasValidAssignment);
+        
         if (isAppend) {
-          setAssignments((prev) => [...prev, ...data[0].data]);
+          setAssignments((prev) => [...prev, ...validAssignments]);
         } else {
-          setAssignments(data[0]?.data);
+          setAssignments(validAssignments);
         }
 
         if (data[0]?.data?.length < itemsPerPage) {

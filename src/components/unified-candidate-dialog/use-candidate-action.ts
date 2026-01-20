@@ -97,7 +97,8 @@ export function useCandidateActions({
   const jobId = getInitialJobId();
 
   const shouldFetchInterviewers =
-    !!user && user.role !== 'candidate' && user.role !== '';
+    user && (user.role === 'admin' || user.role === 'hr');
+
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery(undefined, {
       skip: !shouldFetchInterviewers,
@@ -128,7 +129,9 @@ export function useCandidateActions({
         addRemark: initialAction === 'addRemark',
         updateStatus: initialAction === 'updateStatus',
       });
-      refetchInterviewers();
+      if (shouldFetchInterviewers) {
+        refetchInterviewers();
+      }
     }
   }, [isOpen, initialAction, refetchInterviewers]);
 
@@ -140,7 +143,7 @@ export function useCandidateActions({
         : candidate.assignment?.interviewerId?._id || null;
 
     return {
-      interviewerId: interviewerIdValue || '',
+      interviewerId: interviewerIdValue,
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
@@ -322,7 +325,8 @@ export function useCandidateActions({
     );
     updates.assignment = {
       interviewerId: normalizedInterviewerId,
-      time: values.time?.toISOString() as string,
+      // Explicitly set time to null if values.time is null/undefined, otherwise convert to ISO string
+      time: values.time ? (values.time.toISOString() as string) : '',
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),
     };
@@ -474,7 +478,7 @@ export function useCandidateActions({
       } else if (actions.addFollowUp) {
         updates.followUp = {
           note: values.followUpNote.trim(),
-          date: values.followUpDate?.toISOString() || '',
+          date: values.followUpDate?.toISOString() || null,
           userId: { _id: user.id, name: user.name, email: user.email },
         };
         const followUpTitle =
@@ -588,10 +592,22 @@ export function useCandidateActions({
         return;
       }
 
-      const result = await updateCandidate({
+      const finalCandidatePayload = {
         ...candidate,
         ...updates,
-      } as Candidate).unwrap();
+      };
+
+      if (
+        finalCandidatePayload.assignment &&
+        typeof finalCandidatePayload.assignment === 'object' &&
+        Object.keys(finalCandidatePayload.assignment).length === 0
+      ) {
+        finalCandidatePayload.assignment = null;
+      }
+
+      const result = await updateCandidate(
+        finalCandidatePayload as Candidate,
+      ).unwrap();
 
       if (actions.assignTo) sentAssignmentMail(result, sendEmail);
 
@@ -657,15 +673,17 @@ export function useCandidateActions({
       });
       onOpenChange(false);
 
-      // Trigger refetches in the background
+      // Update local state with the result - no need to refetch individual candidate
+      // since we already have the updated data from the mutation
       onUpdate?.(result);
       setLocalCandidate?.(result);
+
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
       if (pathname === '/dashboard') {
         refetchAssignment?.();
       }
-      if (pathname !== '/dashboard' && pathname !== '/dashboard/calendar') {
-        refetch?.();
-      }
+      // Note: Removed individual candidate refetch - we already have the updated result
     } catch (error) {
       toast({
         title: 'Error',

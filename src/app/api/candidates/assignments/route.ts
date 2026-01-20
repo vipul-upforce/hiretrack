@@ -51,19 +51,41 @@ export async function GET(req: NextRequest) {
     const calendarView = searchParams.get('view'); // 'month' | 'week' | 'day' | 'agenda'
 
     // Parse date range if provided
+    // Include candidates with scheduled dates in range OR candidates assigned to interviewer but not scheduled
     let dateRangeFilter: Record<string, unknown> = {};
     if (startDateParam && endDateParam) {
       const startDate = new Date(startDateParam);
       const endDate = new Date(endDateParam);
+      
+      // Include candidates with time in range OR candidates without time (null or missing)
+      // Use $or to match either condition
       dateRangeFilter = {
-        'assignment.time': {
-          $gte: startDate,
-          $lte: endDate,
-        },
+        $or: [
+          // Candidates with scheduled dates within the range
+          {
+            'assignment.time': {
+              $gte: startDate,
+              $lte: endDate,
+            },
+          },
+          // Candidates without scheduled dates - check for null or missing field
+          // Note: interviewerFilter already ensures they have an assigned interviewer
+          {
+            $or: [
+              // Check if time field is null
+              { 'assignment.time': null },
+              // Check if time field doesn't exist
+              { 'assignment.time': { $exists: false } },
+            ],
+          },
+        ],
       };
     }
+    // Note: When no date range is provided, we don't add dateRangeFilter
+    // This means all candidates matching interviewerFilter will be returned (including unscheduled ones)
 
     // Build interviewer filter
+    // Always exclude candidates with null assignments or null interviewerId
     let interviewerFilter: { $match: Record<string, unknown> };
     if (isInterviewer) {
       interviewerFilter = {
@@ -74,7 +96,7 @@ export async function GET(req: NextRequest) {
     } else if (assignedTo === 'all') {
       interviewerFilter = {
         $match: {
-          'assignment.interviewerId': { $exists: true },
+          'assignment.interviewerId': { $exists: true, $ne: null },
         },
       };
     } else if (assignedTo) {
@@ -84,8 +106,11 @@ export async function GET(req: NextRequest) {
         },
       };
     } else {
+      // Even when no filter, exclude candidates with null assignments
       interviewerFilter = {
-        $match: {},
+        $match: {
+          'assignment.interviewerId': { $exists: true, $ne: null },
+        },
       };
     }
     // Fetch settings and organization data in parallel (CRITICAL: Don't block aggregation)
@@ -128,10 +153,15 @@ export async function GET(req: NextRequest) {
     ];
 
     // Add date range filter for calendar view
+    // IMPORTANT: This filter includes candidates with scheduled dates OR unscheduled candidates
     if (Object.keys(dateRangeFilter).length > 0) {
       candidateMatchPipeline.push({
         $match: dateRangeFilter,
       });
+    } else {
+      // When no date range is provided, ensure we still get candidates with assigned interviewers
+      // This includes both scheduled and unscheduled candidates
+      // The interviewerFilter already handles this, so we don't need an additional filter
     }
 
     // Add filterValue to candidate pipeline early for better performance

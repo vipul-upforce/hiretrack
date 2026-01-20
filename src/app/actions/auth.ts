@@ -86,14 +86,14 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
     // Support fetching either CandidateAccount or User depending on isCandidate flag.
     // Always prefer explicit, typed models, and minimize selected fields for performance and privacy.
 
-    let user: IUser | IUCandidateAccount| undefined | null;
+    let user: IUser | IUCandidateAccount | undefined | null;
     if (isCandidate) {
       // Fetch candidate account info by userId
       user = await CandidateAccount!
         .findById(userId)
         .populate({
           path: 'organizationId',
-          select: '-customFields',
+          select: 'name _id',
         })
         .select(
           'name email role organizationId tokenVersion appliedApplications isDeleted',
@@ -105,7 +105,9 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
         .findById(userId)
         .populate({
           path: 'organizationId',
-          select: '-customFields',
+          select: (decryptedData?.role === 'interviewer')
+            ? 'name _id'
+            : '-customFields',
         })
         .select('name email role organizationId tokenVersion isDeleted')
         .lean();
@@ -126,12 +128,19 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
       user?.tokenVersion !== undefined &&
       Number(user?.tokenVersion) !== Number(oldTokenVersion)
     ) {
+
+      const newRole = user?.role;
+      const oldRole = decryptedData?.role;
       // Token version mismatch, log out
       const cookieStore = await cookies();
+      const cookiesToDelete = ['auth_token', 'auth_state'];
+      if (newRole !== oldRole) {
+        cookiesToDelete.push('refresh_token');
+        cookiesToDelete.push('org_id');
+      }
       const mutableCookieStore = cookieStore as unknown as {
         delete?: (name: string) => void;
       };
-      const cookiesToDelete = ['auth_token', 'auth_state'];
 
       cookiesToDelete.forEach((cookieName) => {
         try {

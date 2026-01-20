@@ -277,7 +277,8 @@ export function EditCandidateDialog({
           updatedCandidate.assignment = {
             ...values.assignment,
             interviewerId: normalizedInterviewerId,
-            time: values.assignment.time,
+            // Explicitly set time to null if it's null/undefined, otherwise use the value
+            time: values.assignment.time ?? null,
             assignedAt: values.assignment.assignedAt,
           };
         }

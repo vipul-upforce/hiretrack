@@ -92,14 +92,23 @@ export async function GET(
         $addFields: {
           assignment: {
             $cond: {
-              if: { $ne: ['$assignment', null] },
+              if: {
+                // Convert object to array (Key-Value pairs).
+                // If it has 0 keys (it's empty or null), this logic returns false.
+                $gt: [
+                  {
+                    $size: { $objectToArray: { $ifNull: ['$assignment', {}] } },
+                  },
+                  0,
+                ],
+              },
               then: {
                 $mergeObjects: [
                   '$assignment',
                   { interviewerId: '$interviewerData' },
                 ],
               },
-              else: null,
+              else: null, // Force null if object is empty
             },
           },
         },
