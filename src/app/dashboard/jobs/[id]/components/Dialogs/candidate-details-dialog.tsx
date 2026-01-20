@@ -643,7 +643,6 @@ export function CandidateDetailsDialog({
             setUnifiedInitialAction(undefined);
             // Close candidate details dialog if interviewer marked as done
             if (
-              user?.role === 'interviewer' &&
               unifiedInitialAction === 'markAsDone'
             ) {
               onOpenChange(false);

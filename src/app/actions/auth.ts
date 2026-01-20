@@ -86,7 +86,7 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
     // Support fetching either CandidateAccount or User depending on isCandidate flag.
     // Always prefer explicit, typed models, and minimize selected fields for performance and privacy.
 
-    let user: IUser | IUCandidateAccount| undefined | null;
+    let user: IUser | IUCandidateAccount | undefined | null;
     if (isCandidate) {
       // Fetch candidate account info by userId
       user = await CandidateAccount!
