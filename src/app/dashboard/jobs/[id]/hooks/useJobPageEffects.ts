@@ -74,7 +74,6 @@ export function useJobPageEffects({
   isLaneEditOpen,
   laneToEdit,
   setLaneToEdit,
-  initialLaneToEdit,
   setInitialLaneToEdit,
 }: UseJobPageEffectsParams): void {
   const prevLanesSigRef = useRef<string>('');

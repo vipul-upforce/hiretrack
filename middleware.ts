@@ -471,6 +471,67 @@ interface JWTPayload {
   exp?: number;
 }
 
+const redirectPaths = [
+  "/dashboard",
+  "/jobs",
+  "/auth/signup",
+  "/:orgName/apply-jobs",
+];
+
+const unauthorizedInterviewerPages = [
+  "/jobs-board",
+  "/jobs",
+  "/auth/signup",
+  "/dashboard/settings",
+  "/dashboard/search",
+  "/dashboard/cv-upload",
+  "/dashboard/analytics",
+  "/api/organization/tags",
+];
+
+const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
+const unauthorizedCandidateAPIRoutes = [
+  "/api/candidates/assignments",
+  "/dashboard",
+  "/api/candidates/assignments",
+  "/dashboard/:path*",
+  "/api/nginx-logs",
+  "/api/download/assets",
+];
+
+const apiExemptPaths = [
+  "/api/jobs/open-jobs",
+  "/api/auth/login",
+  "/api/auth/me",
+  "/api/auth/signup",
+  "/api/organization",
+  "/api/orgs",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/event-mail",
+  "/api/candidates/signup",
+  "/api/candidates/evaluate",
+  "/api/candidates/event-mail",
+  "/api/files",
+  "/api/file-proxy",
+  "/api/file",
+  "/api/candidates/guest-apply",
+  "/api/candidates/apply-application",
+  "/apply-jobs",
+  "/api/organization/cs/",
+  "/api/auth/2fa/send-otp",
+  "/api/auth/2fa/verify-otp",
+  "/api/settings/twofa",
+  "/api/settings/portal",
+  "/api/shared-files",
+  // "/api/organization/tags",
+  "/api/auth/google/callback",
+  "/api/auth/google/authorize",
+  "/api/settings/captcha",
+  "/api/license-validate",
+];
+
+
 export async function verifyAndDecryptTokenMiddleware(token: string, orgId: string) {
   if (!orgId) {
     return {
@@ -668,61 +729,5 @@ export const config = {
   ],
 };
 
-const unauthorizedInterviewerPages = [
-  "/jobs-board",
-  "/jobs",
-  "/auth/signup",
-  "/dashboard/settings",
-  "/dashboard/search",
-  "/dashboard/cv-upload",
-  "/dashboard/analytics",
-  "/api/organization/tags",
-];
 
-const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
-const unauthorizedCandidateAPIRoutes = [
-  "/api/candidates/assignments",
-  "/dashboard",
-  "/api/candidates/assignments",
-  "/dashboard/:path*",
-  "/api/nginx-logs",
-  "/api/download/assets",
-];
-const apiExemptPaths = [
-  "/api/jobs/open-jobs",
-  "/api/auth/login",
-  "/api/auth/me",
-  "/api/auth/signup",
-  "/api/organization",
-  "/api/orgs",
-  "/api/auth/forgot-password",
-  "/api/auth/reset-password",
-  "/api/event-mail",
-  "/api/candidates/signup",
-  "/api/candidates/evaluate",
-  "/api/candidates/event-mail",
-  "/api/files",
-  "/api/file-proxy",
-  "/api/file",
-  "/api/candidates/guest-apply",
-  "/api/candidates/apply-application",
-  "/apply-jobs",
-  "/api/organization/cs/",
-  "/api/auth/2fa/send-otp",
-  "/api/auth/2fa/verify-otp",
-  "/api/settings/twofa",
-  "/api/settings/portal",
-  "/api/shared-files",
-  // "/api/organization/tags",
-  "/api/auth/google/callback",
-  "/api/auth/google/authorize",
-  "/api/settings/captcha",
-  "/api/license-validate",
-];
 
-const redirectPaths = [
-  "/dashboard",
-  "/jobs",
-  "/auth/signup",
-  "/:orgName/apply-jobs",
-];
