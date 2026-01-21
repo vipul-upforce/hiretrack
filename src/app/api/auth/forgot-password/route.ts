@@ -64,11 +64,11 @@ async function handlePasswordReset(
       throw new Error('Mail configuration not found');
     }
 
-    const fromEmail =
-      settings.mailConfig.resend_from ||
-      settings.mailConfig.brevo_from ||
-      settings.mailConfig.smtp_from ||
-      '';
+    // const fromEmail =
+    //   settings.mailConfig.resend_from ||
+    //   settings.mailConfig.brevo_from ||
+    //   settings.mailConfig.smtp_from ||
+    //   '';
 
     // Find the correct user with both email and organizationId
     let user;
@@ -144,18 +144,18 @@ async function handlePasswordReset(
       organizationId,
     );
 
-    const systemUser = await User.findOneAndUpdate(
-      { email: fromEmail, organizationId },
-      {
-        $setOnInsert: {
-          name: 'HireTrack System',
-          email: fromEmail,
-          role: 'system',
-          organizationId,
-        },
-      },
-      { upsert: true, new: true },
-    );
+    // const systemUser = await User.findOneAndUpdate(
+    //   { email: fromEmail, organizationId },
+    //   {
+    //     $setOnInsert: {
+    //       name: 'HireTrack System',
+    //       email: fromEmail,
+    //       role: 'system',
+    //       organizationId,
+    //     },
+    //   },
+    //   { upsert: true, new: true },
+    // );
 
     const emailStatus = await sendEventEmailWithHistory(
       organizationId,
@@ -163,15 +163,16 @@ async function handlePasswordReset(
       emailSubject,
       emailContent,
       {
-        sentBy: systemUser._id.toString(),
-        sentByEmail: systemUser.email,
-        sentByName: systemUser.name,
+        sentBy: user?._id?.toString() || '',
+        sentByEmail: user?.email || '',
+        sentByName: user?.name || '',
         metadata: {
           templateUsed: 'reset-password-request',
           eventType: 'password_reset',
         },
       },
-      undefined,resolvedIsCandidate ?? false
+      undefined,
+      // resolvedIsCandidate ?? false
     );
 
     if (emailStatus.status === 200) {

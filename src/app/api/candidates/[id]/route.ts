@@ -363,18 +363,28 @@ export async function PUT(
       updateObj.$set.followUp = data.followUp;
       const oldFollowUp = existingCandidate.followUp;
       const newFollowUp = data?.followUp;
+
       try {
         const jobInfo = existingCandidate.jobId as IFJob;
 
         // Follow-up notifications
         // if ("followUp" in data) {
         // Case 1: Follow-up Added
-        if (
-          !oldFollowUp &&
-          (oldFollowUp === undefined || oldFollowUp === null) &&
+        // Check if old follow-up is effectively empty (null/undefined OR both note and date are null)
+        const isOldFollowUpEmpty =
+          !oldFollowUp ||
+          oldFollowUp === null ||
+          oldFollowUp === undefined ||
+          ((oldFollowUp.note === null || oldFollowUp.note === undefined || oldFollowUp.note === '') &&
+           (oldFollowUp.date === null || oldFollowUp.date === undefined));
+
+        // Check if new follow-up has actual content
+        const hasNewFollowUpContent =
           newFollowUp &&
-          (newFollowUp?.note != null || newFollowUp?.date != null)
-        ) {
+          ((newFollowUp.note != null && newFollowUp.note !== '') ||
+           (newFollowUp.date != null));
+
+        if (isOldFollowUpEmpty && hasNewFollowUpContent) {
           await NotificationService.notifyFollowUpAdded({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -741,12 +751,36 @@ export async function PUT(
               !oldAssignment ||
               JSON.stringify(oldAssignment) !== JSON.stringify(newAssignment)
             ) {
-              const interviewer = await User?.findById(
-                newAssignment.interviewerId,
-              ).select('_id name email');
+              // Fetch both old and new interviewers in parallel if needed
+              const [newInterviewer, oldInterviewer] = await Promise.all([
+                User?.findById(newAssignment.interviewerId).select(
+                  '_id name email',
+                ),
+                oldAssignment?.interviewerId &&
+                oldAssignment.interviewerId !== newAssignment.interviewerId
+                  ? User?.findById(oldAssignment.interviewerId).select(
+                      '_id name email',
+                    )
+                  : Promise.resolve(null),
+              ]);
 
-              if (newAssignment && interviewer) {
-                if (!newAssignment.time && !oldAssignment) {
+              if (newAssignment && newInterviewer) {
+                // Check if interviewer changed
+                const interviewerChanged =
+                  oldAssignment &&
+                  oldAssignment.interviewerId !== newAssignment.interviewerId;
+
+                // Case 1: New assignment without time
+                // Notify when:
+                // - No old assignment exists (new assignment), OR
+                // - Assignment changed from HR (with time) to interviewer (without time), OR
+                // - Interviewer changed (reassignment to different interviewer)
+                if (
+                  !newAssignment.time &&
+                  (!oldAssignment ||
+                    interviewerChanged ||
+                    oldAssignment?.time)
+                ) {
                   await NotificationService.notifyCandidateAssigned({
                     organizationId,
                     candidateId: updatedCandidate._id?.toString() || '',
@@ -757,7 +791,7 @@ export async function PUT(
                       '',
                     jobTitle: jobInfo?.title || 'Unknown Job',
                     interviewerId: newAssignment.interviewerId,
-                    interviewerName: interviewer.name,
+                    interviewerName: newInterviewer.name,
                     triggerUserId: userData?.id?.toString() || '',
                     triggerUserName: userData?.name || '',
                   });
@@ -775,12 +809,12 @@ export async function PUT(
                         '',
                       jobTitle: jobInfo?.title || 'Unknown Job',
                       interviewerId: newAssignment.interviewerId,
-                      interviewerName: interviewer.name,
+                      interviewerName: newInterviewer.name,
                       meetingDate: new Date(newAssignment.time),
                       triggerUserId: userData?.id?.toString() || '',
                       triggerUserName: userData?.name || '',
                     });
-                  } else if (oldAssignment.time !== newAssignment.time) {
+                  } else if (String(oldAssignment.time.toISOString())!== newAssignment.time) {                    
                     await NotificationService.notifyMeetingUpdated({
                       organizationId,
                       candidateId: updatedCandidate._id?.toString() || '',
@@ -791,7 +825,7 @@ export async function PUT(
                         '',
                       jobTitle: jobInfo?.title || 'Unknown Job',
                       interviewerId: newAssignment.interviewerId,
-                      interviewerName: interviewer.name,
+                      interviewerName: newInterviewer.name,
                       meetingDate: new Date(newAssignment.time),
                       triggerUserId: userData?.id?.toString() || '',
                       triggerUserName: userData?.name || '',
@@ -799,22 +833,28 @@ export async function PUT(
                   }
                 }
 
-                // New: Handle case where oldAssignment has time but newAssignment does not
-                if (oldAssignment?.time && !newAssignment.time && interviewer) {
-                  await NotificationService.notifyMeetingCancelled({
-                    organizationId,
-                    candidateId: updatedCandidate._id?.toString() || '',
-                    candidateName: updatedCandidate.name,
-                    jobId:
-                      jobInfo?._id?.toString() ||
-                      updatedCandidate.jobId?.toString() ||
-                      '',
-                    jobTitle: jobInfo?.title || 'Unknown Job',
-                    interviewerId: interviewer._id.toString(),
-                    interviewerName: interviewer.name,
-                    triggerUserId: userData?.id?.toString() || '',
-                    triggerUserName: userData?.name || '',
-                  });
+                // Handle meeting cancellation: when oldAssignment has time but newAssignment does not
+                // If interviewer changed, notify the OLD interviewer; otherwise notify the current one
+                if (oldAssignment?.time && !newAssignment.time ) {
+                  const interviewerToNotify = interviewerChanged
+                    ? oldInterviewer
+                    : newInterviewer;        
+                  if (interviewerToNotify) {
+                    await NotificationService.notifyMeetingCancelled({
+                      organizationId,
+                      candidateId: updatedCandidate._id?.toString() || '',
+                      candidateName: updatedCandidate.name,
+                      jobId:
+                        jobInfo?._id?.toString() ||
+                        updatedCandidate.jobId?.toString() ||
+                        '',
+                      jobTitle: jobInfo?.title || 'Unknown Job',
+                      interviewerId: interviewerToNotify._id.toString(),
+                      interviewerName: interviewerToNotify.name,
+                      triggerUserId: userData?.id?.toString() || '',
+                      triggerUserName: userData?.name || '',
+                    });
+                  }
                 }
               }
             }

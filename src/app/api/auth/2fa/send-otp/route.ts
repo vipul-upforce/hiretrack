@@ -35,11 +35,10 @@ async function handleSendOtp(req: NextRequest) {
       );
     }
 
-    const fromEmail =
-      settings.mailConfig.resend_from ||
-      settings.mailConfig.brevo_from ||
-      settings.mailConfig.smtp_from ||
-      '';
+    // const fromEmail =
+    //   settings.mailConfig.resend_from ||
+    //   settings.mailConfig.brevo_from ||
+    //   settings.mailConfig.smtp_from ;
     const user = isCandidate
       ? await CandidateAccount?.findOne({
           email,
@@ -63,6 +62,7 @@ async function handleSendOtp(req: NextRequest) {
             select: 'name', // populate only organization name
           })
           .lean();
+                    
     const organizationName =
       (user?.organizationId as unknown as { name: string })?.name || '';
     // Check if user has an existing OTP and its generation time
@@ -115,18 +115,18 @@ async function handleSendOtp(req: NextRequest) {
       organizationId,
     );
 
-    const systemUser = await User?.findOneAndUpdate(
-      { email: fromEmail, organizationId },
-      {
-        $setOnInsert: {
-          name: 'HireTrack System',
-          email: fromEmail,
-          role: 'system',
-          organizationId,
-        },
-      },
-      { upsert: true, new: true },
-    );
+    // const systemUser = await User?.findOneAndUpdate(
+    //   { email: fromEmail, organizationId },
+    //   {
+    //     $setOnInsert: {
+    //       name: 'HireTrack System',
+    //       email: fromEmail,
+    //       role: 'system',
+    //       organizationId,
+    //     },
+    //   },
+    //   { upsert: true, new: true },
+    // );
 
     const mailResult = await sendEventEmailWithHistory(
       organizationId,
@@ -134,16 +134,16 @@ async function handleSendOtp(req: NextRequest) {
       emailSubject,
       emailContent,
       {
-        sentBy: systemUser!._id.toString(),
-        sentByEmail: systemUser!.email,
-        sentByName: systemUser!.name,
+        sentBy: user?._id?.toString() || '' ,
+        sentByEmail: user?.email || '',
+        sentByName: user?.name || '',
         metadata: {
           templateUsed: '2fa-otp',
           eventType: '2fa_authentication',
         },
       },
       undefined,
-      isCandidate,
+      // isCandidate,
     );
 
     if (mailResult.status === 200) {
