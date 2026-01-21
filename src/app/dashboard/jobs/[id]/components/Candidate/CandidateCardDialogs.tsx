@@ -208,13 +208,14 @@ export function CandidateCardDialogs({
           message="Are you sure you want to remove this followup?"
           isOpen={removeFUOpen}
           setIsOpen={setRemoveFUOpen}
-          onConfirm={() => {
-            handleRemoveFollowUp();
+          onConfirm={async () => {
+            await handleRemoveFollowUp();
             setRemoveFUOpen(false);
           }}
           onCancel={() => setRemoveFUOpen(false)}
-          loadingText="Removing..."
+          loadingText="Removing followup..."
           className="sm:max-w-[300px]"
+          isLoading={_isFollowUpSubmitting}
         />
       )}
 

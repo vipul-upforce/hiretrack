@@ -66,8 +66,8 @@ export function StatusUpdateSection({
                     disabled={isCurrent}
                     className={
                       isCurrent
-                        ? 'cursor-not-allowed bg-blue-100 font-medium opacity-100 dark:bg-blue-900/50 dark:text-blue-100'
-                        : 'cursor-pointer'
+                        ? 'cursor-not-allowed bg-blue-100 font-medium capitalize opacity-100 dark:bg-blue-900/50 dark:text-blue-100'
+                        : 'cursor-pointer capitalize'
                     }
                   >
                     {lane} {isCurrent && '(Current)'}

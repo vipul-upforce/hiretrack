@@ -21,6 +21,7 @@ interface CandidateOverviewTabProps {
   isReEvaluating: boolean;
   isEvaluatingFor: string | null;
   onReEvaluate: () => void;
+  isFollowUpSubmitting: boolean;
 }
 
 // Helper function to get ordinal suffix
@@ -355,6 +356,7 @@ export function CandidateOverviewTab({
   isReEvaluating,
   isEvaluatingFor,
   onReEvaluate,
+  isFollowUpSubmitting,
 }: CandidateOverviewTabProps) {
   const { user } = useAppSelector((state) => state.auth);
   const [confirmRemoveFollowUpOpen, setConfirmRemoveFollowUpOpen] =
@@ -364,9 +366,9 @@ export function CandidateOverviewTab({
     setConfirmRemoveFollowUpOpen(true);
   };
 
-  const handleConfirmRemove = () => {
+  const handleConfirmRemove = async () => {
+    await onRemoveFollowUp();
     setConfirmRemoveFollowUpOpen(false);
-    onRemoveFollowUp();
   };
 
   const handleCancelRemove = () => {
@@ -395,6 +397,8 @@ export function CandidateOverviewTab({
         onCancel={handleCancelRemove}
         buttonName="Remove"
         className="sm:max-w-[400px]"
+        isLoading={isFollowUpSubmitting}
+        loadingText="Removing followup..."
       />
       {/* Skills */}
       {candidate.skills && candidate.skills.length > 0 && (

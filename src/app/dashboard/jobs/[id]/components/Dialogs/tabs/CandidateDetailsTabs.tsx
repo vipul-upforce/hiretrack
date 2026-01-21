@@ -27,6 +27,7 @@ interface CandidateDetailsTabsProps {
   // History tab props
   isHistoryLoading: boolean;
   isRemarkSubmitting: boolean;
+  isFollowUpSubmitting: boolean;
   validTimeLineItems: ICandidateHistory[];
   handleRemarkUpdate: (
     id: string,
@@ -53,6 +54,7 @@ export function CandidateDetailsTabs({
   onReEvaluate,
   isHistoryLoading,
   isRemarkSubmitting,
+  isFollowUpSubmitting,
   validTimeLineItems,
   handleRemarkUpdate,
   setEditingRemark,
@@ -105,6 +107,7 @@ export function CandidateDetailsTabs({
             isReEvaluating={isReEvaluating}
             isEvaluatingFor={isEvaluatingFor}
             onReEvaluate={onReEvaluate}
+            isFollowUpSubmitting={isFollowUpSubmitting}
           />
         </TabsContent>
 

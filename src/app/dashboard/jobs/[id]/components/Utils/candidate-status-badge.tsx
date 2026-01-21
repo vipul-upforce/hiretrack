@@ -40,7 +40,7 @@ export function CandidateStatusBadge({ status }: CandidateStatusBadgeProps) {
   const { bg, text } = statusColors[status] || statusColors.default;
 
   return (
-    <Badge variant="secondary" className={`${bg} ${text} border-0`}>
+    <Badge variant="secondary" className={`${bg} ${text} border-0 capitalize`}>
       {status ? status.charAt(0).toUpperCase() + status.slice(1) : ''}
     </Badge>
   );

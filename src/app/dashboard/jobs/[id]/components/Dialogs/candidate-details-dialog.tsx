@@ -315,6 +315,7 @@ export function CandidateDetailsDialog({
     setNewFollowUpDate,
     setMADFollowup,
     handleRemoveFollowUp,
+    isFollowUpSubmitting,
   } = useRemarkHandlers(
     localCandidate,
     refetchAssignment,
@@ -550,6 +551,7 @@ export function CandidateDetailsDialog({
         onReEvaluate={() => setConfirmReEvaluateOpen(true)}
         isHistoryLoading={isHistoryFetching}
         isRemarkSubmitting={isRemarkSubmitting}
+        isFollowUpSubmitting={isFollowUpSubmitting}
         validTimeLineItems={validTimeLineItems}
         handleRemarkUpdate={handleRemarkUpdate}
         setEditingRemark={setEditingRemark}

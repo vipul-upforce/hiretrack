@@ -24,7 +24,7 @@ function ConfirmationDialog({
   setIsOpen: (x: boolean) => void;
   title: string;
   message: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void> | void;
   onCancel: () => void;
   isLoading?: boolean;
   loadingText?: string;
@@ -38,9 +38,8 @@ function ConfirmationDialog({
     setIsOpen(false);
   };
 
-  const handleConfirm = () => {
-    onCancel();
-    onConfirm();
+  const handleConfirm = async () => {
+    await onConfirm();
   };
 
   return (
