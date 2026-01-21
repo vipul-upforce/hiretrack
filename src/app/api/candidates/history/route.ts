@@ -244,10 +244,13 @@ export async function PATCH(request: NextRequest) {
       ])
       .lean();
 
+    // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate({
       ...candidateData,
       history: populatedHistory?.history || [],
-    } as ICandidate & { history?: ICandidateHistory[] });
+    } as ICandidate & { history?: ICandidateHistory[] }).catch((error) => {
+      logger.error({ error }, 'Failed to broadcast candidate history update');
+    });
 
     return NextResponse.json(
       {
@@ -472,10 +475,13 @@ export async function PUT(request: NextRequest) {
       },
     );
 
+    // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate({
       ...candidateData,
       history: transformedHistory,
-    } as ICandidate & { history?: ICandidateHistory[] });
+    } as ICandidate & { history?: ICandidateHistory[] }).catch((error) => {
+      logger.error({ error }, 'Failed to broadcast candidate history update');
+    });
 
     return NextResponse.json(transformedHistory);
   } catch (error) {

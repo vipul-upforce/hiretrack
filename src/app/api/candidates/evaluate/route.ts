@@ -293,7 +293,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       history: candidateHistoryPopulated?.history,
     };
 
-    broadcastCandidateUpdate(dataTobroadcast);
+    // Fire-and-forget broadcast - errors handled internally
+    broadcastCandidateUpdate(dataTobroadcast).catch((error) => {
+      logger.error({ error }, 'Failed to broadcast candidate evaluation update');
+    });
     return NextResponse.json(
       {
         message: 'Candidate scores updated successfully',

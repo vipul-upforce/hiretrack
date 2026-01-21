@@ -289,9 +289,12 @@ export async function POST(
 
     const candidateHistoryPopulated = { history: allHistory };
     const candidateObj = candidate.toObject();
+    // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate({
       ...candidateObj,
       history: candidateHistoryPopulated?.history || [],
+    }).catch((error) => {
+      logger.error({ error }, 'Failed to broadcast candidate checklist update');
     });
     return NextResponse.json({
       success: true,

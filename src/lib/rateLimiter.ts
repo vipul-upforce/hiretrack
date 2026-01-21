@@ -149,9 +149,10 @@ export function createEmailPasswordResetLimiter() {
     handler: (req: NextRequest) => Promise<NextResponse>,
     email?: string,
   ): Promise<NextResponse> {
+    let emailValue: string | null = email || null;
     // Extract email if not provided
     if (!email) {
-      const emailValue = await extractEmailFromRequest(request);
+      emailValue = await extractEmailFromRequest(request);
       if (!emailValue) {
         return NextResponse.json(
           { error: 'Email is required' },
@@ -159,7 +160,8 @@ export function createEmailPasswordResetLimiter() {
         );
       }
     }
-    const emailKey = `password-reset:${email}`;
+
+    const emailKey = `password-reset:${email || emailValue}`;
     const now = Date.now();
     const windowMs = 60 * 60 * 1000; // 1 hour
     const maxRequests = 3; // 3 reset requests per hour

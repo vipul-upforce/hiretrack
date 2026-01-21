@@ -891,9 +891,12 @@ export async function PUT(
         );
         // Don't fail the API call if notification fails
       }
+      // Fire-and-forget broadcast - errors handled internally
       broadcastCandidateUpdate({
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,
+      }).catch((error) => {
+        logger.error({ error }, 'Failed to broadcast candidate update');
       });
       return NextResponse.json({
         ...updatedCandidate,
@@ -1159,9 +1162,12 @@ export async function DELETE(
       );
     }
 
+    // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate({
       ...deletedCandidate,
       history: updatedHistory?.history,
+    }).catch((error) => {
+      logger.error({ error }, 'Failed to broadcast candidate deletion');
     });
 
     return NextResponse.json({ message: 'Candidate deleted successfully' });
