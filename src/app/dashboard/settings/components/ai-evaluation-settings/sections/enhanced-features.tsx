@@ -26,12 +26,12 @@ export function EnhancedFeaturesSection({
       label: 'Skills Verification Matrix',
       desc: 'Detailed breakdown of required vs. present skills with evidence',
     },
-    {
-      id: 'enableRanking',
-      key: 'enableComparativeRanking' as const,
-      label: 'Comparative Ranking (Admin Only)',
-      desc: 'Show candidate rank and percentile within job applicant pool',
-    },
+    // {
+    //   id: 'enableRanking',
+    //   key: 'enableComparativeRanking' as const,
+    //   label: 'Comparative Ranking (Admin Only)',
+    //   desc: 'Show candidate rank and percentile within job applicant pool',
+    // },
   ];
 
   return (
