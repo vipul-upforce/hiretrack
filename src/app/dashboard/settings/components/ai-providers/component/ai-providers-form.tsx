@@ -24,7 +24,8 @@ export default function AIProvidersForm({
   onRefetch,
 }: AIProvidersFormProps) {
   const { toast } = useToast();
-  const [updateAIProviders, { isLoading: isUpdating }] = useUpdateAIProvidersMutation();
+  const [updateAIProviders, { isLoading: isUpdating }] =
+    useUpdateAIProvidersMutation();
   const {
     verificationStatus,
     verificationMessages,
@@ -93,10 +94,10 @@ export default function AIProvidersForm({
       enableReinitialize
     >
       {(formik) => (
-        <Form className="flex flex-col h-[calc(86vh-80px)] overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 sticky top-0">
+        <Form className="flex h-[calc(86vh-80px)] flex-col overflow-hidden">
+          <div className="sticky top-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
             {/* Provider Cards Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {PROVIDER_CONFIGS.map((config) => (
                 <ProviderCard
                   key={config.provider}
@@ -109,8 +110,12 @@ export default function AIProvidersForm({
                   }
                   verificationMessage={verificationMessages[config.provider]}
                   showApiKey={!!showApiKeys[config.provider]}
-                  onVerify={(key, model) => verifyApiKey(config.provider, key, model)}
-                  onToggleVisibility={() => toggleApiKeyVisibility(config.provider)}
+                  onVerify={(key, model) =>
+                    verifyApiKey(config.provider, key, model)
+                  }
+                  onToggleVisibility={() =>
+                    toggleApiKeyVisibility(config.provider)
+                  }
                 />
               ))}
             </div>
@@ -122,21 +127,20 @@ export default function AIProvidersForm({
                   <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                     Security & Usage Information
                   </p>
-                  <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                  <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-200">
                     <li>
-                      • Only the active provider will be used for resume
+                      Only the active provider will be used for resume
                       processing
                     </li>
                     <li>
-                      • API keys are stored securely and encrypted in the
-                      database
+                      API keys are stored securely and encrypted in the database
                     </li>
                     <li>
-                      • Verify your API keys to ensure they work before saving
+                      Verify your API keys to ensure they work before saving
                     </li>
-                    <li>• You can switch between providers at any time</li>
+                    <li> You can switch between providers at any time</li>
                     <li>
-                      • Custom models can be used to access newer or unlisted
+                      Custom models can be used to access newer or unlisted
                       models
                     </li>
                   </ul>
@@ -146,7 +150,7 @@ export default function AIProvidersForm({
           </div>
 
           {/* Footer Actions */}
-          <div className="flex justify-end space-x-2 border-t bg-background px-6 py-4 sticky bottom-0 z-10 mt-auto">
+          <div className="sticky bottom-0 z-10 mt-auto flex justify-end space-x-2 border-t bg-background px-6 py-4">
             <Button
               type="button"
               variant="outline"
