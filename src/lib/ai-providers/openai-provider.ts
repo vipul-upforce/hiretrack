@@ -64,8 +64,11 @@ export class OpenAIProvider extends BaseAIProvider {
 
     const resumeText = await BaseAIProvider.extractTextFromPdf(resumeBase64);
     const finalPrompt = `${prompt}
- Resume Text:
-${resumeText}`;
+  ===== CV START =====
+  ${resumeText}
+  ===== CV END =====
+`;
+
     const response = await openai.chat.completions.create({
       model: selectedModel,
       messages: [
@@ -112,7 +115,10 @@ ${resumeText}`;
       });
 
       if (!response.id) {
-        return { isValid: false, error: `No response received from ${this.name}` };
+        return {
+          isValid: false,
+          error: `No response received from ${this.name}`,
+        };
       }
 
       return { isValid: true };
