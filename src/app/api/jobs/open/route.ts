@@ -213,6 +213,7 @@ export async function POST(req: NextRequest) {
 
     delete candidateObj.jobId;
 
+    // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate({
       ...candidateObj,
       jobId: {
@@ -221,6 +222,8 @@ export async function POST(req: NextRequest) {
         description: nextJob.description,
       },
       history: updatedHistory?.history,
+    }).catch((error) => {
+      logger.error({ error }, 'Failed to broadcast candidate job open update');
     });
 
     return NextResponse.json({

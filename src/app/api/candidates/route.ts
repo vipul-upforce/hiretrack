@@ -17,7 +17,7 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 // import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
 // import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 // import { NotificationType } from '@/lib/services/emailDecisionEngine';
-// import { logger } from '@/lib/logger/logger.server';
+import { logger } from '@/lib/logger/logger.server';
 
 export interface Attachment {
   id: string;
@@ -358,9 +358,12 @@ const candidateData = {
       //   }
       // }
 
+      // Fire-and-forget broadcast - errors handled internally
       broadcastCandidateUpdate({
         ...sanitizedCandidate,
         history: candidateHistory?.history,
+      }).catch((error) => {
+        logger.error({ error }, 'Failed to broadcast candidate creation');
       });
       return NextResponse.json(candidate, { status: 201 });
     }

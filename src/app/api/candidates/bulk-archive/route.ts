@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Candidate, History } from '@/lib/mongodb';
-import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { logger } from '@/lib/logger/logger.server';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 
@@ -143,14 +143,16 @@ export async function POST(
           throw new Error(`Failed to update candidate ${candidate._id}`);
         }
 
-        // Broadcast update
+        // Collect candidate for batch broadcast (don't broadcast individually)
         const candidateObj = updatedCandidate.toObject();
-        broadcastCandidateUpdate({
-          ...candidateObj,
-          history: updatedHistory?.history,
-        });
-
-        return { success: true, candidateId: candidate._id.toString() };
+        return {
+          success: true,
+          candidateId: candidate._id.toString(),
+          candidate: {
+            ...candidateObj,
+            history: updatedHistory?.history,
+          },
+        };
       } catch (error) {
         logger.error(
           { error, url: req.url },
@@ -173,6 +175,32 @@ export async function POST(
         r.status === 'rejected' ||
         (r.status === 'fulfilled' && !r.value.success),
     ).length;
+
+    // CRITICAL FIX: Batch broadcast all updated candidates at once
+    // This reduces token signings from (N candidates × M clients) to just 1
+    const candidatesToBroadcast = results
+      .filter(
+        (r) =>
+          r.status === 'fulfilled' &&
+          r.value.success &&
+          r.value.candidate !== undefined,
+      )
+      .map((r) =>
+        r.status === 'fulfilled' ? r.value.candidate : null,
+      )
+      .filter(
+        (c): c is NonNullable<typeof c> => c !== null && c !== undefined,
+      );
+
+    if (candidatesToBroadcast.length > 0) {
+      // Fire-and-forget: don't block response, but handle errors internally
+      broadcastMultipleCandidateUpdate(candidatesToBroadcast).catch((error) => {
+        logger.error(
+          { error, url: req.url },
+          'Failed to broadcast candidate updates',
+        );
+      });
+    }
 
     return NextResponse.json<BulkArchiveResponse>({
       success: true,

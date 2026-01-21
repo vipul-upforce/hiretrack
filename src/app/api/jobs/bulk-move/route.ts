@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Job, Candidate, History } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ICandidateHistory } from '@/lib/models/history';
-import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
 
@@ -183,17 +183,26 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    // Broadcast updates
-    for (const candidate of updatedCandidates) {
-      const candidateObj = candidate.toObject();
-      delete candidateObj.jobId;
-      broadcastCandidateUpdate({
-        ...candidateObj,
-        jobId: {
-          _id: jobId,
-          title: targetJob.title,
-          description: targetJob.description,
-        },
+    // CRITICAL FIX: Use batch broadcasting instead of individual broadcasts
+    // This reduces token signings from (N candidates × M clients) to just 1
+    if (updatedCandidates.length > 0) {
+      const candidatesToBroadcast = updatedCandidates.map((candidate) => {
+        const candidateObj = candidate.toObject();
+        delete candidateObj.jobId;
+        return {
+          ...candidateObj,
+          jobId: {
+            _id: jobId,
+            title: targetJob.title,
+            description: targetJob.description,
+          },
+        };
+      });
+
+      // Use batch broadcast - signs token ONCE for all candidates
+      // Fire-and-forget: don't block response, but handle errors internally
+      broadcastMultipleCandidateUpdate(candidatesToBroadcast).catch((error) => {
+        logger.error({ error, url: req.url }, 'Failed to broadcast candidate updates');
       });
     }
 

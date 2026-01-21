@@ -525,9 +525,12 @@ export async function DELETE(req: NextRequest) {
             const candidateHistoryPopulated = { history: allHistory };
 
             // Broadcast candidate update for real-time UI updates
+            // Fire-and-forget broadcast - errors handled internally
             broadcastCandidateUpdate({
               ...fullCandidate,
               history: candidateHistoryPopulated?.history,
+            }).catch((error) => {
+              logger.error({ error }, 'Failed to broadcast candidate calendar update');
             });
           }
         } catch (broadcastError) {
