@@ -89,7 +89,9 @@ export async function GET(req: NextRequest) {
   const userId = user.id;
 
   // Generate a unique signature for this browser session based on cookies.
-  const sessionSignature = req.headers.get('cookie') || 'unknown-session';
+  // take the refresh token only from cookie for session signature
+  const sessionSignature =
+    req.cookies.get('refreshToken')?.value || 'no-session';
 
   if (!userId || !orgId) {
     return NextResponse.json({ error: 'Invalid user data' }, { status: 400 });
@@ -212,6 +214,8 @@ export async function GET(req: NextRequest) {
               })}\n\n`,
             ),
           );
+
+          broadcastTabCount();
         } catch {
           clearInterval(heartbeat);
         }
