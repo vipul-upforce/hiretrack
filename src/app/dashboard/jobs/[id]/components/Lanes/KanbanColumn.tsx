@@ -285,7 +285,7 @@ const KanbanColumn = memo(
             <div className="flex h-full w-full min-w-0 max-w-full flex-col rounded-xl border border-gray-200/50 bg-white/70 p-2 shadow-sm dark:border-gray-700/50 dark:bg-black/30">
               <div className="mb-2 flex-shrink-0 px-2 py-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 ">
                     <div
                       role="button"
                       tabIndex={0}
@@ -299,7 +299,7 @@ const KanbanColumn = memo(
                     >
                       <GripVertical className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </div>
-                    <h3 className="truncate text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+                    <h3 className="truncate text-sm font-semibold capitalize tracking-wide text-gray-700 dark:text-gray-300">
                       {column.title}
                     </h3>
                   </div>
