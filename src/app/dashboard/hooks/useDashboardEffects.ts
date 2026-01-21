@@ -1,6 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
 import { Candidate } from '@/types/candidate';
-import logger from '@/lib/logger';
 
 interface UseDashboardEffectsParams {
   // State

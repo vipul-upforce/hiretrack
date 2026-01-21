@@ -45,13 +45,30 @@ export const transformAssignmentToEvent = (
     ? { bg: '#3b82f6', border: '#1d4ed8' }
     : eventColors[colorIndex];
 
+  // Avoid nested ternaries for end and endStr
+  let end: Date | undefined;
+  let endStr: string = '';
+
+  if (startTime) {
+    if (calendarView === 'dayGridMonth') {
+      end = endTime;
+      endStr = endTime?.toISOString() || '';
+    } else {
+      end = startTime;
+      endStr = '';
+    }
+  } else {
+    end = undefined;
+    endStr = '';
+  }
+
   return {
     id: candidate._id,
     title,
     start: startTime, // undefined for unscheduled candidates
     startStr: startTime ? startTime.toISOString() : '',
-    end: startTime ? (calendarView === 'dayGridMonth' ? endTime : startTime) : undefined,
-    endStr: startTime ? (calendarView === 'dayGridMonth' ? endTime?.toISOString() : '') : '',
+    end,
+    endStr,
     allDay: false,
     display: 'auto',
     backgroundColor: color.bg,

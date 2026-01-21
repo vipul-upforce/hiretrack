@@ -13,7 +13,6 @@ import {
 } from '@/lib/features/lane/laneApi';
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { NoDataFound } from '@/app/not-found';
-import { useSSE } from '@/hooks/useSSE';
 import { useAppSelector } from '@/lib/redux/hooks';
 import logger from '@/lib/logger';
 import { initialCandidateColumns } from './data/initial-data';

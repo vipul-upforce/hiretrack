@@ -196,7 +196,7 @@ export async function PUT(
     }
 
     // Update job
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       useCustomLanes: Boolean(useCustomLanes),
     };
 

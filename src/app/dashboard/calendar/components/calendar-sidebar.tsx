@@ -49,9 +49,9 @@ export function CalendarSidebar({
 
   const notScheduledEvents = events.filter((event) => !event.start);
 
-  const eventDates = events
-    .filter((e) => e.start)
-    .map((e) => new Date(e.start!));
+  // const eventDates = events
+  //   .filter((e) => e.start)
+  //   .map((e) => new Date(e.start!));
 
   const renderEventCard = (
     event: CustomCalendarEvent,
