@@ -140,9 +140,9 @@ export async function handleInterviewAssignment(req: NextRequest) {
 
   // Resolve sentBy to valid ObjectId before queuing
   const resolvedSentById = await resolveSentByToObjectId({
-    sentBy: userData?.id || 'system',
+    sentBy: userData?.id || '',
     sentByEmail: userData?.email || fromEmail,
-    sentByName: userData?.name || 'HireTrack System',
+    sentByName: userData?.name || '',
     organizationId,
     fromEmail,
   });
