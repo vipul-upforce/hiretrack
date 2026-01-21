@@ -66,7 +66,7 @@ export default function EmailTemplatesPage() {
     <div className="flex h-screen w-full flex-col overflow-hidden">
       <TemplateHeader onSave={handleSave} saving={saving} />
 
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+      <div className="my-4 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
         <div className="space-y-6">
           <TemplateSelector
             templates={templates}
