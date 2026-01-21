@@ -446,6 +446,7 @@ export async function PUT(request: NextRequest) {
             rating,
             candidateProfileLink,
             organizationName,
+            validMentionUserIds: selectedMentionUserIds,
             recipientName: emailList[0] || '',
           },
           emailList as string[],
