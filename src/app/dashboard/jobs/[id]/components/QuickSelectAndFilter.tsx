@@ -18,6 +18,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -86,6 +87,7 @@ export function QuickSelectAndFilter({
     withRemarks: false,
     withoutRemarks: false,
   });
+  const [isFiltersDropdownOpen, setIsFiltersDropdownOpen] = useState(false);
 
   const { data: jobs } = useFetchJobsQuery(undefined);
 
@@ -94,8 +96,10 @@ export function QuickSelectAndFilter({
     let filtered = [...candidates];
 
     // Apply archived filter
+    // When showArchived is true, show ONLY archived candidates
+    // When showArchived is false, show ONLY non-archived candidates
     filtered = filtered.filter(
-      (candidate) => showArchived || !candidate.isDeleted,
+      (candidate) => showArchived ? candidate.isDeleted : !candidate.isDeleted,
     );
 
     // Apply text search
@@ -164,11 +168,11 @@ export function QuickSelectAndFilter({
       },
       {
         key: 'withRemarks',
-        filter: (candidate: Candidate) => candidate.remarks && candidate.remarks.length > 0,
+        filter: (candidate: Candidate) => candidate.remarksCount && candidate.remarksCount > 0,
       },
       {
         key: 'withoutRemarks',
-        filter: (candidate: Candidate) => !candidate.remarks || candidate.remarks.length === 0,
+        filter: (candidate: Candidate) => !candidate.remarksCount || candidate.remarksCount === 0,
       },
     ].filter((filter) => filters[filter.key as keyof FilterState] === true);
 
@@ -359,7 +363,7 @@ export function QuickSelectAndFilter({
       </div>
 
       {/* Filters Dropdown */}
-      <DropdownMenu>
+      <DropdownMenu open={isFiltersDropdownOpen} onOpenChange={setIsFiltersDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex items-center gap-2">
             <Filter className="h-4 w-4" />
@@ -369,10 +373,19 @@ export function QuickSelectAndFilter({
                 {activeFiltersCount}
               </Badge>
             )}
+            {showArchived && (
+              <Badge variant="secondary" className="ml-1">
+                Archived
+              </Badge>
+            )}
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent 
+          align="end" 
+          className="w-64"
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
           <DropdownMenuLabel>Quick Filters</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
@@ -410,6 +423,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.topCandidates}
             onCheckedChange={() => handleFilterToggle('topCandidates')}
+            onSelect={(e) => e.preventDefault()}
           >
             <Star className="h-4 w-4 mr-2" />
             Top Candidates (7+ score)
@@ -418,6 +432,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.appliedThisWeek}
             onCheckedChange={() => handleFilterToggle('appliedThisWeek')}
+            onSelect={(e) => e.preventDefault()}
           >
             <Calendar className="h-4 w-4 mr-2" />
             Applied This Week
@@ -426,6 +441,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.appliedToday}
             onCheckedChange={() => handleFilterToggle('appliedToday')}
+            onSelect={(e) => e.preventDefault()}
           >
             <Clock className="h-4 w-4 mr-2" />
             Applied Today
@@ -434,6 +450,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.appliedIn15Days}
             onCheckedChange={() => handleFilterToggle('appliedIn15Days')}
+            onSelect={(e) => e.preventDefault()}
           >
             <Target className="h-4 w-4 mr-2" />
             Applied in 15 Days
@@ -444,6 +461,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.toFollowUp}
             onCheckedChange={() => handleFilterToggle('toFollowUp')}
+            onSelect={(e) => e.preventDefault()}
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             To Follow Up
@@ -452,6 +470,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.assigned}
             onCheckedChange={() => handleFilterToggle('assigned')}
+            onSelect={(e) => e.preventDefault()}
           >
             <UserCheck className="h-4 w-4 mr-2" />
             Assigned
@@ -460,6 +479,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.notAssigned}
             onCheckedChange={() => handleFilterToggle('notAssigned')}
+            onSelect={(e) => e.preventDefault()}
           >
             <UserX className="h-4 w-4 mr-2" />
             Not Assigned
@@ -470,6 +490,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.withRemarks}
             onCheckedChange={() => handleFilterToggle('withRemarks')}
+            onSelect={(e) => e.preventDefault()}
           >
             <FileText className="h-4 w-4 mr-2" />
             With Remarks
@@ -478,6 +499,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem
             checked={filters.withoutRemarks}
             onCheckedChange={() => handleFilterToggle('withoutRemarks')}
+            onSelect={(e) => e.preventDefault()}
           >
             <FileX className="h-4 w-4 mr-2" />
             Without Remarks
@@ -491,6 +513,7 @@ export function QuickSelectAndFilter({
               onShowArchivedChange(checked);
               clearAllFilters();
             }}
+            onSelect={(e) => e.preventDefault()}
           >
             <FileText className="h-4 w-4 mr-2" />
             Show Archived
@@ -498,12 +521,14 @@ export function QuickSelectAndFilter({
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuCheckboxItem
-            checked={false}
-            onCheckedChange={clearAllFilters}
+          <DropdownMenuItem
+            onClick={() => {
+              clearAllFilters();
+              setIsFiltersDropdownOpen(false);
+            }}
           >
             Clear All Filters
-          </DropdownMenuCheckboxItem>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -512,6 +537,7 @@ export function QuickSelectAndFilter({
         {filteredCandidates.length}
         {' '}
         of
+        {' '}
         {candidates.length}
         {' '}
         candidates

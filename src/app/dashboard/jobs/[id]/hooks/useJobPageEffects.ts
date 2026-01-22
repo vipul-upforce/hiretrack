@@ -1,8 +1,7 @@
 import { useEffect, useRef, Dispatch, SetStateAction } from 'react';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
-import { Interviewer } from '@/lib/features/user/userApi';
 import { initialCandidateColumns } from '../data/initial-data';
-import { isAssigned } from '../utils/candidateAccessors';
+import { isAssigned, getInterviewerName } from '../utils/candidateAccessors';
 
 interface FilterState {
   search: string;
@@ -113,6 +112,13 @@ export function useJobPageEffects({
     if (normalizedCandidates && lanes) {
       let currentCandidates = [...mergedCandidates];
 
+      // Apply archived filter first (consistent with QuickSelectAndFilter)
+      // When showArchived is true, show ONLY archived candidates
+      // When showArchived is false, show ONLY non-archived candidates
+      currentCandidates = currentCandidates.filter(
+        (candidate) => showArchived ? candidate.isDeleted : !candidate.isDeleted,
+      );
+
       // Apply filter conditions if they exist
       if (filterConditions) {
         currentCandidates = currentCandidates.filter((candidate) => {
@@ -125,9 +131,7 @@ export function useJobPageEffects({
                 skill.toLowerCase().includes(searchLower),
               ) ||
               candidate.experience.toString().includes(searchLower) ||
-              (candidate.assignment?.interviewerId as Interviewer)?.name
-                ?.toLowerCase()
-                .includes(searchLower) ||
+              getInterviewerName(candidate)?.toLowerCase().includes(searchLower) ||
               candidate.location.toLowerCase().includes(searchLower);
             if (!matchesSearch) return false;
           }
@@ -185,11 +189,11 @@ export function useJobPageEffects({
             },
             {
               key: 'withRemarks',
-              filter: (c: Candidate) => c.remarks && c.remarks.length > 0,
+              filter: (c: Candidate) => c.remarksCount && c.remarksCount > 0,
             },
             {
               key: 'withoutRemarks',
-              filter: (c: Candidate) => !c.remarks || c.remarks.length === 0,
+              filter: (c: Candidate) => !c.remarksCount || c.remarksCount === 0,
             },
           ].filter(
             (filter) =>
@@ -206,10 +210,6 @@ export function useJobPageEffects({
           return true;
         });
       }
-      // Apply archived filter
-      currentCandidates = currentCandidates.filter(
-        (candidate) => showArchived || !candidate.isDeleted,
-      );
 
       // Handle different lane data structures
       let lanesArray: string[];
@@ -242,10 +242,9 @@ export function useJobPageEffects({
 
       const updatedColumns = lanesArray.map((lane) => {
         const column = initialCandidateColumns.find((item) => item.id === lane);
+        // Filter by status only - archived filter already applied above
         const candidates = currentCandidates.filter(
-          (candidate) =>
-            candidate.status === lane &&
-            (showArchived ? candidate.isDeleted : !candidate.isDeleted),
+          (candidate) => candidate.status === lane,
         );
 
         return {

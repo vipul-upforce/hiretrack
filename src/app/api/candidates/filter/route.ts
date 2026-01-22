@@ -295,7 +295,6 @@ export async function POST(request: NextRequest) {
               $lookup: {
                 from: 'histories',
                 let: {
-                  jobId: { $toString: '$jobId' },
                   candidateId: { $toString: '$_id' },
                 },
                 pipeline: [
@@ -305,14 +304,9 @@ export async function POST(request: NextRequest) {
                   {
                     $match: {
                       $expr: {
-                        $and: [
-                          { $eq: [{ $toString: '$jobId' }, '$$jobId'] },
-                          {
-                            $eq: [
-                              { $toString: '$candidateId' },
-                              '$$candidateId',
-                            ],
-                          },
+                        $eq: [
+                          { $toString: '$candidateId' },
+                          '$$candidateId',
                         ],
                       },
                     },
