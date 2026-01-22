@@ -87,6 +87,7 @@ export interface Candidate {
     size: number;
   } | null;
   remarks?: Remark[];
+  remarksCount?: number; // Count of remarks (from optimized API)
   attachments: Array<{
     id: string;
     name: string;

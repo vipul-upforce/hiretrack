@@ -453,7 +453,7 @@ const KanbanColumn = memo(
                         <Virtuoso
                           style={{ height: '100%', scrollbarWidth: 'none' }}
                           data={processedCandidates}
-                          increaseViewportBy={{ bottom: 250, top: 100 }}
+                          increaseViewportBy={{ bottom: 350, top: 350 }}
                           scrollerRef={(el) => {
                             if (el) scrollerRef.current = el as HTMLDivElement;
                           }}

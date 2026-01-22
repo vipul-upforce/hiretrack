@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/app/hooks/useAuth';
 
 interface LaneOptionsMenuProps {
   laneId: string;
@@ -85,6 +86,7 @@ export function LaneOptionsMenu({
   isOpen,
   setIsOpen,
 }: LaneOptionsMenuProps) {
+  const { userRole } = useAuth();
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [selectedSortField, setSelectedSortField] =
     useState<string>('createdAt');
@@ -141,7 +143,7 @@ export function LaneOptionsMenu({
         setIsOpen(false);
       },
     },
-    ...(onConfigureChecklist
+    ...(onConfigureChecklist && userRole !== 'hr'
       ? [
           {
             icon: <ClipboardCheck className="mr-2 h-4 w-4" />,

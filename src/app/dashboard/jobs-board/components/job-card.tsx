@@ -196,15 +196,17 @@ function JobCard({
                       <Layout className="mr-2 h-4 w-4" />
                       Open Board
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsAnalyticsOpen(true);
-                      }}
-                    >
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      View Analytics
-                    </DropdownMenuItem>
+                    {user?.role !== 'hr' && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsAnalyticsOpen(true);
+                        }}
+                      >
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        View Analytics
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();

@@ -24,7 +24,7 @@ export function AIReEvaluateTrigger({
         <div className="flex flex-row justify-between items-center">
           <div className="flex items-center gap-3">
             <Label className={labelClass}>AI Evaluation</Label>
-            {role !== 'candidate' && (
+            {role !== 'candidate' && role !== 'interviewer' && (
               <Button
                 variant="ghost"
                 size="icon"
