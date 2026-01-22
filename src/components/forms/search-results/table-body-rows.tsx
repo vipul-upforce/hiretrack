@@ -216,7 +216,7 @@ export const TableBodyRows = memo(
                       'inline-flex items-center justify-center rounded-md p-1 transition-all duration-150',
                       'hover:ring-primary/30 hover:ring-2 hover:ring-offset-1',
                       isShiftPressed &&
-                        'ring-primary/50 bg-primary/5 ring-2 ring-offset-1',
+                      'ring-primary/50 bg-primary/5 ring-2 ring-offset-1',
                     )}
                   >
                     <Checkbox

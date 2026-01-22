@@ -25,27 +25,27 @@ type CandidateDetailsRenderArgs =
   | { id: 'skills' }
   | { id: 'metafields' }
   | {
-      id: 'ai-evaluation';
-      isReEvaluating: boolean;
-      isEvaluatingFor: string;
-      onReEvaluate: () => void;
-    }
+    id: 'ai-evaluation';
+    isReEvaluating: boolean;
+    isEvaluatingFor: string;
+    onReEvaluate: () => void;
+  }
   | { id: 'resume' }
   | { id: 'attachments' }
   | {
-      id: 'candidate-history';
-      timeLineItems: ICandidateHistory[];
-      handleRemarkUpdate: (
-        id: string,
-        description: string,
-        isPrivate?: boolean,
-      ) => void;
-      setEditingRemark: React.Dispatch<
-        React.SetStateAction<IEditRemark | null>
-      >;
-      setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-      showHeader?: boolean;
-    }
+    id: 'candidate-history';
+    timeLineItems: ICandidateHistory[];
+    handleRemarkUpdate: (
+      id: string,
+      description: string,
+      isPrivate?: boolean,
+    ) => void;
+    setEditingRemark: React.Dispatch<
+      React.SetStateAction<IEditRemark | null>
+    >;
+    setIsEditRemarkDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    showHeader?: boolean;
+  }
   | { id: 'status-history' }
   | { id: 'interview-assignment' };
 
@@ -93,146 +93,147 @@ export const candidateDetailsFields: [
   FieldConfig<{ id: 'status-history' }>,
   FieldConfig<{ id: 'interview-assignment' }>,
 ] = [
-  {
-    label: '',
-    id: 'candidate-info',
-    render: (candidate, args) => (
-      <CandidateInfoSection candidate={candidate} user={args.user} />
-    ),
-    shouldRender: (candidate) => !!candidate,
-  },
-  {
-    label: 'Skills',
-    id: 'skills',
-    render: (candidate) => (
-      <div className="flex flex-wrap gap-2">
-        {candidate.skills.map((skill) => (
-          <Badge key={`${candidate._id}-skill-${skill}`} variant="secondary">
-            {skill}
-          </Badge>
-        ))}
-      </div>
-    ),
-  },
-  {
-    label: '',
-    id: 'metafields',
-    render: (candidate) => (
-      <CustomFieldsData customFields={candidate.customFields || {}} />
-    ),
-    shouldRender: (candidate) =>
-      !!(
-        candidate.customFields && Object.keys(candidate.customFields).length > 0
+    {
+      label: '',
+      id: 'candidate-info',
+      render: (candidate, args) => (
+        <CandidateInfoSection candidate={candidate} user={args.user} />
       ),
-  },
-  {
-    label: '',
-    id: 'ai-evaluation',
-    render: (candidate, args) => (
-      <ResumeEvaluationDetails
-        labelClass={labelClass}
-        isEvaluatingFor={args.isEvaluatingFor}
-        localCandidate={candidate}
-        isReEvaluating={args.isReEvaluating}
-        onReEvaluate={args.onReEvaluate}
-      />
-    ),
-    shouldRender: (candidate) => !!candidate,
-  },
-  {
-    label: 'Resume',
-    id: 'resume',
-    render: (candidate) =>
-      candidate.resume ? <PDFViewer files={[candidate.resume]} /> : null,
-    shouldRender: (candidate) => !!candidate.resume,
-  },
-  {
-    label: '',
-    id: 'attachments',
-    render: (candidate) => (
-      <RenderAttachments labelClass={labelClass} localCandidate={candidate} />
-    ),
-    shouldRender: (candidate) => candidate.attachments.length > 0,
-  },
-  {
-    label: '',
-    id: 'candidate-history',
-    render: (candidate, args) => (
-      <HistoryAndLogTable
-        candidate={candidate}
-        timeLineItems={args.timeLineItems}
-        handleRemarkUpdate={args.handleRemarkUpdate}
-        setEditingRemark={args.setEditingRemark}
-        setIsEditRemarkDialogOpen={args.setIsEditRemarkDialogOpen}
-        showHeader={args.showHeader}
-      />
-    ),
-    shouldRender: (candidate) =>
-      !!(candidate.history?.length && candidate.history?.length > 0),
-  },
-  {
-    label: 'Status History',
-    id: 'status-history',
-    render: (candidate) => (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm">
-          <FileText className="h-4 w-4" />
-          <span>
-            Created:
-            {formatDate(candidate.tracking?.createdAt)}
-          </span>
+      shouldRender: (candidate) => !!candidate,
+    },
+    {
+      label: 'Skills',
+      id: 'skills',
+      render: (candidate) => (
+        <div className="flex flex-wrap gap-2">
+          {candidate.skills.map((skill) => (
+            <Badge key={`${candidate._id}-skill-${skill}`} variant="secondary">
+              {skill}
+            </Badge>
+          ))}
         </div>
-        {candidate.tracking?.assignedToJobDate && (
+      ),
+    },
+    {
+      label: '',
+      id: 'metafields',
+      render: (candidate) => (
+        <CustomFieldsData customFields={candidate.customFields || {}} />
+      ),
+      shouldRender: (candidate) =>
+        !!(
+          candidate.customFields && Object.keys(candidate.customFields).length > 0
+        ),
+    },
+    {
+      label: '',
+      id: 'ai-evaluation',
+      render: (candidate, args) => (
+        <ResumeEvaluationDetails
+          labelClass={labelClass}
+          isEvaluatingFor={args.isEvaluatingFor}
+          localCandidate={candidate}
+          isReEvaluating={args.isReEvaluating}
+          onReEvaluate={args.onReEvaluate}
+        />
+      ),
+      shouldRender: (candidate) => !!candidate,
+    },
+    {
+      label: 'Resume',
+      id: 'resume',
+      render: (candidate) =>
+        candidate.resume ? <PDFViewer files={[candidate.resume]} /> : null,
+      shouldRender: (candidate) => !!candidate.resume,
+    },
+    {
+      label: '',
+      id: 'attachments',
+      render: (candidate) => (
+        <RenderAttachments labelClass={labelClass} localCandidate={candidate} />
+      ),
+      shouldRender: (candidate) => candidate.attachments.length > 0,
+    },
+    {
+      label: '',
+      id: 'candidate-history',
+      render: (candidate, args) => (
+        <HistoryAndLogTable
+          candidate={candidate}
+          timeLineItems={args.timeLineItems}
+          handleRemarkUpdate={args.handleRemarkUpdate}
+          setEditingRemark={args.setEditingRemark}
+          setIsEditRemarkDialogOpen={args.setIsEditRemarkDialogOpen}
+          showHeader={args.showHeader}
+        />
+      ),
+      shouldRender: (candidate) =>
+        !!(candidate.history?.length && candidate.history?.length > 0),
+    },
+    {
+      label: 'Status History',
+      id: 'status-history',
+      render: (candidate) => (
+        <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4" />
             <span>
-              Job Assigned: {formatDate(candidate.tracking?.assignedToJobDate)}
+              Created:
+              {formatDate(candidate.tracking?.createdAt)}
             </span>
           </div>
-        )}
-        <div className="flex items-center gap-2 text-sm">
-          <FileText className="h-4 w-4" />
-          <span>
-            Last Updated:
-            {formatDate(candidate.tracking?.updatedAt)}
-          </span>
-        </div>
-      </div>
-    ),
-  },
-  {
-    label: '',
-    id: 'interview-assignment',
-    render: (candidate) => {
-      const hasValidInterviewer =
-        candidate.assignment &&
-        candidate.assignment.interviewerId &&
-        typeof candidate.assignment.interviewerId === 'object' &&
-        candidate.assignment.interviewerId._id &&
-        candidate.assignment.interviewerId.name;
-
-      return (
-        <div className="space-y-4 border-t pt-4">
-          {hasValidInterviewer ? (
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span>
-                  Interviewer:{' '}
-                  {typeof candidate.assignment?.interviewerId === 'object'
-                    ? candidate.assignment?.interviewerId.name
-                    : ''}
-                </span>
-              </div>
-              <div>
-                Interview Date: {formatDate(candidate.assignment?.time)} on{' '}
-                {formatTime(candidate.assignment?.time)}
-              </div>
+          {candidate.tracking?.assignedToJobDate && (
+            <div className="flex items-center gap-2 text-sm">
+              <FileText className="h-4 w-4" />
+              <span>
+                Job Assigned: {formatDate(candidate.tracking?.assignedToJobDate)}
+              </span>
             </div>
-          ) : (
-            <div>Not assigned to any interviewer</div>
           )}
+          <div className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4" />
+            <span>
+              Last Updated:
+              {formatDate(candidate.tracking?.updatedAt)}
+            </span>
+          </div>
         </div>
-      );
+      ),
     },
-  },
-];
+    {
+      label: '',
+      id: 'interview-assignment',
+      render: (candidate) => {
+        const hasValidInterviewer =
+          candidate.assignment &&
+          candidate.assignment.interviewerId &&
+          typeof candidate.assignment.interviewerId === 'object' &&
+          candidate.assignment.interviewerId._id &&
+          candidate.assignment.interviewerId.name;
+
+        return (
+          <div className="space-y-4 border-t pt-4">
+            {hasValidInterviewer ? (
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>
+                    Interviewer:{' '}
+                    {candidate.assignment?.interviewerId &&
+                      typeof candidate.assignment.interviewerId === 'object'
+                      ? candidate.assignment.interviewerId.name
+                      : ''}
+                  </span>
+                </div>
+                <div>
+                  Interview Date: {formatDate(candidate.assignment?.time)} on{' '}
+                  {formatTime(candidate.assignment?.time)}
+                </div>
+              </div>
+            ) : (
+              <div>Not assigned to any interviewer</div>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
