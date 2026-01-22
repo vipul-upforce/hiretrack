@@ -70,7 +70,7 @@ export function ChecklistEmptyState({
               </>
             )} */}
 
-            <Button onClick={onCreateNew}>
+            <Button onClick={onCreateNew} variant="primary">
               <Plus className="mr-2 h-4 w-4" />
               {/* {filteredTemplates.length > 0
                 ? 'Create New Checklist'
