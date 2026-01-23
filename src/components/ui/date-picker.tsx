@@ -218,8 +218,8 @@ export function DatePicker({
     return value;
   })();
 
-  const usePortal = !disablePortal && !!portalContainer;
-  const actualPortalTarget = usePortal ? portalContainer : undefined;
+  const shouldUsePortal = !disablePortal;
+  const actualPortalTarget = portalContainer || undefined;
 
   return (
     <div ref={pickerContainerRef} className={cn('relative', className)}>
@@ -235,7 +235,7 @@ export function DatePicker({
         plugins={plugins}
         calendarPosition="bottom"
         range={range}
-        portal={usePortal}
+        portal={shouldUsePortal}
         portalTarget={actualPortalTarget}
         onOpen={() => {
           setInternalOpen(true);
