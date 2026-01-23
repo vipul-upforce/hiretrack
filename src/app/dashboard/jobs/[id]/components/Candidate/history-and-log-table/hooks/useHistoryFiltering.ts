@@ -51,6 +51,7 @@ export function useHistoryFiltering(
         })
         .filter((interview) => {
           // Filter out duplicate interviewer assignments
+          // BUT only if there's no meaningful title or assignmentBy (indicating a real reassignment event)
           if (
             typeof interview.currentInterviewer === 'object' &&
             interview.currentInterviewer &&
@@ -63,7 +64,16 @@ export function useHistoryFiltering(
               interview.previousInterviewer?.email &&
             (!interview.note || !interview.note.description)
           ) {
-            return false;
+            // Don't filter out if there's a meaningful title (like "Assigned by X")
+            // or if assignmentBy exists (indicating a real reassignment event)
+            if (
+              interview.title &&
+              interview.title.includes('Assigned by') &&
+              interview.assignmentBy
+            ) {
+              return true; // Keep entries with meaningful assignment context
+            }
+            return false; // Filter out true duplicates
           }
           return true;
         })
