@@ -208,11 +208,14 @@ export function CompactCircularScores({
     affordability?: number;
   };
 }) {
-  if (!scores || Object.keys(scores).length === 0) {
+  if (!scores || Object.keys(scores).length === 0 || !scores.overall || scores.overall === null || scores.experience === undefined || scores.experience === null || scores.skills === undefined || scores.skills === null || scores.affordability === undefined || scores.affordability === null) {
     return (
-      <div className="rounded bg-muted/30 px-2 py-1 text-xs text-muted-foreground">
-        No Score
-      </div>
+      <Badge
+        variant="outline"
+        className="border-muted-foreground/30 bg-muted/30 text-xs text-muted-foreground"
+      >
+        Not Evaluated
+      </Badge>
     );
   }
 

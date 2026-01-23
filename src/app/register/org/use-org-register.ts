@@ -116,8 +116,8 @@ export const useOrgRegister = () => {
           name,
           lanes: [],
           adminData: {
-            email,
-            name: fullName,
+            email: email.toLowerCase().trim(),
+            name: fullName.trim(),
             password,
             role,
           },

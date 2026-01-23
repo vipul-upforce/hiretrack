@@ -87,19 +87,19 @@ function OrgRegisterPage() {
                   disabled={isSubmitting}
                 />
 
-                  <FormPasswordField
-                    name="password"
-                    label="Password"
-                    icon={Lock}
-                    disabled={isSubmitting}
-                  />
+                <FormPasswordField
+                  name="password"
+                  label="Password"
+                  icon={Lock}
+                  disabled={isSubmitting}
+                />
 
-                  <FormPasswordField
-                    name="confirmPassword"
-                    label="Confirm Password"
-                    icon={Lock}
-                    disabled={isSubmitting}
-                  />
+                <FormPasswordField
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  icon={Lock}
+                  disabled={isSubmitting}
+                />
 
                 {shouldShowCaptcha && (
                   <div className="flex justify-center pt-2">
