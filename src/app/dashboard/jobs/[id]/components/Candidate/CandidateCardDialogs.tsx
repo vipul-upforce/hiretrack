@@ -105,8 +105,7 @@ export function CandidateCardDialogs({
     isAssigning ||
     isAddingFollowUp ||
     confirmUnassignOpen ||
-    isAssignJobOpen ||
-    isAddRemarkOpen;
+    isAssignJobOpen;
   const getUnifiedInitialAction = (): CandidateActionType | undefined => {
     if (isAssigning) return 'assignTo';
     if (isAssignJobOpen) return 'switchJob';
