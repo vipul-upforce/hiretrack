@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Formik, Form, ErrorMessage } from 'formik';
+import { Plus } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,6 +24,7 @@ export default function MultipleOrgForm({
   isSubmitting,
   isReadOnly,
 }: MultipleOrgFormProps) {
+  const router = useRouter();
   return (
     <Formik<MultipleOrgsValues>
       initialValues={initialValues}
@@ -51,6 +54,20 @@ export default function MultipleOrgForm({
               component="div"
               className="text-red-500 text-sm mt-1"
             />
+            {initialValues.multipleOrg && (
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push('/auth/signup')}
+                  disabled={isSubmitting || isReadOnly}
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create new organization
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">

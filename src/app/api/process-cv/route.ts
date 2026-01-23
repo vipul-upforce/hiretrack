@@ -111,8 +111,11 @@ async function processResume(
       };
     }
 
+    // Exclude scores when status is 'applied'
+    const { scores: _scores, ...parsedDataWithoutScores } = parsedData;
+
     return {
-      ...parsedData,
+      ...parsedDataWithoutScores,
       organizationId,
       status: 'applied',
       isDeleted: false,
@@ -311,6 +314,7 @@ export async function POST(request: NextRequest) {
           decryptedAiProviders, // Pass the already decrypted aiProviders
           organizationId as string,
         );
+        
         // Check if the CV was invalid
         if (candidateData.error) {
           // Add error item to batch

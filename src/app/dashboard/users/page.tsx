@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import {
   useGetUsersQuery,
   useDeleteUserMutation,
@@ -26,9 +25,9 @@ import { ResetPasswordDialog } from './components/passworResetDialog';
 import ConfirmationDialog from '../jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { EditUserDialog } from './components/Edit-user-dialog';
 import { UserTableRow } from './components/User-Table-Row';
+import { CreateUserDialog } from './components/CreateUserDialog';
 
 function UsersPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const { data: users = [], isLoading, error, refetch } = useGetUsersQuery();
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
@@ -36,6 +35,7 @@ function UsersPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   interface SelectedUser {
     id?: string;
     name: string;
@@ -70,16 +70,15 @@ function UsersPage() {
       });
     } catch (errorMessage: unknown) {
       toast({
-        description: `${
-          typeof errorMessage === 'object' &&
+        description: `${typeof errorMessage === 'object' &&
           errorMessage !== null &&
           'data' in errorMessage &&
           typeof errorMessage.data === 'object' &&
           errorMessage.data &&
           'error' in errorMessage.data
-            ? (errorMessage.data as { error: string }).error
-            : 'Unknown error'
-        }`,
+          ? (errorMessage.data as { error: string }).error
+          : 'Unknown error'
+          }`,
         title: 'Failed to delete user',
         variant: 'destructive',
       });
@@ -137,16 +136,23 @@ function UsersPage() {
 
   if (!users || users.length === 0) {
     return (
-      <div className="w-[100%] py-6">
-        <Card>
-          <CardContent className="flex h-96 flex-col items-center justify-center space-y-4">
-            <p className="text-lg text-muted-foreground">No users found</p>
-            <Button onClick={() => router.push('/auth/signup')}>
-              Create First User
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <div className="w-[100%] py-6">
+          <Card>
+            <CardContent className="flex h-96 flex-col items-center justify-center space-y-4">
+              <p className="text-lg text-muted-foreground">No users found</p>
+              <Button onClick={() => setIsCreateUserOpen(true)}>
+                Create First User
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <CreateUserDialog
+          isOpen={isCreateUserOpen}
+          onOpenChange={setIsCreateUserOpen}
+          onSuccess={refetch}
+        />
+      </>
     );
   }
 
@@ -182,7 +188,7 @@ function UsersPage() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
               <Button
                 variant="primary"
-                onClick={() => router.push('/auth/signup')}
+                onClick={() => setIsCreateUserOpen(true)}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Create User
@@ -285,6 +291,12 @@ function UsersPage() {
             userName={selectedEmailSettingsUser.name}
           />
         )}
+
+        <CreateUserDialog
+          isOpen={isCreateUserOpen}
+          onOpenChange={setIsCreateUserOpen}
+          onSuccess={refetch}
+        />
       </div>
     </div>
   );
