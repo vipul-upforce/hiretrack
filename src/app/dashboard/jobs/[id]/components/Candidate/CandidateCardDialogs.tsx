@@ -105,7 +105,10 @@ export function CandidateCardDialogs({
     isAssigning ||
     isAddingFollowUp ||
     confirmUnassignOpen ||
-    isAssignJobOpen;
+    isAssignJobOpen ||
+    (onDashboard ? isAddRemarkOpen : false);
+
+ 
   const getUnifiedInitialAction = (): CandidateActionType | undefined => {
     if (isAssigning) return 'assignTo';
     if (isAssignJobOpen) return 'switchJob';
@@ -218,8 +221,7 @@ export function CandidateCardDialogs({
         />
       )}
 
-      {/* Add Remarks Dialog (Dashboard only) */}
-      {onDashboard && isAddRemarkOpen && null}
+
 
       {/* Email Candidate Dialog */}
       {isEmailDialogOpen && (
