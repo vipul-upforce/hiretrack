@@ -436,7 +436,21 @@ export function CandidateDetailsDialog({
   useEffect(() => {
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
-      setLocalCandidate(candidate);
+      
+      // CRITICAL FIX: Preserve assignment from localCandidate when merging with candidate prop
+      // This prevents stale candidate prop from overwriting fresh assignment updates
+      if (isSameCandidate && localCandidate?.assignment) {
+        // Same candidate - preserve assignment from localCandidate (which may have been updated via SSE/refetch)
+        // Merge other fields from candidate prop
+        setLocalCandidate({
+          ...candidate,
+          assignment: localCandidate.assignment, // Preserve the assignment from localCandidate
+          history: localCandidate.history || candidate.history, // Preserve history too
+        });
+      } else {
+        // Different candidate or no localCandidate - use candidate prop as-is
+        setLocalCandidate(candidate);
+      }
 
       // Only reset history state when candidate ID actually changes
       if (!isSameCandidate) {
