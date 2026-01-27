@@ -1,8 +1,7 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const mongoose = require('mongoose'); // Using mongoose for ObjectId only
 
-const DATABASE_URI =
-  'mongodb+srv://rm5901960:GIBsjuuMSULwSne9@cluster0.vgmpoc7.mongodb.net/hiretrackk';
+const DATABASE_URI = process.env.MONGODB_URI;
 
 async function populateDuplicateCandidates() {
   console.log(

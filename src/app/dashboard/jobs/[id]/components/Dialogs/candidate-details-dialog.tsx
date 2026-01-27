@@ -105,15 +105,18 @@ export function CandidateDetailsDialog({
   }, [historyData]);
 
   // Merge SSE history updates into timeLineItems without refetching
-  // Watch localCandidate?.history because useSSE updates localCandidate when SSE arrives
+  // Watch both localCandidate?.history and candidate?.history because SSE updates can come via either path:
+  // - localCandidate.history: updated by dialog's useSSE directly
+  // - candidate.history: updated via parent's selectedEvent (calendar page SSE)
   useEffect(() => {
+    // Get history from either source - prefer candidate (fresh SSE) over localCandidate
+    const sseHistory = candidate?.history || localCandidate?.history;
+    
     if (
-      localCandidate?.history &&
-      Array.isArray(localCandidate.history) &&
-      localCandidate._id === candidate?._id // Only merge if viewing this candidate
+      sseHistory &&
+      Array.isArray(sseHistory) &&
+      localCandidate?._id === candidate?._id // Only merge if viewing this candidate
     ) {
-      // Store history in a const to help TypeScript narrow the type
-      const sseHistory = localCandidate.history;
 
       setTimeLineItems((prevItems) => {
         // CRITICAL: If history is already loaded and SSE history is smaller,
@@ -256,6 +259,7 @@ export function CandidateDetailsDialog({
     localCandidate?.history,
     localCandidate?._id,
     candidate?._id,
+    candidate?.history, // Also watch candidate.history for SSE updates via parent (calendar page)
     historyLoaded,
   ]);
 
@@ -441,11 +445,12 @@ export function CandidateDetailsDialog({
       // This prevents stale candidate prop from overwriting fresh assignment updates
       if (isSameCandidate && localCandidate?.assignment) {
         // Same candidate - preserve assignment from localCandidate (which may have been updated via SSE/refetch)
-        // Merge other fields from candidate prop
+        // Use candidate.history (fresh SSE) when available, fallback to localCandidate.history
+        // This ensures SSE history updates are picked up by the merge effect
         setLocalCandidate({
           ...candidate,
           assignment: localCandidate.assignment, // Preserve the assignment from localCandidate
-          history: localCandidate.history || candidate.history, // Preserve history too
+          history: candidate.history || localCandidate.history, // Prefer fresh SSE data
         });
       } else {
         // Different candidate or no localCandidate - use candidate prop as-is

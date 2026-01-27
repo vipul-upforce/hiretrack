@@ -1,6 +1,6 @@
 {
   "name": "hiretrack",
-  "version": "1.0.25",
+  "version": "1.0.50",
   "private": true,
   "type": "module",
   "scripts": {
@@ -103,13 +103,13 @@
     "mongodb": "^6.18.0",
     "mongoose": "^8.17.0",
     "mui-color-input": "^6.0.0",
-    "next": "^15.4.8",
+    "next": "^15.4.11",
     "nodemailer": "^6.10.0",
     "openai": "^5.11.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^3.11.174",
     "pino": "^10.1.0",
-    "react": "^19.2.1",
+    "react": "^19.2.4",
     "react-colorful": "^5.6.1",
     "react-confetti": "^6.4.0",
     "react-day-picker": "^9.8.1",
