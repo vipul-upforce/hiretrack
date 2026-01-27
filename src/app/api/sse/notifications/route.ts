@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
   // Generate a unique signature for this browser session based on cookies.
   // take the refresh token only from cookie for session signature
   const sessionSignature =
-    req.cookies.get('refreshToken')?.value || 'no-session';
+    req.cookies.get('refresh_token')?.value || 'no-session';
 
   if (!userId || !orgId) {
     return NextResponse.json({ error: 'Invalid user data' }, { status: 400 });
