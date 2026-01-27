@@ -36,8 +36,16 @@ import {
   hasDataInCacheForPrimaryMonth,
   isWithinDateRange as isWithinDateRangeUtil,
   filterAssignmentsByDateRange,
+  hasValidAssignment,
 } from '../utils/cacheUtils';
 import { UseCalendarReturn } from '../types';
+
+/**
+ * Module-level Set to track candidate IDs that have been removed via SSE.
+ * This persists across component unmounts/remounts but resets on page refresh.
+ * Used to filter out removed candidates from RTK Query cache data.
+ */
+const removedCandidateIds = new Set<string>();
 
 /**
  * Custom hook for managing calendar functionality.
@@ -157,12 +165,16 @@ export function useCalendar(): UseCalendarReturn {
   }, [fcRefetch]);
 
   // Merge Full calendar data into shared cache
+  // Filter out any candidates that were removed via SSE (tracked in removedCandidateIds)
   useEffect(() => {
     if (fcAssignments && fcAssignments[0]?.data) {
       setSharedCache((prev) => {
         const newCache = new Map(prev);
         fcAssignments[0].data.forEach((a: CandidateAssignment) => {
-          newCache.set(a._id, a);
+          // Skip candidates that were removed via SSE
+          if (!removedCandidateIds.has(a._id)) {
+            newCache.set(a._id, a);
+          }
         });
         return newCache;
       });
@@ -170,12 +182,16 @@ export function useCalendar(): UseCalendarReturn {
   }, [fcAssignments]);
 
   // Merge Quick nav data into shared cache
+  // Filter out any candidates that were removed via SSE (tracked in removedCandidateIds)
   useEffect(() => {
     if (qnAssignments && qnAssignments[0]?.data) {
       setSharedCache((prev) => {
         const newCache = new Map(prev);
         qnAssignments[0].data.forEach((a: CandidateAssignment) => {
-          newCache.set(a._id, a);
+          // Skip candidates that were removed via SSE
+          if (!removedCandidateIds.has(a._id)) {
+            newCache.set(a._id, a);
+          }
         });
         return newCache;
       });
@@ -211,6 +227,58 @@ export function useCalendar(): UseCalendarReturn {
     undefined, // jobId not needed for calendar
     transformCandidateToEvent,
   );
+
+  // Sync SSE updates to sharedCache and track removed IDs
+  // - When SSE indicates a candidate should be removed (assignment is null or invalid),
+  //   we add its ID to the module-level removedCandidateIds Set
+  // - This Set persists across component remounts, preventing removed candidates from reappearing
+  // - When SSE indicates a valid update, we update the cache and remove the ID from the removed set
+  useEffect(() => {
+    if (sseCandidates.length === 0) return;
+
+    // Collect candidates to remove and update
+    const candidatesToRemove: string[] = [];
+    const candidatesToUpdate: CandidateAssignment[] = [];
+
+    sseCandidates.forEach((sseCandidate: CandidateAssignment) => {
+      if (!hasValidAssignment(sseCandidate)) {
+        candidatesToRemove.push(sseCandidate._id);
+        // Add to module-level Set for persistence across remounts
+        removedCandidateIds.add(sseCandidate._id);
+      } else {
+        candidatesToUpdate.push(sseCandidate);
+        // If this candidate was previously marked as removed but now has a valid assignment,
+        // remove it from the removed set (e.g., reassigned)
+        removedCandidateIds.delete(sseCandidate._id);
+      }
+    });
+
+    // Update sharedCache (component-level cache)
+    if (candidatesToRemove.length > 0 || candidatesToUpdate.length > 0) {
+      setSharedCache((prev) => {
+        const newCache = new Map(prev);
+        let hasChanges = false;
+
+        // Remove invalid candidates
+        candidatesToRemove.forEach((id) => {
+          if (newCache.has(id)) {
+            newCache.delete(id);
+            hasChanges = true;
+          }
+        });
+
+        // Update valid candidates (only if already in cache)
+        candidatesToUpdate.forEach((candidate) => {
+          if (newCache.has(candidate._id)) {
+            newCache.set(candidate._id, candidate);
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newCache : prev;
+      });
+    }
+  }, [sseCandidates]);
 
   // Clear selected event when dialog closes
   useEffect(() => {

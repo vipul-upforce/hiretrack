@@ -5,6 +5,26 @@
 import { CandidateAssignment } from '../page';
 
 /**
+ * Helper to check if a candidate has a valid assignment for calendar display.
+ * A candidate should be removed from calendar when:
+ * - assignment is null/undefined
+ * - assignment.interviewerId is null/undefined
+ *
+ * @param candidate - The candidate assignment to check
+ * @returns true if the candidate has a valid assignment, false otherwise
+ */
+export const hasValidAssignment = (
+  candidate: CandidateAssignment,
+): boolean => {
+  if (!candidate.assignment) return false;
+  const interviewerId =
+    typeof candidate.assignment.interviewerId === 'object'
+      ? candidate.assignment.interviewerId?._id
+      : candidate.assignment.interviewerId;
+  return interviewerId !== null && interviewerId !== undefined;
+};
+
+/**
  * Extracts the primary month from a date range (ignoring overflow days)
  * Uses the midpoint to determine which month is primarily being displayed
  */
