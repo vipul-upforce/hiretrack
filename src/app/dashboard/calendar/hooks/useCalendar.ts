@@ -102,6 +102,8 @@ export function useCalendar(): UseCalendarReturn {
 
   // Track if we've ever loaded data (for initial skeleton only)
   const hasLoadedOnce = useRef(false);
+  // Track if initial refetch has been done (for fresh data on page load)
+  const hasRefetchedOnMount = useRef(false);
 
   // ===== SHARED DATA CACHE =====
   // Stores all assignments ever fetched, keyed by ID
@@ -145,6 +147,14 @@ export function useCalendar(): UseCalendarReturn {
         // No startDate/endDate - this gets all assignments for the organization
       },
     );
+
+  // Refetch once on page load to ensure fresh data
+  useEffect(() => {
+    if (!hasRefetchedOnMount.current) {
+      hasRefetchedOnMount.current = true;
+      fcRefetch();
+    }
+  }, [fcRefetch]);
 
   // Merge Full calendar data into shared cache
   useEffect(() => {
