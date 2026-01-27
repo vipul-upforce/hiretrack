@@ -293,6 +293,7 @@ export async function POST(
     broadcastCandidateUpdate({
       ...candidateObj,
       history: candidateHistoryPopulated?.history || [],
+      duplicateCount: candidateObj.duplicateCount || 0,
     }).catch((error) => {
       logger.error({ error }, 'Failed to broadcast candidate checklist update');
     });

@@ -291,6 +291,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     const dataTobroadcast: ICandidate & { history?: IHistory['history'] } = {
       ...fullCandidate,
       history: candidateHistoryPopulated?.history,
+      duplicateCount: fullCandidate.duplicateCount || 0,
     };
 
     // Fire-and-forget broadcast - errors handled internally
