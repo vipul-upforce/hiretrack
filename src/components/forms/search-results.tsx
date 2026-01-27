@@ -141,7 +141,7 @@ export function SearchResults({
           onOpenChange={logic.setIsDialogOpen}
           refetchCandidates={refetch}
           isAssigning={false}
-          setIsAssigning={() => {}}
+          setIsAssigning={() => { }}
         />
       )}
 
@@ -207,7 +207,7 @@ export function SearchResults({
             initialAction={unifiedInitialAction}
             refetch={refetch}
             onUpdate={logic.handleCandidateUpdate}
-            setLocalCandidate={() => {}}
+            setLocalCandidate={() => { }}
             refetchAssignment={refetch}
             onSuccess={() => {
               closeAll();
@@ -217,34 +217,35 @@ export function SearchResults({
         );
       })()}
 
-      {logic.isAssignJobOpen && logic.candidateToAssignJob && (
-        <AssignJobDialog
-          candidate={logic.candidateToAssignJob}
-          isOpen={logic.isAssignJobOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              logic.setIsAssignJobOpen(false);
-              logic.setCandidateToAssignJob(null);
-            }
-          }}
-          onJobAssignment={(updatedCandidates) => {
-            logic.handleCandidateUpdate(
-              Array.isArray(updatedCandidates)
-                ? updatedCandidates[0]
-                : updatedCandidates,
-            );
-            refetch();
-          }}
-        />
-      )}
-
+      {logic.isAssignJobOpen &&
+        logic.candidateToAssignJob &&
+        Array.isArray(logic.candidateToAssignJob) && (
+          <AssignJobDialog
+            candidate={logic.candidateToAssignJob}
+            isOpen={logic.isAssignJobOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                logic.setIsAssignJobOpen(false);
+                logic.setCandidateToAssignJob(null);
+              }
+            }}
+            onJobAssignment={(updatedCandidates) => {
+              logic.handleCandidateUpdate(
+                Array.isArray(updatedCandidates)
+                  ? updatedCandidates[0]
+                  : updatedCandidates,
+              );
+              refetch();
+            }}
+          />
+        )}
       {logic.selectedJob && (
         <JobDetailsDialog
           job={logic.selectedJob}
           isOpen={logic.isJobDialogOpen}
           onOpenChange={logic.setIsJobDialogOpen}
           userRole="admin"
-          onJobUpdate={() => {}}
+          onJobUpdate={() => { }}
         />
       )}
 

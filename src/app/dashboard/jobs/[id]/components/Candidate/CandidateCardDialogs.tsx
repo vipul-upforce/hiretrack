@@ -15,6 +15,7 @@ import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { getJobTitle } from '../../utils/candidateAccessors';
 import { UnifiedCandidateActionsDialog } from '../Dialogs/unified-candidate-actions-dialog';
+import { DuplicateCandidatesDialog } from '../Dialogs/DuplicateCandidatesDialog';
 
 interface CandidateCardDialogsProps {
   candidate: Candidate;
@@ -60,6 +61,9 @@ interface CandidateCardDialogsProps {
   // Optional callbacks to update state without refetching
   onUpdate?: (updatedCandidate: Candidate) => void;
   refetchAssignment?: () => void;
+  onOpenCandidateDetailsDialog: (candidate: Candidate) => void; // New prop for opening main candidate details dialog
+  isDuplicateDialogOpen: boolean;
+  setIsDuplicateDialogOpen: (open: boolean) => void;
 }
 
 export function CandidateCardDialogs({
@@ -100,6 +104,9 @@ export function CandidateCardDialogs({
   triggerRef,
   onUpdate,
   refetchAssignment: refetchAssignmentProp,
+  onOpenCandidateDetailsDialog,
+  isDuplicateDialogOpen,
+  setIsDuplicateDialogOpen,
 }: CandidateCardDialogsProps) {
   const unifiedOpen =
     isAssigning ||
@@ -243,6 +250,16 @@ export function CandidateCardDialogs({
         onOpenChange={setIsShareDialogOpen}
         candidate={candidate}
       />
+
+      {/* Duplicate Candidates Dialog */}
+      {isDuplicateDialogOpen && (
+        <DuplicateCandidatesDialog
+          candidate={candidate}
+          isOpen={isDuplicateDialogOpen}
+          onOpenChange={setIsDuplicateDialogOpen}
+          onViewDetails={onOpenCandidateDetailsDialog}
+        />
+      )}
     </>
   );
 }

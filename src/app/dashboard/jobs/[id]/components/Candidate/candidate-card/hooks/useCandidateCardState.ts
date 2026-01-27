@@ -23,6 +23,7 @@ export function useCandidateCardState(candidate: Candidate) {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isAddRemarkOpen, setIsAddRemarkOpen] = useState(false);
   const [removeFUOpen, setRemoveFUOpenLocal] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
 
   // Assignment job state
   const [candidateToAssignJob, setCandidateToAssignJob] =
@@ -57,6 +58,8 @@ export function useCandidateCardState(candidate: Candidate) {
     setIsAddRemarkOpen,
     removeFUOpen,
     setRemoveFUOpen: setRemoveFUOpenLocal,
+    isDuplicateDialogOpen,
+    setIsDuplicateDialogOpen,
 
     // Assignment job state
     candidateToAssignJob,

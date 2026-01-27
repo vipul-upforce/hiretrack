@@ -29,6 +29,10 @@ import {
   IWebhookSubscription,
 } from './models/webhookSubscription';
 import logger from './logger';
+import {
+  duplicateCandidateSchema,
+  IDuplicateCandidate,
+} from './models/duplicateCandidates';
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -57,6 +61,8 @@ export let ChecklistTemplate: mongoose.Model<IChecklistTemplate> | null = null;
 export let FileShare: mongoose.Model<IFileShare> | null = null;
 export let EmailHistory: mongoose.Model<IEmailHistory> | null = null;
 export let Notification: mongoose.Model<INotification> | null = null;
+export let DuplicateCandidate: mongoose.Model<IDuplicateCandidate> | null =
+  null;
 export let WebhookSubscription: mongoose.Model<IWebhookSubscription> | null =
   null;
 export let FileUrlMapping: mongoose.Model<IFileUrlMapping> | null = null;
@@ -136,6 +142,12 @@ function registerModels(mongooseInstance: typeof mongoose) {
       mongooseInstance.model<IWebhookSubscription>(
         'WebhookSubscription',
         webhookSubscriptionSchema,
+      );
+    DuplicateCandidate =
+      mongooseInstance.models.DuplicateCandidate ||
+      mongooseInstance.model<IDuplicateCandidate>(
+        'DuplicateCandidate',
+        duplicateCandidateSchema,
       );
     FileUrlMapping =
       mongooseInstance.models.FileUrlMapping ||

@@ -658,9 +658,7 @@ export function CandidateDetailsDialog({
             await refetch();
             setUnifiedInitialAction(undefined);
             // Close candidate details dialog if interviewer marked as done
-            if (
-              unifiedInitialAction === 'markAsDone'
-            ) {
+            if (unifiedInitialAction === 'markAsDone') {
               onOpenChange(false);
             }
           }}

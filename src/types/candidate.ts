@@ -88,6 +88,7 @@ export interface Candidate {
   } | null;
   remarks?: Remark[];
   remarksCount?: number; // Count of remarks (from optimized API)
+  duplicateCount?: number; // Count of duplicate candidates
   attachments: Array<{
     id: string;
     name: string;

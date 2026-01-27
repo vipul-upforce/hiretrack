@@ -73,6 +73,20 @@ export interface ShareCandidateRequest {
   selection: Record<string, boolean>;
 }
 
+interface DuplicateEntry {
+  candidateId: string;
+  name: string;
+  email: string;
+  expectedCTC?: number;
+  currentCTC?: number;
+  experience?: number;
+  relevantExperience?: number;
+  jobId?: string;
+  jobTitle?: string;
+  appliedDate?: string;
+  isDeleted?: boolean;
+}
+
 export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
@@ -167,7 +181,7 @@ export const candidateApi = baseApi.injectEndpoints({
         method: 'PUT',
         body: { ...candidate, dateTime: new Date().toISOString() },
       }),
-      // invalidatesTags: ['Candidate'],
+      invalidatesTags: ['Candidate'],
     }),
     updateCandidateStatus: builder.mutation<
       Candidate,
@@ -371,6 +385,14 @@ export const candidateApi = baseApi.injectEndpoints({
         'EmailHistory',
       ],
     }),
+
+    getDuplicateCandidates: builder.query<
+      DuplicateEntry[],
+      { id: string; email: string; organizationId: string }
+    >({
+      query: ({ id, email, organizationId }) =>
+        `/candidates/${id}/duplicates?email=${email}&organizationId=${organizationId}`,
+    }),
   }),
 });
 
@@ -402,4 +424,5 @@ export const {
   useUpdateCandidateRemarkMutation,
   useSendEmailToCandidateMutation,
   useGenerateCandidatePdfMutation,
+  useGetDuplicateCandidatesQuery,
 } = candidateApi;

@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { Job, Candidate, History } from '@/lib/mongodb';
+import connectToDatabase, {
+  Job,
+  Candidate,
+  History,
+  DuplicateCandidate,
+} from '@/lib/mongodb';
 import { ICandidateHistory } from '@/lib/models/history';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
+import { ICandidate } from '@/lib/models/candidate';
+import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -138,6 +145,28 @@ export async function POST(req: NextRequest) {
 
     await candidate.save();
 
+    if (candidate.email && candidate.organizationId && candidate._id) {
+      try {
+        await DuplicateCandidate?.findOneAndUpdate(
+          {
+            email: candidate.email.toLowerCase(),
+            orgId: candidate.organizationId,
+            'duplicates.candidateId': candidate._id, 
+          },
+          {
+            $set: { 'duplicates.$.jobId': candidate.jobId || null }, 
+          },
+          { new: true },
+        );
+      } catch (error) {
+        logger.error(
+          { error },
+          'Failed to update duplicate candidates during job switch',
+        );
+        // We don't want to block candidate update if this fails
+      }
+    }
+
     // Create a new history entry for the job assignment
     const historyEntry: ICandidateHistory = {
       dateTime: new Date().toISOString(),
@@ -213,6 +242,12 @@ export async function POST(req: NextRequest) {
 
     delete candidateObj.jobId;
 
+    // Calculate duplicateCount
+    const duplicateCount = await getDuplicateCountForCandidate(
+      candidateObj as ICandidate,
+      user.organizationId,
+    );
+
     // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate({
       ...candidateObj,
@@ -236,6 +271,7 @@ export async function POST(req: NextRequest) {
           description: nextJob.description,
         },
         history: updatedHistory?.history,
+        duplicateCount,
       },
     });
   } catch (error: unknown) {

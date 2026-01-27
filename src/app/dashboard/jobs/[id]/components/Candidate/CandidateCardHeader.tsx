@@ -17,6 +17,7 @@ import {
   MessageSquare,
   ArchiveRestore,
   Trash2,
+  TriangleAlert,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -45,7 +46,7 @@ interface CandidateCardHeaderProps {
   user: User | null;
   showStar: boolean;
   showRedFlag: boolean;
-  onViewDetails: (candidate: Candidate) => void;
+  onViewDetails: (candidate?: Candidate) => void;
   setOpenRemarksFor: (id: string | null) => void;
   setIsAddRemarkOpen: (open: boolean) => void;
   setIsEditing: (open: boolean) => void;
@@ -59,6 +60,7 @@ interface CandidateCardHeaderProps {
   onDeleteClick?: (candidateId: string) => void;
   handleAssignJob: (candidate: Candidate, e: React.MouseEvent) => void;
   handlePopoverContentClick: (e: React.MouseEvent) => void;
+  onOpenThisCandidateDuplicateDialog: () => void;
 }
 
 export function CandidateCardHeader({
@@ -80,6 +82,7 @@ export function CandidateCardHeader({
   onDeleteClick,
   handleAssignJob,
   handlePopoverContentClick,
+  onOpenThisCandidateDuplicateDialog,
 }: CandidateCardHeaderProps) {
   const createdAt = getTrackingDate(candidate, 'createdAt');
   const updatedAt = getTrackingDate(candidate, 'updatedAt');
@@ -141,6 +144,31 @@ export function CandidateCardHeader({
               <h3 className="max-w-[150px] truncate text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
                 {candidate.name}
               </h3>
+              {(candidate?.duplicateCount as number) > 1 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 text-yellow-500 hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-800 dark:hover:text-yellow-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenThisCandidateDuplicateDialog();
+                        }}
+                      >
+                        <TriangleAlert className="h-4 w-4" />
+                        <span className="sr-only">Duplicate Candidates</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        {candidate.duplicateCount} Duplicate Candidates
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
           {candidate.tags && <TagsList candidate={candidate} />}

@@ -19,6 +19,10 @@ function ActionItems({
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<Candidate | null>(null);
 
+  // New state to hold the candidate for the details dialog, separate from the card's candidate
+  const [candidateForDetailsDialog, setCandidateForDetailsDialog] =
+    useState<Candidate | null>(null);
+
   const [triggerRefetchCandidate] = useRefetchCandidateMutation();
 
   // Update local state with updated candidate (without making GET request)
@@ -26,6 +30,11 @@ function ActionItems({
     if (!updatedCandidate?._id) return;
 
     setCandidate(updatedCandidate);
+
+    // Also update candidateForDetailsDialog if it's currently showing this candidate
+    if (candidateForDetailsDialog?._id === updatedCandidate._id) {
+      setCandidateForDetailsDialog(updatedCandidate);
+    }
 
     // Check if assignment is null or has null interviewerId - if so, remove from list
     const hasValidAssignment =
@@ -79,6 +88,7 @@ function ActionItems({
     if (assignment) {
       if ('jobDetails' in assignment) {
         setCandidate(assignment as Candidate);
+        setCandidateForDetailsDialog(assignment as Candidate); // Initialize this as well
       } else {
         const transformedCandidate: Candidate = {
           _id: assignment._id,
@@ -119,12 +129,13 @@ function ActionItems({
           organizationId: assignment.organizationId || undefined,
           isDeleted: (assignment as Candidate).isDeleted || false,
           followUp: (assignment as Candidate).followUp,
+          duplicateCount: (assignment as Candidate).duplicateCount || 0,
         };
         setCandidate(transformedCandidate);
+        setCandidateForDetailsDialog(transformedCandidate); // Initialize this as well
       }
     }
   }, [assignment]);
-  
 
   return candidate ? (
     <>
@@ -133,7 +144,11 @@ function ActionItems({
         candidate={candidate}
         index={0}
         refetch={refetchCandidate}
-        onViewDetails={() => setIsDetailsOpen(true)}
+        onViewDetails={(candidateToView?: Candidate) => {
+          // Set the candidate for the details dialog (either the duplicate or the main card candidate)
+          setCandidateForDetailsDialog(candidateToView || candidate);
+          setIsDetailsOpen(true); // Open the dialog
+        }}
         openRemarks={openRemarksFor === candidate._id}
         setOpenRemarksFor={setOpenRemarksFor}
         onDashboard
@@ -155,15 +170,23 @@ function ActionItems({
           // Handle add remark
         }}
       />
-      <CandidateDetailsDialog
-        isAssigning={false}
-        setIsAssigning={() => {}}
-        candidate={candidate}
-        isOpen={isDetailsOpen}
-        onOpenChange={setIsDetailsOpen}
-        onUpdate={setCandidate}
-        refetchAssignment={refetchCandidate}
-      />
+
+      {isDetailsOpen && candidateForDetailsDialog && (
+        <CandidateDetailsDialog
+          isAssigning={false}
+          setIsAssigning={() => {}}
+          candidate={candidateForDetailsDialog}
+          isOpen={isDetailsOpen}
+          onOpenChange={(open) => {
+            setIsDetailsOpen(open);
+            if (!open) {
+              setCandidateForDetailsDialog(null);
+            }
+          }}
+          onUpdate={setCandidateForDetailsDialog}
+          refetchAssignment={refetchCandidate}
+        />
+      )}
     </>
   ) : null;
 }

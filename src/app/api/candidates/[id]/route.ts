@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { User, Candidate, History } from '@/lib/mongodb';
+import connectToDatabase, {
+  User,
+  Candidate,
+  History,
+  DuplicateCandidate,
+} from '@/lib/mongodb';
 import {
   handleCustomFieldFiles,
   handleFileAttachments,
@@ -14,6 +19,7 @@ import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import logger from '@/lib/logger';
 import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
+import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
 import { Attachment } from '../route';
 
 // /*  max-lines-per-function max-lines-per-file 300 */
@@ -265,6 +271,62 @@ export async function PUT(
       }
     }
 
+    if (
+      data.email &&
+      existingCandidate.email &&
+      data.email.toLowerCase() !== existingCandidate.email.toLowerCase()
+    ) {
+      const oldEmail = existingCandidate.email.toLowerCase();
+      const newEmail = String(data.email).toLowerCase();
+
+      // CRITICAL FIX: Safely extract Job ID whether it's populated or not
+      const jobIdValue =
+        existingCandidate.jobId &&
+        typeof existingCandidate.jobId === 'object' &&
+        '_id' in existingCandidate.jobId
+          ? existingCandidate.jobId._id
+          : existingCandidate.jobId;
+
+      try {
+        // 1. Remove candidate from old email's duplicate entry
+        await DuplicateCandidate?.findOneAndUpdate(
+          {
+            email: oldEmail,
+            orgId: organizationId,
+          },
+          {
+            $pull: {
+              duplicates: {
+                candidateId: new mongoose.Types.ObjectId(id),
+              },
+            },
+          },
+        );
+
+        // 2. Add candidate to new email's duplicate entry
+        await DuplicateCandidate?.findOneAndUpdate(
+          {
+            email: newEmail,
+            orgId: organizationId,
+          },
+          {
+            $addToSet: {
+              duplicates: {
+                candidateId: new mongoose.Types.ObjectId(id),
+                jobId: jobIdValue || null,
+              },
+            },
+          },
+          { upsert: true, new: true },
+        );
+      } catch (error) {
+        logger.error(
+          { error },
+          'Failed to update duplicate candidates during email change',
+        );
+      }
+    }
+
     const updateObj: UpdateObject = {
       $set: {},
       $currentDate: { 'tracking.updatedAt': true },
@@ -281,14 +343,13 @@ export async function PUT(
         updateObj.$unset.assignment = 1;
 
         // Add follow-up entry to highlight assignment complete
-        if(userData.role === 'interviewer'){
+        if (userData.role === 'interviewer') {
           assignmentCompletedFollowUp = {
             note: `${userData?.name || 'Unknown User'} has completed the last step.`,
             date: null, // No specific follow-up date needed for completion note
             userId: userData?.id,
           };
         }
-       
       } else {
         // Normalize interviewerId: convert empty string or "-1" to null
         const normalizedAssignment = { ...data.assignment };
@@ -301,7 +362,10 @@ export async function PUT(
 
         // Handle null time explicitly - set time to null directly in the assignment object
         // MongoDB will store null, and we can filter for it properly
-        if (normalizedAssignment.time === null || normalizedAssignment.time === undefined) {
+        if (
+          normalizedAssignment.time === null ||
+          normalizedAssignment.time === undefined
+        ) {
           // Explicitly set time to null in the assignment object
           normalizedAssignment.time = null;
         }
@@ -375,14 +439,16 @@ export async function PUT(
           !oldFollowUp ||
           oldFollowUp === null ||
           oldFollowUp === undefined ||
-          ((oldFollowUp.note === null || oldFollowUp.note === undefined || oldFollowUp.note === '') &&
-           (oldFollowUp.date === null || oldFollowUp.date === undefined));
+          ((oldFollowUp.note === null ||
+            oldFollowUp.note === undefined ||
+            oldFollowUp.note === '') &&
+            (oldFollowUp.date === null || oldFollowUp.date === undefined));
 
         // Check if new follow-up has actual content
         const hasNewFollowUpContent =
           newFollowUp &&
           ((newFollowUp.note != null && newFollowUp.note !== '') ||
-           (newFollowUp.date != null));
+            newFollowUp.date != null);
 
         if (isOldFollowUpEmpty && hasNewFollowUpContent) {
           await NotificationService.notifyFollowUpAdded({
@@ -409,10 +475,9 @@ export async function PUT(
           oldFollowUp.note !== undefined &&
           newFollowUp &&
           newFollowUp.note !== null &&
-         ( newFollowUp.note !== oldFollowUp.note ||
-          newFollowUp.date !== oldFollowUp.date) 
+          (newFollowUp.note !== oldFollowUp.note ||
+            newFollowUp.date !== oldFollowUp.date)
         ) {
-
           await NotificationService.notifyFollowupUpdated({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -743,9 +808,7 @@ export async function PUT(
         if ('assignment' in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-          console.log(oldAssignment,"oldAssignment");
-          console.log(newAssignment,"newAssignment");
-          
+
           if (newAssignment) {
             if (
               !oldAssignment ||
@@ -777,9 +840,7 @@ export async function PUT(
                 // - Interviewer changed (reassignment to different interviewer)
                 if (
                   !newAssignment.time &&
-                  (!oldAssignment ||
-                    interviewerChanged ||
-                    oldAssignment?.time)
+                  (!oldAssignment || interviewerChanged || oldAssignment?.time)
                 ) {
                   await NotificationService.notifyCandidateAssigned({
                     organizationId,
@@ -814,7 +875,10 @@ export async function PUT(
                       triggerUserId: userData?.id?.toString() || '',
                       triggerUserName: userData?.name || '',
                     });
-                  } else if (String(oldAssignment.time.toISOString())!== newAssignment.time) {                    
+                  } else if (
+                    String(oldAssignment.time.toISOString()) !==
+                    newAssignment.time
+                  ) {
                     await NotificationService.notifyMeetingUpdated({
                       organizationId,
                       candidateId: updatedCandidate._id?.toString() || '',
@@ -835,10 +899,10 @@ export async function PUT(
 
                 // Handle meeting cancellation: when oldAssignment has time but newAssignment does not
                 // If interviewer changed, notify the OLD interviewer; otherwise notify the current one
-                if (oldAssignment?.time && !newAssignment.time ) {
+                if (oldAssignment?.time && !newAssignment.time) {
                   const interviewerToNotify = interviewerChanged
                     ? oldInterviewer
-                    : newInterviewer;        
+                    : newInterviewer;
                   if (interviewerToNotify) {
                     await NotificationService.notifyMeetingCancelled({
                       organizationId,
@@ -931,6 +995,11 @@ export async function PUT(
         );
         // Don't fail the API call if notification fails
       }
+      const duplicateCount = await getDuplicateCountForCandidate(
+        updatedCandidate,
+        organizationId,
+      );
+
       // Fire-and-forget broadcast - errors handled internally
       broadcastCandidateUpdate({
         ...updatedCandidate,
@@ -938,13 +1007,23 @@ export async function PUT(
       }).catch((error) => {
         logger.error({ error }, 'Failed to broadcast candidate update');
       });
+
       return NextResponse.json({
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,
+        duplicateCount,
       });
     }
 
-    return NextResponse.json(existingCandidate);
+    const duplicateCount = await getDuplicateCountForCandidate(
+      existingCandidate,
+      organizationId,
+    );
+
+    return NextResponse.json({
+      ...existingCandidate,
+      duplicateCount,
+    });
   } catch (error) {
     logger.error(error);
     if (error instanceof Error) {
@@ -1088,9 +1167,15 @@ export async function GET(
       );
     }
 
+    const duplicateCount = await getDuplicateCountForCandidate(
+      candidate,
+      userData.organizationId,
+    );
+
     return NextResponse.json({
       ...filteredCandidate,
       history: allHistory,
+      duplicateCount,
     });
   } catch (error) {
     return NextResponse.json(

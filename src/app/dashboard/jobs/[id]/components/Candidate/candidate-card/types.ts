@@ -3,7 +3,7 @@ import { Candidate } from '@/types/candidate';
 export interface CandidateCardProps {
   candidate: Candidate;
   index: number;
-  onViewDetails: (candidate: Candidate) => void;
+  onViewDetails: (candidate?: Candidate) => void;
   onDashboard?: boolean;
   onDeleteClick?: (candidateId: string) => void;
   openRemarks: boolean;
@@ -19,5 +19,6 @@ export interface CandidateCardProps {
   // Optional callbacks to update state without refetching
   onUpdate?: (updatedCandidate: Candidate) => void;
   refetchAssignment?: () => void;
+  onOpenCandidateDetailsDialog?: (candidate: Candidate) => void;
+  onOpenThisCandidateDuplicateDialog?: () => void;
 }
-
