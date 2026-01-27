@@ -176,6 +176,7 @@ export interface ICandidate {
     };
   };
   isDeleted: boolean;
+  duplicateCount?: number;
 }
 
 export const candidateSchema = new Schema(

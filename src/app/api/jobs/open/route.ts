@@ -257,6 +257,7 @@ export async function POST(req: NextRequest) {
         description: nextJob.description,
       },
       history: updatedHistory?.history,
+      duplicateCount,
     }).catch((error) => {
       logger.error({ error }, 'Failed to broadcast candidate job open update');
     });

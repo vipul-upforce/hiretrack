@@ -316,6 +316,7 @@ export async function POST(request: NextRequest) {
       broadcastCandidateUpdate({
         ...sanitizedCandidate,
         history: candidateHistory?.history,
+        duplicateCount: sanitizedCandidate.duplicateCount,
       }).catch((error) => {
         logger.error({ error }, 'Failed to broadcast candidate creation');
       });

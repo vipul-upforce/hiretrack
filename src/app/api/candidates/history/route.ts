@@ -248,6 +248,7 @@ export async function PATCH(request: NextRequest) {
     broadcastCandidateUpdate({
       ...candidateData,
       history: populatedHistory?.history || [],
+      duplicateCount: candidateData?.duplicateCount || 0,
     } as ICandidate & { history?: ICandidateHistory[] }).catch((error) => {
       logger.error({ error }, 'Failed to broadcast candidate history update');
     });
@@ -480,6 +481,7 @@ export async function PUT(request: NextRequest) {
     broadcastCandidateUpdate({
       ...candidateData,
       history: transformedHistory,
+      duplicateCount: candidateData.duplicateCount || 0,
     } as ICandidate & { history?: ICandidateHistory[] }).catch((error) => {
       logger.error({ error }, 'Failed to broadcast candidate history update');
     });

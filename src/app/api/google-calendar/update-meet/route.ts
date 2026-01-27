@@ -529,6 +529,7 @@ export async function DELETE(req: NextRequest) {
             broadcastCandidateUpdate({
               ...fullCandidate,
               history: candidateHistoryPopulated?.history,
+              duplicateCount: fullCandidate.duplicateCount || 0,
             }).catch((error) => {
               logger.error({ error }, 'Failed to broadcast candidate calendar update');
             });

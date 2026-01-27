@@ -1004,6 +1004,7 @@ export async function PUT(
       broadcastCandidateUpdate({
         ...updatedCandidate,
         history: candidateHistoryPopulated?.history,
+        duplicateCount,
       }).catch((error) => {
         logger.error({ error }, 'Failed to broadcast candidate update');
       });
@@ -1291,6 +1292,7 @@ export async function DELETE(
     broadcastCandidateUpdate({
       ...deletedCandidate,
       history: updatedHistory?.history,
+      duplicateCount: deletedCandidate.duplicateCount || 0,
     }).catch((error) => {
       logger.error({ error }, 'Failed to broadcast candidate deletion');
     });
