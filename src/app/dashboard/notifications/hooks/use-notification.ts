@@ -108,7 +108,8 @@ export const useNotificationsPage = () => {
       notification.relatedId
     ) {
       try {
-        const result = await fetchCandidateById(notification.relatedId);
+        // Force fresh fetch to avoid stale cached data
+        const result = await fetchCandidateById(notification.relatedId, false);
         if (result.data) {
           setSelectedCandidate(result.data);
           setIsCandidateDialogOpen(true);
@@ -124,9 +125,13 @@ export const useNotificationsPage = () => {
     }
   };
 
-  const handleCandidateUpdate = () => {
+  const handleCandidateUpdate = async () => {
     if (selectedCandidate) {
-      fetchCandidateById(selectedCandidate._id);
+      // Force fresh fetch to get latest candidate data
+      const result = await fetchCandidateById(selectedCandidate._id, false);
+      if (result.data) {
+        setSelectedCandidate(result.data);
+      }
     }
   };
 

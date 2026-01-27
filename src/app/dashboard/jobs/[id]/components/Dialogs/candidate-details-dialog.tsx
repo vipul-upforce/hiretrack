@@ -83,8 +83,12 @@ export function CandidateDetailsDialog({
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const [isRefetching, setIsRefetching] = useState(false);
 
+  // Get job ID from URL params or fallback to extracting from candidate
+  // This ensures SSE works when dialog is opened from notifications page (no job ID in URL)
+  const effectiveJobId = id || getJobId(localCandidate) || undefined;
+
   // useSSE handles updating localCandidate when SSE updates arrive
-  useSSE(setLocalCandidate, localCandidate || null, id);
+  useSSE(setLocalCandidate, localCandidate || null, effectiveJobId);
 
   // Load history when history tab is activated
   useEffect(() => {
@@ -106,11 +110,19 @@ export function CandidateDetailsDialog({
 
   // Merge SSE history updates into timeLineItems without refetching
   // Watch both localCandidate?.history and candidate?.history because SSE updates can come via either path:
-  // - localCandidate.history: updated by dialog's useSSE directly
+  // - localCandidate.history: updated by dialog's useSSE directly (notifications page, job page dialog)
   // - candidate.history: updated via parent's selectedEvent (calendar page SSE)
   useEffect(() => {
-    // Get history from either source - prefer candidate (fresh SSE) over localCandidate
-    const sseHistory = candidate?.history || localCandidate?.history;
+    // Get history from either source - prefer localCandidate (dialog's SSE) over candidate prop
+    // localCandidate is always updated by the dialog's useSSE hook, while candidate prop
+    // may be stale (e.g., when opened from notifications page where parent doesn't use SSE)
+    const localHistory = localCandidate?.history;
+    const candidateHistory = candidate?.history;
+    
+    // Prefer localCandidate.history if it has data, otherwise fall back to candidate.history
+    const sseHistory = (localHistory && localHistory.length > 0) 
+      ? localHistory 
+      : candidateHistory;
     
     if (
       sseHistory &&
@@ -441,16 +453,21 @@ export function CandidateDetailsDialog({
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
       
-      // CRITICAL FIX: Preserve assignment from localCandidate when merging with candidate prop
-      // This prevents stale candidate prop from overwriting fresh assignment updates
-      if (isSameCandidate && localCandidate?.assignment) {
-        // Same candidate - preserve assignment from localCandidate (which may have been updated via SSE/refetch)
-        // Use candidate.history (fresh SSE) when available, fallback to localCandidate.history
-        // This ensures SSE history updates are picked up by the merge effect
+      // CRITICAL FIX: Preserve assignment and history from localCandidate when merging with candidate prop
+      // This prevents stale candidate prop from overwriting fresh SSE updates
+      if (isSameCandidate && localCandidate) {
+        // Same candidate - preserve data from localCandidate (which may have been updated via SSE/refetch)
+        // Prefer localCandidate.history if it has more items (SSE updates) than candidate.history
+        const localHistoryLength = localCandidate.history?.length || 0;
+        const candidateHistoryLength = candidate.history?.length || 0;
+        const preservedHistory = localHistoryLength >= candidateHistoryLength 
+          ? localCandidate.history 
+          : candidate.history;
+        
         setLocalCandidate({
           ...candidate,
-          assignment: localCandidate.assignment, // Preserve the assignment from localCandidate
-          history: candidate.history || localCandidate.history, // Prefer fresh SSE data
+          assignment: localCandidate.assignment || candidate.assignment,
+          history: preservedHistory,
         });
       } else {
         // Different candidate or no localCandidate - use candidate prop as-is
