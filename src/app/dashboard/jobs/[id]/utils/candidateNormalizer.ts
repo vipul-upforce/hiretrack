@@ -326,6 +326,10 @@ export function normalizeCandidate(
     isDeleted: candidateObj.isDeleted === true,
     scores: candidateObj.scores as Candidate['scores'],
     followUp: candidateObj.followUp as Candidate['followUp'],
+    duplicateCount:
+      typeof candidateObj.duplicateCount === 'number'
+        ? candidateObj.duplicateCount
+        : 0,
   };
 
   return normalized;

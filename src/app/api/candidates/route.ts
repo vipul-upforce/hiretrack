@@ -4,6 +4,7 @@ import connectToDatabase, {
   Job,
   Organization,
   Candidate,
+  DuplicateCandidate,
 } from '@/lib/mongodb';
 import {
   handleCustomFieldFiles,
@@ -168,63 +169,63 @@ export async function POST(request: NextRequest) {
       if (!isJobExisted) {
         return NextResponse.json({ error: 'JobId not found' }, { status: 404 });
       }
-      
-const candidateData = {
-  jobId: data.jobId,
-  organizationId,
-  name: data.name,
-  email: data.email || '',
-  contact: data.contact || '',
-  location: data.location,
-  experience: data.experience,
-  relevantExperience: data.relevantExperience,
-  skills: data.skills,
-  expectedCTC: data.expectedCTC,
-  currentCTC: data.currentCTC,
-  noticePeriod: data.noticePeriod,
-  status: candidateStatus,
-  remarks: data.remarks || [],
-  tracking: {
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  // Handle assignment data - explicitly set to null if invalid
-  assignment:
-    data.assignment &&
-    data.assignment.interviewerId !== '-1' &&
-    data.assignment.interviewerId !== '' &&
-    data.assignment.interviewerId
-      ? {
-          interviewerId: data.assignment.interviewerId,
-          googleMeet: null,
-          assignedAt: new Date(),
-          ...(data.assignment.time && {
-            time: new Date(data.assignment.time),
-          }),
-        }
-      : null,
-  // Handle file data
-  ...(data.resume
-    ? {
-        resume: {
-          id: data.resume.id,
-          name: data.resume.name,
-          url: data.resume.url,
-          type: data.resume.type,
-          size: data.resume.size,
+
+      const candidateData = {
+        jobId: data.jobId,
+        organizationId,
+        name: data.name,
+        email: data.email || '',
+        contact: data.contact || '',
+        location: data.location,
+        experience: data.experience,
+        relevantExperience: data.relevantExperience,
+        skills: data.skills,
+        expectedCTC: data.expectedCTC,
+        currentCTC: data.currentCTC,
+        noticePeriod: data.noticePeriod,
+        status: candidateStatus,
+        remarks: data.remarks || [],
+        tracking: {
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
-      }
-    : null),
-  // Handle attachments array
-  attachments: data.attachments.map((attachment: Attachment) => ({
-    id: attachment.id,
-    name: attachment.name,
-    url: attachment.url,
-    type: attachment.type,
-    size: attachment.size,
-  })),
-  customFields: data.customFields,
-};
+        // Handle assignment data - explicitly set to null if invalid
+        assignment:
+          data.assignment &&
+          data.assignment.interviewerId !== '-1' &&
+          data.assignment.interviewerId !== '' &&
+          data.assignment.interviewerId
+            ? {
+                interviewerId: data.assignment.interviewerId,
+                googleMeet: null,
+                assignedAt: new Date(),
+                ...(data.assignment.time && {
+                  time: new Date(data.assignment.time),
+                }),
+              }
+            : null,
+        // Handle file data
+        ...(data.resume
+          ? {
+              resume: {
+                id: data.resume.id,
+                name: data.resume.name,
+                url: data.resume.url,
+                type: data.resume.type,
+                size: data.resume.size,
+              },
+            }
+          : null),
+        // Handle attachments array
+        attachments: data.attachments.map((attachment: Attachment) => ({
+          id: attachment.id,
+          name: attachment.name,
+          url: attachment.url,
+          type: attachment.type,
+          size: attachment.size,
+        })),
+        customFields: data.customFields,
+      };
 
       if (!Candidate) {
         return NextResponse.json(
@@ -234,13 +235,43 @@ const candidateData = {
       }
       const candidate = await Candidate.create(candidateData);
 
-      // Populate the interviewer details before sending response
+      let duplicateCount = 0;
+      if (candidate.email && candidate.organizationId) {
+        try {
+          const updatedDuplicateDoc =
+            await DuplicateCandidate?.findOneAndUpdate(
+              {
+                email: candidate.email.toLowerCase(),
+                orgId: candidate.organizationId,
+              },
+              {
+                $addToSet: {
+                  duplicates: {
+                    candidateId: candidate._id,
+                    jobId: candidate.jobId || null,
+                  },
+                },
+              },
+              { upsert: true, new: true, lean: true },
+            );
+
+          if (updatedDuplicateDoc && updatedDuplicateDoc.duplicates) {
+            duplicateCount = updatedDuplicateDoc.duplicates.length;
+          }
+        } catch (error) {
+          logger.error({ error }, 'Failed to update duplicate candidates');
+        }
+      }
+
       const candidateCreated = await candidate.populate(
         'assignment.interviewerId',
         'name email',
       );
 
-      const sanitizedCandidate = candidateCreated.toObject();
+      const sanitizedCandidate = {
+        ...candidateCreated.toObject(),
+        duplicateCount,
+      };
 
       let candidateHistory = null;
       if (userData.role === 'candidate' || userData.role === '') {
@@ -281,83 +312,6 @@ const candidateData = {
         );
       }
 
-      // const job = await Job?.findById(data.jobId);
-
-      // // Trigger notification for candidate application
-      // if (job) {
-      //   try {
-      //     await NotificationService.notifyCandidateApplied({
-      //       organizationId,
-      //       candidateId: candidate._id.toString(),
-      //       candidateName: candidateData.name,
-      //       candidateEmail: candidateData.email,
-      //       jobId:
-      //         typeof data.jobId === 'string' && data.jobId !== ''
-      //           ? data.jobId
-      //           : data.jobId._id.toString() || null,
-      //       jobTitle: job.title || 'Unknown Job',
-      //       triggerUserId: userData.id,
-      //       triggerUserName: userData.name,
-      //     });
-
-      //     // Send email notification to admin and HR users
-      //     try {
-      //       const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      //         'job-application-hr',
-      //         {
-      //           jobTitle: job.title || 'Unknown Job',
-      //           candidateName: candidateData.name,
-      //           candidateEmail: candidateData.email,
-      //           candidatePhone: candidateData.contact || 'N/A',
-      //           applicationDate: new Date().toLocaleDateString(),
-      //           dashboardLink: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/jobs/${data.jobId}?candidateId=${candidate._id}`,
-      //         },
-      //         organizationId,
-      //       );
-
-      //       // Get admin and HR user IDs for email notification
-      //       const adminHrIds = await NotificationService.getUsersByRole(
-      //         organizationId,
-      //         ['admin', 'hr'],
-      //       );
-      //       const filteredAdminHrIds = adminHrIds.filter(
-      //         (id: string) => id !== userData.id,
-      //       );
-
-      //       if (filteredAdminHrIds.length > 0) {
-      //         await sendSmartNotification(
-      //           organizationId,
-      //           NotificationType.NEW_APPLICATIONS,
-      //           {
-      //             triggererUserId: userData.id,
-      //             triggererEmail: userData.email,
-      //             triggererName: userData.name,
-      //             jobId:
-      //               typeof data.jobId === 'string'
-      //                 ? data.jobId
-      //                 : data.jobId._id.toString(),
-      //             candidateId: candidate._id.toString(),
-      //             eventType: 'job_application',
-      //             templateUsed: 'job-application-hr',
-      //           },
-      //           {
-      //             subject: emailSubject,
-      //             html: emailContent,
-      //           },
-      //           filteredAdminHrIds,
-      //         );
-      //       }
-      //     } catch (emailError) {
-      //       logger.error({ emailError }, 'Failed to send email notification:');
-      //     }
-      //   } catch (notificationError) {
-      //     logger.error(
-      //       { notificationError },
-      //       'Failed to send email notification:',
-      //     );
-      //   }
-      // }
-
       // Fire-and-forget broadcast - errors handled internally
       broadcastCandidateUpdate({
         ...sanitizedCandidate,
@@ -365,7 +319,8 @@ const candidateData = {
       }).catch((error) => {
         logger.error({ error }, 'Failed to broadcast candidate creation');
       });
-      return NextResponse.json(candidate, { status: 201 });
+
+      return NextResponse.json(sanitizedCandidate, { status: 201 });
     }
     return NextResponse.json(
       { message: 'Unauthorised Access' },
@@ -377,7 +332,7 @@ const candidateData = {
     }
 
     return NextResponse.json(
-      { error: 'An Unknwon error occured.' },
+      { error: 'An Unknown error occurred.' },
       { status: 500 },
     );
   }

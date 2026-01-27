@@ -36,21 +36,23 @@ export async function GET(
         { status: 500 },
       );
     }
+
     // Use aggregation to efficiently get candidates with remarksCount
     // Excludes large arrays (history, remarks) to reduce payload size
     // Includes resume and attachments to prevent data loss when updating candidates
     const jobObjectId = new Types.ObjectId(id);
+
     const candidates = await Candidate.aggregate([
       // Match candidates for this job
       { $match: { jobId: jobObjectId } },
-      
+
       // Add remarksCount field
       {
         $addFields: {
           remarksCount: { $size: { $ifNull: ['$remarks', []] } },
         },
       },
-      
+
       // Project fields (exclude large arrays: history and remarks)
       // Include resume and attachments to prevent null overwrites
       {
@@ -66,10 +68,10 @@ export async function GET(
             : {}),
         },
       },
-      
+
       // Sort by createdAt
       { $sort: { 'tracking.createdAt': -1 } },
-      
+
       // Lookup interviewer
       {
         $lookup: {
@@ -114,7 +116,7 @@ export async function GET(
         },
       },
       { $project: { interviewerData: 0 } },
-      
+
       // Lookup followUp user
       {
         $lookup: {
@@ -139,7 +141,7 @@ export async function GET(
         },
       },
       { $project: { followUpUser: 0 } },
-      
+
       // Lookup job
       {
         $lookup: {
@@ -164,11 +166,48 @@ export async function GET(
         },
       },
       { $project: { jobData: 0 } },
-      
+
       // Add empty remarks array for compatibility
       {
         $addFields: {
           remarks: [],
+        },
+      },
+
+      // Lookup DuplicateCandidate to get duplicate information
+      {
+        $lookup: {
+          from: 'duplicatecandidates',
+          let: {
+            candidateEmail: { $toLower: { $trim: { input: '$email' } } },
+            orgId: { $toObjectId: '$organizationId' },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$email', '$$candidateEmail'] },
+                    { $eq: ['$orgId', '$$orgId'] },
+                  ],
+                },
+              },
+            },
+            { $project: { count: { $size: '$duplicates' } } },
+          ],
+          as: 'duplicateInfo',
+        },
+      },
+      {
+        $addFields: {
+          duplicateCount: {
+            $ifNull: [{ $arrayElemAt: ['$duplicateInfo.count', 0] }, 0],
+          },
+        },
+      },
+      {
+        $project: {
+          duplicateInfo: 0,
         },
       },
     ]).exec();

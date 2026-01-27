@@ -4,6 +4,7 @@ import connectToDatabase, {
   Organization,
   Job,
   Candidate,
+  DuplicateCandidate,
 } from '@/lib/mongodb';
 import {
   handleCustomFieldFiles,
@@ -230,6 +231,28 @@ export async function POST(request: NextRequest) {
 
     const candidate = await Candidate.create(candidateData);
 
+    if (candidate.email && candidate.organizationId) {
+      try {
+        await DuplicateCandidate?.findOneAndUpdate(
+          {
+            email: candidate.email.toLowerCase(),
+            orgId: candidate.organizationId,
+          },
+          {
+            $addToSet: {
+              duplicates: {
+                candidateId: candidate._id,
+                jobId: candidate.jobId || null,
+              },
+            },
+          },
+          { upsert: true, new: true },
+        );
+      } catch {
+        // We don't want to block candidate creation if this fails
+      }
+    }
+    
     // Populate the interviewer details before sending response
     if (candidate.assignment && candidate.assignment.interviewerId) {
       await candidate.populate('assignment.interviewerId', 'name email');

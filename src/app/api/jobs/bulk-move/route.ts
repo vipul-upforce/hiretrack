@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { Job, Candidate, History } from '@/lib/mongodb';
+import connectToDatabase, { Job, Candidate, History, DuplicateCandidate } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ICandidateHistory } from '@/lib/models/history';
 import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
@@ -57,15 +57,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Determine lane - avoid nested ternary
-    let lane = 'applied';
-    const [firstLane] = user.organizationInfo?.lanes || [];
-    const [firstDefaultLane] = user.organizationInfo?.defaultLanes || [];
-    if (firstLane) {
-      lane = firstLane;
-    } else if (firstDefaultLane) {
-      lane = firstDefaultLane;
-    }
-
+    const lane = 'applied';
+   
     // Fetch all candidates upfront to filter invalid ones
     const candidates = await Candidate.find({
       _id: { $in: candidateIds },
@@ -104,6 +97,25 @@ export async function POST(req: NextRequest) {
           'tracking.assignedToJobDate': new Date().toISOString(),
         },
       });
+
+      if (candidate.email && organizationId && candidate._id) {
+        try {
+          await DuplicateCandidate?.findOneAndUpdate(
+            {
+              email: candidate.email.toLowerCase(),
+              orgId: organizationId, 
+              'duplicates.candidateId': candidate._id,
+            },
+            {
+              $set: { 'duplicates.$.jobId': jobId || null },
+            },
+            { new: true },
+          );
+        } catch (error) {
+          logger.error({ error }, `Failed to update duplicate candidates for ${candidate._id} during bulk job switch`);
+          // We don't want to block candidate update if this fails
+        }
+      }
 
       // Update history if exists
       if (previousJobId) {

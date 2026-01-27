@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     if (startDateParam && endDateParam) {
       const startDate = new Date(startDateParam);
       const endDate = new Date(endDateParam);
-      
+
       // Include candidates with time in range OR candidates without time (null or missing)
       // Use $or to match either condition
       dateRangeFilter = {
@@ -247,6 +247,40 @@ export async function GET(req: NextRequest) {
               },
             },
             {
+              $lookup: {
+                from: 'duplicatecandidates',
+                let: {
+                  candidateEmail: {
+                    $toLower: { $trim: { input: '$candidates.email' } },
+                  },
+                  orgId: { $toObjectId: '$candidates.organizationId' },
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$email', '$$candidateEmail'] },
+                          { $eq: ['$orgId', '$$orgId'] },
+                        ],
+                      },
+                    },
+                  },
+                  // calculate size in the projection
+                  { $project: { count: { $size: '$duplicates' } } },
+                ],
+                as: 'duplicateInfo',
+              },
+            },
+            {
+              $addFields: {
+                duplicateCount: {
+                  $ifNull: [{ $arrayElemAt: ['$duplicateInfo.count', 0] }, 0],
+                },
+              },
+            },
+
+            {
               $project: {
                 resume: '$candidates.resume',
                 tracking: '$candidates.tracking',
@@ -300,6 +334,7 @@ export async function GET(req: NextRequest) {
                   date: '$candidates.followUp.date',
                   userId: { $first: '$followUpUser' },
                 },
+                duplicateCount: 1,
               },
             },
             {

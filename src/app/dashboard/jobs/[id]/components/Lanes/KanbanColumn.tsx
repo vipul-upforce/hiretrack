@@ -43,8 +43,8 @@ const CandidateRow = memo(
     context: CandidateContextType;
   }) => {
     // Helper handlers using context
-    const handleViewDetails = () => {
-      context.setSelectedCandidate(candidate);
+    const handleViewDetails = (candidateToView?: Candidate) => {
+      context.setSelectedCandidate(candidateToView || candidate);
       context.setIsDetailsOpen(true);
     };
 

@@ -81,7 +81,14 @@ export const CandidateCard = memo(
       setCandidateToAssignJob,
       isAssignJobOpen,
       setIsAssignJobOpen,
+      isDuplicateDialogOpen,
+      setIsDuplicateDialogOpen,
     } = useCandidateCardState(candidate);
+
+    // Handler to open the duplicate candidates dialog for *this* candidate
+    const handleOpenDuplicateDialogForThisCandidate = () =>
+      setIsDuplicateDialogOpen(true);
+
 
     // Sync functionality
     const { handleSyncAttendeeResponses } = useCandidateCardSync({
@@ -133,8 +140,7 @@ export const CandidateCard = memo(
       localCandidate,
       async () => refetch(),
       undefined,
-      undefined,
-      undefined,
+      undefined
     );
 
     const {
@@ -184,6 +190,7 @@ export const CandidateCard = memo(
               onDeleteClick={onDeleteClick}
               handleAssignJob={handleAssignJob}
               handlePopoverContentClick={handlePopoverContentClick}
+              onOpenThisCandidateDuplicateDialog={handleOpenDuplicateDialogForThisCandidate}
             />
             <CandidateCardFollowUp
               candidate={localCandidate}
@@ -241,6 +248,8 @@ export const CandidateCard = memo(
         isSyncing,
         handleSyncAttendeeResponses,
         setRemoveFUOpen,
+        handleOpenDuplicateDialogForThisCandidate,
+        setIsDuplicateDialogOpen,
       ],
     );
 
@@ -317,6 +326,9 @@ export const CandidateCard = memo(
           triggerRef={triggerRef}
           onUpdate={onUpdate}
           refetchAssignment={refetchAssignment}
+          onOpenCandidateDetailsDialog={onViewDetails}
+          isDuplicateDialogOpen={isDuplicateDialogOpen}
+          setIsDuplicateDialogOpen={setIsDuplicateDialogOpen}
         />
       </>
     );

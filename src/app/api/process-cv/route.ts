@@ -5,6 +5,7 @@ import connectToDatabase, {
   Settings,
   cvBatch as CVBatch,
   History,
+  DuplicateCandidate,
 } from '@/lib/mongodb';
 import { handleSingleFile } from '@/lib/fileUtils';
 import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
@@ -375,6 +376,29 @@ export async function POST(request: NextRequest) {
         }
 
         await candidate.save();
+
+        if (candidate.email && candidate.organizationId) {
+          try {
+            await DuplicateCandidate?.findOneAndUpdate(
+              {
+                email: candidate.email.toLowerCase(),
+                orgId: candidate.organizationId,
+              },
+              {
+                $addToSet: {
+                  duplicates: {
+                    candidateId: candidate._id,
+                    jobId: candidate.jobId || null,
+                  },
+                },
+              },
+              { upsert: true, new: true },
+            );
+          } catch (error) {
+            logger.error({ error }, 'Failed to update duplicate candidates from CV upload');
+            // We don't want to block candidate creation if this fails
+          }
+        }
 
         await History?.create({
           candidateId: candidate._id,
