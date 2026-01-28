@@ -3,6 +3,7 @@ import { signAccessToken } from '@/app/actions/auth';
 import { ICandidate } from '../models/candidate';
 import { ICandidateHistory } from '../models/history';
 import logger from '../logger';
+import { isUsingHttpBridge, sendViaBridge } from './httpBridge';
 
 /**
  * WebSocket client interface for real-time broadcasting
@@ -73,16 +74,25 @@ export async function broadcastCandidateUpdate(
     return;
   }
 
-  // Support both wsClients (new) and sseNotificationClients (legacy)
-  const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
-  if (!orgClients || orgClients.size === 0) return;
-
   try {
     // CRITICAL FIX: Sign token ONCE, not N times (where N = number of clients)
     const encodedData = await signAccessToken(candidate, orgId);
-    const clientsCount = orgClients.size;
 
-    // Broadcast to all clients with proper error handling
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'candidateUpdate',
+        orgId,
+        data: { candidate: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients || orgClients.size === 0) return;
+
+    const clientsCount = orgClients.size;
     const deadClients: number[] = [];
     
     for (const [clientId, client] of orgClients.entries()) {
@@ -128,13 +138,23 @@ export async function broadcastMultipleCandidateUpdate(
     return;
   }
 
-  // Support both wsClients (new) and sseNotificationClients (legacy)
-  const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
-  if (!orgClients || orgClients.size === 0) return;
-
   try {
     // CRITICAL FIX: Sign token ONCE, not N times
     const encodedData = await signAccessToken(candidates, orgId);
+
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'multipleCandidateUpdate',
+        orgId,
+        data: { candidates: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients || orgClients.size === 0) return;
 
     const deadClients: number[] = [];
 
@@ -159,14 +179,24 @@ export async function broadcastMultipleCandidateUpdate(
   }
 }
 
-export function broadcastLaneUpdate(
+export async function broadcastLaneUpdate(
   orgId: string,
   lanes: string[],
   jobId?: string,
-): void {
+): Promise<void> {
   if (!orgId) return;
 
-  // Support both wsClients (new) and sseNotificationClients (legacy)
+  // Use HTTP bridge in development (separate WS server)
+  if (isUsingHttpBridge()) {
+    await sendViaBridge({
+      type: 'lanesUpdate',
+      orgId,
+      data: { lanes, jobId },
+    });
+    return;
+  }
+
+  // Direct broadcast (production - same process)
   const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
   if (!orgClients || orgClients.size === 0) return;
 

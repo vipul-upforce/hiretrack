@@ -2,6 +2,7 @@ import type { WebSocket } from 'ws';
 import { signAccessToken } from '@/app/actions/auth';
 import { CustomFields } from '@/Custom_Fields/Types/CustomField';
 import logger from '../logger';
+import { isUsingHttpBridge, sendViaBridge } from './httpBridge';
 
 /**
  * WebSocket client interface for real-time broadcasting
@@ -52,12 +53,23 @@ export async function broadcastCustomFieldsUpdate(
   orgId: string,
   customFields: CustomFields,
 ) {
-  const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
-  if (!orgClients) return;
-
   try {
     // Sign token ONCE, not N times (performance fix)
     const encodedData = await signAccessToken(customFields, orgId);
+
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'customFieldsUpdate',
+        orgId,
+        data: { customFields: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients) return;
     
     orgClients.forEach((client) => {
       const sent = sendToClient(client, { type: 'customFieldsUpdate', customFields: encodedData });

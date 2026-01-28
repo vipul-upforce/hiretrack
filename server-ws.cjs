@@ -401,11 +401,11 @@ async function startServer() {
 
   if (WS_ONLY_MODE) {
     // WebSocket-only mode for development
-    // Create a simple HTTP server that handles CORS for WebSocket upgrade
+    // Create HTTP server with broadcast endpoints for Next.js to call
     server = createServer((req, res) => {
-      // Handle CORS preflight for WebSocket
+      // Handle CORS for all requests
       res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
       
       if (req.method === 'OPTIONS') {
@@ -417,7 +417,60 @@ async function startServer() {
       // Health check endpoint
       if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', mode: 'ws-only' }));
+        res.end(JSON.stringify({ status: 'ok', mode: 'ws-only', clients: global.wsClients.size }));
+        return;
+      }
+
+      // ========== BROADCAST ENDPOINT ==========
+      // This allows Next.js (running separately) to trigger broadcasts
+      if (req.method === 'POST' && req.url === '/broadcast') {
+        let body = '';
+        req.on('data', chunk => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const { type, orgId, data, recipientId } = JSON.parse(body);
+            console.log(`Broadcast request: type=${type}, orgId=${orgId}, recipientId=${recipientId || 'all'}`);
+            
+            const orgClients = global.wsClients.get(orgId);
+            
+            if (!orgClients || orgClients.size === 0) {
+              console.log(`No clients for org ${orgId}`);
+              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: true, sent: 0 }));
+              return;
+            }
+
+            let sentCount = 0;
+            
+            // Broadcast based on type
+            if (type === 'candidateUpdate' || type === 'multipleCandidateUpdate' || 
+                type === 'lanesUpdate' || type === 'customFieldsUpdate') {
+              // Broadcast to all clients in org
+              for (const client of orgClients.values()) {
+                if (sendToClient(client, { type, ...data })) {
+                  sentCount++;
+                }
+              }
+            } else if (type === 'notification' || type === 'notificationCountUpdated' || type === 'notifications') {
+              // Broadcast to specific user only
+              for (const client of orgClients.values()) {
+                if (client.userId === recipientId) {
+                  if (sendToClient(client, { type, ...data })) {
+                    sentCount++;
+                  }
+                }
+              }
+            }
+
+            console.log(`Broadcast sent to ${sentCount} clients`);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, sent: sentCount }));
+          } catch (error) {
+            console.error('Broadcast error:', error.message);
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: error.message }));
+          }
+        });
         return;
       }
       

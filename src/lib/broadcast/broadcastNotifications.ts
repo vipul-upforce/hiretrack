@@ -2,6 +2,7 @@ import type { WebSocket } from 'ws';
 import { signAccessToken } from '@/app/actions/auth';
 import { INotification } from '@/lib/models/notification';
 import logger from '../logger';
+import { isUsingHttpBridge, sendViaBridge } from './httpBridge';
 
 /**
  * WebSocket client interface for real-time broadcasting
@@ -49,10 +50,22 @@ export async function broadcastNotification(
   recipientId: string,
   notification: INotification,
 ) {
+  const encoded = await signAccessToken(notification, orgId);
+
+  // Use HTTP bridge in development (separate WS server)
+  if (isUsingHttpBridge()) {
+    await sendViaBridge({
+      type: 'notification',
+      orgId,
+      recipientId,
+      data: { notification: encoded },
+    });
+    return;
+  }
+
+  // Direct broadcast (production - same process)
   const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
-
-  const encoded = await signAccessToken(notification, orgId);
 
   orgClients.forEach((client) => {
     if (client.userId !== recipientId) return;
@@ -76,6 +89,21 @@ export async function broadcastNotifications(
     recipients.set(n.recipientId, list);
   });
 
+  // Use HTTP bridge in development (separate WS server)
+  if (isUsingHttpBridge()) {
+    for (const [recipientId, items] of recipients.entries()) {
+      const encoded = await signAccessToken(items, orgId);
+      await sendViaBridge({
+        type: 'notifications',
+        orgId,
+        recipientId,
+        data: { notifications: encoded },
+      });
+    }
+    return;
+  }
+
+  // Direct broadcast (production - same process)
   const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
 
@@ -91,11 +119,23 @@ export async function broadcastNotifications(
   }
 }
 
-export function broadcastNotificationCount(
+export async function broadcastNotificationCount(
   orgId: string,
   recipientId: string,
   count: number,
-) {
+): Promise<void> {
+  // Use HTTP bridge in development (separate WS server)
+  if (isUsingHttpBridge()) {
+    await sendViaBridge({
+      type: 'notificationCountUpdated',
+      orgId,
+      recipientId,
+      data: { count },
+    });
+    return;
+  }
+
+  // Direct broadcast (production - same process)
   const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
   if (!orgClients) return;
 

@@ -90,17 +90,17 @@ class SSEManager {
     if (this.isConnecting || this.socket) return;
 
     this.isConnecting = true;
-    
+
     // Build WebSocket URL
     // In development with separate WS server, connect to port 3001
     // In production (or combined mode), connect to same host
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsPort = process.env.NEXT_PUBLIC_WS_PORT;
-    const host = wsPort 
-      ? `${window.location.hostname}:${wsPort}` 
+    const host = wsPort
+      ? `${window.location.hostname}:${wsPort}`
       : window.location.host;
     const wsUrl = `${protocol}//${host}/ws`;
-    
+
     this.socket = new WebSocket(wsUrl);
 
     this.socket.onopen = () => {
@@ -116,7 +116,9 @@ class SSEManager {
 
         // Handle auth_error events from WebSocket server
         if (data?.type === 'auth_error') {
-          logger.log('WebSocket: Received auth_error, attempting token refresh...');
+          logger.log(
+            'WebSocket: Received auth_error, attempting token refresh...',
+          );
           const refreshSuccess = await this.handleUnauthorizedError();
           if (refreshSuccess) {
             // Close current connection and reconnect
@@ -184,7 +186,7 @@ class SSEManager {
         this.reconnectAttempts < 50
       ) {
         // Exponential backoff for reconnection (max 30 seconds)
-        const delay = Math.min(1000 * (1.5 ** this.reconnectAttempts), 30000);
+        const delay = Math.min(1000 * 1.5 ** this.reconnectAttempts, 30000);
         this.reconnectTimeout = setTimeout(() => {
           this.reconnectTimeout = null;
           this.reconnectAttempts! += 1;
@@ -299,11 +301,11 @@ class SSEManager {
           !Array.isArray(decodedCustomFields)
         ) {
           // Check if it's an error object (has success: false or error property)
-          const hasError = 
-            'success' in decodedCustomFields && 
+          const hasError =
+            'success' in decodedCustomFields &&
             (decodedCustomFields as { success?: boolean }).success === false;
           const hasErrorProperty = 'error' in decodedCustomFields;
-          
+
           if (hasError || hasErrorProperty) {
             logger.error(
               'Invalid custom fields data received from SSE (error object):',
@@ -311,7 +313,7 @@ class SSEManager {
             );
             return;
           }
-          
+
           this.subscribers.forEach((sub) => {
             sub.onCustomFieldsUpdate?.(decodedCustomFields as CustomFields);
           });
