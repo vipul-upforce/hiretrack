@@ -27,8 +27,12 @@ type Subscriber = {
   onCustomFieldsUpdate?: (customFields: CustomFields) => void;
 };
 
+/**
+ * WebSocket-based connection manager for real-time notifications
+ * Replaces SSE to eliminate HTTP/1.1 6-connection limit
+ */
 class SSEManager {
-  private eventSource: EventSource | null = null;
+  private socket: WebSocket | null = null;
 
   private subscribers: Map<string, Subscriber> = new Map();
 
@@ -51,7 +55,7 @@ class SSEManager {
 
     // If no connection exists and we're not already connecting, create one
     // Only connect if enabled is true
-    if (enabled && !this.eventSource && !this.isConnecting) {
+    if (enabled && !this.socket && !this.isConnecting) {
       this.connect();
     }
 
@@ -65,21 +69,6 @@ class SSEManager {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
-  private async checkIfUnauthorized(): Promise<boolean> {
-    try {
-      // Make a test request to check if we're unauthorized
-      const response = await fetch('/api/sse/notifications', {
-        method: 'HEAD',
-        credentials: 'include',
-      });
-      return response.status === 401;
-    } catch {
-      // If fetch fails, assume it might be a network issue, not necessarily 401
-      return false;
-    }
-  }
-
   private async handleUnauthorizedError(): Promise<boolean> {
     // Prevent multiple simultaneous refresh attempts
     if (this.isRefreshingToken) return false;
@@ -87,40 +76,53 @@ class SSEManager {
     try {
       // Attempt to refresh the token
       await refreshAccessToken(this.dispatch);
-      logger.log('SSE: Token refreshed successfully, reconnecting...');
+      logger.log('WebSocket: Token refreshed successfully, reconnecting...');
       this.isRefreshingToken = false;
       return true;
     } catch (error) {
-      logger.error('SSE: Failed to refresh token:', error);
+      logger.error('WebSocket: Failed to refresh token:', error);
       this.isRefreshingToken = false;
       return false;
     }
   }
 
   private connect() {
-    if (this.isConnecting || this.eventSource) return;
+    if (this.isConnecting || this.socket) return;
 
     this.isConnecting = true;
-    this.eventSource = new EventSource('/api/sse/notifications');
+    
+    // Build WebSocket URL
+    // In development with separate WS server, connect to port 3001
+    // In production (or combined mode), connect to same host
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsPort = process.env.NEXT_PUBLIC_WS_PORT;
+    const host = wsPort 
+      ? `${window.location.hostname}:${wsPort}` 
+      : window.location.host;
+    const wsUrl = `${protocol}//${host}/ws`;
+    
+    this.socket = new WebSocket(wsUrl);
 
-    this.eventSource.onopen = () => {
+    this.socket.onopen = () => {
       this.isConnecting = false;
+      this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
       this.broadcastConnectionChange(true);
+      logger.log('WebSocket: Connected to', wsUrl);
     };
 
-    this.eventSource.onmessage = async (event) => {
+    this.socket.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
 
-        // Handle auth_error events from SSE endpoint
+        // Handle auth_error events from WebSocket server
         if (data?.type === 'auth_error') {
-          logger.log('SSE: Received auth_error, attempting token refresh...');
+          logger.log('WebSocket: Received auth_error, attempting token refresh...');
           const refreshSuccess = await this.handleUnauthorizedError();
           if (refreshSuccess) {
             // Close current connection and reconnect
-            if (this.eventSource) {
-              this.eventSource.close();
-              this.eventSource = null;
+            if (this.socket) {
+              this.socket.close();
+              this.socket = null;
             }
             this.isConnecting = false;
             // Reconnect after token refresh
@@ -132,9 +134,9 @@ class SSEManager {
             }
           } else {
             // Refresh failed, close connection
-            if (this.eventSource) {
-              this.eventSource.close();
-              this.eventSource = null;
+            if (this.socket) {
+              this.socket.close();
+              this.socket = null;
             }
             this.isConnecting = false;
           }
@@ -143,22 +145,21 @@ class SSEManager {
 
         await this.handleMessage(data);
       } catch (e) {
-        logger.log('UPEXPECTED ERROR : ', e);
+        logger.log('WebSocket: Unexpected error:', e);
       }
     };
 
-    this.eventSource.onerror = async () => {
+    this.socket.onerror = (error) => {
+      logger.error('WebSocket: Connection error:', error);
+    };
+
+    this.socket.onclose = async (event) => {
       this.broadcastConnectionChange(false);
-      if (this.eventSource) {
-        this.eventSource.close();
-        this.eventSource = null;
-      }
+      this.socket = null;
       this.isConnecting = false;
 
-      // Check if the error is due to unauthorized (401)
-      const isUnauthorized = await this.checkIfUnauthorized();
-
-      if (isUnauthorized) {
+      // Code 1008 means policy violation (auth error)
+      if (event.code === 1008) {
         // Attempt to refresh token and reconnect
         const refreshSuccess = await this.handleUnauthorizedError();
         if (
@@ -175,18 +176,20 @@ class SSEManager {
         }
       }
 
-      // Reconnect if we still have subscribers (for non-401 errors or if refresh failed)
+      // Reconnect if we still have subscribers (for non-auth errors or if refresh failed)
       if (!this.reconnectAttempts) this.reconnectAttempts = 0;
       if (
         this.subscribers.size > 0 &&
         !this.reconnectTimeout &&
         this.reconnectAttempts < 50
       ) {
+        // Exponential backoff for reconnection (max 30 seconds)
+        const delay = Math.min(1000 * (1.5 ** this.reconnectAttempts), 30000);
         this.reconnectTimeout = setTimeout(() => {
           this.reconnectTimeout = null;
           this.reconnectAttempts! += 1;
           this.connect();
-        }, 1000);
+        }, delay);
       }
     };
   }
@@ -332,15 +335,15 @@ class SSEManager {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    if (this.socket) {
+      this.socket.close(1000, 'Client disconnect');
+      this.socket = null;
     }
     this.isConnecting = false;
   }
 
   getConnectionState(): boolean {
-    return this.eventSource?.readyState === EventSource.OPEN;
+    return this.socket?.readyState === WebSocket.OPEN;
   }
 }
 
@@ -459,7 +462,7 @@ export function useNotificationSSE(
     // Set dispatch for token refresh
     sseManager.setDispatch(dispatch);
 
-    // Subscribe to the shared SSE connection (only if not a candidate)
+    // Subscribe to the shared WebSocket connection (only if not a candidate)
     const unsubscribe = sseManager.subscribe(
       {
         id: subscriberIdRef.current,

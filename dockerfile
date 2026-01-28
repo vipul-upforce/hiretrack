@@ -51,9 +51,12 @@ ENV NODE_ENV=production
 ENV PORT=3000
 # Copy production node_modules
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copy Next.js build output (for custom server with WebSocket support)
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+# Copy custom WebSocket server
+COPY --from=builder /app/server-ws.js ./server-ws.js
 # Add non-root user for security
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 # Install PM2 (before switching to non-root user)
@@ -61,5 +64,7 @@ RUN npm install -g pm2
 # Switch to non-root user
 USER appuser
 EXPOSE 3000
-CMD ["pm2-runtime", "node", "server.js"]
-# Alternative: CMD ["node", "server.js"] (if you skip PM2)
+# Use custom server with WebSocket support
+CMD ["pm2-runtime", "node", "server-ws.js"]
+# Alternative without PM2: CMD ["node", "server-ws.js"]
+# Fallback to original standalone: CMD ["pm2-runtime", "node", "server.js"]

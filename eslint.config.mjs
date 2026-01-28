@@ -25,6 +25,7 @@ const eslintConfig = [
       '**/*.config.mjs',
       '**/next-env.d.ts',
       '**/*.js',
+      '**/*.cjs', // CommonJS files (e.g., server-ws.cjs)
     ],
   },
 
