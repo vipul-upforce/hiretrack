@@ -22,7 +22,6 @@ import SidebarContent from '@/components/layouts/SidebarContent';
 import { NotificationsProvider } from '@/contexts/NotificationsContext';
 import { useDashboardLogic } from '@/app/hooks/useDashboardLogic';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
-import { ConnectionLimitAlert } from './connection-limiter';
 
 interface SidebarItem {
   title: string;
@@ -95,18 +94,13 @@ export default function DashboardLayoutClient({
     generateShareOrg,
     notifications,
     candidateDialog,
-    activeTabCount,
-    isConnected,
   } = useDashboardLogic();
 
   return (
     <OnboardingProvider>
       <div className="flex h-screen w-full max-w-full flex-col overflow-hidden">
         {/* Connection Limit Alert (Handles both Warning and Blocking Overlay) */}
-        <ConnectionLimitAlert
-          activeTabCount={activeTabCount}
-          isConnected={isConnected}
-        />
+      
 
         {/* Debug: Optional - remove in production */}
         {/* <div className="absolute top-0 right-0 z-50 bg-black text-white p-2">{activeTabCount}</div> */}

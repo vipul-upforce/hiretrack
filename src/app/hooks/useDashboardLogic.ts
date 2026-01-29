@@ -124,11 +124,10 @@ export const useDashboardLogic = () => {
   const [triggerLogout] = useLogoutUserMutation();
 
   // SSE
-  const { unreadCount, totalCount, activeTabCount, isConnected } =
-    useNotificationSSE(
-      notificationCountData?.unreadCount || 0,
-      notificationCountData?.totalCount || 0,
-    );
+  const { unreadCount, totalCount } = useNotificationSSE(
+    notificationCountData?.unreadCount || 0,
+    notificationCountData?.totalCount || 0,
+  );
 
   // Handle Org Allowance
   useEffect(() => {
@@ -371,8 +370,7 @@ export const useDashboardLogic = () => {
     handleToggleCollapse,
     handleLogout,
     generateShareOrg,
-    activeTabCount,
-    isConnected,
+
     notifications: {
       data: notificationsData,
       countData: notificationCountData,
