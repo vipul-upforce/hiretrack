@@ -1,6 +1,6 @@
 /**
  * HTTP Bridge for WebSocket broadcasts in development mode
- * 
+ *
  * When running Next.js and WebSocket server as separate processes,
  * this module forwards broadcast requests to the WS server via HTTP.
  */
@@ -22,7 +22,7 @@ function getWsServerUrl(): string | null {
 export function isUsingHttpBridge(): boolean {
   const wsServerUrl = getWsServerUrl();
   if (!wsServerUrl) return false;
-  
+
   // If WS_PORT is set AND global.wsClients is empty/undefined,
   // we're in separate process mode and need the HTTP bridge
   const hasLocalClients = global.wsClients?.size > 0;
@@ -40,23 +40,27 @@ export async function sendViaBridge(params: {
 }): Promise<boolean> {
   const wsServerUrl = getWsServerUrl();
   if (!wsServerUrl) return false;
-  
+
   try {
-    logger.log(`HTTP Bridge: Sending ${params.type} to ${wsServerUrl}/broadcast`);
-    
+    logger.log(
+      `HTTP Bridge: Sending ${params.type} to ${wsServerUrl}/broadcast`,
+    );
+
     const response = await fetch(`${wsServerUrl}/broadcast`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
-    
+
     if (!response.ok) {
       logger.error(`HTTP bridge error: ${response.status}`);
       return false;
     }
-    
+
     const result = await response.json();
-    logger.log(`HTTP Bridge: Broadcast result - sent to ${result.sent} clients`);
+    logger.log(
+      `HTTP Bridge: Broadcast result - sent to ${result.sent} clients`,
+    );
     return result.success;
   } catch (error) {
     logger.error({ error }, 'HTTP bridge request failed');

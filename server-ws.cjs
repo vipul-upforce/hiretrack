@@ -1,8 +1,8 @@
 /**
  * Custom server with WebSocket support for real-time notifications
  * This wraps the Next.js standalone server and adds WebSocket handling
- * 
- * Usage: 
+ *
+ * Usage:
  *   - Production: node server-ws.cjs (runs combined Next.js + WebSocket)
  *   - Development: node server-ws.cjs --ws-only (runs WebSocket only on port 3001)
  */
@@ -17,7 +17,9 @@ const mongoose = require('mongoose');
 
 // Check if running in WebSocket-only mode (for development)
 const WS_ONLY_MODE = process.argv.includes('--ws-only');
-const WS_PORT = WS_ONLY_MODE ? (process.env.WS_PORT || 3001) : (process.env.PORT || 3000);
+const WS_PORT = WS_ONLY_MODE
+  ? process.env.WS_PORT || 3001
+  : process.env.PORT || 3000;
 
 // Only import Next.js if not in WS-only mode
 let app = null;
@@ -37,7 +39,7 @@ const dev = process.env.NODE_ENV !== 'production';
 // Configuration
 // ============================================================================
 
-const PORT = WS_ONLY_MODE ? WS_PORT : (process.env.PORT || 3000);
+const PORT = WS_ONLY_MODE ? WS_PORT : process.env.PORT || 3000;
 const HEARTBEAT_INTERVAL = 20000; // 20 seconds
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -110,14 +112,14 @@ async function verifyAndDecryptToken(token, orgId) {
 function parseCookies(cookieHeader) {
   const cookies = {};
   if (!cookieHeader) return cookies;
-  
+
   cookieHeader.split(';').forEach((cookie) => {
     const [name, ...rest] = cookie.split('=');
     if (name && rest.length > 0) {
       cookies[name.trim()] = decodeURIComponent(rest.join('=').trim());
     }
   });
-  
+
   return cookies;
 }
 
@@ -150,7 +152,10 @@ global.sseNotificationClients = global.wsClients;
 function getUserConnectionCount(orgClients, userId, sessionSignature) {
   let count = 0;
   for (const client of orgClients.values()) {
-    if (client.userId === userId && client.sessionSignature === sessionSignature) {
+    if (
+      client.userId === userId &&
+      client.sessionSignature === sessionSignature
+    ) {
       count += 1;
     }
   }
@@ -159,7 +164,8 @@ function getUserConnectionCount(orgClients, userId, sessionSignature) {
 
 function sendToClient(client, data) {
   try {
-    if (client.socket.readyState === 1) { // WebSocket.OPEN
+    if (client.socket.readyState === 1) {
+      // WebSocket.OPEN
       client.socket.send(JSON.stringify(data));
       return true;
     }
@@ -170,11 +176,18 @@ function sendToClient(client, data) {
 }
 
 function broadcastTabCount(orgClients, userId, sessionSignature) {
-  const currentCount = getUserConnectionCount(orgClients, userId, sessionSignature);
+  const currentCount = getUserConnectionCount(
+    orgClients,
+    userId,
+    sessionSignature,
+  );
   const message = { type: 'connectionStatus', activeTabs: currentCount };
 
   for (const client of orgClients.values()) {
-    if (client.userId === userId && client.sessionSignature === sessionSignature) {
+    if (
+      client.userId === userId &&
+      client.sessionSignature === sessionSignature
+    ) {
       sendToClient(client, message);
     }
   }
@@ -190,7 +203,7 @@ async function connectToDatabase() {
   if (mongoose.connection.readyState === 1) {
     return;
   }
-  
+
   if (!MONGODB_URI) {
     console.error('MONGODB_URI not set');
     return;
@@ -198,19 +211,22 @@ async function connectToDatabase() {
 
   try {
     await mongoose.connect(MONGODB_URI);
-    
+
     // Get or create Notification model
     if (mongoose.models.Notification) {
       Notification = mongoose.models.Notification;
     } else {
-      const notificationSchema = new mongoose.Schema({
-        organizationId: String,
-        recipientId: String,
-        isRead: Boolean,
-      }, { strict: false });
+      const notificationSchema = new mongoose.Schema(
+        {
+          organizationId: String,
+          recipientId: String,
+          isRead: Boolean,
+        },
+        { strict: false },
+      );
       Notification = mongoose.model('Notification', notificationSchema);
     }
-    
+
     console.log('WebSocket server connected to MongoDB');
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
@@ -253,7 +269,7 @@ async function handleWebSocketConnection(ws, request) {
   }
 
   const { success, user } = await verifyAndDecryptToken(token, orgId);
-  
+
   if (!success || !user || user.role === 'candidate') {
     ws.send(JSON.stringify({ type: 'auth_error', error: 'Unauthorized' }));
     ws.close(1008, 'Unauthorized');
@@ -261,7 +277,7 @@ async function handleWebSocketConnection(ws, request) {
   }
 
   const userId = user.id;
-  
+
   if (!userId || !orgId) {
     ws.send(JSON.stringify({ type: 'auth_error', error: 'Invalid user data' }));
     ws.close(1008, 'Invalid user data');
@@ -288,10 +304,11 @@ async function handleWebSocketConnection(ws, request) {
       enqueue: (encodedData) => {
         // Convert SSE format to plain JSON
         // SSE format: "data: {json}\n\n"
-        const dataStr = encodedData instanceof Uint8Array 
-          ? new TextDecoder().decode(encodedData) 
-          : encodedData;
-        
+        const dataStr =
+          encodedData instanceof Uint8Array
+            ? new TextDecoder().decode(encodedData)
+            : encodedData;
+
         // Extract JSON from SSE format
         const match = dataStr.match(/^data: (.+)\n\n$/s);
         if (match) {
@@ -311,10 +328,16 @@ async function handleWebSocketConnection(ws, request) {
 
   // Register client
   orgClients.set(clientId, newClient);
-  console.log(`WebSocket client connected: ${clientId} (org: ${orgId}, user: ${userId})`);
+  console.log(
+    `WebSocket client connected: ${clientId} (org: ${orgId}, user: ${userId})`,
+  );
 
   // Send initial connection state
-  const initialCount = getUserConnectionCount(orgClients, userId, sessionSignature);
+  const initialCount = getUserConnectionCount(
+    orgClients,
+    userId,
+    sessionSignature,
+  );
   sendToClient(newClient, {
     type: 'connected',
     orgId,
@@ -349,7 +372,14 @@ async function handleWebSocketConnection(ws, request) {
       broadcastTabCount(orgClients, userId, sessionSignature);
     } else {
       // Client is dead, clean up
-      cleanupClient(orgClients, clientId, orgId, userId, sessionSignature, newClient.heartbeatInterval);
+      cleanupClient(
+        orgClients,
+        clientId,
+        orgId,
+        userId,
+        sessionSignature,
+        newClient.heartbeatInterval,
+      );
     }
   }, HEARTBEAT_INTERVAL);
 
@@ -368,16 +398,37 @@ async function handleWebSocketConnection(ws, request) {
 
   // Handle disconnect
   ws.on('close', () => {
-    cleanupClient(orgClients, clientId, orgId, userId, sessionSignature, newClient.heartbeatInterval);
+    cleanupClient(
+      orgClients,
+      clientId,
+      orgId,
+      userId,
+      sessionSignature,
+      newClient.heartbeatInterval,
+    );
   });
 
   ws.on('error', (error) => {
     console.error(`WebSocket error for client ${clientId}:`, error.message);
-    cleanupClient(orgClients, clientId, orgId, userId, sessionSignature, newClient.heartbeatInterval);
+    cleanupClient(
+      orgClients,
+      clientId,
+      orgId,
+      userId,
+      sessionSignature,
+      newClient.heartbeatInterval,
+    );
   });
 }
 
-function cleanupClient(orgClients, clientId, orgId, userId, sessionSignature, heartbeatInterval) {
+function cleanupClient(
+  orgClients,
+  clientId,
+  orgId,
+  userId,
+  sessionSignature,
+  heartbeatInterval,
+) {
   if (heartbeatInterval) {
     clearInterval(heartbeatInterval);
   }
@@ -407,17 +458,23 @@ async function startServer() {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-      
+
       if (req.method === 'OPTIONS') {
         res.writeHead(204);
         res.end();
         return;
       }
-      
+
       // Health check endpoint
       if (req.url === '/health') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', mode: 'ws-only', clients: global.wsClients.size }));
+        res.end(
+          JSON.stringify({
+            status: 'ok',
+            mode: 'ws-only',
+            clients: global.wsClients.size,
+          }),
+        );
         return;
       }
 
@@ -425,14 +482,18 @@ async function startServer() {
       // This allows Next.js (running separately) to trigger broadcasts
       if (req.method === 'POST' && req.url === '/broadcast') {
         let body = '';
-        req.on('data', chunk => { body += chunk; });
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
         req.on('end', () => {
           try {
             const { type, orgId, data, recipientId } = JSON.parse(body);
-            console.log(`Broadcast request: type=${type}, orgId=${orgId}, recipientId=${recipientId || 'all'}`);
-            
+            console.log(
+              `Broadcast request: type=${type}, orgId=${orgId}, recipientId=${recipientId || 'all'}`,
+            );
+
             const orgClients = global.wsClients.get(orgId);
-            
+
             if (!orgClients || orgClients.size === 0) {
               console.log(`No clients for org ${orgId}`);
               res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -441,17 +502,25 @@ async function startServer() {
             }
 
             let sentCount = 0;
-            
+
             // Broadcast based on type
-            if (type === 'candidateUpdate' || type === 'multipleCandidateUpdate' || 
-                type === 'lanesUpdate' || type === 'customFieldsUpdate') {
+            if (
+              type === 'candidateUpdate' ||
+              type === 'multipleCandidateUpdate' ||
+              type === 'lanesUpdate' ||
+              type === 'customFieldsUpdate'
+            ) {
               // Broadcast to all clients in org
               for (const client of orgClients.values()) {
                 if (sendToClient(client, { type, ...data })) {
                   sentCount++;
                 }
               }
-            } else if (type === 'notification' || type === 'notificationCountUpdated' || type === 'notifications') {
+            } else if (
+              type === 'notification' ||
+              type === 'notificationCountUpdated' ||
+              type === 'notifications'
+            ) {
               // Broadcast to specific user only
               for (const client of orgClients.values()) {
                 if (client.userId === recipientId) {
@@ -473,11 +542,11 @@ async function startServer() {
         });
         return;
       }
-      
+
       res.writeHead(404);
       res.end('WebSocket server only');
     });
-    
+
     console.log('> Starting WebSocket-only server (development mode)');
   } else {
     // Combined mode - Prepare Next.js
@@ -495,7 +564,7 @@ async function startServer() {
   await connectToDatabase();
 
   // Create WebSocket server attached to HTTP server
-  const wss = new WebSocketServer({ 
+  const wss = new WebSocketServer({
     server,
     path: '/ws',
   });
@@ -513,7 +582,9 @@ async function startServer() {
       console.log(`> WebSocket endpoint: ws://localhost:${PORT}/ws`);
       console.log('> Run "npm run dev" in another terminal for Next.js');
     } else {
-      console.log(`> Server with WebSocket support running on http://0.0.0.0:${PORT}`);
+      console.log(
+        `> Server with WebSocket support running on http://0.0.0.0:${PORT}`,
+      );
       console.log(`> WebSocket endpoint: ws://0.0.0.0:${PORT}/ws`);
       console.log(`> Environment: ${dev ? 'development' : 'production'}`);
     }

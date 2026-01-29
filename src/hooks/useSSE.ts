@@ -14,7 +14,7 @@ export async function getDecodedSSE(encodedData: string) {
   }
   try {
     const data = await verifyAndDecryptSSE(encodedData, orgId);
-    
+
     // Check if verifyAndDecryptSSE returned an error object
     // It returns { success: false, error: "..." } on failure
     if (
@@ -24,11 +24,14 @@ export async function getDecodedSSE(encodedData: string) {
     ) {
       const errorData = data as { success?: boolean; error?: string };
       if (errorData.success === false || errorData.error) {
-        logger.error('SSE decryption returned error:', errorData.error || 'Unknown error');
+        logger.error(
+          'SSE decryption returned error:',
+          errorData.error || 'Unknown error',
+        );
         return null;
       }
     }
-    
+
     return data;
   } catch (error) {
     logger.error('SSE decryption error:', error);
@@ -125,6 +128,7 @@ export const useSSE = <T = Candidate>(
     const updatedCandidate = candidates.find(
       (c) => c._id === currentSelectedId,
     );
+    debugger;
     if (updatedCandidate && currentSelectedId === updatedCandidate._id) {
       // Use transform callback if provided, otherwise use candidate directly
       const transform = transformCandidateRef.current;

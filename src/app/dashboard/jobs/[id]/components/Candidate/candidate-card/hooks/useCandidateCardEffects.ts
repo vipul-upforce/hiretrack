@@ -31,6 +31,7 @@ export function useCandidateCardEffects({
   // Update local candidate when prop changes
   useEffect(() => {
     setLocalCandidate(candidate);
+    // debugger;
   }, [candidate, setLocalCandidate]);
 
   // Parse follow-up notes when adding/editing follow-up

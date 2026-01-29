@@ -625,7 +625,6 @@ export function useCandidateActions({
           },
         );
       }
-
       for (const entry of historyEntries) {
         await updateCandidateHistory({
           candidateId: candidate._id,
@@ -675,8 +674,18 @@ export function useCandidateActions({
 
       // Update local state with the result - no need to refetch individual candidate
       // since we already have the updated data from the mutation
-      onUpdate?.(result);
-      setLocalCandidate?.(result);
+      // IMPORTANT: When we have history entries to add, strip the stale history from result
+      // The updateCandidateHistory call happens AFTER updateCandidate, so the history in result
+      // is stale (missing the new entries). Stripping it ensures the details dialog will
+      // fetch fresh history instead of using stale data and marking historyLoaded=true prematurely.
+      if (historyEntries.length > 0) {
+        const { history: _staleHistory, ...resultWithoutHistory } = result as Candidate & { history?: unknown };
+        onUpdate?.(resultWithoutHistory as Candidate);
+        setLocalCandidate?.(resultWithoutHistory as Candidate);
+      } else {
+        onUpdate?.(result);
+        setLocalCandidate?.(result);
+      }
 
       // Only refetch assignments list for dashboard (to update the list view)
       // Don't refetch individual candidate since we already have the updated result
