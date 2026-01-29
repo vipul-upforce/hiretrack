@@ -23,7 +23,6 @@ type Subscriber = {
   ) => void;
   onClientsUpdate?: (clients: number) => void;
   onConnectionChange?: (connected: boolean) => void;
-  onTabCountUpdate?: (count: number) => void;
   onCustomFieldsUpdate?: (customFields: CustomFields) => void;
 };
 
@@ -211,14 +210,7 @@ class SSEManager {
     error?: string;
     customFields?: unknown;
   }) {
-    if (
-      (data?.type === 'connectionStatus' || data?.type === 'connected') &&
-      typeof data.activeTabs === 'number'
-    ) {
-      this.subscribers.forEach((sub) => {
-        sub.onTabCountUpdate?.(data.activeTabs as number);
-      });
-    }
+
 
     if (
       data?.type === 'notificationCountUpdated' &&
@@ -371,15 +363,10 @@ export function useNotificationSSE(
   const [laneRenamed, setLaneRenamed] = useState<boolean>(false);
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
-  const [activeTabCount, setActiveTabCount] = useState<number>(1);
   const [customFields, setCustomFields] = useState<CustomFields | null>(null);
-  const subscriberIdRef = useRef<string>(
-    `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-  );
-
-  const handleTabCountUpdate = useCallback((count: number) => {
-    setActiveTabCount(count);
-  }, []);
+   const subscriberIdRef = useRef<string>(
+     `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+   );
 
   const handleNotificationCountUpdated = useCallback((count: number) => {
     setTotalCount((c) => c + 1);
@@ -476,7 +463,6 @@ export function useNotificationSSE(
         onLanesUpdate: handleLanesUpdate,
         onClientsUpdate: handleClientsUpdate,
         onConnectionChange: handleConnectionChange,
-        onTabCountUpdate: handleTabCountUpdate,
         onCustomFieldsUpdate: handleCustomFieldsUpdate,
       },
       !isCandidate, // enabled = false for candidates
@@ -496,7 +482,6 @@ export function useNotificationSSE(
     handleLanesUpdate,
     handleClientsUpdate,
     handleConnectionChange,
-    handleTabCountUpdate,
     handleCustomFieldsUpdate,
   ]);
 
@@ -512,7 +497,6 @@ export function useNotificationSSE(
     isConnected,
     jobId,
     laneRenamed,
-    activeTabCount,
     customFields,
   };
 }
