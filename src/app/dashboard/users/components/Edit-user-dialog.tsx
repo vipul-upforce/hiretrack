@@ -66,6 +66,11 @@ export function EditUserDialog({
         email: values.email.toLowerCase().trim(),
         name: values.name.trim(),
       }).unwrap();
+      
+      const getIsoString = (date?: Date | string) => {
+        if (!date) return new Date().toISOString();
+        return new Date(date).toISOString();
+      };
 
       // Check if the updated user's email matches the current user's email in state
       if (user && user.id === selectedUser?.id) {
@@ -78,8 +83,8 @@ export function EditUserDialog({
             id: selectedUser?.id || '',
             organizationId: user.organizationId || selectedUser?.organizationId || '',
             password: selectedUser?.password || '',
-            createdAt: selectedUser?.createdAt || new Date(),
-            updatedAt: selectedUser?.updatedAt || new Date(),
+            createdAt: getIsoString(selectedUser?.createdAt),
+            updatedAt: new Date().toISOString(),
           }),
         );
       }
@@ -90,16 +95,15 @@ export function EditUserDialog({
     } catch (error: unknown) {
       toast({
         title: 'Error',
-        description: ` ${
-          typeof error === 'object' &&
+        description: ` ${typeof error === 'object' &&
           error !== null &&
           'data' in error &&
           typeof error.data === 'object' &&
           error.data &&
           'error' in error.data
-            ? (error.data as { error: string }).error
-            : 'Unknown error'
-        }`,
+          ? (error.data as { error: string }).error
+          : 'Unknown error'
+          }`,
         variant: 'destructive',
       });
     } finally {

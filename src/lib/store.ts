@@ -1,5 +1,14 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from '@/lib/redux/authSlice';
 import { baseApi } from './api/baseApi';
@@ -26,9 +35,16 @@ const orgPersistConfig = {
   key: 'organization',
   storage,
 };
+
+// Persist config for auth slice
+const authPersistConfig = {
+  key: 'auth',
+  storage,
+};
+
 const rootReducer = combineReducers({
   organization: persistReducer(orgPersistConfig, organizationSlice.reducer),
-  auth: authReducer,
+  auth: persistReducer(authPersistConfig, authReducer),
   // All APIs extend from baseApi, so only need baseApi reducer
   [baseApi.reducerPath]: baseApi.reducer,
 });
@@ -38,7 +54,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }).concat(
       // All APIs extend from baseApi, so only need baseApi middleware
