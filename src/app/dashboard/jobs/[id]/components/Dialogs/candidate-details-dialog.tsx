@@ -108,172 +108,34 @@ export function CandidateDetailsDialog({
     }
   }, [historyData]);
 
-  // Merge SSE history updates into timeLineItems without refetching
-  // Watch both localCandidate?.history and candidate?.history because SSE updates can come via either path:
-  // - localCandidate.history: updated by dialog's useSSE directly (notifications page, job page dialog)
-  // - candidate.history: updated via parent's selectedEvent (calendar page SSE)
+  // Merge SSE history updates into timeLineItems
+  // SSE updates come via: localCandidate.history (job page) or candidate.history (calendar page)
   useEffect(() => {
-    // Get history from either source - prefer localCandidate (dialog's SSE) over candidate prop
-    // localCandidate is always updated by the dialog's useSSE hook, while candidate prop
-    // may be stale (e.g., when opened from notifications page where parent doesn't use SSE)
+    if (localCandidate?._id !== candidate?._id) return;
+    
     const localHistory = localCandidate?.history;
     const candidateHistory = candidate?.history;
+    const sseHistory = (localHistory?.length ? localHistory : candidateHistory) || [];
     
-    // Prefer localCandidate.history if it has data, otherwise fall back to candidate.history
-    const sseHistory = (localHistory && localHistory.length > 0) 
-      ? localHistory 
-      : candidateHistory;
-    
-    if (
-      sseHistory &&
-      Array.isArray(sseHistory) &&
-      localCandidate?._id === candidate?._id // Only merge if viewing this candidate
-    ) {
+    if (!Array.isArray(sseHistory) || sseHistory.length === 0) return;
 
-      setTimeLineItems((prevItems) => {
-        // CRITICAL: If history is already loaded and SSE history is smaller,
-        // it might be incomplete - preserve existing items
-        if (
-          historyLoaded &&
-          prevItems.length > 0 &&
-          sseHistory.length < prevItems.length
-        ) {
-          // SSE history is smaller than what we have - likely incomplete
-          // Only merge new/updated items, don't replace everything
-          const existingItemsMap = new Map<string, ICandidateHistory>();
-          prevItems.forEach((item) => {
-            const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-            existingItemsMap.set(key, item);
-          });
+    // Helper: get stable key (prefer remark.id as it uniquely identifies remarks)
+    const getKey = (item: ICandidateHistory): string => 
+      item.remark?.id || item._id?.toString() || `${item.dateTime}-${item.title || ''}`;
 
-          // Find new items that don't exist in current timeline
-          const newItems = sseHistory.filter((newItem) => {
-            const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
-            return !existingItemsMap.has(key);
-          });
-
-          // If there are new items, merge them
-          if (newItems.length > 0) {
-            const merged = [...prevItems, ...newItems].sort(
-              (a, b) =>
-                new Date(b.dateTime ?? 0).getTime() -
-                new Date(a.dateTime ?? 0).getTime(),
-            );
-            return merged;
-          }
-
-          // Check if any existing items were updated
-          const updatedItems = sseHistory
-            .map((updatedItem) => {
-              const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
-              const existing = existingItemsMap.get(key);
-              if (existing) {
-                return updatedItem;
-              }
-              return null;
-            })
-            .filter(Boolean) as ICandidateHistory[];
-
-          if (updatedItems.length > 0) {
-            const updatedMap = new Map<string, ICandidateHistory>();
-            updatedItems.forEach((item) => {
-              const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-              updatedMap.set(key, item);
-            });
-
-            return prevItems
-              .map((item) => {
-                const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-                return updatedMap.get(key) || item;
-              })
-              .sort(
-                (a, b) =>
-                  new Date(b.dateTime ?? 0).getTime() -
-                  new Date(a.dateTime ?? 0).getTime(),
-              );
-          }
-
-          // Preserve existing items if SSE history is incomplete
-          return prevItems;
-        }
-
-        // History not loaded yet, or SSE history is complete - use it
-        if (sseHistory.length > 0) {
-          // Create a map of existing items
-          const existingItemsMap = new Map<string, ICandidateHistory>();
-          prevItems.forEach((item) => {
-            const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-            existingItemsMap.set(key, item);
-          });
-
-          // Find new items
-          const newItems = sseHistory.filter((newItem) => {
-            const key = `${newItem.dateTime}-${newItem._id || newItem.remark?.id || ''}`;
-            return !existingItemsMap.has(key);
-          });
-
-          if (newItems.length > 0) {
-            const merged = [...prevItems, ...newItems].sort(
-              (a, b) =>
-                new Date(b.dateTime ?? 0).getTime() -
-                new Date(a.dateTime ?? 0).getTime(),
-            );
-            return merged;
-          }
-
-          // Check for updated items
-          const updatedItems = sseHistory
-            .map((updatedItem) => {
-              const key = `${updatedItem.dateTime}-${updatedItem._id || updatedItem.remark?.id || ''}`;
-              const existing = existingItemsMap.get(key);
-              if (existing) {
-                return updatedItem;
-              }
-              return null;
-            })
-            .filter(Boolean) as ICandidateHistory[];
-
-          if (updatedItems.length > 0) {
-            const updatedMap = new Map<string, ICandidateHistory>();
-            updatedItems.forEach((item) => {
-              const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-              updatedMap.set(key, item);
-            });
-
-            return prevItems
-              .map((item) => {
-                const key = `${item.dateTime}-${item._id || item.remark?.id || ''}`;
-                return updatedMap.get(key) || item;
-              })
-              .sort(
-                (a, b) =>
-                  new Date(b.dateTime ?? 0).getTime() -
-                  new Date(a.dateTime ?? 0).getTime(),
-              );
-          }
-
-          // If SSE history is same or larger, use it (might be complete)
-          if (sseHistory.length >= prevItems.length) {
-            return sseHistory.sort(
-              (a, b) =>
-                new Date(b.dateTime ?? 0).getTime() -
-                new Date(a.dateTime ?? 0).getTime(),
-            );
-          }
-
-          return prevItems;
-        }
-
-        return prevItems;
-      });
-    }
-  }, [
-    localCandidate?.history,
-    localCandidate?._id,
-    candidate?._id,
-    candidate?.history, // Also watch candidate.history for SSE updates via parent (calendar page)
-    historyLoaded,
-  ]);
+    setTimeLineItems((prev) => {
+      const sseMap = new Map(sseHistory.map((item) => [getKey(item), item]));
+      const existingKeys = new Set(prev.map(getKey));
+      
+      // Update existing items with SSE data + add new items
+      const updated = prev.map((item) => sseMap.get(getKey(item)) || item);
+      const newItems = sseHistory.filter((item) => !existingKeys.has(getKey(item)));
+      
+      return [...updated, ...newItems].sort(
+        (a, b) => new Date(b.dateTime ?? 0).getTime() - new Date(a.dateTime ?? 0).getTime()
+      );
+    });
+  }, [localCandidate?.history, candidate?.history, localCandidate?._id, candidate?._id]);
 
   // Handle History Error
   useEffect(() => {
@@ -453,21 +315,16 @@ export function CandidateDetailsDialog({
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
       
-      // CRITICAL FIX: Preserve assignment and history from localCandidate when merging with candidate prop
-      // This prevents stale candidate prop from overwriting fresh SSE updates
       if (isSameCandidate && localCandidate) {
-        // Same candidate - preserve data from localCandidate (which may have been updated via SSE/refetch)
-        // Prefer localCandidate.history if it has more items (SSE updates) than candidate.history
-        const localHistoryLength = localCandidate.history?.length || 0;
-        const candidateHistoryLength = candidate.history?.length || 0;
-        const preservedHistory = localHistoryLength >= candidateHistoryLength 
-          ? localCandidate.history 
-          : candidate.history;
+        // Same candidate - merge candidate prop with localCandidate
+        // Use candidate.history if it has data (may have SSE updates from parent like calendar)
+        // Otherwise keep localCandidate.history (dialog's own SSE updates)
+        const historyToUse = (candidate.history?.length ? candidate.history : localCandidate.history) || [];
         
         setLocalCandidate({
           ...candidate,
           assignment: localCandidate.assignment || candidate.assignment,
-          history: preservedHistory,
+          history: historyToUse,
         });
       } else {
         // Different candidate or no localCandidate - use candidate prop as-is
@@ -608,7 +465,7 @@ export function CandidateDetailsDialog({
           setRemarkRatingHistory={setRemarkRatingHistory}
           isSubRemarkPrivate={isSubRemarkPrivate}
           setIsSubRemarkPrivate={setIsSubRemarkPrivate}
-          localCandidate={candidate}
+          localCandidate={localCandidate}
           handleRemoveFollowUp={handleRemoveFollowUp}
           handleAddRemark={handleAddRemark}
           isRemarkSubmitting={isRemarkSubmitting}
