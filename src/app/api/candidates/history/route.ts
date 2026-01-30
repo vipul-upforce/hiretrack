@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     ];
     const [historyEntry, laneConfig] = await Promise.all([
       History.findOne({
-        jobId: data.jobId,
+        // jobId: data.jobId,
         candidateId: data.candidateId,
       })
         .populate(populateFields)
@@ -314,7 +314,11 @@ export async function PUT(request: NextRequest) {
     // Handle: object {_id, title, description}, string, null, or empty string
     let normalizedJobId: string | null = null;
     if (data.jobId) {
-      if (typeof data.jobId === 'object' && data.jobId !== null && '_id' in data.jobId) {
+      if (
+        typeof data.jobId === 'object' &&
+        data.jobId !== null &&
+        '_id' in data.jobId
+      ) {
         normalizedJobId = data.jobId._id || null;
       } else if (typeof data.jobId === 'string' && data.jobId.trim() !== '') {
         normalizedJobId = data.jobId.trim();

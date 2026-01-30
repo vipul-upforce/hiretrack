@@ -112,25 +112,25 @@ export function CandidateDetailsDialog({
   // SSE updates come via: localCandidate.history (job page) or candidate.history (calendar page)
   useEffect(() => {
     if (localCandidate?._id !== candidate?._id) return;
-    
+
     const localHistory = localCandidate?.history;
     const candidateHistory = candidate?.history;
     const sseHistory = (localHistory?.length ? localHistory : candidateHistory) || [];
-    
+
     if (!Array.isArray(sseHistory) || sseHistory.length === 0) return;
 
     // Helper: get stable key (prefer remark.id as it uniquely identifies remarks)
-    const getKey = (item: ICandidateHistory): string => 
+    const getKey = (item: ICandidateHistory): string =>
       item.remark?.id || item._id?.toString() || `${item.dateTime}-${item.title || ''}`;
 
     setTimeLineItems((prev) => {
       const sseMap = new Map(sseHistory.map((item) => [getKey(item), item]));
       const existingKeys = new Set(prev.map(getKey));
-      
+
       // Update existing items with SSE data + add new items
       const updated = prev.map((item) => sseMap.get(getKey(item)) || item);
       const newItems = sseHistory.filter((item) => !existingKeys.has(getKey(item)));
-      
+
       return [...updated, ...newItems].sort(
         (a, b) => new Date(b.dateTime ?? 0).getTime() - new Date(a.dateTime ?? 0).getTime()
       );
@@ -287,9 +287,9 @@ export function CandidateDetailsDialog({
 
     const parts = localCandidate?.followUp?.note
       ? localCandidate.followUp.note
-          .split(followUpSepretorPatternRegex)
-          .map((p) => p.trim())
-          .filter(Boolean)
+        .split(followUpSepretorPatternRegex)
+        .map((p) => p.trim())
+        .filter(Boolean)
       : [];
 
     const followUpParts = parts.filter((p) => {
@@ -314,13 +314,13 @@ export function CandidateDetailsDialog({
   useEffect(() => {
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
-      
+
       if (isSameCandidate && localCandidate) {
         // Same candidate - merge candidate prop with localCandidate
         // Use candidate.history if it has data (may have SSE updates from parent like calendar)
         // Otherwise keep localCandidate.history (dialog's own SSE updates)
         const historyToUse = (candidate.history?.length ? candidate.history : localCandidate.history) || [];
-        
+
         setLocalCandidate({
           ...candidate,
           assignment: localCandidate.assignment || candidate.assignment,
@@ -333,32 +333,26 @@ export function CandidateDetailsDialog({
 
       // Only reset history state when candidate ID actually changes
       if (!isSameCandidate) {
+        // CRITICAL: Always reset historyLoaded to false so API fetch happens
+        // candidate.history from props may be partial (e.g., from SSE or single job)
+        // The API endpoint merges ALL history documents for complete data
         setHistoryLoaded(false);
-        // Initialize timeLineItems from candidate history if available
+
+        // Use candidate.history as initial display data while API loads
+        // But do NOT set historyLoaded = true (API fetch must still happen)
         if (
           candidate.history &&
           Array.isArray(candidate.history) &&
           candidate.history.length > 0
         ) {
           setTimeLineItems(candidate.history);
-          setHistoryLoaded(true);
         } else {
           setTimeLineItems([]);
         }
-      } else if (
-        !historyLoaded &&
-        candidate.history &&
-        Array.isArray(candidate.history) &&
-        candidate.history.length > 0
-      ) {
-        // Same candidate - don't reset historyLoaded or overwrite timeLineItems
-        // The merge logic in the other useEffect will handle SSE updates
-        // Only initialize if history hasn't been loaded yet
-        setTimeLineItems(candidate.history);
-        setHistoryLoaded(true);
       }
+      // For same candidate, don't reset - let SSE merge effect handle updates
     }
-  }, [candidate, id, localCandidate?._id, historyLoaded]);
+  }, [candidate, id, localCandidate?._id]);
 
   // Check if interviewer can access this candidate
   const canInterviewerAccess = () => {
@@ -530,7 +524,7 @@ export function CandidateDetailsDialog({
           onOpenChange={setIsUnifiedOpen}
           initialAction={unifiedInitialAction}
           refetch={refetch}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
@@ -548,7 +542,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
