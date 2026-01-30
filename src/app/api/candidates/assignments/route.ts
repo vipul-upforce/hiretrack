@@ -43,7 +43,24 @@ export async function GET(req: NextRequest) {
     const isPagination = searchParams.get('isPagination') === 'true';
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '48', 10);
-    const skip = (page - 1) * limit;
+    // sseOffset compensates for items added via SSE to prevent duplicates when paginating
+    const sseOffset = parseInt(searchParams.get('sseOffset') || '0', 10);
+    const skip = (page - 1) * limit + sseOffset;
+
+    // Sorting parameters
+    const sortByParam = searchParams.get('sortBy') || 'assignment.time';
+    const sortOrderParam = searchParams.get('sortOrder') || 'asc';
+    // Validate sortBy to prevent injection - only allow specific fields
+    const allowedSortFields = [
+      'assignment.time',
+      'name',
+      'createdAt',
+      'jobId.title',
+    ];
+    const sortBy = allowedSortFields.includes(sortByParam)
+      ? sortByParam
+      : 'assignment.time';
+    const sortOrder = sortOrderParam === 'desc' ? -1 : 1;
 
     // Date range filtering for calendar view
     const startDateParam = searchParams.get('startDate');
@@ -337,6 +354,12 @@ export async function GET(req: NextRequest) {
                 duplicateCount: 1,
               },
             },
+            // Sort before grouping to maintain order in $push
+            {
+              $sort: {
+                [sortBy]: sortOrder,
+              },
+            },
             {
               $group: {
                 _id: null,
@@ -368,6 +391,78 @@ export async function GET(req: NextRequest) {
                 _id: 0,
                 data: '$data',
                 totalInterviews: '$totalInterviews',
+              },
+            },
+            // Sort the data array reliably using $sortArray
+            // For string fields (name, jobId.title), use case-insensitive sorting
+            {
+              $addFields: {
+                data: {
+                  $let: {
+                    vars: {
+                      // Add lowercase sort key for case-insensitive string sorting
+                      dataWithSortKey: {
+                        $map: {
+                          input: '$data',
+                          as: 'item',
+                          in: {
+                            $mergeObjects: [
+                              '$$item',
+                              {
+                                _sortKey: (() => {
+                                  // Build sort key expression based on field type
+                                  // String fields use $toLower for case-insensitive sorting
+                                  if (sortBy === 'name') {
+                                    return {
+                                      $toLower: {
+                                        $ifNull: ['$$item.name', ''],
+                                      },
+                                    };
+                                  }
+                                  if (sortBy === 'jobId.title') {
+                                    return {
+                                      $toLower: {
+                                        $ifNull: ['$$item.jobId.title', ''],
+                                      },
+                                    };
+                                  }
+                                  if (sortBy === 'assignment.time') {
+                                    return {
+                                      $ifNull: ['$$item.assignment.time', null],
+                                    };
+                                  }
+                                  return {
+                                    $ifNull: [`$$item.${sortBy}`, null],
+                                  };
+                                })(),
+                              },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                    in: {
+                      $map: {
+                        input: {
+                          $sortArray: {
+                            input: '$$dataWithSortKey',
+                            sortBy: { _sortKey: sortOrder },
+                          },
+                        },
+                        as: 'sorted',
+                        in: {
+                          $arrayToObject: {
+                            $filter: {
+                              input: { $objectToArray: '$$sorted' },
+                              as: 'field',
+                              cond: { $ne: ['$$field.k', '_sortKey'] },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
             // Add pagination if enabled

@@ -300,6 +300,10 @@ export default function CalendarPage() {
                   eventTextColor="#fff"
                   slotMinTime="00:00:00"
                   slotMaxTime="24:00:00"
+                  // Hide days from previous/next months in month view
+                  showNonCurrentDates={false}
+                  // Don't force 6 weeks - only show weeks with current month days
+                  fixedWeekCount={false}
                   // eslint-disable-next-line react/no-unstable-nested-components
                   eventContent={(arg) => {
                     const extendedProps = arg.event.extendedProps as {
@@ -310,7 +314,7 @@ export default function CalendarPage() {
 
                     const jobTitle =
                       typeof candidate.jobId !== 'string' &&
-                      candidate.jobId?.title
+                        candidate.jobId?.title
                         ? candidate.jobId.title
                         : candidate.jobDetails?.title || '';
 
@@ -410,21 +414,21 @@ export default function CalendarPage() {
       {selectedEvent && 'extendedProps' in selectedEvent && (
         <CandidateDetailsDialog
           isAssigning={false}
-          setIsAssigning={() => {}}
+          setIsAssigning={() => { }}
           candidate={
             {
               ...selectedEvent.extendedProps.candidate,
               jobId: {
                 _id:
                   typeof selectedEvent.extendedProps.candidate.jobId ===
-                  'string'
+                    'string'
                     ? selectedEvent.extendedProps.candidate.jobId
                     : selectedEvent.extendedProps.candidate.jobId?._id || '',
                 title:
                   selectedEvent.extendedProps.candidate.jobDetails?.title ||
                   (typeof selectedEvent.extendedProps.candidate.jobId ===
                     'object' &&
-                  selectedEvent.extendedProps.candidate.jobId !== null
+                    selectedEvent.extendedProps.candidate.jobId !== null
                     ? selectedEvent.extendedProps.candidate.jobId.title
                     : '') ||
                   '',
@@ -433,14 +437,14 @@ export default function CalendarPage() {
                     ?.description ||
                   (typeof selectedEvent.extendedProps.candidate.jobId ===
                     'object' &&
-                  selectedEvent.extendedProps.candidate.jobId !== null
+                    selectedEvent.extendedProps.candidate.jobId !== null
                     ? selectedEvent.extendedProps.candidate.jobId.description
                     : '') ||
                   '',
                 skills:
                   typeof selectedEvent.extendedProps.candidate.jobId ===
                     'object' &&
-                  selectedEvent.extendedProps.candidate.jobId !== null
+                    selectedEvent.extendedProps.candidate.jobId !== null
                     ? selectedEvent.extendedProps.candidate.jobId.skills || []
                     : [],
               },

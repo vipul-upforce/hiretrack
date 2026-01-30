@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const [fetchCandidateById] = useLazyFetchCandidateByIdQuery();
   const [triggerFetchAssignments] = useLazyFetchAssignmentsQuery();
   const [markAsRead] = useMarkNotificationAsReadMutation();
-  const { candidates: sseCandidates } = useSSE(() => {}, null);
+  const { candidates: sseCandidates } = useSSE(() => { }, null);
   const { notifications, isLoading: notificationsLoading } =
     useNotificationsContext();
 
@@ -38,6 +38,7 @@ export default function DashboardPage() {
     itemsPerPage,
     filterText: state.filterText,
     selectedAssignedTo: state.selectedAssignedTo,
+    sortConfig: state.sortConfig,
     triggerFetchAssignments,
     setAssignments: state.setAssignments,
     setAssignedInterviewers: state.setAssignedInterviewers,
@@ -50,6 +51,7 @@ export default function DashboardPage() {
     setCurrentPage: state.setCurrentPage,
     hasMoreData: state.hasMoreData,
     isLoadingMore: state.isLoadingMore,
+    sseAddedCountRef: state.sseAddedCountRef,
   });
 
   // Scroll handler
@@ -74,6 +76,7 @@ export default function DashboardPage() {
   const { lastElementRef } = useDashboardEffects({
     selectedAssignedTo: state.selectedAssignedTo,
     filterText: state.filterText,
+    sortConfig: state.sortConfig,
     fetchAssignments,
     scrollContainerRef: state.scrollContainerRef,
     handleScroll,
@@ -86,6 +89,7 @@ export default function DashboardPage() {
     setAssignments: state.setAssignments,
     isActivitiesSidebarOpen: state.isActivitiesSidebarOpen,
     sseCandidates,
+    sseAddedCountRef: state.sseAddedCountRef,
     isToday,
     isThisWeek,
     setAssignmentsCounts: state.setAssignmentsCounts,
@@ -107,7 +111,7 @@ export default function DashboardPage() {
   const interviewerAssignments = state.assignments?.filter((assignment) =>
     isInterviewer
       ? (assignment.assignment?.interviewerId as { email: string })?.email ===
-        user?.email
+      user?.email
       : assignment,
   );
 
@@ -125,12 +129,12 @@ export default function DashboardPage() {
   const hasValidAssignment = (assignment: Candidate): boolean => {
     // Exclude deleted candidates
     if (assignment.isDeleted) return false;
-    
+
     // Exclude candidates with no assignment or assignment with null interviewerId
     if (!assignment.assignment || assignment.assignment.interviewerId === null) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -167,6 +171,8 @@ export default function DashboardPage() {
           state.setIsActivitiesSidebarOpen(!state.isActivitiesSidebarOpen)
         }
         userRole={user?.role}
+        sortConfig={state.sortConfig}
+        setSortConfig={state.setSortConfig}
       />
 
       <div className="mt-4 flex min-h-0 flex-1 gap-4 overflow-hidden px-4 pb-4">
@@ -202,7 +208,7 @@ export default function DashboardPage() {
 
       <CandidateDetailsDialog
         isAssigning={false}
-        setIsAssigning={() => {}}
+        setIsAssigning={() => { }}
         candidate={state.selectedCandidate}
         isOpen={state.isCandidateDialogOpen}
         onOpenChange={state.setIsCandidateDialogOpen}

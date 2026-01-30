@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { EventClickArg, DatesSetArg } from '@fullcalendar/core';
 import { DateClickArg } from '@fullcalendar/interaction';
 import FullCalendar from '@fullcalendar/react';
@@ -33,7 +27,7 @@ import {
   createSSETransformer,
 } from '../utils/eventTransformers';
 import {
-  hasDataInCacheForPrimaryMonth,
+  getPrimaryMonthFromRange,
   isWithinDateRange as isWithinDateRangeUtil,
   filterAssignmentsByDateRange,
   hasValidAssignment,
@@ -120,16 +114,26 @@ export function useCalendar(): UseCalendarReturn {
     Map<string, CandidateAssignment>
   >(new Map());
 
-  // Check if we have data in cache for the primary month (ignores overflow days)
-  const hasDataInCache = useMemo(
-    () =>
-      hasDataInCacheForPrimaryMonth(
-        fcQueryParams.startDate,
-        fcQueryParams.endDate,
-        sharedCache,
-      ),
-    [sharedCache, fcQueryParams.startDate, fcQueryParams.endDate],
+  // Track months that have been properly loaded from API (not SSE)
+  // Format: "YYYY-MM" (e.g., "2026-01" for January 2026)
+  const [apiLoadedMonths, setApiLoadedMonths] = useState<Set<string>>(
+    new Set(),
   );
+
+  /**
+   * Check if the primary month has been loaded from API.
+   * This is separate from cache data because SSE updates can add data to cache
+   * for months that haven't been fetched from API yet, which would incorrectly
+   * skip the API fetch when navigating to that month.
+   */
+  const hasDataInCache = useMemo(() => {
+    const { year, month } = getPrimaryMonthFromRange(
+      fcQueryParams.startDate,
+      fcQueryParams.endDate,
+    );
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    return apiLoadedMonths.has(monthKey);
+  }, [apiLoadedMonths, fcQueryParams.startDate, fcQueryParams.endDate]);
   // ===== FULL CALENDAR QUERY =====
   const {
     currentData: fcAssignments,
@@ -148,13 +152,12 @@ export function useCalendar(): UseCalendarReturn {
   // ===== TOTAL ASSIGNMENTS QUERY =====
   // Fetch total count of all active assignments (without date range filtering)
   // This gives us the organization-wide total, not just current month
-  const { currentData: totalAssignmentsData } =
-    useFetchAssignedCandidatesQuery(
-      {
-        filterValue: fcQueryParams.filterValue,
-        // No startDate/endDate - this gets all assignments for the organization
-      },
-    );
+  const { currentData: totalAssignmentsData } = useFetchAssignedCandidatesQuery(
+    {
+      filterValue: fcQueryParams.filterValue,
+      // No startDate/endDate - this gets all assignments for the organization
+    },
+  );
 
   // Refetch once on page load to ensure fresh data
   useEffect(() => {
@@ -164,10 +167,23 @@ export function useCalendar(): UseCalendarReturn {
     }
   }, [fcRefetch]);
 
-  // Merge Full calendar data into shared cache
+  // Merge Full calendar data into shared cache and track loaded months
   // Filter out any candidates that were removed via SSE (tracked in removedCandidateIds)
   useEffect(() => {
     if (fcAssignments && fcAssignments[0]?.data) {
+      // Mark this month as loaded from API (prevents SSE data from blocking future fetches)
+      const { year, month } = getPrimaryMonthFromRange(
+        fcQueryParams.startDate,
+        fcQueryParams.endDate,
+      );
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      setApiLoadedMonths((prev) => {
+        if (prev.has(monthKey)) return prev;
+        const newSet = new Set(prev);
+        newSet.add(monthKey);
+        return newSet;
+      });
+
       setSharedCache((prev) => {
         const newCache = new Map(prev);
         fcAssignments[0].data.forEach((a: CandidateAssignment) => {
@@ -179,12 +195,25 @@ export function useCalendar(): UseCalendarReturn {
         return newCache;
       });
     }
-  }, [fcAssignments]);
+  }, [fcAssignments, fcQueryParams.startDate, fcQueryParams.endDate]);
 
-  // Merge Quick nav data into shared cache
+  // Merge Quick nav data into shared cache and track loaded months
   // Filter out any candidates that were removed via SSE (tracked in removedCandidateIds)
   useEffect(() => {
     if (qnAssignments && qnAssignments[0]?.data) {
+      // Mark this month as loaded from API
+      const { year, month } = getPrimaryMonthFromRange(
+        qnQueryParams.startDate,
+        qnQueryParams.endDate,
+      );
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      setApiLoadedMonths((prev) => {
+        if (prev.has(monthKey)) return prev;
+        const newSet = new Set(prev);
+        newSet.add(monthKey);
+        return newSet;
+      });
+
       setSharedCache((prev) => {
         const newCache = new Map(prev);
         qnAssignments[0].data.forEach((a: CandidateAssignment) => {
@@ -196,7 +225,7 @@ export function useCalendar(): UseCalendarReturn {
         return newCache;
       });
     }
-  }, [qnAssignments]);
+  }, [qnAssignments, qnQueryParams.startDate, qnQueryParams.endDate]);
 
   // Mark as loaded once we have data
   useEffect(() => {
@@ -677,7 +706,10 @@ export function useCalendar(): UseCalendarReturn {
   // Use the total from the API response when no date range is applied
   const totalInterviews = useMemo(() => {
     // If we have total assignments data (without date range), use that
-    if (totalAssignmentsData && totalAssignmentsData[0]?.totalInterviews !== undefined) {
+    if (
+      totalAssignmentsData &&
+      totalAssignmentsData[0]?.totalInterviews !== undefined
+    ) {
       return totalAssignmentsData[0].totalInterviews;
     }
     // Fallback to events.length if total data not available yet

@@ -128,7 +128,6 @@ export const useSSE = <T = Candidate>(
     const updatedCandidate = candidates.find(
       (c) => c._id === currentSelectedId,
     );
-    debugger;
     if (updatedCandidate && currentSelectedId === updatedCandidate._id) {
       // Use transform callback if provided, otherwise use candidate directly
       const transform = transformCandidateRef.current;

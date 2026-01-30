@@ -1,8 +1,25 @@
+import React from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { MultiSelect } from '@/components/ui/multi-select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { SortConfig, SortField } from '../hooks/useDashboardState';
+
+/** Label mappings for sort field display */
+const SORT_FIELD_LABELS: Record<SortField, string> = {
+  'assignment.time': 'Interview Date',
+  'name': 'Candidate Name',
+  'createdAt': 'Created Date',
+  'jobId.title': 'Job Title',
+};
 
 interface DashboardHeaderProps {
   searchText: string;
@@ -17,6 +34,8 @@ interface DashboardHeaderProps {
   isActivitiesSidebarOpen: boolean;
   onToggleSidebar: () => void;
   userRole?: string;
+  sortConfig: SortConfig;
+  setSortConfig: React.Dispatch<React.SetStateAction<SortConfig>>;
 }
 
 export function DashboardHeader({
@@ -32,7 +51,19 @@ export function DashboardHeader({
   isActivitiesSidebarOpen,
   onToggleSidebar,
   userRole,
+  sortConfig,
+  setSortConfig,
 }: DashboardHeaderProps) {
+  const handleSortFieldChange = (field: string) => {
+    setSortConfig((prev) => ({ ...prev, field: field as SortField }));
+  };
+
+  const toggleSortOrder = () => {
+    setSortConfig((prev) => ({
+      ...prev,
+      order: prev.order === 'asc' ? 'desc' : 'asc',
+    }));
+  };
   return (
     <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
       <Card className="border-0 bg-transparent shadow-none">
@@ -74,6 +105,37 @@ export function DashboardHeader({
                   options={options}
                 />
               )}
+              {/* Sort Controls */}
+              <div className="flex items-center gap-1">
+                <Select
+                  value={sortConfig.field}
+                  onValueChange={handleSortFieldChange}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <ArrowUpDown className="mr-2 h-4 w-4" />
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SORT_FIELD_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleSortOrder}
+                  title={sortConfig.order === 'asc' ? 'Ascending' : 'Descending'}
+                >
+                  {sortConfig.order === 'asc' ? (
+                    <ArrowUp className="h-4 w-4" />
+                  ) : (
+                    <ArrowDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
               {showRecentActivities && (
                 <Button
                   variant="outline"
