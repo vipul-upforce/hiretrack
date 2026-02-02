@@ -1,9 +1,8 @@
 import React, { useCallback } from 'react';
 import { Candidate } from '@/types/candidate';
 import logger from '@/lib/logger';
-import {
-  useLazyFetchAssignmentsQuery,
-} from '@/lib/features/candidate/candidateApi';
+import { useLazyFetchAssignmentsQuery } from '@/lib/features/candidate/candidateApi';
+import { SortConfig } from './useDashboardState';
 
 /**
  * Helper function to check if a candidate has a valid assignment
@@ -12,12 +11,12 @@ import {
 const hasValidAssignment = (assignment: Candidate): boolean => {
   // Exclude deleted candidates
   if (assignment.isDeleted) return false;
-  
+
   // Exclude candidates with no assignment or assignment with null interviewerId
   if (!assignment.assignment || assignment.assignment.interviewerId === null) {
     return false;
   }
-  
+
   return true;
 };
 
@@ -25,9 +24,8 @@ interface UseDashboardAssignmentsParams {
   itemsPerPage: number;
   filterText: string;
   selectedAssignedTo: string;
-  triggerFetchAssignments: ReturnType<
-    typeof useLazyFetchAssignmentsQuery
-  >[0];
+  sortConfig: SortConfig;
+  triggerFetchAssignments: ReturnType<typeof useLazyFetchAssignmentsQuery>[0];
   setAssignments: React.Dispatch<React.SetStateAction<Candidate[]>>;
   setAssignedInterviewers: React.Dispatch<
     React.SetStateAction<
@@ -52,6 +50,8 @@ interface UseDashboardAssignmentsParams {
   setCurrentPage: (page: number) => void;
   hasMoreData: boolean;
   isLoadingMore: boolean;
+  /** Ref tracking SSE additions to adjust pagination offset */
+  sseAddedCountRef: React.MutableRefObject<number>;
 }
 
 /**
@@ -61,6 +61,7 @@ export function useDashboardAssignments({
   itemsPerPage,
   filterText,
   selectedAssignedTo,
+  sortConfig,
   triggerFetchAssignments,
   setAssignments,
   setAssignedInterviewers,
@@ -73,6 +74,7 @@ export function useDashboardAssignments({
   setCurrentPage,
   hasMoreData,
   isLoadingMore,
+  sseAddedCountRef,
 }: UseDashboardAssignmentsParams) {
   const fetchAssignments = useCallback(
     async (page = 1, isAppend = false) => {
@@ -82,6 +84,8 @@ export function useDashboardAssignments({
 
       if (!isAppend) {
         setIsLoading(true);
+        // Reset SSE offset counter on fresh fetch
+        sseAddedCountRef.current = 0;
       } else {
         setIsLoadingMore(true);
       }
@@ -93,6 +97,10 @@ export function useDashboardAssignments({
           limit: itemsPerPage,
           filterValue: filterText.toString(),
           assignedTo: selectedAssignedTo,
+          sortBy: sortConfig.field,
+          sortOrder: sortConfig.order,
+          // Compensate for SSE-added items to prevent duplicates
+          sseOffset: isAppend ? sseAddedCountRef.current : 0,
         }).unwrap();
 
         setAssignmentsCounts((prev) => ({
@@ -102,10 +110,12 @@ export function useDashboardAssignments({
           thisweeksInterviews: data[0]?.thisweeksInterviews || 0,
         }));
         setAssignedInterviewers([...data[0].assignmentCount]);
-        
+
         // Filter out candidates with null assignments or null interviewerId
-        const validAssignments = (data[0]?.data || []).filter(hasValidAssignment);
-        
+        const validAssignments = (data[0]?.data || []).filter(
+          hasValidAssignment,
+        );
+
         if (isAppend) {
           setAssignments((prev) => [...prev, ...validAssignments]);
         } else {
@@ -128,6 +138,7 @@ export function useDashboardAssignments({
     [
       filterText,
       selectedAssignedTo,
+      sortConfig,
       itemsPerPage,
       triggerFetchAssignments,
       setAssignments,
@@ -160,4 +171,3 @@ export function useDashboardAssignments({
     loadMoreData,
   };
 }
-

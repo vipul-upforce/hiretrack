@@ -1,22 +1,58 @@
+import type { WebSocket } from 'ws';
 import { signAccessToken } from '@/app/actions/auth';
 import { ICandidate } from '../models/candidate';
 import { ICandidateHistory } from '../models/history';
 import logger from '../logger';
+import { isUsingHttpBridge, sendViaBridge } from './httpBridge';
 
-interface NotificationSSEClient {
+/**
+ * WebSocket client interface for real-time broadcasting
+ * Compatible with both WebSocket (production) and SSE (legacy) connections
+ */
+interface WSClient {
   id: number;
   orgId: string;
   userId: string;
-  controller: ReadableStreamDefaultController;
+  socket: WebSocket;
+  // Backward compatibility with SSE
+  controller?: {
+    enqueue: (data: Uint8Array) => void;
+    desiredSize: number | null;
+  };
 }
 
 declare global {
   // eslint-disable-next-line no-var, vars-on-top
-  var sseNotificationClients: Map<string, Map<number, NotificationSSEClient>>;
+  var wsClients: Map<string, Map<number, WSClient>>;
+  // eslint-disable-next-line no-var, vars-on-top
+  var sseNotificationClients: Map<string, Map<number, WSClient>>;
 }
 
 /**
- * Broadcast candidate update to all SSE clients in the organization.
+ * Send data to a WebSocket client with error handling
+ * Returns false if the client connection is dead
+ */
+function sendToClient(client: WSClient, data: object): boolean {
+  try {
+    // WebSocket: Use socket.send directly
+    if (client.socket && client.socket.readyState === 1) { // WebSocket.OPEN = 1
+      client.socket.send(JSON.stringify(data));
+      return true;
+    }
+    // Fallback: Use controller.enqueue for SSE compatibility
+    if (client.controller && client.controller.desiredSize !== null) {
+      const encoder = new TextEncoder();
+      client.controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      return true;
+    }
+  } catch {
+    // Connection is dead
+  }
+  return false;
+}
+
+/**
+ * Broadcast candidate update to all WebSocket clients in the organization.
  * CRITICAL FIX: Signs token ONCE before broadcasting to all clients (not N times).
  * 
  * Performance impact:
@@ -38,34 +74,34 @@ export async function broadcastCandidateUpdate(
     return;
   }
 
-  const orgClients = global.sseNotificationClients?.get(orgId);
-  if (!orgClients || orgClients.size === 0) return;
-
   try {
     // CRITICAL FIX: Sign token ONCE, not N times (where N = number of clients)
-    const encodedSSE = await signAccessToken(candidate, orgId);
-    const encoder = new TextEncoder();
-    const clientsCount = orgClients.size;
-    
-    const candidateData = `data: ${JSON.stringify({ type: 'candidateUpdate', candidate: encodedSSE })}\n\n`;
-    const clientsData = `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`;
+    const encodedData = await signAccessToken(candidate, orgId);
 
-    // Broadcast to all clients with proper error handling
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'candidateUpdate',
+        orgId,
+        data: { candidate: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients || orgClients.size === 0) return;
+
+    const clientsCount = orgClients.size;
     const deadClients: number[] = [];
     
     for (const [clientId, client] of orgClients.entries()) {
-      try {
-        // Check if controller is still valid before enqueueing
-        if (client.controller.desiredSize !== null) {
-          client.controller.enqueue(encoder.encode(candidateData));
-          client.controller.enqueue(encoder.encode(clientsData));
-        } else {
-          deadClients.push(clientId);
-        }
-      } catch (_error) {
-        // Connection is dead, mark for cleanup
+      const sent = sendToClient(client, { type: 'candidateUpdate', candidate: encodedData });
+      if (sent) {
+        sendToClient(client, { type: 'clients', clients: clientsCount, orgId });
+      } else {
         deadClients.push(clientId);
-        logger.log(`Dead SSE connection detected: client ${clientId}`);
+        logger.log(`Dead connection detected: client ${clientId}`);
       }
     }
 
@@ -73,6 +109,7 @@ export async function broadcastCandidateUpdate(
     if (deadClients.length > 0) {
       deadClients.forEach((clientId) => orgClients.delete(clientId));
       if (orgClients.size === 0) {
+        global.wsClients?.delete(orgId);
         global.sseNotificationClients?.delete(orgId);
       }
     }
@@ -101,27 +138,31 @@ export async function broadcastMultipleCandidateUpdate(
     return;
   }
 
-  const orgClients = global.sseNotificationClients?.get(orgId);
-  if (!orgClients || orgClients.size === 0) return;
-
   try {
     // CRITICAL FIX: Sign token ONCE, not N times
-    const encodedSSE = await signAccessToken(candidates, orgId);
-    const encoder = new TextEncoder();
-    const data = `data: ${JSON.stringify({ type: 'multipleCandidateUpdate', candidates: encodedSSE })}\n\n`;
+    const encodedData = await signAccessToken(candidates, orgId);
+
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'multipleCandidateUpdate',
+        orgId,
+        data: { candidates: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients || orgClients.size === 0) return;
 
     const deadClients: number[] = [];
 
     for (const [clientId, client] of orgClients.entries()) {
-      try {
-        if (client.controller.desiredSize !== null) {
-          client.controller.enqueue(encoder.encode(data));
-        } else {
-          deadClients.push(clientId);
-        }
-      } catch (_error) {
+      const sent = sendToClient(client, { type: 'multipleCandidateUpdate', candidates: encodedData });
+      if (!sent) {
         deadClients.push(clientId);
-        logger.log(`Dead SSE connection detected: client ${clientId}`);
+        logger.log(`Dead connection detected: client ${clientId}`);
       }
     }
 
@@ -129,6 +170,7 @@ export async function broadcastMultipleCandidateUpdate(
     if (deadClients.length > 0) {
       deadClients.forEach((clientId) => orgClients.delete(clientId));
       if (orgClients.size === 0) {
+        global.wsClients?.delete(orgId);
         global.sseNotificationClients?.delete(orgId);
       }
     }
@@ -137,34 +179,37 @@ export async function broadcastMultipleCandidateUpdate(
   }
 }
 
-export function broadcastLaneUpdate(
+export async function broadcastLaneUpdate(
   orgId: string,
   lanes: string[],
   jobId?: string,
-): void {
+): Promise<void> {
   if (!orgId) return;
 
-  const orgClients = global.sseNotificationClients?.get(orgId);
+  // Use HTTP bridge in development (separate WS server)
+  if (isUsingHttpBridge()) {
+    await sendViaBridge({
+      type: 'lanesUpdate',
+      orgId,
+      data: { lanes, jobId },
+    });
+    return;
+  }
+
+  // Direct broadcast (production - same process)
+  const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
   if (!orgClients || orgClients.size === 0) return;
 
-  const encoder = new TextEncoder();
   const clientsCount = orgClients.size;
-  const lanesData = `data: ${JSON.stringify({ type: 'lanesUpdate', lanes, jobId })}\n\n`;
-  const clientsData = `data: ${JSON.stringify({ type: 'clients', clients: clientsCount, orgId })}\n\n`;
-
   const deadClients: number[] = [];
 
   for (const [clientId, client] of orgClients.entries()) {
-    try {
-      if (client.controller.desiredSize !== null) {
-        client.controller.enqueue(encoder.encode(lanesData));
-        client.controller.enqueue(encoder.encode(clientsData));
-      } else {
-        deadClients.push(clientId);
-      }
-    } catch (_error) {
+    const sent = sendToClient(client, { type: 'lanesUpdate', lanes, jobId });
+    if (sent) {
+      sendToClient(client, { type: 'clients', clients: clientsCount, orgId });
+    } else {
       deadClients.push(clientId);
-      logger.log(`Dead SSE connection detected: client ${clientId}`);
+      logger.log(`Dead connection detected: client ${clientId}`);
     }
   }
 
@@ -172,6 +217,7 @@ export function broadcastLaneUpdate(
   if (deadClients.length > 0) {
     deadClients.forEach((clientId) => orgClients.delete(clientId));
     if (orgClients.size === 0) {
+      global.wsClients?.delete(orgId);
       global.sseNotificationClients?.delete(orgId);
     }
   }

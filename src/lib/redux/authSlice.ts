@@ -23,8 +23,8 @@ export interface ILocalUser {
   email: string;
   role: string;
   password: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   resetToken?: string;
   resetTokenExpiry?: Date;
   isDeleted?: boolean;
@@ -76,8 +76,8 @@ export const fetchUserFromToken = createAsyncThunk(
 
           // ADD THESE MISSING FIELDS:
           password: '',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
         return user;
       }

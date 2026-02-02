@@ -1,10 +1,12 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { Candidate } from '@/types/candidate';
+import { SortConfig, SortField } from './useDashboardState';
 
 interface UseDashboardEffectsParams {
   // State
   selectedAssignedTo: string;
   filterText: string;
+  sortConfig: SortConfig;
   fetchAssignments: (page: number, isAppend: boolean) => Promise<void>;
   scrollContainerRef:
     | React.RefObject<HTMLDivElement | null>
@@ -21,6 +23,8 @@ interface UseDashboardEffectsParams {
 
   // SSE
   sseCandidates: Candidate[] | undefined;
+  /** Ref to track SSE additions for pagination offset adjustment */
+  sseAddedCountRef: React.MutableRefObject<number>;
 
   // Helper functions
   isToday: (assignment: Candidate) => boolean;
@@ -39,6 +43,7 @@ interface UseDashboardEffectsParams {
 export function useDashboardEffects({
   selectedAssignedTo,
   filterText,
+  sortConfig,
   fetchAssignments,
   scrollContainerRef,
   handleScroll,
@@ -51,20 +56,40 @@ export function useDashboardEffects({
   setAssignments,
   isActivitiesSidebarOpen,
   sseCandidates,
+  sseAddedCountRef,
   isToday,
   isThisWeek,
   setAssignmentsCounts,
 }: UseDashboardEffectsParams) {
-  // Effect 1: Fetch assignments when filters change
+  /**
+   * Ref to hold the latest fetchAssignments function.
+   * This prevents Effect 1 from re-running when fetchAssignments reference changes
+   * due to its internal dependencies (like sortConfig), while still allowing us
+   * to call the latest version of the function.
+   *
+   * Without this pattern, any change to fetchAssignments' dependencies would
+   * trigger a refetch, potentially overwriting SSE updates (race condition).
+   */
+  const fetchAssignmentsRef = useRef(fetchAssignments);
+
+  // Keep the ref updated with the latest function
+  useEffect(() => {
+    fetchAssignmentsRef.current = fetchAssignments;
+  }, [fetchAssignments]);
+
+  // Effect 1: Fetch assignments when filters or sort config change
+  // Uses ref pattern to avoid re-running when fetchAssignments changes due to internal deps
   useEffect(() => {
     setCurrentPage(1);
     setHasMoreData(true);
     setAssignments([]);
-    fetchAssignments(1, false);
+    fetchAssignmentsRef.current(1, false);
   }, [
     selectedAssignedTo,
     filterText,
-    fetchAssignments,
+    // Explicitly depend on sort config fields rather than through fetchAssignments
+    sortConfig.field,
+    sortConfig.order,
     setCurrentPage,
     setHasMoreData,
     setAssignments,
@@ -93,12 +118,15 @@ export function useDashboardEffects({
   const hasValidAssignment = (assignment: Candidate): boolean => {
     // Exclude deleted candidates
     if (assignment.isDeleted) return false;
-    
+
     // Exclude candidates with no assignment or assignment with null interviewerId
-    if (!assignment.assignment || assignment.assignment.interviewerId === null) {
+    if (
+      !assignment.assignment ||
+      assignment.assignment.interviewerId === null
+    ) {
       return false;
     }
-    
+
     return true;
   };
 
@@ -123,6 +151,70 @@ export function useDashboardEffects({
       sseCandidate.assignment?.interviewerId,
     );
     return interviewerId === selectedAssignedTo;
+  };
+
+  /**
+   * Get comparable value for a candidate based on sort field.
+   * Returns a value that can be compared for sorting.
+   * String fields are lowercased for case-insensitive sorting.
+   */
+  const getSortValue = (
+    candidate: Candidate,
+    field: SortField,
+  ): number | string => {
+    switch (field) {
+      case 'assignment.time':
+        return new Date(candidate.assignment?.time || 0).getTime();
+      case 'name':
+        return (candidate.name || '').toLowerCase();
+      case 'createdAt':
+        return new Date(candidate.createdAt || 0).getTime();
+      case 'jobId.title':
+        return (
+          (typeof candidate.jobId === 'object' ? candidate.jobId?.title : '') ||
+          ''
+        ).toLowerCase();
+      default:
+        return 0;
+    }
+  };
+
+  /**
+   * Find the correct index to insert an item in a sorted array using binary search.
+   * Maintains sort order when inserting new SSE items.
+   */
+  const findSortedIndex = (
+    array: Candidate[],
+    item: Candidate,
+    config: SortConfig,
+  ): number => {
+    if (array.length === 0) return 0;
+
+    const itemValue = getSortValue(item, config.field);
+    let low = 0;
+    let high = array.length;
+
+    while (low < high) {
+      const mid = Math.floor((low + high) / 2);
+      const midValue = getSortValue(array[mid], config.field);
+
+      let shouldGoAfter: boolean;
+      if (typeof itemValue === 'number' && typeof midValue === 'number') {
+        shouldGoAfter =
+          config.order === 'asc' ? itemValue > midValue : itemValue < midValue;
+      } else {
+        const comparison = String(itemValue).localeCompare(String(midValue));
+        shouldGoAfter =
+          config.order === 'asc' ? comparison > 0 : comparison < 0;
+      }
+
+      if (shouldGoAfter) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return low;
   };
 
   // Effect 4: Update assignments from SSE
@@ -231,24 +323,51 @@ export function useDashboardEffects({
                 if (wasThisWeek && !isNowThisWeek) removedWeekCount += 1;
                 if (!wasThisWeek && isNowThisWeek) addedWeekCount += 1;
 
-                updatedAssignments[existingIndex] = {
-                  ...updatedAssignments[existingIndex],
-                  ...assignment,
-                };
+                // Check if sort field changed - if so, need to re-position
+                const oldSortValue = getSortValue(
+                  oldAssignment,
+                  sortConfig.field,
+                );
+                const newSortValue = getSortValue(assignment, sortConfig.field);
+
+                if (oldSortValue !== newSortValue) {
+                  // Sort field changed - remove and re-insert at correct position
+                  updatedAssignments.splice(existingIndex, 1);
+                  const newIndex = findSortedIndex(
+                    updatedAssignments,
+                    assignment,
+                    sortConfig,
+                  );
+                  updatedAssignments.splice(newIndex, 0, assignment);
+                } else {
+                  // Sort field unchanged - update in place
+                  updatedAssignments[existingIndex] = {
+                    ...updatedAssignments[existingIndex],
+                    ...assignment,
+                  };
+                }
               }
             } else if (matchesFilter) {
-              // New assignment that matches filter - add it
+              // New assignment that matches filter - insert at sorted position
               addedCount += 1;
+              // Track SSE additions for pagination offset adjustment
+              sseAddedCountRef.current += 1;
               if (isToday(assignment)) addedTodayCount += 1;
               if (isThisWeek(assignment)) addedWeekCount += 1;
-              updatedAssignments.push(assignment);
+              const insertIndex = findSortedIndex(
+                updatedAssignments,
+                assignment,
+                sortConfig,
+              );
+              updatedAssignments.splice(insertIndex, 0, assignment);
             }
             // If new assignment doesn't match filter, skip adding it
           }
         });
 
         // Final cleanup: Remove any candidates with invalid assignments that might have slipped through
-        const cleanedAssignments = updatedAssignments.filter(hasValidAssignment);
+        const cleanedAssignments =
+          updatedAssignments.filter(hasValidAssignment);
 
         // Incrementally adjust counts instead of replacing them
         setAssignmentsCounts((prev) => ({
@@ -269,10 +388,16 @@ export function useDashboardEffects({
         return cleanedAssignments;
       });
     }
+    // NOTE: filterText is intentionally NOT in dependencies - this effect only handles SSE updates
+    // and SSE candidates are already server-filtered. Including filterText would cause unnecessary
+    // re-processing of all SSE candidates when text filter changes.
+    // sseAddedCountRef is a ref (stable reference) so it doesn't need to be in deps.
   }, [
     sseCandidates,
     selectedAssignedTo,
-    filterText,
+    // Using specific sortConfig fields to avoid re-runs on object reference changes
+    sortConfig.field,
+    sortConfig.order,
     setAssignments,
     isToday,
     isThisWeek,

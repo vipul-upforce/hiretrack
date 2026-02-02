@@ -113,6 +113,10 @@ export const candidateApi = baseApi.injectEndpoints({
         limit?: number;
         filterValue?: string;
         assignedTo?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+        /** Extra offset to add to skip, used to compensate for SSE-added items */
+        sseOffset?: number;
       }
     >({
       query: ({
@@ -121,6 +125,9 @@ export const candidateApi = baseApi.injectEndpoints({
         limit = 10,
         filterValue = '',
         assignedTo = '',
+        sortBy = 'assignment.time',
+        sortOrder = 'asc',
+        sseOffset = 0,
       }) => {
         const params = new URLSearchParams({
           isPagination: String(isPagination),
@@ -128,6 +135,9 @@ export const candidateApi = baseApi.injectEndpoints({
           limit: String(limit),
           filterValue,
           assignedTo,
+          sortBy,
+          sortOrder,
+          sseOffset: String(sseOffset),
         });
         return `/candidates/assignments?${params.toString()}`;
       },
@@ -270,7 +280,10 @@ export const candidateApi = baseApi.injectEndpoints({
     updateCandidateHistory: builder.mutation<
       ICandidateHistory[],
       {
-        jobId: string | null | { _id: string; title: string; description: string };
+        jobId:
+          | string
+          | null
+          | { _id: string; title: string; description: string };
         candidateId: string;
         newEntry: ICandidateHistory;
       }

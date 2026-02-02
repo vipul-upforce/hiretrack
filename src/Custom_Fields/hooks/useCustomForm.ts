@@ -91,7 +91,7 @@ const useCustomForm = (
         acc[field.label] = field.defaultValue || dayjs().format('HH:mm');
       } else if (field.type === 'datetime') {
         acc[field.label] =
-          field.defaultValue || dayjs().format('YYYY-MM-DDTHH:mm:ss');
+          field.defaultValue || dayjs().format('YYYY-MM-DDTHH:mm');
       } else {
         acc[field.label] = field.defaultValue || '';
       }

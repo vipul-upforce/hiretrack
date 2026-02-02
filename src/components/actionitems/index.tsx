@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Dispatch, SetStateAction } from 'react';
 import { CandidateCard } from '@/app/dashboard/jobs/[id]/components/Candidate/candidate-card';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
@@ -9,10 +9,10 @@ import { useRefetchCandidateMutation } from '@/lib/features/candidate/candidateA
 function ActionItems({
   assignment,
   setAssignments,
-  assignments,
+  assignments: _assignments, // Prefixed with _ as it's intentionally unused (SSE handles updates)
 }: {
   assignment: Candidate;
-  setAssignments: (a: Candidate[]) => void;
+  setAssignments: Dispatch<SetStateAction<Candidate[]>>;
   assignments: Candidate[];
 }) {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -25,7 +25,20 @@ function ActionItems({
 
   const [triggerRefetchCandidate] = useRefetchCandidateMutation();
 
-  // Update local state with updated candidate (without making GET request)
+  /**
+   * Update local state with updated candidate (without making GET request).
+   * 
+   * IMPORTANT: When a candidate's assignment is cleared (markAsDone), we do NOT
+   * remove it from `assignments` here. Instead, we let SSE Effect 4 handle the
+   * removal. This is critical because:
+   * 
+   * 1. SSE is the single source of truth for assignment removals
+   * 2. Having two mechanisms (direct update + SSE) causes race conditions
+   * 3. The details dialog works correctly because it follows this pattern
+   * 
+   * We only update local component state (candidate, candidateForDetailsDialog)
+   * and update existing candidates in the list (but don't remove them).
+   */
   const updateCandidate = (updatedCandidate: Candidate) => {
     if (!updatedCandidate?._id) return;
 
@@ -36,28 +49,36 @@ function ActionItems({
       setCandidateForDetailsDialog(updatedCandidate);
     }
 
-    // Check if assignment is null or has null interviewerId - if so, remove from list
+    // Check if assignment is null or has null interviewerId
     const hasValidAssignment =
       updatedCandidate.assignment &&
       updatedCandidate.assignment.interviewerId !== null &&
       updatedCandidate.assignment.interviewerId !== undefined;
 
-    const updatedAssignments = !hasValidAssignment
-      ? assignments.filter((a) => a._id !== updatedCandidate._id)
-      : assignments.map((a) =>
+    // Only UPDATE existing candidates in list, do NOT remove them
+    // Removal is handled exclusively by SSE Effect 4 to avoid race conditions
+    if (hasValidAssignment) {
+      setAssignments((prevAssignments) =>
+        prevAssignments.map((a) =>
           a._id === updatedCandidate._id
-            ? { ...a, ...updatedCandidate } // merge updated data
+            ? { ...a, ...updatedCandidate }
             : a,
-        );
-    setAssignments(updatedAssignments);
+        ),
+      );
+    }
+    // When assignment is cleared, we intentionally do NOT remove from assignments here.
+    // SSE will send the update and Effect 4 will handle the removal.
+    // This matches how candidate-details-dialog works (and why it doesn't have the bug).
   };
 
   // Update assignments list (for dashboard list view)
+  // NOTE: This is intentionally a no-op now. When markAsDone is triggered:
+  // 1. We don't want to spread stale closure data which could re-add the candidate
+  // 2. SSE Effect 4 handles the removal as the single source of truth
+  // 3. The functional update pattern ensures we work with latest state
   const updateAssignments = () => {
-    // This is called to refresh the assignments list view
-    // The individual candidate is already updated via updateCandidate
-    // So we just need to trigger a re-render by updating assignments
-    setAssignments([...assignments]);
+    // Intentionally empty - let SSE handle all assignment list updates
+    // to avoid race conditions with stale closure data
   };
 
   // Candidate-specific refetch function (only used when we actually need to fetch from server)
@@ -174,7 +195,7 @@ function ActionItems({
       {isDetailsOpen && candidateForDetailsDialog && (
         <CandidateDetailsDialog
           isAssigning={false}
-          setIsAssigning={() => {}}
+          setIsAssigning={() => { }}
           candidate={candidateForDetailsDialog}
           isOpen={isDetailsOpen}
           onOpenChange={(open) => {

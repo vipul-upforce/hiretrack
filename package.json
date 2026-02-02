@@ -7,9 +7,11 @@
     "dev": "next dev --port 3000",
     "dev:fast": "next dev --turbopack --port 3000",
     "dev:debug": "NODE_OPTIONS='--inspect' next dev --turbopack --port 3000",
+    "dev:ws": "node server-ws.cjs --ws-only",
     "build": "next build",
     "build:analyze": "ANALYZE=true next build",
-    "start": "next start",
+    "start": "NODE_ENV=production node server-ws.cjs",
+    "start:next": "next start",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "lint:report": "eslint . -f html -o eslint-report.html",
@@ -131,6 +133,7 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.0.5",
     "webpack-obfuscator": "^3.5.1",
+    "ws": "^8.19.0",
     "yup": "^1.3.3"
   },
   "devDependencies": {
@@ -146,6 +149,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/react-google-recaptcha": "^2.1.9",
+    "@types/ws": "^8.18.1",
     "depcheck": "^1.4.7",
     "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
