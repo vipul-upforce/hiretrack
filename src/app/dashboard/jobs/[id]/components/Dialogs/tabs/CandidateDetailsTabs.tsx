@@ -62,44 +62,50 @@ export function CandidateDetailsTabs({
   historyLoaded,
 }: CandidateDetailsTabsProps) {
   const { user } = useAppSelector((state) => state.auth);
+
   return (
     <Tabs
       value={activeTab}
       onValueChange={onTabChange}
-      className="flex h-full flex-col"
+      className="flex h-full flex-col overflow-hidden"
     >
-      <TabsList
-        className={`grid w-full ${
-          user?.role === 'interviewer' ? 'grid-cols-2' : 'grid-cols-3'
-        } h-12 rounded-none border-b border-gray-200 bg-transparent dark:border-gray-700`}
-      >
-        <TabsTrigger
-          value="overview"
-          className="flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary dark:data-[state=active]:border-primary dark:data-[state=active]:text-primary"
+      <div className="px-3 pt-2">
+        <TabsList
+          className={`grid w-full ${user?.role === 'interviewer' ? 'grid-cols-2' : 'grid-cols-3'
+            } h-9 items-center justify-center bg-transparent p-0 text-muted-foreground`}
         >
-          <UserIcon className="h-4 w-4" />
-          Overview
-        </TabsTrigger>
-        <TabsTrigger
-          value="history"
-          className="flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary dark:data-[state=active]:border-primary dark:data-[state=active]:text-primary"
-        >
-          <MessageSquare className="h-4 w-4" />
-          History
-        </TabsTrigger>
-        {user?.role !== 'candidate' && (
           <TabsTrigger
-            value="logs"
-            className={`flex h-full items-center gap-2 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary dark:data-[state=active]:border-primary dark:data-[state=active]:text-primary ${user?.role === 'interviewer' ? 'hidden' : ''}`}
+            value="overview"
+            className="flex items-center justify-center gap-1.5 rounded-none border-b-2 border-transparent px-2 py-1 text-xs font-medium ring-offset-background transition-all hover:text-foreground focus-visible:outline-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
           >
-            <Clock className="h-4 w-4" />
-            Logs
+            <UserIcon className="h-3.5 w-3.5" />
+            Overview
           </TabsTrigger>
-        )}
-      </TabsList>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 lg:px-6 lg:py-4">
-        <TabsContent value="overview" className="mt-0 space-y-6">
+          <TabsTrigger
+            value="history"
+            className="flex items-center justify-center gap-1.5 rounded-none border-b-2 border-transparent px-2 py-1 text-xs font-medium ring-offset-background transition-all hover:text-foreground focus-visible:outline-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            History
+          </TabsTrigger>
+
+          {user?.role !== 'candidate' && (
+            <TabsTrigger
+              value="logs"
+              className={`flex items-center justify-center gap-1.5 rounded-none border-b-2 border-transparent px-2 py-1 text-xs font-medium ring-offset-background transition-all hover:text-foreground focus-visible:outline-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none ${user?.role === 'interviewer' ? 'hidden' : ''
+                }`}
+            >
+              <Clock className="h-3.5 w-3.5" />
+              Logs
+            </TabsTrigger>
+          )}
+        </TabsList>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto px-3 lg:px-6 lg:py-2 pb-10 border-t-2 mb-4">
+        <TabsContent value="overview" className="mt-0 h-full focus-visible:outline-none">
           <CandidateOverviewTab
             candidate={candidate}
             onEditFollowUp={onEditFollowUp}
@@ -111,7 +117,7 @@ export function CandidateDetailsTabs({
           />
         </TabsContent>
 
-        <TabsContent value="history" className="mt-0 space-y-6">
+        <TabsContent value="history" className="mt-0 h-full focus-visible:outline-none">
           <CandidateHistoryTab
             candidate={candidate}
             isHistoryLoading={isHistoryLoading}
@@ -124,7 +130,7 @@ export function CandidateDetailsTabs({
           />
         </TabsContent>
 
-        <TabsContent value="logs" className="mt-0 space-y-6">
+        <TabsContent value="logs" className="mt-0 h-full focus-visible:outline-none">
           <CandidateLogsTab
             candidate={candidate}
             isHistoryLoading={isHistoryLoading}

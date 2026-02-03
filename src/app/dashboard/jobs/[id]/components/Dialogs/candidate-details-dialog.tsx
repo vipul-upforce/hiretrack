@@ -399,7 +399,7 @@ export function CandidateDetailsDialog({
       return item;
     });
   const header = (
-    <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4">
+    <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}
