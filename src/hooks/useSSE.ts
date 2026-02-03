@@ -133,9 +133,9 @@ export const useSSE = <T = Candidate>(
       const transform = transformCandidateRef.current;
       if (transform) {
         const transformed = transform(updatedCandidate, currentSelected);
-        if (transformed !== null) {
-          setSelectedCandidateRef.current(transformed);
-        }
+        // Allow setting null to clear selection 
+        setSelectedCandidateRef.current(transformed);
+        
       } else {
         // Default: just pass the candidate (for job pages)
         setSelectedCandidateRef.current(updatedCandidate as T);

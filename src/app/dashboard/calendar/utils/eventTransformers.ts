@@ -120,6 +120,19 @@ export const createSSETransformer =
     }
 
     const currentEvent = currentSelected as CustomCalendarEvent;
+
+    // Check if the updated candidate still has a valid assignment
+    // If not, return null to close the dialog (handled by useSSE)
+    if (!updatedCandidate?.assignment) return null;
+    
+    const hasInterviewer = updatedCandidate.assignment.interviewerId && (
+      typeof updatedCandidate.assignment.interviewerId === 'object' 
+        ? updatedCandidate.assignment.interviewerId?._id 
+        : updatedCandidate.assignment.interviewerId
+    );
+    
+    if (!hasInterviewer) return null;
+
     const startTime = updatedCandidate?.assignment?.time
       ? new Date(updatedCandidate.assignment.time)
       : currentEvent?.start || new Date();

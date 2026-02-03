@@ -75,6 +75,10 @@ export default function ApplyJobsContent({
   const { setUserLoggedIn, userLoggedIn, setCustomFields } = useCustomFields();
   const [triggerLogout] = useLogoutUserMutation();
 
+  function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   useEffect(() => {
     const resolveOrgName = async () => {
       const urlOrgName = searchParams?.get('o');
@@ -347,7 +351,13 @@ export default function ApplyJobsContent({
   }, [data, isModalOpen, selectedJob]);
 
   const handleSearch = () => {
-    setQueryTitle(searchTerm);
+    if (!searchTerm) {
+      setQueryTitle('');
+      return;
+    }
+
+    const sanitizedTerm = escapeRegExp(searchTerm.trim());
+    setQueryTitle(sanitizedTerm);
   };
 
   const handleClearSearch = () => {

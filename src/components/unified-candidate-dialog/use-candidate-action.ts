@@ -776,7 +776,7 @@ export function useCandidateActions({
 
       // Only refetch assignments list for dashboard (to update the list view)
       // Don't refetch individual candidate since we already have the updated result
-      if (pathname === '/dashboard') {
+      if (pathname === '/dashboard' && !actions.markAsDone) {
         refetchAssignment?.();
       }
       // Note: Removed individual candidate refetch - we already have the updated result
