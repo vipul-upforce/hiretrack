@@ -29,7 +29,8 @@ import { ScrollToFormError } from '@/components/ui/scroll-to-error';
 export function UnifiedCandidateActionsDialog(
   props: UnifiedCandidateActionsDialogProps,
 ) {
-  const { candidate, isOpen, onOpenChange } = props;
+  const { candidate, candidates, isOpen, onOpenChange } = props;
+  const isBulkMode = candidates && candidates.length > 1;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -72,11 +73,11 @@ export function UnifiedCandidateActionsDialog(
         >
           <DialogHeader className="border-0 px-6 py-3 pt-5">
             <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
-              {Array.isArray(candidate) ? (
+              {isBulkMode ? (
                 <span>
                   Update{' '}
                   <span className="font-bold text-primary">
-                    {candidate.length}
+                    {candidates?.length}
                   </span>{' '}
                   Candidates
                 </span>

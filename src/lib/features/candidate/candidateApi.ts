@@ -384,6 +384,43 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    bulkAssignCandidates: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        updatedCount: number;
+        failedCount: number;
+      },
+      {
+        candidateIds: string[];
+        interviewerId: string;
+        time?: string;
+      }
+    >({
+      query: (body) => ({
+        url: '/candidates/bulk-assign',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
+    bulkUnassignCandidates: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        updatedCount: number;
+        skippedCount: number;
+        failedCount: number;
+      },
+      { candidateIds: string[] }
+    >({
+      query: (body) => ({
+        url: '/candidates/bulk-unassign',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
     sendEmailToCandidate: builder.mutation<
       SendEmailToCandidateResponse,
       SendEmailToCandidateRequest
@@ -432,6 +469,8 @@ export const {
   useCandidateSignupMutation,
   useApplicationEventMailMutation,
   useBulkArchiveCandidatesMutation,
+  useBulkAssignCandidatesMutation,
+  useBulkUnassignCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
   useLazyFetchCandidateDetailsQuery,
   useUpdateCandidateRemarkMutation,

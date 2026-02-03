@@ -22,6 +22,7 @@ import { useCandidateCardSync } from './hooks/useCandidateCardSync';
 import { useCandidateCardHandlers } from './hooks/useCandidateCardHandlers';
 import { useCandidateCardCalculations } from './hooks/useCandidateCardCalculations';
 import { useCandidateCardEffects } from './hooks/useCandidateCardEffects';
+import useMultiSelect from './hooks/useMultiSelect';
 
 export const CandidateCard = memo(
   ({
@@ -52,6 +53,8 @@ export const CandidateCard = memo(
     // Type assertion: ILocalUser is compatible with User at runtime
     // Using double cast to satisfy TypeScript's structural type checking
     const user = (authUser as unknown as User | null) ?? null;
+
+
 
     // State management
     const {
@@ -85,10 +88,11 @@ export const CandidateCard = memo(
       setIsDuplicateDialogOpen,
     } = useCandidateCardState(candidate);
 
+    const { isSelected } = useMultiSelect({ candidate });
+
     // Handler to open the duplicate candidates dialog for *this* candidate
     const handleOpenDuplicateDialogForThisCandidate = () =>
       setIsDuplicateDialogOpen(true);
-
 
     // Sync functionality
     const { handleSyncAttendeeResponses } = useCandidateCardSync({
@@ -150,8 +154,8 @@ export const CandidateCard = memo(
     } = useUnassignHandlers(
       localCandidate,
       async () => refetch(),
-      () => {},
-      () => {},
+      () => { },
+      () => { },
       undefined,
       undefined,
     );
@@ -171,7 +175,9 @@ export const CandidateCard = memo(
       () => (
         <div className="relative flex h-full flex-col">
           <div className="flex flex-1 flex-col">
+
             <CandidateCardHeader
+              setLocalCandidate={setLocalCandidate}
               candidate={localCandidate}
               user={user as User | null}
               showStar={showStar}
@@ -255,17 +261,17 @@ export const CandidateCard = memo(
 
     return (
       <>
-        {onDashboard ? ( <div
-            role="button"
-            tabIndex={0}
-            className={cn(
-              'h-full w-[420px] flex-shrink-0 cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-800 dark:bg-black dark:hover:border-gray-700',
-              className,
-            )}
-            onClick={handleDashboardCardClick}
-          >
-            {renderCardContent}
-          </div>
+        {onDashboard ? (<div
+          role="button"
+          tabIndex={0}
+          className={cn(
+            'h-full w-[420px] flex-shrink-0 cursor-pointer rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md dark:border-gray-800 dark:bg-black dark:hover:border-gray-700',
+            className,
+          )}
+          onClick={handleDashboardCardClick}
+        >
+          {renderCardContent}
+        </div>
         ) : (
           <Draggable draggableId={localCandidate._id} index={index}>
             {(provided: DraggableProvided) => (
@@ -279,6 +285,7 @@ export const CandidateCard = memo(
                   'relative cursor-grab overflow-visible rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:border-gray-300 hover:shadow-md active:cursor-grabbing dark:border-gray-800 dark:bg-black dark:hover:border-gray-700',
                   isPending && 'opacity-50',
                   className,
+                  isSelected ? "border-2 border-primary dark:border-primary" : ""
                 )}
                 onClick={handleDraggableCardClick}
               >

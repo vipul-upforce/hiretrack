@@ -59,6 +59,7 @@ export interface Assignment {
 }
 
 export interface Candidate {
+  isSelected?: boolean;
   _id: string;
   id?: string;
   jobId: {

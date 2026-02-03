@@ -13,6 +13,7 @@ import storage from 'redux-persist/lib/storage';
 import authReducer from '@/lib/redux/authSlice';
 import { baseApi } from './api/baseApi';
 import { organizationSlice } from './features/org/orgSlice';
+import selectedCandidatesReducer from './redux/selectedCandidatesSlice';
 
 // Import APIs to ensure they inject their endpoints into baseApi
 import './features/auth/authApi';
@@ -47,6 +48,7 @@ const rootReducer = combineReducers({
   auth: persistReducer(authPersistConfig, authReducer),
   // All APIs extend from baseApi, so only need baseApi reducer
   [baseApi.reducerPath]: baseApi.reducer,
+  selectedCandidates: selectedCandidatesReducer,
 });
 
 export const store = configureStore({

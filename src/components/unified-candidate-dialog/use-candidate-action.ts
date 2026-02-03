@@ -9,9 +9,12 @@ import { FormikHelpers } from 'formik';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
+  useBulkAssignCandidatesMutation,
+  useBulkUnassignCandidatesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import {
   useAssignJobMutation,
+  useBulkAssignJobMutation,
   useFetchOpenJobsQuery,
   useFetchJobLanesQuery,
 } from '@/lib/features/job/jobApi';
@@ -56,6 +59,7 @@ const normalizeInterviewerId = (
 
 export function useCandidateActions({
   candidate,
+  candidates,
   isOpen,
   initialAction,
   refetch,
@@ -65,6 +69,8 @@ export function useCandidateActions({
   onSuccess,
   onOpenChange,
 }: UnifiedCandidateActionsDialogProps) {
+  const isBulkMode = candidates && candidates.length > 1;
+  const candidateList = isBulkMode ? candidates : [candidate];
   const { user } = useAppSelector((state) => state.auth || {});
   const pathname = usePathname();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,6 +81,9 @@ export function useCandidateActions({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [assignJob] = useAssignJobMutation();
+  const [bulkAssignJob] = useBulkAssignJobMutation();
+  const [bulkAssignCandidates] = useBulkAssignCandidatesMutation();
+  const [bulkUnassignCandidates] = useBulkUnassignCandidatesMutation();
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
@@ -395,29 +404,107 @@ export function useCandidateActions({
     }
     setIsSubmitting(true);
     try {
-      // Handle bulk operations
-      if (Array.isArray(candidate)) {
+      // Handle bulk operations via existing bulk APIs (history updated on backend)
+      if (isBulkMode && candidateList.length > 1) {
+        const candidateIds = candidateList.map((c) => c._id);
+
+        // Bulk Switch Job – use existing /jobs/bulk-move API
         if (actions.switchJob && values.jobId) {
-          for (const c of candidate) {
-            await assignJob({
+          try {
+            const result = await bulkAssignJob({
               jobId: values.jobId,
-              candidateId: c._id,
+              candidateIds,
             }).unwrap();
+            const count = result?.updatedCandidates?.length ?? candidateIds.length;
+            toast({
+              title: 'Success',
+              description: `${count} candidate(s) moved to job`,
+            });
+            onSuccess?.();
+            onOpenChange(false);
+          } catch (error) {
+            toast({
+              title: 'Error',
+              description:
+                (error as { data?: { error?: string } })?.data?.error ||
+                (error as Error)?.message ||
+                'Failed to move candidates',
+              variant: 'destructive',
+            });
           }
-          toast({
-            title: 'Success',
-            description: `${candidate.length} candidates assigned to job successfully`,
-          });
-          onSuccess?.();
-          onOpenChange(false);
+          setIsSubmitting(false);
           return;
         }
-        // Other bulk operations not implemented
+
+        // Bulk Assign To – use /candidates/bulk-assign API (updates history on backend)
+        if (actions.assignTo && values.interviewerId) {
+          const normalizedInterviewerId = normalizeInterviewerId(
+            values.interviewerId as string | null | undefined,
+          );
+          if (!normalizedInterviewerId) {
+            toast({
+              title: 'Error',
+              description: 'Please select an interviewer',
+              variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          try {
+            const result = await bulkAssignCandidates({
+              candidateIds,
+              interviewerId: normalizedInterviewerId,
+              time: values.time ? values.time.toISOString() : undefined,
+            }).unwrap();
+            toast({
+              title: 'Success',
+              description: result.message || `${result.updatedCount} candidate(s) assigned`,
+            });
+            onSuccess?.();
+            onOpenChange(false);
+          } catch (error) {
+            toast({
+              title: 'Error',
+              description:
+                (error as { data?: { error?: string } })?.data?.error ||
+                (error as Error)?.message ||
+                'Failed to assign candidates',
+              variant: 'destructive',
+            });
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Bulk Mark as Done – use /candidates/bulk-unassign API (updates history on backend)
+        if (actions.markAsDone) {
+          try {
+            const result = await bulkUnassignCandidates({ candidateIds }).unwrap();
+            toast({
+              title: 'Success',
+              description: result.message || `${result.updatedCount} candidate(s) marked as done`,
+            });
+            onSuccess?.();
+            onOpenChange(false);
+          } catch (error) {
+            toast({
+              title: 'Error',
+              description:
+                (error as { data?: { error?: string } })?.data?.error ||
+                (error as Error)?.message ||
+                'Failed to unassign candidates',
+              variant: 'destructive',
+            });
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
         toast({
-          title: 'Error',
-          description: 'Bulk operations only support job switching',
-          variant: 'destructive',
+          title: 'Info',
+          description: 'Please select an action to perform',
         });
+        setIsSubmitting(false);
         return;
       }
 

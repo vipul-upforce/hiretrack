@@ -63,6 +63,8 @@ export interface UnifiedFormValues {
 
 export interface UnifiedCandidateActionsDialogProps {
   candidate: Candidate;
+  /** Optional array of candidates for bulk operations */
+  candidates?: Candidate[];
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   initialAction?: CandidateActionType;
