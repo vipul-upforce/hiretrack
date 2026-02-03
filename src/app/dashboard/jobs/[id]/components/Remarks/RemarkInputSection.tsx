@@ -9,7 +9,6 @@ import { Candidate } from '@/types/candidate';
 import { Checkbox } from '@/components/ui/checkbox';
 import React, { useState } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
-import logger from '@/lib/logger';
 
 interface MentionUser {
   _id: string;
@@ -26,7 +25,7 @@ interface RemarkInputSectionProps {
   setRemarkRatingHistory: (value: number | null) => void;
   isSubRemarkPrivate: boolean;
   setIsSubRemarkPrivate: (value: boolean) => void;
-  handleAddRemark: (selectedMentionUserIds?: string[]) => void;
+  handleAddRemark: (selectedMentionUserIds?: string[], removeFollowUp?: boolean) => void;
   localCandidate: Candidate | null;
   handleRemoveFollowUp: () => void;
   isRemarkSubmitting: boolean;
@@ -47,7 +46,7 @@ export default function RemarkInputSection({
 }: RemarkInputSectionProps) {
   const { user } = useAppSelector((state) => state.auth);
   const hasFollowUp =
-    localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
+    !!(localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0);
   const [removeFU, setRemoveFU] = useState(false);
   const [selectedMentions, setSelectedMentions] = useState<MentionUser[]>([]);
 
@@ -64,17 +63,7 @@ export default function RemarkInputSection({
             if (e.altKey && e.key === 'Enter') {
               e.preventDefault();
               if (newRemark.trim() && !isRemarkSubmitting) {
-                if (removeFU && hasFollowUp) {
-                  // Execute both actions in parallel
-                  Promise.all([
-                    handleAddRemark(selectedMentions.map((m) => m._id)),
-                    handleRemoveFollowUp(),
-                  ]).catch((error) => {
-                    logger.error('Error executing parallel actions:', error);
-                  });
-                } else {
-                  handleAddRemark(selectedMentions.map((m) => m._id));
-                }
+                handleAddRemark(selectedMentions.map((m) => m._id), removeFU && hasFollowUp);
               }
             }
           }}
@@ -167,17 +156,10 @@ export default function RemarkInputSection({
               onClick={() => {
                 const hasRemark = newRemark.trim();
 
-                if (removeFU && hasFollowUp && hasRemark) {
-                  Promise.all([
-                    handleAddRemark(selectedMentions.map((m) => m._id)),
-                    handleRemoveFollowUp(),
-                  ]).catch((error) => {
-                    logger.error('Error executing parallel actions:', error);
-                  });
+                if (hasRemark) {
+                  handleAddRemark(selectedMentions.map((m) => m._id), removeFU && hasFollowUp);
                 } else if (removeFU && hasFollowUp) {
                   handleRemoveFollowUp();
-                } else if (hasRemark) {
-                  handleAddRemark(selectedMentions.map((m) => m._id));
                 }
               }}
               disabled={isRemarkSubmitting}

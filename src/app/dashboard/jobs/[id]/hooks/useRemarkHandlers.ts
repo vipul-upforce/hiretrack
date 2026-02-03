@@ -207,7 +207,10 @@ export const useRemarkHandlers = (
     }
   };
 
-  const handleAddRemark = async (selectedMentionUserIds?: string[]) => {
+  const handleAddRemark = async (
+    selectedMentionUserIds?: string[],
+    removeFollowUp?: boolean,
+  ) => {
     if (!newRemark.trim() || !user?.id) {
       toast({
         title: 'Error',
@@ -218,6 +221,8 @@ export const useRemarkHandlers = (
     }
 
     setIsRemarkSubmitting(true);
+    if (removeFollowUp) setIsFollowUpSubmitting(true);
+
     try {
       const newRemarkObj = {
         description: String(newRemark).trim(),
@@ -256,23 +261,60 @@ export const useRemarkHandlers = (
         },
         attachments: [],
       };
-      const updateData = {
+
+      const updateData: any = {
         _id: localCandidate?._id,
         name: localCandidate?.name,
         jobId: localCandidate?.jobId,
         remarks: [...(localCandidate?.remarks || []), newRemarkObj],
       };
 
+      if (removeFollowUp && user) {
+        updateData.followUp = {
+          date: null,
+          note: null,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        };
+      }
+
       if (localCandidate) {
+        // Add Remark History
         await updateCandidateHistory({
           candidateId: localCandidate?._id,
           jobId: localCandidate?.jobId,
           newEntry: newHistoryEntry,
         }).unwrap();
+
+        // Add Followup Removed History if needed
+        if (removeFollowUp) {
+          const removedFUHistoryEntry: ICandidateHistory = {
+            dateTime: new Date().toISOString(),
+            currentInterviewer: null,
+            previousInterviewer: null,
+            assignmentBy: user!.id,
+            title: 'Followup Removed',
+            note: {
+              description: '',
+              date: '',
+              rating: 0,
+              userId: null,
+            },
+            attachments: [],
+          };
+          await updateCandidateHistory({
+            candidateId: localCandidate?._id,
+            jobId: localCandidate?.jobId,
+            newEntry: removedFUHistoryEntry,
+          }).unwrap();
+        }
       }
 
       const result = await updateCandidate(updateData).unwrap();
-      
+
       // Update local state with the result - no need to refetch since we have the updated data
       if (onUpdate && result) {
         onUpdate(result);
@@ -290,9 +332,16 @@ export const useRemarkHandlers = (
       setRemarkRating(null);
       setRemarkRatingHistory(null);
 
+      if (removeFollowUp) {
+        setNewFollowUp('');
+        setNewFollowUpDate(null);
+      }
+
       toast({
         title: 'Success',
-        description: 'Remark added successfully',
+        description: removeFollowUp
+          ? 'Remark added and followup removed successfully'
+          : 'Remark added successfully',
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -304,6 +353,7 @@ export const useRemarkHandlers = (
       }
     } finally {
       setIsRemarkSubmitting(false);
+      setIsFollowUpSubmitting(false);
     }
   };
   const handleRemoveFollowUp = async () => {
