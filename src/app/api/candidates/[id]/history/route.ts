@@ -21,6 +21,49 @@ interface HistoryEntryWithJobId extends ICandidateHistory {
   _jobIdForConfig?: string | null;
 }
 
+/** Valid MongoDB ObjectId is 24 hex characters */
+const OBJECT_ID_HEX_REGEX = /^[a-fA-F0-9]{24}$/;
+
+/**
+ * Normalize jobId to a 24-char hex string for JobLaneConfig queries.
+ * Handles: ObjectId, populated job object, plain string, or malformed data.
+ */
+function normalizeJobId(value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'string') {
+    if (OBJECT_ID_HEX_REGEX.test(value)) return value;
+    if (value.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(value) as { _id?: string | { toString?: () => string } };
+        const id = parsed._id;
+        if (typeof id === 'string' && OBJECT_ID_HEX_REGEX.test(id)) return id;
+        if (id != null && typeof (id as { toString?: () => string }).toString === 'function')
+          return (id as { toString: () => string }).toString();
+      } catch {
+        // ignore parse error
+      }
+    }
+    // Fallback: extract first 24-char hex from malformed string (e.g. stringified object with ObjectId('...'))
+    const hexMatch = value.match(/[a-fA-F0-9]{24}/);
+    if (hexMatch) return hexMatch[0];
+    return null;
+  }
+  if (typeof value === 'object' && value !== null) {
+    const obj = value as { _id?: unknown; toString?: () => string };
+    if (obj._id != null) {
+      const id = obj._id;
+      if (typeof id === 'string' && OBJECT_ID_HEX_REGEX.test(id)) return id;
+      if (typeof id === 'object' && id !== null && typeof (id as { toString?: () => string }).toString === 'function')
+        return (id as { toString: () => string }).toString();
+    }
+    if (typeof obj.toString === 'function') {
+      const s = obj.toString();
+      if (OBJECT_ID_HEX_REGEX.test(s)) return s;
+    }
+  }
+  return null;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -83,39 +126,38 @@ export async function GET(
       return NextResponse.json({ history: [] });
     }
 
-    // Collect all unique jobIds to fetch lane configs
+    // Collect all unique jobIds (normalized to 24-char hex) to fetch lane configs
     const jobIds = new Set<string>();
     historyDocuments.forEach((doc) => {
-      if (doc.jobId && typeof doc.jobId === 'string') {
-        jobIds.add(doc.jobId);
-      }
+      const id = normalizeJobId(doc.jobId);
+      if (id) jobIds.add(id);
     });
 
     // Fetch all relevant lane configs in parallel
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const laneConfigsMap = new Map<string, any>();
     if (jobIds.size > 0 && JobLaneConfig) {
+      const jobIdsArray = Array.from(jobIds);
       const laneConfigs = await JobLaneConfig.find({
-        jobId: { $in: Array.from(jobIds) },
+        jobId: { $in: jobIdsArray },
       })
         .lean()
         .exec();
       laneConfigs.forEach((config) => {
-        if (config.jobId && typeof config.jobId === 'string') {
-          laneConfigsMap.set(config.jobId, config);
-        }
+        const configJobId = normalizeJobId(config.jobId) ?? (typeof config.jobId === 'string' ? config.jobId : null);
+        if (configJobId) laneConfigsMap.set(configJobId, config);
       });
     }
 
     // Merge all history entries from all documents
     const allHistoryEntries: HistoryEntryWithJobId[] = [];
     historyDocuments.forEach((historyDoc) => {
+      const normalizedJobId = normalizeJobId(historyDoc.jobId);
       if (historyDoc.history && Array.isArray(historyDoc.history)) {
         historyDoc.history.forEach((entry) => {
-          // Store the jobId with each entry for lane config lookup
           allHistoryEntries.push({
             ...entry,
-            _jobIdForConfig: historyDoc.jobId || null,
+            _jobIdForConfig: normalizedJobId ?? null,
           });
         });
       }

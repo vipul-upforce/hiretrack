@@ -4,45 +4,19 @@ import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Search,
-  Filter,
-  ChevronDown,
-  X,
-  Star,
-  Calendar,
-  Clock,
-  MessageSquare,
-  UserCheck,
-  UserX,
-  FileText,
-  FileX,
-  Target,
-} from 'lucide-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Search, Filter, ChevronDown, X, Star, Calendar, Clock, MessageSquare, UserCheck, UserX, FileText, FileX, Target, UserPlus, Briefcase, CheckCircle, Trash2, ArchiveRestore } from 'lucide-react';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import { Job } from '@/types/job';
 import { Candidate } from '@/types/candidate';
 import { useRouter } from 'next/navigation';
 import { useFetchJobsQuery } from '@/lib/features/job/jobApi';
+import { useBulkArchiveCandidatesMutation } from '@/lib/features/candidate/candidateApi';
+import { useToast } from '@/hooks/use-toast';
 import { getInterviewerName, isAssigned } from '../utils/candidateAccessors';
+import useMultiSelect from './Candidate/candidate-card/hooks/useMultiSelect';
+import { UnifiedCandidateActionsDialog } from './Dialogs/unified-candidate-actions-dialog';
 
 interface FilterState {
   search: string;
@@ -74,6 +48,7 @@ export function QuickSelectAndFilter({
   onShowArchivedChange,
 }: QuickSelectAndFilterProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     logicalOperator: 'AND',
@@ -88,8 +63,45 @@ export function QuickSelectAndFilter({
     withoutRemarks: false,
   });
   const [isFiltersDropdownOpen, setIsFiltersDropdownOpen] = useState(false);
-
+  const { selectedCandidates, selectedCandidateIds, clearSelectedCandidates } =
+    useMultiSelect();
   const { data: jobs } = useFetchJobsQuery(undefined);
+
+  // Bulk action dialog state
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<CandidateActionType | undefined>();
+
+  // Archive mutation
+  const [bulkArchive, { isLoading: isArchiving }] = useBulkArchiveCandidatesMutation();
+
+  const openBulkDialog = (action: CandidateActionType) => {
+    setBulkActionType(action);
+    setIsBulkDialogOpen(true);
+  };
+
+  const handleBulkArchive = async (action: 'archive' | 'unarchive') => {
+    if (selectedCandidateIds.length === 0) return;
+    try {
+      const result = await bulkArchive({
+        candidateIds: selectedCandidateIds,
+        action,
+      }).unwrap();
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+      clearSelectedCandidates();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error
+            ? error.message
+            : `Failed to ${action} candidates`,
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Compute filtered candidates for display purposes (e.g., count)
   const filteredCandidates = useMemo(() => {
@@ -107,12 +119,12 @@ export function QuickSelectAndFilter({
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter((candidate) => (
         candidate.name.toLowerCase().includes(searchLower)
-          || candidate.skills.some((skill) => skill.toLowerCase().includes(searchLower))
-          || candidate.experience.toString().includes(searchLower)
-          || getInterviewerName(candidate)
-            ?.toLowerCase()
-            .includes(searchLower)
-          || candidate.location.toLowerCase().includes(searchLower)
+        || candidate.skills.some((skill) => skill.toLowerCase().includes(searchLower))
+        || candidate.experience.toString().includes(searchLower)
+        || getInterviewerName(candidate)
+          ?.toLowerCase()
+          .includes(searchLower)
+        || candidate.location.toLowerCase().includes(searchLower)
       ));
     }
 
@@ -248,6 +260,7 @@ export function QuickSelectAndFilter({
       withRemarks: false,
       withoutRemarks: false,
     });
+    onShowArchivedChange(false)
   };
 
   const activeFiltersCount = Object.keys(filters).filter(
@@ -381,8 +394,8 @@ export function QuickSelectAndFilter({
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          align="end" 
+        <DropdownMenuContent
+          align="end"
           className="w-64"
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
@@ -419,116 +432,21 @@ export function QuickSelectAndFilter({
           </div>
 
           <DropdownMenuSeparator />
-
-          <DropdownMenuCheckboxItem
-            checked={filters.topCandidates}
-            onCheckedChange={() => handleFilterToggle('topCandidates')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <Star className="h-4 w-4 mr-2" />
-            Top Candidates (7+ score)
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={filters.appliedThisWeek}
-            onCheckedChange={() => handleFilterToggle('appliedThisWeek')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Applied This Week
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={filters.appliedToday}
-            onCheckedChange={() => handleFilterToggle('appliedToday')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Applied Today
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={filters.appliedIn15Days}
-            onCheckedChange={() => handleFilterToggle('appliedIn15Days')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <Target className="h-4 w-4 mr-2" />
-            Applied in 15 Days
-          </DropdownMenuCheckboxItem>
-
+          <DropdownMenuCheckboxItem checked={filters.topCandidates} onCheckedChange={() => handleFilterToggle('topCandidates')} onSelect={(e) => e.preventDefault()}><Star className="h-4 w-4 mr-2" />Top Candidates (7+ score)</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={filters.appliedThisWeek} onCheckedChange={() => handleFilterToggle('appliedThisWeek')} onSelect={(e) => e.preventDefault()}><Calendar className="h-4 w-4 mr-2" />Applied This Week</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={filters.appliedToday} onCheckedChange={() => handleFilterToggle('appliedToday')} onSelect={(e) => e.preventDefault()}><Clock className="h-4 w-4 mr-2" />Applied Today</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={filters.appliedIn15Days} onCheckedChange={() => handleFilterToggle('appliedIn15Days')} onSelect={(e) => e.preventDefault()}><Target className="h-4 w-4 mr-2" />Applied in 15 Days</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-
-          <DropdownMenuCheckboxItem
-            checked={filters.toFollowUp}
-            onCheckedChange={() => handleFilterToggle('toFollowUp')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <MessageSquare className="h-4 w-4 mr-2" />
-            To Follow Up
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={filters.assigned}
-            onCheckedChange={() => handleFilterToggle('assigned')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <UserCheck className="h-4 w-4 mr-2" />
-            Assigned
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={filters.notAssigned}
-            onCheckedChange={() => handleFilterToggle('notAssigned')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <UserX className="h-4 w-4 mr-2" />
-            Not Assigned
-          </DropdownMenuCheckboxItem>
-
+          <DropdownMenuCheckboxItem checked={filters.toFollowUp} onCheckedChange={() => handleFilterToggle('toFollowUp')} onSelect={(e) => e.preventDefault()}><MessageSquare className="h-4 w-4 mr-2" />To Follow Up</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={filters.assigned} onCheckedChange={() => handleFilterToggle('assigned')} onSelect={(e) => e.preventDefault()}><UserCheck className="h-4 w-4 mr-2" />Assigned</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={filters.notAssigned} onCheckedChange={() => handleFilterToggle('notAssigned')} onSelect={(e) => e.preventDefault()}><UserX className="h-4 w-4 mr-2" />Not Assigned</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-
-          <DropdownMenuCheckboxItem
-            checked={filters.withRemarks}
-            onCheckedChange={() => handleFilterToggle('withRemarks')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            With Remarks
-          </DropdownMenuCheckboxItem>
-
-          <DropdownMenuCheckboxItem
-            checked={filters.withoutRemarks}
-            onCheckedChange={() => handleFilterToggle('withoutRemarks')}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <FileX className="h-4 w-4 mr-2" />
-            Without Remarks
-          </DropdownMenuCheckboxItem>
-
+          <DropdownMenuCheckboxItem checked={filters.withRemarks} onCheckedChange={() => handleFilterToggle('withRemarks')} onSelect={(e) => e.preventDefault()}><FileText className="h-4 w-4 mr-2" />With Remarks</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={filters.withoutRemarks} onCheckedChange={() => handleFilterToggle('withoutRemarks')} onSelect={(e) => e.preventDefault()}><FileX className="h-4 w-4 mr-2" />Without Remarks</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-
-          <DropdownMenuCheckboxItem
-            checked={showArchived}
-            onCheckedChange={(checked) => {
-              onShowArchivedChange(checked);
-              clearAllFilters();
-            }}
-            onSelect={(e) => e.preventDefault()}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Show Archived
-          </DropdownMenuCheckboxItem>
-
+          <DropdownMenuCheckboxItem checked={showArchived} onCheckedChange={(checked) => { onShowArchivedChange(checked); clearAllFilters(); }} onSelect={(e) => e.preventDefault()}><FileText className="h-4 w-4 mr-2" />Show Archived</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-
-          <DropdownMenuItem
-            onClick={() => {
-              clearAllFilters();
-              setIsFiltersDropdownOpen(false);
-            }}
-          >
-            Clear All Filters
-          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => { clearAllFilters(); setIsFiltersDropdownOpen(false); }}>Clear All Filters</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -542,6 +460,28 @@ export function QuickSelectAndFilter({
         {' '}
         candidates
       </div>
+
+      {/* Bulk Actions - Show when candidates are selected */}
+      {selectedCandidates.length > 0 && (
+        <>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-sm">{selectedCandidates.length} selected</Badge>
+            <Button variant="ghost" size="sm" onClick={clearSelectedCandidates} className="h-6 px-2"><X className="h-3 w-3" /></Button>
+          </div>
+          <div className="flex items-center gap-2 border-l border-gray-300 dark:border-gray-600 pl-3">
+            <Button variant="outline" size="sm" onClick={() => openBulkDialog('assignTo')} className="flex items-center gap-1"><UserPlus className="h-4 w-4" />Assign</Button>
+            <Button variant="outline" size="sm" onClick={() => openBulkDialog('switchJob')} className="flex items-center gap-1"><Briefcase className="h-4 w-4" />Move Job</Button>
+            <Button variant="outline" size="sm" onClick={() => openBulkDialog('markAsDone')} className="flex items-center gap-1"><CheckCircle className="h-4 w-4" />Done</Button>
+            <Button variant="outline" size="sm" onClick={() => handleBulkArchive(showArchived ? 'unarchive' : 'archive')} disabled={isArchiving} className={`flex items-center gap-1 ${!showArchived ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950'}`}>
+              {showArchived ? <><ArchiveRestore className="h-4 w-4" />Restore</> : <><Trash2 className="h-4 w-4" />Archive</>}
+            </Button>
+          </div>
+        </>
+      )}
+      {/* Bulk Actions Dialog */}
+      {isBulkDialogOpen && selectedCandidates.length > 0 && (
+        <UnifiedCandidateActionsDialog candidate={selectedCandidates[0]} candidates={selectedCandidates} isOpen={isBulkDialogOpen} onOpenChange={(open) => { setIsBulkDialogOpen(open); if (!open) setBulkActionType(undefined); }} initialAction={bulkActionType} onSuccess={() => { setIsBulkDialogOpen(false); clearSelectedCandidates(); }} />
+      )}
     </div>
   );
 }

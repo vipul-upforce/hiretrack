@@ -95,6 +95,7 @@ export default function JobProgressPage() {
     error: jobError,
   } = useFetchJobByIdQuery(id as string);
 
+
   // Temporary state for SSE integration (will be replaced by useCandidateState)
   const [tempSelectedCandidate, setTempSelectedCandidate] =
     useState<Candidate | null>(null);
@@ -104,7 +105,7 @@ export default function JobProgressPage() {
     candidates: normalizedCandidates,
     isLoading: isCandidatesLoading,
     refetch,
-    sseLanes:updatedLanes,
+    sseLanes: updatedLanes,
   } = useNormalizedCandidates({
     jobId: id,
     setSelectedCandidate: setTempSelectedCandidate,

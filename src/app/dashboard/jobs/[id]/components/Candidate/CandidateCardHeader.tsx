@@ -37,12 +37,15 @@ import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
 import TagsList from '@/components/ui/tagsList';
 import { formatDistanceToNow } from 'date-fns';
+import { Checkbox } from '@/components/ui/checkbox';
 import RemarksPopover from '../Remarks/remarks-popover';
 import { getTrackingDate } from '../../utils/candidateAccessors';
+import useMultiSelect from './candidate-card/hooks/useMultiSelect';
 
 // Extend the CandidateCardHeaderProps if jobTitle or status is not already on candidate
 interface CandidateCardHeaderProps {
   candidate: Candidate;
+  setLocalCandidate: React.Dispatch<React.SetStateAction<Candidate>>;
   user: User | null;
   showStar: boolean;
   showRedFlag: boolean;
@@ -65,6 +68,7 @@ interface CandidateCardHeaderProps {
 
 export function CandidateCardHeader({
   candidate,
+  setLocalCandidate,
   user,
   showStar,
   showRedFlag,
@@ -86,12 +90,16 @@ export function CandidateCardHeader({
 }: CandidateCardHeaderProps) {
   const createdAt = getTrackingDate(candidate, 'createdAt');
   const updatedAt = getTrackingDate(candidate, 'updatedAt');
-
+  const { selectCandidate, isSelected } = useMultiSelect({
+    candidate,
+    setLocalCandidate,
+  });
   // Guess field names for job and status
   // If not present on Candidate, you'll need to adjust as per your model
   const jobTitle: string =
     candidate.jobId?.title || candidate.jobDetails?.title || '-';
   const status: string = candidate.status as string;
+
 
   const formatSmartDate = (date: Date | null | undefined) => {
     if (!date) return 'N/A';
@@ -105,73 +113,89 @@ export function CandidateCardHeader({
     return date.toLocaleDateString();
   };
 
-  return (
-    <div className="mb-2 border-b border-gray-100 pb-2 dark:border-gray-800">
-      {/* Header row with job title and status */}
 
+  return (
+    <div className="mb-2 border-b border-gray-100 pb-2 dark:border-gray-800 group">
+      {/* Header row with job title and status */}
       {/* Main row with name, tags, actions */}
       <div className="mt-1 flex items-center justify-between pb-2">
-        <div
-          className="flex h-full flex-col items-center justify-center pr-3"
-          style={{ height: '-webkit-fill-available' }}
-        >
-          <div className="flex h-full flex-col">
-            <div className="flex h-full items-center gap-2">
-              {showStar && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">High-scoring candidate</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {showRedFlag && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Flag className="h-4 w-4 fill-red-500 text-red-500" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Low-scoring candidate</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              <h3 className="max-w-[150px] truncate text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
-                {candidate.name}
-              </h3>
-              {(candidate?.duplicateCount as number) > 1 && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 text-yellow-500 hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-800 dark:hover:text-yellow-400"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpenThisCandidateDuplicateDialog();
-                        }}
-                      >
-                        <TriangleAlert className="h-4 w-4" />
-                        <span className="sr-only">Duplicate Candidates</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">
-                        {candidate.duplicateCount} Duplicate Candidates
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+        <div className="flex items-center justify-start">
+          {!onDashboard && <span
+            className={`transition-all duration-150 overflow-hidden
+            ${(isSelected ? 'w-4 mr-2' : 'w-0')}${' '}
+            group-hover:w-4 group-hover:mr-2`
+            }
+          >
+            <Checkbox
+              checked={isSelected}
+              className="w-4"
+              onCheckedChange={selectCandidate}
+              style={{ minWidth: 16, minHeight: 16 }}
+            />
+          </span>}
+          <div
+            className="flex h-full flex-col items-center justify-center pr-3"
+            style={{ height: '-webkit-fill-available' }}
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex h-full items-center gap-2">
+                {showStar && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">High-scoring candidate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {showRedFlag && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Flag className="h-4 w-4 fill-red-500 text-red-500" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Low-scoring candidate</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <h3 className="max-w-[150px] truncate text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
+                  {candidate.name}
+                </h3>
+                {(candidate?.duplicateCount as number) > 1 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-yellow-500 hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-800 dark:hover:text-yellow-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenThisCandidateDuplicateDialog();
+                          }}
+                        >
+                          <TriangleAlert className="h-4 w-4" />
+                          <span className="sr-only">Duplicate Candidates</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">
+                          {candidate.duplicateCount} Duplicate Candidates
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
             </div>
+            {candidate.tags && <TagsList candidate={candidate} />}
           </div>
-          {candidate.tags && <TagsList candidate={candidate} />}
+
         </div>
 
         <div className="flex flex-col items-center justify-center">
@@ -182,6 +206,7 @@ export function CandidateCardHeader({
           )}
           {/* </div> */}
           <div className="mt-[1px] flex flex-shrink-0 gap-1.5">
+
             {/* Add Remarks Button */}
             <Button
               variant="ghost"

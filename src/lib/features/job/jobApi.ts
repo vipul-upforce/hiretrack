@@ -75,11 +75,12 @@ export const jobApi = baseApi.injectEndpoints({
       }),
     }),
     bulkAssignJob: builder.mutation({
-      query: (data) => ({
-        url: "/jobs/bulk-move",
-        method: "POST",
+      query: (data: { jobId: string; candidateIds: string[] }) => ({
+        url: '/jobs/bulk-move',
+        method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['Candidate'],
     }),
   }),
 });

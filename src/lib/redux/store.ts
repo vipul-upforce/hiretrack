@@ -13,6 +13,7 @@ import storage from 'redux-persist/lib/storage';
 import resumeReducer from '@/lib/redux/resumeSlice';
 import settingsReducer from '@/lib/redux/settingsSlice';
 import authReducer from '@/lib/redux/authSlice';
+import selectedCandidatesReducer from '@/lib/redux/selectedCandidatesSlice';
 
 const persistConfig = {
   key: 'root',
@@ -24,6 +25,7 @@ const rootReducer = combineReducers({
   resume: resumeReducer,
   settings: settingsReducer,
   auth: authReducer,
+  selectedCandidates: selectedCandidatesReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
