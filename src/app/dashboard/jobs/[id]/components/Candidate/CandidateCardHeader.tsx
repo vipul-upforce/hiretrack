@@ -37,10 +37,8 @@ import { Candidate } from '@/types/candidate';
 import { User } from '@/lib/features/users/usersApi';
 import TagsList from '@/components/ui/tagsList';
 import { formatDistanceToNow } from 'date-fns';
-import { Checkbox } from '@/components/ui/checkbox';
 import RemarksPopover from '../Remarks/remarks-popover';
 import { getTrackingDate } from '../../utils/candidateAccessors';
-import useMultiSelect from './candidate-card/hooks/useMultiSelect';
 
 // Extend the CandidateCardHeaderProps if jobTitle or status is not already on candidate
 interface CandidateCardHeaderProps {
@@ -72,7 +70,7 @@ interface CandidateCardHeaderProps {
 
 export function CandidateCardHeader({
   candidate,
-  setLocalCandidate,
+  setLocalCandidate: _setLocalCandidate,
   user,
   showStar,
   showRedFlag,
@@ -91,24 +89,12 @@ export function CandidateCardHeader({
   handleAssignJob,
   handlePopoverContentClick,
   onOpenThisCandidateDuplicateDialog,
-  onSelectCandidate,
-  candidateIndex = 0,
-  isShiftPressed = false,
+  onSelectCandidate: _onSelectCandidate,
+  candidateIndex: _candidateIndex = 0,
+  isShiftPressed: _isShiftPressed = false,
 }: CandidateCardHeaderProps) {
   const createdAt = getTrackingDate(candidate, 'createdAt');
   const updatedAt = getTrackingDate(candidate, 'updatedAt');
-  const { selectCandidate, isSelected } = useMultiSelect({
-    candidate,
-    setLocalCandidate,
-  });
-
-  const handleCheckboxChange = () => {
-    if (onSelectCandidate) {
-      onSelectCandidate(candidate, candidateIndex);
-    } else {
-      selectCandidate();
-    }
-  };
 
   const jobTitle: string =
     candidate.jobId?.title || candidate.jobDetails?.title || '-';
@@ -133,22 +119,6 @@ export function CandidateCardHeader({
       {/* Main row with name, tags, actions */}
       <div className="mt-1 flex items-center justify-between pb-2">
         <div className="flex items-center justify-start">
-          {/* {isShiftPressed && (
-            <span className="mr-2 text-xs text-muted-foreground">Shift</span>
-          )} */}
-          {!onDashboard && <span
-            className={`transition-all duration-150 overflow-hidden
-            ${(isSelected || isShiftPressed ? 'w-4 mr-2' : 'w-0')}${' '}
-            group-hover:w-4 group-hover:mr-2`
-            }
-          >
-            <Checkbox
-              checked={isSelected}
-              className="w-4"
-              onCheckedChange={handleCheckboxChange}
-              style={{ minWidth: 16, minHeight: 16 }}
-            />
-          </span>}
           <div
             className="flex h-full flex-col items-center justify-center pr-3"
             style={{ height: '-webkit-fill-available' }}

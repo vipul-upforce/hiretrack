@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, Filter, ChevronDown, X, Star, Calendar, Clock, MessageSquare, UserCheck, UserX, FileText, FileX, Target, UserPlus, Briefcase, CheckCircle, Trash2, ArchiveRestore } from 'lucide-react';
+import { Search, Filter, ChevronDown, X, Star, Calendar, Clock, MessageSquare, UserCheck, UserX, FileText, FileX, Target } from 'lucide-react';
 import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
 import { Job } from '@/types/job';
 import { Candidate } from '@/types/candidate';
@@ -17,7 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { getInterviewerName, isAssigned } from '../utils/candidateAccessors';
 import useMultiSelect from './Candidate/candidate-card/hooks/useMultiSelect';
 import { UnifiedCandidateActionsDialog } from './Dialogs/unified-candidate-actions-dialog';
-import ConfirmationDialog from './Dialogs/ConfirmationDialog';
+import { BulkActionsDropdown } from './BulkActionsDropdown';
+import { ArchiveConfirmDialog } from './ArchiveConfirmDialog';
 
 interface FilterState {
   search: string;
@@ -473,44 +474,21 @@ export function QuickSelectAndFilter({
         candidates
       </div>
 
-      {/* Bulk Actions - Show when candidates are selected */}
+      {/* Bulk Actions - Dropdown when candidates are selected */}
       {selectedCandidates.length > 0 && (
-        <>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-sm">{selectedCandidates.length} selected</Badge>
-            <Button variant="ghost" size="sm" onClick={clearSelectedCandidates} className="h-6 px-2"><X className="h-3 w-3" /></Button>
-          </div>
-          <div className="flex items-center gap-2 border-l border-gray-300 dark:border-gray-600 pl-3">
-            <Button variant="outline" size="sm" onClick={() => openBulkDialog('assignTo')} className="flex items-center gap-1"><UserPlus className="h-4 w-4" />Assign</Button>
-            <Button variant="outline" size="sm" onClick={() => openBulkDialog('switchJob')} className="flex items-center gap-1"><Briefcase className="h-4 w-4" />Move Job</Button>
-            <Button variant="outline" size="sm" onClick={() => openBulkDialog('markAsDone')} className="flex items-center gap-1"><CheckCircle className="h-4 w-4" />Done</Button>
-            <Button variant="outline" size="sm" onClick={() => openArchiveConfirm(showArchived ? 'unarchive' : 'archive')} disabled={isArchiving} className={`flex items-center gap-1 ${!showArchived ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950'}`}>
-              {showArchived ? <><ArchiveRestore className="h-4 w-4" />Restore</> : <><Trash2 className="h-4 w-4" />Archive</>}
-            </Button>
-          </div>
-        </>
+        <BulkActionsDropdown
+          selectedCount={selectedCandidates.length}
+          showArchived={showArchived}
+          isArchiving={isArchiving}
+          onClearSelection={clearSelectedCandidates}
+          onOpenDialog={openBulkDialog}
+          onArchiveClick={openArchiveConfirm}
+        />
       )}
-      {/* Bulk Actions Dialog */}
       {isBulkDialogOpen && selectedCandidates.length > 0 && (
         <UnifiedCandidateActionsDialog candidate={selectedCandidates[0]} candidates={selectedCandidates} isOpen={isBulkDialogOpen} onOpenChange={(open) => { setIsBulkDialogOpen(open); if (!open) setBulkActionType(undefined); }} initialAction={bulkActionType} onSuccess={() => { setIsBulkDialogOpen(false); clearSelectedCandidates(); }} />
       )}
-      {/* Bulk Archive/Restore confirmation */}
-      <ConfirmationDialog
-        isOpen={isArchiveConfirmOpen}
-        setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }}
-        title={pendingArchiveAction === 'unarchive' ? 'Restore candidates?' : 'Archive candidates?'}
-        message={
-          pendingArchiveAction === 'unarchive'
-            ? `This will restore ${selectedCandidateIds.length} candidate${selectedCandidateIds.length === 1 ? '' : 's'}. They will be visible in the regular view again.`
-            : `This will archive ${selectedCandidateIds.length} candidate${selectedCandidateIds.length === 1 ? '' : 's'}. They will be hidden from the regular view.`
-        }
-        onConfirm={() => pendingArchiveAction && handleBulkArchive(pendingArchiveAction)}
-        onCancel={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }}
-        isLoading={isArchiving}
-        loadingText={pendingArchiveAction === 'unarchive' ? 'Restoring...' : 'Archiving...'}
-        buttonName={pendingArchiveAction === 'unarchive' ? 'Restore' : 'Archive'}
-        className="sm:max-w-[400px]"
-      />
+      <ArchiveConfirmDialog isOpen={isArchiveConfirmOpen} setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }} action={pendingArchiveAction} count={selectedCandidateIds.length} isLoading={isArchiving} onConfirm={handleBulkArchive} onClose={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }} />
     </div>
   );
 }

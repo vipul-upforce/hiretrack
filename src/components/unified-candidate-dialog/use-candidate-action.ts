@@ -9,8 +9,7 @@ import { FormikHelpers } from 'formik';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
-  useBulkAssignCandidatesMutation,
-  useBulkUnassignCandidatesMutation,
+  useBulkUpdateCandidatesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import {
   useAssignJobMutation,
@@ -82,8 +81,7 @@ export function useCandidateActions({
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [assignJob] = useAssignJobMutation();
   const [bulkAssignJob] = useBulkAssignJobMutation();
-  const [bulkAssignCandidates] = useBulkAssignCandidatesMutation();
-  const [bulkUnassignCandidates] = useBulkUnassignCandidatesMutation();
+  const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
@@ -404,18 +402,24 @@ export function useCandidateActions({
     }
     setIsSubmitting(true);
     try {
-      // Handle bulk operations via existing bulk APIs (history updated on backend)
+      // Handle bulk operations via unified bulk-update API (supports multiple operations)
       if (isBulkMode && candidateList.length > 1) {
         const candidateIds = candidateList.map((c) => c._id);
+        const operations: Array<{
+          operation: string;
+          [key: string]: unknown;
+        }> = [];
 
-        // Bulk Switch Job – use existing /jobs/bulk-move API
+        // Build operations array from enabled actions
+        // Note: switchJob uses separate API (bulkAssignJob) for now, but could be added to bulk-update later
         if (actions.switchJob && values.jobId) {
           try {
             const result = await bulkAssignJob({
               jobId: values.jobId,
               candidateIds,
             }).unwrap();
-            const count = result?.updatedCandidates?.length ?? candidateIds.length;
+            const count =
+              result?.updatedCandidates?.length ?? candidateIds.length;
             toast({
               title: 'Success',
               description: `${count} candidate(s) moved to job`,
@@ -436,7 +440,7 @@ export function useCandidateActions({
           return;
         }
 
-        // Bulk Assign To – use /candidates/bulk-assign API (updates history on backend)
+        // Bulk Assign To
         if (actions.assignTo && values.interviewerId) {
           const normalizedInterviewerId = normalizeInterviewerId(
             values.interviewerId as string | null | undefined,
@@ -450,60 +454,111 @@ export function useCandidateActions({
             setIsSubmitting(false);
             return;
           }
-          try {
-            const result = await bulkAssignCandidates({
-              candidateIds,
-              interviewerId: normalizedInterviewerId,
-              time: values.time ? values.time.toISOString() : undefined,
-            }).unwrap();
-            toast({
-              title: 'Success',
-              description: result.message || `${result.updatedCount} candidate(s) assigned`,
-            });
-            onSuccess?.();
-            onOpenChange(false);
-          } catch (error) {
-            toast({
-              title: 'Error',
-              description:
-                (error as { data?: { error?: string } })?.data?.error ||
-                (error as Error)?.message ||
-                'Failed to assign candidates',
-              variant: 'destructive',
-            });
-          }
-          setIsSubmitting(false);
-          return;
+
+          // Process meeting attachments for Google Calendar (convert File to base64 if needed)
+          const processedMeetingAttachments = await Promise.all(
+            (values.meetingAttachments || []).map(async (file) => {
+              if (file instanceof File) {
+                const reader = new FileReader();
+                const dataUrl = await new Promise<string>((resolve, reject) => {
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(file);
+                });
+                return {
+                  id: Math.random().toString(36).slice(2),
+                  name: file.name,
+                  url: dataUrl,
+                  type: file.type,
+                  size: file.size,
+                };
+              }
+              return file;
+            }),
+          );
+
+          operations.push({
+            operation: 'assign',
+            interviewerId: normalizedInterviewerId,
+            time: values.time ? values.time.toISOString() : undefined,
+            attachments: values.attachments || [],
+            scheduleGoogleMeet: values.scheduleGoogleMeet || false,
+            meetDuration: values.meetDuration || 30,
+            meetingNotes: values.meetingNotes || '',
+            meetingAttachments: processedMeetingAttachments,
+            additionalGuests: values.additionalGuests || [],
+          });
         }
 
-        // Bulk Mark as Done – use /candidates/bulk-unassign API (updates history on backend)
+        // Bulk Mark as Done
         if (actions.markAsDone) {
-          try {
-            const result = await bulkUnassignCandidates({ candidateIds }).unwrap();
-            toast({
-              title: 'Success',
-              description: result.message || `${result.updatedCount} candidate(s) marked as done`,
-            });
-            onSuccess?.();
-            onOpenChange(false);
-          } catch (error) {
-            toast({
-              title: 'Error',
-              description:
-                (error as { data?: { error?: string } })?.data?.error ||
-                (error as Error)?.message ||
-                'Failed to unassign candidates',
-              variant: 'destructive',
-            });
-          }
+          operations.push({
+            operation: 'unassign',
+          });
+        }
+
+        // Bulk Add Remark
+        if (actions.addRemark && values.remarkDescription?.trim()) {
+          operations.push({
+            operation: 'addRemark',
+            description: values.remarkDescription.trim(),
+            isPrivate: values.isRemarkPrivate,
+            rating: values.remarkRating ? Number(values.remarkRating) : 0,
+            selectedMentionUserIds:
+              values.selectedMentions?.map((m) => m._id) ?? [],
+          });
+        }
+
+        // Bulk Add Follow-up
+        if (actions.addFollowUp && values.followUpNote?.trim()) {
+          operations.push({
+            operation: 'addFollowUp',
+            note: values.followUpNote.trim(),
+            date: values.followUpDate?.toISOString() ?? null,
+          });
+        }
+
+        // Bulk Status Update
+        if (actions.updateStatus && values.newStatus) {
+          operations.push({
+            operation: 'statusUpdate',
+            status: values.newStatus as string,
+          });
+        }
+
+        if (operations.length === 0) {
+          toast({
+            title: 'Info',
+            description: 'Please select an action to perform',
+          });
           setIsSubmitting(false);
           return;
         }
 
-        toast({
-          title: 'Info',
-          description: 'Please select an action to perform',
-        });
+        // Send all operations in a single request
+        try {
+          const result = await bulkUpdateCandidates({
+            candidateIds,
+            operations:
+              operations as unknown as import('@/app/api/candidates/bulk-update/types').BulkUpdateOperationParams[],
+          }).unwrap();
+          toast({
+            title: 'Success',
+            description:
+              result.message || `Updated ${result.updatedCount} candidate(s)`,
+          });
+          onSuccess?.();
+          onOpenChange(false);
+        } catch (error) {
+          toast({
+            title: 'Error',
+            description:
+              (error as { data?: { error?: string } })?.data?.error ||
+              (error as Error)?.message ||
+              'Failed to update candidates',
+            variant: 'destructive',
+          });
+        }
         setIsSubmitting(false);
         return;
       }
@@ -766,7 +821,8 @@ export function useCandidateActions({
       // is stale (missing the new entries). Stripping it ensures the details dialog will
       // fetch fresh history instead of using stale data and marking historyLoaded=true prematurely.
       if (historyEntries.length > 0) {
-        const { history: _staleHistory, ...resultWithoutHistory } = result as Candidate & { history?: unknown };
+        const { history: _staleHistory, ...resultWithoutHistory } =
+          result as Candidate & { history?: unknown };
         onUpdate?.(resultWithoutHistory as Candidate);
         setLocalCandidate?.(resultWithoutHistory as Candidate);
       } else {

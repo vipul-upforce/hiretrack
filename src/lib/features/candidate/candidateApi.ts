@@ -421,6 +421,27 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    /** Unified bulk update: assign, unassign, archive, moveJob, addRemark, addFollowUp, statusUpdate
+     * Supports both single operation (backward compatible) and multiple operations array
+     */
+    bulkUpdateCandidates: builder.mutation<
+      {
+        success: boolean;
+        message: string;
+        updatedCount: number;
+        failedCount: number;
+        skippedCount?: number;
+      },
+      | import('@/app/api/candidates/bulk-update/types').BulkUpdateParams
+      | import('@/app/api/candidates/bulk-update/types').BulkUpdateRequest
+    >({
+      query: (body) => ({
+        url: '/candidates/bulk-update',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
     sendEmailToCandidate: builder.mutation<
       SendEmailToCandidateResponse,
       SendEmailToCandidateRequest
@@ -471,6 +492,7 @@ export const {
   useBulkArchiveCandidatesMutation,
   useBulkAssignCandidatesMutation,
   useBulkUnassignCandidatesMutation,
+  useBulkUpdateCandidatesMutation,
   useLazyFetchCandidateHistoryQuery,
   useLazyFetchCandidateDetailsQuery,
   useUpdateCandidateRemarkMutation,
