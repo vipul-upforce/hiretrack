@@ -23,7 +23,12 @@ import {
 } from '@/components/ui/tooltip';
 
 import CustomScrollbarLane from '@/components/ui/custom-scrollbar-lane';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  setSelectedCandidates,
+  toggleCandidateSelection,
+} from '@/lib/redux/selectedCandidatesSlice';
+import { useShiftKey, setShiftRangeAnchor } from '@/hooks/useShiftKey';
 import { getJobId, getTrackingDate } from '../../utils/candidateAccessors';
 import { LaneOptionsMenu } from './lanes-options-menu';
 import { CandidateCard } from '../Candidate/candidate-card';
@@ -74,6 +79,8 @@ const CandidateRow = memo(
           onFollowUpClick={handleSelect}
           onAddRemarkClick={handleSelect}
           isPending={isPending}
+          onSelectCandidate={context.onSelectCandidate}
+          isShiftPressed={context.isShiftPressed}
         />
       </div>
     );
@@ -125,12 +132,14 @@ const KanbanColumn = memo(
     pendingMoves = [],
     laneConfig,
   }: KanbanColumnProps) => {
+    const dispatch = useAppDispatch();
+    const isShiftPressed = useShiftKey();
     const [isLaneOptionsOpen, setIsLaneOptionsOpen] = useState<boolean>(false);
     const [isLaneOpsOpenFor, setIsLaneOpsOpenFor] = useState<string | null>(
       null,
     );
     const user = useAppSelector((state) => state.auth.user);
-
+    const selectedCandidates = useAppSelector((state) => state.selectedCandidates?.candidates ?? []);
     const [sortConfig, setSortConfig] = useState<SortConfig>({
       field: null,
       direction: 'asc',
@@ -140,31 +149,6 @@ const KanbanColumn = memo(
     const pathname = usePathname();
     const jobId = pathname?.split('/')[3];
     const scrollerRef = useRef<HTMLDivElement | null>(null);
-
-    // --- 4. Create Memoized Context ---
-    // This object bundles all the dynamic props needed by the list items
-    const contextValue = useMemo<CandidateContextType>(
-      () => ({
-        laneId: column.id,
-        pendingMoves,
-        refetch,
-        openRemarksFor,
-        setOpenRemarksFor,
-        setSelectedCandidate,
-        handleDeleteClick,
-        setIsDetailsOpen,
-      }),
-      [
-        column.id,
-        pendingMoves,
-        refetch,
-        openRemarksFor,
-        setOpenRemarksFor,
-        setSelectedCandidate,
-        handleDeleteClick,
-        setIsDetailsOpen,
-      ],
-    );
 
     const sortCandidates = useCallback(
       (
@@ -258,6 +242,75 @@ const KanbanColumn = memo(
 
       return sortCandidates(filtered, sortConfig.field, sortConfig.direction);
     }, [column.candidates, jobId, sortConfig, sortCandidates]);
+
+    const onSelectCandidate = useCallback(
+      (candidate: Candidate, candidateIndex: number) => {
+        if (isShiftPressed) {
+          const laneId = column.id;
+          const laneIdSet = new Set(processedCandidates.map((c) => c._id));
+          const selectedInLane = selectedCandidates.filter((c) => laneIdSet.has(c._id));
+          if (selectedInLane.length === 0) {
+            const next = selectedCandidates.some((c) => c._id === candidate._id) ? selectedCandidates : [...selectedCandidates, candidate];
+            dispatch(setSelectedCandidates(next));
+            setShiftRangeAnchor(laneId, candidateIndex);
+          } else {
+            const lastSelected = selectedInLane[selectedInLane.length - 1];
+            const lastIndex = processedCandidates.findIndex((c) => c._id === lastSelected._id);
+            if (lastIndex === -1) {
+              const next = selectedCandidates.some((c) => c._id === candidate._id) ? selectedCandidates : [...selectedCandidates, candidate];
+              dispatch(setSelectedCandidates(next));
+              setShiftRangeAnchor(laneId, candidateIndex);
+            } else {
+              const lo = Math.min(lastIndex, candidateIndex);
+              const hi = Math.max(lastIndex, candidateIndex);
+              const range = processedCandidates.slice(lo, hi + 1);
+              const inLaneIds = selectedInLane.map((c) => c._id);
+              const mergedIds = new Set([...inLaneIds, ...range.map((c) => c._id)]);
+              const mergedInLane = processedCandidates.filter((c) => mergedIds.has(c._id));
+              const rest = selectedCandidates.filter((c) => !laneIdSet.has(c._id));
+              dispatch(setSelectedCandidates([...rest, ...mergedInLane]));
+              setShiftRangeAnchor(laneId, candidateIndex);
+            }
+          }
+        } else {
+          dispatch(toggleCandidateSelection({ ...candidate, isSelected: true }));
+        }
+      },
+      [
+        isShiftPressed,
+        column.id,
+        processedCandidates,
+        selectedCandidates,
+        dispatch,
+      ],
+    );
+
+    const contextValue = useMemo<CandidateContextType>(
+      () => ({
+        laneId: column.id,
+        pendingMoves,
+        refetch,
+        openRemarksFor,
+        setOpenRemarksFor,
+        setSelectedCandidate,
+        handleDeleteClick,
+        setIsDetailsOpen,
+        onSelectCandidate,
+        isShiftPressed,
+      }),
+      [
+        column.id,
+        pendingMoves,
+        refetch,
+        openRemarksFor,
+        setOpenRemarksFor,
+        setSelectedCandidate,
+        handleDeleteClick,
+        setIsDetailsOpen,
+        onSelectCandidate,
+        isShiftPressed,
+      ],
+    );
 
     const handleSort = useCallback(
       (field: string, direction: 'asc' | 'desc') => {

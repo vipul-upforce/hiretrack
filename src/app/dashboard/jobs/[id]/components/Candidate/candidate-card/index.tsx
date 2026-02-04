@@ -43,6 +43,8 @@ export const CandidateCard = memo(
     isPending = false,
     onUpdate,
     refetchAssignment,
+    onSelectCandidate,
+    isShiftPressed,
   }: CandidateCardProps) => {
     const triggerRef = useRef<HTMLButtonElement>(
       null,
@@ -197,6 +199,9 @@ export const CandidateCard = memo(
               handleAssignJob={handleAssignJob}
               handlePopoverContentClick={handlePopoverContentClick}
               onOpenThisCandidateDuplicateDialog={handleOpenDuplicateDialogForThisCandidate}
+              onSelectCandidate={onSelectCandidate}
+              candidateIndex={index}
+              isShiftPressed={isShiftPressed}
             />
             <CandidateCardFollowUp
               candidate={localCandidate}

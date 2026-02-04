@@ -21,4 +21,7 @@ export interface CandidateCardProps {
   refetchAssignment?: () => void;
   onOpenCandidateDetailsDialog?: (candidate: Candidate) => void;
   onOpenThisCandidateDuplicateDialog?: () => void;
+  /** From KanbanColumn: shift-click range selection */
+  onSelectCandidate?: (candidate: Candidate, candidateIndex: number) => void;
+  isShiftPressed?: boolean;
 }

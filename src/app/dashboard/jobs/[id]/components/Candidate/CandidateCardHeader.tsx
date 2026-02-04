@@ -64,6 +64,10 @@ interface CandidateCardHeaderProps {
   handleAssignJob: (candidate: Candidate, e: React.MouseEvent) => void;
   handlePopoverContentClick: (e: React.MouseEvent) => void;
   onOpenThisCandidateDuplicateDialog: () => void;
+  /** From KanbanColumn: shift-click range selection */
+  onSelectCandidate?: (candidate: Candidate, candidateIndex: number) => void;
+  candidateIndex?: number;
+  isShiftPressed?: boolean;
 }
 
 export function CandidateCardHeader({
@@ -87,6 +91,9 @@ export function CandidateCardHeader({
   handleAssignJob,
   handlePopoverContentClick,
   onOpenThisCandidateDuplicateDialog,
+  onSelectCandidate,
+  candidateIndex = 0,
+  isShiftPressed = false,
 }: CandidateCardHeaderProps) {
   const createdAt = getTrackingDate(candidate, 'createdAt');
   const updatedAt = getTrackingDate(candidate, 'updatedAt');
@@ -94,12 +101,18 @@ export function CandidateCardHeader({
     candidate,
     setLocalCandidate,
   });
-  // Guess field names for job and status
-  // If not present on Candidate, you'll need to adjust as per your model
+
+  const handleCheckboxChange = () => {
+    if (onSelectCandidate) {
+      onSelectCandidate(candidate, candidateIndex);
+    } else {
+      selectCandidate();
+    }
+  };
+
   const jobTitle: string =
     candidate.jobId?.title || candidate.jobDetails?.title || '-';
   const status: string = candidate.status as string;
-
 
   const formatSmartDate = (date: Date | null | undefined) => {
     if (!date) return 'N/A';
@@ -120,16 +133,19 @@ export function CandidateCardHeader({
       {/* Main row with name, tags, actions */}
       <div className="mt-1 flex items-center justify-between pb-2">
         <div className="flex items-center justify-start">
+          {/* {isShiftPressed && (
+            <span className="mr-2 text-xs text-muted-foreground">Shift</span>
+          )} */}
           {!onDashboard && <span
             className={`transition-all duration-150 overflow-hidden
-            ${(isSelected ? 'w-4 mr-2' : 'w-0')}${' '}
+            ${(isSelected || isShiftPressed ? 'w-4 mr-2' : 'w-0')}${' '}
             group-hover:w-4 group-hover:mr-2`
             }
           >
             <Checkbox
               checked={isSelected}
               className="w-4"
-              onCheckedChange={selectCandidate}
+              onCheckedChange={handleCheckboxChange}
               style={{ minWidth: 16, minHeight: 16 }}
             />
           </span>}

@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getInterviewerName, isAssigned } from '../utils/candidateAccessors';
 import useMultiSelect from './Candidate/candidate-card/hooks/useMultiSelect';
 import { UnifiedCandidateActionsDialog } from './Dialogs/unified-candidate-actions-dialog';
+import ConfirmationDialog from './Dialogs/ConfirmationDialog';
 
 interface FilterState {
   search: string;
@@ -71,6 +72,10 @@ export function QuickSelectAndFilter({
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [bulkActionType, setBulkActionType] = useState<CandidateActionType | undefined>();
 
+  // Bulk archive confirmation
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
+  const [pendingArchiveAction, setPendingArchiveAction] = useState<'archive' | 'unarchive' | null>(null);
+
   // Archive mutation
   const [bulkArchive, { isLoading: isArchiving }] = useBulkArchiveCandidatesMutation();
 
@@ -91,6 +96,8 @@ export function QuickSelectAndFilter({
         description: result.message,
       });
       clearSelectedCandidates();
+      setIsArchiveConfirmOpen(false);
+      setPendingArchiveAction(null);
     } catch (error) {
       toast({
         title: 'Error',
@@ -101,6 +108,11 @@ export function QuickSelectAndFilter({
         variant: 'destructive',
       });
     }
+  };
+
+  const openArchiveConfirm = (action: 'archive' | 'unarchive') => {
+    setPendingArchiveAction(action);
+    setIsArchiveConfirmOpen(true);
   };
 
   // Compute filtered candidates for display purposes (e.g., count)
@@ -444,7 +456,7 @@ export function QuickSelectAndFilter({
           <DropdownMenuCheckboxItem checked={filters.withRemarks} onCheckedChange={() => handleFilterToggle('withRemarks')} onSelect={(e) => e.preventDefault()}><FileText className="h-4 w-4 mr-2" />With Remarks</DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem checked={filters.withoutRemarks} onCheckedChange={() => handleFilterToggle('withoutRemarks')} onSelect={(e) => e.preventDefault()}><FileX className="h-4 w-4 mr-2" />Without Remarks</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
-          <DropdownMenuCheckboxItem checked={showArchived} onCheckedChange={(checked) => { onShowArchivedChange(checked); clearAllFilters(); }} onSelect={(e) => e.preventDefault()}><FileText className="h-4 w-4 mr-2" />Show Archived</DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={showArchived} onCheckedChange={(checked) => onShowArchivedChange(checked)} onSelect={(e) => e.preventDefault()}><FileText className="h-4 w-4 mr-2" />Show Archived</DropdownMenuCheckboxItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => { clearAllFilters(); setIsFiltersDropdownOpen(false); }}>Clear All Filters</DropdownMenuItem>
         </DropdownMenuContent>
@@ -472,7 +484,7 @@ export function QuickSelectAndFilter({
             <Button variant="outline" size="sm" onClick={() => openBulkDialog('assignTo')} className="flex items-center gap-1"><UserPlus className="h-4 w-4" />Assign</Button>
             <Button variant="outline" size="sm" onClick={() => openBulkDialog('switchJob')} className="flex items-center gap-1"><Briefcase className="h-4 w-4" />Move Job</Button>
             <Button variant="outline" size="sm" onClick={() => openBulkDialog('markAsDone')} className="flex items-center gap-1"><CheckCircle className="h-4 w-4" />Done</Button>
-            <Button variant="outline" size="sm" onClick={() => handleBulkArchive(showArchived ? 'unarchive' : 'archive')} disabled={isArchiving} className={`flex items-center gap-1 ${!showArchived ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950'}`}>
+            <Button variant="outline" size="sm" onClick={() => openArchiveConfirm(showArchived ? 'unarchive' : 'archive')} disabled={isArchiving} className={`flex items-center gap-1 ${!showArchived ? 'text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950' : 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950'}`}>
               {showArchived ? <><ArchiveRestore className="h-4 w-4" />Restore</> : <><Trash2 className="h-4 w-4" />Archive</>}
             </Button>
           </div>
@@ -482,6 +494,23 @@ export function QuickSelectAndFilter({
       {isBulkDialogOpen && selectedCandidates.length > 0 && (
         <UnifiedCandidateActionsDialog candidate={selectedCandidates[0]} candidates={selectedCandidates} isOpen={isBulkDialogOpen} onOpenChange={(open) => { setIsBulkDialogOpen(open); if (!open) setBulkActionType(undefined); }} initialAction={bulkActionType} onSuccess={() => { setIsBulkDialogOpen(false); clearSelectedCandidates(); }} />
       )}
+      {/* Bulk Archive/Restore confirmation */}
+      <ConfirmationDialog
+        isOpen={isArchiveConfirmOpen}
+        setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }}
+        title={pendingArchiveAction === 'unarchive' ? 'Restore candidates?' : 'Archive candidates?'}
+        message={
+          pendingArchiveAction === 'unarchive'
+            ? `This will restore ${selectedCandidateIds.length} candidate${selectedCandidateIds.length === 1 ? '' : 's'}. They will be visible in the regular view again.`
+            : `This will archive ${selectedCandidateIds.length} candidate${selectedCandidateIds.length === 1 ? '' : 's'}. They will be hidden from the regular view.`
+        }
+        onConfirm={() => pendingArchiveAction && handleBulkArchive(pendingArchiveAction)}
+        onCancel={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }}
+        isLoading={isArchiving}
+        loadingText={pendingArchiveAction === 'unarchive' ? 'Restoring...' : 'Archiving...'}
+        buttonName={pendingArchiveAction === 'unarchive' ? 'Restore' : 'Archive'}
+        className="sm:max-w-[400px]"
+      />
     </div>
   );
 }

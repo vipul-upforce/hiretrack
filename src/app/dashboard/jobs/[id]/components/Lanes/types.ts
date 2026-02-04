@@ -27,6 +27,9 @@ export interface CandidateContextType {
   setSelectedCandidate: (candidate: Candidate | null) => void;
   handleDeleteClick: (id: string) => void;
   setIsDetailsOpen: (val: boolean) => void;
+  /** Shift-click range selection: (candidate, index) => void */
+  onSelectCandidate?: (candidate: Candidate, candidateIndex: number) => void;
+  isShiftPressed?: boolean;
 }
 
 export interface KanbanColumnProps {
