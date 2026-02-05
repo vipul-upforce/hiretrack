@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ interface BulkActionsDropdownProps {
   onClearSelection: () => void;
   onOpenDialog: (action: CandidateActionType) => void;
   onArchiveClick: (action: 'archive' | 'unarchive') => void;
+  className?: string;
 }
 
 export function BulkActionsDropdown({
@@ -41,24 +43,25 @@ export function BulkActionsDropdown({
   onClearSelection,
   onOpenDialog,
   onArchiveClick,
+  className,
 }: BulkActionsDropdownProps) {
   return (
-    <div className="flex items-center gap-2 border-l border-gray-300 dark:border-gray-600 pl-3">
-      <Badge variant="secondary" className="text-sm font-normal">
+    <div className={cn("flex items-center gap-2 border-l border-gray-300 dark:border-gray-600 pl-3", className)}>
+      <Badge variant="secondary" className="text-sm font-normal bulk-actions-badge">
         {selectedCount} selected
       </Badge>
       <Button
         variant="ghost"
         size="sm"
         onClick={onClearSelection}
-        className="h-7 w-7 p-0 rounded-full"
+        className="h-7 w-7 p-0 rounded-full bulk-actions-clear"
         aria-label="Clear selection"
       >
         <X className="h-3.5 w-3.5" />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex items-center gap-2 bulk-actions-menu">
             <MoreHorizontal className="h-4 w-4" />
             Bulk actions
             <ChevronDown className="h-4 w-4 opacity-70" />
