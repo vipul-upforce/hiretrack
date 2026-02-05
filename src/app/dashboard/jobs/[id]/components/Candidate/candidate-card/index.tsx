@@ -300,7 +300,9 @@ export const CandidateCard = memo(
                   'group relative cursor-grab overflow-visible rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md active:cursor-grabbing dark:border-gray-800 dark:bg-black',
                   isPending && 'opacity-50',
                   className,
-                  isSelected ? "border-2 border-primary dark:border-primary hover:border-primary/50" : "hover:border-gray-300  dark:hover:border-gray-700"
+                  isSelected
+                    ? "border-2 border-primary dark:border-primary hover:border-primary/50"
+                    : "hover:border-gray-300  dark:hover:border-gray-700"
                 )}
                 onClick={handleDraggableCardClick}
               >
@@ -309,7 +311,7 @@ export const CandidateCard = memo(
                   <div
                     role="presentation"
                     className={cn(
-                      'absolute -left-1 -top-1 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2  bg-white transition-opacity dark:bg-black',
+                      'absolute -left-1 -top-1 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white transition-opacity dark:bg-black',
                       showCheckbox ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
                       isSelected ? 'border-primary' : 'border-gray-300 border-[1px] dark:border-gray-600'
                     )}
@@ -325,19 +327,21 @@ export const CandidateCard = memo(
                       type="button"
                       aria-label={isSelected ? "Deselect candidate" : "Select candidate"}
                       className={cn(
-                        "relative z-10 flex items-center justify-center h-5 w-5 rounded-full transition-all duration-150 outline-none",
-                        "border-2",
+                        "relative z-10 flex h-5 w-5 items-center justify-center rounded-full transition-all duration-150 outline-none",
+                        "border",
                         isSelected
                           ? "bg-primary border-primary text-white"
-                          : "bg-white dark:bg-black text-transparent border-1 border-gray-300 dark:border-gray-600"
+                          : "bg-white text-transparent border-gray-300 dark:bg-black dark:border-gray-600"
                       )}
                       tabIndex={-1}
                     >
-                      {isSelected && (
-                        <svg className="h-3 w-3 text-white" viewBox="0 0 16 16" fill="none">
-                          <path d="M4 8.5l2.5 2.5L12 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
+                      <svg
+                        className={cn("h-3 w-3", isSelected ? "text-white" : "text-gray-400 dark:text-gray-600")}
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path d="M4 8.5l2.5 2.5L12 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
                     </button>
                   </div>
                 )}
