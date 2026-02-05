@@ -109,6 +109,27 @@ export interface BulkUpdateContext {
   requestHeaders?: Headers;
 }
 
+/** Meta for bulk-assign notification: interviewer gets one per candidate, admin/hr get one bulk */
+export interface BulkAssignNotificationMeta {
+  interviewerId: string;
+  interviewerName: string;
+  jobId: string;
+  jobTitle: string;
+  candidates: Array<{ candidateId: string; candidateName: string }>;
+}
+
+/** Meta for bulk-unassign notification: each previous interviewer gets one per candidate, admin/hr get one bulk */
+export interface BulkUnassignNotificationMeta {
+  unassignments: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    previousInterviewerId: string;
+    previousInterviewerName: string;
+  }>;
+}
+
 export interface BulkUpdateResult {
   success: boolean;
   updatedCount: number;
@@ -120,4 +141,14 @@ export interface BulkUpdateResult {
   message: string;
   /** For moveJob: target job title for notifications */
   meta?: { jobTitle?: string; toJobId?: string };
+  /** For assign: used to send bulk assign notifications (interviewer = separate; admin/hr = one bulk) */
+  assignNotificationMeta?: BulkAssignNotificationMeta;
+  /** For unassign: used to send bulk unassign notifications */
+  unassignNotificationMeta?: BulkUnassignNotificationMeta;
+  /** For addRemark: used to send bulk remark notifications (mentioned users = separate per candidate; admin/hr = one bulk) */
+  addRemarkNotificationMeta?: BulkAddRemarkNotificationMeta;
+  /** For addFollowUp: used to send bulk follow-up notifications */
+  addFollowUpNotificationMeta?: BulkAddFollowUpNotificationMeta;
+  /** For statusUpdate: used to send bulk status update notifications */
+  statusUpdateNotificationMeta?: BulkStatusUpdateNotificationMeta;
 }

@@ -37,6 +37,7 @@ interface GoogleMeetIntegrationProps {
   interviewers: Interviewer[] | undefined;
   googleCalendarData: IGoogleCalendar;
   setShowCancelMeetDialog: (show: boolean) => void;
+  isBulkMode: boolean;
 }
 
 export function GoogleMeetIntegration({
@@ -44,6 +45,7 @@ export function GoogleMeetIntegration({
   interviewers,
   googleCalendarData,
   setShowCancelMeetDialog,
+  isBulkMode,
 }: GoogleMeetIntegrationProps) {
   const {
     user,
@@ -156,6 +158,7 @@ export function GoogleMeetIntegration({
               <Field name="scheduleGoogleMeet">
                 {({ field }: FieldProps) => (
                   <Checkbox
+                    disabled={isBulkMode}
                     id="scheduleGoogleMeet"
                     checked={field.value}
                     onCheckedChange={(checked) =>
@@ -384,9 +387,8 @@ export function GoogleMeetIntegration({
                           handleAddGuest();
                         }
                       }}
-                      className={`h-8 flex-1 text-sm ${
-                        emailError ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={`h-8 flex-1 text-sm ${emailError ? 'border-red-500' : 'border-gray-300'
+                        }`}
                     />
                     <Button
                       type="button"

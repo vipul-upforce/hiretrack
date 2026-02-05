@@ -15,6 +15,7 @@ interface AssignSectionProps {
   interviewers: Interviewer[] | undefined;
   googleCalendarData?: IGoogleCalendar;
   setShowCancelMeetDialog: (show: boolean) => void;
+  isBulkMode: boolean;
 }
 
 export function AssignSection({
@@ -24,6 +25,7 @@ export function AssignSection({
   interviewers,
   googleCalendarData,
   setShowCancelMeetDialog,
+  isBulkMode,
 }: AssignSectionProps) {
   return (
     <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
@@ -40,6 +42,7 @@ export function AssignSection({
         </div>
         {googleCalendarData ? (
           <GoogleMeetIntegration
+            isBulkMode={isBulkMode}
             candidate={candidate}
             interviewers={interviewers}
             googleCalendarData={googleCalendarData}

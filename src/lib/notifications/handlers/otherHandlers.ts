@@ -3,7 +3,10 @@ import logger from '@/lib/logger';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
 import { batchCheckNotifications } from '../decision';
 import { getUsersByRole } from '../core/userHelpers';
-import { createBulkNotificationsWithDecision } from '../core/notificationHelpers';
+import {
+  createBulkNotificationsWithDecision,
+  createNotificationWithDecision,
+} from '../core/notificationHelpers';
 import { CreateNotificationParams } from '../types';
 import { createBulkNotifications } from '../core/notificationCore';
 
@@ -172,5 +175,115 @@ export async function notifyBulkImportCompleted(params: {
     });
   } catch (error) {
     logger.error('Failed to send bulk import completed notification:', error);
+  }
+}
+
+/**
+ * Bulk add remark: mentioned users get one notification per candidate (as MENTIONS);
+ * admin/hr get one bulk notification (as NEW_REMARKS).
+ * Mimics single notifyRemarkAdded exactly.
+ */
+export async function notifyBulkRemarkAdded(params: {
+  organizationId: string;
+  remarkText: string;
+  roles: string[];
+  validMentionUserIds?: string[];
+  candidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+  }>;
+  triggerUserId: string;
+  triggerUserName: string;
+}): Promise<void> {
+  try {
+    const userIds = await getUsersByRole(params.organizationId, params.roles);
+    const filteredIds = userIds.filter((id) => id !== params.triggerUserId);
+
+    let mentionedUserIds: string[] = [];
+    try {
+      const mentionResult = await findMentionedUsers(
+        params.remarkText,
+        params.organizationId,
+        params.validMentionUserIds,
+      );
+      mentionedUserIds = mentionResult.mentionedUsers.map((u) =>
+        u._id.toString(),
+      );
+    } catch (mentionError) {
+      logger.error('Error in mention detection:', mentionError);
+    }
+
+    // Mentioned users get one notification per candidate (as MENTIONS type)
+    for (const c of params.candidates) {
+      for (const mentionedUserId of mentionedUserIds) {
+        if (mentionedUserId !== params.triggerUserId) {
+          await createNotificationWithDecision(
+            params.organizationId,
+            mentionedUserId,
+            NotificationType.MENTIONS,
+            c.jobId,
+            params.triggerUserId,
+            true, // isMention
+            {
+              organizationId: params.organizationId,
+              recipientId: mentionedUserId,
+              type: NotificationType.MENTIONS,
+              title: 'New Remark Added',
+              message: `${params.triggerUserName} added a remark for ${c.candidateName}`,
+              relatedEntity: 'candidate',
+              relatedId: c.candidateId,
+              actionUrl: `/dashboard/jobs/${c.jobId}?candidateId=${c.candidateId}`,
+              triggerUserId: params.triggerUserId,
+              triggerUserName: params.triggerUserName,
+              priority: 'low',
+              metadata: {
+                candidateName: c.candidateName,
+                jobTitle: c.jobTitle,
+                jobId: c.jobId,
+                remarkText:
+                  params.remarkText.substring(0, 100) +
+                  (params.remarkText.length > 100 ? '...' : ''),
+              },
+            },
+          );
+        }
+      }
+    }
+
+    // Admin/hr get one bulk notification (as NEW_REMARKS type) - exclude mentioned users since they already got per-candidate notifications
+    if (filteredIds.length > 0) {
+      await createBulkNotificationsWithDecision({
+        organizationId: params.organizationId,
+        recipientIds: filteredIds,
+        notificationType: NotificationType.NEW_REMARKS,
+        jobId: params.candidates[0]?.jobId,
+        triggerUserId: params.triggerUserId,
+        baseParams: {
+          organizationId: params.organizationId,
+          type: NotificationType.NEW_REMARKS,
+          title: 'New Remarks Added',
+          message: `${params.triggerUserName} added a remark to ${params.candidates.length} candidate${params.candidates.length > 1 ? 's' : ''}`,
+          relatedEntity: 'job',
+          relatedId: params.candidates[0]?.jobId ?? '',
+          actionUrl: params.candidates[0]?.jobId
+            ? `/dashboard/jobs/${params.candidates[0].jobId}`
+            : '/dashboard/jobs',
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: 'low',
+          metadata: {
+            candidateCount: params.candidates.length,
+            remarkText:
+              params.remarkText.substring(0, 100) +
+              (params.remarkText.length > 100 ? '...' : ''),
+            isBulkRemark: true,
+          },
+        },
+      });
+    }
+  } catch (error) {
+    logger.error('Failed to send bulk remark notification:', error);
   }
 }

@@ -87,6 +87,38 @@ export class NotificationService {
     return candidateHandlers.notifyBulkCandidateMoved(params);
   }
 
+  static async notifyBulkCandidateAssigned(
+    params: Parameters<typeof candidateHandlers.notifyBulkCandidateAssigned>[0],
+  ): Promise<void> {
+    return candidateHandlers.notifyBulkCandidateAssigned(params);
+  }
+
+  static async notifyBulkCandidateUnassigned(
+    params: Parameters<typeof candidateHandlers.notifyBulkCandidateUnassigned>[0],
+  ): Promise<void> {
+    return candidateHandlers.notifyBulkCandidateUnassigned(params);
+  }
+
+  static async notifyBulkCandidateStatusUpdated(
+    params: Parameters<
+      typeof candidateHandlers.notifyBulkCandidateStatusUpdated
+    >[0],
+  ): Promise<void> {
+    return candidateHandlers.notifyBulkCandidateStatusUpdated(params);
+  }
+
+  static async notifyBulkRemarkAdded(
+    params: Parameters<typeof otherHandlers.notifyBulkRemarkAdded>[0],
+  ): Promise<void> {
+    return otherHandlers.notifyBulkRemarkAdded(params);
+  }
+
+  static async notifyBulkFollowUpAdded(
+    params: Parameters<typeof followupHandlers.notifyBulkFollowUpAdded>[0],
+  ): Promise<void> {
+    return followupHandlers.notifyBulkFollowUpAdded(params);
+  }
+
   static async notifyCandidateDetailsUpdated(
     params: Parameters<
       typeof candidateHandlers.notifyCandidateDetailsUpdated

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import {
   useFetchJobByIdQuery,
@@ -82,16 +82,6 @@ export default function JobProgressPage() {
     null,
   );
   const { user } = useAppSelector((state) => state.auth || {});
-
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      if (e.shiftKey && Math.abs(e.deltaX) > 0) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
-  }, []);
 
   const {
     ref: scrollRef,

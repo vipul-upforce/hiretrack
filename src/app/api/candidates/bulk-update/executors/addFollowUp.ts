@@ -87,11 +87,31 @@ export async function runBulkAddFollowUp(
     }
   }
 
+  const addFollowUpNotificationMeta =
+    toBroadcast.length > 0
+      ? {
+          followupNote: note ?? '',
+          followupDate: date ?? null,
+          candidates: toBroadcast.map((c) => ({
+            candidateId: (c._id as { toString: () => string }).toString(),
+            candidateName: (c as ICandidate).name ?? 'Candidate',
+            jobId: getJobIdString(c as ICandidate) ?? '',
+            jobTitle:
+              c.jobId != null &&
+              typeof c.jobId === 'object' &&
+              'title' in (c.jobId as object)
+                ? String((c.jobId as { title?: string }).title ?? 'Job')
+                : 'Job',
+          })),
+        }
+      : undefined;
+
   return {
     success: true,
     updatedCount: toBroadcast.length,
     failedCount,
     candidatesToBroadcast: toBroadcast,
     message: `Added follow-up to ${toBroadcast.length} candidate(s)`,
+    addFollowUpNotificationMeta,
   };
 }

@@ -249,11 +249,31 @@ export async function runBulkAssign(
     }
   }
 
+  const assignNotificationMeta =
+    toBroadcast.length > 0
+      ? {
+          interviewerId,
+          interviewerName: (interviewer as { name: string }).name,
+          jobId: getJobIdString(toBroadcast[0] as ICandidate),
+          jobTitle:
+            (toBroadcast[0] as ICandidate).jobId != null &&
+            typeof (toBroadcast[0] as ICandidate).jobId === 'object' &&
+            'title' in ((toBroadcast[0] as ICandidate).jobId as object)
+              ? String(((toBroadcast[0] as ICandidate).jobId as { title?: string }).title ?? 'Job')
+              : 'Job',
+          candidates: toBroadcast.map((c) => ({
+            candidateId: (c._id as { toString: () => string }).toString(),
+            candidateName: (c as ICandidate).name ?? 'Candidate',
+          })),
+        }
+      : undefined;
+
   return {
     success: true,
     updatedCount: toBroadcast.length,
     failedCount,
     candidatesToBroadcast: toBroadcast,
     message: `Assigned ${toBroadcast.length} candidate(s)`,
+    assignNotificationMeta,
   };
 }

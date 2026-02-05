@@ -143,6 +143,7 @@ export function UnifiedCandidateActionsDialog(
                       user?.role !== 'interviewer' && (
                         <AssignSection
                           candidate={candidate}
+                          isBulkMode={isBulkMode}
                           values={values}
                           setFieldValue={setFieldValue}
                           interviewers={interviewers}

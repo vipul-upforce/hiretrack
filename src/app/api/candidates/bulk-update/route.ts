@@ -241,6 +241,11 @@ export async function POST(
     let totalSkippedCount = 0;
     const messages: string[] = [];
     let moveJobMeta: { jobTitle?: string; toJobId?: string } | undefined;
+    let assignNotificationMeta: BulkUpdateResult['assignNotificationMeta'];
+    let unassignNotificationMeta: BulkUpdateResult['unassignNotificationMeta'];
+    let addRemarkNotificationMeta: BulkUpdateResult['addRemarkNotificationMeta'];
+    let addFollowUpNotificationMeta: BulkUpdateResult['addFollowUpNotificationMeta'];
+    let statusUpdateNotificationMeta: BulkUpdateResult['statusUpdateNotificationMeta'];
 
     if (parsed.request) {
       // Multiple operations: process sequentially
@@ -259,6 +264,21 @@ export async function POST(
         if (op.operation === 'moveJob' && result.meta) {
           moveJobMeta = result.meta;
         }
+        if (result.assignNotificationMeta) {
+          assignNotificationMeta = result.assignNotificationMeta;
+        }
+        if (result.unassignNotificationMeta) {
+          unassignNotificationMeta = result.unassignNotificationMeta;
+        }
+        if (result.addRemarkNotificationMeta) {
+          addRemarkNotificationMeta = result.addRemarkNotificationMeta;
+        }
+        if (result.addFollowUpNotificationMeta) {
+          addFollowUpNotificationMeta = result.addFollowUpNotificationMeta;
+        }
+        if (result.statusUpdateNotificationMeta) {
+          statusUpdateNotificationMeta = result.statusUpdateNotificationMeta;
+        }
       }
     } else if (parsed.singleParams) {
       // Single operation (backward compatibility)
@@ -270,6 +290,21 @@ export async function POST(
       allCandidatesToBroadcast = result.candidatesToBroadcast;
       if (parsed.singleParams.operation === 'moveJob' && result.meta) {
         moveJobMeta = result.meta;
+      }
+      if (result.assignNotificationMeta) {
+        assignNotificationMeta = result.assignNotificationMeta;
+      }
+      if (result.unassignNotificationMeta) {
+        unassignNotificationMeta = result.unassignNotificationMeta;
+      }
+      if (result.addRemarkNotificationMeta) {
+        addRemarkNotificationMeta = result.addRemarkNotificationMeta;
+      }
+      if (result.addFollowUpNotificationMeta) {
+        addFollowUpNotificationMeta = result.addFollowUpNotificationMeta;
+      }
+      if (result.statusUpdateNotificationMeta) {
+        statusUpdateNotificationMeta = result.statusUpdateNotificationMeta;
       }
     }
 
@@ -322,6 +357,101 @@ export async function POST(
         logger.error(
           { notificationError, url: req.url },
           'Bulk update: failed to send move notification',
+        );
+      }
+    }
+
+    // Bulk assign: interviewer gets one per candidate; admin/hr get one bulk
+    if (assignNotificationMeta && user.organizationId) {
+      try {
+        await NotificationService.notifyBulkCandidateAssigned({
+          organizationId: user.organizationId,
+          interviewerId: assignNotificationMeta.interviewerId,
+          interviewerName: assignNotificationMeta.interviewerName,
+          jobId: assignNotificationMeta.jobId,
+          jobTitle: assignNotificationMeta.jobTitle,
+          candidates: assignNotificationMeta.candidates,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk assign notification',
+        );
+      }
+    }
+
+    // Bulk unassign: each previous interviewer gets one per candidate; admin/hr get one bulk
+    if (unassignNotificationMeta && user.organizationId) {
+      try {
+        await NotificationService.notifyBulkCandidateUnassigned({
+          organizationId: user.organizationId,
+          unassignments: unassignNotificationMeta.unassignments,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk unassign notification',
+        );
+      }
+    }
+
+    // Bulk add remark: mentioned users get one per candidate (as MENTIONS); admin/hr get one bulk (as NEW_REMARKS)
+    if (addRemarkNotificationMeta && user.organizationId) {
+      try {
+        await NotificationService.notifyBulkRemarkAdded({
+          organizationId: user.organizationId,
+          remarkText: addRemarkNotificationMeta.remarkText,
+          roles: addRemarkNotificationMeta.roles,
+          validMentionUserIds: addRemarkNotificationMeta.validMentionUserIds,
+          candidates: addRemarkNotificationMeta.candidates,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk remark notification',
+        );
+      }
+    }
+
+    // Bulk add follow-up: admin/hr get one bulk
+    if (addFollowUpNotificationMeta && user.organizationId) {
+      try {
+        await NotificationService.notifyBulkFollowUpAdded({
+          organizationId: user.organizationId,
+          followupNote: addFollowUpNotificationMeta.followupNote,
+          followupDate: addFollowUpNotificationMeta.followupDate,
+          candidates: addFollowUpNotificationMeta.candidates,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk follow-up notification',
+        );
+      }
+    }
+
+    // Bulk status update: admin/hr get one bulk
+    if (statusUpdateNotificationMeta && user.organizationId) {
+      try {
+        await NotificationService.notifyBulkCandidateStatusUpdated({
+          organizationId: user.organizationId,
+          newStatus: statusUpdateNotificationMeta.newStatus,
+          candidates: statusUpdateNotificationMeta.candidates,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk status update notification',
         );
       }
     }

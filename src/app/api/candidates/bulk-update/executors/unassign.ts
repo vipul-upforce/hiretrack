@@ -36,6 +36,15 @@ export async function runBulkUnassign(
     };
   }
 
+  const unassignments: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    previousInterviewerId: string;
+    previousInterviewerName: string;
+  }> = [];
+
   for (const candidate of candidates) {
     try {
       const candidateId = (candidate._id as { toString: () => string }).toString();
@@ -45,6 +54,14 @@ export async function runBulkUnassign(
         prev != null && typeof prev === 'object' && '_id' in prev
           ? (prev as { _id: unknown })._id
           : prev;
+      const prevInterviewerName =
+        prev != null && typeof prev === 'object' && 'name' in (prev as object)
+          ? String((prev as { name?: string }).name ?? 'Interviewer')
+          : 'Interviewer';
+      const jobTitle =
+        candidate.jobId != null && typeof candidate.jobId === 'object' && 'title' in (candidate.jobId as object)
+          ? String((candidate.jobId as { title?: string }).title ?? 'Job')
+          : 'Job';
 
       const historyEntry: ICandidateHistory = {
         dateTime,
@@ -71,7 +88,17 @@ export async function runBulkUnassign(
           { path: 'jobId', select: 'title description' },
         ])
         .lean();
-      if (updated) toBroadcast.push(updated as ICandidate);
+      if (updated) {
+        toBroadcast.push(updated as ICandidate);
+        unassignments.push({
+          candidateId,
+          candidateName: (candidate as ICandidate).name ?? 'Candidate',
+          jobId,
+          jobTitle,
+          previousInterviewerId: String(previousInterviewerId),
+          previousInterviewerName: prevInterviewerName,
+        });
+      }
     } catch (err) {
       logger.error(
         { error: err, candidateId: (candidate as { _id: unknown })._id },
@@ -88,5 +115,7 @@ export async function runBulkUnassign(
     skippedCount,
     candidatesToBroadcast: toBroadcast,
     message: `Unassigned ${toBroadcast.length} candidate(s)`,
+    unassignNotificationMeta:
+      unassignments.length > 0 ? { unassignments } : undefined,
   };
 }

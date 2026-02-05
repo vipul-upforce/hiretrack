@@ -48,10 +48,25 @@ export async function runBulkStatusUpdate(
     attachments: [],
   };
 
+  const statusUpdateCandidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+    oldStatus: string;
+  }> = [];
+
   for (const candidate of candidates) {
     try {
       const candidateId = (candidate._id as { toString: () => string }).toString();
       const jobId = getJobIdString(candidate);
+      const oldStatus = (candidate as ICandidate).status ?? 'Unknown';
+      const jobTitle =
+        candidate.jobId != null &&
+        typeof candidate.jobId === 'object' &&
+        'title' in (candidate.jobId as object)
+          ? String((candidate.jobId as { title?: string }).title ?? 'Job')
+          : 'Job';
 
       await Candidate.updateOne(
         { _id: candidateId },
@@ -72,12 +87,29 @@ export async function runBulkStatusUpdate(
           { path: 'jobId', select: 'title description' },
         ])
         .lean();
-      if (updated) toBroadcast.push(updated as ICandidate);
+      if (updated) {
+        toBroadcast.push(updated as ICandidate);
+        statusUpdateCandidates.push({
+          candidateId,
+          candidateName: (candidate as ICandidate).name ?? 'Candidate',
+          jobId: jobId ?? '',
+          jobTitle,
+          oldStatus,
+        });
+      }
     } catch (err) {
       logger.error({ error: err, candidateId: (candidate as { _id: unknown })._id }, 'Bulk statusUpdate: failed one candidate');
       failedCount += 1;
     }
   }
+
+  const statusUpdateNotificationMeta =
+    statusUpdateCandidates.length > 0
+      ? {
+          newStatus: status,
+          candidates: statusUpdateCandidates,
+        }
+      : undefined;
 
   return {
     success: true,
@@ -85,5 +117,6 @@ export async function runBulkStatusUpdate(
     failedCount,
     candidatesToBroadcast: toBroadcast,
     message: `Updated status for ${toBroadcast.length} candidate(s)`,
+    statusUpdateNotificationMeta,
   };
 }
