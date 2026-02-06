@@ -40,9 +40,19 @@ export async function runBulkArchive(
     };
   }
 
-  const results = await Promise.allSettled(
-    toUpdate.map(async (candidate) => {
-      try {
+  const idsToUpdate = toUpdate.map((c) => c._id.toString());
+
+  try {
+    // Batch update: set isDeleted for all candidates that need updating
+    await Candidate.updateMany(
+      { _id: { $in: idsToUpdate } },
+      { $set: { isDeleted: targetIsDeleted } },
+    );
+
+    // Build history bulk operations
+    const historyBulk = toUpdate
+      .filter((c) => c.jobId)
+      .map((c) => {
         const historyEntry = {
           dateTime,
           title: targetIsDeleted ? 'Archived' : 'Unarchived',
@@ -51,39 +61,51 @@ export async function runBulkArchive(
           assignmentBy: user?.id ?? '',
         };
 
-        await History.findOneAndUpdate(
-          { candidateId: candidate._id, jobId: candidate.jobId },
-          { $push: { history: historyEntry } },
-          { new: true, upsert: true },
-        );
+        return {
+          updateOne: {
+            filter: {
+              candidateId: c._id.toString(),
+              jobId: c.jobId?.toString() ?? null,
+            },
+            update: { $push: { history: historyEntry } },
+            upsert: true as const,
+          },
+        };
+      });
 
-        const updated = await Candidate.findByIdAndUpdate(candidate._id, { isDeleted: targetIsDeleted }, { new: true }).populate([
-          { path: 'assignment.interviewerId', select: '_id name email' },
-          { path: 'remarks.userId', select: 'name email' },
-          { path: 'jobId', select: 'title description' },
-        ]);
+    if (historyBulk.length > 0) {
+      await History.bulkWrite(historyBulk);
+    }
 
-        if (!updated) throw new Error(`Failed to update candidate ${candidate._id}`);
-        return { success: true as const, candidate: updated.toObject() };
-      } catch (error) {
-        logger.error({ error, candidateId: candidate._id }, 'Bulk archive: failed one candidate');
-        return { success: false as const };
-      }
-    }),
-  );
+    // Single query to get all updated candidates
+    const updatedList = await Candidate.find({ _id: { $in: idsToUpdate } })
+      .populate([
+        { path: 'assignment.interviewerId', select: '_id name email' },
+        { path: 'remarks.userId', select: 'name email' },
+        { path: 'jobId', select: 'title description' },
+      ])
+      .lean();
 
-  const successful = results.filter((r) => r.status === 'fulfilled' && r.value.success);
-  const candidatesToBroadcast = successful
-    .filter((r): r is PromiseFulfilledResult<{ success: true; candidate: Record<string, unknown> }> => r.status === 'fulfilled' && r.value.success)
-    .map((r) => r.value.candidate);
-  const failedCount = results.length - successful.length;
+    const candidatesToBroadcast = updatedList.map((c) => c as Record<string, unknown>);
+    const failedCount = 0;
 
-  return {
-    success: true,
-    updatedCount: successful.length,
-    failedCount,
-    skippedCount,
-    candidatesToBroadcast: candidatesToBroadcast as BulkUpdateResult['candidatesToBroadcast'],
-    message: `Successfully ${action === 'archive' ? 'archived' : 'unarchived'} ${successful.length} candidate(s)`,
-  };
+    return {
+      success: true,
+      updatedCount: candidatesToBroadcast.length,
+      failedCount,
+      skippedCount,
+      candidatesToBroadcast: candidatesToBroadcast as BulkUpdateResult['candidatesToBroadcast'],
+      message: `Successfully ${action === 'archive' ? 'archived' : 'unarchived'} ${candidatesToBroadcast.length} candidate(s)`,
+    };
+  } catch (err) {
+    logger.error({ error: err }, 'Bulk archive: batch failed');
+    return {
+      success: false,
+      updatedCount: 0,
+      failedCount: toUpdate.length,
+      skippedCount,
+      candidatesToBroadcast: [],
+      message: 'Archive operation failed',
+    };
+  }
 }

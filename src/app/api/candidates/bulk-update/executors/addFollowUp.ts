@@ -55,63 +55,79 @@ export async function runBulkAddFollowUp(
     attachments: [],
   };
 
-  for (const candidate of candidates) {
-    try {
-      const candidateId = (candidate._id as { toString: () => string }).toString();
-      const jobId = getJobIdString(candidate);
+  const ids = candidates.map((c) => (c._id as { toString: () => string }).toString());
 
-      await Candidate.updateOne(
-        { _id: candidateId },
-        { $set: { followUp: followUpPayload } },
-      );
+  try {
+    // Batch update: set followUp for all candidates
+    await Candidate.updateMany(
+      { _id: { $in: ids } },
+      { $set: { followUp: followUpPayload } },
+    );
 
-      if (jobId) {
-        await History.findOneAndUpdate(
-          { candidateId, jobId },
-          { $push: { history: historyEntry } },
-          { upsert: true },
-        );
-      }
-
-      const updated = await Candidate.findById(candidateId)
-        .populate([
-          { path: 'assignment.interviewerId', select: '_id name email' },
-          { path: 'followUp.userId', select: '_id name email' },
-          { path: 'jobId', select: 'title description' },
-        ])
-        .lean();
-      if (updated) toBroadcast.push(updated as ICandidate);
-    } catch (err) {
-      logger.error({ error: err, candidateId: (candidate as { _id: unknown })._id }, 'Bulk addFollowUp: failed one candidate');
-      failedCount += 1;
-    }
-  }
-
-  const addFollowUpNotificationMeta =
-    toBroadcast.length > 0
-      ? {
-          followupNote: note ?? '',
-          followupDate: date ?? null,
-          candidates: toBroadcast.map((c) => ({
+    // Build history bulk operations
+    const historyBulk = candidates
+      .filter((c) => getJobIdString(c))
+      .map((c) => ({
+        updateOne: {
+          filter: {
             candidateId: (c._id as { toString: () => string }).toString(),
-            candidateName: (c as ICandidate).name ?? 'Candidate',
-            jobId: getJobIdString(c as ICandidate) ?? '',
-            jobTitle:
-              c.jobId != null &&
-              typeof c.jobId === 'object' &&
-              'title' in (c.jobId as object)
-                ? String((c.jobId as { title?: string }).title ?? 'Job')
-                : 'Job',
-          })),
-        }
-      : undefined;
+            jobId: getJobIdString(c),
+          },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      }));
 
-  return {
-    success: true,
-    updatedCount: toBroadcast.length,
-    failedCount,
-    candidatesToBroadcast: toBroadcast,
-    message: `Added follow-up to ${toBroadcast.length} candidate(s)`,
-    addFollowUpNotificationMeta,
-  };
+    if (historyBulk.length > 0) {
+      await History.bulkWrite(historyBulk);
+    }
+
+    // Single query to get all updated candidates
+    const updatedList = await Candidate.find({ _id: { $in: ids } })
+      .populate([
+        { path: 'assignment.interviewerId', select: '_id name email' },
+        { path: 'followUp.userId', select: '_id name email' },
+        { path: 'jobId', select: 'title description' },
+      ])
+      .lean();
+
+    toBroadcast.push(...(updatedList as ICandidate[]));
+
+    const addFollowUpNotificationMeta =
+      toBroadcast.length > 0
+        ? {
+            followupNote: note ?? '',
+            followupDate: date ?? null,
+            candidates: toBroadcast.map((c) => ({
+              candidateId: (c._id as { toString: () => string }).toString(),
+              candidateName: (c as ICandidate).name ?? 'Candidate',
+              jobId: getJobIdString(c as ICandidate) ?? '',
+              jobTitle:
+                c.jobId != null &&
+                typeof c.jobId === 'object' &&
+                'title' in (c.jobId as object)
+                  ? String((c.jobId as { title?: string }).title ?? 'Job')
+                  : 'Job',
+            })),
+          }
+        : undefined;
+
+    return {
+      success: true,
+      updatedCount: toBroadcast.length,
+      failedCount: 0,
+      candidatesToBroadcast: toBroadcast,
+      message: `Added follow-up to ${toBroadcast.length} candidate(s)`,
+      addFollowUpNotificationMeta,
+    };
+  } catch (err) {
+    logger.error({ error: err }, 'Bulk addFollowUp: batch failed');
+    return {
+      success: false,
+      updatedCount: 0,
+      failedCount: candidates.length,
+      candidatesToBroadcast: [],
+      message: 'Add follow-up failed',
+    };
+  }
 }

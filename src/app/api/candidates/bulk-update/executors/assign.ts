@@ -82,6 +82,23 @@ export async function runBulkAssign(
     }
   }
 
+  // Process candidates: collect updates for batching
+  const candidateUpdates: Array<{
+    updateOne: {
+      filter: { _id: string };
+      update: { $set: { assignment: unknown; attachments: unknown[] } };
+    };
+  }> = [];
+  const historyBulk: Array<{
+    updateOne: {
+      filter: { candidateId: string; jobId: string };
+      update: { $push: { history: ICandidateHistory } };
+      upsert: true;
+    };
+  }> = [];
+  const ids: string[] = [];
+
+  // Process each candidate to build updates (Google Meet must be per-candidate)
   for (const candidate of candidates) {
     try {
       const candidateId = (candidate._id as { toString: () => string }).toString();
@@ -100,7 +117,7 @@ export async function runBulkAssign(
       const newAttachments = processedAttachments.filter((a) => !existingNames.has(a.name));
       const mergedAttachments = [...existingAttachments, ...newAttachments];
 
-      // Schedule Google Calendar meeting if requested
+      // Schedule Google Calendar meeting if requested (per-candidate external API call)
       let googleMeetData: {
         eventId: string;
         meetingLink: string;
@@ -120,23 +137,19 @@ export async function runBulkAssign(
             ...additionalGuests,
           ];
 
-          // Process meeting attachments (convert File objects to base64 if needed)
           const processedMeetingAttachments = await Promise.all(
             meetingAttachments.map(async (att) => {
               if (att.url && !att.url.startsWith('data:') && !att.url.startsWith('http')) {
-                // If it's a File object, we'd need to read it, but in API context it should already be base64
                 return att;
               }
               return att;
             }),
           );
 
-          // Call Google Calendar scheduling API with proper auth headers
           const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
           };
-          // Copy auth headers from original request if available
           if (ctx.requestHeaders) {
             const authHeader = ctx.requestHeaders.get('authorization') || ctx.requestHeaders.get('cookie');
             if (authHeader) {
@@ -215,31 +228,30 @@ export async function runBulkAssign(
         assignmentUpdate.googleMeet = googleMeetData;
       }
 
-      await Candidate.updateOne(
-        { _id: candidateId },
-        {
-          $set: {
-            assignment: assignmentUpdate,
-            attachments: mergedAttachments,
+      // Collect updates for batching
+      candidateUpdates.push({
+        updateOne: {
+          filter: { _id: candidateId },
+          update: {
+            $set: {
+              assignment: assignmentUpdate,
+              attachments: mergedAttachments,
+            },
           },
         },
-      );
+      });
 
       if (jobId) {
-        await History.findOneAndUpdate(
-          { candidateId, jobId },
-          { $push: { history: historyEntry } },
-          { upsert: true },
-        );
+        historyBulk.push({
+          updateOne: {
+            filter: { candidateId, jobId },
+            update: { $push: { history: historyEntry } },
+            upsert: true as const,
+          },
+        });
       }
 
-      const updated = await Candidate.findById(candidateId)
-        .populate([
-          { path: 'assignment.interviewerId', select: '_id name email' },
-          { path: 'jobId', select: 'title description' },
-        ])
-        .lean();
-      if (updated) toBroadcast.push(updated as ICandidate);
+      ids.push(candidateId);
     } catch (err) {
       logger.error(
         { error: err, candidateId: (candidate as { _id: unknown })._id },
@@ -249,31 +261,62 @@ export async function runBulkAssign(
     }
   }
 
-  const assignNotificationMeta =
-    toBroadcast.length > 0
-      ? {
-          interviewerId,
-          interviewerName: (interviewer as { name: string }).name,
-          jobId: getJobIdString(toBroadcast[0] as ICandidate),
-          jobTitle:
-            (toBroadcast[0] as ICandidate).jobId != null &&
-            typeof (toBroadcast[0] as ICandidate).jobId === 'object' &&
-            'title' in ((toBroadcast[0] as ICandidate).jobId as object)
-              ? String(((toBroadcast[0] as ICandidate).jobId as { title?: string }).title ?? 'Job')
-              : 'Job',
-          candidates: toBroadcast.map((c) => ({
-            candidateId: (c._id as { toString: () => string }).toString(),
-            candidateName: (c as ICandidate).name ?? 'Candidate',
-          })),
-        }
-      : undefined;
+  try {
+    // Batch update candidates
+    if (candidateUpdates.length > 0) {
+      await Candidate.bulkWrite(candidateUpdates);
+    }
 
-  return {
-    success: true,
-    updatedCount: toBroadcast.length,
-    failedCount,
-    candidatesToBroadcast: toBroadcast,
-    message: `Assigned ${toBroadcast.length} candidate(s)`,
-    assignNotificationMeta,
-  };
+    // Batch update history
+    if (historyBulk.length > 0) {
+      await History.bulkWrite(historyBulk);
+    }
+
+    // Single query to get all updated candidates
+    const updatedList = await Candidate.find({ _id: { $in: ids } })
+      .populate([
+        { path: 'assignment.interviewerId', select: '_id name email' },
+        { path: 'jobId', select: 'title description' },
+      ])
+      .lean();
+
+    toBroadcast.push(...(updatedList as ICandidate[]));
+
+    const assignNotificationMeta =
+      toBroadcast.length > 0
+        ? {
+            interviewerId,
+            interviewerName: (interviewer as { name: string }).name,
+            jobId: getJobIdString(toBroadcast[0] as ICandidate),
+            jobTitle:
+              (toBroadcast[0] as ICandidate).jobId != null &&
+              typeof (toBroadcast[0] as ICandidate).jobId === 'object' &&
+              'title' in ((toBroadcast[0] as ICandidate).jobId as object)
+                ? String(((toBroadcast[0] as ICandidate).jobId as { title?: string }).title ?? 'Job')
+                : 'Job',
+            candidates: toBroadcast.map((c) => ({
+              candidateId: (c._id as { toString: () => string }).toString(),
+              candidateName: (c as ICandidate).name ?? 'Candidate',
+            })),
+          }
+        : undefined;
+
+    return {
+      success: true,
+      updatedCount: toBroadcast.length,
+      failedCount,
+      candidatesToBroadcast: toBroadcast,
+      message: `Assigned ${toBroadcast.length} candidate(s)`,
+      assignNotificationMeta,
+    };
+  } catch (err) {
+    logger.error({ error: err }, 'Bulk assign: batch failed');
+    return {
+      success: false,
+      updatedCount: 0,
+      failedCount: candidates.length,
+      candidatesToBroadcast: [],
+      message: 'Assign failed',
+    };
+  }
 }

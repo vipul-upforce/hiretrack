@@ -44,19 +44,35 @@ export interface GeneratePortalMetadataOptions {
   additionalMetadata?: Partial<Metadata>;
 }
 
+/**
+ * Normalizes a portal asset URL to a relative path for metadata.
+ * Uses relative paths so the browser resolves them against the current origin
+ * (no NEXT_PUBLIC_BASE_URL or localhost fallback needed; safe for multi-tenant).
+ * If the stored value is absolute (e.g. legacy localhost URL), strips to path only.
+ */
+function toRelativeMetadataUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+
+  // Already relative – use as-is
+  if (url.startsWith('/')) return url;
+
+  try {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname + urlObj.search;
+    return path.startsWith('/') ? path : `/${path}`;
+  } catch {
+    return undefined;
+  }
+}
+
 export function generatePortalMetadata(
   portalData: PortalMetadata,
   options: GeneratePortalMetadataOptions = {},
 ): Metadata {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-
-  // Construct absolute URLs for images
-  const logoUrl = portalData.portalLogo?.url
-    ? `${baseUrl}${portalData.portalLogo.url}`
-    : undefined;
-  const faviconUrl = portalData.portalFavicon?.url
-    ? `${baseUrl}${portalData.portalFavicon.url}`
-    : undefined;
+  // Use relative paths only – browser resolves against current origin.
+  // No NEXT_PUBLIC_BASE_URL or localhost fallback (multi-tenant safe).
+  const logoUrl = toRelativeMetadataUrl(portalData.portalLogo?.url);
+  const faviconUrl = toRelativeMetadataUrl(portalData.portalFavicon?.url);
 
   // Generate title
   const defaultTitle = portalData.portalName;

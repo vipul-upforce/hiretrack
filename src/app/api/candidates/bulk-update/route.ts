@@ -30,6 +30,17 @@ const VALID_OPERATIONS: BulkUpdateOperation[] = [
   'statusUpdate',
 ];
 
+/** Process in chunks to reduce memory and DB pressure */
+const CHUNK_SIZE = 75;
+
+function chunkIds(ids: string[], size: number): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += size) {
+    chunks.push(ids.slice(i, i + size));
+  }
+  return chunks;
+}
+
 function parseOperation(
   op: Record<string, unknown>,
   candidateIds: string[],
@@ -215,6 +226,22 @@ export async function POST(
       );
     }
 
+    const candidateIds =
+      parsed.request?.candidateIds ?? parsed.singleParams?.candidateIds ?? [];
+
+    // Log large batches for monitoring
+    if (candidateIds.length > 1000) {
+      logger.info(
+        {
+          candidateCount: candidateIds.length,
+          userId: user.id,
+          organizationId: user.organizationId,
+          operation: parsed.request?.operations?.[0]?.operation ?? parsed.singleParams?.operation,
+        },
+        'Large bulk update request received',
+      );
+    }
+
     const dateTime = new Date().toISOString();
     const ctx = {
       user: {
@@ -234,7 +261,7 @@ export async function POST(
     };
 
     // Handle multiple operations or single operation
-    let allCandidatesToBroadcast: BulkUpdateResult['candidatesToBroadcast'] =
+    const allCandidatesToBroadcast: BulkUpdateResult['candidatesToBroadcast'] =
       [];
     let totalUpdatedCount = 0;
     let totalFailedCount = 0;
@@ -247,64 +274,115 @@ export async function POST(
     let addFollowUpNotificationMeta: BulkUpdateResult['addFollowUpNotificationMeta'];
     let statusUpdateNotificationMeta: BulkUpdateResult['statusUpdateNotificationMeta'];
 
-    if (parsed.request) {
-      // Multiple operations: process sequentially
-      for (const op of parsed.request.operations) {
-        const params: BulkUpdateParams = {
-          ...op,
-          candidateIds: parsed.request.candidateIds,
-        } as BulkUpdateParams;
+    const chunks = chunkIds(candidateIds, CHUNK_SIZE);
 
+    if (parsed.request) {
+      // Multiple operations: process sequentially, each operation in chunks
+      for (const op of parsed.request.operations) {
+        for (let ci = 0; ci < chunks.length; ci += 1) {
+          const chunk = chunks[ci];
+          const params: BulkUpdateParams = {
+            ...op,
+            candidateIds: chunk,
+          } as BulkUpdateParams;
+          const result = await runBulkUpdate(params, ctx);
+          totalUpdatedCount += result.updatedCount;
+          totalFailedCount += result.failedCount;
+          if (result.skippedCount) totalSkippedCount += result.skippedCount;
+          if (ci === 0) messages.push(result.message);
+          allCandidatesToBroadcast.push(...result.candidatesToBroadcast);
+          if (op.operation === 'moveJob' && result.meta) {
+            moveJobMeta = result.meta;
+          }
+          if (result.assignNotificationMeta) {
+            if (!assignNotificationMeta) {
+              assignNotificationMeta = { ...result.assignNotificationMeta, candidates: [] };
+            }
+            assignNotificationMeta.candidates.push(...result.assignNotificationMeta.candidates);
+          }
+          if (result.unassignNotificationMeta) {
+            if (!unassignNotificationMeta) {
+              unassignNotificationMeta = { ...result.unassignNotificationMeta, unassignments: [] };
+            }
+            unassignNotificationMeta.unassignments.push(...result.unassignNotificationMeta.unassignments);
+          }
+          if (result.addRemarkNotificationMeta) {
+            if (!addRemarkNotificationMeta) {
+              addRemarkNotificationMeta = { ...result.addRemarkNotificationMeta, candidates: [] };
+            }
+            addRemarkNotificationMeta.candidates.push(...result.addRemarkNotificationMeta.candidates);
+          }
+          if (result.addFollowUpNotificationMeta) {
+            if (!addFollowUpNotificationMeta) {
+              addFollowUpNotificationMeta = { ...result.addFollowUpNotificationMeta, candidates: [] };
+            }
+            addFollowUpNotificationMeta.candidates.push(...result.addFollowUpNotificationMeta.candidates);
+          }
+          if (result.statusUpdateNotificationMeta) {
+            if (!statusUpdateNotificationMeta) {
+              statusUpdateNotificationMeta = { ...result.statusUpdateNotificationMeta, candidates: [] };
+            }
+            statusUpdateNotificationMeta.candidates.push(...result.statusUpdateNotificationMeta.candidates);
+          }
+          if (chunks.length > 1) {
+            await new Promise<void>((r) => {
+              setImmediate(r);
+            });
+          }
+        }
+      }
+    } else if (parsed.singleParams) {
+      // Single operation (backward compatibility): process in chunks
+      for (let ci = 0; ci < chunks.length; ci += 1) {
+        const chunk = chunks[ci];
+        const params: BulkUpdateParams = {
+          ...parsed.singleParams,
+          candidateIds: chunk,
+        } as BulkUpdateParams;
         const result = await runBulkUpdate(params, ctx);
         totalUpdatedCount += result.updatedCount;
         totalFailedCount += result.failedCount;
         if (result.skippedCount) totalSkippedCount += result.skippedCount;
-        messages.push(result.message);
+        if (ci === 0) messages.push(result.message);
         allCandidatesToBroadcast.push(...result.candidatesToBroadcast);
-        if (op.operation === 'moveJob' && result.meta) {
+        if (parsed.singleParams.operation === 'moveJob' && result.meta) {
           moveJobMeta = result.meta;
         }
         if (result.assignNotificationMeta) {
-          assignNotificationMeta = result.assignNotificationMeta;
+          if (!assignNotificationMeta) {
+            assignNotificationMeta = { ...result.assignNotificationMeta, candidates: [] };
+          }
+          assignNotificationMeta.candidates.push(...result.assignNotificationMeta.candidates);
         }
         if (result.unassignNotificationMeta) {
-          unassignNotificationMeta = result.unassignNotificationMeta;
+          if (!unassignNotificationMeta) {
+            unassignNotificationMeta = { ...result.unassignNotificationMeta, unassignments: [] };
+          }
+          unassignNotificationMeta.unassignments.push(...result.unassignNotificationMeta.unassignments);
         }
         if (result.addRemarkNotificationMeta) {
-          addRemarkNotificationMeta = result.addRemarkNotificationMeta;
+          if (!addRemarkNotificationMeta) {
+            addRemarkNotificationMeta = { ...result.addRemarkNotificationMeta, candidates: [] };
+          }
+          addRemarkNotificationMeta.candidates.push(...result.addRemarkNotificationMeta.candidates);
         }
         if (result.addFollowUpNotificationMeta) {
-          addFollowUpNotificationMeta = result.addFollowUpNotificationMeta;
+          if (!addFollowUpNotificationMeta) {
+            addFollowUpNotificationMeta = { ...result.addFollowUpNotificationMeta, candidates: [] };
+          }
+          addFollowUpNotificationMeta.candidates.push(...result.addFollowUpNotificationMeta.candidates);
         }
         if (result.statusUpdateNotificationMeta) {
-          statusUpdateNotificationMeta = result.statusUpdateNotificationMeta;
+          if (!statusUpdateNotificationMeta) {
+            statusUpdateNotificationMeta = { ...result.statusUpdateNotificationMeta, candidates: [] };
+          }
+          statusUpdateNotificationMeta.candidates.push(...result.statusUpdateNotificationMeta.candidates);
         }
-      }
-    } else if (parsed.singleParams) {
-      // Single operation (backward compatibility)
-      const result = await runBulkUpdate(parsed.singleParams, ctx);
-      totalUpdatedCount = result.updatedCount;
-      totalFailedCount = result.failedCount;
-      totalSkippedCount = result.skippedCount ?? 0;
-      messages.push(result.message);
-      allCandidatesToBroadcast = result.candidatesToBroadcast;
-      if (parsed.singleParams.operation === 'moveJob' && result.meta) {
-        moveJobMeta = result.meta;
-      }
-      if (result.assignNotificationMeta) {
-        assignNotificationMeta = result.assignNotificationMeta;
-      }
-      if (result.unassignNotificationMeta) {
-        unassignNotificationMeta = result.unassignNotificationMeta;
-      }
-      if (result.addRemarkNotificationMeta) {
-        addRemarkNotificationMeta = result.addRemarkNotificationMeta;
-      }
-      if (result.addFollowUpNotificationMeta) {
-        addFollowUpNotificationMeta = result.addFollowUpNotificationMeta;
-      }
-      if (result.statusUpdateNotificationMeta) {
-        statusUpdateNotificationMeta = result.statusUpdateNotificationMeta;
+        if (chunks.length > 1) {
+          await new Promise<void>((r) => {
+            setImmediate(r);
+          });
+        }
       }
     }
 
@@ -342,8 +420,6 @@ export async function POST(
       const movedIds = uniqueCandidatesToBroadcast
         .map((c) => (c as { _id?: unknown })._id?.toString())
         .filter((id): id is string => Boolean(id));
-      const candidateIds =
-        parsed.request?.candidateIds ?? parsed.singleParams?.candidateIds ?? [];
       try {
         await NotificationService.notifyBulkCandidateMoved({
           organizationId: user.organizationId,
