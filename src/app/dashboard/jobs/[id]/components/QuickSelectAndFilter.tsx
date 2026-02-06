@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +68,10 @@ export function QuickSelectAndFilter({
   const { selectedCandidates, selectedCandidateIds, clearSelectedCandidates } =
     useMultiSelect();
   const { data: jobs } = useFetchJobsQuery(undefined);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionsVisible, setBulkActionsVisible] = useState(false);
+  const [lastSelectedCount, setLastSelectedCount] = useState(0);
+  const bulkActionsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Bulk action dialog state
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
@@ -216,6 +220,32 @@ export function QuickSelectAndFilter({
   useEffect(() => {
     onFilterChange(filters);
   }, [filters, onFilterChange]);
+
+  useEffect(() => {
+    if (selectedCandidates.length > 0) {
+      setLastSelectedCount(selectedCandidates.length);
+      setShowBulkActions(true);
+      if (bulkActionsTimeoutRef.current) {
+        clearTimeout(bulkActionsTimeoutRef.current);
+        bulkActionsTimeoutRef.current = null;
+      }
+      requestAnimationFrame(() => {
+        setBulkActionsVisible(true);
+      });
+      return;
+    }
+
+    setBulkActionsVisible(false);
+    bulkActionsTimeoutRef.current = setTimeout(() => {
+      setShowBulkActions(false);
+    }, 200);
+    return () => {
+      if (bulkActionsTimeoutRef.current) {
+        clearTimeout(bulkActionsTimeoutRef.current);
+        bulkActionsTimeoutRef.current = null;
+      }
+    };
+  }, [selectedCandidates.length]);
 
   // Group jobs by status and get candidate counts
   const groupedJobs = useMemo(() => {
@@ -474,21 +504,113 @@ export function QuickSelectAndFilter({
         candidates
       </div>
 
-      {/* Bulk Actions - Dropdown when candidates are selected */}
-      {selectedCandidates.length > 0 && (
-        <BulkActionsDropdown
-          selectedCount={selectedCandidates.length}
-          showArchived={showArchived}
-          isArchiving={isArchiving}
-          onClearSelection={clearSelectedCandidates}
-          onOpenDialog={openBulkDialog}
-          onArchiveClick={openArchiveConfirm}
-        />
+      {/* Bulk Actions - Animated in/out */}
+      {showBulkActions && (
+        <div
+          className={`will-change-transform transition-[opacity,transform] duration-150 ease-in ${
+            bulkActionsVisible
+              ? 'bulk-actions-enter opacity-100 translate-y-0 translate-x-0 scale-100'
+              : 'pointer-events-none opacity-0 -translate-y-3 translate-x-2 scale-90'
+          }`}
+        >
+          <BulkActionsDropdown
+            selectedCount={selectedCandidates.length || lastSelectedCount}
+            showArchived={showArchived}
+            isArchiving={isArchiving}
+            onClearSelection={clearSelectedCandidates}
+            onOpenDialog={openBulkDialog}
+            onArchiveClick={openArchiveConfirm}
+            className="bulk-actions-root"
+          />
+        </div>
       )}
       {isBulkDialogOpen && selectedCandidates.length > 0 && (
         <UnifiedCandidateActionsDialog candidate={selectedCandidates[0]} candidates={selectedCandidates} isOpen={isBulkDialogOpen} onOpenChange={(open) => { setIsBulkDialogOpen(open); if (!open) setBulkActionType(undefined); }} initialAction={bulkActionType} onSuccess={() => { setIsBulkDialogOpen(false); clearSelectedCandidates(); }} />
       )}
       <ArchiveConfirmDialog isOpen={isArchiveConfirmOpen} setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }} action={pendingArchiveAction} count={selectedCandidateIds.length} isLoading={isArchiving} onConfirm={handleBulkArchive} onClose={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }} />
+      <style jsx>{`
+        @keyframes bulkActionsEnter {
+          0% {
+            opacity: 0;
+            transform: translateY(-12px) translateX(8px) scale(0.9);
+          }
+          70% {
+            opacity: 1;
+            transform: translateY(0) translateX(0) scale(1.06);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) translateX(0) scale(1);
+          }
+        }
+        .bulk-actions-enter {
+          animation: bulkActionsEnter 220ms cubic-bezier(0.2, 0.8, 0.2, 1)
+            both;
+        }
+        .bulk-actions-root {
+          position: relative;
+        }
+        .bulk-actions-enter :global(.bulk-actions-badge) {
+          transform-origin: right center;
+        }
+        .bulk-actions-enter :global(.bulk-actions-menu) {
+          transform-origin: left center;
+        }
+        .bulk-actions-enter :global(.bulk-actions-clear) {
+          animation: bulkActionsClearIn 140ms cubic-bezier(0.2, 0.9, 0.2, 1)
+            both;
+        }
+        .bulk-actions-enter :global(.bulk-actions-badge) {
+          animation: bulkActionsBadgeShoot 240ms 90ms
+            cubic-bezier(0.15, 0.85, 0.25, 1) both;
+        }
+        .bulk-actions-enter :global(.bulk-actions-menu) {
+          animation: bulkActionsMenuShoot 240ms 90ms
+            cubic-bezier(0.15, 0.85, 0.25, 1) both;
+        }
+        @keyframes bulkActionsClearIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.4);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.08);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        @keyframes bulkActionsBadgeShoot {
+          0% {
+            opacity: 0;
+            transform: translateX(32px) scale(0.2);
+          }
+          70% {
+            opacity: 1;
+            transform: translateX(-4px) scale(1.08);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        @keyframes bulkActionsMenuShoot {
+          0% {
+            opacity: 0;
+            transform: translateX(-32px) scale(0.2);
+          }
+          70% {
+            opacity: 1;
+            transform: translateX(4px) scale(1.08);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+      `}</style>
     </div>
   );
 }
