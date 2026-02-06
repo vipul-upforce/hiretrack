@@ -1,8 +1,12 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkAddFollowUpParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkAddFollowUpParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkAddFollowUp(
   params: BulkAddFollowUpParams,
@@ -11,7 +15,7 @@ export async function runBulkAddFollowUp(
   const { candidateIds, note, date } = params;
   const { user, dateTime, Candidate, History } = ctx;
   const toBroadcast: ICandidate[] = [];
-  let failedCount = 0;
+  const failedCount = 0;
 
   const candidates = await Candidate.find({
     _id: { $in: candidateIds },
@@ -55,7 +59,9 @@ export async function runBulkAddFollowUp(
     attachments: [],
   };
 
-  const ids = candidates.map((c) => (c._id as { toString: () => string }).toString());
+  const ids = candidates.map((c) =>
+    (c._id as { toString: () => string }).toString(),
+  );
 
   try {
     // Batch update: set followUp for all candidates
@@ -99,7 +105,8 @@ export async function runBulkAddFollowUp(
             followupNote: note ?? '',
             followupDate: date ?? null,
             candidates: toBroadcast.map((c) => ({
-              candidateId: (c._id as { toString: () => string }).toString(),
+              candidateId:
+                (c as unknown as { _id: unknown })._id?.toString() ?? '',
               candidateName: (c as ICandidate).name ?? 'Candidate',
               jobId: getJobIdString(c as ICandidate) ?? '',
               jobTitle:

@@ -12,6 +12,7 @@ import * as meetingInviteHandlers from './handlers/meetingInviteHandlers';
 import * as assignmentHandlers from './handlers/assignmentHandlers';
 import * as followupHandlers from './handlers/followupHandlers';
 import * as otherHandlers from './handlers/otherHandlers';
+import * as bulkActionHandlers from './handlers/bulkActionHandlers';
 
 /**
  * Main NotificationService class that provides a unified API
@@ -81,42 +82,49 @@ export class NotificationService {
     return candidateHandlers.notifyCandidateMoved(params);
   }
 
+  // Bulk action notifications (see handlers/bulkActionHandlers.ts)
   static async notifyBulkCandidateMoved(
-    params: Parameters<typeof candidateHandlers.notifyBulkCandidateMoved>[0],
+    params: Parameters<typeof bulkActionHandlers.notifyBulkCandidateMoved>[0],
   ): Promise<void> {
-    return candidateHandlers.notifyBulkCandidateMoved(params);
+    return bulkActionHandlers.notifyBulkCandidateMoved(params);
   }
 
   static async notifyBulkCandidateAssigned(
-    params: Parameters<typeof candidateHandlers.notifyBulkCandidateAssigned>[0],
+    params: Parameters<typeof bulkActionHandlers.notifyBulkCandidateAssigned>[0],
   ): Promise<void> {
-    return candidateHandlers.notifyBulkCandidateAssigned(params);
+    return bulkActionHandlers.notifyBulkCandidateAssigned(params);
   }
 
   static async notifyBulkCandidateUnassigned(
-    params: Parameters<typeof candidateHandlers.notifyBulkCandidateUnassigned>[0],
+    params: Parameters<typeof bulkActionHandlers.notifyBulkCandidateUnassigned>[0],
   ): Promise<void> {
-    return candidateHandlers.notifyBulkCandidateUnassigned(params);
+    return bulkActionHandlers.notifyBulkCandidateUnassigned(params);
   }
 
   static async notifyBulkCandidateStatusUpdated(
     params: Parameters<
-      typeof candidateHandlers.notifyBulkCandidateStatusUpdated
+      typeof bulkActionHandlers.notifyBulkCandidateStatusUpdated
     >[0],
   ): Promise<void> {
-    return candidateHandlers.notifyBulkCandidateStatusUpdated(params);
+    return bulkActionHandlers.notifyBulkCandidateStatusUpdated(params);
   }
 
   static async notifyBulkRemarkAdded(
-    params: Parameters<typeof otherHandlers.notifyBulkRemarkAdded>[0],
+    params: Parameters<typeof bulkActionHandlers.notifyBulkRemarkAdded>[0],
   ): Promise<void> {
-    return otherHandlers.notifyBulkRemarkAdded(params);
+    return bulkActionHandlers.notifyBulkRemarkAdded(params);
   }
 
   static async notifyBulkFollowUpAdded(
-    params: Parameters<typeof followupHandlers.notifyBulkFollowUpAdded>[0],
+    params: Parameters<typeof bulkActionHandlers.notifyBulkFollowUpAdded>[0],
   ): Promise<void> {
-    return followupHandlers.notifyBulkFollowUpAdded(params);
+    return bulkActionHandlers.notifyBulkFollowUpAdded(params);
+  }
+
+  static async notifyBulkImportCompleted(
+    params: Parameters<typeof bulkActionHandlers.notifyBulkImportCompleted>[0],
+  ): Promise<void> {
+    return bulkActionHandlers.notifyBulkImportCompleted(params);
   }
 
   static async notifyCandidateDetailsUpdated(
@@ -228,11 +236,5 @@ export class NotificationService {
     params: Parameters<typeof otherHandlers.notifyUserAdded>[0],
   ): Promise<void> {
     return otherHandlers.notifyUserAdded(params);
-  }
-
-  static async notifyBulkImportCompleted(
-    params: Parameters<typeof otherHandlers.notifyBulkImportCompleted>[0],
-  ): Promise<void> {
-    return otherHandlers.notifyBulkImportCompleted(params);
   }
 }

@@ -1,7 +1,11 @@
 import { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
 import { logger } from '@/lib/logger/logger.server';
-import type { BulkStatusUpdateParams, BulkUpdateContext, BulkUpdateResult } from '../types';
+import type {
+  BulkStatusUpdateParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
 import { getJobIdString } from '../utils';
 
 export async function runBulkStatusUpdate(
@@ -29,8 +33,10 @@ export async function runBulkStatusUpdate(
     };
   }
 
-  const ids = candidates.map((c) => (c._id as { toString: () => string }).toString());
-  
+  const ids = candidates.map((c) =>
+    (c._id as { toString: () => string }).toString(),
+  );
+
   try {
     await Candidate.updateMany(
       { _id: { $in: ids } },
@@ -43,14 +49,14 @@ export async function runBulkStatusUpdate(
       .map((c) => {
         const candidateId = (c._id as { toString: () => string }).toString();
         const oldStatus = (c as ICandidate).status ?? 'Unknown';
-        
+
         // Create IinfoUpdateLog entry matching normal status update format
         const statusUpdateLog: IinfoUpdateLog = {
           title: 'Updated Status',
           previousValue: oldStatus,
           currentValue: status,
         };
-        
+
         const historyEntry: ICandidateHistory = {
           dateTime,
           title: 'Updated Status',
@@ -65,7 +71,7 @@ export async function runBulkStatusUpdate(
           },
           attachments: [],
         };
-        
+
         return {
           updateOne: {
             filter: {

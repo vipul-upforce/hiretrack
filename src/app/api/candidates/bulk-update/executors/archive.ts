@@ -1,5 +1,9 @@
-import type { BulkArchiveParams, BulkUpdateContext, BulkUpdateResult } from '../types';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkArchiveParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
 
 export async function runBulkArchive(
   params: BulkArchiveParams,
@@ -9,7 +13,9 @@ export async function runBulkArchive(
   const { user, dateTime, Candidate, History } = ctx;
   const targetIsDeleted = action === 'archive';
 
-  const candidates = await Candidate.find({ _id: { $in: candidateIds } }).populate([
+  const candidates = await Candidate.find({
+    _id: { $in: candidateIds },
+  }).populate([
     { path: 'assignment.interviewerId', select: '_id name email' },
     { path: 'remarks.userId', select: 'name email' },
     { path: 'jobId', select: 'title description' },
@@ -86,7 +92,9 @@ export async function runBulkArchive(
       ])
       .lean();
 
-    const candidatesToBroadcast = updatedList.map((c) => c as Record<string, unknown>);
+    const candidatesToBroadcast = updatedList.map(
+      (c) => c as Record<string, unknown>,
+    );
     const failedCount = 0;
 
     return {
@@ -94,7 +102,8 @@ export async function runBulkArchive(
       updatedCount: candidatesToBroadcast.length,
       failedCount,
       skippedCount,
-      candidatesToBroadcast: candidatesToBroadcast as BulkUpdateResult['candidatesToBroadcast'],
+      candidatesToBroadcast:
+        candidatesToBroadcast as BulkUpdateResult['candidatesToBroadcast'],
       message: `Successfully ${action === 'archive' ? 'archived' : 'unarchived'} ${candidatesToBroadcast.length} candidate(s)`,
     };
   } catch (err) {

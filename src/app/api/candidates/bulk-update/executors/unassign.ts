@@ -1,8 +1,12 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkUnassignParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkUnassignParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkUnassign(
   params: BulkUnassignParams,
@@ -36,7 +40,9 @@ export async function runBulkUnassign(
     };
   }
 
-  const ids = candidates.map((c) => (c._id as { toString: () => string }).toString());
+  const ids = candidates.map((c) =>
+    (c._id as { toString: () => string }).toString(),
+  );
 
   try {
     // Batch update: set assignment to null for all candidates
@@ -106,7 +112,9 @@ export async function runBulkUnassign(
           ? String((prev as { name?: string }).name ?? 'Interviewer')
           : 'Interviewer';
       const jobTitle =
-        c.jobId != null && typeof c.jobId === 'object' && 'title' in (c.jobId as object)
+        c.jobId != null &&
+        typeof c.jobId === 'object' &&
+        'title' in (c.jobId as object)
           ? String((c.jobId as { title?: string }).title ?? 'Job')
           : 'Job';
 

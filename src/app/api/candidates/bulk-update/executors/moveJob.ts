@@ -1,6 +1,10 @@
 import { ICandidateHistory } from '@/lib/models/history';
-import type { BulkMoveJobParams, BulkUpdateContext, BulkUpdateResult } from '../types';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkMoveJobParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
 
 export async function runBulkMoveJob(
   params: BulkMoveJobParams,
@@ -8,7 +12,7 @@ export async function runBulkMoveJob(
 ): Promise<BulkUpdateResult> {
   const { candidateIds, jobId } = params;
   const { user, dateTime, Candidate, History, Job, DuplicateCandidate } = ctx;
-  const organizationId = user.organizationId;
+  const { organizationId } = user;
 
   const targetJob = await Job.findById(jobId);
   if (!targetJob) {
@@ -22,7 +26,9 @@ export async function runBulkMoveJob(
   }
 
   const candidates = await Candidate.find({ _id: { $in: candidateIds } });
-  const validCandidates = candidates.filter((c) => c.jobId?.toString() !== jobId);
+  const validCandidates = candidates.filter(
+    (c) => c.jobId?.toString() !== jobId,
+  );
 
   if (validCandidates.length === 0) {
     return {
@@ -36,12 +42,20 @@ export async function runBulkMoveJob(
 
   const lane = 'applied';
   const ids = validCandidates.map((c) => c._id.toString());
-  
+
   // Fetch previous jobs in batch
-  const previousJobIds = [...new Set(validCandidates.map((c) => c.jobId?.toString()).filter(Boolean) as string[])];
+  const previousJobIds = [
+    ...new Set(
+      validCandidates
+        .map((c) => c.jobId?.toString())
+        .filter(Boolean) as string[],
+    ),
+  ];
   const previousJobsMap = new Map<string, { title?: string } | null>();
   if (previousJobIds.length > 0) {
-    const previousJobs = await Job.find({ _id: { $in: previousJobIds } }).select('_id title').lean();
+    const previousJobs = await Job.find({ _id: { $in: previousJobIds } })
+      .select('_id title')
+      .lean();
     previousJobs.forEach((job) => {
       previousJobsMap.set(job._id.toString(), job);
     });
@@ -77,7 +91,10 @@ export async function runBulkMoveJob(
 
       if (duplicateUpdates.length > 0) {
         await DuplicateCandidate.bulkWrite(duplicateUpdates).catch((err) => {
-          logger.error({ error: err }, 'Bulk moveJob: duplicate update batch failed');
+          logger.error(
+            { error: err },
+            'Bulk moveJob: duplicate update batch failed',
+          );
         });
       }
     }
@@ -105,7 +122,9 @@ export async function runBulkMoveJob(
     const historyBulk = validCandidates.map((c) => {
       const candidateId = c._id.toString();
       const previousJobId = c.jobId?.toString() ?? null;
-      const previousJob = previousJobId ? previousJobsMap.get(previousJobId) : null;
+      const previousJob = previousJobId
+        ? previousJobsMap.get(previousJobId)
+        : null;
 
       const historyEntry: ICandidateHistory = {
         dateTime,
@@ -146,14 +165,19 @@ export async function runBulkMoveJob(
 
     const toBroadcast = updatedList.map((c) => ({
       ...c,
-      jobId: { _id: jobId, title: targetJob.title, description: (targetJob as { description?: string }).description },
+      jobId: {
+        _id: jobId,
+        title: targetJob.title,
+        description: (targetJob as { description?: string }).description,
+      },
     }));
 
     return {
       success: true,
       updatedCount: toBroadcast.length,
       failedCount: 0,
-      candidatesToBroadcast: toBroadcast as BulkUpdateResult['candidatesToBroadcast'],
+      candidatesToBroadcast:
+        toBroadcast as BulkUpdateResult['candidatesToBroadcast'],
       message: `Moved ${toBroadcast.length} candidate(s) to job`,
       meta: { jobTitle: targetJob.title, toJobId: jobId },
     };

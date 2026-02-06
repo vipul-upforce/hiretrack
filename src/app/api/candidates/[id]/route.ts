@@ -476,8 +476,9 @@ export async function PUT(
           newFollowUp &&
           newFollowUp.note !== null &&
           (newFollowUp.note !== oldFollowUp.note ||
-            newFollowUp.date !== oldFollowUp.date)
+            newFollowUp.date !== oldFollowUp.date?.toISOString())
         ) {
+          console.log('notifyFollowupUpdated');
           await NotificationService.notifyFollowupUpdated({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',

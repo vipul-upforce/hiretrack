@@ -1,9 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkAddRemarkParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkAddRemarkParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkAddRemark(
   params: BulkAddRemarkParams,
@@ -12,7 +16,7 @@ export async function runBulkAddRemark(
   const { candidateIds, description, isPrivate = false, rating = 0 } = params;
   const { user, dateTime, Candidate, History } = ctx;
   const toBroadcast: ICandidate[] = [];
-  let failedCount = 0;
+  const failedCount = 0;
 
   const candidates = await Candidate.find({
     _id: { $in: candidateIds },
@@ -35,7 +39,9 @@ export async function runBulkAddRemark(
     };
   }
 
-  const ids = candidates.map((c) => (c._id as { toString: () => string }).toString());
+  const ids = candidates.map((c) =>
+    (c._id as { toString: () => string }).toString(),
+  );
   const newRemarkDoc = {
     description,
     date: dateTime,
@@ -109,7 +115,8 @@ export async function runBulkAddRemark(
             roles: ['admin', 'hr'],
             validMentionUserIds: params.selectedMentionUserIds,
             candidates: toBroadcast.map((c) => ({
-              candidateId: (c._id as { toString: () => string }).toString(),
+              candidateId:
+                (c as unknown as { _id: unknown })._id?.toString() ?? '',
               candidateName: (c as ICandidate).name ?? 'Candidate',
               jobId: getJobIdString(c as ICandidate) ?? '',
               jobTitle:
