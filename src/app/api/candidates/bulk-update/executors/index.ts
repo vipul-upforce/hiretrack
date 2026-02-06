@@ -1,5 +1,8 @@
-import type { BulkUpdateParams, BulkUpdateResult } from '../types';
-import type { BulkUpdateContext } from '../types';
+import type {
+  BulkUpdateParams,
+  BulkUpdateResult,
+  BulkUpdateContext,
+} from '../types';
 import { runBulkAssign } from './assign';
 import { runBulkUnassign } from './unassign';
 import { runBulkArchive } from './archive';

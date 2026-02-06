@@ -1,8 +1,12 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkUnassignParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkUnassignParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkUnassign(
   params: BulkUnassignParams,
@@ -47,7 +51,9 @@ export async function runBulkUnassign(
 
   for (const candidate of candidates) {
     try {
-      const candidateId = (candidate._id as { toString: () => string }).toString();
+      const candidateId = (
+        candidate._id as { toString: () => string }
+      ).toString();
       const jobId = getJobIdString(candidate);
       const prev = candidate.assignment?.interviewerId;
       const previousInterviewerId =
@@ -59,7 +65,9 @@ export async function runBulkUnassign(
           ? String((prev as { name?: string }).name ?? 'Interviewer')
           : 'Interviewer';
       const jobTitle =
-        candidate.jobId != null && typeof candidate.jobId === 'object' && 'title' in (candidate.jobId as object)
+        candidate.jobId != null &&
+        typeof candidate.jobId === 'object' &&
+        'title' in (candidate.jobId as object)
           ? String((candidate.jobId as { title?: string }).title ?? 'Job')
           : 'Job';
 
@@ -73,7 +81,10 @@ export async function runBulkUnassign(
         attachments: [],
       };
 
-      await Candidate.updateOne({ _id: candidateId }, { $set: { assignment: null } });
+      await Candidate.updateOne(
+        { _id: candidateId },
+        { $set: { assignment: null } },
+      );
       if (jobId) {
         await History.findOneAndUpdate(
           { candidateId, jobId },

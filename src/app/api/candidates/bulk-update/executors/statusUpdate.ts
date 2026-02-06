@@ -1,8 +1,12 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkStatusUpdateParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkStatusUpdateParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkStatusUpdate(
   params: BulkStatusUpdateParams,
@@ -58,7 +62,9 @@ export async function runBulkStatusUpdate(
 
   for (const candidate of candidates) {
     try {
-      const candidateId = (candidate._id as { toString: () => string }).toString();
+      const candidateId = (
+        candidate._id as { toString: () => string }
+      ).toString();
       const jobId = getJobIdString(candidate);
       const oldStatus = (candidate as ICandidate).status ?? 'Unknown';
       const jobTitle =
@@ -98,7 +104,10 @@ export async function runBulkStatusUpdate(
         });
       }
     } catch (err) {
-      logger.error({ error: err, candidateId: (candidate as { _id: unknown })._id }, 'Bulk statusUpdate: failed one candidate');
+      logger.error(
+        { error: err, candidateId: (candidate as { _id: unknown })._id },
+        'Bulk statusUpdate: failed one candidate',
+      );
       failedCount += 1;
     }
   }

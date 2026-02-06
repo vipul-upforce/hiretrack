@@ -363,6 +363,10 @@ export async function POST(
 
     // Bulk assign: interviewer gets one per candidate; admin/hr get one bulk
     if (assignNotificationMeta && user.organizationId) {
+      console.log(
+        'notifyBulkCandidateAssigned',
+        assignNotificationMeta.candidates.length,
+      );
       try {
         await NotificationService.notifyBulkCandidateAssigned({
           organizationId: user.organizationId,

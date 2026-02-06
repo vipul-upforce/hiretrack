@@ -1,8 +1,12 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkAddFollowUpParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkAddFollowUpParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkAddFollowUp(
   params: BulkAddFollowUpParams,
@@ -57,7 +61,9 @@ export async function runBulkAddFollowUp(
 
   for (const candidate of candidates) {
     try {
-      const candidateId = (candidate._id as { toString: () => string }).toString();
+      const candidateId = (
+        candidate._id as { toString: () => string }
+      ).toString();
       const jobId = getJobIdString(candidate);
 
       await Candidate.updateOne(
@@ -82,7 +88,10 @@ export async function runBulkAddFollowUp(
         .lean();
       if (updated) toBroadcast.push(updated as ICandidate);
     } catch (err) {
-      logger.error({ error: err, candidateId: (candidate as { _id: unknown })._id }, 'Bulk addFollowUp: failed one candidate');
+      logger.error(
+        { error: err, candidateId: (candidate as { _id: unknown })._id },
+        'Bulk addFollowUp: failed one candidate',
+      );
       failedCount += 1;
     }
   }
@@ -93,7 +102,8 @@ export async function runBulkAddFollowUp(
           followupNote: note ?? '',
           followupDate: date ?? null,
           candidates: toBroadcast.map((c) => ({
-            candidateId: (c._id as { toString: () => string }).toString(),
+            candidateId:
+              (c as unknown as { _id: unknown })._id?.toString() ?? '',
             candidateName: (c as ICandidate).name ?? 'Candidate',
             jobId: getJobIdString(c as ICandidate) ?? '',
             jobTitle:

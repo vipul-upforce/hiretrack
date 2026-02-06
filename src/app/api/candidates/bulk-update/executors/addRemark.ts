@@ -1,9 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkAddRemarkParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
+import type {
+  BulkAddRemarkParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
+import { getJobIdString } from '../utils';
 
 export async function runBulkAddRemark(
   params: BulkAddRemarkParams,
@@ -37,7 +41,9 @@ export async function runBulkAddRemark(
 
   for (const candidate of candidates) {
     try {
-      const candidateId = (candidate._id as { toString: () => string }).toString();
+      const candidateId = (
+        candidate._id as { toString: () => string }
+      ).toString();
       const jobId = getJobIdString(candidate) ?? null;
       const remarkId = uuidv4();
       const historyEntry: ICandidateHistory = {
@@ -84,7 +90,10 @@ export async function runBulkAddRemark(
         .lean();
       if (updated) toBroadcast.push(updated as ICandidate);
     } catch (err) {
-      logger.error({ error: err, candidateId: (candidate as { _id: unknown })._id }, 'Bulk addRemark: failed one candidate');
+      logger.error(
+        { error: err, candidateId: (candidate as { _id: unknown })._id },
+        'Bulk addRemark: failed one candidate',
+      );
       failedCount += 1;
     }
   }
@@ -96,7 +105,8 @@ export async function runBulkAddRemark(
           roles: ['admin', 'hr'],
           validMentionUserIds: params.selectedMentionUserIds,
           candidates: toBroadcast.map((c) => ({
-            candidateId: (c._id as { toString: () => string }).toString(),
+            candidateId:
+              (c as unknown as { _id: unknown })._id?.toString() ?? '',
             candidateName: (c as ICandidate).name ?? 'Candidate',
             jobId: getJobIdString(c as ICandidate) ?? '',
             jobTitle:
