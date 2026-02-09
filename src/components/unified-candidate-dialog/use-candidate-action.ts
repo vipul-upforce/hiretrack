@@ -517,8 +517,12 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Add Follow-up
-        if (actions.addFollowUp && values.followUpNote?.trim()) {
+        // Bulk Follow-up (remove or add)
+        if (actions.addFollowUp && values.removeFollowUp) {
+          operations.push({
+            operation: 'removeFollowUp',
+          });
+        } else if (actions.addFollowUp && values.followUpNote?.trim()) {
           operations.push({
             operation: 'addFollowUp',
             note: values.followUpNote.trim(),

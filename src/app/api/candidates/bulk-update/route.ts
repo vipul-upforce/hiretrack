@@ -27,6 +27,7 @@ const VALID_OPERATIONS: BulkUpdateOperation[] = [
   'moveJob',
   'addRemark',
   'addFollowUp',
+  'removeFollowUp',
   'statusUpdate',
 ];
 
@@ -125,6 +126,8 @@ function parseOperation(
         },
       };
     }
+    case 'removeFollowUp':
+      return { params: { operation: 'removeFollowUp', ...base } };
     case 'statusUpdate': {
       const { status } = op;
       if (status === undefined || typeof status !== 'string') {

@@ -8,6 +8,7 @@ export type BulkUpdateOperation =
   | 'moveJob'
   | 'addRemark'
   | 'addFollowUp'
+  | 'removeFollowUp'
   | 'statusUpdate';
 
 /** Base: candidateIds required for all operations */
@@ -67,6 +68,8 @@ export interface BulkAddFollowUpParams extends BulkUpdateBaseParams {
   date?: string | null;
 }
 
+export interface BulkRemoveFollowUpParams extends BulkUpdateBaseParams {}
+
 export interface BulkStatusUpdateParams extends BulkUpdateBaseParams {
   status: string;
 }
@@ -78,6 +81,7 @@ export type BulkUpdateParams =
   | ({ operation: 'moveJob' } & BulkMoveJobParams)
   | ({ operation: 'addRemark' } & BulkAddRemarkParams)
   | ({ operation: 'addFollowUp' } & BulkAddFollowUpParams)
+  | ({ operation: 'removeFollowUp' } & BulkRemoveFollowUpParams)
   | ({ operation: 'statusUpdate' } & BulkStatusUpdateParams);
 
 /** Operation params WITHOUT candidateIds (since they're shared across all operations) */
@@ -88,6 +92,7 @@ export type BulkUpdateOperationParams =
   | ({ operation: 'moveJob' } & Omit<BulkMoveJobParams, 'candidateIds'>)
   | ({ operation: 'addRemark' } & Omit<BulkAddRemarkParams, 'candidateIds'>)
   | ({ operation: 'addFollowUp' } & Omit<BulkAddFollowUpParams, 'candidateIds'>)
+  | ({ operation: 'removeFollowUp' } & Omit<BulkRemoveFollowUpParams, 'candidateIds'>)
   | ({ operation: 'statusUpdate' } & Omit<BulkStatusUpdateParams, 'candidateIds'>);
 
 /** Request body supporting multiple operations */
