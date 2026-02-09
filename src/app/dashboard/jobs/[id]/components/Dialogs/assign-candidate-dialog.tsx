@@ -318,6 +318,7 @@ export function AssignCandidateDialog({
                             googleCalendarData.googleCalendar as IGoogleCalendar
                           }
                           setShowCancelMeetDialog={setShowCancelMeetDialog}
+                          isBulkMode={false}
                         />
                       )}
 

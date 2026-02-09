@@ -69,6 +69,23 @@ export function GoogleMeetIntegration({
     return null;
   }
 
+  if (isBulkMode) {
+    return (
+      <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
+        <div className="flex items-center space-x-2 opacity-60">
+          <Checkbox disabled id="scheduleGoogleMeet" checked={false} />
+          <Label
+            htmlFor="scheduleGoogleMeet"
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Schedule Google Meet
+          </Label>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
       {/* LOGIC FIX: Show summary card if Meet exists and not editing */}

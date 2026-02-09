@@ -149,16 +149,24 @@ export function useCandidateActions({
         ? candidate.assignment.interviewerId
         : candidate.assignment?.interviewerId?._id || null;
 
+    const scheduleGoogleMeet =
+      !isBulkMode && !!candidate?.assignment?.googleMeet?.eventId;
+    const meetingNotes = !isBulkMode
+      ? candidate?.assignment?.googleMeet?.meetingNotes || ''
+      : '';
+    const meetingAttachments = !isBulkMode
+      ? candidate?.assignment?.googleMeet?.meetingAttachments || []
+      : [];
+
     return {
       interviewerId: interviewerIdValue,
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
-      scheduleGoogleMeet: !!candidate?.assignment?.googleMeet?.eventId,
+      scheduleGoogleMeet,
       meetDuration: 60,
-      meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || '',
-      meetingAttachments:
-        candidate?.assignment?.googleMeet?.meetingAttachments || [],
+      meetingNotes,
+      meetingAttachments,
       additionalGuests: [],
       attachments: [],
       jobId,
@@ -182,7 +190,7 @@ export function useCandidateActions({
         updateStatus: initialAction === 'updateStatus',
       },
     };
-  }, [candidate, user?.role, jobId, initialAction]);
+  }, [candidate, user?.role, jobId, initialAction, isBulkMode]);
 
   const toggleAction = useCallback(
     (
