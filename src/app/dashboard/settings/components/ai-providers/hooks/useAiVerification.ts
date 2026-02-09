@@ -12,6 +12,10 @@ export const useAiVerification = () => {
     Record<string, string>
   >({});
 
+  const [verifiedConfig, setVerifiedConfig] = useState<
+    Record<string, { apiKey: string; model: string } | null>
+  >({});
+
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
 
   const [validateProvider] = useValidateAiProviderMutation();
@@ -25,12 +29,16 @@ export const useAiVerification = () => {
     apiKey: string,
     model: string,
   ) => {
-    if (!apiKey.trim()) {
+    const trimmedApiKey = apiKey.trim();
+    const finalModel = model || getDefaultModel(provider);
+
+    if (!trimmedApiKey) {
       setVerificationStatus((prev) => ({ ...prev, [provider]: 'error' }));
       setVerificationMessages((prev) => ({
         ...prev,
         [provider]: 'Please enter an API key before verifying',
       }));
+      setVerifiedConfig((prev) => ({ ...prev, [provider]: null }));
       return;
     }
 
@@ -43,8 +51,8 @@ export const useAiVerification = () => {
     try {
       const result = await validateProvider({
         provider,
-        apiKey: apiKey.trim(),
-        model: model || getDefaultModel(provider),
+        apiKey: trimmedApiKey,
+        model: finalModel,
       }).unwrap();
 
       const { isValid } = result;
@@ -52,6 +60,11 @@ export const useAiVerification = () => {
       setVerificationStatus((prev) => ({
         ...prev,
         [provider]: isValid ? 'success' : 'error',
+      }));
+
+      setVerifiedConfig((prev) => ({
+        ...prev,
+        [provider]: isValid ? { apiKey: trimmedApiKey, model: finalModel } : null,
       }));
 
       const message = isValid
@@ -64,6 +77,7 @@ export const useAiVerification = () => {
       }));
     } catch (error: unknown) {
       setVerificationStatus((prev) => ({ ...prev, [provider]: 'error' }));
+      setVerifiedConfig((prev) => ({ ...prev, [provider]: null }));
 
       const errorMessage =
         (error as { data?: { error?: string; message?: string } }).data
@@ -74,9 +88,60 @@ export const useAiVerification = () => {
 
       setVerificationMessages((prev) => ({
         ...prev,
-        [provider]: `❌ Verification failed: ${errorMessage}`,
+        [provider]: `âŒ Verification failed: ${errorMessage}`,
       }));
     }
+  };
+
+  const getVerificationState = (
+    provider: AIProviderType,
+    apiKey: string,
+    model: string,
+  ) => {
+    const trimmedApiKey = apiKey.trim();
+    const finalModel = model || getDefaultModel(provider);
+    const baseStatus = verificationStatus[provider] || 'idle';
+    const baseMessage = verificationMessages[provider];
+    const verified =
+      baseStatus === 'success' &&
+      verifiedConfig[provider]?.apiKey === trimmedApiKey &&
+      verifiedConfig[provider]?.model === finalModel &&
+      !!trimmedApiKey &&
+      !!finalModel;
+
+    if (verified) {
+      return {
+        status: 'success' as const,
+        message: baseMessage,
+        isVerified: true,
+      };
+    }
+
+    if (baseStatus === 'loading') {
+      return {
+        status: 'loading' as const,
+        message: baseMessage,
+        isVerified: false,
+      };
+    }
+
+    if (baseStatus === 'error') {
+      return {
+        status: 'error' as const,
+        message: baseMessage,
+        isVerified: false,
+      };
+    }
+
+    const message = trimmedApiKey
+      ? 'Please verify this API key and model.'
+      : undefined;
+
+    return {
+      status: 'idle' as const,
+      message,
+      isVerified: false,
+    };
   };
 
   return {
@@ -85,5 +150,6 @@ export const useAiVerification = () => {
     showApiKeys,
     verifyApiKey,
     toggleApiKeyVisibility,
+    getVerificationState,
   };
 };
