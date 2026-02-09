@@ -43,3 +43,15 @@ export interface GoogleCalendarConfig {
 export interface GoogleCalendarConfigResponse {
   googleCalendar: GoogleCalendarConfig;
 }
+
+export interface ZoomConfig {
+  accountId?: string;
+  clientId?: string;
+  clientSecret?: string;
+  connectedEmail?: string;
+  isConnected?: boolean;
+}
+
+export interface ZoomConfigResponse {
+  zoom: ZoomConfig;
+}

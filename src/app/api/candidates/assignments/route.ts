@@ -309,6 +309,7 @@ export async function GET(req: NextRequest) {
                 'assignment.time': '$candidates.assignment.time',
                 'assignment.assignedAt': '$candidates.assignment.assignedAt',
                 'assignment.googleMeet': '$candidates.assignment.googleMeet',
+                'assignment.zoomMeet': '$candidates.assignment.zoomMeet',
                 scores: '$candidates.scores',
                 'jobId._id': '$_id',
                 'jobId.title': '$title',

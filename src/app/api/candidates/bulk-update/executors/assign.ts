@@ -21,6 +21,11 @@ export async function runBulkAssign(
     meetingNotes = '',
     meetingAttachments = [],
     additionalGuests = [],
+    scheduleZoomMeet = false,
+    zoomMeetDuration = 30,
+    zoomMeetingNotes = '',
+    zoomMeetingAttachments = [],
+    zoomAdditionalGuests = [],
   } = params;
   const { user, dateTime, Candidate, History, User } = ctx;
   const toBroadcast: ICandidate[] = [];
@@ -129,6 +134,18 @@ export async function runBulkAssign(
         meetingAttachments?: typeof meetingAttachments;
       } | null = null;
 
+      let zoomMeetData: {
+        meetingId: string;
+        meetingLink: string;
+        startUrl?: string;
+        eventId?: string;
+        htmlLink?: string;
+        summary?: string;
+        description?: string;
+        meetingNotes?: string;
+        meetingAttachments?: typeof zoomMeetingAttachments;
+      } | null = null;
+
       if (scheduleGoogleMeet && time && user.organizationId) {
         try {
           const guests = [
@@ -204,6 +221,84 @@ export async function runBulkAssign(
         }
       }
 
+      if (scheduleZoomMeet && time && user.organizationId) {
+        try {
+          const guests = [
+            ...((interviewer as { email?: string }).email ? [(interviewer as { email: string }).email] : []),
+            ...(candidateObj.email ? [candidateObj.email] : []),
+            ...(user.email && user.email !== (interviewer as { email?: string }).email ? [user.email] : []),
+            ...zoomAdditionalGuests,
+          ];
+
+          const processedZoomMeetingAttachments = await Promise.all(
+            zoomMeetingAttachments.map(async (att) => {
+              if (att.url && !att.url.startsWith('data:') && !att.url.startsWith('http')) {
+                return att;
+              }
+              return att;
+            }),
+          );
+
+          const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+          };
+          if (ctx.requestHeaders) {
+            const authHeader = ctx.requestHeaders.get('authorization') || ctx.requestHeaders.get('cookie');
+            if (authHeader) {
+              if (ctx.requestHeaders.get('authorization')) {
+                headers['authorization'] = ctx.requestHeaders.get('authorization')!;
+              }
+              if (ctx.requestHeaders.get('cookie')) {
+                headers['cookie'] = ctx.requestHeaders.get('cookie')!;
+              }
+            }
+          }
+
+          const scheduleResponse = await fetch(`${baseUrl}/api/zoom/schedule-meet`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+              candidateId,
+              candidateName: candidateObj.name,
+              candidateEmail: candidateObj.email,
+              interviewerId,
+              interviewerName: (interviewer as { name: string }).name,
+              interviewerEmail: (interviewer as { email?: string }).email,
+              scheduledTime: time,
+              duration: zoomMeetDuration,
+              guests,
+              jobTitle: (candidateObj.jobId as { title?: string })?.title || 'Position',
+              organizationName: user.organizationInfo?.name || user.organizationId || 'Company',
+              meetingNotes: zoomMeetingNotes,
+              meetingAttachments: processedZoomMeetingAttachments,
+            }),
+          });
+
+          if (scheduleResponse.ok) {
+            const scheduleResult = await scheduleResponse.json();
+            zoomMeetData = {
+              meetingId: scheduleResult.meetingId,
+              meetingLink: scheduleResult.meetingLink,
+              startUrl: scheduleResult.startUrl,
+              eventId: scheduleResult.eventId,
+              htmlLink: scheduleResult.htmlLink,
+              summary: scheduleResult.summary,
+              description: scheduleResult.description,
+              meetingNotes: zoomMeetingNotes,
+              meetingAttachments: processedZoomMeetingAttachments,
+            };
+          } else {
+            logger.error(
+              { status: scheduleResponse.status, candidateId },
+              'Bulk assign: failed to schedule Zoom meeting',
+            );
+          }
+        } catch (err) {
+          logger.error({ error: err, candidateId }, 'Bulk assign: Zoom scheduling error');
+        }
+      }
+
       const historyEntry: ICandidateHistory = {
         dateTime,
         title: `Assigned to ${(interviewer as { name: string }).name} : Assigned by ${user.name}`,
@@ -219,6 +314,7 @@ export async function runBulkAssign(
         time: string | null;
         assignedAt: string;
         googleMeet?: typeof googleMeetData;
+        zoomMeet?: typeof zoomMeetData;
       } = {
         interviewerId,
         time: time ?? null,
@@ -227,6 +323,9 @@ export async function runBulkAssign(
 
       if (googleMeetData) {
         assignmentUpdate.googleMeet = googleMeetData;
+      }
+      if (zoomMeetData) {
+        assignmentUpdate.zoomMeet = zoomMeetData;
       }
 
       // Collect updates for batching

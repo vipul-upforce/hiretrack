@@ -18,6 +18,7 @@ import {
   Calendar,
   ShieldCheck,
   ArrowUpCircle,
+  Video,
 } from 'lucide-react';
 import { SettingGroup } from './types';
 
@@ -118,6 +119,12 @@ export const settingGroups: SettingGroup[] = [
         key: 'google-calendar',
         description: 'Connect Google Calendar for interview scheduling',
         icon: Calendar,
+      },
+      {
+        title: 'Zoom Meetings',
+        key: 'zoom',
+        description: 'Connect Zoom for interview scheduling',
+        icon: Video,
       },
     ],
   },

@@ -113,6 +113,18 @@ export interface CandidateAssignment {
     }>;
     lastSyncedAt?: Date | string;
   };
+  zoomMeet?: {
+    meetingId: string;
+    meetingLink: string;
+    startUrl?: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingAttachments?: FileAttachment[];
+    meetingNotes?: string;
+    lastSyncedAt?: Date | string;
+  };
   jobId?: string | JobObject;
 }
 

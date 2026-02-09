@@ -464,6 +464,9 @@ export default function CalendarPage() {
                 googleMeet:
                   selectedEvent.extendedProps.candidate.assignment
                     ?.googleMeet || undefined,
+                zoomMeet:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.zoomMeet || undefined,
               } as Assignment,
             } as unknown as Candidate
           }

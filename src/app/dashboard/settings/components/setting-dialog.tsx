@@ -13,6 +13,7 @@ import GeminiConfigs from './gemini';
 import ManageTagsDialog from '../../jobs/[id]/components/Dialogs/manage-tags-dialog';
 import AssetsDialog from './assets';
 import GoogleCalendarSettings from './google-calendar';
+import ZoomSettings from './zoom';
 import BackupsDialog from './backups';
 import { EvaluationSettings } from './ai-evaluation-settings';
 import AIProvidersConfigs from './ai-providers';
@@ -39,6 +40,7 @@ const settingComponents: Record<
   gemini: GeminiConfigs,
   'ai-providers': AIProvidersConfigs,
   'google-calendar': GoogleCalendarSettings,
+  zoom: ZoomSettings,
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,
   assets: AssetsDialog,
@@ -80,6 +82,7 @@ function SettingDialog({
     switch (key) {
       case 'ai-providers':
       case 'google-calendar':
+      case 'zoom':
         return '2xl';
       case 'version':
         return 'xl';
@@ -98,6 +101,7 @@ function SettingDialog({
         return 'flex min-h-[95vh] w-[90vw] max-w-7xl flex-col overflow-hidden';
       case 'ai-providers':
       case 'google-calendar':
+      case 'zoom':
         return 'flex max-h-[90vh] flex-col overflow-hidden p-0';
       case 'timezone':
         return 'w-[90vw] max-w-2xl overflow-visible';
@@ -134,7 +138,11 @@ function SettingDialog({
       return <ComponentToRender onClose={onClose} isOpen={isOpen} />;
     }
 
-    if (setting.key === 'ai-providers' || setting.key === 'google-calendar') {
+    if (
+      setting.key === 'ai-providers' ||
+      setting.key === 'google-calendar' ||
+      setting.key === 'zoom'
+    ) {
       return (
         <div className="flex-1 overflow-hidden overflow-y-auto px-6 py-0">
           <ComponentToRender onClose={onClose} isOpen={isOpen} />

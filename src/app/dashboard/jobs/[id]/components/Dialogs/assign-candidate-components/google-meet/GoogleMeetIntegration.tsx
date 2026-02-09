@@ -36,7 +36,7 @@ interface GoogleMeetIntegrationProps {
   candidate: Candidate;
   interviewers: Interviewer[] | undefined;
   googleCalendarData: IGoogleCalendar;
-  setShowCancelMeetDialog: (show: boolean) => void;
+  onRequestCancel: () => void;
   isBulkMode: boolean;
 }
 
@@ -44,7 +44,7 @@ export function GoogleMeetIntegration({
   candidate,
   interviewers,
   googleCalendarData,
-  setShowCancelMeetDialog,
+  onRequestCancel,
   isBulkMode,
 }: GoogleMeetIntegrationProps) {
   const {
@@ -66,6 +66,11 @@ export function GoogleMeetIntegration({
   } = useGoogleMeetIntegration({ candidate });
 
   if (!googleCalendarData?.isConnected) {
+    return null;
+  }
+
+  const hasOtherMeeting = !!candidate.assignment?.zoomMeet?.meetingId;
+  if (!hasExistingMeet && hasOtherMeeting) {
     return null;
   }
 
@@ -104,6 +109,7 @@ export function GoogleMeetIntegration({
                 onClick={() => {
                   setIsEditMode(true);
                   setFieldValue('scheduleGoogleMeet', true);
+                  setFieldValue('scheduleZoomMeet', false);
                 }}
                 className="h-7 text-xs"
               >
@@ -115,7 +121,7 @@ export function GoogleMeetIntegration({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setShowCancelMeetDialog(true);
+                  onRequestCancel();
                 }}
                 className="h-7 text-xs text-red-600 hover:text-red-700"
               >
@@ -178,9 +184,12 @@ export function GoogleMeetIntegration({
                     disabled={isBulkMode}
                     id="scheduleGoogleMeet"
                     checked={field.value}
-                    onCheckedChange={(checked) =>
-                      setFieldValue('scheduleGoogleMeet', checked)
-                    }
+                    onCheckedChange={(checked) => {
+                      setFieldValue('scheduleGoogleMeet', checked);
+                      if (checked) {
+                        setFieldValue('scheduleZoomMeet', false);
+                      }
+                    }}
                   />
                 )}
               </Field>
@@ -224,8 +233,8 @@ export function GoogleMeetIntegration({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        setShowCancelMeetDialog(true);
+                    onClick={() => {
+                        onRequestCancel();
                       }}
                       className="h-7 text-xs text-red-600 hover:text-red-700"
                     >

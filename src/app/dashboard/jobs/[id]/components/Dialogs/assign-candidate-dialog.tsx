@@ -18,7 +18,10 @@ import {
 } from '@/lib/features/user/userApi';
 import { Textarea } from '@/components/ui/textarea';
 import { Trash2, Loader2 } from 'lucide-react';
-import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
+import {
+  useGetGoogleCalendarConfigQuery,
+  useGetZoomConfigQuery,
+} from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
 import { useAppSelector } from '@/lib/redux/hooks';
@@ -27,8 +30,11 @@ import {
   useCancelMeetingMutation,
   useScheduleMeetingMutation,
   useUpdateMeetingMutation,
+  useCancelZoomMeetingMutation,
+  useScheduleZoomMeetingMutation,
+  useUpdateZoomMeetingMutation,
 } from '@/lib/features/calendar/calendarApi';
-import { IGoogleCalendar } from '@/lib/models/settings';
+import { IGoogleCalendar, IZoomConfig } from '@/lib/models/settings';
 import {
   validationSchema,
   FormValues,
@@ -37,6 +43,7 @@ import {
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
 import { GoogleMeetIntegration } from './assign-candidate-components/google-meet/GoogleMeetIntegration';
+import { ZoomMeetIntegration } from './assign-candidate-components/zoom-meet/ZoomMeetIntegration';
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
 import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
@@ -56,13 +63,25 @@ export function AssignCandidateDialog({
   onSuccess,
 }: AssignCandidateDialogProps) {
   const { toast } = useToast();
-  const [showCancelMeetDialog, setShowCancelMeetDialog] = useState(false);
+  const [cancelMeetingProvider, setCancelMeetingProvider] = useState<
+    'google' | 'zoom' | null
+  >(null);
   const [cancelNotes, setCancelNotes] = useState('');
 
   const [scheduleMeeting] = useScheduleMeetingMutation();
   const [updateMeeting] = useUpdateMeetingMutation();
   const [cancelMeeting, { isLoading: isCancelling }] =
     useCancelMeetingMutation();
+  const [scheduleZoomMeeting] = useScheduleZoomMeetingMutation();
+  const [updateZoomMeeting] = useUpdateZoomMeetingMutation();
+  const [cancelZoomMeeting, { isLoading: isCancellingZoom }] =
+    useCancelZoomMeetingMutation();
+
+  const showCancelMeetDialog = cancelMeetingProvider !== null;
+  const activeCancelLabel =
+    cancelMeetingProvider === 'zoom' ? 'Zoom' : 'Google Meet';
+  const isCancellingActive =
+    cancelMeetingProvider === 'zoom' ? isCancellingZoom : isCancelling;
 
   const { user } = useAppSelector((state) => state.auth);
   const shouldFetchInterviewers =
@@ -71,6 +90,7 @@ export function AssignCandidateDialog({
     useFetchInterviewersQuery(undefined, { skip: !shouldFetchInterviewers });
   const { data: googleCalendarData } =
     useGetGoogleCalendarConfigQuery(undefined);
+  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
   const {
     confirmUnassignOpen,
     setConfirmUnassignOpen,
@@ -122,13 +142,22 @@ export function AssignCandidateDialog({
     meetingAttachments:
       candidate?.assignment?.googleMeet?.meetingAttachments || [],
     additionalGuests: [],
+    scheduleZoomMeet: !!candidate?.assignment?.zoomMeet?.meetingId,
+    zoomMeetDuration: 40,
+    zoomMeetingNotes: candidate?.assignment?.zoomMeet?.meetingNotes || '',
+    zoomMeetingAttachments:
+      candidate?.assignment?.zoomMeet?.meetingAttachments || [],
+    zoomAdditionalGuests: [],
   };
 
   const handleFormSubmit = async (
     values: FormValues,
     formikHelpers: FormikHelpers<FormValues>,
   ) => {
-    if (values.scheduleGoogleMeet && values.time) {
+    const scheduleGoogle = values.scheduleGoogleMeet && values.time;
+    const scheduleZoom = values.scheduleZoomMeet && values.time;
+
+    if (scheduleGoogle || scheduleZoom) {
       try {
         const selectedInterviewer = interviewers?.find(
           (i) => i._id === values.interviewerId,
@@ -144,78 +173,152 @@ export function AssignCandidateDialog({
           return;
         }
 
+        const processAttachments = async (files: unknown[]) =>
+          Promise.all(
+            (files || []).map(async (file) => {
+              if (file instanceof File) {
+                const reader = new FileReader();
+                const dataUrl = await new Promise<string>((resolve, reject) => {
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(file);
+                });
+
+                return {
+                  id: Math.random().toString(36).substr(2, 9),
+                  name: file.name,
+                  url: dataUrl,
+                  type: file.type,
+                  size: file.size,
+                };
+              }
+              return file;
+            }),
+          );
+
         const defaultGuests = getDefaultGuests(selectedInterviewer);
-        const allGuests = [
+        const googleGuests = [
           ...defaultGuests,
           ...(values.additionalGuests || []),
         ];
+        const zoomGuests = [
+          ...defaultGuests,
+          ...(values.zoomAdditionalGuests || []),
+        ];
 
-        const processedMeetingAttachments = await Promise.all(
-          (values.meetingAttachments || []).map(async (file) => {
-            if (file instanceof File) {
-              const reader = new FileReader();
-              const dataUrl = await new Promise<string>((resolve, reject) => {
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-              });
+        let googleResult;
+        let zoomResult;
+        let processedGoogleAttachments: typeof values.meetingAttachments = [];
+        let processedZoomAttachments: typeof values.zoomMeetingAttachments = [];
 
-              return {
-                id: Math.random().toString(36).substr(2, 9),
-                name: file.name,
-                url: dataUrl,
-                type: file.type,
-                size: file.size,
-              };
-            }
-            return file;
-          }),
-        );
+        if (scheduleGoogle) {
+          processedGoogleAttachments = await processAttachments(
+            values.meetingAttachments || [],
+          );
 
-        const isUpdating = candidate.assignment?.googleMeet?.eventId;
-        let result;
+          const isUpdatingGoogle = candidate.assignment?.googleMeet?.eventId;
 
-        if (isUpdating) {
-          // UPDATE EXISTING MEETING
-          result = await updateMeeting({
-            eventId: candidate.assignment?.googleMeet?.eventId || '',
-            candidateId: candidate._id,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-          }).unwrap();
-        } else {
-          // SCHEDULE NEW MEETING
-          result = await scheduleMeeting({
-            candidateId: candidate._id,
-            candidateName: candidate.name,
-            candidateEmail: candidate.email,
-            interviewerId: selectedInterviewer._id,
-            interviewerName: selectedInterviewer.name,
-            scheduledTime: values.time?.toISOString(),
-            duration: values.meetDuration || 30,
-            guests: allGuests,
-            jobTitle: candidate.jobId?.title || 'Position',
-            organizationName: user?.organizationInfo?.name || 'Company',
-            meetingNotes: values.meetingNotes || '',
-            meetingAttachments: processedMeetingAttachments,
-          }).unwrap();
+          googleResult = isUpdatingGoogle
+            ? await updateMeeting({
+                eventId: candidate.assignment?.googleMeet?.eventId || '',
+                candidateId: candidate._id,
+                scheduledTime: values.time?.toISOString(),
+                duration: values.meetDuration || 30,
+                guests: googleGuests,
+              }).unwrap()
+            : await scheduleMeeting({
+                candidateId: candidate._id,
+                candidateName: candidate.name,
+                candidateEmail: candidate.email,
+                interviewerId: selectedInterviewer._id,
+                interviewerName: selectedInterviewer.name,
+                interviewerEmail: selectedInterviewer.email,
+                scheduledTime: values.time?.toISOString(),
+                duration: values.meetDuration || 30,
+                guests: googleGuests,
+                jobTitle: candidate.jobId?.title || 'Position',
+                organizationName: user?.organizationInfo?.name || 'Company',
+                meetingNotes: values.meetingNotes || '',
+                meetingAttachments: processedGoogleAttachments,
+              }).unwrap();
+        }
+
+        if (scheduleZoom) {
+          processedZoomAttachments = await processAttachments(
+            values.zoomMeetingAttachments || [],
+          );
+
+          const isUpdatingZoom = candidate.assignment?.zoomMeet?.meetingId;
+
+          zoomResult = isUpdatingZoom
+            ? await updateZoomMeeting({
+                meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
+                eventId: candidate.assignment?.zoomMeet?.eventId || '',
+                candidateId: candidate._id,
+                scheduledTime: values.time?.toISOString(),
+                duration: values.zoomMeetDuration || 30,
+                guests: zoomGuests,
+              }).unwrap()
+            : await scheduleZoomMeeting({
+                candidateId: candidate._id,
+                candidateName: candidate.name,
+                candidateEmail: candidate.email,
+                interviewerId: selectedInterviewer._id,
+                interviewerName: selectedInterviewer.name,
+                interviewerEmail: selectedInterviewer.email,
+                scheduledTime: values.time?.toISOString(),
+                duration: values.zoomMeetDuration || 30,
+                guests: zoomGuests,
+                jobTitle: candidate.jobId?.title || 'Position',
+                organizationName: user?.organizationInfo?.name || 'Company',
+                meetingNotes: values.zoomMeetingNotes || '',
+                meetingAttachments: processedZoomAttachments,
+              }).unwrap();
+        }
+
+        const remarkParts = [values.remark];
+        if (googleResult) {
+          if (values.meetingNotes) remarkParts.push(values.meetingNotes);
+          remarkParts.push(`Google Meet Link: ${googleResult.meetingLink}`);
+        }
+        if (zoomResult) {
+          if (values.zoomMeetingNotes)
+            remarkParts.push(values.zoomMeetingNotes);
+          remarkParts.push(`Zoom Link: ${zoomResult.meetingLink}`);
         }
 
         const updatedValues = {
           ...values,
-          remark:
-            `${values.remark}\n\n${values.meetingNotes}\n\nGoogle Meet Link: ${result.meetingLink}`.trim(),
-          googleMeetData: {
-            eventId: result.eventId,
-            meetingLink: result.meetingLink,
-            htmlLink: result.htmlLink,
-            summary: result.summary,
-            description: result.description,
-            meetingNotes: values.meetingNotes,
-            meetingAttachments: processedMeetingAttachments,
-          },
-          attachments: [...values.attachments, ...processedMeetingAttachments],
+          remark: remarkParts.filter(Boolean).join('\n\n').trim(),
+          ...(googleResult && {
+            googleMeetData: {
+              eventId: googleResult.eventId,
+              meetingLink: googleResult.meetingLink,
+              htmlLink: googleResult.htmlLink,
+              summary: googleResult.summary,
+              description: googleResult.description,
+              meetingNotes: values.meetingNotes,
+              meetingAttachments: processedGoogleAttachments,
+            },
+          }),
+          ...(zoomResult && {
+            zoomMeetData: {
+              meetingId: zoomResult.meetingId,
+              meetingLink: zoomResult.meetingLink,
+              startUrl: zoomResult.startUrl,
+              eventId: zoomResult.eventId,
+              htmlLink: zoomResult.htmlLink,
+              summary: zoomResult.summary,
+              description: zoomResult.description,
+              meetingNotes: values.zoomMeetingNotes,
+              meetingAttachments: processedZoomAttachments,
+            },
+          }),
+          attachments: [
+            ...values.attachments,
+            ...(processedGoogleAttachments || []),
+            ...(processedZoomAttachments || []),
+          ],
         };
 
         await handleSubmit(updatedValues, formikHelpers, interviewers);
@@ -226,18 +329,20 @@ export function AssignCandidateDialog({
 
         toast({
           title: 'Success',
-          description: isUpdating
-            ? 'Google Meet updated and candidate assigned'
-            : 'Google Meet scheduled and candidate assigned',
+          description: scheduleGoogle && scheduleZoom
+            ? 'Google Meet and Zoom scheduled'
+            : scheduleGoogle
+              ? 'Google Meet scheduled and candidate assigned'
+              : 'Zoom meeting scheduled and candidate assigned',
         });
       } catch (error) {
-        logger.error('❌ Google Meet Error:', error);
+        logger.error('Meeting scheduling error:', error);
         toast({
           title: 'Error',
           description:
             (error as { data?: { error?: string } }).data?.error ||
             (error as { message?: string }).message ||
-            'Failed to schedule/update Google Meet',
+            'Failed to schedule/update meeting',
           variant: 'destructive',
         });
         formikHelpers.setSubmitting(false);
@@ -248,29 +353,47 @@ export function AssignCandidateDialog({
   };
 
   const handleCancelMeeting = async () => {
-    if (!candidate.assignment?.googleMeet?.eventId) return;
-
     try {
-      await cancelMeeting({
-        eventId: candidate.assignment.googleMeet.eventId,
-        candidateId: candidate._id,
-        cancelNotes,
-      }).unwrap();
+      if (cancelMeetingProvider === 'google') {
+        if (!candidate.assignment?.googleMeet?.eventId) return;
 
-      toast({
-        title: 'Success',
-        description: 'Google Meet cancelled successfully',
-      });
+        await cancelMeeting({
+          eventId: candidate.assignment.googleMeet.eventId,
+          candidateId: candidate._id,
+          cancelNotes,
+        }).unwrap();
+
+        toast({
+          title: 'Success',
+          description: 'Google Meet cancelled successfully',
+        });
+      }
+
+      if (cancelMeetingProvider === 'zoom') {
+        if (!candidate.assignment?.zoomMeet?.meetingId) return;
+
+        await cancelZoomMeeting({
+          meetingId: candidate.assignment.zoomMeet.meetingId,
+          eventId: candidate.assignment.zoomMeet.eventId || '',
+          candidateId: candidate._id,
+          cancelNotes,
+        }).unwrap();
+
+        toast({
+          title: 'Success',
+          description: 'Zoom meeting cancelled successfully',
+        });
+      }
 
       if (refetch) await refetch();
       onOpenChange(false);
-      setShowCancelMeetDialog(false);
+      setCancelMeetingProvider(null);
       setCancelNotes('');
     } catch (error) {
       logger.error('Error cancelling meeting:', error);
       toast({
         title: 'Error',
-        description: 'Failed to cancel Google Meet',
+        description: 'Failed to cancel meeting',
         variant: 'destructive',
       });
     }
@@ -300,7 +423,9 @@ export function AssignCandidateDialog({
                   <div
                     className={`flex-1 space-y-6 px-6 py-4 ${
                       !candidate.assignment?.googleMeet?.eventId &&
-                      !values.scheduleGoogleMeet
+                      !values.scheduleGoogleMeet &&
+                      !candidate.assignment?.zoomMeet?.meetingId &&
+                      !values.scheduleZoomMeet
                         ? ''
                         : 'overflow-y-auto'
                     }`}
@@ -317,7 +442,21 @@ export function AssignCandidateDialog({
                           googleCalendarData={
                             googleCalendarData.googleCalendar as IGoogleCalendar
                           }
-                          setShowCancelMeetDialog={setShowCancelMeetDialog}
+                          onRequestCancel={() =>
+                            setCancelMeetingProvider('google')
+                          }
+                          isBulkMode={false}
+                        />
+                      )}
+
+                      {zoomConfigData && (
+                        <ZoomMeetIntegration
+                          candidate={candidate}
+                          interviewers={interviewers}
+                          zoomConfig={zoomConfigData.zoom as IZoomConfig}
+                          onRequestCancel={() =>
+                            setCancelMeetingProvider('zoom')
+                          }
                           isBulkMode={false}
                         />
                       )}
@@ -382,17 +521,22 @@ export function AssignCandidateDialog({
       {showCancelMeetDialog && (
         <Dialog
           open={showCancelMeetDialog}
-          onOpenChange={setShowCancelMeetDialog}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCancelMeetingProvider(null);
+              setCancelNotes('');
+            }
+          }}
         >
           <DialogContent className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]">
             <DialogHeader className="flex flex-col gap-2 border-b p-6 pb-4">
               <DialogTitle className="flex items-center gap-2 text-destructive">
                 <Trash2 className="h-5 w-5" />
-                Cancel Google Meet
+                Cancel {activeCancelLabel}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground/90">
-                Are you sure you want to cancel this Google Meet? This action
-                cannot be undone and attendees will be notified.
+                Are you sure you want to cancel this {activeCancelLabel}? This
+                action cannot be undone and attendees will be notified.
               </DialogDescription>
             </DialogHeader>
 
@@ -424,7 +568,7 @@ export function AssignCandidateDialog({
                 variant="outline"
                 className="mt-2 sm:mt-0"
                 onClick={() => {
-                  setShowCancelMeetDialog(false);
+                  setCancelMeetingProvider(null);
                   setCancelNotes('');
                 }}
               >
@@ -433,10 +577,10 @@ export function AssignCandidateDialog({
               <Button
                 type="button"
                 variant="destructive"
-                disabled={isCancelling}
+                disabled={isCancellingActive}
                 onClick={handleCancelMeeting}
               >
-                {isCancelling ? (
+                {isCancellingActive ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Cancelling...
@@ -455,3 +599,5 @@ export function AssignCandidateDialog({
     </>
   );
 }
+
+

@@ -43,6 +43,22 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   }>;
   /** Additional guest emails */
   additionalGuests?: string[];
+  /** Schedule Zoom meeting */
+  scheduleZoomMeet?: boolean;
+  /** Zoom meeting duration in minutes */
+  zoomMeetDuration?: number;
+  /** Zoom meeting notes */
+  zoomMeetingNotes?: string;
+  /** Attachments for the Zoom meeting */
+  zoomMeetingAttachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>;
+  /** Additional guest emails for Zoom */
+  zoomAdditionalGuests?: string[];
 }
 
 export interface BulkUnassignParams extends BulkUpdateBaseParams {}

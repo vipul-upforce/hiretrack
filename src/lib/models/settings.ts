@@ -161,6 +161,36 @@ const settingsSchema = new Schema({
       default: '',
     },
   },
+  zoom: {
+    isConnected: {
+      type: Boolean,
+      default: false,
+    },
+    accountId: {
+      type: String,
+      default: '',
+    },
+    clientId: {
+      type: String,
+      default: '',
+    },
+    clientSecret: {
+      type: String,
+      default: '',
+    },
+    accessToken: {
+      type: String,
+      default: '',
+    },
+    expiryDate: {
+      type: Number,
+      default: null,
+    },
+    connectedEmail: {
+      type: String,
+      default: '',
+    },
+  },
   onboardingStatus: {
     isCompleted: {
       type: Boolean,
@@ -490,6 +520,16 @@ export interface IGoogleCalendar {
   connectedEmail: string;
 }
 
+export interface IZoomConfig {
+  isConnected: boolean;
+  accountId: string;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  expiryDate: number | null;
+  connectedEmail?: string;
+}
+
 export interface IOnboardingStatus {
   isCompleted: boolean;
   completedSteps: string[];
@@ -552,6 +592,7 @@ export interface ISettings {
   emailTemplates: { [key: string]: IEmailTemplate };
   twoFA?: ITwoFA;
   googleCalendar?: IGoogleCalendar;
+  zoom?: IZoomConfig;
   onboardingStatus?: IOnboardingStatus;
   organizationEmailNotifications?: OrganizationEmailNotifications;
   captcha?: ICaptcha;

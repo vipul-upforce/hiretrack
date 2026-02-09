@@ -66,7 +66,11 @@ export const sentAssignmentMail = async (
           : '',
       candidateName: result.name,
       status: result.status,
-      eventId: result.assignment.googleMeet?.eventId ?? '',
+      eventId:
+        result.assignment.googleMeet?.eventId ??
+        result.assignment.zoomMeet?.eventId ??
+        result.assignment.zoomMeet?.meetingId ??
+        '',
     };
     const { error } = await sendEmail(reqBody);
     if (error) {

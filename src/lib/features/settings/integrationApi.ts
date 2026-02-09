@@ -3,6 +3,7 @@ import {
   TestConnectionRequest,
   TestConnectionResponse,
   GoogleCalendarConfigResponse,
+  ZoomConfigResponse,
 } from './types/config.types';
 
 export const integrationApi = baseApi.injectEndpoints({
@@ -39,6 +40,29 @@ export const integrationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Settings'],
     }),
+    getZoomConfig: builder.query<ZoomConfigResponse, void>({
+      query: () => ({ url: '/settings/zoom', method: 'GET' }),
+      providesTags: ['Settings'],
+    }),
+    updateZoomConfig: builder.mutation({
+      query: (config) => ({
+        url: '/settings/zoom',
+        method: 'PUT',
+        body: config,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    disconnectZoom: builder.mutation({
+      query: () => ({ url: '/settings/zoom', method: 'DELETE' }),
+      invalidatesTags: ['Settings'],
+    }),
+    testZoomConnection: builder.mutation<TestConnectionResponse, void>({
+      query: () => ({
+        url: '/zoom/test-connection',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Settings'],
+    }),
   }),
 });
 
@@ -48,4 +72,8 @@ export const {
   useUpdateGoogleCalendarMutation,
   useDisconnectGoogleCalendarMutation,
   useTestGoogleCalendarConnectionMutation,
+  useGetZoomConfigQuery,
+  useUpdateZoomConfigMutation,
+  useDisconnectZoomMutation,
+  useTestZoomConnectionMutation,
 } = integrationApi;

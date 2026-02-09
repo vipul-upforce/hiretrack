@@ -60,6 +60,24 @@ export interface NormalizedAssignment {
     }>;
     lastSyncedAt?: Date | string;
   };
+  zoomMeet?: {
+    meetingId: string;
+    meetingLink: string;
+    startUrl?: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingAttachments?: Array<{
+      id: string;
+      name: string;
+      url: string;
+      type: string;
+      size: number;
+    }>;
+    meetingNotes?: string;
+    lastSyncedAt?: Date | string;
+  };
 }
 
 /**
@@ -177,6 +195,7 @@ export function normalizeAssignment(
         : undefined,
     assignedAt,
     googleMeet: assignmentObj.googleMeet as NormalizedAssignment['googleMeet'],
+    zoomMeet: assignmentObj.zoomMeet as NormalizedAssignment['zoomMeet'],
   };
 }
 

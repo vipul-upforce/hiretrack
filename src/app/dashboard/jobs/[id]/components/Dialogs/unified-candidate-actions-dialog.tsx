@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { IGoogleCalendar } from '@/lib/models/settings';
+import { IGoogleCalendar, IZoomConfig } from '@/lib/models/settings';
 import { ActionToggles } from '@/components/unified-candidate-dialog/action-toggle';
 import { AssignSection } from '@/components/unified-candidate-dialog/assign-section';
 import { SwitchJobSection } from '@/components/unified-candidate-dialog/switch-job-section';
@@ -35,12 +35,19 @@ export function UnifiedCandidateActionsDialog(
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const {
-    state: { isSubmitting, showCancelMeetDialog, cancelNotes, isCancelling },
+    state: {
+      isSubmitting,
+      showCancelMeetDialog,
+      cancelNotes,
+      isCancelling,
+      cancelMeetingProvider,
+    },
     data: {
       user,
       jobs,
       interviewers,
       googleCalendarData,
+      zoomConfigData,
       initialValues,
       jobLanesData,
       isLoadingLanes,
@@ -49,7 +56,7 @@ export function UnifiedCandidateActionsDialog(
       handleSubmit,
       handleCancelMeeting,
       setCancelNotes,
-      setShowCancelMeetDialog,
+      setCancelMeetingProvider,
       toggleAction,
     },
   } = useCandidateActions(props);
@@ -150,7 +157,8 @@ export function UnifiedCandidateActionsDialog(
                           googleCalendarData={
                             googleCalendarData?.googleCalendar as IGoogleCalendar
                           }
-                          setShowCancelMeetDialog={setShowCancelMeetDialog}
+                          zoomConfig={zoomConfigData?.zoom as IZoomConfig}
+                          onRequestCancel={setCancelMeetingProvider}
                         />
                       )}
 
@@ -244,7 +252,13 @@ export function UnifiedCandidateActionsDialog(
 
       <CancelMeetingDialog
         open={showCancelMeetDialog}
-        onOpenChange={setShowCancelMeetDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCancelMeetingProvider(null);
+            setCancelNotes('');
+          }
+        }}
+        meetingType={cancelMeetingProvider === 'zoom' ? 'Zoom' : 'Google Meet'}
         cancelNotes={cancelNotes}
         setCancelNotes={setCancelNotes}
         onConfirm={handleCancelMeeting}

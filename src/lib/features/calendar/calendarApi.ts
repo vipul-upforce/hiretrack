@@ -19,6 +19,7 @@ export interface ScheduleMeetingRequest {
   candidateEmail: string;
   interviewerId: string;
   interviewerName: string;
+  interviewerEmail?: string;
   scheduledTime: string; // ISO string
   duration: number;
   guests: string[];
@@ -42,12 +43,44 @@ export interface CancelMeetingRequest {
   cancelNotes?: string;
 }
 
+export interface ScheduleZoomMeetingRequest extends ScheduleMeetingRequest {
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
+}
+
+export interface UpdateZoomMeetingRequest {
+  meetingId: string;
+  eventId?: string;
+  candidateId: string;
+  scheduledTime: string; // ISO string
+  duration: number;
+  guests: string[];
+}
+
+export interface CancelZoomMeetingRequest {
+  meetingId: string;
+  eventId?: string;
+  candidateId: string;
+  cancelNotes?: string;
+}
+
 export interface MeetingResponse {
   eventId: string;
   meetingLink: string;
   htmlLink: string;
   summary: string;
   description: string;
+  error?: string;
+}
+
+export interface ZoomMeetingResponse {
+  meetingId: string;
+  meetingLink: string;
+  startUrl?: string;
+  eventId?: string;
+  htmlLink?: string;
+  summary?: string;
+  description?: string;
   error?: string;
 }
 
@@ -117,6 +150,41 @@ export const calendarApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    scheduleZoomMeeting: builder.mutation<
+      ZoomMeetingResponse,
+      ScheduleZoomMeetingRequest
+    >({
+      query: (data) => ({
+        url: '/zoom/schedule-meet',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
+    updateZoomMeeting: builder.mutation<
+      ZoomMeetingResponse,
+      UpdateZoomMeetingRequest
+    >({
+      query: (data) => ({
+        url: '/zoom/update-meet',
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
+    cancelZoomMeeting: builder.mutation<void, CancelZoomMeetingRequest>({
+      query: ({ meetingId, candidateId, eventId, cancelNotes }) => ({
+        url: '/zoom/update-meet',
+        method: 'DELETE',
+        params: {
+          meetingId,
+          candidateId,
+          eventId: eventId || '',
+          cancelNotes: cancelNotes || '',
+        },
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
   }),
 });
 
@@ -125,4 +193,7 @@ export const {
   useUpdateMeetingMutation,
   useCancelMeetingMutation,
   useSyncEventMutation,
+  useScheduleZoomMeetingMutation,
+  useUpdateZoomMeetingMutation,
+  useCancelZoomMeetingMutation,
 } = calendarApi;

@@ -265,6 +265,7 @@ const handleChekOrg = async (req: NextRequest) => {
           aiProviders: 0,
           emailTemplates: 0,
           googleCalendar: 0,
+          zoom: 0,
           twoFA: 0,
         },
       )

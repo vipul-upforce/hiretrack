@@ -34,16 +34,19 @@ export const transformAssignmentToEvent = (
   const endTime = startTime ? new Date(startTime.getTime() + 1000) : undefined;
 
   const hasGoogleMeet = candidate?.assignment?.googleMeet;
+  const hasZoomMeet = candidate?.assignment?.zoomMeet;
   const baseTitle =
     candidate?.jobId && typeof candidate.jobId === 'object'
       ? candidate.jobId.title
       : 'Unknown';
-  const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+  const title = hasGoogleMeet || hasZoomMeet ? `📹 ${baseTitle}` : baseTitle;
 
   const colorIndex = index % eventColors.length;
   const color = hasGoogleMeet
     ? { bg: '#3b82f6', border: '#1d4ed8' }
-    : eventColors[colorIndex];
+    : hasZoomMeet
+      ? { bg: '#0ea5e9', border: '#0284c7' }
+      : eventColors[colorIndex];
 
   // Avoid nested ternaries for end and endStr
   let end: Date | undefined;
@@ -141,11 +144,12 @@ export const createSSETransformer =
       : currentEvent?.end || new Date();
 
     const hasGoogleMeet = updatedCandidate?.assignment?.googleMeet;
+    const hasZoomMeet = updatedCandidate?.assignment?.zoomMeet;
     const baseTitle =
       updatedCandidate?.jobId && typeof updatedCandidate.jobId === 'object'
         ? updatedCandidate.jobId.title
         : 'Unknown';
-    const title = hasGoogleMeet ? `📹 ${baseTitle}` : baseTitle;
+    const title = hasGoogleMeet || hasZoomMeet ? `📹 ${baseTitle}` : baseTitle;
 
     return {
       ...currentEvent,
