@@ -91,6 +91,7 @@ export async function runBulkStatusUpdate(
     const updatedList = await Candidate.find({ _id: { $in: ids } })
       .populate([
         { path: 'assignment.interviewerId', select: '_id name email' },
+        { path: 'followUp.userId', select: '_id name email' },
         { path: 'jobId', select: 'title description' },
       ])
       .lean();

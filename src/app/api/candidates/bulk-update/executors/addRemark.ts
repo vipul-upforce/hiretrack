@@ -25,6 +25,7 @@ export async function runBulkAddRemark(
     .populate([
       { path: 'assignment.interviewerId', select: '_id name email' },
       { path: 'remarks.userId', select: 'name email' },
+      { path: 'followUp.userId', select: '_id name email' },
       { path: 'jobId', select: '_id title description' },
     ])
     .lean();
@@ -102,6 +103,7 @@ export async function runBulkAddRemark(
       .populate([
         { path: 'assignment.interviewerId', select: '_id name email' },
         { path: 'remarks.userId', select: 'name email' },
+        { path: 'followUp.userId', select: '_id name email' },
         { path: 'jobId', select: 'title description' },
       ])
       .lean();
