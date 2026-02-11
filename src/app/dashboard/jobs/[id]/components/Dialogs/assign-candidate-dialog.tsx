@@ -1,23 +1,19 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Formik, Form, FormikHelpers } from 'formik';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import {
   Interviewer,
   useFetchInterviewersQuery,
 } from '@/lib/features/user/userApi';
-import { Textarea } from '@/components/ui/textarea';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import {
   useGetGoogleCalendarConfigQuery,
   useGetZoomConfigQuery,
@@ -28,26 +24,24 @@ import dayjs from 'dayjs';
 import { useAppSelector } from '@/lib/redux/hooks';
 import logger from '@/lib/logger';
 import {
-  useCancelMeetingMutation,
   useScheduleMeetingMutation,
   useUpdateMeetingMutation,
-  useCancelZoomMeetingMutation,
   useScheduleZoomMeetingMutation,
   useUpdateZoomMeetingMutation,
-  useCancelTeamsMeetingMutation,
   useScheduleTeamsMeetingMutation,
   useUpdateTeamsMeetingMutation,
-  type MeetingAttachment,
 } from '@/lib/features/calendar/calendarApi';
 import {
   IGoogleCalendar,
   IZoomConfig,
   IMicrosoftTeamsConfig,
 } from '@/lib/models/settings';
+import { CancelMeetingDialog } from '@/components/unified-candidate-dialog/cancel-meeting-dialog';
 import {
   validationSchema,
   FormValues,
   AssignCandidateDialogProps,
+  type Attachment,
 } from '../../schemas/AssignCandidateSchema';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
@@ -57,6 +51,7 @@ import { TeamsMeetIntegration } from './assign-candidate-components/teams-meet/T
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
 import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
+import { useCancelMeeting } from '../../hooks/useCancelMeeting';
 
 function LoadingSpinner({ w = 4 }: { w?: number }) {
   return <Loader2 className={`mr-2 h-${w} w-${w} animate-spin`} />;
@@ -73,46 +68,28 @@ export function AssignCandidateDialog({
   onSuccess,
 }: AssignCandidateDialogProps) {
   const { toast } = useToast();
-  const [cancelMeetingProvider, setCancelMeetingProvider] = useState<
-    'google' | 'zoom' | 'teams' | null
-  >(null);
-  const [cancelNotes, setCancelNotes] = useState('');
 
   const [scheduleMeeting] = useScheduleMeetingMutation();
   const [updateMeeting] = useUpdateMeetingMutation();
-  const [cancelMeeting, { isLoading: isCancelling }] =
-    useCancelMeetingMutation();
   const [scheduleZoomMeeting] = useScheduleZoomMeetingMutation();
   const [updateZoomMeeting] = useUpdateZoomMeetingMutation();
-  const [cancelZoomMeeting, { isLoading: isCancellingZoom }] =
-    useCancelZoomMeetingMutation();
-  const [cancelTeamsMeeting, { isLoading: isCancellingTeams }] =
-    useCancelTeamsMeetingMutation();
   const [scheduleTeamsMeeting] = useScheduleTeamsMeetingMutation();
   const [updateTeamsMeeting] = useUpdateTeamsMeetingMutation();
 
-  const showCancelMeetDialog = cancelMeetingProvider !== null;
-  const cancelLabelByProvider: Record<
-    'google' | 'zoom' | 'teams',
-    string
-  > = {
-    google: 'Google Meet',
-    zoom: 'Zoom',
-    teams: 'Microsoft Teams',
-  };
-  const activeCancelLabel =
-    cancelMeetingProvider !== null
-      ? cancelLabelByProvider[cancelMeetingProvider]
-      : '';
-  const isCancellingByProvider = {
-    google: isCancelling,
-    zoom: isCancellingZoom,
-    teams: isCancellingTeams,
-  };
-  const isCancellingActive =
-    cancelMeetingProvider !== null
-      ? isCancellingByProvider[cancelMeetingProvider]
-      : false;
+  const {
+    cancelNotes,
+    setCancelNotes,
+    activeCancelLabel,
+    isCancellingActive,
+    showCancelMeetDialog,
+    handleCancelMeeting,
+    handleOpenCancelDialog,
+    handleCloseCancelDialog,
+  } = useCancelMeeting({
+    candidate,
+    refetch,
+    onOpenChange,
+  });
 
   const { user } = useAppSelector((state) => state.auth);
   const shouldFetchInterviewers =
@@ -212,9 +189,11 @@ export function AssignCandidateDialog({
           return;
         }
 
-        const processAttachments = async (files: unknown[]) =>
+        const processAttachments = async (
+          files: unknown[],
+        ): Promise<Attachment[]> =>
           Promise.all(
-            (files || []).map(async (file) => {
+            (files || []).map(async (file): Promise<Attachment> => {
               if (file instanceof File) {
                 const reader = new FileReader();
                 const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -231,7 +210,11 @@ export function AssignCandidateDialog({
                   size: file.size,
                 };
               }
-              return file;
+              const existing = file as Attachment;
+              return {
+                ...existing,
+                id: existing.id ?? Math.random().toString(36).substr(2, 9),
+              };
             }),
           );
 
@@ -253,9 +236,9 @@ export function AssignCandidateDialog({
         let googleResult;
         let zoomResult;
         let teamsResult;
-        let processedGoogleAttachments: typeof values.meetingAttachments = [];
-        let processedZoomAttachments: typeof values.zoomMeetingAttachments = [];
-        let processedTeamsAttachments: typeof values.teamsMeetingAttachments = [];
+        let processedGoogleAttachments: Attachment[] = [];
+        let processedZoomAttachments: Attachment[] = [];
+        let processedTeamsAttachments: Attachment[] = [];
 
         if (scheduleGoogle) {
           processedGoogleAttachments = await processAttachments(
@@ -268,7 +251,7 @@ export function AssignCandidateDialog({
             ? await updateMeeting({
               eventId: candidate.assignment?.googleMeet?.eventId || '',
               candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString(),
+              scheduledTime: values.time?.toISOString() ?? '',
               duration: values.meetDuration || 30,
               guests: googleGuests,
             }).unwrap()
@@ -279,7 +262,7 @@ export function AssignCandidateDialog({
               interviewerId: selectedInterviewer._id,
               interviewerName: selectedInterviewer.name,
               interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time?.toISOString(),
+              scheduledTime: values.time?.toISOString() ?? '',
               duration: values.meetDuration || 30,
               guests: googleGuests,
               jobTitle: candidate.jobId?.title || 'Position',
@@ -301,7 +284,7 @@ export function AssignCandidateDialog({
               meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
               eventId: candidate.assignment?.zoomMeet?.eventId || '',
               candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString(),
+              scheduledTime: values.time?.toISOString() ?? '',
               duration: values.zoomMeetDuration || 30,
               guests: zoomGuests,
             }).unwrap()
@@ -312,7 +295,7 @@ export function AssignCandidateDialog({
               interviewerId: selectedInterviewer._id,
               interviewerName: selectedInterviewer.name,
               interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time?.toISOString(),
+              scheduledTime: values.time?.toISOString() ?? '',
               duration: values.zoomMeetDuration || 30,
               guests: zoomGuests,
               jobTitle: candidate.jobId?.title || 'Position',
@@ -360,7 +343,7 @@ export function AssignCandidateDialog({
               jobTitle: candidate.jobId?.title || 'Position',
               organizationName: user?.organizationInfo?.name || 'Company',
               meetingNotes: teamsNotes,
-              meetingAttachments: processedTeamsAttachments as MeetingAttachment[],
+              meetingAttachments: processedTeamsAttachments,
             }).unwrap();
         }
 
@@ -378,7 +361,7 @@ export function AssignCandidateDialog({
           if (values.teamsMeetingNotes) remarkParts.push(values.teamsMeetingNotes);
           remarkParts.push(`Microsoft Teams Link: ${teamsResult.meetingLink}`);
         }
-        const updatedValues = {
+        const updatedValues: FormValues = {
           ...values,
           remark: remarkParts.filter(Boolean).join('\n\n').trim(),
           ...(googleResult && {
@@ -419,9 +402,9 @@ export function AssignCandidateDialog({
           }),
           attachments: [
             ...values.attachments,
-            ...(processedGoogleAttachments || []),
-            ...(processedZoomAttachments || []),
-            ...(processedTeamsAttachments || []),
+            ...processedGoogleAttachments,
+            ...processedZoomAttachments,
+            ...processedTeamsAttachments,
           ],
         };
 
@@ -468,68 +451,6 @@ export function AssignCandidateDialog({
     }
   };
 
-  const handleCancelMeeting = async () => {
-    try {
-      if (cancelMeetingProvider === 'google') {
-        if (!candidate.assignment?.googleMeet?.eventId) return;
-
-        await cancelMeeting({
-          eventId: candidate.assignment.googleMeet.eventId,
-          candidateId: candidate._id,
-          cancelNotes,
-        }).unwrap();
-
-        toast({
-          title: 'Success',
-          description: 'Google Meet cancelled successfully',
-        });
-      }
-
-      if (cancelMeetingProvider === 'zoom') {
-        if (!candidate.assignment?.zoomMeet?.meetingId) return;
-
-        await cancelZoomMeeting({
-          meetingId: candidate.assignment.zoomMeet.meetingId,
-          eventId: candidate.assignment.zoomMeet.eventId || '',
-          candidateId: candidate._id,
-          cancelNotes,
-        }).unwrap();
-
-        toast({
-          title: 'Success',
-          description: 'Zoom meeting cancelled successfully',
-        });
-      }
-
-      if (cancelMeetingProvider === 'teams') {
-        if (!candidate.assignment?.microsoftTeams?.meetingId) return;
-
-        await cancelTeamsMeeting({
-          meetingId: candidate.assignment.microsoftTeams.meetingId,
-          eventId: candidate.assignment.microsoftTeams.eventId || '',
-          candidateId: candidate._id,
-          cancelNotes,
-        }).unwrap();
-
-        toast({
-          title: 'Success',
-          description: 'Microsoft Teams meeting cancelled successfully',
-        });
-      }
-
-      if (refetch) await refetch();
-      onOpenChange(false);
-      setCancelMeetingProvider(null);
-      setCancelNotes('');
-    } catch (error) {
-      logger.error('Error cancelling meeting:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to cancel meeting',
-        variant: 'destructive',
-      });
-    }
-  };
 
   return (
     <>
@@ -575,9 +496,7 @@ export function AssignCandidateDialog({
                           googleCalendarData={
                             googleCalendarData.googleCalendar as IGoogleCalendar
                           }
-                          onRequestCancel={() =>
-                            setCancelMeetingProvider('google')
-                          }
+                          onRequestCancel={() => handleOpenCancelDialog('google')}
                           isBulkMode={false}
                         />
                       )}
@@ -587,9 +506,7 @@ export function AssignCandidateDialog({
                           candidate={candidate}
                           interviewers={interviewers}
                           zoomConfig={zoomConfigData.zoom as IZoomConfig}
-                          onRequestCancel={() =>
-                            setCancelMeetingProvider('zoom')
-                          }
+                          onRequestCancel={() => handleOpenCancelDialog('zoom')}
                           isBulkMode={false}
                         />
                       )}
@@ -601,9 +518,7 @@ export function AssignCandidateDialog({
                           teamsConfig={
                             teamsConfigData.microsoftTeams as IMicrosoftTeamsConfig
                           }
-                          onRequestCancel={() =>
-                            setCancelMeetingProvider('teams')
-                          }
+                          onRequestCancel={() => handleOpenCancelDialog('teams')}
                           isBulkMode={false}
                         />
                       )}
@@ -665,84 +580,19 @@ export function AssignCandidateDialog({
         </DialogContent>
       </Dialog>
 
-      {showCancelMeetDialog && (
-        <Dialog
-          open={showCancelMeetDialog}
-          onOpenChange={(open) => {
-            if (!open) {
-              setCancelMeetingProvider(null);
-              setCancelNotes('');
-            }
-          }}
-        >
-          <DialogContent className="flex flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]">
-            <DialogHeader className="flex flex-col gap-2 border-b p-6 pb-4">
-              <DialogTitle className="flex items-center gap-2 text-destructive">
-                <Trash2 className="h-5 w-5" />
-                Cancel {activeCancelLabel}
-              </DialogTitle>
-              <DialogDescription className="text-muted-foreground/90">
-                Are you sure you want to cancel this {activeCancelLabel}? This
-                action cannot be undone and attendees will be notified.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 p-6">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="cancelNotes"
-                  className="text-sm font-semibold text-foreground"
-                >
-                  Cancellation Notes{' '}
-                  <span className="font-normal text-muted-foreground">
-                    (Optional)
-                  </span>
-                </Label>
-                <Textarea
-                  id="cancelNotes"
-                  placeholder="Reason for cancellation, rescheduling information, or other notes..."
-                  value={cancelNotes}
-                  onChange={(e) => setCancelNotes(e.target.value)}
-                  className="min-h-[60px] resize-y focus-visible:ring-offset-1"
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <DialogFooter className="flex gap-3 bg-background p-6 pt-0 sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-2 sm:mt-0"
-                onClick={() => {
-                  setCancelMeetingProvider(null);
-                  setCancelNotes('');
-                }}
-              >
-                Keep Meeting
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                disabled={isCancellingActive}
-                onClick={handleCancelMeeting}
-              >
-                {isCancellingActive ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Cancelling...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Cancel Meeting
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      <CancelMeetingDialog
+        open={showCancelMeetDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseCancelDialog();
+          }
+        }}
+        meetingType={activeCancelLabel}
+        cancelNotes={cancelNotes}
+        setCancelNotes={setCancelNotes}
+        onConfirm={handleCancelMeeting}
+        isCancelling={isCancellingActive}
+      />
     </>
   );
 }

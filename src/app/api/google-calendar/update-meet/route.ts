@@ -3,6 +3,8 @@ import connectToDatabase, { Settings, Candidate, History } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
+import { uploadFile, uploadFileToS3, saveFileLocally } from '@/lib/fileUtils';
+import { MeetingAttachment } from '@/lib/features/calendar/calendarApi';
 import { google } from 'googleapis';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
@@ -16,6 +18,8 @@ interface UpdateMeetRequest {
   scheduledTime?: string;
   duration?: number;
   guests?: string[];
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
 }
 
 export async function PUT(req: NextRequest) {
@@ -33,8 +37,15 @@ export async function PUT(req: NextRequest) {
 
     const { organizationId } = userData;
     const orgId = userData.organizationId;
-    const { candidateId, eventId, scheduledTime, duration, guests } =
-      body as UpdateMeetRequest;
+    const {
+      candidateId,
+      eventId,
+      scheduledTime,
+      duration,
+      guests,
+      meetingNotes,
+      meetingAttachments,
+    } = body as UpdateMeetRequest;
 
     if (!Settings) {
       return NextResponse.json(
@@ -45,7 +56,7 @@ export async function PUT(req: NextRequest) {
 
     // Optimize: Fetch only needed fields from Settings
     const settings = await Settings.findOne({ organizationId })
-      .select('googleCalendar timeZone.name')
+      .select('googleCalendar timeZone.name fileStorage')
       .lean()
       .exec();
 
@@ -98,6 +109,8 @@ export async function PUT(req: NextRequest) {
       start?: { dateTime: string; timeZone: string };
       end?: { dateTime: string; timeZone: string };
       attendees?: Array<{ email: string }>;
+      description?: string;
+      attachments?: Array<{ fileUrl: string }>;
     } = {};
 
     if (scheduledTime && duration) {
@@ -136,6 +149,99 @@ export async function PUT(req: NextRequest) {
       updateData.attendees = guests.map((email) => ({ email }));
     }
 
+    // Upload meeting attachments and add to description
+    const validAttachments =
+      meetingAttachments?.filter(
+        (att: MeetingAttachment) => att && att.name && att.url,
+      ) || [];
+
+    const protocol = req.headers.get('x-forwarded-proto') || 'http';
+    const host = req.headers.get('host') || 'localhost:3000';
+    const baseUrl = `${protocol}://${host}`;
+
+    let uploadedAttachments: Array<{ name: string; url: string }> = [];
+    if (validAttachments.length > 0) {
+      const fileStorageSettings = settings.fileStorage;
+
+      const uploadPromises = validAttachments.map(
+        async (attachment: MeetingAttachment) => {
+          try {
+            let uploadedUrl = '';
+            const timestamp = new Date().getTime();
+            const uploadName =
+              attachment.name || `meeting_attachment_${timestamp}`;
+
+            const base64Data = attachment.url.startsWith('data:')
+              ? attachment.url
+              : `data:${attachment.type};base64,${attachment.url}`;
+
+            switch (fileStorageSettings?.storageType) {
+              case 'cloudinary':
+                uploadedUrl = await uploadFile(
+                  base64Data,
+                  'documents',
+                  organizationId,
+                  uploadName,
+                );
+                break;
+              case 's3':
+                uploadedUrl = await uploadFileToS3(
+                  base64Data,
+                  'documents',
+                  organizationId,
+                  uploadName,
+                );
+                break;
+              default:
+                uploadedUrl = await saveFileLocally(
+                  base64Data,
+                  'documents',
+                  uploadName,
+                );
+            }
+
+            return { name: attachment.name, url: uploadedUrl };
+          } catch (error) {
+            logger.error(
+              { error, url: req.url },
+              'Failed to upload attachment:',
+              error,
+            );
+            return { name: attachment.name, url: 'Upload failed' };
+          }
+        },
+      );
+
+      uploadedAttachments = await Promise.all(uploadPromises);
+    }
+
+    // Build description with meeting notes and attachments
+    let descriptionToUpdate = '';
+
+    if (meetingNotes) {
+      descriptionToUpdate = meetingNotes;
+    } else {
+      // Preserve existing description if no new notes provided
+      descriptionToUpdate = existingEvent.data.description || '';
+    }
+
+    if (uploadedAttachments.length > 0) {
+      if (descriptionToUpdate) {
+        descriptionToUpdate += '\n\nAttachments:';
+      } else {
+        descriptionToUpdate = 'Attachments:';
+      }
+      uploadedAttachments.forEach((attachment) => {
+        const fullUrl = attachment.url.startsWith('/api/files')
+          ? `${baseUrl}${attachment.url}`
+          : attachment.url;
+        descriptionToUpdate += `\n- ${attachment.name}: ${fullUrl}`;
+      });
+    }
+
+    if (meetingNotes || uploadedAttachments.length > 0) {
+      updateData.description = descriptionToUpdate;
+    }
     // Update the event
     const response = await calendar.events.patch({
       calendarId: 'primary',
@@ -253,7 +359,7 @@ export async function DELETE(req: NextRequest) {
 
     // Optimize: Fetch only needed fields from Settings
     const settings = await Settings.findOne({ organizationId })
-      .select('googleCalendar timeZone.name')
+      .select('googleCalendar timeZone.name fileStorage')
       .lean()
       .exec();
 
@@ -531,7 +637,10 @@ export async function DELETE(req: NextRequest) {
               history: candidateHistoryPopulated?.history,
               duplicateCount: fullCandidate.duplicateCount || 0,
             }).catch((error) => {
-              logger.error({ error }, 'Failed to broadcast candidate calendar update');
+              logger.error(
+                { error },
+                'Failed to broadcast candidate calendar update',
+              );
             });
           }
         } catch (broadcastError) {

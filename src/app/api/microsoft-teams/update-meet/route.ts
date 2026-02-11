@@ -558,7 +558,6 @@ export async function PUT(req: NextRequest) {
             descriptionContent += `Interviewer: ${interviewerName} \n`;
           }
           descriptionContent += ` Candidate: ${candidateName} \n`;
-          descriptionContent += ` Duration: ${meetingDuration} minutes \n`;
 
           if (formattedDateTime) {
             descriptionContent += `\n\nWhen:
@@ -708,7 +707,6 @@ export async function PUT(req: NextRequest) {
           descriptionContent += `Interviewer: ${interviewerName}\n`;
         }
         descriptionContent += ` Candidate: ${candidateName} \n`;
-        descriptionContent += ` Duration: ${meetingDuration} minutes \n`;
 
         updateData.description = descriptionContent;
       }

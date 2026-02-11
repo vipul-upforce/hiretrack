@@ -37,7 +37,6 @@ export function AssignSection({
   onRequestCancel,
   isBulkMode,
 }: AssignSectionProps) {
-  console.log(candidate, "candidate");
 
   return (
     <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">

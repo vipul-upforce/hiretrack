@@ -35,6 +35,8 @@ export interface UpdateMeetingRequest {
   scheduledTime: string; // ISO string
   duration: number;
   guests: string[];
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
 }
 
 export interface CancelMeetingRequest {
@@ -55,6 +57,8 @@ export interface UpdateZoomMeetingRequest {
   scheduledTime: string; // ISO string
   duration: number;
   guests: string[];
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
 }
 
 export interface CancelZoomMeetingRequest {
@@ -76,6 +80,8 @@ export interface UpdateTeamsMeetingRequest {
   scheduledTime: string; // ISO string
   duration: number;
   guests: string[];
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
 }
 
 export interface CancelTeamsMeetingRequest {

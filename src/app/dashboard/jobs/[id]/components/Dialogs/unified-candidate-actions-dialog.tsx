@@ -266,7 +266,13 @@ export function UnifiedCandidateActionsDialog(
             setCancelNotes('');
           }
         }}
-        meetingType={cancelMeetingProvider === 'zoom' ? 'Zoom' : 'Google Meet'}
+        meetingType={
+          cancelMeetingProvider === 'zoom'
+            ? 'Zoom'
+            : cancelMeetingProvider === 'teams'
+              ? 'Microsoft Teams'
+              : 'Google Meet'
+        }
         cancelNotes={cancelNotes}
         setCancelNotes={setCancelNotes}
         onConfirm={handleCancelMeeting}

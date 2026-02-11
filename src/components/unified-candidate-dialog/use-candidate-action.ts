@@ -360,6 +360,9 @@ export function useCandidateActions({
               scheduledTime: values.time?.toISOString() || '',
               duration: values.meetDuration || 30,
               guests,
+              meetingNotes: values.meetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap()
           : await scheduleMeeting({
               candidateId: candidate._id,
@@ -411,6 +414,9 @@ export function useCandidateActions({
               scheduledTime: values.time?.toISOString() || '',
               duration: values.zoomMeetDuration || 30,
               guests,
+              meetingNotes: values.zoomMeetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap()
           : await scheduleZoomMeeting({
               candidateId: candidate._id,
@@ -461,9 +467,12 @@ export function useCandidateActions({
               meetingId: candidate.assignment?.microsoftTeams?.meetingId || '',
               eventId: candidate.assignment?.microsoftTeams?.eventId || '',
               candidateId: candidate._id,
-              scheduledTime: values.time.toISOString(),
+              scheduledTime: values.time?.toISOString() || '',
               duration: values.teamsMeetDuration || 30,
               guests,
+              meetingNotes: values.teamsMeetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap()
           : await scheduleTeamsMeeting({
               candidateId: candidate._id,
@@ -472,13 +481,14 @@ export function useCandidateActions({
               interviewerId: selectedInterviewer._id,
               interviewerName: selectedInterviewer.name,
               interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time.toISOString(),
+              scheduledTime: values.time?.toISOString() || '',
               duration: values.teamsMeetDuration || 30,
               guests,
               jobTitle: candidate.jobId?.title || 'Position',
               organizationName: user?.organizationInfo?.name || 'Company',
               meetingNotes: values.teamsMeetingNotes || '',
-              meetingAttachments: processedMeetingAttachments,
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap();
 
         teamsMeetData = {
