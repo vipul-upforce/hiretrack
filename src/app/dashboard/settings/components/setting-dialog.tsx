@@ -26,6 +26,9 @@ import MultipleOrgsConfigs from './multiple-org';
 import TimeZoneSelect from './time-zone';
 import CaptchaSettings from './captcha';
 import { EmailTemplateEditor } from '../templates/components/email-template-editor/EmailTemplateEditor';
+import EmailCommunicationSettings from './communication/email-settings';
+import AICommunicationSettings from './communication/ai-settings';
+import MeetingCommunicationSettings from './communication/meeting-settings';
 
 export interface SettingComponentProps {
   onClose: () => void;
@@ -43,6 +46,9 @@ const settingComponents: Record<
   'google-calendar': GoogleCalendarSettings,
   zoom: ZoomSettings,
   'microsoft-teams': MicrosoftTeamsSettings,
+  'communication-email': EmailCommunicationSettings,
+  'communication-ai': AICommunicationSettings,
+  'communication-meetings': MeetingCommunicationSettings,
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,
   assets: AssetsDialog,
@@ -86,6 +92,9 @@ function SettingDialog({
       case 'google-calendar':
       case 'zoom':
       case 'microsoft-teams':
+      case 'communication-email':
+      case 'communication-ai':
+      case 'communication-meetings':
         return '2xl';
       case 'version':
         return 'xl';
@@ -102,6 +111,11 @@ function SettingDialog({
       case 'portal':
       case 'templates':
         return 'flex min-h-[95vh] w-[90vw] max-w-7xl flex-col overflow-hidden';
+      case 'communication-email':
+        return 'hide-scrollbar flex h-[80vh] max-h-[80vh] w-[30vw] max-w-2xl flex-col overflow-hidden overflow-y-auto p-0';
+      case 'communication-ai':
+      case 'communication-meetings':
+        return 'flex h-[90vh] max-h-[90vh] w-[95vw] max-w-6xl flex-col overflow-hidden p-0';
       case 'ai-providers':
       case 'google-calendar':
       case 'zoom':
@@ -140,6 +154,18 @@ function SettingDialog({
 
     if (directRenderKeys.includes(setting.key)) {
       return <ComponentToRender onClose={onClose} isOpen={isOpen} />;
+    }
+
+    if (
+      setting.key === 'communication-email' ||
+      setting.key === 'communication-ai' ||
+      setting.key === 'communication-meetings'
+    ) {
+      return (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <ComponentToRender onClose={onClose} isOpen={isOpen} />
+        </div>
+      );
     }
 
     if (
