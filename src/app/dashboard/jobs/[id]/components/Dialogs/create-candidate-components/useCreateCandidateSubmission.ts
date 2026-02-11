@@ -9,6 +9,7 @@ import {
   useEvaluateCandidateMutation,
   useUpdateAppliedApplicationMutation,
   useUpdateCandidateHistoryMutation,
+  useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import { v4 as uuidv4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -50,14 +51,7 @@ interface UseCreateCandidateSubmissionProps {
   onSuccess: () => void;
 }
 
-// Helper function to convert file to base64
-const convertFileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
+// Removed convertFileToBase64 - we send files as binary in FormData now
 
 // Helper function to evaluate candidate
 async function evaluateCandidate(
@@ -96,6 +90,8 @@ export function useCreateCandidateSubmission({
   const { toast } = useToast();
   const [createCandidate, { isLoading: isAdding }] =
     useCreateCandidateMutation();
+  const [uploadFiles, { isLoading: isUploadingFiles }] =
+    useUploadFilesMutation();
   const [evaluateCandidateMutation, { isLoading: isEvaluating }] =
     useEvaluateCandidateMutation();
   const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
@@ -144,16 +140,9 @@ export function useCreateCandidateSubmission({
         return;
       }
 
-      const resumeBase64 = values.resume
-        ? await convertFileToBase64(values.resume)
-        : null;
-
-      const attachmentsBase64 = await Promise.all(
-        values.attachments.map((file) => convertFileToBase64(file)),
-      );
-
       // Extract assignment, assignee, and time from values to avoid spreading empty objects
-      const { assignment, assignee, time, ...restValues } = values;
+      // DO NOT include resume or attachments in candidateData - they go in FormData as binary files
+      const { assignment, assignee, time, resume, attachments, ...restValues } = values;
 
       const candidateData: Record<string, unknown> = {
         ...restValues,
@@ -172,23 +161,8 @@ export function useCreateCandidateSubmission({
           parseFloat(String(values.noticePeriod)).toFixed(0),
         ),
         email: values.email || parsedResumeData?.profile?.email,
-        resume: resumeBase64
-          ? {
-              id: uuidv4(),
-              name: values.resume?.name || '',
-              url: resumeBase64,
-              type: 'pdf',
-              size: values.resume?.size || 0,
-            }
-          : undefined,
-        attachments: attachmentsBase64.map((base64, index) => ({
-          id: uuidv4(),
-          name: values.attachments[index].name,
-          url: base64,
-          type: values.attachments[index].type,
-          size: values.attachments[index].size,
-        })),
         remarks: [],
+        // DO NOT include resume or attachments here - they are sent as binary files in FormData
       };
 
       // Handle assignment: prefer assignment object, fallback to assignee/time for backward compatibility
@@ -222,7 +196,109 @@ export function useCreateCandidateSubmission({
 
       setIsCreating(true);
 
-      const createdCandidate = await createCandidate(candidateData).unwrap();
+      // Step 1: Upload files first to get URLs
+      let resumeUrl: { id: string; name: string; url: string; type: string; size: number } | null = null;
+      let attachmentUrls: Array<{ id: string; name: string; url: string; type: string; size: number }> = [];
+      let customFieldUrls: Record<string, Array<{ id: string; name: string; url: string; type: string; size: number }>> = {};
+
+      const hasFilesToUpload =
+        (values.resume && values.resume instanceof File) ||
+        (Array.isArray(values.attachments) && values.attachments.length > 0) ||
+        (values.customFields &&
+          Object.values(values.customFields).some(
+            (field) =>
+              Array.isArray(field) &&
+              field.some((item) => item instanceof File),
+          ));
+
+      if (hasFilesToUpload) {
+        const uploadFormData = new FormData();
+
+        // Add resume file if present
+        if (values.resume && values.resume instanceof File) {
+          uploadFormData.append('resume', values.resume);
+        }
+
+        // Add attachment files
+        if (Array.isArray(values.attachments)) {
+          values.attachments.forEach((file) => {
+            if (file instanceof File) {
+              uploadFormData.append('attachments', file);
+            }
+          });
+        }
+
+        // Add custom field files
+        if (values.customFields) {
+          Object.entries(values.customFields).forEach(([fieldKey, fieldValue]) => {
+            if (Array.isArray(fieldValue)) {
+              fieldValue.forEach((item, index) => {
+                if (item instanceof File) {
+                  uploadFormData.append(`customField_${fieldKey}_${index}`, item);
+                }
+              });
+            }
+          });
+        }
+
+        try {
+          // Authenticated users don't need to pass organizationId - API uses their auth
+          const uploadResult = await uploadFiles({ formData: uploadFormData }).unwrap();
+          if (uploadResult.files && uploadResult.files.length > 0) {
+            // First file is resume if present, rest are attachments
+            if (values.resume && values.resume instanceof File) {
+              resumeUrl = uploadResult.files[0];
+              attachmentUrls = uploadResult.files.slice(1);
+            } else {
+              attachmentUrls = uploadResult.files;
+            }
+          }
+          if (uploadResult.customFields) {
+            customFieldUrls = uploadResult.customFields;
+          }
+        } catch (uploadError) {
+          logger.error('File upload error:', uploadError);
+          toast({
+            title: 'File Upload Failed',
+            description:
+              uploadError instanceof Error
+                ? uploadError.message
+                : 'Failed to upload files. Please try again.',
+            variant: 'destructive',
+          });
+          setIsFormSubmitting(false);
+          setIsCreating(false);
+          return;
+        }
+      }
+
+      // Step 2: Build candidate data with file URLs (not File objects)
+      if (resumeUrl) {
+        candidateData.resume = resumeUrl;
+      }
+      if (attachmentUrls.length > 0) {
+        candidateData.attachments = attachmentUrls;
+      }
+      if (Object.keys(customFieldUrls).length > 0) {
+        // Merge custom field URLs with existing custom field values
+        const existingCustomFields = candidateData.customFields as Record<string, unknown> || {};
+        Object.entries(customFieldUrls).forEach(([fieldKey, files]) => {
+          const existingField = existingCustomFields[fieldKey];
+          if (Array.isArray(existingField)) {
+            // Merge with existing files (non-File objects)
+            existingCustomFields[fieldKey] = [
+              ...existingField.filter((item) => !(item instanceof File)),
+              ...files,
+            ];
+          } else {
+            existingCustomFields[fieldKey] = files;
+          }
+        });
+        candidateData.customFields = existingCustomFields;
+      }
+
+      // Step 3: Send candidate data as JSON (with URLs, not files)
+      const createdCandidate = await createCandidate(candidateData as Partial<typeof candidateData>).unwrap();
       const candidateId = createdCandidate._id;
 
       // Always attempt evaluation if resume is PDF
@@ -335,6 +411,6 @@ export function useCreateCandidateSubmission({
     submitCandidate,
     isCreating,
     isFormSubmitting,
-    isLoading: isAdding || isEvaluating || isSendingEmail || isLoading,
+    isLoading: isAdding || isEvaluating || isSendingEmail || isLoading || isUploadingFiles,
   };
 }

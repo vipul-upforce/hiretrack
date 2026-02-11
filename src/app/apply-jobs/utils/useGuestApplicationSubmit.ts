@@ -5,6 +5,7 @@ import {
   useCreateGuestCandidateMutation,
   useEvaluateCandidateMutation,
   useApplicationEventMailMutation,
+  useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import { Resume } from '@/lib/redux/types';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
@@ -14,7 +15,6 @@ import {
   hasAppliedAsGuest,
   evaluateCandidate,
   sendAppliedEventMail,
-  convertFileToBase64,
   extractErrorMessage,
   validateFormValues,
 } from './guestApplicationUtils';
@@ -44,6 +44,7 @@ export const useGuestApplicationSubmit = (
 ) => {
   const { toast } = useToast();
   const [createGuestCandidate] = useCreateGuestCandidateMutation();
+  const [uploadFiles] = useUploadFilesMutation();
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [applicationEventMailMutation] = useApplicationEventMailMutation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,16 +76,61 @@ export const useGuestApplicationSubmit = (
     }
 
     try {
-      const resumeBase64 = values.resume
-        ? await convertFileToBase64(values.resume)
-        : null;
+      // Step 1: Upload files first to get URLs
+      let resumeUrl: { id: string; name: string; url: string; type: string; size: number } | null = null;
+      let attachmentUrls: Array<{ id: string; name: string; url: string; type: string; size: number }> = [];
 
-      const attachmentsBase64 = await Promise.all(
-        values.attachments.map((file) => convertFileToBase64(file)),
-      );
+      const hasFilesToUpload =
+        (values.resume && values.resume instanceof File) ||
+        (Array.isArray(values.attachments) && values.attachments.length > 0);
 
+      if (hasFilesToUpload) {
+        const uploadFormData = new FormData();
+
+        if (values.resume && values.resume instanceof File) {
+          uploadFormData.append('resume', values.resume);
+        }
+
+        if (Array.isArray(values.attachments)) {
+          values.attachments.forEach((file) => {
+            if (file instanceof File) {
+              uploadFormData.append('attachments', file);
+            }
+          });
+        }
+
+        try {
+          // Pass jobId for public access (guest applications don't have cookies/auth)
+          const uploadResult = await uploadFiles({ formData: uploadFormData, jobId }).unwrap();
+          if (uploadResult.files && uploadResult.files.length > 0) {
+            // First file is resume if present, rest are attachments
+            if (values.resume && values.resume instanceof File) {
+              resumeUrl = uploadResult.files[0];
+              attachmentUrls = uploadResult.files.slice(1);
+            } else {
+              attachmentUrls = uploadResult.files;
+            }
+          }
+        } catch (uploadError) {
+          logger.error('File upload error:', uploadError);
+          toast({
+            title: 'File Upload Failed',
+            description:
+              uploadError instanceof Error
+                ? uploadError.message
+                : 'Failed to upload files. Please try again.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return false;
+        }
+      }
+
+      // Step 2: Build candidate data with file URLs (not File objects)
+      const { resume, attachments, ...restValues } = values;
+      
       const candidateData = {
-        ...values,
+        ...restValues,
         jobId: {
           _id: jobId,
           title: '',
@@ -107,25 +153,13 @@ export const useGuestApplicationSubmit = (
               time: values.time,
             }
           : {}),
-        resume: resumeBase64
-          ? {
-              id: uuidv4(),
-              name: values.resume?.name || '',
-              url: resumeBase64,
-              type: 'pdf',
-              size: values.resume?.size || 0,
-            }
-          : undefined,
-        attachments: attachmentsBase64.map((base64, index) => ({
-          id: uuidv4(),
-          name: values.attachments[index].name,
-          url: base64,
-          type: values.attachments[index].type,
-          size: values.attachments[index].size,
-        })),
         remarks: [],
+        // Include file URLs from upload
+        ...(resumeUrl ? { resume: resumeUrl } : {}),
+        ...(attachmentUrls.length > 0 ? { attachments: attachmentUrls } : {}),
       };
 
+      // Step 3: Send candidate data as JSON (with URLs, not files)
       const createdCandidate =
         await createGuestCandidate(candidateData).unwrap();
       const candidateId = createdCandidate._id;
