@@ -38,6 +38,7 @@ interface TeamsMeetIntegrationProps {
   teamsConfig: IMicrosoftTeamsConfig;
   onRequestCancel: () => void;
   isBulkMode: boolean;
+  showScheduleToggle?: boolean;
 }
 
 export function TeamsMeetIntegration({
@@ -46,6 +47,7 @@ export function TeamsMeetIntegration({
   teamsConfig,
   onRequestCancel,
   isBulkMode,
+  showScheduleToggle = true,
 }: TeamsMeetIntegrationProps) {
   const {
     user,
@@ -73,6 +75,10 @@ export function TeamsMeetIntegration({
     !!candidate.assignment?.googleMeet?.eventId ||
     !!candidate.assignment?.zoomMeet?.meetingId;
   if (!hasExistingMeet && hasOtherMeeting) {
+    return null;
+  }
+
+  if (!showScheduleToggle && !hasExistingMeet && !values.scheduleTeamsMeet) {
     return null;
   }
 
@@ -179,7 +185,7 @@ export function TeamsMeetIntegration({
 
       {(!hasExistingMeet || isEditMode) && (
         <>
-          {!hasExistingMeet && (
+          {!hasExistingMeet && showScheduleToggle && (
             <div className="flex items-center space-x-2">
               <Field name="scheduleTeamsMeet">
                 {({ field }: FieldProps) => (

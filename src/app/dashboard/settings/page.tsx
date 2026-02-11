@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Card, CardContent, CardHeader, CardTitle,
 } from '@/components/ui/card';
@@ -9,22 +9,51 @@ import AddCustomFieldButton from '@/Custom_Fields/Components/AddCustomFieldButto
 import withAuthGuard from '@/components/withAuthGuard';
 import { Tags, Palette } from 'lucide-react';
 import SettingDialog from './components/setting-dialog';
-import { settingGroups } from './constants';
+import { settingGroups, settingsByKey } from './constants';
 import SettingsCard from './components/settings/setting-card';
 
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     const config = searchParams?.get('config');
     if (config) {
+      if (config === 'users') {
+        router.push('/dashboard/users');
+        return;
+      }
+      if (config === 'portal') {
+        router.push('/dashboard/settings/portal');
+        return;
+      }
+      if (config === 'templates') {
+        router.push('/dashboard/settings/templates');
+        return;
+      }
+      if (config === 'logs') {
+        router.push('/dashboard/settings/logs');
+        return;
+      }
       setOpenDialog(config);
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   // Helper function to check if setting opens in new page
   const opensInNewPage = (key: string) => ['users', 'portal', 'templates', 'logs'].includes(key);
+  const visibleKeys = useMemo(
+    () =>
+      new Set(
+        settingGroups.flatMap((group) =>
+          group.settings.map((setting) => setting.key),
+        ),
+      ),
+    [settingGroups],
+  );
+
+  const primaryGroup = settingGroups[0];
+  const remainingGroups = settingGroups.slice(1);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">
@@ -41,15 +70,15 @@ function Settings() {
       </div>
 
       <div className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-8 overflow-y-auto">
-        {settingGroups.map((group) => (
+        {primaryGroup && (
           <SettingsCard
-            group={group}
+            group={primaryGroup}
             openDialog={openDialog}
             opensInNewPage={opensInNewPage}
             setOpenDialog={setOpenDialog}
-            key={group.title}
+            key={primaryGroup.title}
           />
-        ))}
+        )}
 
         {/* Custom Fields Section */}
         <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -73,7 +102,7 @@ function Settings() {
               onClick={() => setOpenDialog('tags')}
             >
               <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
                     <Tags className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   </div>
@@ -105,6 +134,27 @@ function Settings() {
             />
           )}
         </div>
+
+        {remainingGroups.map((group) => (
+          <SettingsCard
+            group={group}
+            openDialog={openDialog}
+            opensInNewPage={opensInNewPage}
+            setOpenDialog={setOpenDialog}
+            key={group.title}
+          />
+        ))}
+
+        {openDialog
+          && !visibleKeys.has(openDialog)
+          && !opensInNewPage(openDialog)
+          && settingsByKey[openDialog] && (
+            <SettingDialog
+              isOpen={openDialog === settingsByKey[openDialog].key}
+              onClose={() => setOpenDialog(null)}
+              setting={settingsByKey[openDialog]}
+            />
+        )}
       </div>
     </div>
   );

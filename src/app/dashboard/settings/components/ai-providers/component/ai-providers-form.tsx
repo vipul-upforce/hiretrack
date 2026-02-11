@@ -20,6 +20,7 @@ interface AIProvidersFormProps {
   primaryColor: string;
   onClose: () => void;
   onRefetch: () => void;
+  embedded?: boolean;
 }
 
 function getProviderFormValue(
@@ -61,6 +62,7 @@ export default function AIProvidersForm({
   primaryColor,
   onClose,
   onRefetch,
+  embedded = false,
 }: AIProvidersFormProps) {
   const { toast } = useToast();
   const [updateAIProviders, { isLoading: isUpdating }] =
@@ -201,7 +203,11 @@ export default function AIProvidersForm({
         const isSaveBlocked = Boolean(saveDisabledReason);
 
         return (
-          <Form className="flex h-[calc(86vh-80px)] flex-col overflow-hidden">
+          <Form
+            className={`flex flex-col overflow-hidden ${
+              embedded ? 'h-full' : 'h-[calc(86vh-80px)]'
+            }`}
+          >
             <div className="sticky top-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
               {/* Provider Cards Grid */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -321,4 +327,3 @@ export default function AIProvidersForm({
     </Formik>
   );
 }
-

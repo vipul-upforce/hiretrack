@@ -45,7 +45,7 @@ function AddCustomFields() {
         onClick={onClick}
       >
         <CardHeader className="pb-3">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
               <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
             </div>

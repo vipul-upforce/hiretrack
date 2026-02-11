@@ -11,6 +11,7 @@ import { Candidate } from '@/types/candidate';
 import { Settings } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
 import ManageTagsDialog from './manage-tags-dialog';
 
 interface TagsDialogProps {
@@ -113,8 +114,14 @@ function TagsDialog({
         </Button>
       </div>
       {isLoading && (
-        <div className="flex justify-center">
-          <LoadingSpinner width={4} />
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-6 w-[120px] rounded-md" />
+            </div>
+          ))}
         </div>
       )}
       {!isLoading && (error || candidateError) && (

@@ -38,6 +38,7 @@ interface ZoomMeetIntegrationProps {
   zoomConfig: IZoomConfig;
   onRequestCancel: () => void;
   isBulkMode: boolean;
+  showScheduleToggle?: boolean;
 }
 
 export function ZoomMeetIntegration({
@@ -46,6 +47,7 @@ export function ZoomMeetIntegration({
   zoomConfig,
   onRequestCancel,
   isBulkMode,
+  showScheduleToggle = true,
 }: ZoomMeetIntegrationProps) {
   const {
     user,
@@ -73,6 +75,10 @@ export function ZoomMeetIntegration({
     !!candidate.assignment?.googleMeet?.eventId ||
     !!candidate.assignment?.microsoftTeams?.meetingId;
   if (!hasExistingMeet && hasOtherMeeting) {
+    return null;
+  }
+
+  if (!showScheduleToggle && !hasExistingMeet && !values.scheduleZoomMeet) {
     return null;
   }
 
@@ -171,7 +177,7 @@ export function ZoomMeetIntegration({
 
       {(!hasExistingMeet || isEditMode) && (
         <>
-          {!hasExistingMeet && (
+          {!hasExistingMeet && showScheduleToggle && (
             <div className="flex items-center space-x-2">
               <Field name="scheduleZoomMeet">
                 {({ field }: FieldProps) => (
