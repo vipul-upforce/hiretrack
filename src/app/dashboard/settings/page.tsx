@@ -102,7 +102,7 @@ function Settings() {
               onClick={() => setOpenDialog('tags')}
             >
               <CardHeader className="pb-3">
-                <div className="flex items-start gap-3">
+                <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
                     <Tags className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                   </div>
