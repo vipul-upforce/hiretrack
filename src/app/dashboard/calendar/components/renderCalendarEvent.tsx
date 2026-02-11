@@ -109,42 +109,105 @@ export function RenderEvent({
                         </button>
                         {event.extendedProps.candidate.assignment.googleMeet
                           .meetingLink && (
-                          <a
-                            href={
-                              event.extendedProps.candidate.assignment
-                                .googleMeet.meetingLink
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1 text-blue-500 transition-colors hover:text-blue-600"
-                            title="Open meeting link"
-                          >
-                            <ExternalLink size={12} />
-                          </a>
-                        )}
+                            <a
+                              href={
+                                event.extendedProps.candidate.assignment
+                                  .googleMeet.meetingLink
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 text-blue-500 transition-colors hover:text-blue-600"
+                              title="Open meeting link"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          )}
                       </div>
                     </div>
                     <div className="rounded bg-blue-50 p-2 text-xs text-muted-foreground dark:bg-blue-900/20">
                       {event.extendedProps.candidate.assignment.googleMeet
                         .summary && (
-                        <p className="font-medium text-blue-900 dark:text-blue-100">
-                          {
-                            event.extendedProps.candidate.assignment.googleMeet
-                              .summary
-                          }
-                        </p>
-                      )}
+                          <p className="font-medium text-blue-900 dark:text-blue-100">
+                            {
+                              event.extendedProps.candidate.assignment.googleMeet
+                                .summary
+                            }
+                          </p>
+                        )}
                       {event.extendedProps.candidate.assignment.googleMeet
                         .description && (
-                        <p className="mt-1 line-clamp-2 text-blue-700 dark:text-blue-200">
-                          {
-                            event.extendedProps.candidate.assignment.googleMeet.description.split(
+                          <p className="mt-1 line-clamp-2 text-blue-700 dark:text-blue-200">
+                            {
+                              event.extendedProps.candidate.assignment.googleMeet.description.split(
+                                '\n',
+                              )[0]
+                            }
+                          </p>
+                        )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Microsoft Teams Info */}
+                {event.extendedProps.candidate.assignment?.microsoftTeams && (
+                  <div className="space-y-2 border-t pt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Video size={12} className="text-purple-500" />
+                        Teams:
+                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigator.clipboard.writeText(
+                              event.extendedProps.candidate.assignment
+                                ?.microsoftTeams?.meetingLink || '',
+                            );
+                          }}
+                          className="p-1 text-purple-500 transition-colors hover:text-purple-600"
+                          title="Copy meeting link"
+                        >
+                          <Copy size={12} />
+                        </button>
+                        {event.extendedProps.candidate.assignment
+                          .microsoftTeams?.meetingLink && (
+                            <a
+                              href={
+                                event.extendedProps.candidate.assignment
+                                  .microsoftTeams.meetingLink
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 text-purple-500 transition-colors hover:text-purple-600"
+                              title="Open meeting link"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          )}
+                      </div>
+                    </div>
+                    <div className="rounded bg-purple-50 p-2 text-xs text-muted-foreground dark:bg-purple-900/20">
+                      {event.extendedProps.candidate.assignment.microsoftTeams
+                        ?.summary && (
+                          <p className="font-medium text-purple-900 dark:text-purple-100">
+                            {
+                              event.extendedProps.candidate.assignment
+                                .microsoftTeams.summary
+                            }
+                          </p>
+                        )}
+                      {event.extendedProps.candidate.assignment.microsoftTeams
+                        ?.description && (
+                          <p className="mt-1 line-clamp-2 text-purple-700 dark:text-purple-200">
+                            {event.extendedProps.candidate.assignment.microsoftTeams.description?.split(
                               '\n',
-                            )[0]
-                          }
-                        </p>
-                      )}
+                            )[0]}
+                          </p>
+                        )}
                     </div>
                   </div>
                 )}
@@ -174,42 +237,42 @@ export function RenderEvent({
                         </button>
                         {event.extendedProps.candidate.assignment.zoomMeet
                           .meetingLink && (
-                          <a
-                            href={
-                              event.extendedProps.candidate.assignment.zoomMeet
-                                .meetingLink
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-1 text-sky-500 transition-colors hover:text-sky-600"
-                            title="Open meeting link"
-                          >
-                            <ExternalLink size={12} />
-                          </a>
-                        )}
+                            <a
+                              href={
+                                event.extendedProps.candidate.assignment.zoomMeet
+                                  .meetingLink
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1 text-sky-500 transition-colors hover:text-sky-600"
+                              title="Open meeting link"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          )}
                       </div>
                     </div>
                     <div className="rounded bg-sky-50 p-2 text-xs text-muted-foreground dark:bg-sky-900/20">
                       {event.extendedProps.candidate.assignment.zoomMeet
                         .summary && (
-                        <p className="font-medium text-sky-900 dark:text-sky-100">
-                          {
-                            event.extendedProps.candidate.assignment.zoomMeet
-                              .summary
-                          }
-                        </p>
-                      )}
+                          <p className="font-medium text-sky-900 dark:text-sky-100">
+                            {
+                              event.extendedProps.candidate.assignment.zoomMeet
+                                .summary
+                            }
+                          </p>
+                        )}
                       {event.extendedProps.candidate.assignment.zoomMeet
                         .description && (
-                        <p className="mt-1 line-clamp-2 text-sky-700 dark:text-sky-200">
-                          {
-                            event.extendedProps.candidate.assignment.zoomMeet.description.split(
-                              '\n',
-                            )[0]
-                          }
-                        </p>
-                      )}
+                          <p className="mt-1 line-clamp-2 text-sky-700 dark:text-sky-200">
+                            {
+                              event.extendedProps.candidate.assignment.zoomMeet.description.split(
+                                '\n',
+                              )[0]
+                            }
+                          </p>
+                        )}
                     </div>
                   </div>
                 )}

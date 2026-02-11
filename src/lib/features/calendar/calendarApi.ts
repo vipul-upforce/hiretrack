@@ -64,6 +64,27 @@ export interface CancelZoomMeetingRequest {
   cancelNotes?: string;
 }
 
+export interface ScheduleTeamsMeetingRequest extends ScheduleMeetingRequest {
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
+}
+
+export interface UpdateTeamsMeetingRequest {
+  meetingId: string;
+  eventId?: string;
+  candidateId: string;
+  scheduledTime: string; // ISO string
+  duration: number;
+  guests: string[];
+}
+
+export interface CancelTeamsMeetingRequest {
+  meetingId: string;
+  eventId?: string;
+  candidateId: string;
+  cancelNotes?: string;
+}
+
 export interface MeetingResponse {
   eventId: string;
   meetingLink: string;
@@ -77,6 +98,16 @@ export interface ZoomMeetingResponse {
   meetingId: string;
   meetingLink: string;
   startUrl?: string;
+  eventId?: string;
+  htmlLink?: string;
+  summary?: string;
+  description?: string;
+  error?: string;
+}
+
+export interface TeamsMeetingResponse {
+  meetingId: string;
+  meetingLink: string;
   eventId?: string;
   htmlLink?: string;
   summary?: string;
@@ -185,6 +216,41 @@ export const calendarApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Candidate'],
     }),
+    scheduleTeamsMeeting: builder.mutation<
+      TeamsMeetingResponse,
+      ScheduleTeamsMeetingRequest
+    >({
+      query: (data) => ({
+        url: '/microsoft-teams/schedule-meet',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
+    updateTeamsMeeting: builder.mutation<
+      TeamsMeetingResponse,
+      UpdateTeamsMeetingRequest
+    >({
+      query: (data) => ({
+        url: '/microsoft-teams/update-meet',
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
+    cancelTeamsMeeting: builder.mutation<void, CancelTeamsMeetingRequest>({
+      query: ({ meetingId, candidateId, eventId, cancelNotes }) => ({
+        url: '/microsoft-teams/update-meet',
+        method: 'DELETE',
+        params: {
+          meetingId,
+          candidateId,
+          eventId: eventId || '',
+          cancelNotes: cancelNotes || '',
+        },
+      }),
+      invalidatesTags: ['Candidate'],
+    }),
   }),
 });
 
@@ -196,4 +262,7 @@ export const {
   useScheduleZoomMeetingMutation,
   useUpdateZoomMeetingMutation,
   useCancelZoomMeetingMutation,
+  useScheduleTeamsMeetingMutation,
+  useUpdateTeamsMeetingMutation,
+  useCancelTeamsMeetingMutation,
 } = calendarApi;

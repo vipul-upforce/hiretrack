@@ -1,11 +1,16 @@
 import React from 'react';
 import { Candidate } from '@/types/candidate';
 import { Interviewer } from '@/lib/features/user/userApi';
-import { IGoogleCalendar, IZoomConfig } from '@/lib/models/settings';
+import {
+  IGoogleCalendar,
+  IZoomConfig,
+  IMicrosoftTeamsConfig,
+} from '@/lib/models/settings';
 import { InterviewerSelector } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/DateTimePickerSection';
 import { GoogleMeetIntegration } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/google-meet/GoogleMeetIntegration';
 import { ZoomMeetIntegration } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/zoom-meet/ZoomMeetIntegration';
+import { TeamsMeetIntegration } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/teams-meet/TeamsMeetIntegration';
 import { UnifiedFormValues } from './types';
 import { AttachmentsSection } from './attachments-section';
 
@@ -16,7 +21,8 @@ interface AssignSectionProps {
   interviewers: Interviewer[] | undefined;
   googleCalendarData?: IGoogleCalendar;
   zoomConfig?: IZoomConfig;
-  onRequestCancel: (provider: 'google' | 'zoom') => void;
+  teamsConfig?: IMicrosoftTeamsConfig;
+  onRequestCancel: (provider: 'google' | 'zoom' | 'teams') => void;
   isBulkMode: boolean;
 }
 
@@ -27,9 +33,12 @@ export function AssignSection({
   interviewers,
   googleCalendarData,
   zoomConfig,
+  teamsConfig,
   onRequestCancel,
   isBulkMode,
 }: AssignSectionProps) {
+  console.log(candidate, "candidate");
+
   return (
     <div className="space-y-4 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
       <div className="flex items-center gap-2 border-b border-border/40 pb-2.5">
@@ -59,6 +68,15 @@ export function AssignSection({
             interviewers={interviewers}
             zoomConfig={zoomConfig}
             onRequestCancel={() => onRequestCancel('zoom')}
+          />
+        ) : null}
+        {teamsConfig ? (
+          <TeamsMeetIntegration
+            isBulkMode={isBulkMode}
+            candidate={candidate}
+            interviewers={interviewers}
+            teamsConfig={teamsConfig}
+            onRequestCancel={() => onRequestCancel('teams')}
           />
         ) : null}
         <AttachmentsSection

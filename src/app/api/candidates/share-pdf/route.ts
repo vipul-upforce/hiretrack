@@ -64,6 +64,9 @@ interface PopulatedCandidate {
     zoomMeet?: {
       meetingLink: string;
     };
+    microsoftTeams?: {
+      meetingLink: string;
+    };
   };
   followUp?: {
     note?: string;
@@ -746,7 +749,8 @@ export async function POST(req: NextRequest) {
           candidate.assignment.interviewerId) ||
         candidate.assignment.time ||
         candidate.assignment.googleMeet?.meetingLink ||
-        candidate.assignment.zoomMeet?.meetingLink;
+        candidate.assignment.zoomMeet?.meetingLink ||
+        candidate.assignment.microsoftTeams?.meetingLink;
 
       if (hasInterviewData) {
         addSectionHeader('INTERVIEW DETAILS');
@@ -780,6 +784,12 @@ export async function POST(req: NextRequest) {
         }
         if (candidate.assignment.zoomMeet?.meetingLink) {
           addKeyValue('Zoom Link', candidate.assignment.zoomMeet.meetingLink);
+        }
+        if (candidate.assignment.microsoftTeams?.meetingLink) {
+          addKeyValue(
+            'Teams Link',
+            candidate.assignment.microsoftTeams.meetingLink,
+          );
         }
         yPosition += 3;
       }

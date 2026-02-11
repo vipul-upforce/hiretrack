@@ -94,6 +94,23 @@ export interface ICandidate {
       }>;
       lastSyncedAt?: Date;
     };
+    microsoftTeams?: {
+      meetingId: string;
+      meetingLink: string;
+      eventId?: string;
+      htmlLink?: string;
+      summary?: string;
+      description?: string;
+      meetingNotes?: string;
+      meetingAttachments?: Array<{
+        id: string;
+        name: string;
+        url: string;
+        type: string;
+        size: number;
+      }>;
+      lastSyncedAt?: Date;
+    };
   };
   customFields: {
     [key: string]:
@@ -383,6 +400,28 @@ export const candidateSchema = new Schema(
           meetingId: String,
           meetingLink: String,
           startUrl: String,
+          eventId: String,
+          htmlLink: String,
+          summary: String,
+          description: String,
+          meetingNotes: String,
+          meetingAttachments: {
+            type: [
+              {
+                id: String,
+                name: String,
+                url: String,
+                type: { type: String, default: 'pdf' },
+                size: Number,
+              },
+            ],
+            default: undefined,
+          },
+          lastSyncedAt: Date,
+        },
+        microsoftTeams: {
+          meetingId: String,
+          meetingLink: String,
           eventId: String,
           htmlLink: String,
           summary: String,

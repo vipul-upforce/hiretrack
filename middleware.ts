@@ -527,6 +527,8 @@ const apiExemptPaths = [
   // "/api/organization/tags",
   "/api/auth/google/callback",
   "/api/auth/google/authorize",
+  "/api/auth/microsoft/callback",
+  "/api/auth/microsoft/authorize",
   "/api/settings/captcha",
   "/api/license-validate",
 ];

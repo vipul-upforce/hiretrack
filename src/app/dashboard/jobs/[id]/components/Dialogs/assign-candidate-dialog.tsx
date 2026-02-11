@@ -21,6 +21,7 @@ import { Trash2, Loader2 } from 'lucide-react';
 import {
   useGetGoogleCalendarConfigQuery,
   useGetZoomConfigQuery,
+  useGetMicrosoftTeamsConfigQuery,
 } from '@/lib/features/settings';
 import { useToast } from '@/hooks/use-toast';
 import dayjs from 'dayjs';
@@ -33,8 +34,16 @@ import {
   useCancelZoomMeetingMutation,
   useScheduleZoomMeetingMutation,
   useUpdateZoomMeetingMutation,
+  useCancelTeamsMeetingMutation,
+  useScheduleTeamsMeetingMutation,
+  useUpdateTeamsMeetingMutation,
+  type MeetingAttachment,
 } from '@/lib/features/calendar/calendarApi';
-import { IGoogleCalendar, IZoomConfig } from '@/lib/models/settings';
+import {
+  IGoogleCalendar,
+  IZoomConfig,
+  IMicrosoftTeamsConfig,
+} from '@/lib/models/settings';
 import {
   validationSchema,
   FormValues,
@@ -44,6 +53,7 @@ import { InterviewerSelector } from './assign-candidate-components/InterviewerSe
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
 import { GoogleMeetIntegration } from './assign-candidate-components/google-meet/GoogleMeetIntegration';
 import { ZoomMeetIntegration } from './assign-candidate-components/zoom-meet/ZoomMeetIntegration';
+import { TeamsMeetIntegration } from './assign-candidate-components/teams-meet/TeamsMeetIntegration';
 import { AssignmentDetailsSection } from './assign-candidate-components/AssignmentDetailsSection';
 import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
@@ -64,7 +74,7 @@ export function AssignCandidateDialog({
 }: AssignCandidateDialogProps) {
   const { toast } = useToast();
   const [cancelMeetingProvider, setCancelMeetingProvider] = useState<
-    'google' | 'zoom' | null
+    'google' | 'zoom' | 'teams' | null
   >(null);
   const [cancelNotes, setCancelNotes] = useState('');
 
@@ -76,12 +86,33 @@ export function AssignCandidateDialog({
   const [updateZoomMeeting] = useUpdateZoomMeetingMutation();
   const [cancelZoomMeeting, { isLoading: isCancellingZoom }] =
     useCancelZoomMeetingMutation();
+  const [cancelTeamsMeeting, { isLoading: isCancellingTeams }] =
+    useCancelTeamsMeetingMutation();
+  const [scheduleTeamsMeeting] = useScheduleTeamsMeetingMutation();
+  const [updateTeamsMeeting] = useUpdateTeamsMeetingMutation();
 
   const showCancelMeetDialog = cancelMeetingProvider !== null;
+  const cancelLabelByProvider: Record<
+    'google' | 'zoom' | 'teams',
+    string
+  > = {
+    google: 'Google Meet',
+    zoom: 'Zoom',
+    teams: 'Microsoft Teams',
+  };
   const activeCancelLabel =
-    cancelMeetingProvider === 'zoom' ? 'Zoom' : 'Google Meet';
+    cancelMeetingProvider !== null
+      ? cancelLabelByProvider[cancelMeetingProvider]
+      : '';
+  const isCancellingByProvider = {
+    google: isCancelling,
+    zoom: isCancellingZoom,
+    teams: isCancellingTeams,
+  };
   const isCancellingActive =
-    cancelMeetingProvider === 'zoom' ? isCancellingZoom : isCancelling;
+    cancelMeetingProvider !== null
+      ? isCancellingByProvider[cancelMeetingProvider]
+      : false;
 
   const { user } = useAppSelector((state) => state.auth);
   const shouldFetchInterviewers =
@@ -91,6 +122,7 @@ export function AssignCandidateDialog({
   const { data: googleCalendarData } =
     useGetGoogleCalendarConfigQuery(undefined);
   const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
+  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined);
   const {
     confirmUnassignOpen,
     setConfirmUnassignOpen,
@@ -148,6 +180,12 @@ export function AssignCandidateDialog({
     zoomMeetingAttachments:
       candidate?.assignment?.zoomMeet?.meetingAttachments || [],
     zoomAdditionalGuests: [],
+    scheduleTeamsMeet: !!candidate?.assignment?.microsoftTeams?.meetingId,
+    teamsMeetDuration: 30,
+    teamsMeetingNotes: candidate?.assignment?.microsoftTeams?.meetingNotes || '',
+    teamsMeetingAttachments:
+      candidate?.assignment?.microsoftTeams?.meetingAttachments || [],
+    teamsAdditionalGuests: [],
   };
 
   const handleFormSubmit = async (
@@ -156,8 +194,9 @@ export function AssignCandidateDialog({
   ) => {
     const scheduleGoogle = values.scheduleGoogleMeet && values.time;
     const scheduleZoom = values.scheduleZoomMeet && values.time;
+    const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
-    if (scheduleGoogle || scheduleZoom) {
+    if (scheduleGoogle || scheduleZoom || scheduleTeams) {
       try {
         const selectedInterviewer = interviewers?.find(
           (i) => i._id === values.interviewerId,
@@ -205,11 +244,18 @@ export function AssignCandidateDialog({
           ...defaultGuests,
           ...(values.zoomAdditionalGuests || []),
         ];
+        const teamsGuests = [
+          ...defaultGuests,
+          ...((values as { teamsAdditionalGuests?: string[] }).teamsAdditionalGuests ||
+            []),
+        ];
 
         let googleResult;
         let zoomResult;
+        let teamsResult;
         let processedGoogleAttachments: typeof values.meetingAttachments = [];
         let processedZoomAttachments: typeof values.zoomMeetingAttachments = [];
+        let processedTeamsAttachments: typeof values.teamsMeetingAttachments = [];
 
         if (scheduleGoogle) {
           processedGoogleAttachments = await processAttachments(
@@ -220,27 +266,27 @@ export function AssignCandidateDialog({
 
           googleResult = isUpdatingGoogle
             ? await updateMeeting({
-                eventId: candidate.assignment?.googleMeet?.eventId || '',
-                candidateId: candidate._id,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.meetDuration || 30,
-                guests: googleGuests,
-              }).unwrap()
+              eventId: candidate.assignment?.googleMeet?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: googleGuests,
+            }).unwrap()
             : await scheduleMeeting({
-                candidateId: candidate._id,
-                candidateName: candidate.name,
-                candidateEmail: candidate.email,
-                interviewerId: selectedInterviewer._id,
-                interviewerName: selectedInterviewer.name,
-                interviewerEmail: selectedInterviewer.email,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.meetDuration || 30,
-                guests: googleGuests,
-                jobTitle: candidate.jobId?.title || 'Position',
-                organizationName: user?.organizationInfo?.name || 'Company',
-                meetingNotes: values.meetingNotes || '',
-                meetingAttachments: processedGoogleAttachments,
-              }).unwrap();
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.meetDuration || 30,
+              guests: googleGuests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.meetingNotes || '',
+              meetingAttachments: processedGoogleAttachments,
+            }).unwrap();
         }
 
         if (scheduleZoom) {
@@ -252,28 +298,70 @@ export function AssignCandidateDialog({
 
           zoomResult = isUpdatingZoom
             ? await updateZoomMeeting({
-                meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
-                eventId: candidate.assignment?.zoomMeet?.eventId || '',
-                candidateId: candidate._id,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.zoomMeetDuration || 30,
-                guests: zoomGuests,
-              }).unwrap()
+              meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
+              eventId: candidate.assignment?.zoomMeet?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.zoomMeetDuration || 30,
+              guests: zoomGuests,
+            }).unwrap()
             : await scheduleZoomMeeting({
-                candidateId: candidate._id,
-                candidateName: candidate.name,
-                candidateEmail: candidate.email,
-                interviewerId: selectedInterviewer._id,
-                interviewerName: selectedInterviewer.name,
-                interviewerEmail: selectedInterviewer.email,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.zoomMeetDuration || 30,
-                guests: zoomGuests,
-                jobTitle: candidate.jobId?.title || 'Position',
-                organizationName: user?.organizationInfo?.name || 'Company',
-                meetingNotes: values.zoomMeetingNotes || '',
-                meetingAttachments: processedZoomAttachments,
-              }).unwrap();
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time?.toISOString(),
+              duration: values.zoomMeetDuration || 30,
+              guests: zoomGuests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.zoomMeetingNotes || '',
+              meetingAttachments: processedZoomAttachments,
+            }).unwrap();
+        }
+
+        if (scheduleTeams) {
+          processedTeamsAttachments = await processAttachments(
+            (values as { teamsMeetingAttachments?: unknown[] })
+              .teamsMeetingAttachments || [],
+          );
+
+          const isUpdatingTeams =
+            candidate.assignment?.microsoftTeams?.meetingId;
+
+          const teamsDuration = (values as { teamsMeetDuration?: number })
+            .teamsMeetDuration ?? 30;
+          const teamsNotes = (values as { teamsMeetingNotes?: string })
+            .teamsMeetingNotes ?? '';
+
+          teamsResult = isUpdatingTeams
+            ? await updateTeamsMeeting({
+              meetingId:
+                candidate.assignment?.microsoftTeams?.meetingId || '',
+              eventId:
+                candidate.assignment?.microsoftTeams?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString() ?? '',
+              duration: teamsDuration,
+              guests: teamsGuests,
+            }).unwrap()
+            : await scheduleTeamsMeeting({
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time?.toISOString() ?? '',
+              duration: teamsDuration,
+              guests: teamsGuests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: teamsNotes,
+              meetingAttachments: processedTeamsAttachments as MeetingAttachment[],
+            }).unwrap();
         }
 
         const remarkParts = [values.remark];
@@ -286,7 +374,10 @@ export function AssignCandidateDialog({
             remarkParts.push(values.zoomMeetingNotes);
           remarkParts.push(`Zoom Link: ${zoomResult.meetingLink}`);
         }
-
+        if (teamsResult) {
+          if (values.teamsMeetingNotes) remarkParts.push(values.teamsMeetingNotes);
+          remarkParts.push(`Microsoft Teams Link: ${teamsResult.meetingLink}`);
+        }
         const updatedValues = {
           ...values,
           remark: remarkParts.filter(Boolean).join('\n\n').trim(),
@@ -314,10 +405,23 @@ export function AssignCandidateDialog({
               meetingAttachments: processedZoomAttachments,
             },
           }),
+          ...(teamsResult && {
+            microsoftTeamsData: {
+              meetingId: teamsResult.meetingId,
+              meetingLink: teamsResult.meetingLink,
+              eventId: teamsResult.eventId,
+              htmlLink: teamsResult.htmlLink,
+              summary: teamsResult.summary,
+              description: teamsResult.description,
+              meetingNotes: values.teamsMeetingNotes,
+              meetingAttachments: processedTeamsAttachments,
+            },
+          }),
           attachments: [
             ...values.attachments,
             ...(processedGoogleAttachments || []),
             ...(processedZoomAttachments || []),
+            ...(processedTeamsAttachments || []),
           ],
         };
 
@@ -327,13 +431,25 @@ export function AssignCandidateDialog({
           await refetch();
         }
 
+        const scheduledProviders = [
+          scheduleGoogle && 'Google Meet',
+          scheduleZoom && 'Zoom',
+          scheduleTeams && 'Microsoft Teams',
+        ].filter(Boolean) as string[];
+        const singleProviderMessages: Record<string, string> = {
+          'Google Meet': 'Google Meet scheduled and candidate assigned',
+          Zoom: 'Zoom meeting scheduled and candidate assigned',
+          'Microsoft Teams': 'Microsoft Teams scheduled and candidate assigned',
+        };
+        const description =
+          scheduledProviders.length > 1
+            ? `${scheduledProviders.join(' and ')} scheduled`
+            : singleProviderMessages[scheduledProviders[0] ?? ''] ??
+            'Meeting scheduled and candidate assigned';
+
         toast({
           title: 'Success',
-          description: scheduleGoogle && scheduleZoom
-            ? 'Google Meet and Zoom scheduled'
-            : scheduleGoogle
-              ? 'Google Meet scheduled and candidate assigned'
-              : 'Zoom meeting scheduled and candidate assigned',
+          description,
         });
       } catch (error) {
         logger.error('Meeting scheduling error:', error);
@@ -385,6 +501,22 @@ export function AssignCandidateDialog({
         });
       }
 
+      if (cancelMeetingProvider === 'teams') {
+        if (!candidate.assignment?.microsoftTeams?.meetingId) return;
+
+        await cancelTeamsMeeting({
+          meetingId: candidate.assignment.microsoftTeams.meetingId,
+          eventId: candidate.assignment.microsoftTeams.eventId || '',
+          candidateId: candidate._id,
+          cancelNotes,
+        }).unwrap();
+
+        toast({
+          title: 'Success',
+          description: 'Microsoft Teams meeting cancelled successfully',
+        });
+      }
+
       if (refetch) await refetch();
       onOpenChange(false);
       setCancelMeetingProvider(null);
@@ -421,14 +553,15 @@ export function AssignCandidateDialog({
               return (
                 <Form className="flex h-full flex-1 flex-col overflow-hidden">
                   <div
-                    className={`flex-1 space-y-6 px-6 py-4 ${
-                      !candidate.assignment?.googleMeet?.eventId &&
+                    className={`flex-1 space-y-6 px-6 py-4 ${!candidate.assignment?.googleMeet?.eventId &&
                       !values.scheduleGoogleMeet &&
                       !candidate.assignment?.zoomMeet?.meetingId &&
-                      !values.scheduleZoomMeet
-                        ? ''
-                        : 'overflow-y-auto'
-                    }`}
+                      !values.scheduleZoomMeet &&
+                      !candidate.assignment?.microsoftTeams?.meetingId &&
+                      !values.scheduleTeamsMeet
+                      ? ''
+                      : 'overflow-y-auto'
+                      }`}
                   >
                     <div className="grid gap-4 py-4">
                       <InterviewerSelector interviewers={interviewers} />
@@ -456,6 +589,20 @@ export function AssignCandidateDialog({
                           zoomConfig={zoomConfigData.zoom as IZoomConfig}
                           onRequestCancel={() =>
                             setCancelMeetingProvider('zoom')
+                          }
+                          isBulkMode={false}
+                        />
+                      )}
+
+                      {teamsConfigData && (
+                        <TeamsMeetIntegration
+                          candidate={candidate}
+                          interviewers={interviewers}
+                          teamsConfig={
+                            teamsConfigData.microsoftTeams as IMicrosoftTeamsConfig
+                          }
+                          onRequestCancel={() =>
+                            setCancelMeetingProvider('teams')
                           }
                           isBulkMode={false}
                         />

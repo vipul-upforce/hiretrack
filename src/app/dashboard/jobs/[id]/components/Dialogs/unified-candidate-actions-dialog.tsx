@@ -11,7 +11,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { IGoogleCalendar, IZoomConfig } from '@/lib/models/settings';
+import {
+  IGoogleCalendar,
+  IZoomConfig,
+  IMicrosoftTeamsConfig,
+} from '@/lib/models/settings';
 import { ActionToggles } from '@/components/unified-candidate-dialog/action-toggle';
 import { AssignSection } from '@/components/unified-candidate-dialog/assign-section';
 import { SwitchJobSection } from '@/components/unified-candidate-dialog/switch-job-section';
@@ -48,6 +52,7 @@ export function UnifiedCandidateActionsDialog(
       interviewers,
       googleCalendarData,
       zoomConfigData,
+      teamsConfigData,
       initialValues,
       jobLanesData,
       isLoadingLanes,
@@ -158,6 +163,9 @@ export function UnifiedCandidateActionsDialog(
                             googleCalendarData?.googleCalendar as IGoogleCalendar
                           }
                           zoomConfig={zoomConfigData?.zoom as IZoomConfig}
+                          teamsConfig={
+                            teamsConfigData?.microsoftTeams as IMicrosoftTeamsConfig
+                          }
                           onRequestCancel={setCancelMeetingProvider}
                         />
                       )}

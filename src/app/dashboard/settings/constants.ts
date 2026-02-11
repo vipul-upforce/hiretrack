@@ -126,6 +126,12 @@ export const settingGroups: SettingGroup[] = [
         description: 'Connect Zoom for interview scheduling',
         icon: Video,
       },
+      {
+        title: 'Microsoft Teams',
+        key: 'microsoft-teams',
+        description: 'Connect Microsoft Teams for interview scheduling',
+        icon: Video,
+      },
     ],
   },
   {

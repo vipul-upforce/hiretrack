@@ -69,7 +69,9 @@ export function GoogleMeetIntegration({
     return null;
   }
 
-  const hasOtherMeeting = !!candidate.assignment?.zoomMeet?.meetingId;
+  const hasOtherMeeting =
+    !!candidate.assignment?.zoomMeet?.meetingId ||
+    !!candidate.assignment?.microsoftTeams?.meetingId;
   if (!hasExistingMeet && hasOtherMeeting) {
     return null;
   }
@@ -110,6 +112,7 @@ export function GoogleMeetIntegration({
                   setIsEditMode(true);
                   setFieldValue('scheduleGoogleMeet', true);
                   setFieldValue('scheduleZoomMeet', false);
+                  setFieldValue('scheduleTeamsMeet', false);
                 }}
                 className="h-7 text-xs"
               >
@@ -188,6 +191,7 @@ export function GoogleMeetIntegration({
                       setFieldValue('scheduleGoogleMeet', checked);
                       if (checked) {
                         setFieldValue('scheduleZoomMeet', false);
+                        setFieldValue('scheduleTeamsMeet', false);
                       }
                     }}
                   />
@@ -233,7 +237,7 @@ export function GoogleMeetIntegration({
                       type="button"
                       variant="outline"
                       size="sm"
-                    onClick={() => {
+                      onClick={() => {
                         onRequestCancel();
                       }}
                       className="h-7 text-xs text-red-600 hover:text-red-700"

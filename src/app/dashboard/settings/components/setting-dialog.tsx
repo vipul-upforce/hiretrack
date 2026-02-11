@@ -14,6 +14,7 @@ import ManageTagsDialog from '../../jobs/[id]/components/Dialogs/manage-tags-dia
 import AssetsDialog from './assets';
 import GoogleCalendarSettings from './google-calendar';
 import ZoomSettings from './zoom';
+import MicrosoftTeamsSettings from './microsoft-teams';
 import BackupsDialog from './backups';
 import { EvaluationSettings } from './ai-evaluation-settings';
 import AIProvidersConfigs from './ai-providers';
@@ -41,6 +42,7 @@ const settingComponents: Record<
   'ai-providers': AIProvidersConfigs,
   'google-calendar': GoogleCalendarSettings,
   zoom: ZoomSettings,
+  'microsoft-teams': MicrosoftTeamsSettings,
   multipleorgs: MultipleOrgsConfigs,
   backups: BackupsDialog,
   assets: AssetsDialog,
@@ -83,6 +85,7 @@ function SettingDialog({
       case 'ai-providers':
       case 'google-calendar':
       case 'zoom':
+      case 'microsoft-teams':
         return '2xl';
       case 'version':
         return 'xl';
@@ -102,6 +105,7 @@ function SettingDialog({
       case 'ai-providers':
       case 'google-calendar':
       case 'zoom':
+      case 'microsoft-teams':
         return 'flex max-h-[90vh] flex-col overflow-hidden p-0';
       case 'timezone':
         return 'w-[90vw] max-w-2xl overflow-visible';
@@ -141,7 +145,8 @@ function SettingDialog({
     if (
       setting.key === 'ai-providers' ||
       setting.key === 'google-calendar' ||
-      setting.key === 'zoom'
+      setting.key === 'zoom' ||
+      setting.key === 'microsoft-teams'
     ) {
       return (
         <div className="flex-1 overflow-hidden overflow-y-auto px-6 py-0">

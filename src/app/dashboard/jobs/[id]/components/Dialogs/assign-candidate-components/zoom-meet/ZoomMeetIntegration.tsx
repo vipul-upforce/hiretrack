@@ -69,7 +69,9 @@ export function ZoomMeetIntegration({
     return null;
   }
 
-  const hasOtherMeeting = !!candidate.assignment?.googleMeet?.eventId;
+  const hasOtherMeeting =
+    !!candidate.assignment?.googleMeet?.eventId ||
+    !!candidate.assignment?.microsoftTeams?.meetingId;
   if (!hasExistingMeet && hasOtherMeeting) {
     return null;
   }
@@ -106,6 +108,7 @@ export function ZoomMeetIntegration({
                   setIsEditMode(true);
                   setFieldValue('scheduleZoomMeet', true);
                   setFieldValue('scheduleGoogleMeet', false);
+                  setFieldValue('scheduleTeamsMeet', false);
                 }}
                 className="h-7 text-xs"
               >
@@ -180,6 +183,7 @@ export function ZoomMeetIntegration({
                       setFieldValue('scheduleZoomMeet', checked);
                       if (checked) {
                         setFieldValue('scheduleGoogleMeet', false);
+                        setFieldValue('scheduleTeamsMeet', false);
                       }
                     }}
                   />

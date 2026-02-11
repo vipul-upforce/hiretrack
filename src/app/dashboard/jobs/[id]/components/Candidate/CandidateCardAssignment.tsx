@@ -49,9 +49,10 @@ export function CandidateCardAssignment({
     return null;
   }
 
-  const { googleMeet, zoomMeet } = candidate.assignment;
+  const { googleMeet, zoomMeet, microsoftTeams } = candidate.assignment;
   const hasGoogleMeet = googleMeet?.eventId;
   const hasZoomMeet = zoomMeet?.meetingId;
+  const hasMicrosoftTeams = microsoftTeams?.meetingId;
   const attendeeResponses = googleMeet?.attendeeResponses || [];
 
   const hasDeclined = attendeeResponses.some(
@@ -92,6 +93,15 @@ export function CandidateCardAssignment({
               >
                 <Video size={10} className="mr-1" />
                 Zoom
+              </Badge>
+            )}
+            {hasMicrosoftTeams && (
+              <Badge
+                variant="default"
+                className="ml-2 border-purple-200 bg-purple-100 text-xs text-purple-800 hover:bg-purple-200"
+              >
+                <Video size={10} className="mr-1" />
+                Teams
               </Badge>
             )}
           </span>
@@ -176,13 +186,13 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                                   className={cn(
                                     'rounded px-1.5 py-0.5 text-xs font-medium',
                                     attendee.responseStatus === 'accepted' &&
-                                      'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
+                                    'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400',
                                     attendee.responseStatus === 'declined' &&
-                                      'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
+                                    'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400',
                                     attendee.responseStatus === 'tentative' &&
-                                      'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
+                                    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-400',
                                     attendee.responseStatus === 'needsAction' &&
-                                      'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400',
+                                    'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-400',
                                   )}
                                 >
                                   {attendee.responseStatus === 'accepted' &&
@@ -244,6 +254,52 @@ Zoom Link: ${zoomMeet?.meetingLink || ''}`;
                       </div>
                       <div className="break-all rounded border border-sky-200/50 bg-sky-50/50 px-2 py-1 text-sky-600 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-400">
                         {zoomMeet?.meetingLink}
+                      </div>
+                    </div>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {hasMicrosoftTeams && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="relative flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-purple-500 transition-colors hover:bg-purple-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const meetingInfo = `Meeting: ${microsoftTeams?.summary || 'Microsoft Teams Interview'}
+Description: ${microsoftTeams?.description || ''}
+Time: ${candidate.assignment?.time ? `${formatDate(candidate.assignment.time)} at ${formatTime(candidate.assignment.time)}` : 'Not set'}
+Teams Link: ${microsoftTeams?.meetingLink || ''}`;
+                      onCopy(meetingInfo, 'Teams meeting information');
+                    }}
+                  >
+                    <Video size={12} className="text-white" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="max-w-sm rounded-lg border border-gray-200/50 bg-white/95 p-3 shadow-xl backdrop-blur-md dark:border-gray-600/50 dark:bg-black/95"
+                >
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
+                      {microsoftTeams?.summary || 'Microsoft Teams Interview'}
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded bg-white/50 px-2 py-1 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">
+                      <div className="h-1 w-1 rounded-full bg-purple-500" />
+                      Click to copy meeting details
+                    </div>
+                    <div className="text-xs">
+                      <div className="mb-1 text-gray-500 dark:text-gray-400">
+                        Meeting Link:
+                      </div>
+                      <div className="break-all rounded border border-purple-200/50 bg-purple-50/50 px-2 py-1 text-purple-600 dark:border-purple-800/50 dark:bg-purple-900/20 dark:text-purple-400">
+                        {microsoftTeams?.meetingLink}
                       </div>
                     </div>
                   </div>

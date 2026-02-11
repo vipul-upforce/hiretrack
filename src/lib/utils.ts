@@ -70,6 +70,8 @@ export const sentAssignmentMail = async (
         result.assignment.googleMeet?.eventId ??
         result.assignment.zoomMeet?.eventId ??
         result.assignment.zoomMeet?.meetingId ??
+        result.assignment.microsoftTeams?.eventId ??
+        result.assignment.microsoftTeams?.meetingId ??
         '',
     };
     const { error } = await sendEmail(reqBody);
