@@ -159,6 +159,7 @@ export async function runBulkMoveJob(
       .populate([
         { path: 'assignment.interviewerId', select: '_id name email' },
         { path: 'remarks.userId', select: 'name email' },
+        { path: 'followUp.userId', select: '_id name email' },
         { path: 'jobId', select: 'title description' },
       ])
       .lean();

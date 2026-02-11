@@ -15,7 +15,7 @@ export async function runBulkUnassign(
   const { candidateIds } = params;
   const { user, dateTime, Candidate, History } = ctx;
   const toBroadcast: ICandidate[] = [];
-  let failedCount = 0;
+  const failedCount = 0;
 
   const candidates = await Candidate.find({
     _id: { $in: candidateIds },
@@ -24,6 +24,7 @@ export async function runBulkUnassign(
   })
     .populate([
       { path: 'assignment.interviewerId', select: '_id name email' },
+      { path: 'followUp.userId', select: '_id name email' },
       { path: 'jobId', select: '_id title description' },
     ])
     .lean();
@@ -92,6 +93,7 @@ export async function runBulkUnassign(
     const updatedList = await Candidate.find({ _id: { $in: ids } })
       .populate([
         { path: 'assignment.interviewerId', select: '_id name email' },
+        { path: 'followUp.userId', select: '_id name email' },
         { path: 'jobId', select: 'title description' },
       ])
       .lean();

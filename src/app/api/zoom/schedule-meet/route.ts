@@ -324,7 +324,7 @@ Candidate: ${candidateName}`;
             interviewerName,
             candidateName,
             interviewType: 'Interview',
-            meetingLink: meetingLink,
+            meetingLink,
             outlookCalendarLink: calendarLinks.outlookCalendarLink,
             candidateProfileLink: `${baseUrl}/candidate/${candidateId}`,
             organizationName,
@@ -373,19 +373,33 @@ Candidate: ${candidateName}`;
       }
     }
 
-    if (candidateId && Candidate) {
-      await Candidate?.findByIdAndUpdate(candidateId, {
-        'assignment.zoomMeet': {
-          meetingId,
-          meetingLink,
-          startUrl,
-          eventId: calendarEventId,
-          htmlLink: calendarHtmlLink,
-          summary,
-          description: calendarDescription,
-          lastSyncedAt: new Date(),
+   if (candidateId && Candidate) {
+      const zoomMeetData = {
+        meetingId,
+        meetingLink,
+        startUrl,
+        eventId: calendarEventId,
+        htmlLink: calendarHtmlLink,
+        summary,
+        description: calendarDescription,
+        lastSyncedAt: new Date(),
+      };
+
+      // Use an aggregation pipeline (array syntax) to handle 'assignment: null' safely
+      await Candidate.findByIdAndUpdate(candidateId, [
+        {
+          $set: {
+            assignment: {
+              $mergeObjects: [
+                // If assignment is null or missing, use {}, otherwise use existing assignment
+                { $ifNull: ['$assignment', {}] },
+                // Merge in the new zoomMeet data
+                { zoomMeet: zoomMeetData },
+              ],
+            },
+          },
         },
-      });
+      ]);
     }
 
     return NextResponse.json({
