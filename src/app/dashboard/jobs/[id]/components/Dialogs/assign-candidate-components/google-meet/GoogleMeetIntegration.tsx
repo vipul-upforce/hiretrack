@@ -38,6 +38,7 @@ interface GoogleMeetIntegrationProps {
   googleCalendarData: IGoogleCalendar;
   onRequestCancel: () => void;
   isBulkMode: boolean;
+  showScheduleToggle?: boolean;
 }
 
 export function GoogleMeetIntegration({
@@ -46,6 +47,7 @@ export function GoogleMeetIntegration({
   googleCalendarData,
   onRequestCancel,
   isBulkMode,
+  showScheduleToggle = true,
 }: GoogleMeetIntegrationProps) {
   const {
     user,
@@ -73,6 +75,10 @@ export function GoogleMeetIntegration({
     !!candidate.assignment?.zoomMeet?.meetingId ||
     !!candidate.assignment?.microsoftTeams?.meetingId;
   if (!hasExistingMeet && hasOtherMeeting) {
+    return null;
+  }
+
+  if (!showScheduleToggle && !hasExistingMeet && !values.scheduleGoogleMeet) {
     return null;
   }
 
@@ -179,7 +185,7 @@ export function GoogleMeetIntegration({
       {(!hasExistingMeet || isEditMode) && (
         <>
           {/* Only show the checkbox for NEW scheduling (never when editing); users can't unschedule here */}
-          {!hasExistingMeet && (
+          {!hasExistingMeet && showScheduleToggle && (
             <div className="flex items-center space-x-2">
               <Field name="scheduleGoogleMeet">
                 {({ field }: FieldProps) => (
