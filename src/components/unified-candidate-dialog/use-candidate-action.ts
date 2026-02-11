@@ -531,6 +531,24 @@ export function useCandidateActions({
       title = `${previousInterviewer} → ${selectedInterviewer.name} : Assigned by ${user.name}`;
     }
 
+    const meetingLinkLines: string[] = [];
+    if (scheduleGoogle && googleMeetData?.meetingLink) {
+      meetingLinkLines.push(
+        `Google Meet meeting link: ${googleMeetData.meetingLink}`,
+      );
+    }
+    if (scheduleZoom && zoomMeetData?.meetingLink) {
+      meetingLinkLines.push(
+        `Zoom meeting link: ${zoomMeetData.meetingLink}`,
+      );
+    }
+    if (scheduleTeams && teamsMeetData?.meetingLink) {
+      meetingLinkLines.push(
+        `Microsoft Teams meeting link: ${teamsMeetData.meetingLink}`,
+      );
+    }
+    const meetingLinkNote = meetingLinkLines.join('\n');
+
     const assignmentRemark =
       values.enabledActions.addRemark && values.remarkDescription.trim()
         ? {
@@ -542,6 +560,12 @@ export function useCandidateActions({
           }
         : null;
 
+    const baseDescription = assignmentRemark?.description || '';
+    const noteDescription =
+      baseDescription && meetingLinkNote
+        ? `${baseDescription}\n\n${meetingLinkNote}`
+        : baseDescription || meetingLinkNote;
+
     historyEntries.push({
       dateTime: new Date().toISOString(),
       currentInterviewer:
@@ -550,13 +574,17 @@ export function useCandidateActions({
       assignmentBy: user.id,
       title,
       note:
-        assignmentRemark ||
-        ({
-          description: '',
-          date: '',
-          rating: 0,
-          userId: null,
-        } as ICandidateHistory['note']),
+        assignmentRemark
+          ? {
+              ...assignmentRemark,
+              description: noteDescription,
+            }
+          : ({
+              description: noteDescription,
+              date: '',
+              rating: 0,
+              userId: null,
+            } as ICandidateHistory['note']),
       attachments: values.attachments,
     });
   };
