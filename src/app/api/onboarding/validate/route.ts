@@ -60,7 +60,9 @@ const stepValidators: StepValidators = {
     const hasCalendar = !!(
       settings?.googleCalendar?.isConnected ||
       settings?.googleCalendar?.refreshToken ||
-      settings?.googleCalendar?.accessToken
+      settings?.googleCalendar?.accessToken ||
+      settings?.zoom?.isConnected ||
+      settings?.zoom?.accessToken
     );
     logger.info({ hasCalendar }, 'Calendar validation completed');
     return hasCalendar;

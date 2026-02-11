@@ -15,6 +15,7 @@ import { Trash2, Loader2 } from 'lucide-react';
 interface CancelMeetingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  meetingType?: string;
   cancelNotes: string;
   setCancelNotes: (notes: string) => void;
   onConfirm: () => void;
@@ -24,6 +25,7 @@ interface CancelMeetingDialogProps {
 export function CancelMeetingDialog({
   open,
   onOpenChange,
+  meetingType = 'Google Meet',
   cancelNotes,
   setCancelNotes,
   onConfirm,
@@ -35,11 +37,11 @@ export function CancelMeetingDialog({
         <DialogHeader className="flex flex-col gap-2 border-b p-6 pb-4">
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Trash2 className="h-5 w-5" />
-            Cancel Google Meet
+            Cancel {meetingType}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground/90">
-            Are you sure you want to cancel this Google Meet? This action cannot
-            be undone and attendees will be notified.
+            Are you sure you want to cancel this {meetingType}? This action
+            cannot be undone and attendees will be notified.
           </DialogDescription>
         </DialogHeader>
 

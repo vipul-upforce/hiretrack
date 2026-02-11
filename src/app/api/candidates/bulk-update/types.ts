@@ -8,6 +8,7 @@ export type BulkUpdateOperation =
   | 'moveJob'
   | 'addRemark'
   | 'addFollowUp'
+  | 'removeFollowUp'
   | 'statusUpdate';
 
 /** Base: candidateIds required for all operations */
@@ -42,6 +43,22 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   }>;
   /** Additional guest emails */
   additionalGuests?: string[];
+  /** Schedule Zoom meeting */
+  scheduleZoomMeet?: boolean;
+  /** Zoom meeting duration in minutes */
+  zoomMeetDuration?: number;
+  /** Zoom meeting notes */
+  zoomMeetingNotes?: string;
+  /** Attachments for the Zoom meeting */
+  zoomMeetingAttachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>;
+  /** Additional guest emails for Zoom */
+  zoomAdditionalGuests?: string[];
 }
 
 export interface BulkUnassignParams extends BulkUpdateBaseParams {}
@@ -67,6 +84,8 @@ export interface BulkAddFollowUpParams extends BulkUpdateBaseParams {
   date?: string | null;
 }
 
+export interface BulkRemoveFollowUpParams extends BulkUpdateBaseParams {}
+
 export interface BulkStatusUpdateParams extends BulkUpdateBaseParams {
   status: string;
 }
@@ -78,6 +97,7 @@ export type BulkUpdateParams =
   | ({ operation: 'moveJob' } & BulkMoveJobParams)
   | ({ operation: 'addRemark' } & BulkAddRemarkParams)
   | ({ operation: 'addFollowUp' } & BulkAddFollowUpParams)
+  | ({ operation: 'removeFollowUp' } & BulkRemoveFollowUpParams)
   | ({ operation: 'statusUpdate' } & BulkStatusUpdateParams);
 
 /** Operation params WITHOUT candidateIds (since they're shared across all operations) */
@@ -88,6 +108,7 @@ export type BulkUpdateOperationParams =
   | ({ operation: 'moveJob' } & Omit<BulkMoveJobParams, 'candidateIds'>)
   | ({ operation: 'addRemark' } & Omit<BulkAddRemarkParams, 'candidateIds'>)
   | ({ operation: 'addFollowUp' } & Omit<BulkAddFollowUpParams, 'candidateIds'>)
+  | ({ operation: 'removeFollowUp' } & Omit<BulkRemoveFollowUpParams, 'candidateIds'>)
   | ({ operation: 'statusUpdate' } & Omit<BulkStatusUpdateParams, 'candidateIds'>);
 
 /** Request body supporting multiple operations */

@@ -198,6 +198,7 @@ export async function POST(request: NextRequest) {
             ? {
                 interviewerId: data.assignment.interviewerId,
                 googleMeet: null,
+                zoomMeet: null,
                 assignedAt: new Date(),
                 ...(data.assignment.time && {
                   time: new Date(data.assignment.time),

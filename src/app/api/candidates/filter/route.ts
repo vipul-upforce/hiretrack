@@ -292,101 +292,6 @@ export async function POST(request: NextRequest) {
               },
             },
             {
-              $lookup: {
-                from: 'histories',
-                let: {
-                  candidateId: { $toString: '$_id' },
-                },
-                pipeline: [
-                  {
-                    $unwind: '$history',
-                  },
-                  {
-                    $match: {
-                      $expr: {
-                        $eq: [
-                          { $toString: '$candidateId' },
-                          '$$candidateId',
-                        ],
-                      },
-                    },
-                  },
-                  { $unwind: '$history' },
-                  {
-                    $lookup: {
-                      from: 'users',
-                      localField: 'history.assignmentBy',
-                      foreignField: '_id',
-                      as: 'history.assignmentBy',
-                    },
-                  },
-                  {
-                    $unwind: {
-                      path: '$history.assignmentBy',
-                      preserveNullAndEmptyArrays: true,
-                    },
-                  },
-                  {
-                    $lookup: {
-                      from: 'users',
-                      localField: 'history.currentInterviewer',
-                      foreignField: '_id',
-                      as: 'history.currentInterviewer',
-                    },
-                  },
-                  {
-                    $unwind: {
-                      path: '$history.currentInterviewer',
-                      preserveNullAndEmptyArrays: true,
-                    },
-                  },
-                  {
-                    $lookup: {
-                      from: 'users',
-                      localField: 'history.previousInterviewer',
-                      foreignField: '_id',
-                      as: 'history.previousInterviewer',
-                    },
-                  },
-                  {
-                    $unwind: {
-                      path: '$history.previousInterviewer',
-                      preserveNullAndEmptyArrays: true,
-                    },
-                  },
-                  {
-                    $unwind: {
-                      path: '$history.note',
-                      preserveNullAndEmptyArrays: true,
-                    },
-                  },
-                  {
-                    $lookup: {
-                      from: 'users',
-                      localField: 'history.note.userId',
-                      foreignField: '_id',
-                      as: 'history.note.userId',
-                    },
-                  },
-                  {
-                    $unwind: {
-                      path: '$history.note.userId',
-                      preserveNullAndEmptyArrays: true,
-                    },
-                  },
-                  {
-                    $group: {
-                      _id: '$_id',
-                      jobId: { $first: '$jobId' },
-                      candidateId: { $first: '$candidateId' },
-                      history: { $push: '$history' },
-                    },
-                  },
-                ],
-                as: 'history',
-              },
-            },
-            {
               $project: {
                 _id: 1,
                 jobId: '$job',
@@ -409,7 +314,6 @@ export async function POST(request: NextRequest) {
                 customFields: 1,
                 tracking: 1,
                 isDeleted: 1,
-                history: { $arrayElemAt: ['$history.history', 0] },
                 assignment: {
                   $mergeObjects: [
                     '$assignment',

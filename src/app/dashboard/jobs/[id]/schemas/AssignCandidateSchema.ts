@@ -36,12 +36,30 @@ export interface FormValues {
   meetingNotes?: string;
   meetingAttachments?: Attachment[];
   additionalGuests?: string[];
+  scheduleZoomMeet?: boolean;
+  zoomMeetDuration?: number;
+  zoomMeetingNotes?: string;
+  zoomMeetingAttachments?: Attachment[];
+  zoomAdditionalGuests?: string[];
   googleMeetData?: {
     eventId: string;
     meetingLink: string;
     htmlLink: string;
     summary: string;
     description: string;
+    meetingNotes?: string;
+    meetingAttachments?: Attachment[];
+  };
+  zoomMeetData?: {
+    meetingId: string;
+    meetingLink: string;
+    startUrl?: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingNotes?: string;
+    meetingAttachments?: Attachment[];
   };
 }
 
@@ -69,10 +87,21 @@ export const validationSchema = Yup.object({
     is: true,
     then: (schema) => schema.required('Please select meeting duration'),
     otherwise: (schema) => schema.nullable(),
-  }),
+  }).max(60, 'Google Meet duration cannot exceed 60 minutes'),
   meetingNotes: Yup.string(),
   meetingAttachments: Yup.array(),
   additionalGuests: Yup.array().of(
+    Yup.string().email('Please enter valid email addresses'),
+  ),
+  scheduleZoomMeet: Yup.boolean(),
+  zoomMeetDuration: Yup.number().when('scheduleZoomMeet', {
+    is: true,
+    then: (schema) => schema.required('Please select meeting duration'),
+    otherwise: (schema) => schema.nullable(),
+  }).max(40, 'Zoom meeting duration cannot exceed 40 minutes'),
+  zoomMeetingNotes: Yup.string(),
+  zoomMeetingAttachments: Yup.array(),
+  zoomAdditionalGuests: Yup.array().of(
     Yup.string().email('Please enter valid email addresses'),
   ),
 });

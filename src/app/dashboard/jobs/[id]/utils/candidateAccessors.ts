@@ -158,3 +158,14 @@ export function hasGoogleMeet(
     hasAssignment(candidate) && candidate?.assignment?.googleMeet !== undefined
   );
 }
+
+/**
+ * Check if candidate has Zoom meeting
+ */
+export function hasZoomMeet(
+  candidate: Candidate | null | undefined,
+): boolean {
+  return (
+    hasAssignment(candidate) && candidate?.assignment?.zoomMeet !== undefined
+  );
+}

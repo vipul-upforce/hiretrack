@@ -27,6 +27,7 @@ const VALID_OPERATIONS: BulkUpdateOperation[] = [
   'moveJob',
   'addRemark',
   'addFollowUp',
+  'removeFollowUp',
   'statusUpdate',
 ];
 
@@ -75,6 +76,13 @@ function parseOperation(
             (op.meetingAttachments as BulkAssignParams['meetingAttachments']) ??
             [],
           additionalGuests: (op.additionalGuests as string[]) ?? [],
+          scheduleZoomMeet: (op.scheduleZoomMeet as boolean) ?? false,
+          zoomMeetDuration: (op.zoomMeetDuration as number) ?? 30,
+          zoomMeetingNotes: (op.zoomMeetingNotes as string) ?? '',
+          zoomMeetingAttachments:
+            (op.zoomMeetingAttachments as BulkAssignParams['zoomMeetingAttachments']) ??
+            [],
+          zoomAdditionalGuests: (op.zoomAdditionalGuests as string[]) ?? [],
         },
       };
     }
@@ -125,6 +133,8 @@ function parseOperation(
         },
       };
     }
+    case 'removeFollowUp':
+      return { params: { operation: 'removeFollowUp', ...base } };
     case 'statusUpdate': {
       const { status } = op;
       if (status === undefined || typeof status !== 'string') {

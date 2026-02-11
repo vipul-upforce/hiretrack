@@ -9,6 +9,7 @@ import { runBulkArchive } from './archive';
 import { runBulkMoveJob } from './moveJob';
 import { runBulkAddRemark } from './addRemark';
 import { runBulkAddFollowUp } from './addFollowUp';
+import { runBulkRemoveFollowUp } from './removeFollowUp';
 import { runBulkStatusUpdate } from './statusUpdate';
 
 /**
@@ -32,6 +33,8 @@ export async function runBulkUpdate(
       return runBulkAddRemark(params, ctx);
     case 'addFollowUp':
       return runBulkAddFollowUp(params, ctx);
+    case 'removeFollowUp':
+      return runBulkRemoveFollowUp(params, ctx);
     case 'statusUpdate':
       return runBulkStatusUpdate(params, ctx);
     default: {

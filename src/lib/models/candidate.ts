@@ -76,6 +76,24 @@ export interface ICandidate {
       }>;
       lastSyncedAt?: Date;
     };
+    zoomMeet?: {
+      meetingId: string;
+      meetingLink: string;
+      startUrl?: string;
+      eventId?: string;
+      htmlLink?: string;
+      summary?: string;
+      description?: string;
+      meetingNotes?: string;
+      meetingAttachments?: Array<{
+        id: string;
+        name: string;
+        url: string;
+        type: string;
+        size: number;
+      }>;
+      lastSyncedAt?: Date;
+    };
   };
   customFields: {
     [key: string]:
@@ -355,6 +373,29 @@ export const candidateSchema = new Schema(
                 comment: String,
                 lastUpdated: Date,
                 notificationSent: Boolean,
+              },
+            ],
+            default: undefined,
+          },
+          lastSyncedAt: Date,
+        },
+        zoomMeet: {
+          meetingId: String,
+          meetingLink: String,
+          startUrl: String,
+          eventId: String,
+          htmlLink: String,
+          summary: String,
+          description: String,
+          meetingNotes: String,
+          meetingAttachments: {
+            type: [
+              {
+                id: String,
+                name: String,
+                url: String,
+                type: { type: String, default: 'pdf' },
+                size: Number,
               },
             ],
             default: undefined,

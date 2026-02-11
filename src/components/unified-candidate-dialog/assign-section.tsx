@@ -1,10 +1,11 @@
 import React from 'react';
 import { Candidate } from '@/types/candidate';
 import { Interviewer } from '@/lib/features/user/userApi';
-import { IGoogleCalendar } from '@/lib/models/settings';
+import { IGoogleCalendar, IZoomConfig } from '@/lib/models/settings';
 import { InterviewerSelector } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/DateTimePickerSection';
 import { GoogleMeetIntegration } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/google-meet/GoogleMeetIntegration';
+import { ZoomMeetIntegration } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-candidate-components/zoom-meet/ZoomMeetIntegration';
 import { UnifiedFormValues } from './types';
 import { AttachmentsSection } from './attachments-section';
 
@@ -14,7 +15,8 @@ interface AssignSectionProps {
   setFieldValue: (field: string, value: unknown) => void;
   interviewers: Interviewer[] | undefined;
   googleCalendarData?: IGoogleCalendar;
-  setShowCancelMeetDialog: (show: boolean) => void;
+  zoomConfig?: IZoomConfig;
+  onRequestCancel: (provider: 'google' | 'zoom') => void;
   isBulkMode: boolean;
 }
 
@@ -24,7 +26,8 @@ export function AssignSection({
   setFieldValue,
   interviewers,
   googleCalendarData,
-  setShowCancelMeetDialog,
+  zoomConfig,
+  onRequestCancel,
   isBulkMode,
 }: AssignSectionProps) {
   return (
@@ -46,7 +49,16 @@ export function AssignSection({
             candidate={candidate}
             interviewers={interviewers}
             googleCalendarData={googleCalendarData}
-            setShowCancelMeetDialog={setShowCancelMeetDialog}
+            onRequestCancel={() => onRequestCancel('google')}
+          />
+        ) : null}
+        {zoomConfig ? (
+          <ZoomMeetIntegration
+            isBulkMode={isBulkMode}
+            candidate={candidate}
+            interviewers={interviewers}
+            zoomConfig={zoomConfig}
+            onRequestCancel={() => onRequestCancel('zoom')}
           />
         ) : null}
         <AttachmentsSection

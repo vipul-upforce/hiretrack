@@ -55,6 +55,18 @@ export interface Assignment {
     }>;
     lastSyncedAt?: Date;
   };
+  zoomMeet?: {
+    meetingId: string;
+    meetingLink: string;
+    startUrl?: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingAttachments?: Attachment[];
+    meetingNotes?: string;
+    lastSyncedAt?: Date;
+  };
   jobId?: Job;
 }
 

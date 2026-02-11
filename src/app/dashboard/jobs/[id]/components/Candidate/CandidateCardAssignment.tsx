@@ -49,8 +49,9 @@ export function CandidateCardAssignment({
     return null;
   }
 
-  const { googleMeet } = candidate.assignment;
+  const { googleMeet, zoomMeet } = candidate.assignment;
   const hasGoogleMeet = googleMeet?.eventId;
+  const hasZoomMeet = zoomMeet?.meetingId;
   const attendeeResponses = googleMeet?.attendeeResponses || [];
 
   const hasDeclined = attendeeResponses.some(
@@ -82,6 +83,15 @@ export function CandidateCardAssignment({
               >
                 <Video size={10} className="mr-1" />
                 Google Meet
+              </Badge>
+            )}
+            {hasZoomMeet && (
+              <Badge
+                variant="default"
+                className="ml-2 border-sky-200 bg-sky-100 text-xs text-sky-800 hover:bg-sky-200"
+              >
+                <Video size={10} className="mr-1" />
+                Zoom
               </Badge>
             )}
           </span>
@@ -190,6 +200,52 @@ Google Meet Link: ${googleMeet.meetingLink}`;
                         </div>
                       </div>
                     )}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {hasZoomMeet && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    className="relative flex h-6 w-6 flex-shrink-0 cursor-pointer items-center justify-center rounded-full bg-sky-500 transition-colors hover:bg-sky-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const meetingInfo = `Meeting: ${zoomMeet?.summary || 'Zoom Interview'}
+Description: ${zoomMeet?.description || ''}
+Time: ${candidate.assignment?.time ? `${formatDate(candidate.assignment.time)} at ${formatTime(candidate.assignment.time)}` : 'Not set'}
+Zoom Link: ${zoomMeet?.meetingLink || ''}`;
+                      onCopy(meetingInfo, 'Zoom meeting information');
+                    }}
+                  >
+                    <Video size={12} className="text-white" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="max-w-sm rounded-lg border border-gray-200/50 bg-white/95 p-3 shadow-xl backdrop-blur-md dark:border-gray-600/50 dark:bg-black/95"
+                >
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">
+                      {zoomMeet?.summary || 'Zoom Interview'}
+                    </div>
+                    <div className="flex items-center gap-1.5 rounded bg-white/50 px-2 py-1 text-xs text-gray-600 dark:bg-gray-700/50 dark:text-gray-300">
+                      <div className="h-1 w-1 rounded-full bg-sky-500" />
+                      Click to copy meeting details
+                    </div>
+                    <div className="text-xs">
+                      <div className="mb-1 text-gray-500 dark:text-gray-400">
+                        Meeting Link:
+                      </div>
+                      <div className="break-all rounded border border-sky-200/50 bg-sky-50/50 px-2 py-1 text-sky-600 dark:border-sky-800/50 dark:bg-sky-900/20 dark:text-sky-400">
+                        {zoomMeet?.meetingLink}
+                      </div>
+                    </div>
                   </div>
                 </TooltipContent>
               </Tooltip>

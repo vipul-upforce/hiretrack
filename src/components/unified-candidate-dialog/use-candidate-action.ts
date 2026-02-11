@@ -22,8 +22,14 @@ import {
   useScheduleMeetingMutation,
   useUpdateMeetingMutation,
   useCancelMeetingMutation,
+  useScheduleZoomMeetingMutation,
+  useUpdateZoomMeetingMutation,
+  useCancelZoomMeetingMutation,
 } from '@/lib/features/calendar/calendarApi';
-import { useGetGoogleCalendarConfigQuery } from '@/lib/features/settings';
+import {
+  useGetGoogleCalendarConfigQuery,
+  useGetZoomConfigQuery,
+} from '@/lib/features/settings';
 import {
   useSendMailMutation,
   useSendUnassignMailMutation,
@@ -73,7 +79,9 @@ export function useCandidateActions({
   const { user } = useAppSelector((state) => state.auth || {});
   const pathname = usePathname();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showCancelMeetDialog, setShowCancelMeetDialog] = useState(false);
+  const [cancelMeetingProvider, setCancelMeetingProvider] = useState<
+    'google' | 'zoom' | null
+  >(null);
   const [cancelNotes, setCancelNotes] = useState('');
 
   // API Hooks
@@ -89,10 +97,15 @@ export function useCandidateActions({
   const [updateMeeting] = useUpdateMeetingMutation();
   const [cancelMeeting, { isLoading: isCancelling }] =
     useCancelMeetingMutation();
+  const [scheduleZoomMeeting] = useScheduleZoomMeetingMutation();
+  const [updateZoomMeeting] = useUpdateZoomMeetingMutation();
+  const [cancelZoomMeeting, { isLoading: isCancellingZoom }] =
+    useCancelZoomMeetingMutation();
 
   const { data: jobs } = useFetchOpenJobsQuery();
   const { data: googleCalendarData } =
     useGetGoogleCalendarConfigQuery(undefined);
+  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
 
   const getInitialJobId = useCallback(() => {
     if (typeof candidate.jobId === 'string') return candidate.jobId;
@@ -149,17 +162,38 @@ export function useCandidateActions({
         ? candidate.assignment.interviewerId
         : candidate.assignment?.interviewerId?._id || null;
 
+    const scheduleGoogleMeet =
+      !isBulkMode && !!candidate?.assignment?.googleMeet?.eventId;
+    const meetingNotes = !isBulkMode
+      ? candidate?.assignment?.googleMeet?.meetingNotes || ''
+      : '';
+    const meetingAttachments = !isBulkMode
+      ? candidate?.assignment?.googleMeet?.meetingAttachments || []
+      : [];
+    const scheduleZoomMeet =
+      !isBulkMode && !!candidate?.assignment?.zoomMeet?.meetingId;
+    const zoomMeetingNotes = !isBulkMode
+      ? candidate?.assignment?.zoomMeet?.meetingNotes || ''
+      : '';
+    const zoomMeetingAttachments = !isBulkMode
+      ? candidate?.assignment?.zoomMeet?.meetingAttachments || []
+      : [];
+
     return {
       interviewerId: interviewerIdValue,
       time: candidate.assignment?.time
         ? dayjs(candidate.assignment.time)
         : null,
-      scheduleGoogleMeet: !!candidate?.assignment?.googleMeet?.eventId,
+      scheduleGoogleMeet,
       meetDuration: 60,
-      meetingNotes: candidate?.assignment?.googleMeet?.meetingNotes || '',
-      meetingAttachments:
-        candidate?.assignment?.googleMeet?.meetingAttachments || [],
+      meetingNotes,
+      meetingAttachments,
       additionalGuests: [],
+      scheduleZoomMeet,
+      zoomMeetDuration: 40,
+      zoomMeetingNotes,
+      zoomMeetingAttachments,
+      zoomAdditionalGuests: [],
       attachments: [],
       jobId,
       followUpNote: candidate?.followUp?.note || '',
@@ -182,7 +216,7 @@ export function useCandidateActions({
         updateStatus: initialAction === 'updateStatus',
       },
     };
-  }, [candidate, user?.role, jobId, initialAction]);
+  }, [candidate, user?.role, jobId, initialAction, isBulkMode]);
 
   const toggleAction = useCallback(
     (
@@ -254,71 +288,135 @@ export function useCandidateActions({
     );
     if (!selectedInterviewer) throw new Error('Selected interviewer not found');
 
-    let { googleMeetData } = values;
-    if (values.scheduleGoogleMeet && values.time) {
-      const guests = [
-        ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
-        ...(candidate.email ? [candidate.email] : []),
-        ...(user.email && user.email !== selectedInterviewer.email
-          ? [user.email]
-          : []),
-        ...(values.additionalGuests || []),
-      ];
+    let { googleMeetData, zoomMeetData } = values;
+    const scheduleGoogle = values.scheduleGoogleMeet && values.time;
+    const scheduleZoom = values.scheduleZoomMeet && values.time;
 
-      const processedMeetingAttachments = await Promise.all(
-        (values.meetingAttachments || []).map(async (file) => {
-          if (file instanceof File) {
-            const reader = new FileReader();
-            const dataUrl = await new Promise<string>((resolve, reject) => {
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-            return {
-              id: Math.random().toString(36).slice(2),
-              name: file.name,
-              url: dataUrl,
-              type: file.type,
-              size: file.size,
-            };
-          }
-          return file;
-        }),
-      );
+    if (scheduleGoogle || scheduleZoom) {
+      const processMeetingAttachments = async (files: unknown[]) =>
+        Promise.all(
+          (files || []).map(async (file) => {
+            if (file instanceof File) {
+              const reader = new FileReader();
+              const dataUrl = await new Promise<string>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+              });
+              return {
+                id: Math.random().toString(36).slice(2),
+                name: file.name,
+                url: dataUrl,
+                type: file.type,
+                size: file.size,
+              };
+            }
+            return file;
+          }),
+        );
 
-      const isUpdating = candidate.assignment?.googleMeet?.eventId;
-      const result = isUpdating
-        ? await updateMeeting({
-            eventId: candidate.assignment?.googleMeet?.eventId || '',
-            candidateId: candidate._id,
-            scheduledTime: values.time.toISOString(),
-            duration: values.meetDuration || 30,
-            guests,
-          }).unwrap()
-        : await scheduleMeeting({
-            candidateId: candidate._id,
-            candidateName: candidate.name,
-            candidateEmail: candidate.email,
-            interviewerId: selectedInterviewer._id,
-            interviewerName: selectedInterviewer.name,
-            scheduledTime: values.time.toISOString(),
-            duration: values.meetDuration || 30,
-            guests,
-            jobTitle: candidate.jobId?.title || 'Position',
-            organizationName: user?.organizationInfo?.name || 'Company',
-            meetingNotes: values.meetingNotes || '',
-            meetingAttachments: processedMeetingAttachments,
-          }).unwrap();
+      if (scheduleGoogle) {
+        const guests = [
+          ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
+          ...(candidate.email ? [candidate.email] : []),
+          ...(user.email && user.email !== selectedInterviewer.email
+            ? [user.email]
+            : []),
+          ...(values.additionalGuests || []),
+        ];
 
-      googleMeetData = {
-        eventId: result.eventId,
-        meetingLink: result.meetingLink,
-        htmlLink: result.htmlLink,
-        summary: result.summary,
-        description: result.description,
-        meetingNotes: values.meetingNotes,
-        meetingAttachments: processedMeetingAttachments,
-      };
+        const processedMeetingAttachments = await processMeetingAttachments(
+          values.meetingAttachments || [],
+        );
+
+        const isUpdating = candidate.assignment?.googleMeet?.eventId;
+        const result = isUpdating
+          ? await updateMeeting({
+              eventId: candidate.assignment?.googleMeet?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time.toISOString(),
+              duration: values.meetDuration || 30,
+              guests,
+            }).unwrap()
+          : await scheduleMeeting({
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time.toISOString(),
+              duration: values.meetDuration || 30,
+              guests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.meetingNotes || '',
+              meetingAttachments: processedMeetingAttachments,
+            }).unwrap();
+
+        googleMeetData = {
+          eventId: result.eventId,
+          meetingLink: result.meetingLink,
+          htmlLink: result.htmlLink,
+          summary: result.summary,
+          description: result.description,
+          meetingNotes: values.meetingNotes,
+          meetingAttachments: processedMeetingAttachments,
+        };
+      }
+
+      if (scheduleZoom) {
+        const guests = [
+          ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
+          ...(candidate.email ? [candidate.email] : []),
+          ...(user.email && user.email !== selectedInterviewer.email
+            ? [user.email]
+            : []),
+          ...(values.zoomAdditionalGuests || []),
+        ];
+
+        const processedMeetingAttachments = await processMeetingAttachments(
+          values.zoomMeetingAttachments || [],
+        );
+
+        const isUpdating = candidate.assignment?.zoomMeet?.meetingId;
+        const result = isUpdating
+          ? await updateZoomMeeting({
+              meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
+              eventId: candidate.assignment?.zoomMeet?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time.toISOString(),
+              duration: values.zoomMeetDuration || 30,
+              guests,
+            }).unwrap()
+          : await scheduleZoomMeeting({
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time.toISOString(),
+              duration: values.zoomMeetDuration || 30,
+              guests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.zoomMeetingNotes || '',
+              meetingAttachments: processedMeetingAttachments,
+            }).unwrap();
+
+        zoomMeetData = {
+          meetingId: result.meetingId,
+          meetingLink: result.meetingLink,
+          startUrl: result.startUrl,
+          eventId: result.eventId,
+          htmlLink: result.htmlLink,
+          summary: result.summary,
+          description: result.description,
+          meetingNotes: values.zoomMeetingNotes,
+          meetingAttachments: processedMeetingAttachments,
+        };
+      }
     }
 
     const existingNames = new Set(candidate.attachments.map((a) => a.name));
@@ -336,6 +434,7 @@ export function useCandidateActions({
       time: values.time ? (values.time.toISOString() as string) : '',
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),
+      ...(zoomMeetData && { zoomMeet: zoomMeetData }),
     };
 
     const previousInterviewer =
@@ -477,6 +576,27 @@ export function useCandidateActions({
             }),
           );
 
+          const processedZoomMeetingAttachments = await Promise.all(
+            (values.zoomMeetingAttachments || []).map(async (file) => {
+              if (file instanceof File) {
+                const reader = new FileReader();
+                const dataUrl = await new Promise<string>((resolve, reject) => {
+                  reader.onload = () => resolve(reader.result as string);
+                  reader.onerror = reject;
+                  reader.readAsDataURL(file);
+                });
+                return {
+                  id: Math.random().toString(36).slice(2),
+                  name: file.name,
+                  url: dataUrl,
+                  type: file.type,
+                  size: file.size,
+                };
+              }
+              return file;
+            }),
+          );
+
           operations.push({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
@@ -487,6 +607,11 @@ export function useCandidateActions({
             meetingNotes: values.meetingNotes || '',
             meetingAttachments: processedMeetingAttachments,
             additionalGuests: values.additionalGuests || [],
+            scheduleZoomMeet: values.scheduleZoomMeet || false,
+            zoomMeetDuration: values.zoomMeetDuration || 30,
+            zoomMeetingNotes: values.zoomMeetingNotes || '',
+            zoomMeetingAttachments: processedZoomMeetingAttachments,
+            zoomAdditionalGuests: values.zoomAdditionalGuests || [],
           });
         }
 
@@ -509,8 +634,12 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Add Follow-up
-        if (actions.addFollowUp && values.followUpNote?.trim()) {
+        // Bulk Follow-up (remove or add)
+        if (actions.addFollowUp && values.removeFollowUp) {
+          operations.push({
+            operation: 'removeFollowUp',
+          });
+        } else if (actions.addFollowUp && values.followUpNote?.trim()) {
           operations.push({
             operation: 'addFollowUp',
             note: values.followUpNote.trim(),
@@ -852,28 +981,49 @@ export function useCandidateActions({
   };
 
   const handleCancelMeeting = async () => {
-    if (!candidate.assignment?.googleMeet?.eventId) return;
     try {
-      await cancelMeeting({
-        eventId: candidate.assignment.googleMeet.eventId,
-        candidateId: candidate._id,
-        cancelNotes,
-      }).unwrap();
-      toast({
-        title: 'Success',
-        description: 'Google Meet cancelled successfully',
-      });
+      if (cancelMeetingProvider === 'google') {
+        if (!candidate.assignment?.googleMeet?.eventId) return;
+        await cancelMeeting({
+          eventId: candidate.assignment.googleMeet.eventId,
+          candidateId: candidate._id,
+          cancelNotes,
+        }).unwrap();
+        toast({
+          title: 'Success',
+          description: 'Google Meet cancelled successfully',
+        });
+      }
+
+      if (cancelMeetingProvider === 'zoom') {
+        if (!candidate.assignment?.zoomMeet?.meetingId) return;
+        await cancelZoomMeeting({
+          meetingId: candidate.assignment.zoomMeet.meetingId,
+          eventId: candidate.assignment.zoomMeet.eventId || '',
+          candidateId: candidate._id,
+          cancelNotes,
+        }).unwrap();
+        toast({
+          title: 'Success',
+          description: 'Zoom meeting cancelled successfully',
+        });
+      }
+
       if (refetch) await refetch();
-      setShowCancelMeetDialog(false);
+      setCancelMeetingProvider(null);
       setCancelNotes('');
     } catch {
       toast({
         title: 'Error',
-        description: 'Failed to cancel Google Meet',
+        description: 'Failed to cancel meeting',
         variant: 'destructive',
       });
     }
   };
+
+  const showCancelMeetDialog = cancelMeetingProvider !== null;
+  const isCancellingActive =
+    cancelMeetingProvider === 'zoom' ? isCancellingZoom : isCancelling;
 
   return {
     state: {
@@ -881,13 +1031,15 @@ export function useCandidateActions({
       showCancelMeetDialog,
       cancelNotes,
       actionCheckboxes,
-      isCancelling,
+      isCancelling: isCancellingActive,
+      cancelMeetingProvider,
     },
     data: {
       user,
       jobs,
       interviewers,
       googleCalendarData,
+      zoomConfigData,
       initialValues,
       jobLanesData,
       isLoadingLanes,
@@ -896,7 +1048,7 @@ export function useCandidateActions({
       handleSubmit,
       handleCancelMeeting,
       setCancelNotes,
-      setShowCancelMeetDialog,
+      setCancelMeetingProvider,
       toggleAction,
     },
   };

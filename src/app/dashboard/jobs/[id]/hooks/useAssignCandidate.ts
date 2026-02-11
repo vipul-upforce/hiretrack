@@ -111,6 +111,7 @@ export const useAssignCandidate = ({
           assignedAt: new Date().toISOString(),
           // Include Google Meet data if available
           ...(values?.googleMeetData && { googleMeet: values?.googleMeetData }),
+          ...(values?.zoomMeetData && { zoomMeet: values?.zoomMeetData }),
         },
         attachments: uniqueAttachments,
       };

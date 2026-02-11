@@ -261,18 +261,31 @@ Candidate: ${candidateName}`;
     });
 
     // Update candidate record with Google Meet info and initial attendee responses
-    if (candidateId) {
-      await Candidate?.findByIdAndUpdate(candidateId, {
-        'assignment.googleMeet': {
-          eventId,
-          meetingLink,
-          htmlLink,
-          summary,
-          description,
-          attendeeResponses: initialAttendeeResponses,
-          lastSyncedAt: new Date(),
+    if (candidateId && Candidate) {
+      const googleMeetData = {
+        eventId,
+        meetingLink,
+        htmlLink,
+        summary,
+        description,
+        attendeeResponses: initialAttendeeResponses,
+        lastSyncedAt: new Date(),
+      };
+
+      await Candidate.findByIdAndUpdate(candidateId, [
+        {
+          $set: {
+            assignment: {
+              $mergeObjects: [
+                // If assignment is null/missing, default to empty object {}, otherwise use existing
+                { $ifNull: ['$assignment', {}] },
+                // Merge in the new googleMeet data
+                { googleMeet: googleMeetData },
+              ],
+            },
+          },
         },
-      });
+      ]);
     }
 
     // Try to set up webhook for this event (non-blocking)

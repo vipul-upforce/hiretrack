@@ -61,6 +61,9 @@ interface PopulatedCandidate {
     googleMeet?: {
       meetingLink: string;
     };
+    zoomMeet?: {
+      meetingLink: string;
+    };
   };
   followUp?: {
     note?: string;
@@ -742,7 +745,8 @@ export async function POST(req: NextRequest) {
         (typeof candidate.assignment.interviewerId === 'object' &&
           candidate.assignment.interviewerId) ||
         candidate.assignment.time ||
-        candidate.assignment.googleMeet?.meetingLink;
+        candidate.assignment.googleMeet?.meetingLink ||
+        candidate.assignment.zoomMeet?.meetingLink;
 
       if (hasInterviewData) {
         addSectionHeader('INTERVIEW DETAILS');
@@ -773,6 +777,9 @@ export async function POST(req: NextRequest) {
             'Meeting Link',
             candidate.assignment.googleMeet.meetingLink,
           );
+        }
+        if (candidate.assignment.zoomMeet?.meetingLink) {
+          addKeyValue('Zoom Link', candidate.assignment.zoomMeet.meetingLink);
         }
         yPosition += 3;
       }
