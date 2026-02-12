@@ -5,6 +5,7 @@ import { getFileShare, validateAndRecordDownload } from '@/lib/fileShareUtils';
 import { getFileFromProvider } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
+import { FileStorageValues } from '@/app/dashboard/settings/components/file-storage/schema';
 
 export async function GET(
   request: NextRequest,
@@ -80,8 +81,8 @@ export async function GET(
     // Get file from storage provider
     const fileResult = await getFileFromProvider(
       fileShare.storagePath,
-      settings.fileStorage,
-      fileShare.organizationId.toString(),
+      settings.fileStorage as unknown as FileStorageValues,
+      // fileShare.organizationId.toString(),
     );
 
     if (!fileResult.success) {
@@ -89,7 +90,7 @@ export async function GET(
     }
 
     // Create response with file
-    const response = new NextResponse(fileResult.buffer as BodyInit);
+    const response = new NextResponse(fileResult.buffer);
 
     // Set headers
     response.headers.set('Content-Type', fileShare.mimeType);

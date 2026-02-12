@@ -1,11 +1,17 @@
 import { Schema } from 'mongoose';
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
-import type { BulkAssignParams, BulkUpdateContext, BulkUpdateResult } from '../types';
-import { getJobIdString } from '../utils';
 import { logger } from '@/lib/logger/logger.server';
 import { handleFileAttachments, Attachments } from '@/lib/fileUtils';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { AnyBulkWriteOperation } from 'mongodb';
+import { getJobIdString } from '../utils';
+import type {
+  BulkAssignNotificationMeta,
+  BulkAssignParams,
+  BulkUpdateContext,
+  BulkUpdateResult,
+} from '../types';
 
 export async function runBulkAssign(
   params: BulkAssignParams,
@@ -31,7 +37,9 @@ export async function runBulkAssign(
   const toBroadcast: ICandidate[] = [];
   let failedCount = 0;
 
-  const interviewer = await User.findById(interviewerId).select('_id name email').lean();
+  const interviewer = await User.findById(interviewerId)
+    .select('_id name email')
+    .lean();
   if (!interviewer) {
     return {
       success: false,
@@ -64,11 +72,19 @@ export async function runBulkAssign(
   }
 
   // Process attachments once (shared across all candidates)
-  let processedAttachments: Array<{ id: string; name: string; url: string; type: string; size: number }> = [];
+  let processedAttachments: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }> = [];
   if (attachments.length > 0 && user.organizationId) {
     try {
       await connectToDatabase();
-      const settings = await Settings?.findOne({ organizationId: user.organizationId })
+      const settings = await Settings?.findOne({
+        organizationId: user.organizationId,
+      })
         .select('fileStorage')
         .lean();
       const fileStorage = settings?.fileStorage?.storageType || 'local';
@@ -77,14 +93,18 @@ export async function runBulkAssign(
       const files = attachments.filter((att) => !att.type.startsWith('image'));
 
       const attachmentsObj: Attachments = { files, images };
-      const { files: processedFiles, images: processedImages } = await handleFileAttachments(
-        attachmentsObj,
-        fileStorage,
-        user.organizationId,
-      );
+      const { files: processedFiles, images: processedImages } =
+        await handleFileAttachments(
+          attachmentsObj,
+          fileStorage,
+          user.organizationId,
+        );
       processedAttachments = [...processedFiles, ...processedImages];
     } catch (err) {
-      logger.error({ error: err }, 'Bulk assign: failed to process attachments');
+      logger.error(
+        { error: err },
+        'Bulk assign: failed to process attachments',
+      );
     }
   }
 
@@ -107,20 +127,26 @@ export async function runBulkAssign(
   // Process each candidate to build updates (Google Meet must be per-candidate)
   for (const candidate of candidates) {
     try {
-      const candidateId = (candidate._id as { toString: () => string }).toString();
+      const candidateId = (
+        candidate._id as { toString: () => string }
+      ).toString();
       const jobId = getJobIdString(candidate);
       const candidateObj = candidate as ICandidate;
       let previousInterviewerId: unknown = null;
       if (candidate.assignment?.interviewerId != null) {
         const a = candidate.assignment.interviewerId as { _id?: unknown };
         previousInterviewerId =
-          typeof a === 'object' && a !== null && '_id' in a ? a._id : candidate.assignment.interviewerId;
+          typeof a === 'object' && a !== null && '_id' in a
+            ? a._id
+            : candidate.assignment.interviewerId;
       }
 
       // Merge attachments with existing candidate attachments
       const existingAttachments = candidateObj.attachments || [];
       const existingNames = new Set(existingAttachments.map((a) => a.name));
-      const newAttachments = processedAttachments.filter((a) => !existingNames.has(a.name));
+      const newAttachments = processedAttachments.filter(
+        (a) => !existingNames.has(a.name),
+      );
       const mergedAttachments = [...existingAttachments, ...newAttachments];
 
       // Schedule Google Calendar meeting if requested (per-candidate external API call)
@@ -149,55 +175,78 @@ export async function runBulkAssign(
       if (scheduleGoogleMeet && time && user.organizationId) {
         try {
           const guests = [
-            ...((interviewer as { email?: string }).email ? [(interviewer as { email: string }).email] : []),
+            ...((interviewer as { email?: string }).email
+              ? [(interviewer as { email: string }).email]
+              : []),
             ...(candidateObj.email ? [candidateObj.email] : []),
-            ...(user.email && user.email !== (interviewer as { email?: string }).email ? [user.email] : []),
+            ...(user.email &&
+            user.email !== (interviewer as { email?: string }).email
+              ? [user.email]
+              : []),
             ...additionalGuests,
           ];
 
           const processedMeetingAttachments = await Promise.all(
             meetingAttachments.map(async (att) => {
-              if (att.url && !att.url.startsWith('data:') && !att.url.startsWith('http')) {
+              if (
+                att.url &&
+                !att.url.startsWith('data:') &&
+                !att.url.startsWith('http')
+              ) {
                 return att;
               }
               return att;
             }),
           );
 
-          const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          const baseUrl =
+            process.env.BASE_URL ||
+            process.env.NEXT_PUBLIC_BASE_URL ||
+            'http://localhost:3000';
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
           };
           if (ctx.requestHeaders) {
-            const authHeader = ctx.requestHeaders.get('authorization') || ctx.requestHeaders.get('cookie');
+            const authHeader =
+              ctx.requestHeaders.get('authorization') ||
+              ctx.requestHeaders.get('cookie');
             if (authHeader) {
               if (ctx.requestHeaders.get('authorization')) {
-                headers['authorization'] = ctx.requestHeaders.get('authorization')!;
+                headers.authorization =
+                  ctx.requestHeaders.get('authorization')!;
               }
               if (ctx.requestHeaders.get('cookie')) {
-                headers['cookie'] = ctx.requestHeaders.get('cookie')!;
+                headers.cookie = ctx.requestHeaders.get('cookie')!;
               }
             }
           }
 
-          const scheduleResponse = await fetch(`${baseUrl}/api/google-calendar/schedule-meet`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              candidateId,
-              candidateName: candidateObj.name,
-              candidateEmail: candidateObj.email,
-              interviewerId,
-              interviewerName: (interviewer as { name: string }).name,
-              scheduledTime: time,
-              duration: meetDuration,
-              guests,
-              jobTitle: (candidateObj.jobId as { title?: string })?.title || 'Position',
-              organizationName: user.organizationInfo?.name || user.organizationId || 'Company',
-              meetingNotes,
-              meetingAttachments: processedMeetingAttachments,
-            }),
-          });
+          const scheduleResponse = await fetch(
+            `${baseUrl}/api/google-calendar/schedule-meet`,
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                candidateId,
+                candidateName: candidateObj.name,
+                candidateEmail: candidateObj.email,
+                interviewerId,
+                interviewerName: (interviewer as { name: string }).name,
+                scheduledTime: time,
+                duration: meetDuration,
+                guests,
+                jobTitle:
+                  (candidateObj.jobId as { title?: string })?.title ||
+                  'Position',
+                organizationName:
+                  user.organizationInfo?.name ||
+                  user.organizationId ||
+                  'Company',
+                meetingNotes,
+                meetingAttachments: processedMeetingAttachments,
+              }),
+            },
+          );
 
           if (scheduleResponse.ok) {
             const scheduleResult = await scheduleResponse.json();
@@ -217,63 +266,89 @@ export async function runBulkAssign(
             );
           }
         } catch (err) {
-          logger.error({ error: err, candidateId }, 'Bulk assign: Google Meet scheduling error');
+          logger.error(
+            { error: err, candidateId },
+            'Bulk assign: Google Meet scheduling error',
+          );
         }
       }
 
       if (scheduleZoomMeet && time && user.organizationId) {
         try {
           const guests = [
-            ...((interviewer as { email?: string }).email ? [(interviewer as { email: string }).email] : []),
+            ...((interviewer as { email?: string }).email
+              ? [(interviewer as { email: string }).email]
+              : []),
             ...(candidateObj.email ? [candidateObj.email] : []),
-            ...(user.email && user.email !== (interviewer as { email?: string }).email ? [user.email] : []),
+            ...(user.email &&
+            user.email !== (interviewer as { email?: string }).email
+              ? [user.email]
+              : []),
             ...zoomAdditionalGuests,
           ];
 
           const processedZoomMeetingAttachments = await Promise.all(
             zoomMeetingAttachments.map(async (att) => {
-              if (att.url && !att.url.startsWith('data:') && !att.url.startsWith('http')) {
+              if (
+                att.url &&
+                !att.url.startsWith('data:') &&
+                !att.url.startsWith('http')
+              ) {
                 return att;
               }
               return att;
             }),
           );
 
-          const baseUrl = process.env.BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+          const baseUrl =
+            process.env.BASE_URL ||
+            process.env.NEXT_PUBLIC_BASE_URL ||
+            'http://localhost:3000';
           const headers: Record<string, string> = {
             'Content-Type': 'application/json',
           };
           if (ctx.requestHeaders) {
-            const authHeader = ctx.requestHeaders.get('authorization') || ctx.requestHeaders.get('cookie');
+            const authHeader =
+              ctx.requestHeaders.get('authorization') ||
+              ctx.requestHeaders.get('cookie');
             if (authHeader) {
               if (ctx.requestHeaders.get('authorization')) {
-                headers['authorization'] = ctx.requestHeaders.get('authorization')!;
+                headers.authorization =
+                  ctx.requestHeaders.get('authorization')!;
               }
               if (ctx.requestHeaders.get('cookie')) {
-                headers['cookie'] = ctx.requestHeaders.get('cookie')!;
+                headers.cookie = ctx.requestHeaders.get('cookie')!;
               }
             }
           }
 
-          const scheduleResponse = await fetch(`${baseUrl}/api/zoom/schedule-meet`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              candidateId,
-              candidateName: candidateObj.name,
-              candidateEmail: candidateObj.email,
-              interviewerId,
-              interviewerName: (interviewer as { name: string }).name,
-              interviewerEmail: (interviewer as { email?: string }).email,
-              scheduledTime: time,
-              duration: zoomMeetDuration,
-              guests,
-              jobTitle: (candidateObj.jobId as { title?: string })?.title || 'Position',
-              organizationName: user.organizationInfo?.name || user.organizationId || 'Company',
-              meetingNotes: zoomMeetingNotes,
-              meetingAttachments: processedZoomMeetingAttachments,
-            }),
-          });
+          const scheduleResponse = await fetch(
+            `${baseUrl}/api/zoom/schedule-meet`,
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                candidateId,
+                candidateName: candidateObj.name,
+                candidateEmail: candidateObj.email,
+                interviewerId,
+                interviewerName: (interviewer as { name: string }).name,
+                interviewerEmail: (interviewer as { email?: string }).email,
+                scheduledTime: time,
+                duration: zoomMeetDuration,
+                guests,
+                jobTitle:
+                  (candidateObj.jobId as { title?: string })?.title ||
+                  'Position',
+                organizationName:
+                  user.organizationInfo?.name ||
+                  user.organizationId ||
+                  'Company',
+                meetingNotes: zoomMeetingNotes,
+                meetingAttachments: processedZoomMeetingAttachments,
+              }),
+            },
+          );
 
           if (scheduleResponse.ok) {
             const scheduleResult = await scheduleResponse.json();
@@ -295,7 +370,10 @@ export async function runBulkAssign(
             );
           }
         } catch (err) {
-          logger.error({ error: err, candidateId }, 'Bulk assign: Zoom scheduling error');
+          logger.error(
+            { error: err, candidateId },
+            'Bulk assign: Zoom scheduling error',
+          );
         }
       }
 
@@ -312,7 +390,8 @@ export async function runBulkAssign(
         dateTime,
         title: `Assigned to ${(interviewer as { name: string }).name} : Assigned by ${user.name}`,
         currentInterviewer: interviewerId as unknown as Schema.Types.ObjectId,
-        previousInterviewer: previousInterviewerId as Schema.Types.ObjectId | null,
+        previousInterviewer:
+          previousInterviewerId as Schema.Types.ObjectId | null,
         assignmentBy: user.id ?? null,
         note: { description: meetingLinkNote, date: '', rating: 0, userId: null },
         attachments: processedAttachments,
@@ -373,7 +452,9 @@ export async function runBulkAssign(
   try {
     // Batch update candidates
     if (candidateUpdates.length > 0) {
-      await Candidate.bulkWrite(candidateUpdates);
+      await Candidate.bulkWrite(
+        candidateUpdates as unknown as AnyBulkWriteOperation<ICandidate>[],
+      );
     }
 
     // Batch update history
@@ -402,10 +483,14 @@ export async function runBulkAssign(
               (toBroadcast[0] as ICandidate).jobId != null &&
               typeof (toBroadcast[0] as ICandidate).jobId === 'object' &&
               'title' in ((toBroadcast[0] as ICandidate).jobId as object)
-                ? String(((toBroadcast[0] as ICandidate).jobId as { title?: string }).title ?? 'Job')
+                ? String(
+                    ((toBroadcast[0] as ICandidate).jobId as { title?: string })
+                      .title ?? 'Job',
+                  )
                 : 'Job',
             candidates: toBroadcast.map((c) => ({
-              candidateId: (c._id as { toString: () => string }).toString(),
+              candidateId:
+                (c as unknown as { _id: unknown })._id?.toString() ?? '',
               candidateName: (c as ICandidate).name ?? 'Candidate',
             })),
           }
@@ -417,7 +502,9 @@ export async function runBulkAssign(
       failedCount,
       candidatesToBroadcast: toBroadcast,
       message: `Assigned ${toBroadcast.length} candidate(s)`,
-      assignNotificationMeta,
+      assignNotificationMeta: assignNotificationMeta as
+        | BulkAssignNotificationMeta
+        | undefined,
     };
   } catch (err) {
     logger.error({ error: err }, 'Bulk assign: batch failed');

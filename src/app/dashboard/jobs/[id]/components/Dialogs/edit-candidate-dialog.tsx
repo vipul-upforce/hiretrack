@@ -7,6 +7,7 @@ import { Formik, Form, FormikProps } from 'formik';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
+  useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
 import { v4 as uuidv4 } from 'uuid';
@@ -91,6 +92,7 @@ export function EditCandidateDialog({
   const { toast } = useToast();
   const id = useParams()?.id as string;
   const [updateCandidate] = useUpdateCandidateMutation();
+  const [uploadFiles] = useUploadFilesMutation();
   const [sendEmail] = useSendMailMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const isDesktop = useIsDesktop();
@@ -151,13 +153,6 @@ export function EditCandidateDialog({
       setSelectedFormId(null);
     },
   });
-  const convertFileToBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
 
   const handleSubmit = async (values: Candidate) => {
     // debugger;
@@ -174,76 +169,33 @@ export function EditCandidateDialog({
       return;
     }
     try {
-      const resumeBase64 =
-        values.resume instanceof File
-          ? await convertFileToBase64(values.resume)
-          : values.resume?.url;
+      // Separate new files from existing files
+      const resumeIsFile = values.resume instanceof File;
+      const newAttachmentFiles: File[] = [];
+      const existingAttachments: Array<{
+        url: string;
+        id: string;
+        name: string;
+        type: string;
+        size: number;
+      }> = [];
 
-      const attachmentsBase64 = await Promise.all(
-        values.attachments.map(
-          async (
-            file:
-              | File
-              | {
-                  url: string;
-                  id: string;
-                  name: string;
-                  type: string;
-                  size: number;
-                },
-          ) => {
-            if (file instanceof File) {
-              const base64 = await convertFileToBase64(file);
-              return {
-                id: uuidv4(),
-                name: file.name,
-                url: base64,
-                type: file.type,
-                size: file.size,
-              };
-            }
-            return file;
-          },
-        ),
-      );
+      values.attachments.forEach((file) => {
+        if (file instanceof File) {
+          newAttachmentFiles.push(file);
+        } else {
+          existingAttachments.push(file);
+        }
+      });
 
-      const latestModifiedAttachments = attachmentsBase64.filter(
-        (newAttachment) => {
-          const originalAttachment = candidate.attachments.find(
-            (oldAttachment) => oldAttachment.id === newAttachment.id,
-          );
+      // Check if we have new files to upload
+      const hasFilesToUpload = resumeIsFile || newAttachmentFiles.length > 0;
 
-          if (!originalAttachment) {
-            return true;
-          }
-
-          return (
-            originalAttachment.name !== newAttachment.name ||
-            originalAttachment.size !== newAttachment.size ||
-            originalAttachment.url !== newAttachment.url
-          );
-        },
-      );
-
-      const updatedCandidate: Partial<Candidate> = {
+      // Build payload with existing file URLs (keep existing files as-is)
+      const payload: Partial<Candidate> = {
         ...values,
-
-        resume: resumeBase64
-          ? {
-              id: values?.resume?.id || uuidv4(),
-              name:
-                values.resume instanceof File
-                  ? values.resume.name
-                  : values?.resume?.name || '',
-              url: resumeBase64,
-              type: 'pdf',
-              size:
-                values.resume instanceof File
-                  ? values.resume.size
-                  : values?.resume?.size || 0,
-            }
-          : undefined,
-        email: values.email, // Added email field
+        _id: candidate._id, // Explicitly include _id for FormData submission
+        email: values.email,
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
         experience: Number(parseFloat(String(values.experience)).toFixed(2)),
@@ -253,11 +205,27 @@ export function EditCandidateDialog({
         noticePeriod: Number(
           parseFloat(String(values.noticePeriod)).toFixed(0),
         ),
-        attachments: attachmentsBase64,
+        resume: (() => {
+          if (resumeIsFile) {
+            // New file will be sent in FormData
+            return undefined;
+          }
+          if (values.resume) {
+            return {
+              id: values.resume.id || uuidv4(),
+              name: values.resume.name || '',
+              url: values.resume.url,
+              type: values.resume.type || 'pdf',
+              size: values.resume.size || 0,
+            };
+          }
+          return undefined;
+        })(),
+        attachments: existingAttachments, // Only existing attachments in payload
       };
 
+      // Handle assignment
       if (values.assignment) {
-        // Normalize interviewerId: convert empty string or "-1" to null/delete assignment
         const normalizedInterviewerId =
           typeof values.assignment.interviewerId === 'string'
             ? values.assignment.interviewerId
@@ -268,20 +236,93 @@ export function EditCandidateDialog({
           normalizedInterviewerId === '' ||
           normalizedInterviewerId === '-1'
         ) {
-          // Delete assignment if interviewerId is empty, null, or "-1"
-          delete updatedCandidate.assignment;
+          delete payload.assignment;
         } else {
-          updatedCandidate.assignment = {
+          payload.assignment = {
             ...values.assignment,
             interviewerId: normalizedInterviewerId,
-            // Explicitly set time to null if it's null/undefined, otherwise use the value
             time: values.assignment.time ?? null,
             assignedAt: values.assignment.assignedAt,
           };
         }
       }
 
-      const { data: result, error } = await updateCandidate(updatedCandidate);
+      // Calculate latest modified attachments (for history tracking)
+      const latestModifiedAttachments = [
+        ...(resumeIsFile
+          ? [
+            {
+              id: uuidv4(),
+              name: values.resume?.name || '',
+              size: values.resume?.size || 0,
+            },
+          ]
+          : []),
+        ...newAttachmentFiles.map((file) => ({
+          id: uuidv4(),
+          name: file.name,
+          size: file.size,
+        })),
+      ];
+
+      // let result;
+      // let error;
+
+      // Step 1: Upload new files first to get URLs
+      if (hasFilesToUpload) {
+        const uploadFormData = new FormData();
+
+        if (resumeIsFile && values.resume instanceof File) {
+          uploadFormData.append('resume', values.resume);
+        }
+
+        newAttachmentFiles.forEach((file) => {
+          if (file instanceof File) {
+            uploadFormData.append('attachments', file);
+          }
+        });
+
+        try {
+          // Authenticated users don't need to pass organizationId - API uses their auth
+          const uploadResult = await uploadFiles({ formData: uploadFormData }).unwrap();
+
+          // Add uploaded resume URL to payload
+          if (uploadResult.files && uploadResult.files.length > 0 && resumeIsFile) {
+            [payload.resume] = uploadResult.files;
+            // Remaining files are attachments
+            if (uploadResult.files.length > 1) {
+              payload.attachments = [
+                ...existingAttachments,
+                ...uploadResult.files.slice(1),
+              ];
+            } else {
+              payload.attachments = existingAttachments;
+            }
+          } else if (newAttachmentFiles.length > 0 && uploadResult.files) {
+            // Only attachments were uploaded
+            payload.attachments = [
+              ...existingAttachments,
+              ...uploadResult.files,
+            ];
+          }
+        } catch (uploadError) {
+          toast({
+            title: 'File Upload Failed',
+            description:
+              uploadError instanceof Error
+                ? uploadError.message
+                : 'Failed to upload files. Please try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      }
+
+      // Step 2: Send candidate data as JSON (with URLs, not files)
+      const updateResult = await updateCandidate(payload);
+      const result = updateResult.data;
+      const { error } = updateResult;
+
       if (error) {
         toast({
           title: 'Error',
@@ -305,7 +346,7 @@ export function EditCandidateDialog({
         typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
 
       if (prevId !== newId) {
-      sentAssignmentMail(result, sendEmail);
+        sentAssignmentMail(result as Candidate, sendEmail);
       }
 
       const previousInterviewer =
@@ -328,13 +369,11 @@ export function EditCandidateDialog({
 
       let title;
       if (!previousInterviewer || previousInterviewer === '') {
-        title = `Assigned to ${nextInterviewer} : Assigned by ${
-          user ? user.name : 'No one'
-        }`;
+        title = `Assigned to ${nextInterviewer} : Assigned by ${user ? user.name : 'No one'
+          }`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
-          user ? user.name : 'No one'
-        }`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user ? user.name : 'No one'
+          }`;
       }
 
       title = null;
@@ -351,13 +390,19 @@ export function EditCandidateDialog({
           rating: 0,
           userId: null,
         },
-        attachments: latestModifiedAttachments || [],
+        attachments: latestModifiedAttachments.map((file) => ({
+          id: file.id,
+          name: file.name,
+          url: '',
+          type: '',
+          size: file.size,
+        })),
       };
 
       if (nextInterviewer && nextInterviewer !== '') {
         await updateCandidateHistory({
-          candidateId: updatedCandidate._id || '',
-          jobId: updatedCandidate?.jobId || null,
+          candidateId: candidate._id || '',
+          jobId: candidate?.jobId || null,
           newEntry: newHistoryEntry,
         }).unwrap();
       }
@@ -415,8 +460,8 @@ export function EditCandidateDialog({
     if (typeof candidate.assignment.interviewerId === 'string') {
       interviewerId =
         !candidate.assignment.interviewerId ||
-        candidate.assignment.interviewerId === '' ||
-        candidate.assignment.interviewerId === '-1'
+          candidate.assignment.interviewerId === '' ||
+          candidate.assignment.interviewerId === '-1'
           ? null
           : candidate.assignment.interviewerId;
     } else if (candidate.assignment.interviewerId?._id) {
@@ -433,11 +478,11 @@ export function EditCandidateDialog({
     assignment:
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
-            ...candidate.assignment,
-            interviewerId: interviewerId || null,
-            time: candidate.assignment.time,
-            assignedAt: candidate.assignment.assignedAt,
-          }
+          ...candidate.assignment,
+          interviewerId: interviewerId || null,
+          time: candidate.assignment.time,
+          assignedAt: candidate.assignment.assignedAt,
+        }
         : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
@@ -465,9 +510,8 @@ export function EditCandidateDialog({
         className={
           !isDesktop || isMaximized
             ? 'dialog-fullscreen-mode flex flex-col overflow-hidden'
-            : `dialog-modal-mode ${
-                candidate.resume ? 'xl-max-w-65vw' : 'xl-max-w-50vw'
-              } flex flex-col justify-between overflow-hidden`
+            : `dialog-modal-mode ${candidate.resume ? 'xl-max-w-65vw' : 'xl-max-w-50vw'
+            } flex flex-col justify-between overflow-hidden`
         }
       >
         <EditCandidateDialogHeader
@@ -515,7 +559,7 @@ export function EditCandidateDialog({
                       handleApply();
                     }}
                     disabled={isSubmitting}
-                    type={  Object.keys(errors).length === 0 ? 'button' : 'submit'}
+                    type={Object.keys(errors).length === 0 ? 'button' : 'submit'}
                     variant="primary"
                   >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}

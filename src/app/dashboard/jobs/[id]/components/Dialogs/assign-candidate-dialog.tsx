@@ -41,7 +41,7 @@ import {
   validationSchema,
   FormValues,
   AssignCandidateDialogProps,
-  type Attachment,
+  Attachment,
 } from '../../schemas/AssignCandidateSchema';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
@@ -243,7 +243,7 @@ export function AssignCandidateDialog({
         if (scheduleGoogle) {
           processedGoogleAttachments = await processAttachments(
             values.meetingAttachments || [],
-          );
+          ) as Attachment[];
 
           const isUpdatingGoogle = candidate.assignment?.googleMeet?.eventId;
 
@@ -275,7 +275,7 @@ export function AssignCandidateDialog({
         if (scheduleZoom) {
           processedZoomAttachments = await processAttachments(
             values.zoomMeetingAttachments || [],
-          );
+          ) as Attachment[];
 
           const isUpdatingZoom = candidate.assignment?.zoomMeet?.meetingId;
 

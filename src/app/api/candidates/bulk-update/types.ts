@@ -61,7 +61,9 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   zoomAdditionalGuests?: string[];
 }
 
-export interface BulkUnassignParams extends BulkUpdateBaseParams {}
+export interface BulkUnassignParams extends BulkUpdateBaseParams {
+  unassignerId: string;
+}
 
 export interface BulkArchiveParams extends BulkUpdateBaseParams {
   action: 'archive' | 'unarchive';
@@ -84,7 +86,9 @@ export interface BulkAddFollowUpParams extends BulkUpdateBaseParams {
   date?: string | null;
 }
 
-export interface BulkRemoveFollowUpParams extends BulkUpdateBaseParams {}
+export interface BulkRemoveFollowUpParams extends BulkUpdateBaseParams {
+  followUpId: string;
+}
 
 export interface BulkStatusUpdateParams extends BulkUpdateBaseParams {
   status: string;
@@ -108,8 +112,14 @@ export type BulkUpdateOperationParams =
   | ({ operation: 'moveJob' } & Omit<BulkMoveJobParams, 'candidateIds'>)
   | ({ operation: 'addRemark' } & Omit<BulkAddRemarkParams, 'candidateIds'>)
   | ({ operation: 'addFollowUp' } & Omit<BulkAddFollowUpParams, 'candidateIds'>)
-  | ({ operation: 'removeFollowUp' } & Omit<BulkRemoveFollowUpParams, 'candidateIds'>)
-  | ({ operation: 'statusUpdate' } & Omit<BulkStatusUpdateParams, 'candidateIds'>);
+  | ({ operation: 'removeFollowUp' } & Omit<
+      BulkRemoveFollowUpParams,
+      'candidateIds'
+    >)
+  | ({ operation: 'statusUpdate' } & Omit<
+      BulkStatusUpdateParams,
+      'candidateIds'
+    >);
 
 /** Request body supporting multiple operations */
 export interface BulkUpdateRequest {
@@ -119,13 +129,23 @@ export interface BulkUpdateRequest {
 
 /** Context passed to each bulk executor; models from connectToDatabase() */
 export interface BulkUpdateContext {
-  user: { id: string; name: string; email?: string; organizationId?: string; organizationInfo?: { name?: string } };
+  user: {
+    id: string;
+    name: string;
+    email?: string;
+    organizationId?: string;
+    organizationInfo?: { name?: string };
+  };
   dateTime: string;
   Candidate: import('mongoose').Model<ICandidate>;
   History: import('mongoose').Model<import('@/lib/models/history').IHistory>;
   Job: import('mongoose').Model<import('@/lib/models/job').IJob>;
   User: import('mongoose').Model<import('@/lib/models/user').IUser>;
-  DuplicateCandidate: import('mongoose').Model<import('@/lib/models/duplicateCandidates').IDuplicateCandidate> | null;
+  DuplicateCandidate:
+    | import('mongoose').Model<
+        import('@/lib/models/duplicateCandidates').IDuplicateCandidate
+      >
+    | null;
   /** Request headers for making authenticated internal API calls */
   requestHeaders?: Headers;
 }
@@ -167,9 +187,9 @@ export interface BulkUpdateResult {
   /** For unassign: used to send bulk unassign notifications */
   unassignNotificationMeta?: BulkUnassignNotificationMeta;
   /** For addRemark: used to send bulk remark notifications (mentioned users = separate per candidate; admin/hr = one bulk) */
-  addRemarkNotificationMeta?: BulkAddRemarkNotificationMeta;
+  addRemarkNotificationMeta?: unknown;
   /** For addFollowUp: used to send bulk follow-up notifications */
-  addFollowUpNotificationMeta?: BulkAddFollowUpNotificationMeta;
+  addFollowUpNotificationMeta?: unknown;
   /** For statusUpdate: used to send bulk status update notifications */
-  statusUpdateNotificationMeta?: BulkStatusUpdateNotificationMeta;
+  statusUpdateNotificationMeta?: unknown;
 }
