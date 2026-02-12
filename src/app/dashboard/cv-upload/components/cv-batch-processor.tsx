@@ -21,7 +21,14 @@ export type FileWithPreview = {
   preview?: string;
   error?: string;
   isZip?: boolean;
+  skipped?: boolean;
+  skipReason?: string;
 };
+
+// File size limits (same as backend)
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_ZIP_SIZE = 100 * 1024 * 1024; // 100MB
+const BATCH_SIZE = 20; // Process 20 files at a time
 
 export type ProcessedItem = {
   filename: string;
@@ -57,6 +64,12 @@ export function CVBatchProcessor() {
   const processingRef = useRef(false);
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    current: number;
+    total: number;
+    currentBatch: number;
+    totalBatches: number;
+  } | null>(null);
   const { toast } = useToast();
   const { user } = useAppSelector((state) => state.auth || {});
 
@@ -76,13 +89,41 @@ export function CVBatchProcessor() {
   }, [batches]);
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
-    const processedFiles = newFiles.map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      isZip: file.type === 'application/zip' || file.name.endsWith('.zip'),
-    }));
-    setFiles((prevFiles) => [...prevFiles, ...processedFiles]);
-  }, []);
+    const processedFiles: FileWithPreview[] = [];
+    const skippedFiles: FileWithPreview[] = [];
+
+    newFiles.forEach((file) => {
+      const isZip = file.type === 'application/zip' || file.name.endsWith('.zip');
+      const maxSize = isZip ? MAX_ZIP_SIZE : MAX_FILE_SIZE;
+      const sizeLabel = isZip ? '100MB' : '10MB';
+
+      if (file.size > maxSize) {
+        skippedFiles.push({
+          id: crypto.randomUUID(),
+          file,
+          isZip,
+          skipped: true,
+          skipReason: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${sizeLabel})`,
+        });
+      } else {
+        processedFiles.push({
+          id: crypto.randomUUID(),
+          file,
+          isZip,
+        });
+      }
+    });
+
+    if (skippedFiles.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Some Files Skipped',
+        description: `${skippedFiles.length} file(s) were skipped due to size limits. Maximum size: 10MB for PDFs, 100MB for ZIP files.`,
+      });
+    }
+
+    setFiles((prevFiles) => [...prevFiles, ...processedFiles, ...skippedFiles]);
+  }, [toast]);
 
   const handleRemoveFile = useCallback((id: string) => {
     setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
@@ -90,40 +131,104 @@ export function CVBatchProcessor() {
 
   const handleProcessBatch = async () => {
     if (files.length === 0 || processingRef.current) return;
+
+    // Filter out skipped files
+    const filesToProcess = files.filter((f) => !f.skipped);
+    if (filesToProcess.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Files to Process',
+        description: 'All files were skipped due to size limits.',
+      });
+      return;
+    }
+
     setIsPosting(true);
     processingRef.current = true;
 
     try {
-      const formData = new FormData();
-      files.forEach((file) => {
-        formData.append('file', file.file);
-      });
-
       const organizationId = (user?.organizationId as string) || '';
-      // eslint-disable-next-line no-shadow
-      const { data: batchResult, error } = await postBatch({
-        formData,
-        organizationId,
-      });
-      if (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Batch Not Processed',
-          description:
-            'data' in error && typeof error.data === 'object' && error.data
-              ? (error.data as ErrorResponse).error || 'Failed to process batch'
-              : 'Failed to process batch',
-        });
-        return;
+
+      // Split files into chunks for batch processing
+      const chunks: File[][] = [];
+      for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
+        chunks.push(filesToProcess.slice(i, i + BATCH_SIZE).map((f) => f.file));
       }
 
-      setCompletedBatches((prevBatches) => [batchResult, ...prevBatches]);
-      setFiles([]);
+      const totalBatches = chunks.length;
+      setUploadProgress({
+        current: 0,
+        total: filesToProcess.length,
+        currentBatch: 0,
+        totalBatches,
+      });
+
+      const allResults: Batch[] = [];
+      let processedCount = 0;
+
+      // Process each chunk sequentially
+      for (let i = 0; i < chunks.length; i += 1) {
+        const chunk = chunks[i];
+
+        setUploadProgress({
+          current: processedCount,
+          total: filesToProcess.length,
+          currentBatch: i + 1,
+          totalBatches,
+        });
+
+        const formData = new FormData();
+        chunk.forEach((file) => {
+          formData.append('file', file);
+        });
+
+        // eslint-disable-next-line no-await-in-loop
+        const { data: batchResult, error: batchError } = await postBatch({
+          formData,
+          organizationId,
+        });
+
+        if (batchError) {
+          toast({
+            variant: 'destructive',
+            title: `Batch ${i + 1} Failed`,
+            description:
+              'data' in batchError && typeof batchError.data === 'object' && batchError.data
+                ? (batchError.data as ErrorResponse).error || 'Failed to process batch'
+                : 'Failed to process batch',
+          });
+          // Continue with next batch even if one fails
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
+        if (batchResult) {
+          allResults.push(batchResult);
+          processedCount += chunk.length;
+        }
+      }
+
+      if (allResults.length > 0) {
+        setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
+        toast({
+          title: 'Processing Completed',
+          description: `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
+        });
+      }
+
+      // Remove processed files (keep skipped files for reference)
+      setFiles((prevFiles) => prevFiles.filter((f) => f.skipped));
     } catch (e) {
       logger.error(e instanceof Error ? e.message : 'Failed to process batch');
+      toast({
+        variant: 'destructive',
+        title: 'Processing Failed',
+        description: e instanceof Error ? e.message : 'Failed to process batch',
+      });
     } finally {
       processingRef.current = false;
       setIsPosting(false);
+      setUploadProgress(null);
     }
   };
 
@@ -134,15 +239,43 @@ export function CVBatchProcessor() {
       {files.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Current Batch</h2>
+            <div>
+              <h2 className="text-xl font-semibold">Current Batch</h2>
+              {uploadProgress && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Processing batch {uploadProgress.currentBatch} of {uploadProgress.totalBatches}
+                  ({uploadProgress.current} of {uploadProgress.total} files)
+                </p>
+              )}
+            </div>
             <Button
               onClick={handleProcessBatch}
               disabled={files.length === 0 || isPosting}
               variant="primary"
             >
-              {isPosting ? 'Processing...' : 'Process Batch'}
+              {
+                (() => {
+                  if (isPosting) {
+                    if (uploadProgress) {
+                      return `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`;
+                    }
+                    return 'Processing...';
+                  }
+                  return 'Process Batch';
+                })()
+              }
             </Button>
           </div>
+          {uploadProgress && (
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                }}
+              />
+            </div>
+          )}
           <FileList
             isProcessing={isPosting}
             files={files}

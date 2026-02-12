@@ -17,6 +17,10 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ISettings, IAIProviders } from '@/lib/models/settings';
 import logger from '@/lib/logger';
 
+// Maximum file size limit (10MB) to prevent body size limit errors
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+const MAX_ZIP_SIZE = MAX_FILE_SIZE * 10; // Allow ZIP files up to 100MB
+
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
   email?: string;
@@ -128,9 +132,13 @@ async function processResume(
   }
 }
 
-// Helper function to process ZIP entries recursively
-function processZipEntries(zip: AdmZip): File[] {
+// Helper function to process ZIP entries recursively with size filtering
+function processZipEntries(zip: AdmZip): {
+  files: File[];
+  skippedFiles: Array<{ filename: string; size: number; reason: string }>;
+} {
   const files: File[] = [];
+  const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
   const entries = zip.getEntries();
 
   for (const entry of entries) {
@@ -150,18 +158,52 @@ function processZipEntries(zip: AdmZip): File[] {
     }
     // Check if it's a PDF file
     else if (entry.entryName.toLowerCase().endsWith('.pdf')) {
-      const content = entry.getData();
-      // Extract just the filename from the full path
       const filename = entry.entryName.split('/').pop() || entry.entryName;
-      // const file = new File([content as BlobPart], filename, {
-      const file = new File([new Uint8Array(content)], filename, {
-        type: 'application/pdf',
-      });
-      files.push(file);
+      
+      // Get file size from header
+      // entry.header.size might be 0 for some entries, so we use it as fallback
+      const entrySize = entry.header.size || 0;
+
+      try {
+        // If we have size info and it's too large, skip before extraction
+        if (entrySize > 0 && entrySize > MAX_FILE_SIZE) {
+          skippedFiles.push({
+            filename,
+            size: entrySize,
+            reason: `File size (${(entrySize / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (10MB)`,
+          });
+          continue; // eslint-disable-line no-continue
+        }
+
+        // Extract file content
+        const content = entry.getData();
+        const actualSize = content.length;
+
+        // Double-check actual size after extraction (in case header size was 0 or incorrect)
+        if (actualSize > MAX_FILE_SIZE) {
+          skippedFiles.push({
+            filename,
+            size: actualSize,
+            reason: `File size (${(actualSize / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (10MB)`,
+          });
+          continue; // eslint-disable-line no-continue
+        }
+
+        const file = new File([new Uint8Array(content)], filename, {
+          type: 'application/pdf',
+        });
+        files.push(file);
+      } catch (error) {
+        skippedFiles.push({
+          filename,
+          size: entrySize || 0,
+          reason: `Failed to extract file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
     }
   }
 
-  return files;
+  return { files, skippedFiles };
 }
 
 export async function POST(request: NextRequest) {
@@ -180,9 +222,32 @@ export async function POST(request: NextRequest) {
       { status: 401 },
     );
   }
-  const formData = await request.formData();
+
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get('organizationId');
+  
+  // Check content type and parse FormData safely
+  const contentType = request.headers.get('content-type') || '';
+  let formData: FormData;
+  
+  try {
+    if (!contentType.includes('multipart/form-data')) {
+      return NextResponse.json(
+        { error: 'Request must be multipart/form-data' },
+        { status: 400 },
+      );
+    }
+    formData = await request.formData();
+  } catch (error) {
+    logger.error({ error, contentType }, 'Failed to parse FormData');
+    return NextResponse.json(
+      {
+        error: 'Failed to parse form data. Please ensure files are sent as multipart/form-data.',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 400 },
+    );
+  }
   if (!organizationId) {
     return NextResponse.json(
       { error: 'organizationId is required' },
@@ -192,6 +257,8 @@ export async function POST(request: NextRequest) {
   const cvBatchInfo = new CVBatch({
     organizationId,
     totalFiles: 0,
+    successCount: 0,
+    failureCount: 0,
     status: 'processing',
   });
 
@@ -269,6 +336,7 @@ export async function POST(request: NextRequest) {
     }
 
     const files: File[] = [];
+    const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
     const uploadedFiles = formData.getAll('file');
 
     if (uploadedFiles.length === 0) {
@@ -278,14 +346,45 @@ export async function POST(request: NextRequest) {
     for (const uploadedFile of uploadedFiles) {
       if (uploadedFile instanceof File) {
         if (uploadedFile.name.endsWith('.zip')) {
-          const arrayBuffer = await uploadedFile.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-          const zip = new AdmZip(buffer);
+          // Check ZIP file size
+          if (uploadedFile.size > MAX_ZIP_SIZE) {
+            skippedFiles.push({
+              filename: uploadedFile.name,
+              size: uploadedFile.size,
+              reason: `ZIP file size (${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (100MB)`,
+            });
+            // eslint-disable-next-line no-continue
+            continue;
+          }
 
-          // Use the new recursive function to process ZIP entries
-          const zipFiles = processZipEntries(zip);
-          files.push(...zipFiles);
+          try {
+            const arrayBuffer = await uploadedFile.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            const zip = new AdmZip(buffer);
+
+            // Process ZIP entries with size filtering
+            const { files: zipFiles, skippedFiles: zipSkippedFiles } =
+              processZipEntries(zip);
+            files.push(...zipFiles);
+            skippedFiles.push(...zipSkippedFiles);
+          } catch (error) {
+            skippedFiles.push({
+              filename: uploadedFile.name,
+              size: uploadedFile.size,
+              reason: `Failed to process ZIP file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            });
+          }
         } else if (uploadedFile.type === 'application/pdf') {
+          // Filter individual PDF files by size
+          if (uploadedFile.size > MAX_FILE_SIZE) {
+            skippedFiles.push({
+              filename: uploadedFile.name,
+              size: uploadedFile.size,
+              reason: `File size (${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (10MB)`,
+            });
+            // eslint-disable-next-line no-continue
+            continue;
+          }
           files.push(uploadedFile);
         } else {
           return NextResponse.json(
@@ -298,7 +397,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    cvBatchInfo.totalFiles = files.length;
+    // Update batch info with total files (including skipped files)
+    // Note: totalFiles should include all files (processed + skipped) for accurate reporting
+    const totalFilesIncludingSkipped = files.length + skippedFiles.length;
+    cvBatchInfo.totalFiles = totalFilesIncludingSkipped;
+    
+    // Add skipped files to batch items as 'failed' status (schema only supports 'success' or 'failed')
+    skippedFiles.forEach((skipped) => {
+      cvBatchInfo.items.push({
+        filename: skipped.filename,
+        status: 'failed',
+        error: skipped.reason,
+        processedAt: new Date(),
+      });
+      cvBatchInfo.failureCount += 1;
+    });
+
     await cvBatchInfo.save();
 
     const results: ProcessResult[] = [];
@@ -466,22 +580,44 @@ export async function POST(request: NextRequest) {
       batchId: cvBatchInfo._id,
       processed: results,
       errors,
+      skipped: skippedFiles,
+      summary: {
+        total: files.length + skippedFiles.length,
+        processed: results.length,
+        failed: errors.length,
+        skipped: skippedFiles.length,
+      },
     });
   } catch (error) {
     logger.error({ error, url: request.url }, 'Error processing CV batch');
     // If there's an error in the main process, update the batch if it exists
-    if (cvBatchInfo) {
-      cvBatchInfo.status = 'failed';
-      cvBatchInfo.completedAt = new Date();
-      await cvBatchInfo.save();
+    if (cvBatchInfo && cvBatchInfo._id) {
+      try {
+        cvBatchInfo.status = 'failed';
+        cvBatchInfo.completedAt = new Date();
+        await cvBatchInfo.save();
+      } catch (saveError) {
+        logger.error({ error: saveError }, 'Failed to save batch status on error');
+      }
     }
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'An unexpected error occurred';
+
+    logger.error(
+      { error: errorMessage, stack: error instanceof Error ? error.stack : undefined },
+      'CV batch processing failed',
+    );
 
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred',
+        error: errorMessage,
+        details:
+          process.env.NODE_ENV === 'development' && error instanceof Error
+            ? error.stack
+            : undefined,
       },
       { status: 500 },
     );

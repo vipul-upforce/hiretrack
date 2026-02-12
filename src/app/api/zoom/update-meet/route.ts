@@ -12,6 +12,10 @@ import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
 import { getZoomAccessToken } from '@/lib/zoom/zoomAuth';
+import {
+  getZoomInvitationRecipients,
+  sendZoomInvitationEmail,
+} from '@/app/api/zoom/invitationEmail';
 
 interface UpdateMeetRequest {
   candidateId?: string;
@@ -60,6 +64,69 @@ export async function PUT(req: NextRequest) {
         { error: 'Zoom meeting duration cannot exceed 40 minutes' },
         { status: 400 },
       );
+    }
+
+    let candidateName = '';
+    let candidateEmail = '';
+    let interviewerName = 'Interviewer';
+    let interviewerEmail = '';
+    let jobTitle = 'Position';
+    let jobIdForEmail = '';
+    let fallbackScheduledTime = '';
+    let existingGuestEmails: string[] = [];
+    let existingMeetingNotes = '';
+    let existingAttachments: Array<{ name: string; url: string }> = [];
+    let existingMeetingLink = '';
+
+    if (candidateId && Candidate) {
+      const candidate = (await Candidate.findById(candidateId)
+        .select(
+          'name email jobId assignment.time assignment.interviewerId assignment.zoomMeet',
+        )
+        .populate({
+          path: 'jobId',
+          select: '_id title',
+        })
+        .populate({
+          path: 'assignment.interviewerId',
+          select: '_id name email',
+        })
+        .lean()) as ICandidate | null;
+
+      if (candidate) {
+        candidateName = candidate.name || '';
+        candidateEmail = candidate.email || '';
+        if (candidate.assignment?.time) {
+          fallbackScheduledTime = new Date(
+            candidate.assignment.time,
+          ).toISOString();
+        }
+
+        const jobData = candidate.jobId;
+        if (jobData && typeof jobData !== 'string') {
+          if ('title' in jobData && jobData.title) jobTitle = jobData.title;
+          if ('_id' in jobData && jobData._id)
+            jobIdForEmail = String(jobData._id);
+        } else if (jobData) {
+          jobIdForEmail = String(jobData);
+        }
+
+        const interviewerData = candidate.assignment?.interviewerId;
+        if (interviewerData && typeof interviewerData !== 'string') {
+          interviewerName = interviewerData.name || interviewerName;
+          interviewerEmail = interviewerData.email || '';
+        }
+
+        existingGuestEmails = candidate.assignment?.zoomMeet?.guestEmails || [];
+        existingMeetingNotes =
+          candidate.assignment?.zoomMeet?.meetingNotes || '';
+        existingMeetingLink = candidate.assignment?.zoomMeet?.meetingLink || '';
+        existingAttachments = (
+          candidate.assignment?.zoomMeet?.meetingAttachments || []
+        )
+          .filter((item) => item?.name && item?.url)
+          .map((item) => ({ name: item.name, url: item.url }));
+      }
     }
 
     if (!Settings) {
@@ -310,9 +377,22 @@ export async function PUT(req: NextRequest) {
       logger.error({ error: fetchError }, 'Failed to fetch Zoom meeting info');
     }
 
+    const effectiveMeetingLink = meetingLink || existingMeetingLink;
+    const effectiveMeetingNotes =
+      meetingNotes !== undefined ? meetingNotes : existingMeetingNotes;
+    const effectiveMeetingAttachments =
+      uploadedAttachments.length > 0
+        ? uploadedAttachments
+        : existingAttachments;
+    const invitationRecipients = getZoomInvitationRecipients({
+      guests: guests && guests.length > 0 ? guests : existingGuestEmails,
+      candidateEmail,
+      interviewerEmail,
+    });
+
     if (candidateId && Candidate) {
       const updateFields: Record<string, unknown> = {
-        'assignment.zoomMeet.meetingLink': meetingLink,
+        'assignment.zoomMeet.meetingLink': effectiveMeetingLink,
         'assignment.zoomMeet.startUrl': startUrl,
         'assignment.zoomMeet.lastSyncedAt': new Date(),
       };
@@ -326,16 +406,50 @@ export async function PUT(req: NextRequest) {
         updateFields['assignment.zoomMeet.meetingAttachments'] =
           uploadedAttachments.length > 0 ? uploadedAttachments : [];
       if (htmlLink) updateFields['assignment.zoomMeet.htmlLink'] = htmlLink;
+      if (invitationRecipients.length > 0)
+        updateFields['assignment.zoomMeet.guestEmails'] = invitationRecipients;
 
       await Candidate.findByIdAndUpdate(candidateId, {
         $set: updateFields,
       });
     }
 
+    if (!settings?.googleCalendar?.isConnected) {
+      try {
+        await sendZoomInvitationEmail({
+          req,
+          organizationId,
+          action: 'updated',
+          candidateId,
+          candidateName,
+          candidateEmail,
+          interviewerName,
+          interviewerEmail,
+          guests: invitationRecipients,
+          scheduledTime: scheduledTime || fallbackScheduledTime,
+          duration: duration || 30,
+          meetingLink: effectiveMeetingLink,
+          meetingNotes: effectiveMeetingNotes,
+          attachments: effectiveMeetingAttachments,
+          jobTitle,
+          timeZoneOffset: `${settings.timeZone?.offset || ''} ${settings.timeZone?.name || ''}`,
+          sentById: userData.id || 'system',
+          sentByEmail: userData.email || '',
+          sentByName: userData.name || 'System',
+          jobId: jobIdForEmail,
+        });
+      } catch (invitationError) {
+        logger.error(
+          { error: invitationError, url: req.url },
+          'Failed to send Zoom update invitation fallback email',
+        );
+      }
+    }
+
     return NextResponse.json({
       success: true,
       meetingId,
-      meetingLink,
+      meetingLink: effectiveMeetingLink,
       startUrl,
       eventId: eventId || '',
       htmlLink,
@@ -373,6 +487,24 @@ export async function DELETE(req: NextRequest) {
     const candidateId = searchParams.get('candidateId');
     const eventId = searchParams.get('eventId');
     const cancelNotes = searchParams.get('cancelNotes') || '';
+    const guestsParam = searchParams.get('guests') || '';
+
+    let requestGuestEmails: string[] = [];
+    if (guestsParam) {
+      try {
+        const parsed = JSON.parse(guestsParam);
+        if (Array.isArray(parsed)) {
+          requestGuestEmails = parsed.filter(
+            (item): item is string => typeof item === 'string' && !!item,
+          );
+        }
+      } catch {
+        requestGuestEmails = guestsParam
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean);
+      }
+    }
 
     if (!meetingId) {
       return NextResponse.json(
@@ -388,7 +520,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const settings = await Settings.findOne({ organizationId })
-      .select('zoom googleCalendar timeZone.name')
+      .select('zoom googleCalendar timeZone.name timeZone.offset')
       .lean()
       .exec();
 
@@ -406,6 +538,79 @@ export async function DELETE(req: NextRequest) {
     const { accessToken } = await getZoomAccessToken({
       organizationId,
       zoomConfig: settings.zoom,
+    });
+
+    let candidateName = 'Candidate';
+    let candidateEmail = '';
+    let interviewerName = 'Interviewer';
+    let interviewerEmail = '';
+    let jobTitleForEmail = 'Position';
+    let jobIdForEmail = '';
+    let scheduledTimeForEmail = '';
+    let storedGuestEmails: string[] = [];
+    let storedMeetingLink = '';
+    let storedMeetingNotes = '';
+    let storedAttachments: Array<{ name: string; url: string }> = [];
+
+    if (candidateId && Candidate) {
+      const candidate = (await Candidate.findById(candidateId)
+        .select(
+          'name email jobId assignment.time assignment.interviewerId assignment.zoomMeet',
+        )
+        .populate({
+          path: 'jobId',
+          select: '_id title',
+        })
+        .populate({
+          path: 'assignment.interviewerId',
+          select: '_id name email',
+        })
+        .lean()) as ICandidate | null;
+
+      if (candidate) {
+        candidateName = candidate.name || candidateName;
+        candidateEmail = candidate.email || '';
+
+        if (candidate.assignment?.time) {
+          scheduledTimeForEmail = new Date(
+            candidate.assignment.time,
+          ).toISOString();
+        }
+
+        const jobData = candidate.jobId;
+        if (jobData && typeof jobData !== 'string') {
+          if ('title' in jobData && jobData.title) {
+            jobTitleForEmail = jobData.title;
+          }
+          if ('_id' in jobData && jobData._id) {
+            jobIdForEmail = String(jobData._id);
+          }
+        } else if (jobData) {
+          jobIdForEmail = String(jobData);
+        }
+
+        const interviewerData = candidate.assignment?.interviewerId;
+        if (interviewerData && typeof interviewerData !== 'string') {
+          interviewerName = interviewerData.name || interviewerName;
+          interviewerEmail = interviewerData.email || '';
+        }
+
+        storedGuestEmails = candidate.assignment?.zoomMeet?.guestEmails || [];
+        storedMeetingLink = candidate.assignment?.zoomMeet?.meetingLink || '';
+        storedMeetingNotes = candidate.assignment?.zoomMeet?.meetingNotes || '';
+        storedAttachments = (
+          candidate.assignment?.zoomMeet?.meetingAttachments || []
+        )
+          .filter((item) => item?.name && item?.url)
+          .map((item) => ({ name: item.name, url: item.url }));
+      }
+    }
+
+    const invitationRecipients = getZoomInvitationRecipients({
+      guests:
+        requestGuestEmails.length > 0 ? requestGuestEmails : storedGuestEmails,
+      candidateEmail,
+      interviewerEmail,
     });
 
     // Cancel Zoom meeting
@@ -478,6 +683,38 @@ export async function DELETE(req: NextRequest) {
           });
 
       await cancelEventPromise;
+    }
+
+    if (!settings?.googleCalendar?.isConnected) {
+      try {
+        await sendZoomInvitationEmail({
+          req,
+          organizationId,
+          action: 'cancelled',
+          candidateId: candidateId || undefined,
+          candidateName,
+          candidateEmail,
+          interviewerName,
+          interviewerEmail,
+          guests: invitationRecipients,
+          scheduledTime: scheduledTimeForEmail || undefined,
+          meetingLink: storedMeetingLink,
+          meetingNotes: storedMeetingNotes,
+          attachments: storedAttachments,
+          jobTitle: jobTitleForEmail,
+          cancelNotes,
+          timeZoneOffset: `${settings.timeZone?.offset || ''} ${settings.timeZone?.name || ''}`,
+          sentById: userData.id || 'system',
+          sentByEmail: userData.email || '',
+          sentByName: userData.name || 'System',
+          jobId: jobIdForEmail,
+        });
+      } catch (invitationError) {
+        logger.error(
+          { error: invitationError, url: req.url },
+          'Failed to send Zoom cancellation invitation fallback email',
+        );
+      }
     }
 
     const clearCandidatePromise =
@@ -579,7 +816,7 @@ export async function DELETE(req: NextRequest) {
             ? candidate.assignment.interviewerId._id.toString()
             : '';
 
-        const interviewerName =
+        const finalInterviewerName =
           candidate.assignment?.interviewerId &&
           typeof candidate.assignment.interviewerId !== 'string' &&
           candidate.assignment.interviewerId.name
@@ -593,7 +830,7 @@ export async function DELETE(req: NextRequest) {
           jobId,
           jobTitle,
           interviewerId,
-          interviewerName,
+          interviewerName: finalInterviewerName,
           triggerUserId: userData?.id || '',
           triggerUserName: userData?.name || 'System',
         });

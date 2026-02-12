@@ -11,6 +11,10 @@ import { getZoomAccessToken } from '@/lib/zoom/zoomAuth';
 import { sendUnifiedMail } from '@/lib/notifications/email/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { generateCalendarLinks } from '@/app/api/event-mail/calendarUtils';
+import {
+  getZoomInvitationRecipients,
+  sendZoomInvitationEmail,
+} from '@/app/api/zoom/invitationEmail';
 
 interface ScheduleMeetRequest {
   candidateId?: string;
@@ -256,6 +260,10 @@ Candidate: ${candidateName}`;
         settings.googleCalendar.clientSecret,
         organizationId,
       );
+      const accessTokenGoogle = decryptText(
+        settings.googleCalendar.accessToken,
+        organizationId,
+      );
 
       const refreshToken = decryptText(
         settings.googleCalendar.refreshToken,
@@ -269,7 +277,7 @@ Candidate: ${candidateName}`;
       });
 
       oauth2Client.setCredentials({
-        access_token: accessToken,
+        access_token: accessTokenGoogle,
         refresh_token: refreshToken,
         expiry_date: settings.googleCalendar.expiryDate,
       });
@@ -388,6 +396,43 @@ Candidate: ${candidateName}`;
           'Failed to send Zoom meeting email',
         );
       }
+
+      try {
+        const invitationRecipients = getZoomInvitationRecipients({
+          guests,
+          candidateEmail,
+          interviewerEmail,
+        });
+
+        await sendZoomInvitationEmail({
+          req,
+          organizationId,
+          action: 'scheduled',
+          candidateId,
+          candidateName,
+          candidateEmail,
+          interviewerName,
+          interviewerEmail,
+          guests: invitationRecipients,
+          scheduledTime,
+          duration: duration || 30,
+          meetingLink,
+          meetingNotes,
+          attachments: uploadedAttachments,
+          jobTitle,
+          organizationName,
+          timeZoneOffset: `${settings.timeZone?.offset || ''} ${settings.timeZone?.name || ''}`,
+          sentById: userData.id || 'system',
+          sentByEmail: userData.email || '',
+          sentByName: userData.name || 'System',
+          jobId: body.jobId,
+        });
+      } catch (invitationError) {
+        logger.error(
+          { error: invitationError, url: req.url },
+          'Failed to send Zoom invitation fallback email',
+        );
+      }
     }
 
     if (candidateId && Candidate) {
@@ -399,6 +444,11 @@ Candidate: ${candidateName}`;
         htmlLink: calendarHtmlLink,
         summary,
         description: calendarDescription,
+        guestEmails: getZoomInvitationRecipients({
+          guests,
+          candidateEmail,
+          interviewerEmail,
+        }),
         lastSyncedAt: new Date(),
       };
 

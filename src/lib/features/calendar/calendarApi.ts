@@ -66,6 +66,7 @@ export interface CancelZoomMeetingRequest {
   eventId?: string;
   candidateId: string;
   cancelNotes?: string;
+  guests?: string[];
 }
 
 export interface ScheduleTeamsMeetingRequest extends ScheduleMeetingRequest {
@@ -210,7 +211,7 @@ export const calendarApi = baseApi.injectEndpoints({
       invalidatesTags: ['Candidate'],
     }),
     cancelZoomMeeting: builder.mutation<void, CancelZoomMeetingRequest>({
-      query: ({ meetingId, candidateId, eventId, cancelNotes }) => ({
+      query: ({ meetingId, candidateId, eventId, cancelNotes, guests }) => ({
         url: '/zoom/update-meet',
         method: 'DELETE',
         params: {
@@ -218,6 +219,7 @@ export const calendarApi = baseApi.injectEndpoints({
           candidateId,
           eventId: eventId || '',
           cancelNotes: cancelNotes || '',
+          guests: guests && guests.length > 0 ? JSON.stringify(guests) : '',
         },
       }),
       invalidatesTags: ['Candidate'],

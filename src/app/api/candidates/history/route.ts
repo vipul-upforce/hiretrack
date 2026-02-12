@@ -329,25 +329,41 @@ export async function PUT(request: NextRequest) {
       normalizedJobId = null;
     }
 
-    if (data.newEntry.attachments) {
-      const newAttachments: Attachments = {
-        files: data.newEntry.attachments.filter(
-          (attachment: FileAttachment) => !attachment.type.startsWith('image/'),
-        ) as FileAttachment[],
-        images: data.newEntry.attachments.filter((attachment: FileAttachment) =>
-          attachment.type.startsWith('image/'),
-        ) as FileAttachment[],
-      };
-      const updatedFiles = await handleFileAttachments(
-        newAttachments,
-        fileStorage,
-        organizationId,
+    if (data.newEntry.attachments && Array.isArray(data.newEntry.attachments)) {
+      // Filter out invalid attachments and ensure type exists
+      const validAttachments = data.newEntry.attachments.filter(
+        (attachment: FileAttachment) =>
+          attachment &&
+          attachment.type &&
+          typeof attachment.type === 'string' &&
+          attachment.type.length > 0,
       );
 
-      data.newEntry.attachments = [
-        ...updatedFiles.files,
-        ...updatedFiles.images,
-      ];
+      if (validAttachments.length > 0) {
+        const newAttachments: Attachments = {
+          files: validAttachments.filter(
+            (attachment: FileAttachment) =>
+              attachment.type && !attachment.type.startsWith('image/'),
+          ) as FileAttachment[],
+          images: validAttachments.filter(
+            (attachment: FileAttachment) =>
+              attachment.type && attachment.type.startsWith('image/'),
+          ) as FileAttachment[],
+        };
+        const updatedFiles = await handleFileAttachments(
+          newAttachments,
+          fileStorage,
+          organizationId,
+        );
+
+        data.newEntry.attachments = [
+          ...updatedFiles.files,
+          ...updatedFiles.images,
+        ];
+      } else {
+        // If no valid attachments, set to empty array
+        data.newEntry.attachments = [];
+      }
     }
     if (data.newEntry.note && !data.newEntry.note.userId) {
       data.newEntry.note.userId = userData.id;

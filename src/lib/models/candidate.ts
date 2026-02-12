@@ -84,6 +84,7 @@ export interface ICandidate {
       htmlLink?: string;
       summary?: string;
       description?: string;
+      guestEmails?: string[];
       meetingNotes?: string;
       meetingAttachments?: Array<{
         id: string;
@@ -404,6 +405,10 @@ export const candidateSchema = new Schema(
           htmlLink: String,
           summary: String,
           description: String,
+          guestEmails: {
+            type: [String],
+            default: undefined,
+          },
           meetingNotes: String,
           meetingAttachments: {
             type: [

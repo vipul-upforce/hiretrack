@@ -170,10 +170,10 @@ export const candidateApi = baseApi.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: 'Candidate', id }],
     }),
     createCandidate: builder.mutation<Candidate, Partial<Candidate>>({
-      query: (newCandidate) => ({
+      query: (body) => ({
         url: '/candidates',
         method: 'POST',
-        body: { ...newCandidate, dateTime: new Date().toISOString() },
+        body: { ...body, dateTime: new Date().toISOString() },
       }),
       invalidatesTags: ['Candidate'],
     }),
@@ -186,10 +186,10 @@ export const candidateApi = baseApi.injectEndpoints({
       invalidatesTags: ['Candidate'],
     }),
     updateCandidate: builder.mutation<Candidate, Partial<Candidate>>({
-      query: (candidate) => ({
-        url: `/candidates/${candidate._id}`,
+      query: (body) => ({
+        url: `/candidates/${body._id}`,
         method: 'PUT',
-        body: { ...candidate, dateTime: new Date().toISOString() },
+        body: { ...body, dateTime: new Date().toISOString() },
       }),
       invalidatesTags: ['Candidate'],
     }),
@@ -464,6 +464,45 @@ export const candidateApi = baseApi.injectEndpoints({
       query: ({ id, email, organizationId }) =>
         `/candidates/${id}/duplicates?email=${email}&organizationId=${organizationId}`,
     }),
+
+    uploadFiles: builder.mutation<
+      {
+        success: boolean;
+        files: Array<{
+          id: string;
+          name: string;
+          url: string;
+          type: string;
+          size: number;
+        }>;
+        customFields?: Record<
+          string,
+          Array<{
+            id: string;
+            name: string;
+            url: string;
+            type: string;
+            size: number;
+          }>
+        >;
+      },
+      { formData: FormData; organizationId?: string; jobId?: string }
+    >({
+      query: ({ formData, organizationId, jobId }) => {
+        const params = new URLSearchParams();
+        if (organizationId) {
+          params.append('organizationId', organizationId);
+        } else if (jobId) {
+          params.append('jobId', jobId);
+        }
+        const queryString = params.toString();
+        return {
+          url: `/files/upload${queryString ? `?${queryString}` : ''}`,
+          method: 'POST',
+          body: formData,
+        };
+      },
+    }),
   }),
 });
 
@@ -499,4 +538,5 @@ export const {
   useSendEmailToCandidateMutation,
   useGenerateCandidatePdfMutation,
   useGetDuplicateCandidatesQuery,
+  useUploadFilesMutation,
 } = candidateApi;

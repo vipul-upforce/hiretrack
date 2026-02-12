@@ -63,6 +63,7 @@ export interface Assignment {
     htmlLink?: string;
     summary?: string;
     description?: string;
+    guestEmails?: string[];
     meetingAttachments?: Attachment[];
     meetingNotes?: string;
     lastSyncedAt?: Date;
