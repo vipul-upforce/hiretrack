@@ -148,7 +148,7 @@ export function CVBatchProcessor() {
 
     try {
       const organizationId = (user?.organizationId as string) || '';
-      
+
       // Split files into chunks for batch processing
       const chunks: File[][] = [];
       for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
@@ -169,7 +169,7 @@ export function CVBatchProcessor() {
       // Process each chunk sequentially
       for (let i = 0; i < chunks.length; i += 1) {
         const chunk = chunks[i];
-        
+
         setUploadProgress({
           current: processedCount,
           total: filesToProcess.length,
@@ -183,21 +183,22 @@ export function CVBatchProcessor() {
         });
 
         // eslint-disable-next-line no-await-in-loop
-        const { data: batchResult, error } = await postBatch({
+        const { data: batchResult, error: batchError } = await postBatch({
           formData,
           organizationId,
         });
 
-        if (error) {
+        if (batchError) {
           toast({
             variant: 'destructive',
             title: `Batch ${i + 1} Failed`,
             description:
-              'data' in error && typeof error.data === 'object' && error.data
-                ? (error.data as ErrorResponse).error || 'Failed to process batch'
+              'data' in batchError && typeof batchError.data === 'object' && batchError.data
+                ? (batchError.data as ErrorResponse).error || 'Failed to process batch'
                 : 'Failed to process batch',
           });
           // Continue with next batch even if one fails
+          // eslint-disable-next-line no-continue
           continue;
         }
 
@@ -242,7 +243,7 @@ export function CVBatchProcessor() {
               <h2 className="text-xl font-semibold">Current Batch</h2>
               {uploadProgress && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  Processing batch {uploadProgress.currentBatch} of {uploadProgress.totalBatches} 
+                  Processing batch {uploadProgress.currentBatch} of {uploadProgress.totalBatches}
                   ({uploadProgress.current} of {uploadProgress.total} files)
                 </p>
               )}
@@ -252,11 +253,17 @@ export function CVBatchProcessor() {
               disabled={files.length === 0 || isPosting}
               variant="primary"
             >
-              {isPosting
-                ? uploadProgress
-                  ? `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`
-                  : 'Processing...'
-                : 'Process Batch'}
+              {
+                (() => {
+                  if (isPosting) {
+                    if (uploadProgress) {
+                      return `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`;
+                    }
+                    return 'Processing...';
+                  }
+                  return 'Process Batch';
+                })()
+              }
             </Button>
           </div>
           {uploadProgress && (
