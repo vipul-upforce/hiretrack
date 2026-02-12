@@ -192,7 +192,7 @@ export function EditCandidateDialog({
       const hasFilesToUpload = resumeIsFile || newAttachmentFiles.length > 0;
 
       // Build payload with existing file URLs (keep existing files as-is)
-      let payload: Partial<Candidate> = {
+      const payload: Partial<Candidate> = {
         ...values,
         _id: candidate._id, // Explicitly include _id for FormData submission
         email: values.email,
@@ -205,17 +205,22 @@ export function EditCandidateDialog({
         noticePeriod: Number(
           parseFloat(String(values.noticePeriod)).toFixed(0),
         ),
-        resume: resumeIsFile
-          ? undefined // New file will be sent in FormData
-          : values.resume
-            ? {
-                id: values.resume.id || uuidv4(),
-                name: values.resume.name || '',
-                url: values.resume.url,
-                type: values.resume.type || 'pdf',
-                size: values.resume.size || 0,
-              }
-            : undefined,
+        resume: (() => {
+          if (resumeIsFile) {
+            // New file will be sent in FormData
+            return undefined;
+          }
+          if (values.resume) {
+            return {
+              id: values.resume.id || uuidv4(),
+              name: values.resume.name || '',
+              url: values.resume.url,
+              type: values.resume.type || 'pdf',
+              size: values.resume.size || 0,
+            };
+          }
+          return undefined;
+        })(),
         attachments: existingAttachments, // Only existing attachments in payload
       };
 
@@ -246,12 +251,12 @@ export function EditCandidateDialog({
       const latestModifiedAttachments = [
         ...(resumeIsFile
           ? [
-              {
-                id: uuidv4(),
-                name: values.resume.name,
-                size: values.resume.size,
-              },
-            ]
+            {
+              id: uuidv4(),
+              name: values.resume?.name || '',
+              size: values.resume?.size || 0,
+            },
+          ]
           : []),
         ...newAttachmentFiles.map((file) => ({
           id: uuidv4(),
@@ -260,8 +265,8 @@ export function EditCandidateDialog({
         })),
       ];
 
-      let result;
-      let error;
+      // let result;
+      // let error;
 
       // Step 1: Upload new files first to get URLs
       if (hasFilesToUpload) {
@@ -280,10 +285,10 @@ export function EditCandidateDialog({
         try {
           // Authenticated users don't need to pass organizationId - API uses their auth
           const uploadResult = await uploadFiles({ formData: uploadFormData }).unwrap();
-          
+
           // Add uploaded resume URL to payload
           if (uploadResult.files && uploadResult.files.length > 0 && resumeIsFile) {
-            payload.resume = uploadResult.files[0];
+            [payload.resume] = uploadResult.files;
             // Remaining files are attachments
             if (uploadResult.files.length > 1) {
               payload.attachments = [
@@ -315,8 +320,8 @@ export function EditCandidateDialog({
 
       // Step 2: Send candidate data as JSON (with URLs, not files)
       const updateResult = await updateCandidate(payload);
-      result = updateResult.data;
-      error = updateResult.error;
+      const result = updateResult.data;
+      const { error } = updateResult;
 
       if (error) {
         toast({
@@ -341,7 +346,7 @@ export function EditCandidateDialog({
         typeof newAssignment === 'object' ? newAssignment?._id : newAssignment;
 
       if (prevId !== newId) {
-      sentAssignmentMail(result, sendEmail);
+        sentAssignmentMail(result as Candidate, sendEmail);
       }
 
       const previousInterviewer =
@@ -364,13 +369,11 @@ export function EditCandidateDialog({
 
       let title;
       if (!previousInterviewer || previousInterviewer === '') {
-        title = `Assigned to ${nextInterviewer} : Assigned by ${
-          user ? user.name : 'No one'
-        }`;
+        title = `Assigned to ${nextInterviewer} : Assigned by ${user ? user.name : 'No one'
+          }`;
       } else {
-        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${
-          user ? user.name : 'No one'
-        }`;
+        title = `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user ? user.name : 'No one'
+          }`;
       }
 
       title = null;
@@ -387,7 +390,13 @@ export function EditCandidateDialog({
           rating: 0,
           userId: null,
         },
-        attachments: latestModifiedAttachments || [],
+        attachments: latestModifiedAttachments.map((file) => ({
+          id: file.id,
+          name: file.name,
+          url: '',
+          type: '',
+          size: file.size,
+        })),
       };
 
       if (nextInterviewer && nextInterviewer !== '') {
@@ -451,8 +460,8 @@ export function EditCandidateDialog({
     if (typeof candidate.assignment.interviewerId === 'string') {
       interviewerId =
         !candidate.assignment.interviewerId ||
-        candidate.assignment.interviewerId === '' ||
-        candidate.assignment.interviewerId === '-1'
+          candidate.assignment.interviewerId === '' ||
+          candidate.assignment.interviewerId === '-1'
           ? null
           : candidate.assignment.interviewerId;
     } else if (candidate.assignment.interviewerId?._id) {
@@ -469,11 +478,11 @@ export function EditCandidateDialog({
     assignment:
       candidate.assignment && Object.keys(candidate.assignment).length > 1
         ? {
-            ...candidate.assignment,
-            interviewerId: interviewerId || null,
-            time: candidate.assignment.time,
-            assignedAt: candidate.assignment.assignedAt,
-          }
+          ...candidate.assignment,
+          interviewerId: interviewerId || null,
+          time: candidate.assignment.time,
+          assignedAt: candidate.assignment.assignedAt,
+        }
         : null,
     customFields: getDefaultValues(candidate.customFields || {}),
   };
@@ -501,9 +510,8 @@ export function EditCandidateDialog({
         className={
           !isDesktop || isMaximized
             ? 'dialog-fullscreen-mode flex flex-col overflow-hidden'
-            : `dialog-modal-mode ${
-                candidate.resume ? 'xl-max-w-65vw' : 'xl-max-w-50vw'
-              } flex flex-col justify-between overflow-hidden`
+            : `dialog-modal-mode ${candidate.resume ? 'xl-max-w-65vw' : 'xl-max-w-50vw'
+            } flex flex-col justify-between overflow-hidden`
         }
       >
         <EditCandidateDialogHeader
@@ -551,7 +559,7 @@ export function EditCandidateDialog({
                       handleApply();
                     }}
                     disabled={isSubmitting}
-                    type={  Object.keys(errors).length === 0 ? 'button' : 'submit'}
+                    type={Object.keys(errors).length === 0 ? 'button' : 'submit'}
                     variant="primary"
                   >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}

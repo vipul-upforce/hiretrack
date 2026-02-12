@@ -16,7 +16,6 @@ export async function runBulkAddRemark(
   const { candidateIds, description, isPrivate = false, rating = 0 } = params;
   const { user, dateTime, Candidate, History } = ctx;
   const toBroadcast: ICandidate[] = [];
-  const failedCount = 0;
 
   const candidates = await Candidate.find({
     _id: { $in: candidateIds },
@@ -76,7 +75,11 @@ export async function runBulkAddRemark(
             description,
             date: dateTime,
             rating,
-            userId: user.id as unknown as ICandidateHistory['remark'],
+            userId: {
+              _id: user.id,
+              name: user.name,
+              email: user.email ?? '',
+            },
           },
           note: { description: '', date: '', rating: 0, userId: null },
           attachments: [],

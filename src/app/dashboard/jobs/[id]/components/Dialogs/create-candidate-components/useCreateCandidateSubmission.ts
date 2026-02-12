@@ -11,7 +11,7 @@ import {
   useUpdateCandidateHistoryMutation,
   useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
 import { Resume } from '@/lib/redux/types';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
@@ -142,7 +142,7 @@ export function useCreateCandidateSubmission({
 
       // Extract assignment, assignee, and time from values to avoid spreading empty objects
       // DO NOT include resume or attachments in candidateData - they go in FormData as binary files
-      const { assignment, assignee, time, resume, attachments, ...restValues } = values;
+      const { assignment, assignee, time, ...restValues } = values;
 
       const candidateData: Record<string, unknown> = {
         ...restValues,
@@ -197,9 +197,30 @@ export function useCreateCandidateSubmission({
       setIsCreating(true);
 
       // Step 1: Upload files first to get URLs
-      let resumeUrl: { id: string; name: string; url: string; type: string; size: number } | null = null;
-      let attachmentUrls: Array<{ id: string; name: string; url: string; type: string; size: number }> = [];
-      let customFieldUrls: Record<string, Array<{ id: string; name: string; url: string; type: string; size: number }>> = {};
+      let resumeUrl: {
+        id: string;
+        name: string;
+        url: string;
+        type: string;
+        size: number;
+      } | null = null;
+      let attachmentUrls: Array<{
+        id: string;
+        name: string;
+        url: string;
+        type: string;
+        size: number;
+      }> = [];
+      let customFieldUrls: Record<
+        string,
+        Array<{
+          id: string;
+          name: string;
+          url: string;
+          type: string;
+          size: number;
+        }>
+      > = {};
 
       const hasFilesToUpload =
         (values.resume && values.resume instanceof File) ||
@@ -230,24 +251,31 @@ export function useCreateCandidateSubmission({
 
         // Add custom field files
         if (values.customFields) {
-          Object.entries(values.customFields).forEach(([fieldKey, fieldValue]) => {
-            if (Array.isArray(fieldValue)) {
-              fieldValue.forEach((item, index) => {
-                if (item instanceof File) {
-                  uploadFormData.append(`customField_${fieldKey}_${index}`, item);
-                }
-              });
-            }
-          });
+          Object.entries(values.customFields).forEach(
+            ([fieldKey, fieldValue]) => {
+              if (Array.isArray(fieldValue)) {
+                fieldValue.forEach((item, index) => {
+                  if (item instanceof File) {
+                    uploadFormData.append(
+                      `customField_${fieldKey}_${index}`,
+                      item,
+                    );
+                  }
+                });
+              }
+            },
+          );
         }
 
         try {
           // Authenticated users don't need to pass organizationId - API uses their auth
-          const uploadResult = await uploadFiles({ formData: uploadFormData }).unwrap();
+          const uploadResult = await uploadFiles({
+            formData: uploadFormData,
+          }).unwrap();
           if (uploadResult.files && uploadResult.files.length > 0) {
             // First file is resume if present, rest are attachments
             if (values.resume && values.resume instanceof File) {
-              resumeUrl = uploadResult.files[0];
+              [resumeUrl] = uploadResult.files;
               attachmentUrls = uploadResult.files.slice(1);
             } else {
               attachmentUrls = uploadResult.files;
@@ -281,7 +309,8 @@ export function useCreateCandidateSubmission({
       }
       if (Object.keys(customFieldUrls).length > 0) {
         // Merge custom field URLs with existing custom field values
-        const existingCustomFields = candidateData.customFields as Record<string, unknown> || {};
+        const existingCustomFields =
+          (candidateData.customFields as Record<string, unknown>) || {};
         Object.entries(customFieldUrls).forEach(([fieldKey, files]) => {
           const existingField = existingCustomFields[fieldKey];
           if (Array.isArray(existingField)) {
@@ -298,7 +327,9 @@ export function useCreateCandidateSubmission({
       }
 
       // Step 3: Send candidate data as JSON (with URLs, not files)
-      const createdCandidate = await createCandidate(candidateData as Partial<typeof candidateData>).unwrap();
+      const createdCandidate = await createCandidate(
+        candidateData as Partial<typeof candidateData>,
+      ).unwrap();
       const candidateId = createdCandidate._id;
 
       // Always attempt evaluation if resume is PDF
@@ -411,6 +442,11 @@ export function useCreateCandidateSubmission({
     submitCandidate,
     isCreating,
     isFormSubmitting,
-    isLoading: isAdding || isEvaluating || isSendingEmail || isLoading || isUploadingFiles,
+    isLoading:
+      isAdding ||
+      isEvaluating ||
+      isSendingEmail ||
+      isLoading ||
+      isUploadingFiles,
   };
 }

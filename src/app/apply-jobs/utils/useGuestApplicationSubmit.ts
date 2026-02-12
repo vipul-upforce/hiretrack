@@ -9,7 +9,7 @@ import {
 } from '@/lib/features/candidate/candidateApi';
 import { Resume } from '@/lib/redux/types';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
-import { v4 as uuidv4 } from 'uuid';
+import { Candidate } from '@/types/candidate';
 import {
   storeGuestApplication,
   hasAppliedAsGuest,
@@ -77,8 +77,20 @@ export const useGuestApplicationSubmit = (
 
     try {
       // Step 1: Upload files first to get URLs
-      let resumeUrl: { id: string; name: string; url: string; type: string; size: number } | null = null;
-      let attachmentUrls: Array<{ id: string; name: string; url: string; type: string; size: number }> = [];
+      let resumeUrl: {
+        id: string;
+        name: string;
+        url: string;
+        type: string;
+        size: number;
+      } | null = null;
+      let attachmentUrls: Array<{
+        id: string;
+        name: string;
+        url: string;
+        type: string;
+        size: number;
+      }> = [];
 
       const hasFilesToUpload =
         (values.resume && values.resume instanceof File) ||
@@ -101,11 +113,14 @@ export const useGuestApplicationSubmit = (
 
         try {
           // Pass jobId for public access (guest applications don't have cookies/auth)
-          const uploadResult = await uploadFiles({ formData: uploadFormData, jobId }).unwrap();
+          const uploadResult = await uploadFiles({
+            formData: uploadFormData,
+            jobId,
+          }).unwrap();
           if (uploadResult.files && uploadResult.files.length > 0) {
             // First file is resume if present, rest are attachments
             if (values.resume && values.resume instanceof File) {
-              resumeUrl = uploadResult.files[0];
+              [resumeUrl] = uploadResult.files;
               attachmentUrls = uploadResult.files.slice(1);
             } else {
               attachmentUrls = uploadResult.files;
@@ -127,8 +142,8 @@ export const useGuestApplicationSubmit = (
       }
 
       // Step 2: Build candidate data with file URLs (not File objects)
-      const { resume, attachments, ...restValues } = values;
-      
+      const { ...restValues } = values;
+
       const candidateData = {
         ...restValues,
         jobId: {
@@ -160,8 +175,9 @@ export const useGuestApplicationSubmit = (
       };
 
       // Step 3: Send candidate data as JSON (with URLs, not files)
-      const createdCandidate =
-        await createGuestCandidate(candidateData).unwrap();
+      const createdCandidate = await createGuestCandidate(
+        candidateData as Partial<Candidate>,
+      ).unwrap();
       const candidateId = createdCandidate._id;
 
       storeGuestApplication(jobId, candidateId);

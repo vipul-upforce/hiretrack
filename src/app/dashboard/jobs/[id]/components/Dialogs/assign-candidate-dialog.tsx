@@ -39,6 +39,7 @@ import {
   validationSchema,
   FormValues,
   AssignCandidateDialogProps,
+  Attachment,
 } from '../../schemas/AssignCandidateSchema';
 import { InterviewerSelector } from './assign-candidate-components/InterviewerSelector';
 import { DateTimePickerSection } from './assign-candidate-components/DateTimePickerSection';
@@ -214,66 +215,66 @@ export function AssignCandidateDialog({
         if (scheduleGoogle) {
           processedGoogleAttachments = await processAttachments(
             values.meetingAttachments || [],
-          );
+          ) as Attachment[];
 
           const isUpdatingGoogle = candidate.assignment?.googleMeet?.eventId;
 
           googleResult = isUpdatingGoogle
             ? await updateMeeting({
-                eventId: candidate.assignment?.googleMeet?.eventId || '',
-                candidateId: candidate._id,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.meetDuration || 30,
-                guests: googleGuests,
-              }).unwrap()
+              eventId: candidate.assignment?.googleMeet?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString() || '',
+              duration: values.meetDuration || 30,
+              guests: googleGuests,
+            }).unwrap()
             : await scheduleMeeting({
-                candidateId: candidate._id,
-                candidateName: candidate.name,
-                candidateEmail: candidate.email,
-                interviewerId: selectedInterviewer._id,
-                interviewerName: selectedInterviewer.name,
-                interviewerEmail: selectedInterviewer.email,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.meetDuration || 30,
-                guests: googleGuests,
-                jobTitle: candidate.jobId?.title || 'Position',
-                organizationName: user?.organizationInfo?.name || 'Company',
-                meetingNotes: values.meetingNotes || '',
-                meetingAttachments: processedGoogleAttachments,
-              }).unwrap();
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time?.toISOString() || '',
+              duration: values.meetDuration || 30,
+              guests: googleGuests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.meetingNotes || '',
+              meetingAttachments: processedGoogleAttachments,
+            }).unwrap();
         }
 
         if (scheduleZoom) {
           processedZoomAttachments = await processAttachments(
             values.zoomMeetingAttachments || [],
-          );
+          ) as Attachment[];
 
           const isUpdatingZoom = candidate.assignment?.zoomMeet?.meetingId;
 
           zoomResult = isUpdatingZoom
             ? await updateZoomMeeting({
-                meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
-                eventId: candidate.assignment?.zoomMeet?.eventId || '',
-                candidateId: candidate._id,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.zoomMeetDuration || 30,
-                guests: zoomGuests,
-              }).unwrap()
+              meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
+              eventId: candidate.assignment?.zoomMeet?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString() || '',
+              duration: values.zoomMeetDuration || 30,
+              guests: zoomGuests,
+            }).unwrap()
             : await scheduleZoomMeeting({
-                candidateId: candidate._id,
-                candidateName: candidate.name,
-                candidateEmail: candidate.email,
-                interviewerId: selectedInterviewer._id,
-                interviewerName: selectedInterviewer.name,
-                interviewerEmail: selectedInterviewer.email,
-                scheduledTime: values.time?.toISOString(),
-                duration: values.zoomMeetDuration || 30,
-                guests: zoomGuests,
-                jobTitle: candidate.jobId?.title || 'Position',
-                organizationName: user?.organizationInfo?.name || 'Company',
-                meetingNotes: values.zoomMeetingNotes || '',
-                meetingAttachments: processedZoomAttachments,
-              }).unwrap();
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time?.toISOString() || '',
+              duration: values.zoomMeetDuration || 30,
+              guests: zoomGuests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.zoomMeetingNotes || '',
+              meetingAttachments: processedZoomAttachments,
+            }).unwrap();
         }
 
         const remarkParts = [values.remark];
@@ -329,11 +330,15 @@ export function AssignCandidateDialog({
 
         toast({
           title: 'Success',
-          description: scheduleGoogle && scheduleZoom
-            ? 'Google Meet and Zoom scheduled'
-            : scheduleGoogle
-              ? 'Google Meet scheduled and candidate assigned'
-              : 'Zoom meeting scheduled and candidate assigned',
+          description: (() => {
+            if (scheduleGoogle && scheduleZoom) {
+              return 'Google Meet and Zoom scheduled';
+            }
+            if (scheduleGoogle) {
+              return 'Google Meet scheduled and candidate assigned';
+            }
+            return 'Zoom meeting scheduled and candidate assigned';
+          })(),
         });
       } catch (error) {
         logger.error('Meeting scheduling error:', error);
@@ -421,14 +426,13 @@ export function AssignCandidateDialog({
               return (
                 <Form className="flex h-full flex-1 flex-col overflow-hidden">
                   <div
-                    className={`flex-1 space-y-6 px-6 py-4 ${
-                      !candidate.assignment?.googleMeet?.eventId &&
-                      !values.scheduleGoogleMeet &&
-                      !candidate.assignment?.zoomMeet?.meetingId &&
-                      !values.scheduleZoomMeet
+                    className={`flex-1 space-y-6 px-6 py-4 ${!candidate.assignment?.googleMeet?.eventId &&
+                        !values.scheduleGoogleMeet &&
+                        !candidate.assignment?.zoomMeet?.meetingId &&
+                        !values.scheduleZoomMeet
                         ? ''
                         : 'overflow-y-auto'
-                    }`}
+                      }`}
                   >
                     <div className="grid gap-4 py-4">
                       <InterviewerSelector interviewers={interviewers} />

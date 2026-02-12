@@ -15,7 +15,6 @@ export async function runBulkAddFollowUp(
   const { candidateIds, note, date } = params;
   const { user, dateTime, Candidate, History } = ctx;
   const toBroadcast: ICandidate[] = [];
-  const failedCount = 0;
 
   const candidates = await Candidate.find({
     _id: { $in: candidateIds },
