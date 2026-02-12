@@ -15,13 +15,13 @@ export function useZoomLogic() {
 
   const { data, isLoading, refetch } = useGetZoomConfigQuery(undefined);
 
-  const [updateZoom, { isLoading: isUpdating }] =
-    useUpdateZoomConfigMutation();
+  const [updateZoom, { isLoading: isUpdating }] = useUpdateZoomConfigMutation();
   const [disconnectZoom, { isLoading: isDisconnecting }] =
     useDisconnectZoomMutation();
   const [testConnection, { isLoading: isTestingConnection }] =
     useTestZoomConnectionMutation();
 
+  const [showConfetti, setShowConfetti] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [formData, setFormData] = useState<CredentialsFormData>({
     accountId: '',
@@ -47,6 +47,7 @@ export function useZoomLogic() {
         clientSecret: formData.clientSecret,
       }).unwrap();
 
+      setShowConfetti(true);
       toast({
         title: 'Success',
         description: 'Zoom credentials saved successfully',
@@ -94,10 +95,10 @@ export function useZoomLogic() {
       });
 
       if (connectionData.success) {
+        setShowConfetti(true);
         toast({
           title: 'Connection Test Passed',
-          description:
-            connectionData.message || 'Zoom connection is working',
+          description: connectionData.message || 'Zoom connection is working',
         });
       } else {
         toast({
@@ -165,6 +166,8 @@ export function useZoomLogic() {
     isUpdating,
     isDisconnecting,
     isTestingConnection,
+    showConfetti,
+    setShowConfetti,
     testResult,
     formData,
     data,
