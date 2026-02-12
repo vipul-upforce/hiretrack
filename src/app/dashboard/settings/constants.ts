@@ -204,7 +204,10 @@ export const settingGroups: SettingGroup[] = [
 
 const allSettings = settingGroups.flatMap((group) => group.settings);
 
-export const settingsByKey = [...allSettings, ...communicationLegacySettings].reduce(
+export const settingsByKey = [
+  ...allSettings,
+  ...communicationLegacySettings,
+].reduce(
   (acc, setting) => {
     acc[setting.key] = setting;
     return acc;

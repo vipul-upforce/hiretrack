@@ -33,7 +33,7 @@ export default function ZoomSettings({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-6">
-      <SetupInstructions />
+      <SetupInstructions isConnected={isConnected} />
 
       {isLoading ? (
         <SettingsSkeleton />

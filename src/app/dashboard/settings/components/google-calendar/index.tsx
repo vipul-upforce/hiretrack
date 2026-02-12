@@ -50,7 +50,7 @@ export default function GoogleCalendarSettings({
       {showConfetti && <Confetti width={width} height={height} />}
 
       <div className="space-y-6">
-        <SetupInstructions />
+        <SetupInstructions isConnected={isConnected} />
 
         {isLoading ? (
           <SettingsSkeleton />
