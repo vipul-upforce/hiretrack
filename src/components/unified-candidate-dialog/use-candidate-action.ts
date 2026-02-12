@@ -28,6 +28,7 @@ import {
   useScheduleTeamsMeetingMutation,
   useUpdateTeamsMeetingMutation,
   useCancelTeamsMeetingMutation,
+  MeetingAttachment,
 } from '@/lib/features/calendar/calendarApi';
 import {
   useGetGoogleCalendarConfigQuery,
@@ -46,6 +47,7 @@ import {
   getJobId,
   getJobTitle,
 } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
+import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
 import {
   UnifiedFormValues,
   CandidateActionType,
@@ -377,7 +379,8 @@ export function useCandidateActions({
               jobTitle: candidate.jobId?.title || 'Position',
               organizationName: user?.organizationInfo?.name || 'Company',
               meetingNotes: values.meetingNotes || '',
-              meetingAttachments: processedMeetingAttachments,
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap();
 
         googleMeetData = {
@@ -387,7 +390,8 @@ export function useCandidateActions({
           summary: result.summary,
           description: result.description,
           meetingNotes: values.meetingNotes,
-          meetingAttachments: processedMeetingAttachments,
+          meetingAttachments:
+            processedMeetingAttachments as unknown as Attachment[],
         };
       }
 
@@ -431,7 +435,8 @@ export function useCandidateActions({
               jobTitle: candidate.jobId?.title || 'Position',
               organizationName: user?.organizationInfo?.name || 'Company',
               meetingNotes: values.zoomMeetingNotes || '',
-              meetingAttachments: processedMeetingAttachments,
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap();
 
         zoomMeetData = {
@@ -443,7 +448,8 @@ export function useCandidateActions({
           summary: result.summary,
           description: result.description,
           meetingNotes: values.zoomMeetingNotes,
-          meetingAttachments: processedMeetingAttachments,
+          meetingAttachments:
+            processedMeetingAttachments as unknown as Attachment[],
         };
       }
 
@@ -499,7 +505,8 @@ export function useCandidateActions({
           summary: result.summary,
           description: result.description,
           meetingNotes: values.teamsMeetingNotes,
-          meetingAttachments: processedMeetingAttachments,
+          meetingAttachments:
+            processedMeetingAttachments as unknown as Attachment[],
         };
       }
     }
@@ -548,9 +555,7 @@ export function useCandidateActions({
       );
     }
     if (scheduleZoom && zoomMeetData?.meetingLink) {
-      meetingLinkLines.push(
-        `Zoom meeting link: ${zoomMeetData.meetingLink}`,
-      );
+      meetingLinkLines.push(`Zoom meeting link: ${zoomMeetData.meetingLink}`);
     }
     if (scheduleTeams && teamsMeetData?.meetingLink) {
       meetingLinkLines.push(
@@ -583,18 +588,17 @@ export function useCandidateActions({
       previousInterviewer: previousInterviewerId,
       assignmentBy: user.id,
       title,
-      note:
-        assignmentRemark
-          ? {
-              ...assignmentRemark,
-              description: noteDescription,
-            }
-          : ({
-              description: noteDescription,
-              date: '',
-              rating: 0,
-              userId: null,
-            } as ICandidateHistory['note']),
+      note: assignmentRemark
+        ? {
+            ...assignmentRemark,
+            description: noteDescription,
+          }
+        : ({
+            description: noteDescription,
+            date: '',
+            rating: 0,
+            userId: null,
+          } as ICandidateHistory['note']),
       attachments: values.attachments,
     });
   };
@@ -1111,11 +1115,27 @@ export function useCandidateActions({
 
       if (cancelMeetingProvider === 'zoom') {
         if (!candidate.assignment?.zoomMeet?.meetingId) return;
+        const interviewerEmail =
+          candidate.assignment?.interviewerId &&
+          typeof candidate.assignment.interviewerId !== 'string'
+            ? candidate.assignment.interviewerId.email || ''
+            : '';
+        const guests = Array.from(
+          new Set(
+            [
+              ...(candidate.assignment.zoomMeet.guestEmails || []),
+              candidate.email || '',
+              interviewerEmail,
+            ].filter(Boolean),
+          ),
+        );
+
         await cancelZoomMeeting({
           meetingId: candidate.assignment.zoomMeet.meetingId,
           eventId: candidate.assignment.zoomMeet.eventId || '',
           candidateId: candidate._id,
           cancelNotes,
+          guests,
         }).unwrap();
         toast({
           title: 'Success',
@@ -1149,12 +1169,13 @@ export function useCandidateActions({
   };
 
   const showCancelMeetDialog = cancelMeetingProvider !== null;
-  const isCancellingActive =
-    cancelMeetingProvider === 'zoom'
-      ? isCancellingZoom
-      : cancelMeetingProvider === 'teams'
-        ? isCancellingTeams
-        : isCancelling;
+  const getIsCancellingActive = () => {
+    if (cancelMeetingProvider === 'zoom') return isCancellingZoom;
+    if (cancelMeetingProvider === 'teams') return isCancellingTeams;
+    return isCancelling;
+  };
+
+  const isCancellingActive = getIsCancellingActive();
 
   return {
     state: {
