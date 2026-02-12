@@ -24,7 +24,10 @@ import {
   getDecryptedAIProviders,
   getActiveProviderApiKey,
 } from './utils/settings-utils';
-import { validatePdfPageCount } from './utils/pdf-utils';
+import {
+  validatePdfPageCount,
+  getResumeForEvaluation,
+} from './utils/pdf-utils';
 
 export async function GET(): Promise<NextResponse> {
   return NextResponse.json({
@@ -134,13 +137,12 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         customPrompt: null,
       };
 
-    try {
-      await validatePdfPageCount(base64Resume, evaluationConfig);
-    } catch (pdfError) {
-      if (pdfError instanceof Error) {
-        return NextResponse.json({ error: pdfError.message }, { status: 400 });
-      }
-    }
+    await validatePdfPageCount(base64Resume, evaluationConfig);
+
+    const resumeForEvaluation = await getResumeForEvaluation(
+      base64Resume,
+      evaluationConfig.maxPdfPages ?? 0,
+    );
 
     // Extract job data for evaluation
     const candidateJobIdForData = candidate?.jobId as
@@ -161,7 +163,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       | PopulatedJob
       | undefined;
     const scores: EvaluationResult = await AIEvaluationService.evaluateResume(
-      base64Resume,
+      resumeForEvaluation,
       settingsForEvaluation,
       jobData,
       candidate,
@@ -296,7 +298,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     // Fire-and-forget broadcast - errors handled internally
     broadcastCandidateUpdate(dataTobroadcast).catch((error) => {
-      logger.error({ error }, 'Failed to broadcast candidate evaluation update');
+      logger.error(
+        { error },
+        'Failed to broadcast candidate evaluation update',
+      );
     });
     return NextResponse.json(
       {
