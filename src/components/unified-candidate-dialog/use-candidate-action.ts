@@ -25,10 +25,14 @@ import {
   useScheduleZoomMeetingMutation,
   useUpdateZoomMeetingMutation,
   useCancelZoomMeetingMutation,
+  useScheduleTeamsMeetingMutation,
+  useUpdateTeamsMeetingMutation,
+  useCancelTeamsMeetingMutation,
 } from '@/lib/features/calendar/calendarApi';
 import {
   useGetGoogleCalendarConfigQuery,
   useGetZoomConfigQuery,
+  useGetMicrosoftTeamsConfigQuery,
 } from '@/lib/features/settings';
 import {
   useSendMailMutation,
@@ -80,7 +84,7 @@ export function useCandidateActions({
   const pathname = usePathname();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelMeetingProvider, setCancelMeetingProvider] = useState<
-    'google' | 'zoom' | null
+    'google' | 'zoom' | 'teams' | null
   >(null);
   const [cancelNotes, setCancelNotes] = useState('');
 
@@ -101,11 +105,16 @@ export function useCandidateActions({
   const [updateZoomMeeting] = useUpdateZoomMeetingMutation();
   const [cancelZoomMeeting, { isLoading: isCancellingZoom }] =
     useCancelZoomMeetingMutation();
+  const [scheduleTeamsMeeting] = useScheduleTeamsMeetingMutation();
+  const [updateTeamsMeeting] = useUpdateTeamsMeetingMutation();
+  const [cancelTeamsMeeting, { isLoading: isCancellingTeams }] =
+    useCancelTeamsMeetingMutation();
 
   const { data: jobs } = useFetchOpenJobsQuery();
   const { data: googleCalendarData } =
     useGetGoogleCalendarConfigQuery(undefined);
   const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
+  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined);
 
   const getInitialJobId = useCallback(() => {
     if (typeof candidate.jobId === 'string') return candidate.jobId;
@@ -178,6 +187,14 @@ export function useCandidateActions({
     const zoomMeetingAttachments = !isBulkMode
       ? candidate?.assignment?.zoomMeet?.meetingAttachments || []
       : [];
+    const scheduleTeamsMeet =
+      !isBulkMode && !!candidate?.assignment?.microsoftTeams?.meetingId;
+    const teamsMeetingNotes = !isBulkMode
+      ? candidate?.assignment?.microsoftTeams?.meetingNotes || ''
+      : '';
+    const teamsMeetingAttachments = !isBulkMode
+      ? candidate?.assignment?.microsoftTeams?.meetingAttachments || []
+      : [];
 
     return {
       interviewerId: interviewerIdValue,
@@ -194,6 +211,11 @@ export function useCandidateActions({
       zoomMeetingNotes,
       zoomMeetingAttachments,
       zoomAdditionalGuests: [],
+      scheduleTeamsMeet,
+      teamsMeetDuration: 60,
+      teamsMeetingNotes,
+      teamsMeetingAttachments,
+      teamsAdditionalGuests: [],
       attachments: [],
       jobId,
       followUpNote: candidate?.followUp?.note || '',
@@ -288,11 +310,12 @@ export function useCandidateActions({
     );
     if (!selectedInterviewer) throw new Error('Selected interviewer not found');
 
-    let { googleMeetData, zoomMeetData } = values;
+    let { googleMeetData, zoomMeetData, teamsMeetData } = values;
     const scheduleGoogle = values.scheduleGoogleMeet && values.time;
     const scheduleZoom = values.scheduleZoomMeet && values.time;
+    const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
-    if (scheduleGoogle || scheduleZoom) {
+    if (scheduleGoogle || scheduleZoom || scheduleTeams) {
       const processMeetingAttachments = async (files: unknown[]) =>
         Promise.all(
           (files || []).map(async (file) => {
@@ -334,9 +357,12 @@ export function useCandidateActions({
           ? await updateMeeting({
               eventId: candidate.assignment?.googleMeet?.eventId || '',
               candidateId: candidate._id,
-              scheduledTime: values.time.toISOString(),
+              scheduledTime: values.time?.toISOString() || '',
               duration: values.meetDuration || 30,
               guests,
+              meetingNotes: values.meetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap()
           : await scheduleMeeting({
               candidateId: candidate._id,
@@ -345,7 +371,7 @@ export function useCandidateActions({
               interviewerId: selectedInterviewer._id,
               interviewerName: selectedInterviewer.name,
               interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time.toISOString(),
+              scheduledTime: values.time?.toISOString() || '',
               duration: values.meetDuration || 30,
               guests,
               jobTitle: candidate.jobId?.title || 'Position',
@@ -385,9 +411,12 @@ export function useCandidateActions({
               meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
               eventId: candidate.assignment?.zoomMeet?.eventId || '',
               candidateId: candidate._id,
-              scheduledTime: values.time.toISOString(),
+              scheduledTime: values.time?.toISOString() || '',
               duration: values.zoomMeetDuration || 30,
               guests,
+              meetingNotes: values.zoomMeetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
             }).unwrap()
           : await scheduleZoomMeeting({
               candidateId: candidate._id,
@@ -396,7 +425,7 @@ export function useCandidateActions({
               interviewerId: selectedInterviewer._id,
               interviewerName: selectedInterviewer.name,
               interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time.toISOString(),
+              scheduledTime: values.time?.toISOString() || '',
               duration: values.zoomMeetDuration || 30,
               guests,
               jobTitle: candidate.jobId?.title || 'Position',
@@ -414,6 +443,62 @@ export function useCandidateActions({
           summary: result.summary,
           description: result.description,
           meetingNotes: values.zoomMeetingNotes,
+          meetingAttachments: processedMeetingAttachments,
+        };
+      }
+
+      if (scheduleTeams) {
+        const guests = [
+          ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
+          ...(candidate.email ? [candidate.email] : []),
+          ...(user.email && user.email !== selectedInterviewer.email
+            ? [user.email]
+            : []),
+          ...(values.teamsAdditionalGuests || []),
+        ];
+
+        const processedMeetingAttachments = await processMeetingAttachments(
+          values.teamsMeetingAttachments || [],
+        );
+
+        const isUpdating = candidate.assignment?.microsoftTeams?.meetingId;
+        const result = isUpdating
+          ? await updateTeamsMeeting({
+              meetingId: candidate.assignment?.microsoftTeams?.meetingId || '',
+              eventId: candidate.assignment?.microsoftTeams?.eventId || '',
+              candidateId: candidate._id,
+              scheduledTime: values.time?.toISOString() || '',
+              duration: values.teamsMeetDuration || 30,
+              guests,
+              meetingNotes: values.teamsMeetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
+            }).unwrap()
+          : await scheduleTeamsMeeting({
+              candidateId: candidate._id,
+              candidateName: candidate.name,
+              candidateEmail: candidate.email,
+              interviewerId: selectedInterviewer._id,
+              interviewerName: selectedInterviewer.name,
+              interviewerEmail: selectedInterviewer.email,
+              scheduledTime: values.time?.toISOString() || '',
+              duration: values.teamsMeetDuration || 30,
+              guests,
+              jobTitle: candidate.jobId?.title || 'Position',
+              organizationName: user?.organizationInfo?.name || 'Company',
+              meetingNotes: values.teamsMeetingNotes || '',
+              meetingAttachments:
+                processedMeetingAttachments as unknown as MeetingAttachment[],
+            }).unwrap();
+
+        teamsMeetData = {
+          meetingId: result.meetingId,
+          meetingLink: result.meetingLink,
+          eventId: result.eventId,
+          htmlLink: result.htmlLink,
+          summary: result.summary,
+          description: result.description,
+          meetingNotes: values.teamsMeetingNotes,
           meetingAttachments: processedMeetingAttachments,
         };
       }
@@ -435,6 +520,7 @@ export function useCandidateActions({
       assignedAt: new Date().toISOString(),
       ...(googleMeetData && { googleMeet: googleMeetData }),
       ...(zoomMeetData && { zoomMeet: zoomMeetData }),
+      ...(teamsMeetData && { microsoftTeams: teamsMeetData }),
     };
 
     const previousInterviewer =
@@ -455,6 +541,24 @@ export function useCandidateActions({
       title = `${previousInterviewer} → ${selectedInterviewer.name} : Assigned by ${user.name}`;
     }
 
+    const meetingLinkLines: string[] = [];
+    if (scheduleGoogle && googleMeetData?.meetingLink) {
+      meetingLinkLines.push(
+        `Google Meet meeting link: ${googleMeetData.meetingLink}`,
+      );
+    }
+    if (scheduleZoom && zoomMeetData?.meetingLink) {
+      meetingLinkLines.push(
+        `Zoom meeting link: ${zoomMeetData.meetingLink}`,
+      );
+    }
+    if (scheduleTeams && teamsMeetData?.meetingLink) {
+      meetingLinkLines.push(
+        `Microsoft Teams meeting link: ${teamsMeetData.meetingLink}`,
+      );
+    }
+    const meetingLinkNote = meetingLinkLines.join('\n');
+
     const assignmentRemark =
       values.enabledActions.addRemark && values.remarkDescription.trim()
         ? {
@@ -466,6 +570,12 @@ export function useCandidateActions({
           }
         : null;
 
+    const baseDescription = assignmentRemark?.description || '';
+    const noteDescription =
+      baseDescription && meetingLinkNote
+        ? `${baseDescription}\n\n${meetingLinkNote}`
+        : baseDescription || meetingLinkNote;
+
     historyEntries.push({
       dateTime: new Date().toISOString(),
       currentInterviewer:
@@ -474,13 +584,17 @@ export function useCandidateActions({
       assignmentBy: user.id,
       title,
       note:
-        assignmentRemark ||
-        ({
-          description: '',
-          date: '',
-          rating: 0,
-          userId: null,
-        } as ICandidateHistory['note']),
+        assignmentRemark
+          ? {
+              ...assignmentRemark,
+              description: noteDescription,
+            }
+          : ({
+              description: noteDescription,
+              date: '',
+              rating: 0,
+              userId: null,
+            } as ICandidateHistory['note']),
       attachments: values.attachments,
     });
   };
@@ -1006,6 +1120,19 @@ export function useCandidateActions({
         toast({
           title: 'Success',
           description: 'Zoom meeting cancelled successfully',
+          variant: 'default',
+        });
+      } else if (cancelMeetingProvider === 'teams') {
+        if (!candidate.assignment?.microsoftTeams?.meetingId) return;
+        await cancelTeamsMeeting({
+          meetingId: candidate.assignment.microsoftTeams.meetingId,
+          eventId: candidate.assignment.microsoftTeams.eventId || '',
+          candidateId: candidate._id,
+          cancelNotes,
+        }).unwrap();
+        toast({
+          title: 'Success',
+          description: 'Microsoft Teams meeting cancelled successfully',
         });
       }
 
@@ -1023,7 +1150,11 @@ export function useCandidateActions({
 
   const showCancelMeetDialog = cancelMeetingProvider !== null;
   const isCancellingActive =
-    cancelMeetingProvider === 'zoom' ? isCancellingZoom : isCancelling;
+    cancelMeetingProvider === 'zoom'
+      ? isCancellingZoom
+      : cancelMeetingProvider === 'teams'
+        ? isCancellingTeams
+        : isCancelling;
 
   return {
     state: {
@@ -1040,6 +1171,7 @@ export function useCandidateActions({
       interviewers,
       googleCalendarData,
       zoomConfigData,
+      teamsConfigData,
       initialValues,
       jobLanesData,
       isLoadingLanes,

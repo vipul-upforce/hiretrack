@@ -25,7 +25,7 @@ interface CancelMeetingDialogProps {
 export function CancelMeetingDialog({
   open,
   onOpenChange,
-  meetingType = 'Google Meet',
+  meetingType = 'Meeting',
   cancelNotes,
   setCancelNotes,
   onConfirm,

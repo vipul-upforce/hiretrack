@@ -4,6 +4,8 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
+import { uploadFile, uploadFileToS3, saveFileLocally } from '@/lib/fileUtils';
+import { MeetingAttachment } from '@/lib/features/calendar/calendarApi';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
@@ -18,6 +20,8 @@ interface UpdateMeetRequest {
   scheduledTime?: string;
   duration?: number;
   guests?: string[];
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
 }
 
 export async function PUT(req: NextRequest) {
@@ -33,8 +37,16 @@ export async function PUT(req: NextRequest) {
     }
 
     const { organizationId } = userData;
-    const { candidateId, meetingId, eventId, scheduledTime, duration, guests } =
-      body as UpdateMeetRequest;
+    const {
+      candidateId,
+      meetingId,
+      eventId,
+      scheduledTime,
+      duration,
+      guests,
+      meetingNotes,
+      meetingAttachments,
+    } = body as UpdateMeetRequest;
 
     if (!meetingId) {
       return NextResponse.json(
@@ -58,7 +70,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const settings = await Settings.findOne({ organizationId })
-      .select('zoom googleCalendar timeZone.name timeZone.offset')
+      .select('zoom googleCalendar timeZone.name timeZone.offset fileStorage')
       .lean()
       .exec();
 
@@ -93,22 +105,83 @@ export async function PUT(req: NextRequest) {
     organizationTimezone =
       timezoneMap[organizationTimezone] || organizationTimezone;
 
-    if (scheduledTime || duration) {
-      await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+    // Upload meeting attachments (same pattern as schedule-meet)
+    const validAttachments =
+      meetingAttachments?.filter(
+        (att: MeetingAttachment) => att && att.name && att.url,
+      ) || [];
+
+    let uploadedAttachments: Array<{ name: string; url: string }> = [];
+    if (validAttachments.length > 0) {
+      const fileStorageSettings = settings.fileStorage;
+      const uploadPromises = validAttachments.map(
+        async (attachment: MeetingAttachment) => {
+          try {
+            let uploadedUrl = '';
+            const timestamp = new Date().getTime();
+            const uploadName =
+              attachment.name || `meeting_attachment_${timestamp}`;
+
+            const base64Data = attachment.url.startsWith('data:')
+              ? attachment.url
+              : `data:${attachment.type};base64,${attachment.url}`;
+
+            switch (fileStorageSettings?.storageType) {
+              case 'cloudinary':
+                uploadedUrl = await uploadFile(
+                  base64Data,
+                  'documents',
+                  organizationId,
+                  uploadName,
+                );
+                break;
+              case 's3':
+                uploadedUrl = await uploadFileToS3(
+                  base64Data,
+                  'documents',
+                  organizationId,
+                  uploadName,
+                );
+                break;
+              default:
+                uploadedUrl = await saveFileLocally(
+                  base64Data,
+                  'documents',
+                  uploadName,
+                );
+            }
+
+            return { name: attachment.name, url: uploadedUrl };
+          } catch (error) {
+            logger.error(
+              { error, url: req.url },
+              'Failed to upload attachment:',
+              error,
+            );
+            return { name: attachment.name, url: 'Upload failed' };
+          }
         },
-        body: JSON.stringify({
-          start_time: scheduledTime
-            ? new Date(scheduledTime).toISOString()
-            : undefined,
-          duration: duration || undefined,
-          timezone: organizationTimezone,
-        }),
-      });
+      );
+
+      uploadedAttachments = await Promise.all(uploadPromises);
     }
+
+    // Update Zoom meeting (time, duration, agenda)
+    await fetch(`https://api.zoom.us/v2/meetings/${meetingId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        start_time: scheduledTime
+          ? new Date(scheduledTime).toISOString()
+          : undefined,
+        duration: duration || undefined,
+        timezone: organizationTimezone,
+        agenda: meetingNotes !== undefined ? meetingNotes || '' : undefined,
+      }),
+    });
 
     // Update Google Calendar event if applicable
     let summary = '';
@@ -147,6 +220,7 @@ export async function PUT(req: NextRequest) {
         start?: { dateTime: string; timeZone: string };
         end?: { dateTime: string; timeZone: string };
         attendees?: Array<{ email: string }>;
+        description?: string;
       } = {};
 
       if (scheduledTime && duration) {
@@ -166,6 +240,38 @@ export async function PUT(req: NextRequest) {
 
       if (guests) {
         updateData.attendees = guests.map((email) => ({ email }));
+      }
+
+      // Build description with meeting notes and attachments (same format as schedule-meet)
+      const hasNotesOrAttachments =
+        meetingNotes !== undefined || uploadedAttachments.length > 0;
+
+      if (hasNotesOrAttachments) {
+        const existingEvent = await calendar.events.get({
+          calendarId: 'primary',
+          eventId,
+        });
+
+        let descriptionToUpdate = existingEvent.data.description || '';
+
+        if (meetingNotes) {
+          descriptionToUpdate += `\n\nMeeting Notes:\n${meetingNotes}`;
+        }
+
+        if (uploadedAttachments.length > 0) {
+          const protocol = req.headers.get('x-forwarded-proto') || 'http';
+          const host = req.headers.get('host') || 'localhost:3000';
+          const baseUrl = `${protocol}://${host}`;
+
+          descriptionToUpdate += '\n\nAttachments:';
+          uploadedAttachments.forEach((attachment) => {
+            const fullUrl = attachment.url.startsWith('/api/files')
+              ? `${baseUrl}${attachment.url}`
+              : attachment.url;
+            descriptionToUpdate += `\n- ${attachment.name}: ${fullUrl}`;
+          });
+        }
+        updateData.description = descriptionToUpdate;
       }
 
       const response = await calendar.events.patch({
@@ -214,6 +320,11 @@ export async function PUT(req: NextRequest) {
       if (summary) updateFields['assignment.zoomMeet.summary'] = summary;
       if (description)
         updateFields['assignment.zoomMeet.description'] = description;
+      if (meetingNotes !== undefined)
+        updateFields['assignment.zoomMeet.meetingNotes'] = meetingNotes;
+      if (meetingAttachments !== undefined)
+        updateFields['assignment.zoomMeet.meetingAttachments'] =
+          uploadedAttachments.length > 0 ? uploadedAttachments : [];
       if (htmlLink) updateFields['assignment.zoomMeet.htmlLink'] = htmlLink;
 
       await Candidate.findByIdAndUpdate(candidateId, {
@@ -230,6 +341,7 @@ export async function PUT(req: NextRequest) {
       htmlLink,
       summary,
       description,
+      duration,
       message: 'Zoom meeting updated successfully',
     });
   } catch (error) {
@@ -422,15 +534,24 @@ export async function DELETE(req: NextRequest) {
             const historyEntry: ICandidateHistory = {
               dateTime: new Date().toISOString(),
               title: 'Zoom Meeting Cancelled',
-              assignmentBy: userData?.id,
-              previousInterviewer: candidate?.assignment?.interviewerId,
-              currentInterviewer: candidate?.assignment?.interviewerId,
+              assignmentBy: userData?.id || null,
+              previousInterviewer:
+                (candidate?.assignment?.interviewerId as
+                  | ICandidateHistory['previousInterviewer']
+                  | null) || null,
+              currentInterviewer:
+                (candidate?.assignment?.interviewerId as
+                  | ICandidateHistory['currentInterviewer']
+                  | null) || null,
               note: {
-                userId: userData?.id,
+                userId: userData?.id || null,
                 description: cancelNotes
                   ? `Zoom Meeting Cancelled. Reason: ${cancelNotes}`
                   : 'Zoom Meeting Cancelled.',
+                date: new Date().toISOString(),
+                rating: 0,
               },
+              attachments: [],
             };
 
             await History.findOneAndUpdate(

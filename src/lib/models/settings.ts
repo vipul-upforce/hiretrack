@@ -191,6 +191,40 @@ const settingsSchema = new Schema({
       default: '',
     },
   },
+  microsoftTeams: {
+    isConnected: {
+      type: Boolean,
+      default: false,
+    },
+    tenantId: {
+      type: String,
+      default: '',
+    },
+    clientId: {
+      type: String,
+      default: '',
+    },
+    clientSecret: {
+      type: String,
+      default: '',
+    },
+    accessToken: {
+      type: String,
+      default: '',
+    },
+    refreshToken: {
+      type: String,
+      default: '',
+    },
+    expiryDate: {
+      type: Number,
+      default: null,
+    },
+    connectedEmail: {
+      type: String,
+      default: '',
+    },
+  },
   onboardingStatus: {
     isCompleted: {
       type: Boolean,
@@ -530,6 +564,17 @@ export interface IZoomConfig {
   connectedEmail?: string;
 }
 
+export interface IMicrosoftTeamsConfig {
+  isConnected: boolean;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  refreshToken: string;
+  expiryDate: number | null;
+  connectedEmail?: string;
+}
+
 export interface IOnboardingStatus {
   isCompleted: boolean;
   completedSteps: string[];
@@ -593,6 +638,7 @@ export interface ISettings {
   twoFA?: ITwoFA;
   googleCalendar?: IGoogleCalendar;
   zoom?: IZoomConfig;
+  microsoftTeams?: IMicrosoftTeamsConfig;
   onboardingStatus?: IOnboardingStatus;
   organizationEmailNotifications?: OrganizationEmailNotifications;
   captcha?: ICaptcha;

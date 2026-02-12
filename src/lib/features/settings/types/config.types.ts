@@ -55,3 +55,15 @@ export interface ZoomConfig {
 export interface ZoomConfigResponse {
   zoom: ZoomConfig;
 }
+
+export interface MicrosoftTeamsConfig {
+  tenantId?: string;
+  clientId?: string;
+  clientSecret?: string;
+  connectedEmail?: string;
+  isConnected?: boolean;
+}
+
+export interface MicrosoftTeamsConfigResponse {
+  microsoftTeams: MicrosoftTeamsConfig;
+}

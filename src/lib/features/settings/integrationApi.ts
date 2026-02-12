@@ -4,6 +4,7 @@ import {
   TestConnectionResponse,
   GoogleCalendarConfigResponse,
   ZoomConfigResponse,
+  MicrosoftTeamsConfigResponse,
 } from './types/config.types';
 
 export const integrationApi = baseApi.injectEndpoints({
@@ -63,6 +64,35 @@ export const integrationApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Settings'],
     }),
+    getMicrosoftTeamsConfig: builder.query<MicrosoftTeamsConfigResponse, void>({
+      query: () => ({ url: '/settings/microsoft-teams', method: 'GET' }),
+      providesTags: ['Settings'],
+    }),
+    updateMicrosoftTeamsConfig: builder.mutation({
+      query: (config) => ({
+        url: '/settings/microsoft-teams',
+        method: 'PUT',
+        body: config,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    disconnectMicrosoftTeams: builder.mutation({
+      query: () => ({
+        url: '/settings/microsoft-teams',
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    testMicrosoftTeamsConnection: builder.mutation<
+      TestConnectionResponse,
+      void
+    >({
+      query: () => ({
+        url: '/microsoft-teams/test-connection',
+        method: 'POST',
+      }),
+      invalidatesTags: ['Settings'],
+    }),
   }),
 });
 
@@ -76,4 +106,8 @@ export const {
   useUpdateZoomConfigMutation,
   useDisconnectZoomMutation,
   useTestZoomConnectionMutation,
+  useGetMicrosoftTeamsConfigQuery,
+  useUpdateMicrosoftTeamsConfigMutation,
+  useDisconnectMicrosoftTeamsMutation,
+  useTestMicrosoftTeamsConnectionMutation,
 } = integrationApi;

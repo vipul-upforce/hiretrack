@@ -12,6 +12,22 @@ import { sendUnifiedMail } from '@/lib/notifications/email/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { generateCalendarLinks } from '@/app/api/event-mail/calendarUtils';
 
+interface ScheduleMeetRequest {
+  candidateId?: string;
+  candidateName: string;
+  candidateEmail: string;
+  interviewerName: string;
+  interviewerEmail?: string;
+  scheduledTime: string;
+  duration: number;
+  guests?: string[];
+  jobTitle?: string;
+  organizationName?: string;
+  jobId?: string;
+  meetingNotes?: string;
+  meetingAttachments?: MeetingAttachment[];
+}
+
 export async function POST(req: NextRequest) {
   try {
     const [userData, body] = await Promise.all([
@@ -45,7 +61,7 @@ export async function POST(req: NextRequest) {
       organizationName = 'Company',
       meetingNotes = '',
       meetingAttachments = [],
-    } = body;
+    } = body as ScheduleMeetRequest;
 
     if (typeof duration === 'number' && duration > 40) {
       return NextResponse.json(
@@ -104,14 +120,17 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    const zoomResponse = await fetch('https://api.zoom.us/v2/users/me/meetings', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+    const zoomResponse = await fetch(
+      'https://api.zoom.us/v2/users/me/meetings',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(zoomMeetingPayload),
       },
-      body: JSON.stringify(zoomMeetingPayload),
-    });
+    );
 
     if (!zoomResponse.ok) {
       const errorText = await zoomResponse.text();
@@ -237,10 +256,7 @@ Candidate: ${candidateName}`;
         settings.googleCalendar.clientSecret,
         organizationId,
       );
-      const accessToken = decryptText(
-        settings.googleCalendar.accessToken,
-        organizationId,
-      );
+
       const refreshToken = decryptText(
         settings.googleCalendar.refreshToken,
         organizationId,
@@ -335,9 +351,10 @@ Candidate: ${candidateName}`;
 
         const primaryRecipient =
           interviewerEmail || candidateEmail || (guests || [])[0] || '';
-        const cc = candidateEmail && candidateEmail !== primaryRecipient
-          ? [candidateEmail]
-          : [];
+        const cc =
+          candidateEmail && candidateEmail !== primaryRecipient
+            ? [candidateEmail]
+            : [];
         const bcc = (guests || []).filter(
           (email: string) =>
             email &&
@@ -373,7 +390,7 @@ Candidate: ${candidateName}`;
       }
     }
 
-   if (candidateId && Candidate) {
+    if (candidateId && Candidate) {
       const zoomMeetData = {
         meetingId,
         meetingLink,

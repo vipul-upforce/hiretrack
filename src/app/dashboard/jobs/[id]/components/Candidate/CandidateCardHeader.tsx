@@ -171,7 +171,7 @@ export function CandidateCardHeader({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="text-xs">
-                          {candidate.duplicateCount} Duplicate Candidates
+                          Duplicate Candidates
                         </p>
                       </TooltipContent>
                     </Tooltip>

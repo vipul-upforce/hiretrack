@@ -61,6 +61,21 @@ export interface FormValues {
     meetingNotes?: string;
     meetingAttachments?: Attachment[];
   };
+  scheduleTeamsMeet?: boolean;
+  teamsMeetDuration?: number;
+  teamsMeetingNotes?: string;
+  teamsMeetingAttachments?: Attachment[];
+  teamsAdditionalGuests?: string[];
+  microsoftTeamsData?: {
+    meetingId: string;
+    meetingLink: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingNotes?: string;
+    meetingAttachments?: Attachment[];
+  };
 }
 
 // Interface for AssignCandidateDialog props
@@ -83,25 +98,42 @@ export const validationSchema = Yup.object({
   rating: Yup.number().nullable(),
   attachments: Yup.array(),
   scheduleGoogleMeet: Yup.boolean(),
-  meetDuration: Yup.number().when('scheduleGoogleMeet', {
-    is: true,
-    then: (schema) => schema.required('Please select meeting duration'),
-    otherwise: (schema) => schema.nullable(),
-  }).max(60, 'Google Meet duration cannot exceed 60 minutes'),
+  meetDuration: Yup.number()
+    .when('scheduleGoogleMeet', {
+      is: true,
+      then: (schema) => schema.required('Please select meeting duration'),
+      otherwise: (schema) => schema.nullable(),
+    })
+    .max(60, 'Google Meet duration cannot exceed 60 minutes'),
   meetingNotes: Yup.string(),
   meetingAttachments: Yup.array(),
   additionalGuests: Yup.array().of(
     Yup.string().email('Please enter valid email addresses'),
   ),
   scheduleZoomMeet: Yup.boolean(),
-  zoomMeetDuration: Yup.number().when('scheduleZoomMeet', {
-    is: true,
-    then: (schema) => schema.required('Please select meeting duration'),
-    otherwise: (schema) => schema.nullable(),
-  }).max(40, 'Zoom meeting duration cannot exceed 40 minutes'),
+  zoomMeetDuration: Yup.number()
+    .when('scheduleZoomMeet', {
+      is: true,
+      then: (schema) => schema.required('Please select meeting duration'),
+      otherwise: (schema) => schema.nullable(),
+    })
+    .max(40, 'Zoom meeting duration cannot exceed 40 minutes'),
   zoomMeetingNotes: Yup.string(),
   zoomMeetingAttachments: Yup.array(),
   zoomAdditionalGuests: Yup.array().of(
+    Yup.string().email('Please enter valid email addresses'),
+  ),
+  scheduleTeamsMeet: Yup.boolean(),
+  teamsMeetDuration: Yup.number()
+    .when('scheduleTeamsMeet', {
+      is: true,
+      then: (schema) => schema.required('Please select meeting duration'),
+      otherwise: (schema) => schema.nullable(),
+    })
+    .max(60, 'Teams meeting duration cannot exceed 60 minutes'),
+  teamsMeetingNotes: Yup.string(),
+  teamsMeetingAttachments: Yup.array(),
+  teamsAdditionalGuests: Yup.array().of(
     Yup.string().email('Please enter valid email addresses'),
   ),
 });

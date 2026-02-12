@@ -377,6 +377,15 @@ export async function runBulkAssign(
         }
       }
 
+      const meetingLinkLines: string[] = [];
+      if (scheduleGoogleMeet && googleMeetData?.meetingLink) {
+        meetingLinkLines.push(`Google Meet meeting link: ${googleMeetData.meetingLink}`);
+      }
+      if (scheduleZoomMeet && zoomMeetData?.meetingLink) {
+        meetingLinkLines.push(`Zoom meeting link: ${zoomMeetData.meetingLink}`);
+      }
+      const meetingLinkNote = meetingLinkLines.join('\n');
+
       const historyEntry: ICandidateHistory = {
         dateTime,
         title: `Assigned to ${(interviewer as { name: string }).name} : Assigned by ${user.name}`,
@@ -384,7 +393,7 @@ export async function runBulkAssign(
         previousInterviewer:
           previousInterviewerId as Schema.Types.ObjectId | null,
         assignmentBy: user.id ?? null,
-        note: { description: '', date: '', rating: 0, userId: null },
+        note: { description: meetingLinkNote, date: '', rating: 0, userId: null },
         attachments: processedAttachments,
       };
 

@@ -67,6 +67,17 @@ export interface Assignment {
     meetingNotes?: string;
     lastSyncedAt?: Date;
   };
+  microsoftTeams?: {
+    meetingId: string;
+    meetingLink: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingAttachments?: Attachment[];
+    meetingNotes?: string;
+    lastSyncedAt?: Date;
+  };
   jobId?: Job;
 }
 

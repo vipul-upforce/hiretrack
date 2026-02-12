@@ -38,6 +38,7 @@ interface GoogleMeetIntegrationProps {
   googleCalendarData: IGoogleCalendar;
   onRequestCancel: () => void;
   isBulkMode: boolean;
+  showScheduleToggle?: boolean;
 }
 
 export function GoogleMeetIntegration({
@@ -46,6 +47,7 @@ export function GoogleMeetIntegration({
   googleCalendarData,
   onRequestCancel,
   isBulkMode,
+  showScheduleToggle = true,
 }: GoogleMeetIntegrationProps) {
   const {
     user,
@@ -69,8 +71,14 @@ export function GoogleMeetIntegration({
     return null;
   }
 
-  const hasOtherMeeting = !!candidate.assignment?.zoomMeet?.meetingId;
+  const hasOtherMeeting =
+    !!candidate.assignment?.zoomMeet?.meetingId ||
+    !!candidate.assignment?.microsoftTeams?.meetingId;
   if (!hasExistingMeet && hasOtherMeeting) {
+    return null;
+  }
+
+  if (!showScheduleToggle && !hasExistingMeet && !values.scheduleGoogleMeet) {
     return null;
   }
 
@@ -110,6 +118,7 @@ export function GoogleMeetIntegration({
                   setIsEditMode(true);
                   setFieldValue('scheduleGoogleMeet', true);
                   setFieldValue('scheduleZoomMeet', false);
+                  setFieldValue('scheduleTeamsMeet', false);
                 }}
                 className="h-7 text-xs"
               >
@@ -176,7 +185,7 @@ export function GoogleMeetIntegration({
       {(!hasExistingMeet || isEditMode) && (
         <>
           {/* Only show the checkbox for NEW scheduling (never when editing); users can't unschedule here */}
-          {!hasExistingMeet && (
+          {!hasExistingMeet && showScheduleToggle && (
             <div className="flex items-center space-x-2">
               <Field name="scheduleGoogleMeet">
                 {({ field }: FieldProps) => (
@@ -188,6 +197,7 @@ export function GoogleMeetIntegration({
                       setFieldValue('scheduleGoogleMeet', checked);
                       if (checked) {
                         setFieldValue('scheduleZoomMeet', false);
+                        setFieldValue('scheduleTeamsMeet', false);
                       }
                     }}
                   />
@@ -233,7 +243,7 @@ export function GoogleMeetIntegration({
                       type="button"
                       variant="outline"
                       size="sm"
-                    onClick={() => {
+                      onClick={() => {
                         onRequestCancel();
                       }}
                       className="h-7 text-xs text-red-600 hover:text-red-700"

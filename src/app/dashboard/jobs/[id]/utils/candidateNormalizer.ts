@@ -78,6 +78,23 @@ export interface NormalizedAssignment {
     meetingNotes?: string;
     lastSyncedAt?: Date | string;
   };
+  microsoftTeams?: {
+    meetingId: string;
+    meetingLink: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingAttachments?: Array<{
+      id: string;
+      name: string;
+      url: string;
+      type: string;
+      size: number;
+    }>;
+    meetingNotes?: string;
+    lastSyncedAt?: Date | string;
+  };
 }
 
 /**
@@ -196,6 +213,8 @@ export function normalizeAssignment(
     assignedAt,
     googleMeet: assignmentObj.googleMeet as NormalizedAssignment['googleMeet'],
     zoomMeet: assignmentObj.zoomMeet as NormalizedAssignment['zoomMeet'],
+    microsoftTeams:
+      assignmentObj.microsoftTeams as NormalizedAssignment['microsoftTeams'],
   };
 }
 

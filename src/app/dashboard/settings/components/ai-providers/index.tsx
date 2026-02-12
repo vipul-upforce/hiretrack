@@ -12,8 +12,10 @@ import AiProviderSkeleton from './component/ai-provider-loading-skeleton';
 
 export default function AIProvidersConfigs({
   onClose,
+  embedded = false,
 }: {
   onClose: () => void;
+  embedded?: boolean;
 }) {
   const { data, isLoading, refetch } = useGetAIProvidersConfigsQuery(undefined);
   const { data: portalData } = useGetPortalConfigsQuery(undefined);
@@ -75,6 +77,7 @@ export default function AIProvidersConfigs({
       primaryColor={primaryColor}
       onClose={onClose}
       onRefetch={refetch}
+      embedded={embedded}
     />
   );
 }

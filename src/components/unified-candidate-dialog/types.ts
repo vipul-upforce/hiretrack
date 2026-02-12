@@ -43,6 +43,11 @@ export interface UnifiedFormValues {
   zoomMeetingNotes: string;
   zoomMeetingAttachments: Attachment[];
   zoomAdditionalGuests: string[];
+  scheduleTeamsMeet: boolean;
+  teamsMeetDuration: number;
+  teamsMeetingNotes: string;
+  teamsMeetingAttachments: Attachment[];
+  teamsAdditionalGuests: string[];
   googleMeetData?: {
     eventId: string;
     meetingLink: string;
@@ -56,6 +61,16 @@ export interface UnifiedFormValues {
     meetingId: string;
     meetingLink: string;
     startUrl?: string;
+    eventId?: string;
+    htmlLink?: string;
+    summary?: string;
+    description?: string;
+    meetingNotes: string;
+    meetingAttachments: Attachment[];
+  };
+  teamsMeetData?: {
+    meetingId: string;
+    meetingLink: string;
     eventId?: string;
     htmlLink?: string;
     summary?: string;
@@ -165,6 +180,11 @@ export const getValidationSchema = (currentJobId: string | undefined) =>
     zoomMeetDuration: Yup.number().when('scheduleZoomMeet', {
       is: true,
       then: (s) => s.required('Please select meeting duration').max(40),
+      otherwise: (s) => s.nullable().notRequired(),
+    }),
+    teamsMeetDuration: Yup.number().when('scheduleTeamsMeet', {
+      is: true,
+      then: (s) => s.required('Please select meeting duration').max(60),
       otherwise: (s) => s.nullable().notRequired(),
     }),
   });
