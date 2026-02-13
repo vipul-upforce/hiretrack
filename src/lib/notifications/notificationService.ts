@@ -90,13 +90,17 @@ export class NotificationService {
   }
 
   static async notifyBulkCandidateAssigned(
-    params: Parameters<typeof bulkActionHandlers.notifyBulkCandidateAssigned>[0],
+    params: Parameters<
+      typeof bulkActionHandlers.notifyBulkCandidateAssigned
+    >[0],
   ): Promise<void> {
     return bulkActionHandlers.notifyBulkCandidateAssigned(params);
   }
 
   static async notifyBulkCandidateUnassigned(
-    params: Parameters<typeof bulkActionHandlers.notifyBulkCandidateUnassigned>[0],
+    params: Parameters<
+      typeof bulkActionHandlers.notifyBulkCandidateUnassigned
+    >[0],
   ): Promise<void> {
     return bulkActionHandlers.notifyBulkCandidateUnassigned(params);
   }

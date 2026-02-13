@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings, Candidate } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { NotificationService } from '@/lib/notifications/notificationService';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
 import { google } from 'googleapis';
@@ -286,6 +287,30 @@ Candidate: ${candidateName}`;
           },
         },
       ]);
+    }
+
+    // Send meeting scheduled notification (non-blocking)
+    try {
+      if (candidateId) {
+        await NotificationService.notifyMeetingScheduled({
+          organizationId,
+          candidateId: body.candidateId || '',
+          candidateName: body.candidateName || '',
+          jobId: body.jobId || '',
+          jobTitle: body.jobTitle || '',
+          interviewerId: body.interviewerId || '',
+          interviewerName: body.interviewerName || '',
+          meetingDate: startDateTime,
+          triggerUserId: userData.id?.toString() || '',
+          triggerUserName: userData.name || '',
+        });
+      }
+    } catch (notifyError) {
+      logger.error(
+        { error: notifyError, url: req.url },
+        'Failed to send meeting scheduled notification:',
+        notifyError,
+      );
     }
 
     // Try to set up webhook for this event (non-blocking)

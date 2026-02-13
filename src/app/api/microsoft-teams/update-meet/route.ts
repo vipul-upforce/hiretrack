@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { Settings, Candidate, History } from '@/lib/mongodb';
+import connectToDatabase, {
+  Settings,
+  Candidate,
+  History,
+  User,
+} from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { decryptText } from '@/lib/encryption';
 import { uploadFile, uploadFileToS3, saveFileLocally } from '@/lib/fileUtils';
@@ -778,6 +783,76 @@ export async function PUT(req: NextRequest) {
       await Candidate.findByIdAndUpdate(candidateId, {
         $set: updateFields,
       });
+    }
+
+    // Send meeting updated notification (non-blocking)
+    try {
+      if (candidateId && Candidate && User) {
+        const candidate = await Candidate.findById(candidateId)
+          .populate('assignment.interviewerId', '_id name')
+          .populate('jobId', '_id title')
+          .select('name assignment.interviewerId jobId')
+          .lean()
+          .exec();
+
+        if (candidate) {
+          let interviewerId = userData.id?.toString() || '';
+          const assignmentInterviewer = candidate.assignment?.interviewerId as
+            | { _id?: unknown; name?: string }
+            | undefined;
+          if (assignmentInterviewer?._id) {
+            interviewerId = String(assignmentInterviewer._id);
+          } else if (settings.microsoftTeams?.connectedEmail) {
+            const userByEmail = await User.findOne({
+              organizationId,
+              email: settings.microsoftTeams.connectedEmail,
+            })
+              .select('_id')
+              .lean()
+              .exec();
+            if (userByEmail?._id) {
+              interviewerId = String(userByEmail._id);
+            }
+          }
+
+          const interviewerNameResolved =
+            assignmentInterviewer?.name || 'Interviewer';
+          const jobId =
+            candidate.jobId && typeof candidate.jobId !== 'string' && '_id' in candidate.jobId
+              ? candidate.jobId._id.toString()
+              : candidate.jobId?.toString() || '';
+          const jobTitleResolved =
+            candidate.jobId && typeof candidate.jobId !== 'string' && 'title' in candidate.jobId
+              ? candidate.jobId.title
+              : 'Unknown Job';
+
+          let meetingDate: Date;
+          if (scheduledTime) {
+            meetingDate = new Date(scheduledTime);
+          } else {
+            meetingDate = new Date();
+          }
+
+          await NotificationService.notifyMeetingUpdated({
+            organizationId,
+            candidateId,
+            candidateName: candidate.name,
+            jobId,
+            jobTitle: jobTitleResolved,
+            interviewerId,
+            interviewerName: interviewerNameResolved,
+            meetingDate,
+            triggerUserId: userData.id?.toString() || '',
+            triggerUserName: userData.name || '',
+          });
+        }
+      }
+    } catch (notifyError) {
+      logger.error(
+        { error: notifyError, url: req.url },
+        'Failed to send meeting updated notification:',
+        notifyError,
+      );
     }
 
     return NextResponse.json({

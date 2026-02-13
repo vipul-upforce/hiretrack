@@ -16,6 +16,7 @@ export async function notifyCandidateAssigned(params: {
   interviewerName: string;
   triggerUserId: string;
   triggerUserName: string;
+  skipAdminHr?: boolean;
 }): Promise<void> {
   try {
     // Notify the interviewer if they're not the triggerer
@@ -56,32 +57,34 @@ export async function notifyCandidateAssigned(params: {
     ]);
     const filteredIds = adminHrIds.filter((id) => id !== params.triggerUserId);
 
-    await createBulkNotificationsWithDecision({
-      organizationId: params.organizationId,
-      recipientIds: filteredIds,
-      notificationType: NotificationType.INTERVIEW_ASSIGNMENTS,
-      jobId: params.jobId,
-      triggerUserId: params.triggerUserId,
-      baseParams: {
+    if (!params.skipAdminHr) {
+      await createBulkNotificationsWithDecision({
         organizationId: params.organizationId,
-        type: NotificationType.INTERVIEW_ASSIGNMENTS,
-        title: 'Candidate Assigned',
-        message: `${params.candidateName} has been assigned to ${params.interviewerName}`,
-        relatedEntity: 'candidate',
-        relatedId: params.candidateId,
-        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        recipientIds: filteredIds,
+        notificationType: NotificationType.INTERVIEW_ASSIGNMENTS,
+        jobId: params.jobId,
         triggerUserId: params.triggerUserId,
-        triggerUserName: params.triggerUserName,
-        priority: 'medium',
-        metadata: {
-          candidateName: params.candidateName,
-          jobTitle: params.jobTitle,
-          jobId: params.jobId,
-          interviewerName: params.interviewerName,
-          interviewerId: params.interviewerId,
+        baseParams: {
+          organizationId: params.organizationId,
+          type: NotificationType.INTERVIEW_ASSIGNMENTS,
+          title: 'Candidate Assigned',
+          message: `${params.candidateName} has been assigned to ${params.interviewerName}`,
+          relatedEntity: 'candidate',
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: 'medium',
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+            interviewerName: params.interviewerName,
+            interviewerId: params.interviewerId,
+          },
         },
-      },
-    });
+      });
+    }
   } catch (error) {
     logger.error('Failed to send candidate assigned notification:', error);
   }
@@ -97,6 +100,7 @@ export async function notifyCandidateUnassigned(params: {
   previousInterviewerName: string;
   triggerUserId: string;
   triggerUserName: string;
+  skipAdminHr?: boolean;
 }): Promise<void> {
   try {
     // Notify the previous interviewer if they're not the triggerer
@@ -130,39 +134,43 @@ export async function notifyCandidateUnassigned(params: {
       );
     }
 
-    // Notify admin/hr
-    const adminHrIds = await getUsersByRole(params.organizationId, [
-      'admin',
-      'hr',
-    ]);
-    const filteredIds = adminHrIds.filter((id) => id !== params.triggerUserId);
+    // Notify admin/hr (skip when reassigning - HR already gets assign notification)
+    if (!params.skipAdminHr) {
+      const adminHrIds = await getUsersByRole(params.organizationId, [
+        'admin',
+        'hr',
+      ]);
+      const filteredIds = adminHrIds.filter(
+        (id) => id !== params.triggerUserId,
+      );
 
-    await createBulkNotificationsWithDecision({
-      organizationId: params.organizationId,
-      recipientIds: filteredIds,
-      notificationType: NotificationType.STEP_COMPLETED,
-      jobId: params.jobId,
-      triggerUserId: params.triggerUserId,
-      baseParams: {
+      await createBulkNotificationsWithDecision({
         organizationId: params.organizationId,
-        type: NotificationType.STEP_COMPLETED,
-        title: 'Candidate Unassigned',
-        message: `${params.previousInterviewerName} are no longer assigned to interview ${params.candidateName}`,
-        relatedEntity: 'candidate',
-        relatedId: params.candidateId,
-        actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+        recipientIds: filteredIds,
+        notificationType: NotificationType.STEP_COMPLETED,
+        jobId: params.jobId,
         triggerUserId: params.triggerUserId,
-        triggerUserName: params.triggerUserName,
-        priority: 'medium',
-        metadata: {
-          candidateName: params.candidateName,
-          jobTitle: params.jobTitle,
-          jobId: params.jobId,
-          previousInterviewerName: params.previousInterviewerName,
-          interviewerId: params.previousInterviewerId,
+        baseParams: {
+          organizationId: params.organizationId,
+          type: NotificationType.STEP_COMPLETED,
+          title: 'Candidate Unassigned',
+          message: `${params.previousInterviewerName} are no longer assigned to interview ${params.candidateName}`,
+          relatedEntity: 'candidate',
+          relatedId: params.candidateId,
+          actionUrl: `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`,
+          triggerUserId: params.triggerUserId,
+          triggerUserName: params.triggerUserName,
+          priority: 'medium',
+          metadata: {
+            candidateName: params.candidateName,
+            jobTitle: params.jobTitle,
+            jobId: params.jobId,
+            previousInterviewerName: params.previousInterviewerName,
+            interviewerId: params.previousInterviewerId,
+          },
         },
-      },
-    });
+      });
+    }
   } catch (error) {
     logger.error('Failed to send candidate unassigned notification:', error);
   }

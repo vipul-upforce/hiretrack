@@ -809,7 +809,6 @@ export async function PUT(
         if ('assignment' in data) {
           const oldAssignment = existingCandidate.assignment;
           const newAssignment = data.assignment;
-
           if (newAssignment) {
             if (
               !oldAssignment ||
@@ -832,17 +831,18 @@ export async function PUT(
                 // Check if interviewer changed
                 const interviewerChanged =
                   oldAssignment &&
-                  oldAssignment.interviewerId !== newAssignment.interviewerId;
+                  oldAssignment.interviewerId &&
+                  oldAssignment.interviewerId.toString() !==
+                    newAssignment.interviewerId;
 
-                // Case 1: New assignment without time
-                // Notify when:
-                // - No old assignment exists (new assignment), OR
-                // - Assignment changed from HR (with time) to interviewer (without time), OR
-                // - Interviewer changed (reassignment to different interviewer)
-                if (
-                  !newAssignment.time &&
-                  (!oldAssignment || interviewerChanged || oldAssignment?.time)
-                ) {
+                // Do not send assign notification when a meeting is already scheduled
+                const hasMeeting =
+                  newAssignment.googleMeet ||
+                  newAssignment.zoomMeet ||
+                  newAssignment.microsoftTeams;
+
+                // Notify when: new assignment or reassignment, AND no meeting scheduled
+                if ((!oldAssignment || interviewerChanged) && !hasMeeting) {
                   await NotificationService.notifyCandidateAssigned({
                     organizationId,
                     candidateId: updatedCandidate._id?.toString() || '',
@@ -856,47 +856,68 @@ export async function PUT(
                     interviewerName: newInterviewer.name,
                     triggerUserId: userData?.id?.toString() || '',
                     triggerUserName: userData?.name || '',
+                    skipAdminHr: true,
                   });
                 }
 
-                if (newAssignment && newAssignment.time) {
-                  if (!oldAssignment || !oldAssignment.time) {
-                    await NotificationService.notifyMeetingScheduled({
-                      organizationId,
-                      candidateId: updatedCandidate._id?.toString() || '',
-                      candidateName: updatedCandidate.name,
-                      jobId:
-                        jobInfo?._id?.toString() ||
-                        updatedCandidate.jobId?.toString() ||
-                        '',
-                      jobTitle: jobInfo?.title || 'Unknown Job',
-                      interviewerId: newAssignment.interviewerId,
-                      interviewerName: newInterviewer.name,
-                      meetingDate: new Date(newAssignment.time),
-                      triggerUserId: userData?.id?.toString() || '',
-                      triggerUserName: userData?.name || '',
-                    });
-                  } else if (
-                    String(oldAssignment.time.toISOString()) !==
-                    newAssignment.time
-                  ) {
-                    await NotificationService.notifyMeetingUpdated({
-                      organizationId,
-                      candidateId: updatedCandidate._id?.toString() || '',
-                      candidateName: updatedCandidate.name,
-                      jobId:
-                        jobInfo?._id?.toString() ||
-                        updatedCandidate.jobId?.toString() ||
-                        '',
-                      jobTitle: jobInfo?.title || 'Unknown Job',
-                      interviewerId: newAssignment.interviewerId,
-                      interviewerName: newInterviewer.name,
-                      meetingDate: new Date(newAssignment.time),
-                      triggerUserId: userData?.id?.toString() || '',
-                      triggerUserName: userData?.name || '',
-                    });
-                  }
+                // When reassigning: notify previous interviewer (interviewer1) that they were unassigned
+                // Skip admin/hr - they already receive notifyCandidateAssigned above
+                if (interviewerChanged && oldInterviewer && !hasMeeting) {
+                  await NotificationService.notifyCandidateUnassigned({
+                    organizationId,
+                    candidateId: updatedCandidate._id?.toString() || '',
+                    candidateName: updatedCandidate.name,
+                    jobId:
+                      jobInfo?._id?.toString() ||
+                      updatedCandidate.jobId?.toString() ||
+                      '',
+                    jobTitle: jobInfo?.title || 'Unknown Job',
+                    previousInterviewerId: oldInterviewer._id.toString(),
+                    previousInterviewerName: oldInterviewer.name,
+                    triggerUserId: userData?.id?.toString() || '',
+                    triggerUserName: userData?.name || '',
+                    skipAdminHr: true,
+                  });
                 }
+
+                // if (newAssignment && newAssignment.time) {
+                //   if (!oldAssignment || !oldAssignment.time) {
+                //     // await NotificationService.notifyMeetingScheduled({
+                //     //   organizationId,
+                //     //   candidateId: updatedCandidate._id?.toString() || '',
+                //     //   candidateName: updatedCandidate.name,
+                //     //   jobId:
+                //     //     jobInfo?._id?.toString() ||
+                //     //     updatedCandidate.jobId?.toString() ||
+                //     //     '',
+                //     //   jobTitle: jobInfo?.title || 'Unknown Job',
+                //     //   interviewerId: newAssignment.interviewerId,
+                //     //   interviewerName: newInterviewer.name,
+                //     //   meetingDate: new Date(newAssignment.time),
+                //     //   triggerUserId: userData?.id?.toString() || '',
+                //     //   triggerUserName: userData?.name || '',
+                //     // });
+                //   } else if (
+                //     String(oldAssignment.time.toISOString()) !==
+                //     newAssignment.time
+                //   ) {
+                //     // await NotificationService.notifyMeetingUpdated({
+                //     //   organizationId,
+                //     //   candidateId: updatedCandidate._id?.toString() || '',
+                //     //   candidateName: updatedCandidate.name,
+                //     //   jobId:
+                //     //     jobInfo?._id?.toString() ||
+                //     //     updatedCandidate.jobId?.toString() ||
+                //     //     '',
+                //     //   jobTitle: jobInfo?.title || 'Unknown Job',
+                //     //   interviewerId: newAssignment.interviewerId,
+                //     //   interviewerName: newInterviewer.name,
+                //     //   meetingDate: new Date(newAssignment.time),
+                //     //   triggerUserId: userData?.id?.toString() || '',
+                //     //   triggerUserName: userData?.name || '',
+                //     // });
+                //   }
+                // }
 
                 // Handle meeting cancellation: when oldAssignment has time but newAssignment does not
                 // If interviewer changed, notify the OLD interviewer; otherwise notify the current one

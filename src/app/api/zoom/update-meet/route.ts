@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase, { Settings, Candidate, History } from '@/lib/mongodb';
+import connectToDatabase, {
+  Settings,
+  Candidate,
+  History,
+  User,
+} from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
 import { decryptText } from '@/lib/encryption';
@@ -412,6 +417,78 @@ export async function PUT(req: NextRequest) {
       await Candidate.findByIdAndUpdate(candidateId, {
         $set: updateFields,
       });
+    }
+
+    // Send meeting updated notification (non-blocking)
+    try {
+      if (candidateId && Candidate && User) {
+        const candidate = await Candidate.findById(candidateId)
+          .populate('assignment.interviewerId', '_id name')
+          .populate('jobId', '_id title')
+          .select('name assignment.interviewerId jobId')
+          .lean()
+          .exec();
+
+        if (candidate) {
+          let interviewerId = userData.id?.toString() || '';
+          const assignmentInterviewer = candidate.assignment?.interviewerId as
+            | { _id?: unknown; name?: string }
+            | undefined;
+          if (assignmentInterviewer?._id) {
+            interviewerId = String(assignmentInterviewer._id);
+          } else if (interviewerEmail) {
+            const userByEmail = await User.findOne({
+              organizationId,
+              email: interviewerEmail,
+            })
+              .select('_id')
+              .lean()
+              .exec();
+            if (userByEmail?._id) {
+              interviewerId = String(userByEmail._id);
+            }
+          }
+
+          const interviewerNameResolved =
+            assignmentInterviewer?.name || interviewerName;
+          const jobId =
+            candidate.jobId && typeof candidate.jobId !== 'string' && '_id' in candidate.jobId
+              ? candidate.jobId._id.toString()
+              : candidate.jobId?.toString() || jobIdForEmail;
+          const jobTitleResolved =
+            candidate.jobId && typeof candidate.jobId !== 'string' && 'title' in candidate.jobId
+              ? candidate.jobId.title
+              : jobTitle;
+
+          let meetingDate: Date;
+          if (scheduledTime) {
+            meetingDate = new Date(scheduledTime);
+          } else if (fallbackScheduledTime) {
+            meetingDate = new Date(fallbackScheduledTime);
+          } else {
+            meetingDate = new Date();
+          }
+
+          await NotificationService.notifyMeetingUpdated({
+            organizationId,
+            candidateId,
+            candidateName,
+            jobId,
+            jobTitle: jobTitleResolved,
+            interviewerId,
+            interviewerName: interviewerNameResolved,
+            meetingDate,
+            triggerUserId: userData.id?.toString() || '',
+            triggerUserName: userData.name || '',
+          });
+        }
+      }
+    } catch (notifyError) {
+      logger.error(
+        { error: notifyError, url: req.url },
+        'Failed to send meeting updated notification:',
+        notifyError,
+      );
     }
 
     if (!settings?.googleCalendar?.isConnected) {
