@@ -311,7 +311,7 @@ export const CandidateCard = memo(
                   <div
                     role="presentation"
                     className={cn(
-                      'absolute -left-1 -top-1 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 bg-white transition-opacity dark:bg-black',
+                      'absolute -left-1 -top-1 z-20 flex h-7 w-7 items-center justify-center rounded-full border-2 bg-background transition-opacity',
                       showCheckbox ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
                       isSelected ? 'border-primary' : 'border-gray-300 border-[1px] dark:border-gray-600'
                     )}
@@ -322,7 +322,7 @@ export const CandidateCard = memo(
                     onPointerDown={e => e.stopPropagation()}
                   >
                     {/* White/black overlay on top-left (cropped area) to mask primary border */}
-                    <div className="absolute -left-[4px] -top-[2px] h-5 w-[27px] rounded-full bg-white dark:bg-black" />
+                    <div className="absolute -left-[4px] -top-[2px] h-5 w-[27px] rounded-full bg-background" />
                     <button
                       type="button"
                       aria-label={isSelected ? "Deselect candidate" : "Select candidate"}
