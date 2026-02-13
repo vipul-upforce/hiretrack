@@ -14,6 +14,11 @@ interface CustomField {
   private?: boolean;
 }
 
+interface JobPositionCustomFieldConfig {
+  formName?: string;
+  fields?: CustomField[];
+}
+
 const handleGetOpenJobs = async (request: NextRequest) => {
   try {
     const validation = validateQueryParams(request.nextUrl.searchParams, {
@@ -80,10 +85,7 @@ const handleGetOpenJobs = async (request: NextRequest) => {
       }
     }
 
-    const customFields = await Organization?.findById(organizationId);
-
-    // const organization = await Organization?.findById(organizationId);
-    // const openJobCardsOrder = organization?.openJobCards;
+    const organization = await Organization?.findById(organizationId).lean();
 
     const jobs = await Job!
       .find(
@@ -108,14 +110,27 @@ const handleGetOpenJobs = async (request: NextRequest) => {
         },
       )
       .lean();
-    // const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
-    // console.log('jobsMap ==============++++++++++++++++++', jobsMap);
-    // const sortedJobs =
-    //   openJobCardsOrder?.map((id) => jobsMap.get(id.toString())).filter(Boolean) || [];
 
-    // console.log('sortedJobs ==============++++++++++++++++++', sortedJobs);
+    const openJobCardsOrder = organization?.openJobCards || [];
+    const orderedJobIds = new Set(openJobCardsOrder.map((id) => id?.toString()));
+    const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
+
+    const orderedJobs = openJobCardsOrder
+      .map((id) => jobsMap.get(id?.toString()))
+      .filter((job): job is NonNullable<typeof job> => !!job);
+
+    const remainingJobs = jobs.filter(
+      (job) => !orderedJobIds.has(job._id.toString()),
+    );
+
+    const jobsInDisplayOrder = [...orderedJobs, ...remainingJobs];
+    const customFieldsMap = (organization?.customFields || {}) as Record<
+      string,
+      JobPositionCustomFieldConfig
+    >;
+
     const jobPositionFields =
-      Object.values(customFields?.customFields || {}).find(
+      Object.values(customFieldsMap).find(
         (field) => field.formName === 'Job Position',
       )?.fields || [];
 
@@ -123,7 +138,7 @@ const handleGetOpenJobs = async (request: NextRequest) => {
       ?.filter((field: CustomField) => !field.private)
       ?.map((data: CustomField) => data.label);
 
-    const filteredJobs = jobs?.map((job) => ({
+    const filteredJobs = jobsInDisplayOrder?.map((job) => ({
       ...job,
       salary: job?.salary && !job?.salary?.isPrivate ? job?.salary : undefined,
       customFields: Object.fromEntries(
