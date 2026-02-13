@@ -78,6 +78,14 @@ export function EntryOptionsMenu({
         <RemarkOptionsMenu
           type="note"
           remarkId={interview._id}
+          isPrivate={interview.note?.isPrivate || false}
+          onTogglePrivacy={async (id, isPrivate) => {
+            await handleRemarkUpdate(
+              id,
+              interview.note?.description as string || '',
+              isPrivate,
+            );
+          }}
           onEdit={() => {
             if (
               interview.note &&
@@ -86,7 +94,7 @@ export function EntryOptionsMenu({
               setEditingRemark({
                 id: interview._id,
                 description: interview.note.description,
-                isPrivate: interview.remark?.isPrivate || false,
+                isPrivate: interview.note?.isPrivate || false,
                 rating: interview.note.rating,
               });
               setIsEditRemarkDialogOpen(true);

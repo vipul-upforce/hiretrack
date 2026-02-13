@@ -31,7 +31,10 @@ export function RenderHistoryEntry({
   }
 
   const isPrivate =
-    !!interview.remark?.isPrivate && !!interview.remark?.description;
+    (!!interview.remark?.isPrivate && !!interview.remark?.description) ||
+    (!!interview.note?.isPrivate &&
+      typeof interview.note?.description === 'string' &&
+      !!interview.note.description);
 
   return (
     <div key={indexKey} className="group mb-10 ms-4">
