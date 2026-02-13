@@ -38,18 +38,6 @@ export function CredentialsCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="tenantId">Directory (Tenant) ID</Label>
-          <Input
-            id="tenantId"
-            value={formData.tenantId}
-            onChange={(e) =>
-              setFormData({ ...formData, tenantId: e.target.value })
-            }
-            placeholder="Enter Azure Tenant ID"
-            disabled={isConnected}
-          />
-        </div>
 
         <div className="space-y-2">
           <Label htmlFor="clientId">Application (Client) ID</Label>
@@ -63,9 +51,22 @@ export function CredentialsCard({
             disabled={isConnected}
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="tenantId">Directory (Tenant) ID</Label>
+          <Input
+            id="tenantId"
+            value={formData.tenantId}
+            onChange={(e) =>
+              setFormData({ ...formData, tenantId: e.target.value })
+            }
+            placeholder="Enter Azure Tenant ID"
+            disabled={isConnected}
+          />
+        </div>
+
 
         <div className="space-y-2">
-          <Label htmlFor="clientSecret">Client Secret</Label>
+          <Label htmlFor="clientSecret">Client Secret Value</Label>
           <div className="flex items-center gap-2">
             <Input
               id="clientSecret"
@@ -74,7 +75,7 @@ export function CredentialsCard({
               onChange={(e) =>
                 setFormData({ ...formData, clientSecret: e.target.value })
               }
-              placeholder="Enter Azure Client Secret"
+              placeholder="Enter Azure Client Secret Value"
               disabled={isConnected}
             />
             <Button
