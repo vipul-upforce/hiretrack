@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
       timezone: organizationTimezone,
       agenda: meetingNotes || '',
       settings: {
-        join_before_host: false,
+        join_before_host: true,
         mute_upon_entry: true,
         waiting_room: false,
       },

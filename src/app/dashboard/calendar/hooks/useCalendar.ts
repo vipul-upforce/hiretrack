@@ -149,16 +149,6 @@ export function useCalendar(): UseCalendarReturn {
   const { currentData: qnAssignments } =
     useFetchAssignedCandidatesQuery(qnQueryParams);
 
-  // ===== TOTAL ASSIGNMENTS QUERY =====
-  // Fetch total count of all active assignments (without date range filtering)
-  // This gives us the organization-wide total, not just current month
-  const { currentData: totalAssignmentsData } = useFetchAssignedCandidatesQuery(
-    {
-      filterValue: fcQueryParams.filterValue,
-      // No startDate/endDate - this gets all assignments for the organization
-    },
-  );
-
   // Refetch once on page load to ensure fresh data
   useEffect(() => {
     if (!hasRefetchedOnMount.current) {
@@ -702,19 +692,8 @@ export function useCalendar(): UseCalendarReturn {
     [events, today],
   );
 
-  // Total interviews = all active assignments for the organization (not just current month)
-  // Use the total from the API response when no date range is applied
-  const totalInterviews = useMemo(() => {
-    // If we have total assignments data (without date range), use that
-    if (
-      totalAssignmentsData &&
-      totalAssignmentsData[0]?.totalInterviews !== undefined
-    ) {
-      return totalAssignmentsData[0].totalInterviews;
-    }
-    // Fallback to events.length if total data not available yet
-    return events.length;
-  }, [totalAssignmentsData, events.length]);
+  // Keep total interviews on the same live event source as other calendar cards.
+  const totalInterviews = events.length;
 
   return {
     selectedEvent,

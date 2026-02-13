@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Video } from 'lucide-react';
+import { Calendar, Video, Users } from 'lucide-react';
 import GoogleCalendarSettings from '../google-calendar';
 import ZoomSettings from '../zoom';
 import MicrosoftTeamsSettings from '../microsoft-teams';
@@ -27,7 +27,7 @@ const sections: SectionOption[] = [
     id: 'microsoft-teams',
     title: 'Microsoft Teams',
     description: 'Connect Teams for interview scheduling',
-    icon: Video,
+    icon: Users,
     badge: 'Teams',
   },
 ];

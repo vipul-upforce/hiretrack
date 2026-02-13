@@ -78,6 +78,7 @@ function TagsDialog({
         title: 'Success',
         description: 'Candidate tags updated successfully.',
       });
+      onClose();
     } catch (er) {
       logger.error('Failed to update candidate tags:', er);
       toast({

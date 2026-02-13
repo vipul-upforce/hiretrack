@@ -10,7 +10,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import useRoles from '@/hooks/useRoles';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface RemarkOptionsMenuProps {
   type: 'remark' | 'note';
@@ -31,6 +31,10 @@ export function RemarkOptionsMenu({
 }: RemarkOptionsMenuProps) {
   const [isLocalPrivate, setIsLocalPrivate] = useState(isPrivate); // state for
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    setIsLocalPrivate(isPrivate);
+  }, [isPrivate, remarkId, type]);
 
   const handlePrivacyToggle = async (checked: boolean) => {
     setIsLoading(true);
@@ -61,8 +65,8 @@ export function RemarkOptionsMenu({
         <span className="sr-only">Open options</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        {/* ✅ Show privacy toggle only for remarks */}
-        {type === 'remark' && role !== 'interviewer' && (
+        {/* Show privacy toggle for both remarks and history notes */}
+        {(type === 'remark' || type === 'note') && role !== 'interviewer' && (
           <>
             <div className="flex items-center justify-between px-2 py-2">
               <div className="flex items-center space-x-2">

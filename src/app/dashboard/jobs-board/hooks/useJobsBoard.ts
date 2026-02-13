@@ -458,7 +458,7 @@ export function useJobsBoard(): UseJobsBoardReturn {
         id: draggableId,
         status: destination.droppableId,
         openJobCardsOrder:
-          newColumns
+          updatedColumns
             .find((col) => col.id === 'open')
             ?.jobs.map((job) => job._id) || [],
       }).unwrap();

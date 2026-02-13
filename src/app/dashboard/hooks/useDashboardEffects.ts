@@ -25,6 +25,8 @@ interface UseDashboardEffectsParams {
   sseCandidates: Candidate[] | undefined;
   /** Ref to track SSE additions for pagination offset adjustment */
   sseAddedCountRef: React.MutableRefObject<number>;
+  /** Ref tracking all IDs currently included in total count scope */
+  totalCountMembershipRef: React.MutableRefObject<Set<string>>;
 
   // Helper functions
   isToday: (assignment: Candidate) => boolean;
@@ -57,6 +59,7 @@ export function useDashboardEffects({
   isActivitiesSidebarOpen,
   sseCandidates,
   sseAddedCountRef,
+  totalCountMembershipRef,
   isToday,
   isThisWeek,
   setAssignmentsCounts,
@@ -153,6 +156,23 @@ export function useDashboardEffects({
     return interviewerId === selectedAssignedTo;
   };
 
+  // Matches backend filter behavior for /candidates/assignments (name/email/skills)
+  const matchesSearchFilter = (candidate: Candidate): boolean => {
+    if (!filterText?.trim()) return true;
+
+    try {
+      const searchRegex = new RegExp(filterText, 'i');
+      return (
+        searchRegex.test(candidate.name || '') ||
+        searchRegex.test(candidate.email || '') ||
+        (candidate.skills || []).some((skill) => searchRegex.test(skill || ''))
+      );
+    } catch {
+      // If regex parsing fails, avoid count drift by treating as non-match.
+      return false;
+    }
+  };
+
   /**
    * Get comparable value for a candidate based on sort field.
    * Returns a value that can be compared for sorting.
@@ -222,8 +242,8 @@ export function useDashboardEffects({
     if (sseCandidates && sseCandidates.length > 0) {
       setAssignments((prevAssignments) => {
         let updatedAssignments: Candidate[] = [...prevAssignments];
-        let addedCount = 0;
-        let removedCount = 0;
+        let totalAddedCount = 0;
+        let totalRemovedCount = 0;
         let addedTodayCount = 0;
         let removedTodayCount = 0;
         let addedWeekCount = 0;
@@ -239,12 +259,26 @@ export function useDashboardEffects({
 
           // Check if candidate has a valid assignment (not null and has interviewerId)
           const isValid = hasValidAssignment(sseCandidate as Candidate);
+          const matchesTotalScope =
+            isValid &&
+            matchesInterviewerFilter(sseCandidate) &&
+            matchesSearchFilter(sseCandidate as Candidate);
+          const wasInTotalScope =
+            totalCountMembershipRef.current.has(candidateId);
+
+          // Update total count membership using full-scope ID set (all pages)
+          if (matchesTotalScope && !wasInTotalScope) {
+            totalCountMembershipRef.current.add(candidateId);
+            totalAddedCount += 1;
+          } else if (!matchesTotalScope && wasInTotalScope) {
+            totalCountMembershipRef.current.delete(candidateId);
+            totalRemovedCount += 1;
+          }
 
           // If assignment is null or invalid, remove from list
           if (!isValid) {
             if (existingIndex !== -1) {
               const removed = updatedAssignments[existingIndex];
-              removedCount += 1;
               if (isToday(removed)) removedTodayCount += 1;
               if (isThisWeek(removed)) removedWeekCount += 1;
               updatedAssignments = updatedAssignments.filter(
@@ -261,7 +295,9 @@ export function useDashboardEffects({
             'interviewerId' in sseCandidate.assignment
           ) {
             // Check if this candidate matches the current interviewer filter
-            const matchesFilter = matchesInterviewerFilter(sseCandidate);
+            const matchesFilter =
+              matchesInterviewerFilter(sseCandidate) &&
+              matchesSearchFilter(sseCandidate as Candidate);
 
             const assignment: Candidate = {
               id: sseCandidate._id!,
@@ -304,7 +340,6 @@ export function useDashboardEffects({
               if (!matchesFilter) {
                 // Interviewer changed to someone outside filter, remove from list
                 const removed = updatedAssignments[existingIndex];
-                removedCount += 1;
                 if (isToday(removed)) removedTodayCount += 1;
                 if (isThisWeek(removed)) removedWeekCount += 1;
                 updatedAssignments = updatedAssignments.filter(
@@ -349,7 +384,6 @@ export function useDashboardEffects({
               }
             } else if (matchesFilter) {
               // New assignment that matches filter - insert at sorted position
-              addedCount += 1;
               // Track SSE additions for pagination offset adjustment
               sseAddedCountRef.current += 1;
               if (isToday(assignment)) addedTodayCount += 1;
@@ -373,7 +407,7 @@ export function useDashboardEffects({
         setAssignmentsCounts((prev) => ({
           totalInterviews: Math.max(
             0,
-            (prev.totalInterviews || 0) + addedCount - removedCount,
+            (prev.totalInterviews || 0) + totalAddedCount - totalRemovedCount,
           ),
           todaysInterviews: Math.max(
             0,
@@ -388,9 +422,8 @@ export function useDashboardEffects({
         return cleanedAssignments;
       });
     }
-    // NOTE: filterText is intentionally NOT in dependencies - this effect only handles SSE updates
-    // and SSE candidates are already server-filtered. Including filterText would cause unnecessary
-    // re-processing of all SSE candidates when text filter changes.
+    // NOTE: filterText is intentionally NOT in dependencies - this effect should run only on SSE updates.
+    // Filter changes trigger a fresh API fetch (Effect 1), which resets list and counts from server data.
     // sseAddedCountRef is a ref (stable reference) so it doesn't need to be in deps.
   }, [
     sseCandidates,
@@ -402,6 +435,7 @@ export function useDashboardEffects({
     isToday,
     isThisWeek,
     setAssignmentsCounts,
+    totalCountMembershipRef,
   ]);
 
   // Create lastElementRef callback for intersection observer

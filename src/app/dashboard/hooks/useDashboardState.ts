@@ -122,6 +122,8 @@ export function useDashboardState() {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef(false);
   const observerRef = useRef<IntersectionObserver>(null);
+  /** Tracks all candidate IDs included in the current total-count scope (all pages). */
+  const totalCountMembershipRef = useRef<Set<string>>(new Set());
 
   /**
    * Tracks the number of items added via SSE since the last fresh fetch.
@@ -182,5 +184,6 @@ export function useDashboardState() {
     loadingRef,
     observerRef,
     sseAddedCountRef,
+    totalCountMembershipRef,
   };
 }

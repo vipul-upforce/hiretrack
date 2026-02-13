@@ -184,6 +184,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       updateFields['history.$.note.description'] = description;
+      updateFields['history.$.note.isPrivate'] = isPrivate;
       updateFields['history.$.note.rating'] = rating;
       updateFields['history.$.assignmentBy'] = new mongoose.Types.ObjectId(
         user.id,
