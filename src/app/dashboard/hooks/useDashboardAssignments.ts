@@ -52,6 +52,8 @@ interface UseDashboardAssignmentsParams {
   isLoadingMore: boolean;
   /** Ref tracking SSE additions to adjust pagination offset */
   sseAddedCountRef: React.MutableRefObject<number>;
+  /** Tracks IDs included in current total-count scope across all pages */
+  totalCountMembershipRef: React.MutableRefObject<Set<string>>;
 }
 
 /**
@@ -75,6 +77,7 @@ export function useDashboardAssignments({
   hasMoreData,
   isLoadingMore,
   sseAddedCountRef,
+  totalCountMembershipRef,
 }: UseDashboardAssignmentsParams) {
   const fetchAssignments = useCallback(
     async (page = 1, isAppend = false) => {
@@ -86,6 +89,8 @@ export function useDashboardAssignments({
         setIsLoading(true);
         // Reset SSE offset counter on fresh fetch
         sseAddedCountRef.current = 0;
+        // Reset total-scope membership before rebuilding from fresh data
+        totalCountMembershipRef.current = new Set<string>();
       } else {
         setIsLoadingMore(true);
       }
@@ -127,6 +132,29 @@ export function useDashboardAssignments({
         } else {
           setHasMoreData(true);
         }
+
+        // Build full-scope ID set used by SSE total count calculation.
+        // This includes all pages for current filters/interviewer selection.
+        if (!isAppend) {
+          const fullData = await triggerFetchAssignments({
+            isPagination: false,
+            page: 1,
+            limit: itemsPerPage,
+            filterValue: filterText.toString(),
+            assignedTo: selectedAssignedTo,
+            sortBy: sortConfig.field,
+            sortOrder: sortConfig.order,
+            sseOffset: 0,
+          }).unwrap();
+
+          const scopedIds = new Set<string>();
+          (fullData[0]?.data || []).forEach((candidate) => {
+            if (!hasValidAssignment(candidate)) return;
+            const id = candidate._id || candidate.id;
+            if (id) scopedIds.add(id);
+          });
+          totalCountMembershipRef.current = scopedIds;
+        }
       } catch (error) {
         logger.error('Error fetching assignments:', error);
       } finally {
@@ -148,6 +176,7 @@ export function useDashboardAssignments({
       setIsLoadingMore,
       setHasMoreData,
       loadingRef,
+      totalCountMembershipRef,
     ],
   );
 

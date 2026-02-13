@@ -52,6 +52,7 @@ export default function DashboardPage() {
     hasMoreData: state.hasMoreData,
     isLoadingMore: state.isLoadingMore,
     sseAddedCountRef: state.sseAddedCountRef,
+    totalCountMembershipRef: state.totalCountMembershipRef,
   });
 
   // Scroll handler
@@ -93,6 +94,7 @@ export default function DashboardPage() {
     isToday,
     isThisWeek,
     setAssignmentsCounts: state.setAssignmentsCounts,
+    totalCountMembershipRef: state.totalCountMembershipRef,
   });
 
   // Notification handling
