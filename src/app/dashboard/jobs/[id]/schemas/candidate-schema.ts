@@ -14,6 +14,7 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       ),
     email: Yup.string()
       .required('Email is required')
+      .max(50, 'Email must be 50 characters or fewer')
       .matches(
         /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
         'Please enter a valid email address',
@@ -26,6 +27,7 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
       ),
     location: Yup.string()
       .required('Location is required')
+      .max(50, 'Location must be 50 characters or fewer')
       .matches(
         /^(?=.*[A-Za-z]).+$/,
         'Location must include at least one letter and cannot consist of only numbers or symbols.',
@@ -53,7 +55,17 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
             'Each skill must include at least one letter and cannot consist of only numbers or symbols.',
           ),
       )
-      .min(1, 'At least one skill is required'),
+      .min(1, 'At least one skill is required')
+      .max(100, 'Skills cannot be more than 100 items')
+      .test(
+        'skill-item-max-length',
+        'Each skill must be 150 characters or fewer',
+        (skills) =>
+          !skills ||
+          skills.every(
+            (skill) => typeof skill !== 'string' || skill.length <= 150,
+          ),
+      ),
     expectedCTC: Yup.mixed()
       .required('Expected CTC is required')
       .test('is-valid-ctc', 'Expected CTC must be a valid number', (value) => {
