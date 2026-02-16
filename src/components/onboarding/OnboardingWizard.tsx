@@ -12,7 +12,7 @@ import WelcomeStep from './steps/WelcomeStep';
 import PortalConfigStep from './steps/PortalConfigStep';
 import AIProviderStep from './steps/AIProviderStep';
 import EmailConfigStep from './steps/EmailConfigStep';
-import CalendarStep from './steps/CalendarStep';
+import MeetingIntegrationStep from './steps/MeetingIntegrationStep';
 import TimezoneStep from './steps/TimezoneStep';
 import StorageStep from './steps/StorageStep';
 import UsersStep from './steps/UsersStep';
@@ -35,6 +35,7 @@ function OnboardingWizard() {
   } = useOnboarding();
   const [isCurrentConfigured, setIsCurrentConfigured] = useState(false);
   const [showDismissDialog, setShowDismissDialog] = useState(false);
+  const [isNextLoading, setIsNextLoading] = useState(false);
   const validationInProgressRef = useRef(false);
   const lastValidatedStepIdRef = useRef<string | null>(null);
   const previousConfiguredStateRef = useRef<boolean | null>(null);
@@ -230,8 +231,11 @@ function OnboardingWizard() {
     setIsOpen(false);
   };
 
-  // Next button - optimized to reduce API calls
+  // Next button - always re-validate before deciding to avoid stale state
+  // (e.g. user configured in dialog but wizard's isCurrentConfigured wasn't updated yet)
   const handleNext = useCallback(async () => {
+    if (isNextLoading) return;
+
     // Clear any pending auto-advance
     if (autoAdvanceTimeoutRef.current) {
       clearTimeout(autoAdvanceTimeoutRef.current);
@@ -252,58 +256,72 @@ function OnboardingWizard() {
       return;
     }
 
-    // Use already validated state instead of calling validateStep again
-    // The useEffect already validates and updates isCurrentConfigured
     const nextStep = currentStep + 1;
     setCurrentStepIndex(nextStep);
 
     if (currentStepData && onboardingStatus) {
-      if (isCurrentConfigured) {
-        // Batch completion and step update into a single API call
-        const updated = {
-          ...onboardingStatus,
-          completedSteps: Array.from(
-            new Set([...onboardingStatus.completedSteps, currentStepData.id]),
-          ),
-          skippedSteps: onboardingStatus.skippedSteps.filter(
-            (x) => x !== currentStepData.id,
-          ),
-          currentStep: nextStep,
-        };
-        await updateOnboardingStatus(updated);
-      } else {
-        // If not configured, mark as skipped and move to next step
-        const updated = {
-          ...onboardingStatus,
-          skippedSteps: Array.from(
-            new Set([...onboardingStatus.skippedSteps, currentStepData.id]),
-          ),
-          completedSteps: onboardingStatus.completedSteps.filter(
-            (x) => x !== currentStepData.id,
-          ),
-          currentStep: nextStep,
-        };
-        await updateOnboardingStatus(updated);
-        // Reset validation ref to allow re-validation on next step
+      setIsNextLoading(true);
+      try {
+        // Re-validate with force refresh to get latest config status before deciding.
+        // This fixes: user configures in dialog → closes → clicks Next before
+        // wizard's isCurrentConfigured updates (step components don't call refreshProgress).
+        invalidateStepCache(currentStepData.id);
+        let isConfigured: boolean;
+        try {
+          isConfigured = await validateStep(currentStepData.id, true);
+          setIsCurrentConfigured(isConfigured);
+        } catch (error) {
+          logger.error('Validation error on Next:', error);
+          isConfigured = false;
+        }
+
+        if (isConfigured) {
+          // Step is configured → mark as completed, not skipped
+          const updated = {
+            ...onboardingStatus,
+            completedSteps: Array.from(
+              new Set([...onboardingStatus.completedSteps, currentStepData.id]),
+            ),
+            skippedSteps: onboardingStatus.skippedSteps.filter(
+              (x) => x !== currentStepData.id,
+            ),
+            currentStep: nextStep,
+          };
+          await updateOnboardingStatus(updated);
+        } else {
+          // Step is not configured → mark as skipped
+          const updated = {
+            ...onboardingStatus,
+            skippedSteps: Array.from(
+              new Set([...onboardingStatus.skippedSteps, currentStepData.id]),
+            ),
+            completedSteps: onboardingStatus.completedSteps.filter(
+              (x) => x !== currentStepData.id,
+            ),
+            currentStep: nextStep,
+          };
+          await updateOnboardingStatus(updated);
+        }
         lastValidatedStepIdRef.current = null;
+      } finally {
+        setIsNextLoading(false);
       }
     } else {
-      // If no current step data, just move to next step
       await updateOnboardingStatus({ currentStep: nextStep });
-      // Reset validation ref to allow re-validation on next step
       lastValidatedStepIdRef.current = null;
     }
 
-    // Reset previous state for next step
     previousConfiguredStateRef.current = null;
   }, [
     currentStep,
     totalSteps,
     currentStepData,
-    isCurrentConfigured,
     onboardingStatus,
     updateOnboardingStatus,
+    validateStep,
+    invalidateStepCache,
     handleFinish,
+    isNextLoading,
   ]);
 
   // Previous button
@@ -376,8 +394,8 @@ function OnboardingWizard() {
         return <AIProviderStep />;
       case 'email':
         return <EmailConfigStep />;
-      case 'calendar':
-        return <CalendarStep />;
+      case 'meetingIntegration':
+        return <MeetingIntegrationStep />;
       case 'timezone':
         return <TimezoneStep />;
       case 'storage':
@@ -470,9 +488,19 @@ function OnboardingWizard() {
                   onClick={handleNext}
                   variant="primary"
                   className="text-white"
+                  disabled={isNextLoading}
                 >
-                  Next
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  {isNextLoading ? (
+                    <>
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Validating...
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
                 </Button>
               ) : (
                 <Button
