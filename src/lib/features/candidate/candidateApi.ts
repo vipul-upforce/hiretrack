@@ -496,6 +496,8 @@ export const candidateApi = baseApi.injectEndpoints({
           params.append('jobId', jobId);
         }
         const queryString = params.toString();
+        console.log('queryString', queryString);
+        console.log('formData', formData);
         return {
           url: `/files/upload${queryString ? `?${queryString}` : ''}`,
           method: 'POST',

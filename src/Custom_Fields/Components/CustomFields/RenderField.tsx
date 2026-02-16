@@ -426,28 +426,32 @@ export function RenderField({
               }
 
               try {
-                const base64Files = await Promise.all(
-                  sanitizedFiles.map(async (file) => {
-                    let fileurl;
-                    if ((file as FileData).base64) {
-                      fileurl = (file as FileData).base64;
-                    } else if ((file as FileData).base64 === '') {
-                      fileurl = '';
-                    } else {
-                      fileurl = await fileToBase64(file as File);
-                    }
-                    return {
-                      base64: fileurl,
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                    };
-                  }),
-                );
+                // Separate new File objects from existing FileData objects (with base64/url)
+                const newFiles: File[] = [];
+                const existingFiles: FileData[] = [];
 
-                const fileNames = base64Files.map((file) => file.name);
+                sanitizedFiles.forEach((file) => {
+                  // Check if it's a File object (new file - keep as File)
+                  if (file instanceof File) {
+                    newFiles.push(file);
+                  }
+                  // Check if it's an existing file with base64 or url (keep as-is)
+                  else if (
+                    typeof file === 'object' &&
+                    file !== null &&
+                    ('base64' in file || 'url' in file)
+                  ) {
+                    existingFiles.push(file as FileData);
+                  }
+                });
+
+                // Check for duplicate file names across all files
+                const allFileNames = [
+                  ...newFiles.map((f) => f.name),
+                  ...existingFiles.map((f) => f.name),
+                ];
                 const hasDuplicates =
-                  new Set(fileNames).size !== fileNames.length;
+                  new Set(allFileNames).size !== allFileNames.length;
 
                 if (hasDuplicates) {
                   toast.error('Duplicate Files', {
@@ -456,7 +460,14 @@ export function RenderField({
                   return;
                 }
 
-                setFieldValue(`customFields.${label}`, base64Files);
+                // Store File objects directly for new files (like attachments pattern)
+                // Keep existing files as-is (with base64/url for backward compatibility)
+                const combinedFiles: Array<File | FileData> = [
+                  ...existingFiles,
+                  ...newFiles,
+                ];
+
+                setFieldValue(`customFields.${label}`, combinedFiles);
               } catch {
                 toast.error('Upload Error', {
                   description: 'Failed to process files.',

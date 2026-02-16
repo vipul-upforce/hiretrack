@@ -11,6 +11,10 @@ import { Resume } from '@/lib/redux/types';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import { Candidate } from '@/types/candidate';
 import {
+  uploadCandidateFilesOneByOne,
+  type CandidateFileUploadValues,
+} from '@/lib/utils/candidateFileUpload';
+import {
   storeGuestApplication,
   hasAppliedAsGuest,
   evaluateCandidate,
@@ -76,7 +80,17 @@ export const useGuestApplicationSubmit = (
     }
 
     try {
-      // Step 1: Upload files first to get URLs
+      // Step 1: Upload files one by one and collect URLs
+      const hasFilesToUpload =
+        (values.resume && values.resume instanceof File) ||
+        (Array.isArray(values.attachments) && values.attachments.length > 0) ||
+        (values.customFields &&
+          Object.values(values.customFields).some(
+            (field) =>
+              Array.isArray(field) &&
+              field.some((item) => item instanceof File),
+          ));
+
       let resumeUrl: {
         id: string;
         name: string;
@@ -91,41 +105,32 @@ export const useGuestApplicationSubmit = (
         type: string;
         size: number;
       }> = [];
-
-      const hasFilesToUpload =
-        (values.resume && values.resume instanceof File) ||
-        (Array.isArray(values.attachments) && values.attachments.length > 0);
+      let customFieldUrls: Record<
+        string,
+        Array<{ id: string; name: string; url: string; type: string; size: number }>
+      > = {};
 
       if (hasFilesToUpload) {
-        const uploadFormData = new FormData();
-
-        if (values.resume && values.resume instanceof File) {
-          uploadFormData.append('resume', values.resume);
-        }
-
-        if (Array.isArray(values.attachments)) {
-          values.attachments.forEach((file) => {
-            if (file instanceof File) {
-              uploadFormData.append('attachments', file);
-            }
-          });
-        }
-
         try {
-          // Pass jobId for public access (guest applications don't have cookies/auth)
-          const uploadResult = await uploadFiles({
-            formData: uploadFormData,
-            jobId,
-          }).unwrap();
-          if (uploadResult.files && uploadResult.files.length > 0) {
-            // First file is resume if present, rest are attachments
-            if (values.resume && values.resume instanceof File) {
-              [resumeUrl] = uploadResult.files;
-              attachmentUrls = uploadResult.files.slice(1);
-            } else {
-              attachmentUrls = uploadResult.files;
-            }
+          const uploadResult = await uploadCandidateFilesOneByOne(
+            values as CandidateFileUploadValues,
+            uploadFiles,
+            {
+              jobId,
+              onCustomFieldUploadError: (fieldKey, error) => {
+                toast({
+                  title: 'File Upload Failed',
+                  description: `Failed to upload file for ${fieldKey}: ${error.message}`,
+                  variant: 'destructive',
+                });
+              },
+            },
+          );
+          if (uploadResult.resume) {
+            resumeUrl = uploadResult.resume;
           }
+          attachmentUrls = uploadResult.attachments;
+          customFieldUrls = uploadResult.customFields;
         } catch (uploadError) {
           logger.error('File upload error:', uploadError);
           toast({
@@ -144,7 +149,7 @@ export const useGuestApplicationSubmit = (
       // Step 2: Build candidate data with file URLs (not File objects)
       const { ...restValues } = values;
 
-      const candidateData = {
+      const candidateData: Record<string, unknown> = {
         ...restValues,
         jobId: {
           _id: jobId,
@@ -169,10 +174,26 @@ export const useGuestApplicationSubmit = (
             }
           : {}),
         remarks: [],
-        // Include file URLs from upload
         ...(resumeUrl ? { resume: resumeUrl } : {}),
         ...(attachmentUrls.length > 0 ? { attachments: attachmentUrls } : {}),
       };
+
+      if (Object.keys(customFieldUrls).length > 0) {
+        const existingCustomFields =
+          (candidateData.customFields as Record<string, unknown>) || {};
+        for (const [fieldKey, files] of Object.entries(customFieldUrls)) {
+          const existingField = existingCustomFields[fieldKey];
+          if (Array.isArray(existingField)) {
+            existingCustomFields[fieldKey] = [
+              ...existingField.filter((item) => !(item instanceof File)),
+              ...files,
+            ];
+          } else {
+            existingCustomFields[fieldKey] = files;
+          }
+        }
+        candidateData.customFields = existingCustomFields;
+      }
 
       // Step 3: Send candidate data as JSON (with URLs, not files)
       const createdCandidate = await createGuestCandidate(

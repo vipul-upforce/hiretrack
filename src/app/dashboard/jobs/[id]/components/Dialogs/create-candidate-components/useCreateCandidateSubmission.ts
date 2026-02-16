@@ -11,6 +11,10 @@ import {
   useUpdateCandidateHistoryMutation,
   useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
+import {
+  uploadCandidateFilesOneByOne,
+  type CandidateFileUploadValues,
+} from '@/lib/utils/candidateFileUpload';
 // import { v4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
 import { Resume } from '@/lib/redux/types';
@@ -47,6 +51,7 @@ interface UseCreateCandidateSubmissionProps {
     name: string;
     email: string;
     role: string;
+    organizationId?: string;
   } | null;
   onSuccess: () => void;
 }
@@ -196,32 +201,7 @@ export function useCreateCandidateSubmission({
 
       setIsCreating(true);
 
-      // Step 1: Upload files first to get URLs
-      let resumeUrl: {
-        id: string;
-        name: string;
-        url: string;
-        type: string;
-        size: number;
-      } | null = null;
-      let attachmentUrls: Array<{
-        id: string;
-        name: string;
-        url: string;
-        type: string;
-        size: number;
-      }> = [];
-      let customFieldUrls: Record<
-        string,
-        Array<{
-          id: string;
-          name: string;
-          url: string;
-          type: string;
-          size: number;
-        }>
-      > = {};
-
+      // Step 1: Upload files one by one and collect URLs
       const hasFilesToUpload =
         (values.resume && values.resume instanceof File) ||
         (Array.isArray(values.attachments) && values.attachments.length > 0) ||
@@ -233,56 +213,45 @@ export function useCreateCandidateSubmission({
           ));
 
       if (hasFilesToUpload) {
-        const uploadFormData = new FormData();
-
-        // Add resume file if present
-        if (values.resume && values.resume instanceof File) {
-          uploadFormData.append('resume', values.resume);
-        }
-
-        // Add attachment files
-        if (Array.isArray(values.attachments)) {
-          values.attachments.forEach((file) => {
-            if (file instanceof File) {
-              uploadFormData.append('attachments', file);
-            }
-          });
-        }
-
-        // Add custom field files
-        if (values.customFields) {
-          Object.entries(values.customFields).forEach(
-            ([fieldKey, fieldValue]) => {
-              if (Array.isArray(fieldValue)) {
-                fieldValue.forEach((item, index) => {
-                  if (item instanceof File) {
-                    uploadFormData.append(
-                      `customField_${fieldKey}_${index}`,
-                      item,
-                    );
-                  }
+        try {
+          const uploadResult = await uploadCandidateFilesOneByOne(
+            values as CandidateFileUploadValues,
+            uploadFiles,
+            {
+              organizationId: user?.organizationId,
+              onCustomFieldUploadError: (fieldKey, error) => {
+                toast({
+                  title: 'File Upload Failed',
+                  description: `Failed to upload file for ${fieldKey}: ${error.message}`,
+                  variant: 'destructive',
                 });
-              }
+              },
             },
           );
-        }
 
-        try {
-          // Authenticated users don't need to pass organizationId - API uses their auth
-          const uploadResult = await uploadFiles({
-            formData: uploadFormData,
-          }).unwrap();
-          if (uploadResult.files && uploadResult.files.length > 0) {
-            // First file is resume if present, rest are attachments
-            if (values.resume && values.resume instanceof File) {
-              [resumeUrl] = uploadResult.files;
-              attachmentUrls = uploadResult.files.slice(1);
-            } else {
-              attachmentUrls = uploadResult.files;
-            }
+          if (uploadResult.resume) {
+            candidateData.resume = uploadResult.resume;
           }
-          if (uploadResult.customFields) {
-            customFieldUrls = uploadResult.customFields;
+          if (uploadResult.attachments.length > 0) {
+            candidateData.attachments = uploadResult.attachments;
+          }
+          if (Object.keys(uploadResult.customFields).length > 0) {
+            const existingCustomFields =
+              (candidateData.customFields as Record<string, unknown>) || {};
+            for (const [fieldKey, files] of Object.entries(
+              uploadResult.customFields,
+            )) {
+              const existingField = existingCustomFields[fieldKey];
+              if (Array.isArray(existingField)) {
+                existingCustomFields[fieldKey] = [
+                  ...existingField.filter((item) => !(item instanceof File)),
+                  ...files,
+                ];
+              } else {
+                existingCustomFields[fieldKey] = files;
+              }
+            }
+            candidateData.customFields = existingCustomFields;
           }
         } catch (uploadError) {
           logger.error('File upload error:', uploadError);
@@ -298,32 +267,6 @@ export function useCreateCandidateSubmission({
           setIsCreating(false);
           return;
         }
-      }
-
-      // Step 2: Build candidate data with file URLs (not File objects)
-      if (resumeUrl) {
-        candidateData.resume = resumeUrl;
-      }
-      if (attachmentUrls.length > 0) {
-        candidateData.attachments = attachmentUrls;
-      }
-      if (Object.keys(customFieldUrls).length > 0) {
-        // Merge custom field URLs with existing custom field values
-        const existingCustomFields =
-          (candidateData.customFields as Record<string, unknown>) || {};
-        Object.entries(customFieldUrls).forEach(([fieldKey, files]) => {
-          const existingField = existingCustomFields[fieldKey];
-          if (Array.isArray(existingField)) {
-            // Merge with existing files (non-File objects)
-            existingCustomFields[fieldKey] = [
-              ...existingField.filter((item) => !(item instanceof File)),
-              ...files,
-            ];
-          } else {
-            existingCustomFields[fieldKey] = files;
-          }
-        });
-        candidateData.customFields = existingCustomFields;
       }
 
       // Step 3: Send candidate data as JSON (with URLs, not files)
