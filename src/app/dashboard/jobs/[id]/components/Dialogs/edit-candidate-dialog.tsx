@@ -9,10 +9,15 @@ import {
   useUpdateCandidateHistoryMutation,
   useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
+import {
+  uploadCandidateFilesOneByOne,
+  type CandidateFileUploadValues,
+  type UploadedFileResult,
+} from '@/lib/utils/candidateFileUpload';
 import { Candidate } from '@/types/candidate';
 import { v4 as uuidv4 } from 'uuid';
 import { useParams, usePathname } from 'next/navigation';
-import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
+import useCustomForm, { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import { ICandidateHistory } from '@/lib/models/history';
 import React, { useContext, useEffect, useState } from 'react';
 import { Resume } from '@/lib/redux/types';
@@ -188,8 +193,92 @@ export function EditCandidateDialog({
         }
       });
 
+      // Separate custom field files: new files (File objects or base64) vs existing (with URLs)
+      const customFieldFilesToUpload: Record<
+        string,
+        Array<File | { base64: string; name: string; type: string; size: number }>
+      > = {};
+      const existingCustomFields: Record<
+        string,
+        Array<{
+          url: string;
+          id: string;
+          name: string;
+          type: string;
+          size: number;
+        }>
+      > = {};
+
+      if (values.customFields) {
+        Object.entries(values.customFields).forEach(([fieldKey, fieldValue]) => {
+          if (Array.isArray(fieldValue) && fieldValue.length > 0) {
+            const newFiles: Array<
+              File | { base64: string; name: string; type: string; size: number }
+            > = [];
+            const existingFiles: Array<{
+              url: string;
+              id: string;
+              name: string;
+              type: string;
+              size: number;
+            }> = [];
+
+            fieldValue.forEach((item) => {
+              // Check if it's a File object (new file)
+              if (item instanceof File) {
+                newFiles.push(item);
+              }
+              // Check if it's a new file with base64 (needs upload)
+              else if (
+                typeof item === 'object' &&
+                item !== null &&
+                'base64' in item &&
+                item.base64 &&
+                typeof item.base64 === 'string' &&
+                item.base64.startsWith('data:')
+              ) {
+                newFiles.push(item as {
+                  base64: string;
+                  name: string;
+                  type: string;
+                  size: number;
+                });
+              }
+              // Check if it's an existing file with URL
+              else if (
+                typeof item === 'object' &&
+                item !== null &&
+                'url' in item &&
+                item.url &&
+                typeof item.url === 'string'
+              ) {
+                existingFiles.push({
+                  url: (item as { url: string }).url,
+                  id: (item as { id?: string }).id || uuidv4(),
+                  name: (item as { name?: string }).name || '',
+                  type: (item as { type?: string }).type || 'application/octet-stream',
+                  size: (item as { size?: number }).size || 0,
+                });
+              }
+            });
+
+            if (newFiles.length > 0) {
+              customFieldFilesToUpload[fieldKey] = newFiles;
+            }
+            if (existingFiles.length > 0) {
+              existingCustomFields[fieldKey] = existingFiles;
+            }
+          }
+        });
+      }
+
       // Check if we have new files to upload
-      const hasFilesToUpload = resumeIsFile || newAttachmentFiles.length > 0;
+      const hasCustomFieldFilesToUpload =
+        Object.keys(customFieldFilesToUpload).length > 0;
+      const hasFilesToUpload =
+        resumeIsFile ||
+        newAttachmentFiles.length > 0 ||
+        hasCustomFieldFilesToUpload;
 
       // Build payload with existing file URLs (keep existing files as-is)
       const payload: Partial<Candidate> = {
@@ -222,6 +311,7 @@ export function EditCandidateDialog({
           return undefined;
         })(),
         attachments: existingAttachments, // Only existing attachments in payload
+        // customFields will be populated as files are uploaded
       };
 
       // Handle assignment
@@ -267,43 +357,84 @@ export function EditCandidateDialog({
 
       // let result;
       // let error;
-
-      // Step 1: Upload new files first to get URLs
+      // let uploadResult: {
+      //   files: Array<{
+      //     id: string;
+      //     name: string;
+      //     url: string;
+      //     type: string;
+      //     size: number;
+      //   }>;
+      // } | null = null;
+      // Step 1: Upload new files one by one and collect URLs
       if (hasFilesToUpload) {
-        const uploadFormData = new FormData();
-
-        if (resumeIsFile && values.resume instanceof File) {
-          uploadFormData.append('resume', values.resume);
-        }
-
-        newAttachmentFiles.forEach((file) => {
-          if (file instanceof File) {
-            uploadFormData.append('attachments', file);
-          }
-        });
-
         try {
-          // Authenticated users don't need to pass organizationId - API uses their auth
-          const uploadResult = await uploadFiles({ formData: uploadFormData }).unwrap();
+          const uploadResult = await uploadCandidateFilesOneByOne(
+            values as CandidateFileUploadValues,
+            uploadFiles,
+            {
+              organizationId: user?.organizationId as string,
+              onCustomFieldUploadError: (fieldKey, error) => {
+                toast({
+                  title: 'File Upload Failed',
+                  description: `Failed to upload file for ${fieldKey}: ${error.message}`,
+                  variant: 'destructive',
+                });
+              },
+            },
+          );
 
-          // Add uploaded resume URL to payload
-          if (uploadResult.files && uploadResult.files.length > 0 && resumeIsFile) {
-            [payload.resume] = uploadResult.files;
-            // Remaining files are attachments
-            if (uploadResult.files.length > 1) {
-              payload.attachments = [
-                ...existingAttachments,
-                ...uploadResult.files.slice(1),
-              ];
-            } else {
-              payload.attachments = existingAttachments;
-            }
-          } else if (newAttachmentFiles.length > 0 && uploadResult.files) {
-            // Only attachments were uploaded
+          if (uploadResult.resume) {
+            payload.resume = uploadResult.resume;
+          }
+          if (uploadResult.attachments.length > 0) {
             payload.attachments = [
-              ...existingAttachments,
-              ...uploadResult.files,
+              ...(payload.attachments || []),
+              ...uploadResult.attachments,
             ];
+          }
+
+          const formatFileForPayload = (file: UploadedFileResult) => ({
+            base64: file.url,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            id: file.id,
+            url: file.url,
+          });
+
+          for (const fieldKey of Object.keys(customFieldFilesToUpload)) {
+            const uploadedFiles = uploadResult.customFields[fieldKey] ?? [];
+            if (uploadedFiles.length > 0) {
+              if (!payload.customFields) {
+                payload.customFields = {};
+              }
+              const existingFormatted = (existingCustomFields[fieldKey] || []).map(
+                (f) => formatFileForPayload(f),
+              );
+              const uploadedFormatted = uploadedFiles.map(formatFileForPayload);
+              payload.customFields[fieldKey] = [
+                ...existingFormatted,
+                ...uploadedFormatted,
+              ] as CustomFieldValues[string];
+            } else if (existingCustomFields[fieldKey]) {
+              if (!payload.customFields) {
+                payload.customFields = {};
+              }
+              payload.customFields[fieldKey] = existingCustomFields[
+                fieldKey
+              ].map((f) => formatFileForPayload(f)) as CustomFieldValues[string];
+            }
+          }
+          // Preserve existing-only custom fields (no new uploads this submit)
+          for (const [fieldKey, existingFiles] of Object.entries(
+            existingCustomFields,
+          )) {
+            if (payload.customFields && !(fieldKey in payload.customFields)) {
+              payload.customFields[fieldKey] = existingFiles.map((f) =>
+                formatFileForPayload(f),
+              ) as CustomFieldValues[string];
+            }
           }
         } catch (uploadError) {
           toast({
@@ -319,6 +450,7 @@ export function EditCandidateDialog({
       }
 
       // Step 2: Send candidate data as JSON (with URLs, not files)
+      // debugger
       const updateResult = await updateCandidate(payload);
       const result = updateResult.data;
       const { error } = updateResult;

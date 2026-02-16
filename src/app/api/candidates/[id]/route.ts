@@ -211,13 +211,37 @@ export async function PUT(
     //   }
     // }
     if (data.customFields) {
-      // Process uploaded custom field files
-      const cs = await handleCustomFieldFiles(
-        data.customFields,
-        fileStorage,
-        organizationId,
-      );
-      data.customFields = cs;
+      // Check if custom fields contain files that need processing (base64) vs already uploaded (URLs)
+      let needsProcessing = false;
+      for (const fieldKey in data.customFields) {
+        if (Object.prototype.hasOwnProperty.call(data.customFields, fieldKey)) {
+          const field = data.customFields[fieldKey];
+          if (
+            Array.isArray(field) &&
+            field.length > 0 &&
+            typeof field[0] === 'object' &&
+            field[0] !== null &&
+            'base64' in field[0] &&
+            field[0].base64 &&
+            typeof field[0].base64 === 'string' &&
+            field[0].base64.startsWith('data:')
+          ) {
+            needsProcessing = true;
+            break;
+          }
+        }
+      }
+
+      // Only process custom field files if they contain base64 data (not already uploaded)
+      if (needsProcessing) {
+        const cs = await handleCustomFieldFiles(
+          data.customFields,
+          fileStorage,
+          organizationId,
+        );
+        data.customFields = cs;
+      }
+      // If files already have URLs, they're already uploaded, so use them as-is
 
       // Check for changes
       if (
