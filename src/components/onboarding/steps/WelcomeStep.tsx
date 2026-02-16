@@ -8,7 +8,7 @@ import {
   Palette,
   Bot,
   Mail,
-  Calendar,
+  Video,
   Clock,
   Users,
   ShieldCheck,
@@ -40,9 +40,10 @@ function WelcomeStep() {
       description: 'Set up email delivery for candidate and team notifications',
     },
     {
-      icon: Calendar,
-      title: 'Interview Scheduling',
-      description: 'Connect Google Calendar for seamless interview scheduling',
+      icon: Video,
+      title: 'Meeting Integration',
+      description:
+        'Connect Google Meet, Zoom, or Microsoft Teams for video interviews',
     },
     {
       icon: Clock,
