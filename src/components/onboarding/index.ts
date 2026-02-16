@@ -9,7 +9,7 @@ export { default as WelcomeStep } from './steps/WelcomeStep';
 export { default as PortalConfigStep } from './steps/PortalConfigStep';
 export { default as AIProviderStep } from './steps/AIProviderStep';
 export { default as EmailConfigStep } from './steps/EmailConfigStep';
-export { default as CalendarStep } from './steps/CalendarStep';
+export { default as MeetingIntegrationStep } from './steps/MeetingIntegrationStep';
 export { default as TimezoneStep } from './steps/TimezoneStep';
 export { default as StorageStep } from './steps/StorageStep';
 export { default as UsersStep } from './steps/UsersStep';

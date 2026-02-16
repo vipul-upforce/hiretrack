@@ -15,7 +15,7 @@ type StepValidators = {
   portal: StepValidator;
   aiProviders: StepValidator;
   email: StepValidator;
-  calendar: StepValidator;
+  meetingIntegration: StepValidator;
   timezone: StepValidator;
   storage: StepValidator;
   users: StepValidator;
@@ -26,12 +26,27 @@ type StepValidators = {
 // Define step validation functions (SHOW ACTUAL STATUS BUT FORCE SIDEBAR VISIBLE)
 const stepValidators: StepValidators = {
   portal: (settings, organization) => {
-    const portalName =
-      settings?.portalConfigs?.portalName || organization?.name || '';
-    const isConfigured = !!(
-      portalName && portalName.toLowerCase() !== 'hiretrack'
+    const portalName = (
+      settings?.portalConfigs?.portalName ||
+      organization?.name ||
+      ''
+    ).trim();
+    const hasCustomName =
+      !!portalName && portalName.toLowerCase() !== 'hiretrack';
+    const hasCustomBranding = !!(
+      settings?.portalConfigs?.portalLogo?.url ||
+      settings?.portalConfigs?.portalLogoDark?.url ||
+      settings?.portalConfigs?.portalFavicon?.url ||
+      (settings?.portalConfigs?.primaryColor &&
+        settings.portalConfigs.primaryColor !== '#6366f1') ||
+      (settings?.portalConfigs?.secondaryColor &&
+        settings.portalConfigs.secondaryColor !== '#8b5cf6')
     );
-    logger.info({ portalName, isConfigured }, 'Portal validation completed');
+    const isConfigured = hasCustomName || hasCustomBranding;
+    logger.info(
+      { portalName, hasCustomName, hasCustomBranding, isConfigured },
+      'Portal validation completed',
+    );
     return isConfigured;
   },
 
@@ -56,16 +71,22 @@ const stepValidators: StepValidators = {
     return hasProvider;
   },
 
-  calendar: (settings) => {
-    const hasCalendar = !!(
+  meetingIntegration: (settings) => {
+    const hasMeetingIntegration = !!(
       settings?.googleCalendar?.isConnected ||
       settings?.googleCalendar?.refreshToken ||
       settings?.googleCalendar?.accessToken ||
       settings?.zoom?.isConnected ||
-      settings?.zoom?.accessToken
+      settings?.zoom?.accessToken ||
+      settings?.microsoftTeams?.isConnected ||
+      settings?.microsoftTeams?.refreshToken ||
+      settings?.microsoftTeams?.accessToken
     );
-    logger.info({ hasCalendar }, 'Calendar validation completed');
-    return hasCalendar;
+    logger.info(
+      { hasMeetingIntegration },
+      'Meeting integration validation completed',
+    );
+    return hasMeetingIntegration;
   },
 
   timezone: (settings) => {
@@ -137,7 +158,7 @@ export async function GET(req: NextRequest) {
           portal: true,
           aiProviders: true,
           email: true,
-          calendar: true,
+          meetingIntegration: true,
           timezone: true,
           storage: true,
           users: true,
@@ -159,6 +180,22 @@ export async function GET(req: NextRequest) {
         Settings.findOne({ organizationId: orgId }).lean().exec(),
         Organization.findOne({ _id: orgId }).lean().exec(),
       ]);
+
+      // Try alternative ID formats if not found (orgId can be ObjectId or string)
+      if (!settings) {
+        const altSettings = await Settings.findOne({
+          organizationId: String(orgId),
+        })
+          .lean()
+          .exec();
+        settings = altSettings;
+      }
+      if (!organization) {
+        const altOrg = await Organization.findOne({ _id: String(orgId) })
+          .lean()
+          .exec();
+        organization = altOrg;
+      }
     } catch (error) {
       logger.error({ error, orgId }, 'Database query error in GET');
     }
@@ -174,7 +211,7 @@ export async function GET(req: NextRequest) {
           portal: true,
           aiProviders: true,
           email: true,
-          calendar: true,
+          meetingIntegration: true,
           timezone: true,
           storage: true,
           users: true,
@@ -249,7 +286,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { step } = body as { step?: string };
-    if (!step || !(step in stepValidators)) {
+    // Map legacy 'calendar' to 'meetingIntegration' for backward compatibility
+    const stepId = step === 'calendar' ? 'meetingIntegration' : step;
+    if (!stepId || !(stepId in stepValidators)) {
       return NextResponse.json({ error: 'Invalid step' }, { status: 400 });
     }
 
@@ -268,17 +307,17 @@ export async function POST(req: NextRequest) {
         portal: true,
         aiProviders: true,
         email: true,
-        calendar: true,
+        meetingIntegration: true,
         timezone: true,
         storage: true,
         users: true,
         customFields: true,
       };
 
-      const isValid = fallbackStatus[step] ?? false;
-      logger.info({ step, isValid }, 'Step fallback validation result');
+      const isValid = fallbackStatus[stepId] ?? false;
+      logger.info({ step: stepId, isValid }, 'Step fallback validation result');
 
-      return NextResponse.json({ isValid, step });
+      return NextResponse.json({ isValid, step: stepId });
     }
 
     // Fetch current data
@@ -316,21 +355,21 @@ export async function POST(req: NextRequest) {
     );
 
     if (!settings && !organization) {
-      logger.info({ step }, 'No data found, using fallback validation');
+      logger.info({ step: stepId }, 'No data found, using fallback validation');
       const fallbackStatus: Record<string, boolean> = {
         captcha: true,
         portal: true,
         aiProviders: true,
         email: true,
-        calendar: true,
+        meetingIntegration: true,
         timezone: true,
         storage: true,
         users: true,
         customFields: true,
       };
 
-      const isValid = fallbackStatus[step] ?? false;
-      return NextResponse.json({ isValid, step });
+      const isValid = fallbackStatus[stepId] ?? false;
+      return NextResponse.json({ isValid, step: stepId });
     }
 
     const userCount = 1; // Placeholder
@@ -338,19 +377,19 @@ export async function POST(req: NextRequest) {
     // Validate specific step
     let isValid = false;
     try {
-      const validator = stepValidators[step as keyof StepValidators];
+      const validator = stepValidators[stepId as keyof StepValidators];
       isValid = validator(settings, organization, userCount);
     } catch (validationError) {
       logger.error(
-        { error: validationError, step },
+        { error: validationError, step: stepId },
         'Validation error for step',
       );
       // Fallback: assume configured except for customFields
-      isValid = step !== 'customFields';
+      isValid = stepId !== 'customFields';
     }
 
-    logger.info({ step, isValid }, 'Step validation result');
-    return NextResponse.json({ isValid, step });
+    logger.info({ step: stepId, isValid }, 'Step validation result');
+    return NextResponse.json({ isValid, step: stepId });
   } catch (error) {
     logger.error({ error, url: req.url }, 'Error validating specific step');
     return NextResponse.json(

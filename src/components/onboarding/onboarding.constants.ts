@@ -1,7 +1,6 @@
 import type React from 'react';
 import {
   Bot,
-  Calendar,
   Clock,
   Globe,
   HardDrive,
@@ -9,6 +8,7 @@ import {
   Palette,
   ShieldCheck,
   Users,
+  Video,
 } from 'lucide-react';
 
 export interface OnboardingStep {
@@ -88,10 +88,10 @@ export const getDefaultSteps = (): OnboardingStep[] => [
     isRequired: false,
   },
   {
-    id: 'calendar',
-    title: 'Google Calendar',
-    description: 'Connect Google Calendar for interview scheduling',
-    icon: Calendar,
+    id: 'meetingIntegration',
+    title: 'Meeting Integration',
+    description: 'Connect Google Meet, Zoom, or Microsoft Teams for interviews',
+    icon: Video,
     isCompleted: false,
     isSkipped: false,
     isRequired: false,
