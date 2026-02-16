@@ -19,6 +19,7 @@ import { DuplicateCandidatesDialog } from '../Dialogs/DuplicateCandidatesDialog'
 
 interface CandidateCardDialogsProps {
   candidate: Candidate;
+  setLocalCandidate?: (candidate: Candidate) => void;
   // Dialog states
   isEditing: boolean;
   setIsEditing: (open: boolean) => void;
@@ -68,6 +69,7 @@ interface CandidateCardDialogsProps {
 
 export function CandidateCardDialogs({
   candidate,
+  setLocalCandidate,
   isEditing,
   setIsEditing,
   isAssigning,
@@ -193,7 +195,7 @@ export function CandidateCardDialogs({
               refetch();
             }
           }}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={setLocalCandidate || (() => {})}
           refetchAssignment={() => {
             // Use refetchAssignment callback if provided (updates list without GET request)
             // Otherwise fall back to refetch (for backward compatibility)

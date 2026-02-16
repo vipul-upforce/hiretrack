@@ -48,12 +48,12 @@ export function RenderInterviewerAssignments({
                 <Zap className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground" />
                 <div>
                   <p className="mb-1.5 text-sm text-muted-foreground">Skills</p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 ">
                     {assignment.skills.slice(0, 3).map((skill) => (
                       <Badge
                         key={`${assignment.id}-skill-${skill}`}
                         variant="secondary"
-                        className="text-xs"
+                        className="text-xs max-w-80 truncate"
                       >
                         {skill}
                       </Badge>

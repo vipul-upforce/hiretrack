@@ -50,7 +50,7 @@ export function RenderTodaysInterviews({
                       <Badge
                         key={`${assignment.id}-skill-${skill}`}
                         variant="secondary"
-                        className="text-xs"
+                        className="text-xs max-w-80 truncate"
                       >
                         {skill}
                       </Badge>

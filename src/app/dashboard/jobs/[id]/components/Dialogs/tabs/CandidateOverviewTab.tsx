@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import { Candidate } from '@/types/candidate';
 import { scoreColors } from '@/lib/constants';
 import { QuickTooltip } from '@/components/ui/tooltip';
-import { Trophy } from 'lucide-react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import ResumeEvaluationDetails from '../../Candidate/ResumeEvaluationDetails';
 import { candidateDetailsFields } from '../../Candidate/candidate-details-fields';
@@ -24,15 +23,6 @@ interface CandidateOverviewTabProps {
   isFollowUpSubmitting: boolean;
 }
 
-// Helper function to get ordinal suffix
-const getOrdinalSuffix = (num: number): string => {
-  const j = num % 10;
-  const k = num % 100;
-  if (j === 1 && k !== 11) return `${num}st`;
-  if (j === 2 && k !== 12) return `${num}nd`;
-  if (j === 3 && k !== 13) return `${num}rd`;
-  return `${num}th`;
-};
 
 /**
  * Score Card Component - Reusable for all score types
@@ -102,18 +92,14 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
     return null;
   }
 
-  const hasRanking =
-    candidate.scores?.comparativeRanking?.overallRank !== undefined;
-
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
         AI Assessment Scores
       </h3>
       <div
-        className={`grid grid-cols-2 gap-4 ${
-          hasRanking ? 'md:grid-cols-5' : 'md:grid-cols-4'
-        }`}
+        className={`grid grid-cols-2 gap-4 ${'md:grid-cols-4'
+          }`}
       >
         {candidate.scores.overall !== undefined && (
           <ScoreCard
@@ -242,105 +228,7 @@ function AIScoresSection({ candidate }: AIScoresSectionProps) {
           />
         )}
 
-        {candidate.scores?.comparativeRanking &&
-          candidate.scores.comparativeRanking.overallRank !== undefined && (
-            <QuickTooltip
-              content={
-                <div className="space-y-2 p-1">
-                  <div className="mb-2 text-xs font-semibold">
-                    Ranking Breakdown
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-300">Skills:</span>
-                      <span className="font-semibold">
-                        {candidate.scores.comparativeRanking.skillsPercentile}{' '}
-                        percentile
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-300">Experience:</span>
-                      <span className="font-semibold">
-                        {
-                          candidate.scores.comparativeRanking
-                            .experiencePercentile
-                        }{' '}
-                        percentile
-                      </span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-300">Affordability:</span>
-                      <span className="font-semibold">
-                        {
-                          candidate.scores.comparativeRanking
-                            .affordabilityPercentile
-                        }{' '}
-                        percentile
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              }
-              side="top"
-            >
-              <div
-                className={`${scoreColors[Math.max(1, Math.min(10, Math.round(candidate.scores.comparativeRanking.percentile / 10)))].border} relative flex h-36 cursor-help items-center justify-center rounded-lg border-2 bg-transparent p-4`}
-              >
-                <div className="absolute right-3 top-3">
-                  <Trophy
-                    className={`h-5 w-5 ${scoreColors[Math.max(1, Math.min(10, Math.round(candidate.scores.comparativeRanking.percentile / 10)))].text}`}
-                    style={{
-                      color:
-                        scoreColors[
-                          Math.max(
-                            1,
-                            Math.min(
-                              10,
-                              Math.round(
-                                candidate.scores.comparativeRanking.percentile /
-                                  10,
-                              ),
-                            ),
-                          )
-                        ].text,
-                    }}
-                  />
-                </div>
-                <div className="text-center">
-                  <div
-                    className={`text-2xl font-bold ${scoreColors[Math.max(1, Math.min(10, Math.round(candidate.scores.comparativeRanking.percentile / 10)))].text}`}
-                    style={{
-                      color:
-                        scoreColors[
-                          Math.max(
-                            1,
-                            Math.min(
-                              10,
-                              Math.round(
-                                candidate.scores.comparativeRanking.percentile /
-                                  10,
-                              ),
-                            ),
-                          )
-                        ].text,
-                    }}
-                  >
-                    {getOrdinalSuffix(
-                      candidate.scores.comparativeRanking.overallRank,
-                    )}
-                  </div>
-                  <div className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Candidate Rank
-                  </div>
-                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {candidate.scores.comparativeRanking.percentile} percentile
-                    • {candidate.scores.comparativeRanking.totalCandidates}{' '}
-                    total
-                  </div>
-                </div>
-              </div>
-            </QuickTooltip>
-          )}
+
       </div>
     </div>
   );

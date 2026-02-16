@@ -441,13 +441,37 @@ export const useCandidate = ({
   };
 
   const handleCandidateUpdate = (updatedCandidate: Candidate) => {
-    const newColumns = columns.map((column) => ({
-      ...column,
-      candidates: column.candidates.map((candidate) =>
-        candidate._id === updatedCandidate._id ? updatedCandidate : candidate,
-      ),
-    }));
-    setColumns(newColumns);
+    if (selectedCandidate?._id === updatedCandidate._id) {
+      setSelectedCandidate(updatedCandidate);
+    }
+
+    setColumns((prevColumns) => {
+      const hasTargetLane = prevColumns.some(
+        (column) => column.id === updatedCandidate.status,
+      );
+      const candidateExists = prevColumns.some((column) =>
+        column.candidates.some((candidate) => candidate._id === updatedCandidate._id),
+      );
+
+      if (!hasTargetLane || !candidateExists) {
+        return prevColumns;
+      }
+
+      return prevColumns.map((column) => ({
+        ...column,
+        candidates:
+          column.id === updatedCandidate.status
+            ? [
+                updatedCandidate,
+                ...column.candidates.filter(
+                  (candidate) => candidate._id !== updatedCandidate._id,
+                ),
+              ]
+            : column.candidates.filter(
+                (candidate) => candidate._id !== updatedCandidate._id,
+              ),
+      }));
+    });
   };
 
   const handleFileDrop = async (file: File) => {
