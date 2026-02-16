@@ -5,10 +5,18 @@ import crypto from 'crypto';
 import { execSync } from 'child_process';
 import os from 'os';
 import logger from '@/lib/logger/';
+import {
+  PARENT_CONFIG_PATH,
+  getBetaFlag as getBetaFlagFromConfig,
+} from '@/lib/configUtils';
 
 // License file path (in project root parent directory)
 export const LICENSE_PATH = path.join(process.cwd(), '..', 'license.json');
+/** @deprecated Use PARENT_CONFIG_PATH from @/lib/configUtils for parent config.json */
 export const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
+
+/** Reads the beta flag from parent config.json. Re-exported from configUtils for convenience. */
+export const getBetaFlag = getBetaFlagFromConfig;
 
 /**
  * License data structure stored in license.json
@@ -149,8 +157,8 @@ export function generateMachineCode(): string {
 
     return id;
   } catch (err) {
-    logger.error("Failed to get machine ID:", err);
-    return "unknown-machine-id";
+    logger.error('Failed to get machine ID:', err);
+    return 'unknown-machine-id';
   }
 }
 
@@ -170,7 +178,7 @@ export function readLicenseData(): LicenseData | null {
 
     return licenseData;
   } catch (error) {
-    logger.error("Error reading license data:", error);
+    logger.error('Error reading license data:', error);
     return null;
   }
 }
@@ -179,16 +187,16 @@ export function readLicenseData(): LicenseData | null {
  */
 export function readConfigData(): ConfigData | null {
   try {
-    if (!fs.existsSync(CONFIG_PATH)) {
+    if (!fs.existsSync(PARENT_CONFIG_PATH)) {
       return null;
     }
 
-    const configContent = fs.readFileSync(CONFIG_PATH, 'utf8');
+    const configContent = fs.readFileSync(PARENT_CONFIG_PATH, 'utf8');
     const configData = JSON.parse(configContent) as ConfigData;
 
     return configData;
   } catch (error) {
-    logger.error("Error reading config data:", error);
+    logger.error('Error reading config data:', error);
     return null;
   }
 }
@@ -223,8 +231,10 @@ async function validateLicenseWithAPI(
       'Validating license with external API',
     );
 
+    const betaFlag = await getBetaFlag();
+    logger.info('1111 betaFlag', betaFlag);
     const response = await fetch(
-      `${licenseValidationUrl}/api/license/validate`,
+      `${licenseValidationUrl}/api/license/validate?beta=${betaFlag}`,
       {
         method: 'POST',
         headers: {
@@ -259,7 +269,7 @@ async function validateLicenseWithAPI(
       error: data.error,
     };
   } catch (error) {
-    logger.error("License validation API error:", error);
+    logger.error('License validation API error:', error);
     return {
       valid: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -287,8 +297,7 @@ export async function validateLicenseComprehensive(): Promise<LicenseValidationR
 
     if (validationResult.valid) {
       return { valid: true, hasLicenseFile: true, apiError: false };
-    } 
-  
+    }
 
     // Return invalid result without modifying license file
 
@@ -299,7 +308,7 @@ export async function validateLicenseComprehensive(): Promise<LicenseValidationR
       apiError: true,
     };
   } catch (error) {
-    logger.error("License validation error:", error);
+    logger.error('License validation error:', error);
     return {
       valid: false,
       error: 'Internal server error during license validation',

@@ -30,17 +30,12 @@ function RemarksPopover({
       ? candidate?.remarks?.length
       : candidate?.remarksCount || 0;
 
-  // Fetch remarks when popover opens (if not already loaded)
+  // Fetch remarks when popover opens or when remarksCount changes (always fetch fresh data)
   useEffect(() => {
-    if (
-      isOpen &&
-      (!candidate.remarks || candidate.remarks.length === 0) &&
-      remarksCount > 0 &&
-      !detailsData
-    ) {
+    if (isOpen && remarksCount > 0) {
       fetchDetails(candidate._id);
     }
-  }, [isOpen, candidate._id, candidate.remarks, remarksCount, fetchDetails, detailsData]);
+  }, [isOpen, remarksCount, candidate._id, fetchDetails]);
 
   // Update local remarks when details are fetched
   useEffect(() => {
