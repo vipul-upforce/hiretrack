@@ -16,7 +16,8 @@ export function ChecklistForm({
           key={field.id}
           field={field}
           value={responses[field.id]?.value ?? null}
-          onChange={(value) => onResponseChange(field.id, value)}
+          response={responses[field.id]}
+          onChange={(value, files) => onResponseChange(field.id, value, files)}
           error={errors[field.id]}
           touched={touched[field.id]}
         />

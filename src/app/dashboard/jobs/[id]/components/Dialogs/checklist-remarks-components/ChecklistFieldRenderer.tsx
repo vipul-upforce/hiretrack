@@ -21,11 +21,14 @@ import TimePicker from '@/components/ui/time-picker';
 import dayjs from 'dayjs';
 import { toast } from '@/hooks/use-toast';
 import { FileData } from '@/Custom_Fields/hooks/useCustomForm';
+import type { ChecklistFileItem } from '@/types/checklist';
 
 interface ChecklistFieldRendererProps {
   field: IChecklistField;
   value: ChecklistFieldValue;
-  onChange: (value: ChecklistFieldValue) => void;
+  /** Existing files (with url) for display in drop zone */
+  response?: { files?: ChecklistFileItem[] } | null;
+  onChange: (value: ChecklistFieldValue, files?: ChecklistFileItem[]) => void;
   error?: string;
   touched?: boolean;
 }
@@ -33,6 +36,7 @@ interface ChecklistFieldRendererProps {
 export function ChecklistFieldRenderer({
   field,
   value,
+  response,
   onChange,
   error,
   touched,
@@ -262,55 +266,57 @@ export function ChecklistFieldRenderer({
         );
 
       case 'file': {
+        const existingFiles = response?.files ?? [];
         const fileValue: FileData[] = Array.isArray(value)
-          ? value.map((file) => ({
-              name: file,
-              type: '',
-              size: 0,
-              base64: '',
-            }))
+          ? value.map((name) => {
+              const nameStr = typeof name === 'string' ? name : '';
+              const existing = existingFiles.find((f) => f.name === nameStr);
+              return {
+                name: nameStr,
+                type: existing?.type ?? '',
+                size: existing?.size ?? 0,
+                base64: (existing?.url ?? existing?.base64) ?? '',
+              };
+            })
           : [];
         return (
           <FileDropZone
             value={fileValue}
             onFilesChange={async (files: File[]) => {
               try {
-                const fileData = await Promise.all(
-                  files.map(async (file) => {
-                    // Check file size (50MB limit)
-                    if (file.size > 50 * 1024 * 1024) {
-                      toast({
-                        title: 'File too large',
-                        description: `${file.name} exceeds 50MB limit`,
-                        variant: 'destructive',
-                      });
-                      return null;
-                    }
-
-                    const base64 = await new Promise<string>(
-                      (resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.readAsDataURL(file);
-                        reader.onload = () => resolve(reader.result as string);
-                        reader.onerror = reject;
-                      },
-                    );
-
-                    return {
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                      base64,
-                    };
-                  }),
-                );
-
-                const validFiles = fileData.filter(Boolean);
-                onChange(validFiles.map((file) => file?.name || ''));
+                const fileItems: ChecklistFileItem[] = [];
+                for (const file of files) {
+                  if (file.size > 50 * 1024 * 1024) {
+                    toast({
+                      title: 'File too large',
+                      description: `${file.name} exceeds 50MB limit`,
+                      variant: 'destructive',
+                    });
+                    continue;
+                  }
+                  const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result as string);
+                    reader.onerror = reject;
+                  });
+                  fileItems.push({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    base64,
+                  });
+                }
+                if (fileItems.length > 0) {
+                  onChange(
+                    fileItems.map((f) => f.name),
+                    fileItems,
+                  );
+                }
               } catch {
                 toast({
-                  title: 'Upload failed',
-                  description: 'Failed to process files',
+                  title: 'Failed',
+                  description: 'Failed to process files.',
                   variant: 'destructive',
                 });
               }

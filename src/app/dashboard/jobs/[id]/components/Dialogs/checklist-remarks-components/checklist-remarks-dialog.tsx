@@ -1,11 +1,13 @@
 import {
   useUpdateCandidateHistoryMutation,
   useUpdateCandidateMutation,
+  useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import {
   useSubmitCandidateChecklistMutation,
   useGetJobLaneConfigQuery,
 } from '@/lib/features/checklist/checklistApi';
+import type { ChecklistFileItem } from '@/types/checklist';
 import logger from '@/lib/logger';
 import { CandidateStatus } from '@/types/candidate';
 import React, { useState, useEffect, useMemo } from 'react';
@@ -54,13 +56,16 @@ function ChecklistRemarksDialog({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [fieldTouched, setFieldTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitPhase, setSubmitPhase] = useState<'idle' | 'uploading' | 'submitting'>('idle');
 
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [submitChecklist] = useSubmitCandidateChecklistMutation();
+  const [uploadFiles] = useUploadFilesMutation();
 
   const { user } = useAppSelector((state) => state.auth || {});
+  const organizationId = (user as { organizationId?: string })?.organizationId;
   // const customFieldsContext = useContext(CustomFieldsContext);
   const { data: jobLaneConfig } = useGetJobLaneConfigQuery(
     getJobId(candidate) || '',
@@ -197,14 +202,16 @@ function ChecklistRemarksDialog({
   const handleChecklistFieldChange: ChecklistFieldChangeHandler = (
     fieldId,
     value,
+    files,
   ) => {
-    // Mark field as touched when user interacts with it
     setFieldTouched((prev) => ({ ...prev, [fieldId]: true }));
 
     setChecklistResponses((prev) => ({
       ...prev,
       [fieldId]: {
+        ...prev[fieldId],
         value,
+        ...(files !== undefined && { files }),
         fieldLabel:
           parsedChecklistInfo?.checklist?.fields.find((f) => f.id === fieldId)
             ?.label || fieldId,
@@ -326,15 +333,15 @@ function ChecklistRemarksDialog({
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting) return;
+    if (isSubmitting || submitPhase !== 'idle') return;
 
     if (!validateChecklist()) return;
+
+    if (!user) return;
 
     setIsSubmitting(true);
 
     try {
-      if (!user) return;
-      // Submit checklist if present
       if (hasChecklist && parsedChecklistInfo) {
         const checklist = parsedChecklistInfo.checklist!;
 
@@ -345,6 +352,84 @@ function ChecklistRemarksDialog({
               ? parsedChecklistInfo.targetLane
               : parsedChecklistInfo.currentLane),
         );
+
+        let responsesToSubmit: Record<string, ChecklistHistoryResponseItem> =
+          checklistResponses;
+
+        const hasPendingFiles = Object.values(checklistResponses).some(
+          (r) =>
+            r.fieldType === 'file' &&
+            Array.isArray(r.files) &&
+            r.files.some((f: ChecklistFileItem) => f.base64 && !f.url),
+        );
+
+        if (hasPendingFiles) {
+          if (!organizationId) {
+            toast({
+              title: 'Upload failed',
+              description: 'Session expired. Please refresh and try again.',
+              variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          setSubmitPhase('uploading');
+          const resolved: Record<string, ChecklistHistoryResponseItem> = {};
+          for (const [fieldId, response] of Object.entries(checklistResponses)) {
+            if (response.fieldType !== 'file' || !Array.isArray(response.files)) {
+              resolved[fieldId] = response;
+              continue;
+            }
+            const filesOut: ChecklistFileItem[] = [];
+            for (const file of response.files as ChecklistFileItem[]) {
+              if (file.url) {
+                filesOut.push(file);
+                continue;
+              }
+              if (!file.base64) continue;
+              try {
+                const base64Data = file.base64.split(',')[1] || file.base64;
+                const mimeType = file.type || 'application/octet-stream';
+                const byteCharacters = atob(base64Data);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i += 1) {
+                  byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: mimeType });
+                const fileObj = new File([blob], file.name, { type: mimeType });
+                const formData = new FormData();
+                formData.append('attachments', fileObj);
+                const result = await uploadFiles({
+                  formData,
+                  organizationId,
+                }).unwrap();
+                if (result.files?.[0]) {
+                  const f = result.files[0];
+                  filesOut.push({
+                    id: f.id,
+                    name: f.name,
+                    url: f.url,
+                    type: f.type,
+                    size: f.size,
+                  });
+                }
+              } catch {
+                toast({
+                  title: 'Upload failed',
+                  description: `Failed to upload ${file.name}. Please try again.`,
+                  variant: 'destructive',
+                });
+                setIsSubmitting(false);
+                setSubmitPhase('idle');
+                return;
+              }
+            }
+            resolved[fieldId] = { ...response, files: filesOut };
+          }
+          responsesToSubmit = resolved;
+        }
+        setSubmitPhase('submitting');
 
         await submitChecklist({
           candidateId: candidate._id,
@@ -357,7 +442,7 @@ function ChecklistRemarksDialog({
                 ? parsedChecklistInfo.targetLane
                 : parsedChecklistInfo.currentLane,
             laneName: laneConfig?.laneName || '',
-            responses: checklistResponses,
+            responses: responsesToSubmit,
             remark: newRemark.trim()
               ? {
                   description: newRemark.trim(),
@@ -477,6 +562,7 @@ function ChecklistRemarksDialog({
       }
     } finally {
       setIsSubmitting(false);
+      setSubmitPhase('idle');
     }
   };
 
@@ -549,6 +635,7 @@ function ChecklistRemarksDialog({
         <ChecklistDialogFooter
           isChecklistMandatory={isChecklistMandatory}
           isSubmitting={isSubmitting}
+          submitPhase={submitPhase}
           handleCancel={handleCancel}
           handleSubmit={handleSubmit}
         />

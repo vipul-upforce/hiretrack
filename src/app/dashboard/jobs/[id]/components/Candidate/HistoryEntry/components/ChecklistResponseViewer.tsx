@@ -89,6 +89,11 @@ export function ChecklistResponseViewer({
               const fieldType =
                 (responseData as { fieldType: string })?.fieldType || 'text';
               const value = (responseData as { value: string })?.value;
+              const files =
+                fieldType === 'file'
+                  ? (responseData as { files?: Array<{ name: string; size: number; base64: string }> })
+                      ?.files
+                  : undefined;
 
               return (
                 <div
@@ -101,7 +106,7 @@ export function ChecklistResponseViewer({
                         {fieldLabel}
                       </label>
                       <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {formatValue(value, fieldType)}
+                        {formatValue(value, fieldType, files ? { files } : undefined)}
                       </div>
                     </div>
                   </div>

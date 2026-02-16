@@ -549,54 +549,7 @@ export const candidateSchema = new Schema(
     },
     checklistData: {
       type: Map,
-      of: {
-        incoming: {
-          checklistId: String,
-          completedAt: Date,
-          completedBy: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-          },
-          responses: {
-            type: Map,
-            of: {
-              value: Schema.Types.Mixed,
-              files: [
-                {
-                  id: String,
-                  name: String,
-                  url: String,
-                  type: String,
-                  size: Number,
-                },
-              ],
-            },
-          },
-        },
-        outgoing: {
-          checklistId: String,
-          completedAt: Date,
-          completedBy: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
-          },
-          responses: {
-            type: Map,
-            of: {
-              value: Schema.Types.Mixed,
-              files: [
-                {
-                  id: String,
-                  name: String,
-                  url: String,
-                  type: String,
-                  size: Number,
-                },
-              ],
-            },
-          },
-        },
-      },
+      of: Schema.Types.Mixed,
       default: {},
     },
     isDeleted: Boolean,
