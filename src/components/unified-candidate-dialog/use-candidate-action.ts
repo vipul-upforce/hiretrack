@@ -11,6 +11,7 @@ import {
   useUpdateCandidateHistoryMutation,
   useBulkUpdateCandidatesMutation,
   useLazyFetchCandidateDetailsQuery,
+  useUploadFilesMutation,
 } from '@/lib/features/candidate/candidateApi';
 import {
   useAssignJobMutation,
@@ -49,6 +50,7 @@ import {
   getJobTitle,
 } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
 import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { uploadAttachments } from '@/app/dashboard/jobs/[id]/hooks/fileUploadUtils';
 import {
   UnifiedFormValues,
   CandidateActionType,
@@ -98,6 +100,7 @@ export function useCandidateActions({
   const [bulkAssignJob] = useBulkAssignJobMutation();
   const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
   const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
+  const [uploadFiles] = useUploadFilesMutation();
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
@@ -351,6 +354,7 @@ export function useCandidateActions({
     values: UnifiedFormValues,
     updates: Partial<Candidate>,
     historyEntries: ICandidateHistory[],
+    uploadedAttachments: Attachment[] = [],
   ) => {
     if (!user) return;
     const selectedInterviewer = interviewers?.find(
@@ -364,9 +368,9 @@ export function useCandidateActions({
     const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
     if (scheduleGoogle || scheduleZoom || scheduleTeams) {
-      const processMeetingAttachments = async (files: unknown[]) =>
-        Promise.all(
-          (files || []).map(async (file) => {
+      const processMeetingAttachments = async (files: unknown[]): Promise<Attachment[]> => {
+        const attachmentsToProcess: Attachment[] = await Promise.all(
+          (files || []).map(async (file): Promise<Attachment> => {
             if (file instanceof File) {
               const reader = new FileReader();
               const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -382,9 +386,16 @@ export function useCandidateActions({
                 size: file.size,
               };
             }
-            return file;
+            return file as Attachment;
           }),
         );
+          // Upload meeting attachments
+        return uploadAttachments({
+          attachments: attachmentsToProcess,
+          uploadFiles,
+          organizationId: user?.organizationId as string,
+        });
+      };
 
       if (scheduleGoogle) {
         const guests = [
@@ -557,10 +568,14 @@ export function useCandidateActions({
       }
     }
 
+    // Use uploaded attachments (passed from handleSubmit)
     const existingNames = new Set(candidate.attachments.map((a) => a.name));
+    const attachmentsToUse = uploadedAttachments.length > 0 
+      ? uploadedAttachments 
+      : (values.attachments || []);
     updates.attachments = [
       ...candidate.attachments,
-      ...values.attachments.filter((a) => !existingNames.has(a.name)),
+      ...attachmentsToUse.filter((a) => !existingNames.has(a.name)),
     ];
     // Normalize interviewerId: convert empty string or "-1" to null
     const normalizedInterviewerId = normalizeInterviewerId(
@@ -665,6 +680,26 @@ export function useCandidateActions({
     }
     setIsSubmitting(true);
     try {
+      // Upload regular attachments first if any
+      let uploadedAttachments = values.attachments || [];
+      if (uploadedAttachments.length > 0) {
+        try {
+          uploadedAttachments = await uploadAttachments({
+            attachments: uploadedAttachments,
+            uploadFiles,
+            organizationId: user?.organizationId as string,
+          });
+        } catch {
+          toast({
+            title: 'Upload Error',
+            description: 'Failed to upload some attachments. Please try again.',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
       // Handle bulk operations via unified bulk-update API (supports multiple operations)
       if (isBulkMode && candidateList.length > 1) {
         const candidateIds = candidateList.map((c) => c._id);
@@ -718,9 +753,9 @@ export function useCandidateActions({
             return;
           }
 
-          // Process meeting attachments for Google Calendar (convert File to base64 if needed)
-          const processedMeetingAttachments = await Promise.all(
-            (values.meetingAttachments || []).map(async (file) => {
+          // Process meeting attachments - convert File to Attachment format, then upload
+          const meetingAttachmentsToProcess: Attachment[] = await Promise.all(
+            (values.meetingAttachments || []).map(async (file): Promise<Attachment> => {
               if (file instanceof File) {
                 const reader = new FileReader();
                 const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -736,12 +771,17 @@ export function useCandidateActions({
                   size: file.size,
                 };
               }
-              return file;
+              return file as Attachment;
             }),
           );
+          const processedMeetingAttachments = await uploadAttachments({
+            attachments: meetingAttachmentsToProcess,
+            uploadFiles,
+            organizationId: user?.organizationId as string,
+          });
 
-          const processedZoomMeetingAttachments = await Promise.all(
-            (values.zoomMeetingAttachments || []).map(async (file) => {
+          const zoomMeetingAttachmentsToProcess: Attachment[] = await Promise.all(
+            (values.zoomMeetingAttachments || []).map(async (file): Promise<Attachment> => {
               if (file instanceof File) {
                 const reader = new FileReader();
                 const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -757,15 +797,20 @@ export function useCandidateActions({
                   size: file.size,
                 };
               }
-              return file;
+              return file as Attachment;
             }),
           );
+          const processedZoomMeetingAttachments = await uploadAttachments({
+            attachments: zoomMeetingAttachmentsToProcess,
+            uploadFiles,
+            organizationId: user?.organizationId as string,
+          });
 
           operations.push({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
             time: values.time ? values.time.toISOString() : undefined,
-            attachments: values.attachments || [],
+            attachments: uploadedAttachments,
             scheduleGoogleMeet: values.scheduleGoogleMeet || false,
             meetDuration: values.meetDuration || 30,
             meetingNotes: values.meetingNotes || '',
@@ -870,7 +915,7 @@ export function useCandidateActions({
       const existingRemarks = candidateWithDetailsForRemark.remarks || [];
 
       if (actions.assignTo) {
-        await handleAssignTo(values, updates, historyEntries);
+        await handleAssignTo(values, updates, historyEntries, uploadedAttachments);
       }
 
       if (actions.switchJob && values.jobId) {

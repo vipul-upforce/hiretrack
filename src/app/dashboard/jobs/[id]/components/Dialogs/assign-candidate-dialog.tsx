@@ -52,6 +52,8 @@ import { AssignmentDetailsSection } from './assign-candidate-components/Assignme
 import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 import { useCancelMeeting } from '../../hooks/useCancelMeeting';
+import { useUploadFilesMutation } from '@/lib/features/candidate/candidateApi';
+import { uploadAttachments } from '../../hooks/fileUploadUtils';
 
 function LoadingSpinner({ w = 4 }: { w?: number }) {
   return <Loader2 className={`mr-2 h-${w} w-${w} animate-spin`} />;
@@ -75,6 +77,7 @@ export function AssignCandidateDialog({
   const [updateZoomMeeting] = useUpdateZoomMeetingMutation();
   const [scheduleTeamsMeeting] = useScheduleTeamsMeetingMutation();
   const [updateTeamsMeeting] = useUpdateTeamsMeetingMutation();
+  const [uploadFiles] = useUploadFilesMutation();
 
   const {
     cancelNotes,
@@ -173,6 +176,27 @@ export function AssignCandidateDialog({
     const scheduleZoom = values.scheduleZoomMeet && values.time;
     const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
+    // Upload regular attachments first
+    let uploadedAttachments = values.attachments || [];
+    if (uploadedAttachments.length > 0) {
+      try {
+        uploadedAttachments = await uploadAttachments({
+          attachments: uploadedAttachments,
+          uploadFiles,
+          organizationId: user?.organizationId,
+        });
+      } catch (error) {
+        logger.error('Failed to upload attachments:', error);
+        toast({
+          title: 'Upload Error',
+          description: 'Failed to upload some attachments. Please try again.',
+          variant: 'destructive',
+        });
+        formikHelpers.setSubmitting(false);
+        return;
+      }
+    }
+
     if (scheduleGoogle || scheduleZoom || scheduleTeams) {
       try {
         const selectedInterviewer = interviewers?.find(
@@ -191,8 +215,8 @@ export function AssignCandidateDialog({
 
         const processAttachments = async (
           files: unknown[],
-        ): Promise<Attachment[]> =>
-          Promise.all(
+        ): Promise<Attachment[]> => {
+          const attachmentsToProcess: Attachment[] = await Promise.all(
             (files || []).map(async (file): Promise<Attachment> => {
               if (file instanceof File) {
                 const reader = new FileReader();
@@ -217,6 +241,13 @@ export function AssignCandidateDialog({
               };
             }),
           );
+          // Upload meeting attachments
+          return uploadAttachments({
+            attachments: attachmentsToProcess,
+            uploadFiles,
+            organizationId: user?.organizationId,
+          });
+        };
 
         const defaultGuests = getDefaultGuests(selectedInterviewer);
         const googleGuests = [
@@ -401,7 +432,7 @@ export function AssignCandidateDialog({
             },
           }),
           attachments: [
-            ...values.attachments,
+            ...uploadedAttachments,
             ...processedGoogleAttachments,
             ...processedZoomAttachments,
             ...processedTeamsAttachments,
@@ -447,7 +478,12 @@ export function AssignCandidateDialog({
         formikHelpers.setSubmitting(false);
       }
     } else {
-      await handleSubmit(values, formikHelpers, interviewers || []);
+      // Upload attachments before submitting if no meetings scheduled
+      const finalValues = {
+        ...values,
+        attachments: uploadedAttachments,
+      };
+      await handleSubmit(finalValues, formikHelpers, interviewers || []);
     }
   };
 
