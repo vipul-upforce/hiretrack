@@ -1,4 +1,5 @@
 import { AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -15,6 +16,7 @@ export interface UpdateSettingsSectionProps {
   handleCheckForUpdates: () => void;
   checkingUpdatesRTK: boolean;
   updateAvailable: boolean;
+  isBeta: boolean;
   versionList: VersionListResponse | null;
 }
 
@@ -25,6 +27,7 @@ export function UpdateSettingsSection({
   handleCheckForUpdates,
   checkingUpdatesRTK,
   updateAvailable,
+  isBeta,
   versionList,
 }: UpdateSettingsSectionProps) {
   return (
@@ -40,6 +43,7 @@ export function UpdateSettingsSection({
             />
             <Label htmlFor="enableAutoUpdate">Enable Auto-Update</Label>
 
+
             <Button
               type="submit"
               disabled={isSubmitting}
@@ -48,6 +52,12 @@ export function UpdateSettingsSection({
             >
               {isSubmitting ? 'Saving...' : 'Save Settings'}
             </Button>
+
+            {isBeta && (
+              <Badge variant="secondary" className="flex items-center gap-1 h-[24px] text-xs">
+                BETA
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '@/lib/logger/logger.server';
 import { ConfigData } from '@/lib/licenseUtils';
+import { getBetaFlag } from '@/lib/configUtils';
 
 // Path to config.json in the parent of the current project root
 const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
@@ -41,7 +42,8 @@ export async function GET() {
       { status: 404 },
     );
   }
-  return NextResponse.json({ autoUpdate: config.autoUpdate });
+  const betaFlag = await getBetaFlag();
+  return NextResponse.json({ autoUpdate: config.autoUpdate, beta: betaFlag });
 }
 
 // POST: Toggle the autoUpdate value
@@ -63,5 +65,6 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-  return NextResponse.json({ autoUpdate: config.autoUpdate });
+  const betaFlag = await getBetaFlag();
+  return NextResponse.json({ autoUpdate: config.autoUpdate, beta: betaFlag });
 }

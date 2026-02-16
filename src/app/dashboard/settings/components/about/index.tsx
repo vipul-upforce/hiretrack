@@ -24,6 +24,7 @@ export default function AboutDialog({
     currentVersion,
     latestVersion,
     updateAvailable,
+    isBeta,
     versionList,
     changelogVersions,
     checkingUpdatesRTK,
@@ -71,6 +72,7 @@ export default function AboutDialog({
                   handleCheckForUpdates={handleCheckForUpdates}
                   checkingUpdatesRTK={checkingUpdatesRTK}
                   updateAvailable={updateAvailable}
+                  isBeta={isBeta}
                   versionList={versionList}
                 />
 

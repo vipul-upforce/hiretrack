@@ -152,6 +152,7 @@ export type SystemLogsResponse = {
 
 export interface AutoUpdateResponse {
   autoUpdate: boolean;
+  beta?: boolean;
 }
 
 export interface TriggerUpdateResponse {
