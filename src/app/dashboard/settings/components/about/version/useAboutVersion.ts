@@ -14,6 +14,9 @@ interface UseAboutVersionProps {
   onClose: (values?: AboutValues) => void;
 }
 
+const UPDATE_COOLDOWN_STORAGE_KEY = 'aboutUpdateCooldownUntil';
+const UPDATE_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
+
 // Helper to safely extract error messages
 const getErrorMessage = (error: unknown, fallback: string): string => {
   if (error instanceof Error) return error.message;
@@ -30,6 +33,10 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const [initialValues, setInitialValues] = useState<AboutValues | null>(null);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateCooldownUntil, setUpdateCooldownUntil] = useState<number | null>(
+    null,
+  );
+  const [nowTimestamp, setNowTimestamp] = useState(Date.now());
   const [versionList, setVersionList] = useState<VersionListResponse | null>(
     null,
   );
@@ -44,6 +51,10 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
     useTriggerUpdateMutation();
 
   const currentVersion = packageJson.version;
+  const updateCooldownRemainingMs = updateCooldownUntil
+    ? Math.max(0, updateCooldownUntil - nowTimestamp)
+    : 0;
+  const isUpdateNowDisabled = updatingRTK || updateCooldownRemainingMs > 0;
 
   // Initialize Auto Update Settings
   useEffect(() => {
@@ -56,6 +67,42 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
       setInitialValues({ enableAutoUpdate: false });
     }
   }, [autoUpdateData, autoUpdateError]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const storedCooldown = window.localStorage.getItem(
+      UPDATE_COOLDOWN_STORAGE_KEY,
+    );
+    if (!storedCooldown) return;
+
+    const parsedCooldown = Number(storedCooldown);
+    if (Number.isFinite(parsedCooldown) && parsedCooldown > Date.now()) {
+      setUpdateCooldownUntil(parsedCooldown);
+      return;
+    }
+
+    window.localStorage.removeItem(UPDATE_COOLDOWN_STORAGE_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (!updateCooldownUntil) return undefined;
+
+    const timer = window.setInterval(() => {
+      setNowTimestamp(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [updateCooldownUntil]);
+
+  useEffect(() => {
+    if (!updateCooldownUntil || nowTimestamp < updateCooldownUntil) return;
+
+    setUpdateCooldownUntil(null);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(UPDATE_COOLDOWN_STORAGE_KEY);
+    }
+  }, [nowTimestamp, updateCooldownUntil]);
 
   const handleCheckForUpdates = useCallback(async () => {
     try {
@@ -108,6 +155,16 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const handleUpdate = useCallback(async () => {
     try {
       await triggerUpdateRTK().unwrap();
+      const cooldownUntil = Date.now() + UPDATE_COOLDOWN_MS;
+
+      setUpdateCooldownUntil(cooldownUntil);
+      setNowTimestamp(Date.now());
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(
+          UPDATE_COOLDOWN_STORAGE_KEY,
+          String(cooldownUntil),
+        );
+      }
 
       toast({
         title: 'Update Started',
@@ -178,6 +235,8 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
     changelogVersions,
     checkingUpdatesRTK,
     updatingRTK,
+    isUpdateNowDisabled,
+    updateCooldownRemainingMs,
     handleCheckForUpdates,
     handleUpdate,
     handleSubmit,
