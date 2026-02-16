@@ -353,6 +353,7 @@ export const CandidateCard = memo(
 
         <CandidateCardDialogs
           candidate={localCandidate}
+          setLocalCandidate={setLocalCandidate}
           isEditing={isEditing}
           setIsEditing={setIsEditing}
           isAssigning={isAssigning}

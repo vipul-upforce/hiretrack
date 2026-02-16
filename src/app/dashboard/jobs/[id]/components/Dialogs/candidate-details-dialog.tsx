@@ -9,6 +9,7 @@ import {
   useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
   useLazyFetchCandidateHistoryQuery,
+  useLazyFetchCandidateDetailsQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { useParams, usePathname } from 'next/navigation';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -60,6 +61,7 @@ export function CandidateDetailsDialog({
       isError: isHistoryError,
     },
   ] = useLazyFetchCandidateHistoryQuery();
+  const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
 
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
@@ -89,6 +91,51 @@ export function CandidateDetailsDialog({
 
   // useSSE handles updating localCandidate when SSE updates arrive
   useSSE(setLocalCandidate, localCandidate || null, effectiveJobId);
+
+  // Fetch full candidate details (including remarks) when dialog opens.
+  useEffect(() => {
+    if (!isOpen || !localCandidate?._id) return undefined;
+
+    const hasLoadedRemarks =
+      Array.isArray(localCandidate.remarks) &&
+      (localCandidate.remarks.length > 0 ||
+        localCandidate.remarksCount === 0);
+
+    if (hasLoadedRemarks) return undefined;
+
+    let cancelled = false;
+
+    const loadDetails = async () => {
+      const result = await fetchCandidateDetails(localCandidate._id, true);
+      const details = result.data;
+
+      if (cancelled || !details || details._id !== localCandidate._id) return;
+
+      setLocalCandidate((prev) => {
+        if (!prev || prev._id !== details._id) return prev;
+        return {
+          ...prev,
+          remarks: details.remarks || [],
+          remarksCount: Array.isArray(details.remarks)
+            ? details.remarks.length
+            : prev.remarksCount,
+          resume: details.resume ?? prev.resume,
+          attachments: details.attachments || prev.attachments,
+        };
+      });
+    };
+
+    loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isOpen,
+    localCandidate?._id,
+    localCandidate?.remarks,
+    localCandidate?.remarksCount,
+    fetchCandidateDetails,
+  ]);
 
   // Load history when history tab is activated
   useEffect(() => {
@@ -170,8 +217,17 @@ export function CandidateDetailsDialog({
 
     // Update local candidate with the new data
     if (updatedCandidate) {
+      const remarksToUse =
+        updatedCandidate.remarks && updatedCandidate.remarks.length > 0
+          ? updatedCandidate.remarks
+          : localCandidate?.remarks || [];
+
       setLocalCandidate({
         ...updatedCandidate,
+        remarks: remarksToUse,
+        remarksCount:
+          updatedCandidate.remarksCount ??
+          (Array.isArray(remarksToUse) ? remarksToUse.length : 0),
         history: historyData?.history || localCandidate?.history || [],
       });
     }
@@ -320,10 +376,23 @@ export function CandidateDetailsDialog({
         // Use candidate.history if it has data (may have SSE updates from parent like calendar)
         // Otherwise keep localCandidate.history (dialog's own SSE updates)
         const historyToUse = (candidate.history?.length ? candidate.history : localCandidate.history) || [];
+        const remarksToUse =
+          candidate.remarks && candidate.remarks.length > 0
+            ? candidate.remarks
+            : localCandidate.remarks || [];
 
         setLocalCandidate({
           ...candidate,
           assignment: localCandidate.assignment || candidate.assignment,
+          remarks: remarksToUse,
+          remarksCount:
+            candidate.remarksCount ??
+            (Array.isArray(remarksToUse) ? remarksToUse.length : 0),
+          resume: candidate.resume ?? localCandidate.resume,
+          attachments:
+            candidate.attachments && candidate.attachments.length > 0
+              ? candidate.attachments
+              : localCandidate.attachments,
           history: historyToUse,
         });
       } else {

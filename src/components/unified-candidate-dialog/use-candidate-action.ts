@@ -10,6 +10,7 @@ import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
   useBulkUpdateCandidatesMutation,
+  useLazyFetchCandidateDetailsQuery,
 } from '@/lib/features/candidate/candidateApi';
 import {
   useAssignJobMutation,
@@ -96,6 +97,7 @@ export function useCandidateActions({
   const [assignJob] = useAssignJobMutation();
   const [bulkAssignJob] = useBulkAssignJobMutation();
   const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
+  const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
@@ -242,6 +244,46 @@ export function useCandidateActions({
     };
   }, [candidate, user?.role, jobId, initialAction, isBulkMode]);
 
+  const fetchAndHydrateCandidateDetails = useCallback(async () => {
+    if (isBulkMode || !candidate?._id) return null;
+
+    const hasLoadedRemarks =
+      Array.isArray(candidate.remarks) &&
+      (candidate.remarks.length > 0 || candidate.remarksCount === 0);
+
+    if (hasLoadedRemarks) return null;
+
+    try {
+      const result = await fetchCandidateDetails(candidate._id, true);
+      const details = result.data;
+
+      if (!details || details._id !== candidate._id) return null;
+
+      const mergedCandidate: Candidate = {
+        ...candidate,
+        remarks: details.remarks || [],
+        remarksCount: Array.isArray(details.remarks)
+          ? details.remarks.length
+          : candidate.remarksCount,
+        resume: details.resume ?? candidate.resume,
+        attachments: details.attachments || candidate.attachments,
+      };
+
+      setLocalCandidate?.(mergedCandidate);
+      return mergedCandidate;
+    } catch {
+      return null;
+    }
+  }, [isBulkMode, candidate, fetchCandidateDetails, setLocalCandidate]);
+
+  useEffect(() => {
+    if (!isOpen || isBulkMode || initialAction !== 'addRemark') {
+      return undefined;
+    }
+    fetchAndHydrateCandidateDetails();
+    return undefined;
+  }, [isOpen, isBulkMode, initialAction, fetchAndHydrateCandidateDetails]);
+
   const toggleAction = useCallback(
     (
       action: CandidateActionType,
@@ -282,6 +324,10 @@ export function useCandidateActions({
       if (action === 'updateStatus' && checked) nextActions.switchJob = false;
 
       if (checked) {
+        if (action === 'addRemark') {
+          fetchAndHydrateCandidateDetails();
+        }
+
         const fieldsMap: Record<string, string[]> = {
           assignTo: ['interviewerId', 'time'],
           switchJob: ['jobId'],
@@ -298,7 +344,7 @@ export function useCandidateActions({
 
       setFieldValue('enabledActions', nextActions, true);
     },
-    [],
+    [fetchAndHydrateCandidateDetails],
   );
 
   const handleAssignTo = async (
@@ -812,6 +858,16 @@ export function useCandidateActions({
 
       const updates: Partial<Candidate> = {};
       const historyEntries: ICandidateHistory[] = [];
+      let candidateWithDetailsForRemark = candidate;
+
+      if (!isBulkMode && actions.addRemark) {
+        const hydratedCandidate = await fetchAndHydrateCandidateDetails();
+        if (hydratedCandidate) {
+          candidateWithDetailsForRemark = hydratedCandidate;
+        }
+      }
+
+      const existingRemarks = candidateWithDetailsForRemark.remarks || [];
 
       if (actions.assignTo) {
         await handleAssignTo(values, updates, historyEntries);
@@ -924,7 +980,7 @@ export function useCandidateActions({
             rating: values.remarkRating ? Number(values.remarkRating) : 0,
             userId: { _id: user.id, name: user.name, email: user.email },
           };
-          updates.remarks = [...(candidate.remarks || []), remark];
+          updates.remarks = [...existingRemarks, remark];
         }
 
         historyEntries.push({
@@ -950,7 +1006,7 @@ export function useCandidateActions({
           rating: values.remarkRating ?? undefined,
           userId: { _id: user.id, name: user.name, email: user.email },
         };
-        updates.remarks = [...(candidate.remarks || []), remark];
+        updates.remarks = [...existingRemarks, remark];
 
         // Fix Object literal known properties error by casting
         const historyRemark = {
@@ -982,7 +1038,7 @@ export function useCandidateActions({
       }
 
       const finalCandidatePayload = {
-        ...candidate,
+        ...candidateWithDetailsForRemark,
         ...updates,
       };
 
