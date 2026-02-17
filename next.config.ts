@@ -9,11 +9,9 @@ const isProd = process.env.NODE_ENV === 'production';
 const nextConfig: NextConfig = {
   // Enable experimental features for better performance
   experimental: {
-    ...({
-      middlewareClientMaxBodySize: '50mb', // For route handlers processed through middleware
-      proxyClientMaxBodySize: '50mb', // For requests processed through proxy
-      serverActions: { bodySizeLimit: '50mb' },
-    } as Record<string, unknown>),
+    middlewareClientMaxBodySize: '50mb', // For route handlers processed through middleware
+    proxyClientMaxBodySize: '50mb', // For requests processed through proxy
+    serverActions: { bodySizeLimit: '50mb' },
     // Enable Turbopack for faster builds
     turbo: {
       rules: {
@@ -23,7 +21,7 @@ const nextConfig: NextConfig = {
         },
       },
     },
-  },
+  } as NextConfig['experimental'] & { proxyClientMaxBodySize?: string },
   // Optimize images
   images: {
     domains: [
