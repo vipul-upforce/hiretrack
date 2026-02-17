@@ -163,7 +163,7 @@ export const notificationSchema = new mongoose.Schema<INotification>(
 // TTL index for deleting notifications docs after 30 days
 notificationSchema.index(
   { createdAt: 1 },
-  { expireAfterSeconds: 60 * 60 * 24 * 30 },
+  { expireAfterSeconds: 60 * 60 * 24 * 15 },
 );
 
 // Add compound indexes for efficient queries
