@@ -27,6 +27,10 @@ import { SearchBar } from './components/search-bar';
 import { JobGrid } from './components/job-grid';
 import { ErrorState } from './components/error-state';
 import JobModal from './JobModal';
+import {
+  buildEmbedUrlWithJobId,
+  useShouldRedirectToEmbedOnJobClick,
+} from './utils/embed-redirect';
 
 interface Job {
   _id: string;
@@ -57,6 +61,7 @@ export default function ApplyJobsContent({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const isIframe = useIsIframe();
+  const shouldRedirectToEmbed = useShouldRedirectToEmbedOnJobClick(isIframe);
   const searchParams = useSearchParams();
 
   const [orgName, setOrgName] = useState<string>(searchParams?.get('o') || '');
@@ -350,6 +355,27 @@ export default function ApplyJobsContent({
     }
   }, [data, isModalOpen, selectedJob]);
 
+  /** Auto-open job modal when jobId is present in URL (deep link from cross-origin redirect) */
+  const jobIdFromUrl = searchParams?.get('jobId');
+  useEffect(() => {
+    if (!jobIdFromUrl || !jobs?.length || isModalOpen) return;
+    const job = jobs.find((j) => j._id === jobIdFromUrl);
+    if (job) {
+      setSelectedJob(job);
+      setIsJobModalOpen(true);
+    }
+  }, [jobIdFromUrl, jobs, isModalOpen]);
+
+  /** Redirect to embed URL when cross-origin iframe; otherwise open modal in place */
+  const handleJobClick = (job: Job) => {
+    if (shouldRedirectToEmbed && typeof window !== 'undefined') {
+      window.top!.location.href = buildEmbedUrlWithJobId(job._id);
+      return;
+    }
+    setSelectedJob(job);
+    setIsJobModalOpen(true);
+  };
+
   const handleSearch = () => {
     if (!searchTerm) {
       setQueryTitle('');
@@ -363,6 +389,20 @@ export default function ApplyJobsContent({
   const handleClearSearch = () => {
     setSearchTerm('');
     setQueryTitle('');
+  };
+
+  const handleCloseJobModal = () => {
+    setIsJobModalOpen(false);
+    setSelectedJob(null);
+    if (searchParams?.get('jobId') && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('jobId');
+      const query = params.toString();
+      const path = query ? `/apply-jobs?${query}` : '/apply-jobs';
+      router.replace(path, { scroll: false });
+
+    }
+
   };
 
   const handleLogout = async () => {
@@ -462,10 +502,7 @@ export default function ApplyJobsContent({
             isLoading={isLoading}
             primaryColor={primaryColor}
             formNameObject={formNameObject}
-            onJobClick={(job) => {
-              setSelectedJob(job);
-              setIsJobModalOpen(true);
-            }}
+            onJobClick={handleJobClick}
             hasSearch={queryTitle !== ''}
             onClearSearch={handleClearSearch}
           />
@@ -480,7 +517,7 @@ export default function ApplyJobsContent({
       <JobModal
         job={selectedJob}
         isOpen={isModalOpen}
-        onClose={() => setIsJobModalOpen(false)}
+        onClose={handleCloseJobModal}
         orgName={orgName}
         readOnly={
           !!(
