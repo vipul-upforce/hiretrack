@@ -21,7 +21,7 @@ export async function getBetaFlag(): Promise<boolean> {
     logger.info('configRaw', configRaw);
     const config = JSON.parse(configRaw) as { beta?: string };
     logger.info('config', config);
-    const betaFlag = Boolean(config.beta);
+    const betaFlag = config.beta === 'true';
     logger.info('betaFlag', betaFlag);
     return betaFlag;
   } catch (err) {

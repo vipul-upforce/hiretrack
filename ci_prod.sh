@@ -189,11 +189,11 @@ if [ "$OS_TYPE" = "macOS" ]; then
     --exclude='.DS_Store' \
     --exclude='.AppleDouble' \
     --exclude='.LSOverride' \
-    package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
+    package.json package-lock.json ecosystem.config.cjs next.config.ts .next .env public server-ws.cjs
 else
   # Standard tar for Linux/other systems
   tar -czvf temp/$TARBALL_NAME \
-    package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
+    package.json package-lock.json ecosystem.config.cjs next.config.ts .next .env public server-ws.cjs
 fi
 
 mv temp/$TARBALL_NAME .
