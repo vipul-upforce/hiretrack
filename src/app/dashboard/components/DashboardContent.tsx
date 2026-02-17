@@ -1,8 +1,11 @@
 import { Candidate } from '@/types/candidate';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Button } from '@/components/ui/button';
 import ActionItems from '@/components/actionitems';
 import { DashboardSkeleton } from '@/components/skeletons/dashboard-skeleton';
+import Link from 'next/link';
 import React from 'react';
+import { CalendarDays, ClipboardList, UserCheck } from 'lucide-react';
 import DashboardCards from './DashboardCards';
 import { RenderInterviewerAssignments } from './RenderInterviewerAssignments';
 import { RenderTodaysInterviews } from './RenderTodaysInterviews';
@@ -28,6 +31,45 @@ interface DashboardContentProps {
   showRecentActivities: boolean;
   isActivitiesSidebarOpen: boolean;
   setAssignments: React.Dispatch<React.SetStateAction<Candidate[]>>;
+}
+
+function DashboardEmptyState({
+  title,
+  description,
+  Icon,
+  minHeight = 'min-h-[420px]',
+  actionLabel,
+  actionHref,
+}: {
+  title: string;
+  description: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  minHeight?: string;
+  actionLabel?: string;
+  actionHref?: string;
+}) {
+  return (
+    <div className={`w-full flex rounded-2xl justify-center items-center border border-border/70 bg-background/80 px-6 py-10 h-full ${minHeight} max-h-[100px]`}>
+      <div className="flex min-h-full my-auto flex-col items-center justify-center text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <Icon className="h-7 w-7 text-primary" />
+        </div>
+        <h3 className="text-xl font-semibold text-foreground">
+          {title}
+        </h3>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+          {description}
+        </p>
+        {actionLabel && actionHref && (
+          <div className="mt-6">
+            <Button asChild variant="primary">
+              <Link href={actionHref}>{actionLabel}</Link>
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function DashboardContent({
@@ -90,9 +132,14 @@ export function DashboardContent({
                   })}
                 </div>
               ) : (
-                <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">
-                  No assignments found.
-                </p>
+                <DashboardEmptyState
+                  title="No assignments yet"
+                  description="You have not assigned any candidates to interviewers yet. Once assignments are created, this area will automatically populate with active interview cards."
+                  Icon={ClipboardList}
+                  minHeight="min-h-[76vh]"
+                  actionLabel="Open Jobs Board"
+                  actionHref="/dashboard/jobs-board"
+                />
               )}
 
               {isLoadingMore && (
@@ -156,9 +203,12 @@ export function DashboardContent({
                     }
                   />
                 ) : (
-                  <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">
-                    No interviews scheduled for today.
-                  </p>
+                  <DashboardEmptyState
+                    title="No interviews scheduled for today"
+                    description="You are clear for today. Upcoming interviews will appear here as soon as they are assigned."
+                    Icon={CalendarDays}
+                    minHeight="min-h-[280px]"
+                  />
                 )}
               </div>
 
@@ -195,9 +245,12 @@ export function DashboardContent({
                       }
                     />
                   ) : (
-                    <p className="flex w-full items-center justify-center py-10 text-center text-lg font-semibold text-gray-500">
-                      No assignments found.
-                    </p>
+                    <DashboardEmptyState
+                      title="No active assignments"
+                      description="You currently do not have any assigned candidates. New assignments will show up here automatically."
+                      Icon={UserCheck}
+                      minHeight="min-h-[320px]"
+                    />
                   )}
                 </div>
               )}
