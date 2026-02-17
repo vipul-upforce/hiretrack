@@ -29,6 +29,8 @@ export default function AboutDialog({
     changelogVersions,
     checkingUpdatesRTK,
     updatingRTK,
+    isUpdateNowDisabled,
+    updateCooldownRemainingMs,
     handleCheckForUpdates,
     handleUpdate,
     handleSubmit,
@@ -88,7 +90,7 @@ export default function AboutDialog({
                   <Button
                     type="button"
                     onClick={handleUpdate}
-                    disabled={updatingRTK}
+                    disabled={isUpdateNowDisabled}
                     className="w-full"
                     style={{ backgroundColor: 'var(--portal-primary)' }}
                   >
@@ -100,7 +102,9 @@ export default function AboutDialog({
                     ) : (
                       <>
                         <Download className="mr-2 h-4 w-4" />
-                        Update now
+                        {updateCooldownRemainingMs > 0
+                          ? `Updating the latest version.`
+                          : 'Update now'}
                       </>
                     )}
                   </Button>
