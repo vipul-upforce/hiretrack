@@ -106,6 +106,7 @@ function KanbanPage() {
     isDeleteDialogOpen,
     setIsDeleteDialogOpen,
     isCreatingJob,
+    creatingJobLane,
     setDuplicate,
     isCustomFieldsOpen,
     setIsCustomFieldsOpen,
@@ -190,6 +191,7 @@ function KanbanPage() {
                 key={column.id}
                 column={column}
                 isCreatingJob={isCreatingJob}
+                creatingJobLane={creatingJobLane}
                 setSelectedJob={setSelectedJob}
                 setIsDetailsOpen={setIsDetailsOpen}
                 setIsEditMode={setIsEditMode}
