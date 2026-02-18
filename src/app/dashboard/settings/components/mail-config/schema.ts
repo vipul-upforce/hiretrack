@@ -29,7 +29,7 @@ export const smtpValidationSchema = Yup.object({
     .trim()
     .when('mailProvider', {
       is: (mailProvider: unknown) => mailProvider === 'smtp',
-      then: (schema) => schema.email('Must be a valid email').required('SMTP User is required'),
+      then: (schema) => schema.required('SMTP User is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
 
@@ -45,7 +45,8 @@ export const smtpValidationSchema = Yup.object({
     .trim()
     .when('mailProvider', {
       is: (mailProvider: unknown) => mailProvider === 'smtp',
-      then: (schema) => schema.email('Must be a valid email').required('SMTP From is required'),
+      then: (schema) =>
+        schema.email('Must be a valid email').required('SMTP From is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
 
@@ -61,9 +62,10 @@ export const smtpValidationSchema = Yup.object({
     .trim()
     .when('mailProvider', {
       is: (mailProvider: unknown) => mailProvider === 'resend',
-      then: (schema) => schema
-        .email('Must be a valid email')
-        .required('Resend From is required'),
+      then: (schema) =>
+        schema
+          .email('Must be a valid email')
+          .required('Resend From is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
 
@@ -71,9 +73,10 @@ export const smtpValidationSchema = Yup.object({
     .trim()
     .when('mailProvider', {
       is: (mailProvider: unknown) => mailProvider === 'resend',
-      then: (schema) => schema
-        .email('Must be a valid email')
-        .required('Resend Reply To is required'),
+      then: (schema) =>
+        schema
+          .email('Must be a valid email')
+          .required('Resend Reply To is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
   brevo_api_key: Yup.string()
@@ -88,9 +91,10 @@ export const smtpValidationSchema = Yup.object({
     .trim()
     .when('mailProvider', {
       is: (mailProvider: unknown) => mailProvider === 'brevo',
-      then: (schema) => schema
-        .email('Must be a valid email')
-        .required('Brevo From is required'),
+      then: (schema) =>
+        schema
+          .email('Must be a valid email')
+          .required('Brevo From is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
 
@@ -98,9 +102,10 @@ export const smtpValidationSchema = Yup.object({
     .trim()
     .when('mailProvider', {
       is: (mailProvider: unknown) => mailProvider === 'brevo',
-      then: (schema) => schema
-        .email('Must be a valid email')
-        .required('Brevo Reply To is required'),
+      then: (schema) =>
+        schema
+          .email('Must be a valid email')
+          .required('Brevo Reply To is required'),
       otherwise: (schema) => schema.notRequired(),
     }),
 });
