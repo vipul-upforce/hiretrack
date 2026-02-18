@@ -8,8 +8,65 @@ import {
   NotificationType,
   NotificationDecisionContext,
 } from '../decision';
-import { resolveRecipientsToUserIds } from './helpers';
+import { resolveRecipientsToUserIds, getCommonEmailVariables } from './helpers';
 import { sendEventEmailWithHistory } from './eventEmailService';
+
+export type BulkEmailTemplateKey =
+  | 'bulk-assign'
+  | 'bulk-unassign'
+  | 'bulk-status-update'
+  | 'bulk-remark';
+
+export interface BulkActionEmailParams {
+  organizationId: string;
+  notificationType: NotificationType;
+  templateKey: BulkEmailTemplateKey;
+  /** Template variables (candidateListHtml and viewAllCandidatesLink are built automatically) */
+  variables: Record<string, string>;
+  /** User IDs to send email to */
+  recipients: string[];
+  /** Candidates for building candidateListHtml (each needs candidateId, candidateName, jobId) */
+  candidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+  }>;
+  triggererUserId?: string;
+  triggererEmail?: string;
+  triggererName?: string;
+  /** Primary job ID for actionUrl and viewAllCandidatesLink */
+  jobId?: string;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/** Max candidate names shown in email before "View all X candidates" link. */
+const BULK_CANDIDATE_LIST_MAX = 5;
+
+function buildCandidateListHtml(
+  candidates: BulkActionEmailParams['candidates'],
+  baseUrl: string,
+  viewAllCandidatesLink: string,
+): string {
+  if (candidates.length === 0) return '';
+  const toItem = (c: (typeof candidates)[0]) =>
+    `<li style="margin: 4px 0;"><a href="${baseUrl}/candidate/${c.candidateId}" style="color: #007bff; text-decoration: none;">${escapeHtml(c.candidateName)}</a></li>`;
+  const shown = candidates.slice(0, BULK_CANDIDATE_LIST_MAX);
+  const items = shown.map(toItem).join('');
+  const listHtml = `<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">${items}</ul>`;
+  if (candidates.length <= BULK_CANDIDATE_LIST_MAX) {
+    return listHtml;
+  }
+  const moreLink = `<p style="margin: 10px 0 0 0;"><a href="${viewAllCandidatesLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">View all ${candidates.length} candidates →</a></p>`;
+  return `${listHtml}${moreLink}`;
+}
 
 async function processSmartNotificationRecipients(
   organizationId: string,
@@ -117,8 +174,6 @@ export async function sendSmartNotification(
     ) {
       context.candidateId = undefined;
     }
-    console.log(context, 'context in smart notification');
-
     const { allRecipients, mentionedUsers, eligibleUsers } =
       await processSmartNotificationRecipients(
         organizationId,
@@ -236,6 +291,7 @@ export async function sendRemarkNotificationWithMentions(
   sentToUsers: string[]; // User IDs who received emails
   mentionedUsers?: string[];
 }> {
+  const { organizationName } = await getCommonEmailVariables(organizationId);
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     'new-remark',
     {
@@ -250,7 +306,8 @@ export async function sendRemarkNotificationWithMentions(
           : 'Not Provided',
       remarkText: remarkContent,
       candidateProfileLink: context.candidateProfileLink || '#',
-      organizationName: context.organizationName || 'Your Organization',
+      organizationName:
+        context.organizationName || organizationName || 'Your Organization',
     },
     organizationId,
   );
@@ -268,4 +325,94 @@ export async function sendRemarkNotificationWithMentions(
     { subject: emailSubject, html: emailContent },
     potentialRecipients,
   );
+}
+
+/**
+ * Sends bulk action email notifications.
+ * Builds candidateListHtml and viewAllCandidatesLink from candidates, fetches template, and sends via sendSmartNotification.
+ *
+ * Fire-and-forget: Callers typically invoke without await and use .catch() for error logging,
+ * so the bulk request is not blocked by email delivery. Errors are logged but do not fail the bulk operation.
+ */
+export async function sendBulkActionEmail(
+  params: BulkActionEmailParams,
+): Promise<{ status: number; message: string; sentToUsers: string[] }> {
+  try {
+    const {
+      organizationId,
+      notificationType,
+      templateKey,
+      variables,
+      recipients,
+      candidates,
+      triggererUserId,
+      triggererEmail,
+      triggererName,
+      jobId,
+    } = params;
+
+    if (recipients.length === 0 || candidates.length === 0) {
+      return {
+        status: 200,
+        message: 'No recipients or candidates for bulk email',
+        sentToUsers: [],
+      };
+    }
+
+    const { baseUrl, organizationName, dashboardLink } =
+      await getCommonEmailVariables(organizationId);
+    const primaryJobId = jobId ?? candidates[0]?.jobId ?? '';
+    const viewAllCandidatesLink = primaryJobId
+      ? `${baseUrl}/dashboard/jobs/${primaryJobId}`
+      : `${baseUrl}/dashboard`;
+    const actionUrl = viewAllCandidatesLink;
+
+    const candidateListHtml = buildCandidateListHtml(
+      candidates,
+      baseUrl,
+      viewAllCandidatesLink,
+    );
+
+    const mergedVariables = {
+      ...variables,
+      candidateListHtml,
+      viewAllCandidatesLink,
+      actionUrl,
+      dashboardLink,
+      organizationName: organizationName || variables.organizationName || '',
+    };
+
+    const { emailContent: finalContent, emailSubject: finalSubject } =
+      await getMappedEmailTemplate(
+        templateKey,
+        mergedVariables,
+        organizationId,
+      );
+
+    return sendSmartNotification(
+      organizationId,
+      notificationType,
+      {
+        triggererUserId,
+        triggererEmail,
+        triggererName,
+        jobId: primaryJobId || undefined,
+        eventType: `bulk_${templateKey.replace('bulk-', '')}`,
+        templateUsed: templateKey,
+      },
+      { subject: finalSubject, html: finalContent },
+      recipients,
+    );
+  } catch (error) {
+    logger.error(
+      { error, templateKey: params.templateKey },
+      'Bulk action email failed',
+    );
+    return {
+      status: 500,
+      message:
+        error instanceof Error ? error.message : 'Bulk action email failed',
+      sentToUsers: [],
+    };
+  }
 }

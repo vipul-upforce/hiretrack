@@ -30,6 +30,7 @@ export {
   sendUnifiedMail,
   sendEventEmailWithHistory,
   sendSmartNotification,
+  sendBulkActionEmail,
 } from './email/unifiedEmailService';
 export { sendMail } from './email/emailService';
 

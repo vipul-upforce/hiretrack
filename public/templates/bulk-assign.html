@@ -1,0 +1,52 @@
+<div
+  style="
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  "
+>
+  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px">
+    <h2 style="color: #2c3e50; margin-top: 0">Candidates Assigned</h2>
+    <p style="margin: 0 0 15px 0">Hello {{recipientName}},</p>
+
+    <p style="margin: 0 0 15px 0">
+      {{triggererName}} has assigned {{candidateCount}} candidate(s) to
+      {{interviewerName}} for the <strong>{{jobTitle}}</strong> position.
+    </p>
+
+    <div
+      style="
+        background-color: white;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        border: 1px solid #dee2e6;
+      "
+    >
+      <p style="margin: 0 0 10px 0"><strong>Affected candidates:</strong></p>
+      <div style="margin: 0">{{candidateListHtml}}</div>
+    </div>
+
+    <div style="text-align: center; margin: 20px 0">
+      <a
+        href="{{actionUrl}}"
+        style="
+          background-color: #007bff;
+          color: white;
+          padding: 10px 20px;
+          text-decoration: none;
+          border-radius: 5px;
+          display: inline-block;
+        "
+        >View all candidates</a
+      >
+    </div>
+
+    <p style="margin: 15px 0 0 0">
+      Best regards,<br />{{organizationName}} Hiring Team
+    </p>
+  </div>
+</div>

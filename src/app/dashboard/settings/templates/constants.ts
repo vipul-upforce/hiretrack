@@ -17,6 +17,10 @@ export const DEFAULT_TEMPLATE_IDS = [
   'new-remark',
   'step-completed',
   'send-otp',
+  'bulk-assign',
+  'bulk-unassign',
+  'bulk-status-update',
+  'bulk-remark',
 ];
 
 export const DEFAULT_VARIABLES = ['SenderName', 'ReceiverName', 'PortalName'];
