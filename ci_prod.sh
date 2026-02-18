@@ -175,6 +175,10 @@ jq --arg version "$VERSION_WITHOUT_PREFIX" '.version = $version' package.json > 
 echo "Building Next.js application..."
 NODE_OPTIONS="--max-old-space-size=3072" npx next build
 
+# Obfuscate server files (including server-ws.cjs)
+# echo "Obfuscating server files..."
+# npx tsx scripts/obfuscate-server.ts
+
 # Create tarball with OS-specific handling
 TARBALL_NAME="hiretrack-${CURRENT_VERSION}.tar.gz"
 echo "Creating tarball: $TARBALL_NAME"
@@ -189,11 +193,11 @@ if [ "$OS_TYPE" = "macOS" ]; then
     --exclude='.DS_Store' \
     --exclude='.AppleDouble' \
     --exclude='.LSOverride' \
-    package.json package-lock.json ecosystem.config.cjs next.config.ts .next .env public server-ws.cjs
+    package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
 else
   # Standard tar for Linux/other systems
   tar -czvf temp/$TARBALL_NAME \
-    package.json package-lock.json ecosystem.config.cjs next.config.ts .next .env public server-ws.cjs
+    package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
 fi
 
 mv temp/$TARBALL_NAME .
