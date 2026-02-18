@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { FileUp } from 'lucide-react';
 import { CompletedBatches } from './completed-batches';
 import { FileList } from './file-list';
 import { FileUploader } from './file-uploader';
@@ -58,6 +59,27 @@ interface ErrorResponse {
   error?: string;
 }
 
+function EmptyBatchesState() {
+  return (
+    <div className="flex min-h-full w-full items-center justify-center">
+      <div className="w-full justify-center items-center flex h-[65vh] rounded-2xl border border-border/70 bg-background/80 px-6 py-12">
+        <div className="flex h-full flex-col items-center justify-center text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <FileUp className="h-7 w-7 text-primary" />
+          </div>
+          <h2 className="text-2xl font-semibold text-foreground">
+            No batches processed yet
+          </h2>
+          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
+            Upload your CV files above and click Process Batch to create your
+            first processing history.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
@@ -87,6 +109,9 @@ export function CVBatchProcessor() {
       setCompletedBatches(batches);
     }
   }, [batches]);
+
+  const showNoBatchesState =
+    !isLoading && !error && completedBatches.length === 0 && files.length === 0;
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
     const processedFiles: FileWithPreview[] = [];
@@ -233,7 +258,7 @@ export function CVBatchProcessor() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="flex min-h-full flex-col gap-8">
       <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
 
       {files.length > 0 && (
@@ -286,6 +311,7 @@ export function CVBatchProcessor() {
 
       {isLoading && <CvBatchLoader />}
       {error && <p>Error fetching batches: </p>}
+      {showNoBatchesState && <EmptyBatchesState />}
       {completedBatches.length > 0 && (
         <CompletedBatches batches={completedBatches} />
       )}
