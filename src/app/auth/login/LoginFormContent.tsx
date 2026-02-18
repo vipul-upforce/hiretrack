@@ -12,7 +12,7 @@ import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import OrganizationDialog from '@/components/auth/OrganizationDialog';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { getBetaFlag } from '@/lib/configUtils';
+// import { getBetaFlag } from '@/lib/configUtils';
 import { usePortalBranding } from './hooks/use-portal-branding';
 import { useCaptchaHandler } from './hooks/use-captcha-handler';
 
@@ -51,7 +51,7 @@ export default function LoginFormContent({
   const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
     [],
   );
-  const [isBeta, setIsBeta] = useState(false);
+  // const [isBeta, setIsBeta] = useState(false);
   const [selectedOrgId, setSelectedOrgId] = useState<string>();
   const [loginValues, setLoginValues] = useState<LoginFormValues>();
   const [isMultipleOrgs, setIsMultipleOrgs] = useState(false);
@@ -77,14 +77,14 @@ export default function LoginFormContent({
     setLoginFormValues: setLoginValues,
   });
 
-  const getBetaFlagVal = async () => {
-    const betaFlag: boolean = await getBetaFlag();
-    setIsBeta(betaFlag);
-  };
+  // const getBetaFlagVal = async () => {
+  //   const betaFlag: boolean = await getBetaFlag();
+  //   setIsBeta(betaFlag);
+  // };
 
-  useEffect(() => {
-    getBetaFlagVal();
-  }, []);
+  // useEffect(() => {
+  //   getBetaFlagVal();
+  // }, []);
 
   // Redirect if logged in
   useEffect(() => {
@@ -230,7 +230,7 @@ export default function LoginFormContent({
         className="pointer-events-none fixed bottom-2 right-4 z-50 select-none text-xs text-gray-400"
         aria-label="App Version"
       >
-        v{packageJson.version} {isBeta ? '(Beta)' : ''}
+        v{packageJson.version}
       </div>
     </div>
   );
