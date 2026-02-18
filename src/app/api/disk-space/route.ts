@@ -49,6 +49,55 @@ function calculateFolderSizeRecursive(dirPath: string): number {
 }
 
 /**
+ * Gets the current user's home directory at runtime using Linux commands.
+ * This is more reliable than environment variables which can be manipulated.
+ * 
+ * @returns The home directory path (e.g., '/root' or '/home/hiretrack')
+ */
+function getRuntimeHomeDirectory(): string {
+  try {
+    if (process.platform === 'win32') {
+      // On Windows, use environment variable as fallback
+      return process.env.HOME || process.env.USERPROFILE || 'C:\\Users\\Upforce';
+    }
+
+    // On Linux/Mac, use getent to query /etc/passwd for the actual home directory
+    // This is more reliable than environment variables
+    try {
+      const username = execSync('whoami', { encoding: 'utf-8' }).trim();
+      const passwdEntry = execSync(`getent passwd ${username}`, { encoding: 'utf-8' }).trim();
+      // Home directory is the 6th field (index 5) in /etc/passwd format
+      // Format: username:password:uid:gid:gecos:home:shell
+      const homeDir = passwdEntry.split(':')[5];
+      if (homeDir && fs.existsSync(homeDir)) {
+        return homeDir;
+      }
+    } catch {
+      // Fallback: try reading /etc/passwd directly
+      try {
+        const username = execSync('whoami', { encoding: 'utf-8' }).trim();
+        const passwdContent = fs.readFileSync('/etc/passwd', 'utf-8');
+        const userLine = passwdContent.split('\n').find(line => line.startsWith(`${username}:`));
+        if (userLine) {
+          const homeDir = userLine.split(':')[5];
+          if (homeDir && fs.existsSync(homeDir)) {
+            return homeDir;
+          }
+        }
+      } catch {
+        // Last resort fallback
+      }
+    }
+
+    // Final fallback
+    return process.env.HOME || '/root';
+  } catch (error) {
+    logger.error({ error }, 'Failed to detect home directory, using fallback');
+    return process.env.HOME || '/root';
+  }
+}
+
+/**
  * Formats bytes to human-readable size string
  */
 function formatSize(bytes: number): string {
@@ -164,6 +213,8 @@ async function getDiskSpace(request: NextRequest) {
     const getStats = searchParams.get('stats');
 
     const isWindows = process.platform === 'win32';
+    // Detect home directory at runtime using Linux commands
+    const userHome = getRuntimeHomeDirectory();
 
     const WINDOWS_PATHS: Record<string, string> = {
       nginx: '/Users/UpforceTech/',
@@ -173,8 +224,8 @@ async function getDiskSpace(request: NextRequest) {
 
     const LINUX_PATHS: Record<string, string> = {
       nginx: '/var/log/nginx',
-      pm2: '/root/.pm2/logs',
-      hiretrack: '/root/.hiretrack',
+      pm2: path.join(userHome, '.pm2', 'logs'),
+      hiretrack: path.join(userHome, '.hiretrack'),
     };
 
     const SYSTEM_ROOT = isWindows ? 'C:/' : '/';
@@ -187,8 +238,8 @@ async function getDiskSpace(request: NextRequest) {
 
     if (rootKey) {
       const baseRootPath = isWindows
-        ? WINDOWS_PATHS.rootKey
-        : LINUX_PATHS.rootKey;
+        ? WINDOWS_PATHS[rootKey]
+        : LINUX_PATHS[rootKey];
 
       if (!baseRootPath) {
         return NextResponse.json(
@@ -267,7 +318,7 @@ async function getDiskSpace(request: NextRequest) {
     const baseFolders = ['nginx', 'pm2', 'hiretrack'];
 
     const foldersResult = baseFolders.map((key) => {
-      const folderPath = isWindows ? WINDOWS_PATHS.key : LINUX_PATHS.key;
+      const folderPath = isWindows ? WINDOWS_PATHS[key] : LINUX_PATHS[key];
       let size = '0B';
       try {
         size = getFolderSize(folderPath);

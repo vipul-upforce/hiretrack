@@ -6,6 +6,14 @@ import { logger } from '@/lib/logger/logger.server';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '51mb',
+    },
+  },
+};
+
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
@@ -52,7 +60,12 @@ async function processFileUpload(
       url = await uploadFile(dataUrl, targetFolder, organizationId, fileName);
       break;
     case 's3':
-      url = await uploadFileToS3(dataUrl, targetFolder, organizationId, fileName);
+      url = await uploadFileToS3(
+        dataUrl,
+        targetFolder,
+        organizationId,
+        fileName,
+      );
       break;
     default: // local
       url = await saveFileLocally(dataUrl, targetFolder, fileName);
@@ -113,11 +126,13 @@ export async function POST(request: NextRequest) {
           );
         }
         try {
-          const job = await Job.findById(new mongoose.Types.ObjectId(jobIdParam))
+          const job = await Job.findById(
+            new mongoose.Types.ObjectId(jobIdParam),
+          )
             .select('organizationId')
             .lean()
             .exec();
-          
+
           if (!job) {
             return NextResponse.json(
               { error: 'Job not found' },
@@ -134,7 +149,10 @@ export async function POST(request: NextRequest) {
         }
       } else {
         return NextResponse.json(
-          { error: 'organizationId or jobId query parameter is required for public access' },
+          {
+            error:
+              'organizationId or jobId query parameter is required for public access',
+          },
           { status: 400 },
         );
       }
@@ -149,7 +167,8 @@ export async function POST(request: NextRequest) {
 
     // Get organization settings to determine file storage type
     const settings = await Settings.findOne({ organizationId });
-    const storageType = settings?.fileStorage?.storageType || fileStorage || 'local';
+    const storageType =
+      settings?.fileStorage?.storageType || fileStorage || 'local';
 
     // Parse multipart form data using Next.js native FormData API
     const formData = await request.formData();
@@ -218,9 +237,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         files: uploadedFiles,
-        customFields: Object.keys(customFieldFiles).length > 0
-          ? customFieldFiles
-          : undefined,
+        customFields:
+          Object.keys(customFieldFiles).length > 0
+            ? customFieldFiles
+            : undefined,
       });
     } catch (error) {
       logger.error({ error }, 'Error processing file uploads');
