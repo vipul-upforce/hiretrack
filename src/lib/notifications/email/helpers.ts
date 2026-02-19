@@ -1,11 +1,39 @@
 import mongoose from 'mongoose';
 import connectToDatabase, { Settings, User } from '@/lib/mongodb';
 import type { Ismtp } from '@/lib/models/settings';
+import { getOrganizationName } from '@/lib/utils/organization';
 import {
   batchCheckNotifications,
   NotificationType,
   NotificationDecisionContext,
 } from '../decision';
+
+/** Base URL for links in emails (env or fallback). */
+export function getBaseUrl(): string {
+  return (
+    process.env.BASE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    'http://localhost:3000'
+  );
+}
+
+/**
+ * Common variables used across email templates (bulk and single flows).
+ * Use when building template variables for getMappedEmailTemplate.
+ */
+export async function getCommonEmailVariables(organizationId: string): Promise<{
+  baseUrl: string;
+  organizationName: string;
+  dashboardLink: string;
+}> {
+  const baseUrl = getBaseUrl();
+  const organizationName = await getOrganizationName(organizationId);
+  return {
+    baseUrl,
+    organizationName: organizationName || '',
+    dashboardLink: `${baseUrl}/dashboard`,
+  };
+}
 
 export interface EmailHistoryData {
   organizationId: string;

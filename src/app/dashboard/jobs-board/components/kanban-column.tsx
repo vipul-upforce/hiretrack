@@ -3,6 +3,7 @@
 import { Droppable, DroppableProvided } from '@hello-pangea/dnd';
 import { Job } from '@/types/job';
 import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
+import { JobCardLoadingSkeleton } from './job-card-loading-skeleton';
 import JobCard from './job-card';
 
 interface KanbanColumnProps {
@@ -12,6 +13,7 @@ interface KanbanColumnProps {
     jobs: Job[];
   };
   isCreatingJob: boolean;
+  creatingJobLane: Job['status'] | null;
   setSelectedJob: (job: Job | null) => void;
   setIsDetailsOpen: (open: boolean) => void;
   setIsEditMode: (editMode: boolean) => void;
@@ -23,6 +25,7 @@ interface KanbanColumnProps {
 function KanbanColumn({
   column,
   isCreatingJob,
+  creatingJobLane,
   setSelectedJob,
   setIsDetailsOpen,
   setIsEditMode,
@@ -52,11 +55,8 @@ function KanbanColumn({
                   ref={provided.innerRef}
                   className="h-auto min-w-0 space-y-3 pb-4"
                 >
-                  {isCreatingJob && column.id === 'draft' && (
-                    <div className="animate-pulse rounded-xl bg-gray-100 p-4 shadow-sm dark:bg-black">
-                      <div className="mb-2 h-5 w-2/3 rounded bg-gray-300 dark:bg-gray-700" />
-                      <div className="h-4 w-1/3 rounded bg-gray-300 dark:bg-gray-700" />
-                    </div>
+                  {isCreatingJob && creatingJobLane === column.id && (
+                    <JobCardLoadingSkeleton />
                   )}
 
                   {column.jobs.map((job, index) => (

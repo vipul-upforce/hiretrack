@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import useCustomForm from '@/Custom_Fields/hooks/useCustomForm';
 import { Job } from '@/types/job';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { BriefcaseBusiness } from 'lucide-react';
 import ConfirmationDialog from '../../../jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { JobAnalyticsModal } from '../JobAnalyticsModal';
 import { JobsTableProps, CustomFieldDef } from './types';
@@ -107,11 +108,20 @@ export function JobsTableView(props: JobsTableProps) {
                   {/* Calculate colSpan dynamically based on visible columns + 4 mandatory */}
                   <TableCell
                     colSpan={4 + visibleColumns.size}
-                    className="h-32 text-center"
+                    className="h-40 text-center"
                   >
-                    <p className="text-gray-500 dark:text-gray-400">
-                      No jobs found
-                    </p>
+                    <div className="mx-auto flex max-w-md flex-col items-center justify-center">
+                      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                        <BriefcaseBusiness className="h-5 w-5 text-gray-500 dark:text-gray-300" />
+                      </div>
+                      <p className="text-base font-semibold text-gray-800 dark:text-gray-200">
+                        No jobs match your current view
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        Try changing filters or search terms to see more job
+                        positions.
+                      </p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (

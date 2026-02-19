@@ -7,4 +7,5 @@ export {
   sendEventEmailWithHistory,
   sendSmartNotification,
   sendRemarkNotificationWithMentions,
+  sendBulkActionEmail,
 } from '@/lib/notifications/email/unifiedEmailService';
