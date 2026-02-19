@@ -19,6 +19,7 @@ export function SetupInstructions({ storageType }: SetupInstructionsProps) {
   useEffect(() => {
     setAccordionValue('');
   }, [storageType]);
+
   const isCloudinary = storageType === 'cloudinary';
   const subtitle = isCloudinary
     ? 'Cloudinary storage credentials'
@@ -75,11 +76,21 @@ export function SetupInstructions({ storageType }: SetupInstructionsProps) {
                   <li>Click on Home and open the Dashboard section.</li>
                   <li>In the product Environment click on <b>Go to API Keys</b>.</li>
                   <li>
-                    Copy:
+                    Copy credentials:
                     <ul className="mt-2 ml-4 list-disc space-y-1">
                       <li>Cloud name to Cloud Name field</li>
                       <li>API Key to Cloudinary API Key field</li>
                       <li>API Secret to Cloudinary API Secret field</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <b>Enable PDF Delivery</b>
+                    <ul className="mt-2 ml-4 list-disc space-y-1">
+                      <li>Click <b>Settings (⚙️ icon)</b> in the top right.</li>
+                      <li>Select the <b>Security</b> tab.</li>
+                      <li>Scroll down to <b>PDF and ZIP files delivery</b>.</li>
+                      <li>Check <b>Allow delivery of PDF and ZIP files</b>.</li>
+                      <li>Scroll to bottom and click <b>Save</b>.</li>
                     </ul>
                   </li>
                   <li>Click Test Credentials and then Save.</li>
@@ -128,6 +139,7 @@ export function SetupInstructions({ storageType }: SetupInstructionsProps) {
                 <ul className="mt-2 ml-5 list-disc space-y-1 text-sm text-amber-800/90 dark:text-amber-200/90">
                   <li>Use credentials from the same Cloudinary environment.</li>
                   <li>Use API Secret, not the full CLOUDINARY_URL.</li>
+                  <li><b>Must enable &quot;PDF and ZIP files delivery&quot;</b> in Security settings.</li>
                   <li>Run Test Credentials before saving.</li>
                 </ul>
               )}
