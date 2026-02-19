@@ -256,6 +256,16 @@ const settingsSchema = new Schema({
       type: Boolean,
       default: false,
     },
+    captchaType: {
+      type: String,
+      enum: ['v2', 'v3'],
+      default: 'v2',
+    },
+    captchaVariant: {
+      type: String,
+      enum: ['checkbox', 'invisible'],
+      default: 'checkbox',
+    },
     siteKey: {
       type: String,
       default: '',
@@ -585,9 +595,11 @@ export interface IOnboardingStatus {
 }
 export interface ICaptcha {
   enableCaptcha: boolean;
+  captchaType?: 'v2' | 'v3';
+  captchaVariant?: 'checkbox' | 'invisible';
   siteKey: string;
   secretKey: string;
-  captchaProvider: string;
+  captchaProvider?: string;
 }
 
 export interface IFileMeta {

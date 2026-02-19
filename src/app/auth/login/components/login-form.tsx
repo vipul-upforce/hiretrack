@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useFormik } from 'formik';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, Building2 } from 'lucide-react';
-import ReCAPTCHA from 'react-google-recaptcha';
 import { useTheme } from '@/components/theme-provider';
+import {
+  RecaptchaWrapper,
+  RecaptchaWrapperHandle,
+} from '@/components/recaptcha/RecaptchaWrapper';
 import '../recaptcha-theme.css';
 
 import { loginSchema, LoginSchemaType } from '../schemas/login-schema';
@@ -21,6 +24,8 @@ interface LoginFormProps {
   isSuccess: boolean;
   showCompanyField?: boolean;
   captchaEnabled?: boolean;
+  captchaType?: 'v2' | 'v3';
+  captchaVariant?: 'checkbox' | 'invisible';
   captchaSiteKey: string | null;
   captchaToken: string | null;
   onCaptchaChange: (token: string | null) => void;
@@ -39,6 +44,8 @@ export function LoginForm({
   isSuccess,
   showCompanyField,
   captchaEnabled,
+  captchaType = 'v2',
+  captchaVariant = 'checkbox',
   captchaSiteKey,
   captchaToken,
   onCaptchaChange,
@@ -54,6 +61,9 @@ export function LoginForm({
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
 
+  const recaptchaRef = useRef<RecaptchaWrapperHandle>(null);
+  const pendingSubmitRef = useRef(false);
+
   // Initialize Formik
   const formik = useFormik<LoginSchemaType>({
     initialValues: {
@@ -68,6 +78,35 @@ export function LoginForm({
     },
   });
 
+  const isInvisibleV2 =
+    captchaEnabled &&
+    captchaType === 'v2' &&
+    captchaVariant === 'invisible';
+
+  const onCaptchaChangeWrapped = useCallback(
+    (token: string | null) => {
+      onCaptchaChange(token);
+      if (pendingSubmitRef.current && token) {
+        pendingSubmitRef.current = false;
+        setTimeout(() => formik.submitForm(), 0);
+      }
+    },
+    [onCaptchaChange, formik],
+  );
+
+  const handleFormSubmit = useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      if (isInvisibleV2 && !captchaToken && recaptchaRef.current) {
+        e.preventDefault();
+        pendingSubmitRef.current = true;
+        recaptchaRef.current.execute();
+        return;
+      }
+      formik.handleSubmit(e);
+    },
+    [isInvisibleV2, captchaToken, formik],
+  );
+
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     setMousePosition({
@@ -81,7 +120,12 @@ export function LoginForm({
   )?.name;
 
   const isBusy = isLoading || formik.isSubmitting;
-  const isDisabled = isBusy || isSuccess || (captchaEnabled && !captchaToken);
+  const isDisabled =
+    isBusy ||
+    isSuccess ||
+    (captchaEnabled &&
+      !isInvisibleV2 &&
+      !captchaToken);
 
   return (
     <motion.div
@@ -122,7 +166,7 @@ export function LoginForm({
           )}
         </div>
 
-        <form onSubmit={formik.handleSubmit} className="space-y-6">
+        <form onSubmit={handleFormSubmit} className="space-y-6">
           {showCompanyField && (
             <div className="space-y-2">
               <label className="text-sm font-medium" htmlFor="companyName">
@@ -224,14 +268,22 @@ export function LoginForm({
           </div>
 
           {captchaEnabled && captchaSiteKey && (
-            <div className="flex justify-center">
-              <div className="recaptcha-container">
-                <ReCAPTCHA
-                  sitekey={captchaSiteKey}
-                  onChange={onCaptchaChange}
-                  theme={theme as 'light' | 'dark'}
-                />
-              </div>
+            <div
+              className={
+                captchaVariant === 'invisible'
+                  ? 'w-full'
+                  : 'flex justify-center'
+              }
+            >
+              <RecaptchaWrapper
+                ref={recaptchaRef}
+                siteKey={captchaSiteKey}
+                captchaType={captchaType}
+                captchaVariant={captchaVariant}
+                theme={theme as 'light' | 'dark'}
+                onTokenGenerated={onCaptchaChangeWrapped}
+                action="login"
+              />
             </div>
           )}
 

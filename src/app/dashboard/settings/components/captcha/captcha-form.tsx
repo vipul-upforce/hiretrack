@@ -3,6 +3,13 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { CaptchaValues } from './types';
 
 interface CaptchaFormViewProps {
@@ -42,6 +49,58 @@ export default function CaptchaForm({
 
         {values.enableCaptcha && (
           <div className="space-y-4 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="captchaType">CAPTCHA Type</Label>
+              <Select
+                value={values.captchaType}
+                onValueChange={(value) =>
+                  setFieldValue('captchaType', value as 'v2' | 'v3')
+                }
+                disabled={isPermissionDenied}
+              >
+                <SelectTrigger id="captchaType">
+                  <SelectValue placeholder="Select CAPTCHA type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="v2">reCAPTCHA v2</SelectItem>
+                  <SelectItem value="v3">reCAPTCHA v3</SelectItem>
+                </SelectContent>
+              </Select>
+              <ErrorMessage
+                name="captchaType"
+                component="div"
+                className="text-red-500 text-sm"
+              />
+            </div>
+
+            {values.captchaType === 'v2' && (
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="captchaVariant">CAPTCHA Variant (v2 only)</Label>
+                <Select
+                  value={values.captchaVariant}
+                  onValueChange={(value) =>
+                    setFieldValue('captchaVariant', value as 'checkbox' | 'invisible')
+                  }
+                  disabled={isPermissionDenied}
+                >
+                  <SelectTrigger id="captchaVariant">
+                    <SelectValue placeholder="Select CAPTCHA variant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="checkbox">
+                      Checkbox (&quot;I am not a robot&quot;)
+                    </SelectItem>
+                    <SelectItem value="invisible">Invisible (Badge)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <ErrorMessage
+                  name="captchaVariant"
+                  component="div"
+                  className="text-red-500 text-sm"
+                />
+              </div>
+            )}
+
             <div className="flex flex-col space-y-2">
               <Label htmlFor="siteKey">CAPTCHA Site Key</Label>
               <Input

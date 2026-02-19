@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Formik, Form, Field, FieldProps } from 'formik';
 import { motion } from 'framer-motion';
 import { Mail, Lock, User } from 'lucide-react';
-import ReCAPTCHA from 'react-google-recaptcha';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  RecaptchaWrapper,
+  RecaptchaWrapperHandle,
+} from '@/components/recaptcha/RecaptchaWrapper';
 import { SignupSchema } from '../signupSchema';
 import { TermsAndConditionsDialog } from '../TermsAndConditionsDialog';
 import { FormInput } from './form-input';
@@ -27,6 +30,8 @@ export function SignupForm() {
     portalSettings,
     orgName,
     decryptedSiteKey,
+    captchaType,
+    captchaVariant,
     captchaConfig,
     showTermsDialog,
     setShowTermsDialog,
@@ -37,6 +42,24 @@ export function SignupForm() {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+
+  const recaptchaRef = useRef<RecaptchaWrapperHandle>(null);
+  const pendingSubmitRef = useRef(false);
+  const submitFormRef = useRef<(() => void) | null>(null);
+
+  const isInvisibleV2 =
+    captchaConfig?.captcha?.enableCaptcha &&
+    captchaType === 'v2' &&
+    captchaVariant === 'invisible';
+
+  const onCaptchaChangeWrapped = useCallback((token: string | null) => {
+    setCaptchaToken(token);
+    if (pendingSubmitRef.current && token && submitFormRef.current) {
+      pendingSubmitRef.current = false;
+      // Defer so captchaToken state is updated before submit runs
+      setTimeout(() => submitFormRef.current?.(), 0);
+    }
+  }, []);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -138,14 +161,22 @@ export function SignupForm() {
 
               {/* CAPTCHA */}
               {captchaConfig?.captcha?.enableCaptcha && decryptedSiteKey && (
-                <div className="flex origin-center scale-90 justify-center sm:scale-100">
-                  <div className="recaptcha-container">
-                    <ReCAPTCHA
-                      sitekey={decryptedSiteKey}
-                      onChange={(token) => setCaptchaToken(token)}
-                      theme={theme as 'light' | 'dark'}
-                    />
-                  </div>
+                <div
+                  className={
+                    captchaVariant === 'invisible'
+                      ? 'w-full'
+                      : 'flex origin-center scale-90 justify-center sm:scale-100'
+                  }
+                >
+                  <RecaptchaWrapper
+                    ref={recaptchaRef}
+                    siteKey={decryptedSiteKey}
+                    captchaType={captchaType}
+                    captchaVariant={captchaVariant}
+                    theme={theme as 'light' | 'dark'}
+                    onTokenGenerated={onCaptchaChangeWrapped}
+                    action="signup"
+                  />
                 </div>
               )}
 
@@ -251,8 +282,7 @@ export function SignupForm() {
                 }}
               />
             </Form>
-          )}
-        </Formik>
+          )}</Formik>
       </div>
     </motion.div>
   );
