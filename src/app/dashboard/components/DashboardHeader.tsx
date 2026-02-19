@@ -68,7 +68,7 @@ export function DashboardHeader({
     <div className="flex-shrink-0 border-b border-gray-200 px-4 pb-2 dark:border-gray-700">
       <Card className="border-0 bg-transparent shadow-none">
         <CardHeader className="flex flex-col gap-y-2 px-0 py-3 md:flex-row md:items-center md:justify-between">
-          <CardTitle className="line-clamp-2 text-xl font-bold md:mr-2">
+          <CardTitle className="line-clamp-1 text-xl font-bold md:mr-2">
             All Assignments
           </CardTitle>
 
