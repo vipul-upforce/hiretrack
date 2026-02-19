@@ -12,6 +12,7 @@ import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import OrganizationDialog from '@/components/auth/OrganizationDialog';
 import { useAppSelector } from '@/lib/redux/hooks';
+// import { getBetaFlag } from '@/lib/configUtils';
 import { usePortalBranding } from './hooks/use-portal-branding';
 import { useCaptchaHandler } from './hooks/use-captcha-handler';
 
@@ -50,6 +51,7 @@ export default function LoginFormContent({
   const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
     [],
   );
+  // const [isBeta, setIsBeta] = useState(false);
   const [selectedOrgId, setSelectedOrgId] = useState<string>();
   const [loginValues, setLoginValues] = useState<LoginFormValues>();
   const [isMultipleOrgs, setIsMultipleOrgs] = useState(false);
@@ -75,6 +77,15 @@ export default function LoginFormContent({
     setLoginFormValues: setLoginValues,
   });
 
+  // const getBetaFlagVal = async () => {
+  //   const betaFlag: boolean = await getBetaFlag();
+  //   setIsBeta(betaFlag);
+  // };
+
+  // useEffect(() => {
+  //   getBetaFlagVal();
+  // }, []);
+
   // Redirect if logged in
   useEffect(() => {
     if (user?.id && user?.role) {
@@ -98,12 +109,13 @@ export default function LoginFormContent({
 
   // Handle Org selection
   useEffect(() => {
+
     if (selectedOrgId && loginValues?.email) {
       // Trigger submission again when org is selected
       handleSubmit(
         { email: loginValues.email, password: loginValues.password },
-        () => {},
-        { setStatus: () => {} },
+        () => { },
+        { setStatus: () => { } },
       );
     }
   }, [selectedOrgId]);
@@ -118,7 +130,7 @@ export default function LoginFormContent({
     handleSubmit(
       { email: data.email, password: data.password },
       setSubmitting,
-      { setStatus: () => {} },
+      { setStatus: () => { } },
     );
   };
 

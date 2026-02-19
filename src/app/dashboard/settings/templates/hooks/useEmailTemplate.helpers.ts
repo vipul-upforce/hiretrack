@@ -98,6 +98,8 @@ function getPreviewData(): Record<string, string> {
   previewData.resetLink = Data.resetUrl;
   previewData.interviewerName = Data.interviewerName;
   previewData.interviewDate = Data.startDate;
+  previewData.interviewTime = '10:00 AM';
+  previewData.duration = '60 minutes';
   previewData.interviewType = 'Technical Interview';
   previewData.meetingLink = Data.googleCalendarLink;
   previewData.outlookCalendarLink = Data.outlookCalendarLink;
@@ -121,6 +123,7 @@ function getPreviewData(): Record<string, string> {
   previewData.nextStep = 'Final Interview with Hiring Manager';
   previewData.otpCode = Data.otp;
   previewData.otp = Data.otp;
+  previewData.expirationTime = '10 minutes';
 
   return previewData;
 }

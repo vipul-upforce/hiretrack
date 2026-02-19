@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger/logger.server';
+import { getBetaFlag } from '@/lib/configUtils';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -12,9 +13,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const betaFlag = await getBetaFlag();
+    console.log('2222 betaFlag', betaFlag);
     // Construct the URL for the version list endpoint
-    const versionListUrl = `${licenseValidationUrl}/api/version/list`;
-    
+    const versionListUrl = `${licenseValidationUrl}/api/version/list?beta=${betaFlag}`;
+
     // Fetch version list from the license validation server
     const response = await fetch(versionListUrl, {
       method: 'GET',

@@ -100,22 +100,7 @@ const candidateHistory = {
     laneName: String,
     responses: {
       type: Map,
-      of: {
-        fieldId: String,
-        fieldLabel: String,
-        fieldType: String,
-        value: Schema.Types.Mixed,
-        visibleInHistory: [String],
-        files: [
-          {
-            id: String,
-            name: String,
-            url: String,
-            type: String,
-            size: Number,
-          },
-        ],
-      },
+      of: Schema.Types.Mixed,
     },
     completedAt: Date,
     completedBy: {

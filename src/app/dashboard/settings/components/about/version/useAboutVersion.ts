@@ -33,6 +33,7 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const [initialValues, setInitialValues] = useState<AboutValues | null>(null);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isBeta, setIsBeta] = useState(false);
   const [updateCooldownUntil, setUpdateCooldownUntil] = useState<number | null>(
     null,
   );
@@ -60,11 +61,13 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   useEffect(() => {
     if (autoUpdateData?.autoUpdate !== undefined) {
       setInitialValues({ enableAutoUpdate: autoUpdateData.autoUpdate });
+      setIsBeta(Boolean(autoUpdateData.beta));
       return;
     }
 
     if (autoUpdateError) {
       setInitialValues({ enableAutoUpdate: false });
+      setIsBeta(false);
     }
   }, [autoUpdateData, autoUpdateError]);
 
@@ -231,6 +234,7 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
     currentVersion,
     latestVersion,
     updateAvailable,
+    isBeta,
     versionList,
     changelogVersions,
     checkingUpdatesRTK,

@@ -272,7 +272,7 @@ export default function JobModal({
                   {/* Close button - hidden on mobile, visible on desktop */}
                   <button
                     type="button"
-                    className="hidden items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 dark:border-gray-700 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-700 lg:inline-flex lg:px-6"
+                    className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 dark:border-gray-700 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-700 lg:px-6"
                     onFocus={(e) => {
                       e.target.style.boxShadow = `0 0 0 2px ${primaryColor}20`;
                     }}
@@ -290,17 +290,16 @@ export default function JobModal({
                       type="button"
                       onClick={handleContinue}
                       disabled={alreadyApplied || readOnly}
-                      className={`flex w-full items-center justify-center rounded-lg px-6 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 sm:w-auto lg:px-8 lg:py-3 ${
-                        alreadyApplied || readOnly
-                          ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-500 dark:border-gray-700 dark:bg-black dark:text-gray-400'
-                          : 'text-white'
-                      }`}
+                      className={`flex w-full items-center justify-center rounded-lg px-6 py-2 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 sm:w-auto lg:px-8 lg:py-3 ${alreadyApplied || readOnly
+                        ? 'cursor-not-allowed border border-gray-200 bg-gray-100 text-gray-500 dark:border-gray-700 dark:bg-black dark:text-gray-400'
+                        : 'text-white'
+                        }`}
                       style={
                         alreadyApplied || readOnly
                           ? {}
                           : ({
-                              backgroundColor: primaryColor,
-                            } as React.CSSProperties)
+                            backgroundColor: primaryColor,
+                          } as React.CSSProperties)
                       }
                       onMouseEnter={(e) => {
                         if (!alreadyApplied && !readOnly) {

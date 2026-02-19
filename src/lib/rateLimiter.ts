@@ -37,7 +37,7 @@ function defaultKeyGenerator(req: NextRequest): string {
 
   // Include pathname to have separate limits per endpoint
   const { pathname } = req.nextUrl;
-
+  console.log('‼️ defaultKeyGenerator', `${ip}:${pathname}`);
   return `${ip}:${pathname}`;
 }
 

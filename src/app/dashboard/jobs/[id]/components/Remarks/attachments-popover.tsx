@@ -25,7 +25,7 @@ function AttachmentsPopover({
   attachments,
   onMoreClick,
 }: {
-  attachments: Array<{
+  attachments?: Array<{
     id: string;
     name: string;
     url: string;
@@ -38,14 +38,15 @@ function AttachmentsPopover({
   const [visibleCount, setVisibleCount] = useState(6);
   const [selectedImage, setSelectedImage] = React.useState<Image | null>(null);
 
-  const visibleAttachments = attachments.slice(0, visibleCount);
-  const hasMore = attachments.length > visibleCount;
+  const safeAttachments = Array.isArray(attachments) ? attachments : [];
+  const visibleAttachments = safeAttachments.slice(0, visibleCount);
+  const hasMore = safeAttachments.length > visibleCount;
 
   return (
     <>
       <Popover>
         <PopoverTrigger asChild>
-          {attachments.length === 0 ? (
+          {safeAttachments.length === 0 ? (
             ' '
           ) : (
             <Button
@@ -53,9 +54,9 @@ function AttachmentsPopover({
               variant="secondary"
               className="inline-flex items-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground focus:z-10 focus:text-accent-foreground focus:outline-none focus:ring-4 focus:ring-ring"
             >
-              {attachments.length === 1
+              {safeAttachments.length === 1
                 ? '1 Attachment'
-                : `${attachments.length} Attachments`}
+                : `${safeAttachments.length} Attachments`}
               <Folder className="ml-1 h-4 w-4" />
             </Button>
           )}
@@ -70,7 +71,7 @@ function AttachmentsPopover({
         >
           <div className="space-y-2">
             <h4 className="font-medium">Attachments</h4>
-            {attachments.length > 0 ? (
+            {safeAttachments.length > 0 ? (
               <div className="space-y-2">
                 {visibleAttachments.map((file) => {
                   // debugger;

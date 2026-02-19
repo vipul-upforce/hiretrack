@@ -84,7 +84,7 @@ async function handleRefreshToken(req: NextRequest) {
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
         );
-        // clearAuthTokens(response);
+        clearAuthTokens(response);
         return response;
       }
 
@@ -96,7 +96,7 @@ async function handleRefreshToken(req: NextRequest) {
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
         );
-        // clearAuthTokens(res);
+        clearAuthTokens(res);
         return res;
       }
 

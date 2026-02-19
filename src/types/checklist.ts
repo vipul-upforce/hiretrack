@@ -1,4 +1,3 @@
-import { CustomFieldFile } from '@/lib/fileUtils';
 import { IChecklistField, UserRole } from '@/lib/models/JobLaneConfig';
 
 /**
@@ -63,12 +62,24 @@ export type ChecklistResponses =
   | Map<string, ChecklistHistoryResponseItem>
   | Record<string, ChecklistHistoryResponseItem>;
 
+/** File item: base64 when pending (before submit), url after upload. Stored in history with url only. */
+export interface ChecklistFileItem {
+  id?: string;
+  name: string;
+  url?: string;
+  base64?: string;
+  type: string;
+  size: number;
+}
+
 /**
  * Handler function type for when a checklist field value changes.
+ * For file-type fields, optional third arg is uploaded file metadata (with url) for download.
  */
 export type ChecklistFieldChangeHandler = (
   fieldId: string,
   value: ChecklistFieldValue,
+  files?: ChecklistFileItem[],
 ) => void;
 
 /**
