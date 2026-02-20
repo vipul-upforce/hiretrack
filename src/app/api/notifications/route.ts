@@ -75,8 +75,36 @@ export async function GET(request: NextRequest) {
     ]);
     const totalPages = Math.ceil(totalCount / limit);
 
+    // Ensure createdAt is always returned; use most correct fallback when missing
+    const getCreatedAtFallback = (notification: (typeof notifications)[0]): Date => {
+      if (notification.updatedAt && !Number.isNaN(new Date(notification.updatedAt).getTime())) {
+        return new Date(notification.updatedAt);
+      }
+      const id = notification._id;
+      if (
+        typeof id === 'object' &&
+        id !== null &&
+        'getTimestamp' in id &&
+        typeof (id as { getTimestamp: () => Date }).getTimestamp === 'function'
+      ) {
+        return (id as { getTimestamp: () => Date }).getTimestamp();
+      }
+      return new Date();
+    };
+
+    const sanitizedNotifications = notifications.map((notification) => {
+      if (notification.createdAt && !Number.isNaN(new Date(notification.createdAt).getTime())) {
+        return notification;
+      }
+      logger.warn(
+        { notificationId: notification._id },
+        'Notification missing createdAt; using fallback',
+      );
+      return { ...notification, createdAt: getCreatedAtFallback(notification) };
+    });
+
     return NextResponse.json({
-      notifications,
+      notifications: sanitizedNotifications,
       pagination: {
         currentPage: page,
         totalPages,

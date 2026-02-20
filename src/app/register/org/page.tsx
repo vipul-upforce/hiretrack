@@ -173,8 +173,7 @@ function OrgRegisterPage() {
                   </Button>
                 </CardFooter>
               </Form>
-              );
-            }}
+            )}
           </Formik>
         </CardContent>
       </Card>
