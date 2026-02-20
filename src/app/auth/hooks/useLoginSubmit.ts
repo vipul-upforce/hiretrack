@@ -25,6 +25,7 @@ interface HandleLoginSubmitProps {
   setOrganizations: (organizations: OneOfMulOrganization[]) => void;
   setOrganizationDialogOpen: (open: boolean) => void;
   setLoginFormValues: (values: LoginFormValues) => void;
+  onLoginSuccess?: () => void;
 }
 
 export const useHandleLoginSubmit = ({
@@ -33,6 +34,7 @@ export const useHandleLoginSubmit = ({
   setOrganizations,
   setOrganizationDialogOpen,
   setLoginFormValues,
+  onLoginSuccess,
 }: HandleLoginSubmitProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,7 +48,7 @@ export const useHandleLoginSubmit = ({
   const { setUserLoggedIn } = useCustomFields();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
     // Cache license check result to prevent duplicate calls
     const licenseCheckCache = useRef<{ checked: boolean; valid: boolean } | null>(null);
 
@@ -55,7 +57,7 @@ export const useHandleLoginSubmit = ({
       values: LoginFormValues,
       setIsSubmitting: (isSubmitting: boolean) => void,
       { setStatus }: { setStatus: (message: string) => void },
-    ) => {
+    ): Promise<boolean> => {
       setLoginFormValues(values);
 
       // // firstly check the license
@@ -116,7 +118,7 @@ export const useHandleLoginSubmit = ({
               variant: 'destructive',
             });
             setIsSubmitting(false);
-            return;
+            return false;
           }
         } else if (!licenseCheckCache.current.valid) {
           // If license was already checked and invalid, return early
@@ -126,7 +128,7 @@ export const useHandleLoginSubmit = ({
             variant: 'destructive',
           });
           setIsSubmitting(false);
-          return;
+          return false;
         }
       // Login
       try {
@@ -145,7 +147,7 @@ export const useHandleLoginSubmit = ({
           setOrganizations(response.organizations);
           setOrganizationDialogOpen(true);
           setIsSubmitting(false);
-          return;
+          return false;
         }
 
         // Handle 2FA
@@ -197,39 +199,39 @@ export const useHandleLoginSubmit = ({
               variant: 'destructive',
             });
           }
-          return; // Return early after OTP handling to prevent further execution
+          return false; // Return early after OTP handling to prevent further execution
         }
 
         // Only proceed if login was successful
         if (response.loggedIn === true) {
+          onLoginSuccess?.();
+
           // Handle Redirects & Redux State
           const redirectUrl = getRedirectUrlFromSearchParams(
             searchParams,
-            user,
+            response.user || user,
             isMultiple,
           );
           dispatch(fetchUserFromToken());
-          if (isAuthenticated) {
-            if (redirectUrl !== '/') {
-              router.push(redirectUrl);
-            }
-            setUserLoggedIn(true);
-            setIsSubmitting(false);
-            toast({
-              title: 'Success',
-              description: 'Login successful',
-              variant: 'default',
-            });
-          }
-        } else {
-          // Explicitly handle case where loggedIn is false/undefined
-          // This prevents any accidental execution
-          logger.warn('Login response indicates not logged in', {
-            loggedIn: response.loggedIn,
-            hasOrganizations: !!response.organizations,
-          });
+          const target = redirectUrl !== '/' ? redirectUrl : '/dashboard';
+          router.push(target);
+          setUserLoggedIn(true);
           setIsSubmitting(false);
+          toast({
+            title: 'Success',
+            description: 'Login successful',
+            variant: 'default',
+          });
+          return true;
         }
+
+        // Explicitly handle case where loggedIn is false/undefined
+        logger.warn('Login response indicates not logged in', {
+          loggedIn: response.loggedIn,
+          hasOrganizations: !!response.organizations,
+        });
+        setIsSubmitting(false);
+        return false;
       } catch (err: unknown) {
         logger.error(err);
         const errorMessage =
@@ -246,6 +248,7 @@ export const useHandleLoginSubmit = ({
           description: errorMessage,
           variant: 'destructive',
         });
+        return false;
       }
     },
     [
@@ -261,6 +264,7 @@ export const useHandleLoginSubmit = ({
       toast,
       searchParams,
       user,
+      onLoginSuccess,
     ],
   );
 

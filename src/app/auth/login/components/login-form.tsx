@@ -16,7 +16,7 @@ interface LoginFormProps {
   onSubmit: (
     data: LoginSchemaType,
     setSubmitting: (isSubmitting: boolean) => void,
-  ) => void;
+  ) => void | Promise<void>;
   isLoading: boolean;
   isSuccess: boolean;
   showCompanyField?: boolean;
@@ -63,8 +63,8 @@ export function LoginForm({
       rememberMe: false,
     },
     validationSchema: loginSchema,
-    onSubmit: (values, { setSubmitting }) => {
-      onSubmit(values, setSubmitting);
+    onSubmit: async (values, { setSubmitting }) => {
+      await onSubmit(values, setSubmitting);
     },
   });
 
