@@ -45,10 +45,10 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       'hr',
       'interviewer',
       'guest',
-      'candidate'
+      'candidate',
     ]);
 
-    if (!Candidate || !Settings)  {
+    if (!Candidate || !Settings) {
       return NextResponse.json(
         { error: 'Database not connected' },
         { status: 400 },
@@ -65,11 +65,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     const { candidateId } = data;
     const candidate = await Candidate.findById(candidateId)
-      .select('resume jobId contact scores expectedCTC currentCTC')
+      .select('resume jobId contact scores expectedCTC currentCTC customFields')
       .populate({
         path: 'jobId',
         select:
-          'description organizationId title skills salary experience evaluationWeights',
+          'description organizationId title skills salary experience evaluationWeights customFields',
       });
 
     if (!candidate) {
@@ -144,6 +144,9 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         maxPdfPages: 4,
         temperature: 0.1,
         customPrompt: null,
+        useCustomFieldsPrompt: false,
+        customFieldsPrompt: null,
+        selectedCustomFields: [],
       };
 
     await validatePdfPageCount(base64Resume, evaluationConfig);

@@ -5,7 +5,7 @@ import { PopulatedJob, JobDataForEvaluation } from '../types';
  * Type guard to check if jobId is populated object
  */
 export function isPopulatedJob(
-  jobId: mongoose.Types.ObjectId | PopulatedJob | undefined
+  jobId: mongoose.Types.ObjectId | PopulatedJob | undefined,
 ): jobId is PopulatedJob {
   return typeof jobId === 'object' && jobId !== null && 'description' in jobId;
 }
@@ -14,7 +14,7 @@ export function isPopulatedJob(
  * Extract job data from candidate for evaluation
  */
 export function extractJobDataForEvaluation(
-  candidateJobId: mongoose.Types.ObjectId | PopulatedJob | undefined
+  candidateJobId: mongoose.Types.ObjectId | PopulatedJob | undefined,
 ): JobDataForEvaluation {
   const jobDescription = isPopulatedJob(candidateJobId)
     ? String(candidateJobId.description)
@@ -22,18 +22,23 @@ export function extractJobDataForEvaluation(
 
   return {
     description: jobDescription,
-    salary: isPopulatedJob(candidateJobId) && candidateJobId.salary?.inText
-      ? candidateJobId.salary.inText
-      : undefined,
-    title: isPopulatedJob(candidateJobId)
-      ? String(candidateJobId.title)
-      : '',
-    skills: isPopulatedJob(candidateJobId) && candidateJobId.skills
-      ? candidateJobId.skills
-      : [],
-    experience: isPopulatedJob(candidateJobId) && candidateJobId.experience
-      ? candidateJobId.experience
-      : undefined,
+    salary:
+      isPopulatedJob(candidateJobId) && candidateJobId.salary?.inText
+        ? candidateJobId.salary.inText
+        : undefined,
+    title: isPopulatedJob(candidateJobId) ? String(candidateJobId.title) : '',
+    skills:
+      isPopulatedJob(candidateJobId) && candidateJobId.skills
+        ? candidateJobId.skills
+        : [],
+    experience:
+      isPopulatedJob(candidateJobId) && candidateJobId.experience
+        ? candidateJobId.experience
+        : undefined,
+    customFields:
+      isPopulatedJob(candidateJobId) && candidateJobId.customFields
+        ? candidateJobId.customFields
+        : undefined,
   };
 }
 
@@ -41,7 +46,7 @@ export function extractJobDataForEvaluation(
  * Extract organization ID from candidate job
  */
 export function extractOrganizationId(
-  candidateJobId: mongoose.Types.ObjectId | PopulatedJob | undefined
+  candidateJobId: mongoose.Types.ObjectId | PopulatedJob | undefined,
 ): string {
   return isPopulatedJob(candidateJobId)
     ? String(candidateJobId.organizationId)
@@ -59,19 +64,20 @@ export function extractJobIdForHistory(
     | PopulatedJob
     | string
     | { _id: string; title: string; description: string }
-    | undefined
+    | undefined,
 ): mongoose.Types.ObjectId | string | undefined {
   if (!candidateJobId) return undefined;
 
-  if (candidateJobId && typeof candidateJobId === 'object' && '_id' in candidateJobId) {
+  if (
+    candidateJobId &&
+    typeof candidateJobId === 'object' &&
+    '_id' in candidateJobId
+  ) {
     const jobIdValue = candidateJobId._id;
-    return typeof jobIdValue === 'string'
-      ? jobIdValue
-      : String(jobIdValue);
+    return typeof jobIdValue === 'string' ? jobIdValue : String(jobIdValue);
   }
 
   return typeof candidateJobId === 'string'
     ? candidateJobId
     : String(candidateJobId);
 }
-

@@ -1,4 +1,5 @@
 import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
+import { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
 import { Schema, Document } from 'mongoose';
 
 /* eslint-disable max-lines */
@@ -426,6 +427,47 @@ const settingsSchema = new Schema({
       type: Boolean,
       default: true,
     },
+    useCustomFieldsPrompt: {
+      type: Boolean,
+      default: false,
+    },
+    customFieldsPrompt: {
+      type: String,
+      default: null,
+    },
+    selectedCustomFields: {
+      type: [
+        {
+          fieldId: {
+            type: String,
+            required: true,
+          },
+          formId: {
+            type: String,
+            required: true,
+          },
+          formName: {
+            type: String,
+            required: true,
+          },
+          label: {
+            type: String,
+            required: true,
+          },
+          target: {
+            type: String,
+            enum: ['job', 'candidate'],
+            required: true,
+          },
+          scope: {
+            type: String,
+            enum: ['global', 'job-specific', 'candidate-specific'],
+            required: true,
+          },
+        },
+      ],
+      default: [],
+    },
   },
 });
 
@@ -611,6 +653,9 @@ export interface IEvaluationConfig {
   enableConfidenceScores?: boolean;
   enableRedFlagsDetection?: boolean;
   enableSkillsMatrix?: boolean;
+  useCustomFieldsPrompt?: boolean;
+  customFieldsPrompt?: string | null;
+  selectedCustomFields?: EvaluationCustomFieldSelection[];
 }
 
 export interface ISettings {

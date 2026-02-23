@@ -50,6 +50,7 @@ export type PopulatedJob = {
     inText: string;
     isPrivate: boolean;
   };
+  customFields?: Record<string, unknown>;
   evaluationWeights?: {
     skills: number;
     experience: number;
@@ -86,5 +87,5 @@ export interface JobDataForEvaluation {
   title: string;
   skills: string[];
   experience?: number;
+  customFields?: Record<string, unknown>;
 }
-
