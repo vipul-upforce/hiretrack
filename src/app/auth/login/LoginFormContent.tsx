@@ -63,6 +63,8 @@ export default function LoginFormContent({
   const { branding, isLoading: isPortalLoading } = usePortalBranding();
   const {
     isEnabled: isCaptchaEnabled,
+    captchaType,
+    captchaVariant,
     siteKey: captchaSiteKey,
     captchaToken,
     setCaptchaToken,
@@ -188,6 +190,8 @@ export default function LoginFormContent({
           isSuccess={isSuccess}
           showCompanyField={showCompanyField}
           captchaEnabled={isCaptchaEnabled}
+          captchaType={captchaType}
+          captchaVariant={captchaVariant}
           captchaSiteKey={captchaSiteKey}
           captchaToken={captchaToken}
           onCaptchaChange={setCaptchaToken}

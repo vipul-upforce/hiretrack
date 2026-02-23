@@ -1,9 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Formik, Form } from 'formik';
-import ReCAPTCHA from 'react-google-recaptcha';
 import { Building2, User, Mail, Lock } from 'lucide-react';
+import {
+  RecaptchaWrapper,
+  RecaptchaWrapperHandle,
+} from '@/components/recaptcha/RecaptchaWrapper';
 
 import {
   Card,
@@ -24,14 +27,36 @@ function OrgRegisterPage() {
   const {
     isOrgLoading,
     captchaConfig,
+    captchaType,
+    captchaVariant,
     decryptedSiteKey,
     captchaToken,
     setCaptchaToken,
     handleSubmit,
   } = useOrgRegister();
 
+  const recaptchaRef = useRef<RecaptchaWrapperHandle>(null);
+  const pendingSubmitRef = useRef(false);
+  const submitFormRef = useRef<(() => void) | null>(null);
+
   const isCaptchaEnabled = captchaConfig?.captcha?.enableCaptcha;
   const shouldShowCaptcha = isCaptchaEnabled && decryptedSiteKey;
+  const isInvisibleV2 =
+    isCaptchaEnabled &&
+    captchaType === 'v2' &&
+    captchaVariant === 'invisible';
+
+  const onCaptchaChangeWrapped = useCallback(
+    (token: string | null) => {
+      setCaptchaToken(token);
+      if (pendingSubmitRef.current && token && submitFormRef.current) {
+        pendingSubmitRef.current = false;
+        // Defer so captchaToken state is updated before submit runs
+        setTimeout(() => submitFormRef.current?.(), 0);
+      }
+    },
+    [setCaptchaToken],
+  );
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
@@ -102,11 +127,25 @@ function OrgRegisterPage() {
                 />
 
                 {shouldShowCaptcha && (
-                  <div className="flex justify-center pt-2">
-                    <div className="recaptcha-container scale-90 transform">
-                      <ReCAPTCHA
-                        sitekey={decryptedSiteKey}
-                        onChange={(token) => setCaptchaToken(token)}
+                  <div
+                    className={
+                      isInvisibleV2
+                        ? 'w-full pt-2'
+                        : 'flex justify-center pt-2'
+                    }
+                  >
+                    <div
+                      className={
+                        isInvisibleV2 ? 'w-full' : 'scale-90 transform'
+                      }
+                    >
+                      <RecaptchaWrapper
+                        ref={recaptchaRef}
+                        siteKey={decryptedSiteKey}
+                        captchaType={captchaType}
+                        captchaVariant={captchaVariant}
+                        onTokenGenerated={onCaptchaChangeWrapped}
+                        action="org_register"
                       />
                     </div>
                   </div>
@@ -134,7 +173,8 @@ function OrgRegisterPage() {
                   </Button>
                 </CardFooter>
               </Form>
-            )}
+              );
+            }}
           </Formik>
         </CardContent>
       </Card>
