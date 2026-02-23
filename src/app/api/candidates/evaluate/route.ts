@@ -8,6 +8,7 @@ import { IHistory, ICandidateHistory } from '@/lib/models/history';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
 import mongoose from 'mongoose';
 import logger from '@/lib/logger';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 import { EvaluateCandidateRequest, PopulatedJob } from './types';
 import {
   isPopulatedJob,
@@ -39,7 +40,15 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
     await connectToDatabase();
 
-    if (!Candidate || !Settings) {
+    const user = await getAuthenticatedUser(request, [
+      'admin',
+      'hr',
+      'interviewer',
+      'guest',
+      'candidate'
+    ]);
+
+    if (!Candidate || !Settings)  {
       return NextResponse.json(
         { error: 'Database not connected' },
         { status: 400 },
@@ -303,6 +312,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         'Failed to broadcast candidate evaluation update',
       );
     });
+
+    if (user?.role !== 'admin' && user?.role !== 'hr') {
+      return NextResponse.json(
+        {
+          message: 'Candidate scores updated successfully',
+        },
+        { status: 200 },
+      );
+    }
+
     return NextResponse.json(
       {
         message: 'Candidate scores updated successfully',
