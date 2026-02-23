@@ -15,6 +15,12 @@ import { IJobLaneConfig } from '@/lib/models/JobLaneConfig';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useClientSideChecklistValidation } from './useClientSideChecklistValidation';
 
+/** When set, checklist success should apply this status update (e.g. after deferring from unified dialog) */
+export interface PendingStatusAfterChecklist {
+  candidateId: string;
+  newStatus: string;
+}
+
 interface UseCandidateProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
@@ -29,6 +35,11 @@ interface UseCandidateProps {
   candidateToDelete: string | null;
   jobLaneConfig?: IJobLaneConfig;
   job?: Job;
+  /** When checklist was opened from unified-dialog status update; on checklist success apply this status */
+  pendingStatusAfterChecklist?: PendingStatusAfterChecklist | null;
+  setPendingStatusAfterChecklist?: (v: PendingStatusAfterChecklist | null) => void;
+  /** After applying deferred status (single or bulk), call so page can process next in bulk queue */
+  onBulkQueueStepComplete?: () => void;
 }
 
 interface PendingMove {
@@ -62,7 +73,10 @@ export const useCandidate = ({
   candidateToDelete,
   jobLaneConfig,
   job,
-  // promptForStatusChangeReason,
+    pendingStatusAfterChecklist,
+    setPendingStatusAfterChecklist,
+    onBulkQueueStepComplete,
+    // promptForStatusChangeReason,
 }: UseCandidateProps) => {
   const [updateCandidate] = useUpdateCandidateMutation();
   const [deleteCandidate] = useDeleteCandidateMutation();
@@ -184,6 +198,24 @@ export const useCandidate = ({
 
   // Handler for when a checklist is successfully completed - show next checklist if queued
   const handleChecklistComplete = (candidateId: string) => {
+    // Status was deferred from unified dialog (single or bulk); apply it now and clear pending
+    if (
+      pendingStatusAfterChecklist?.candidateId === candidateId &&
+      setPendingStatusAfterChecklist
+    ) {
+      updateCandidate({
+        _id: candidateId,
+        status: pendingStatusAfterChecklist.newStatus as CandidateStatus,
+      })
+        .unwrap()
+        .then(() => refetch())
+        .finally(() => {
+          setPendingStatusAfterChecklist(null);
+          onBulkQueueStepComplete?.();
+        });
+      return;
+    }
+
     const pendingChecklist = pendingChecklists.find(
       (pc) => pc.candidateId === candidateId,
     );

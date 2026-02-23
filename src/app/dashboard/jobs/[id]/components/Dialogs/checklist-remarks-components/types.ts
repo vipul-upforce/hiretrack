@@ -1,5 +1,6 @@
 import { IChecklistField } from '@/lib/models/JobLaneConfig';
 import { Candidate } from '@/types/candidate';
+import type { ChecklistSubmissionData } from '@/types/checklist';
 
 export interface ChecklistInfo {
   candidateId: string;
@@ -25,4 +26,8 @@ export interface ChecklistRemarksDialogProps {
   checklistInfo?: string; // JSON stringified ChecklistInfo
   onChecklistSuccess?: (candidateId: string) => void;
   onChecklistCancel?: (candidateId: string) => void;
+  /** When in bulk checklist flow: number of remaining candidates after this one */
+  bulkRemainingCount?: number;
+  /** When user chooses "apply same to remaining": submit same checklist data for all remaining in bulk queue */
+  onApplyToRemaining?: (data: ChecklistSubmissionData) => void;
 }

@@ -1,5 +1,6 @@
 'use client';
 
+/* eslint-disable max-lines */
 import {
   Droppable,
   Draggable,
@@ -81,6 +82,8 @@ const CandidateRow = memo(
           isPending={isPending}
           onSelectCandidate={context.onSelectCandidate}
           isShiftPressed={context.isShiftPressed}
+          onValidateStatusChange={context.onValidateStatusChange}
+          onDeferStatusToChecklist={context.onDeferStatusToChecklist}
         />
       </div>
     );
@@ -131,6 +134,8 @@ const KanbanColumn = memo(
     onConfigureChecklist,
     pendingMoves = [],
     laneConfig,
+    onValidateStatusChange,
+    onDeferStatusToChecklist,
   }: KanbanColumnProps) => {
     const dispatch = useAppDispatch();
     const isShiftPressed = useShiftKey();
@@ -297,6 +302,8 @@ const KanbanColumn = memo(
         setIsDetailsOpen,
         onSelectCandidate,
         isShiftPressed,
+        onValidateStatusChange,
+        onDeferStatusToChecklist,
       }),
       [
         column.id,
@@ -309,6 +316,8 @@ const KanbanColumn = memo(
         setIsDetailsOpen,
         onSelectCandidate,
         isShiftPressed,
+        onValidateStatusChange,
+        onDeferStatusToChecklist,
       ],
     );
 

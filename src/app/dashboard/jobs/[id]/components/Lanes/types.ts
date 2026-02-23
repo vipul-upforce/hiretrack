@@ -30,6 +30,12 @@ export interface CandidateContextType {
   /** Shift-click range selection: (candidate, index) => void */
   onSelectCandidate?: (candidate: Candidate, candidateIndex: number) => void;
   isShiftPressed?: boolean;
+  /** Single-candidate status change: validate checklist; when required, defer to checklist dialog */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist: boolean; validationInfo?: string } | null;
+  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
 }
 
 export interface KanbanColumnProps {
@@ -62,4 +68,9 @@ export interface KanbanColumnProps {
   isDragging?: boolean;
   pendingMoves?: PendingMove[];
   laneConfig?: ILaneConfig;
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist: boolean; validationInfo?: string } | null;
+  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
 }

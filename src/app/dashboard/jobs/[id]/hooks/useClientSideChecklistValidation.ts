@@ -37,11 +37,11 @@ export const useClientSideChecklistValidation = (
           };
         }
 
-        // Get the relevant lane configuration
+        // Get the relevant lane configuration (case-insensitive: status may not match laneId casing)
         const laneId =
           movementType === 'incoming' ? targetLaneId : currentLaneId;
         const laneConfig = jobLaneConfig.laneConfigs.find(
-          (lc) => lc.laneId === laneId,
+          (lc) => lc.laneId.toLowerCase() === laneId.toLowerCase(),
         );
 
         if (!laneConfig) {
@@ -52,6 +52,8 @@ export const useClientSideChecklistValidation = (
             checklistCompleted: false,
           };
         }
+
+        const configLaneId = laneConfig.laneId;
 
         // Get the checklist
         const checklist =
@@ -97,8 +99,8 @@ export const useClientSideChecklistValidation = (
           };
         }
 
-        // Check if checklist is already completed
-        const candidateChecklistData = candidate.checklistData?.[laneId];
+        // Check if checklist is already completed (backend keys by config laneId)
+        const candidateChecklistData = candidate.checklistData?.[configLaneId];
         const checklistData =
           movementType === 'incoming'
             ? candidateChecklistData?.incoming

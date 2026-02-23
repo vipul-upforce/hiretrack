@@ -6,12 +6,19 @@ import {
   useFetchJobByIdQuery,
   useUpdateJobMutation,
 } from '@/lib/features/job/jobApi';
-import { Candidate, CandidateColumn } from '@/types/candidate';
+import { useUpdateCandidateMutation } from '@/lib/features/candidate/candidateApi';
+import {
+  useGetJobLaneConfigQuery,
+  useSubmitCandidateChecklistMutation,
+} from '@/lib/features/checklist/checklistApi';
+import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
+import type { BulkStatusQueueItem } from '@/components/unified-candidate-dialog/types';
+import type { ChecklistSubmissionData } from '@/types/checklist';
+import { useToast } from '@/hooks/use-toast';
 import {
   useGetLanesQuery,
   useGetJobLanesQuery,
 } from '@/lib/features/lane/laneApi';
-import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { NoDataFound } from '@/app/not-found';
 import { useAppSelector } from '@/lib/redux/hooks';
 import logger from '@/lib/logger';
@@ -23,6 +30,7 @@ import { useCandidate } from './hooks/useCandidate';
 import { useNormalizedCandidates } from './hooks/useNormalizedCandidates';
 import { useCandidateState } from './hooks/useCandidateState';
 import { useJobPageEffects } from './hooks/useJobPageEffects';
+import { useClientSideChecklistValidation } from './hooks/useClientSideChecklistValidation';
 import { QuickSelectAndFilter } from './components/QuickSelectAndFilter';
 import { JobPageHeader } from './components/JobPageHeader';
 import { JobKanbanBoard } from './components/JobKanbanBoard';
@@ -163,6 +171,167 @@ export default function JobProgressPage() {
   const [isEmailSettingsOpen, setIsEmailSettingsOpen] = useState(false);
   const [isPromptConfirmOpen, setIsPromptConfirmOpen] = useState(false);
   const [pendingPromptValue, setPendingPromptValue] = useState(false);
+  const [pendingStatusAfterChecklist, setPendingStatusAfterChecklist] = useState<{
+    candidateId: string;
+    newStatus: string;
+  } | null>(null);
+  const [bulkStatusQueue, setBulkStatusQueue] = useState<BulkStatusQueueItem[] | null>(null);
+  const { toast } = useToast();
+  const [updateCandidate] = useUpdateCandidateMutation();
+  const [submitChecklist] = useSubmitCandidateChecklistMutation();
+
+  const { validateCompleteMovement } = useClientSideChecklistValidation(
+    jobLaneConfig,
+    user?.role,
+  );
+
+  const onValidateStatusChange = useCallback(
+    (candidate: Candidate, newStatus: string) => {
+      if (!validateCompleteMovement || candidate.status === newStatus)
+        return null;
+      const result = validateCompleteMovement(
+        candidate,
+        candidate.status,
+        newStatus,
+      );
+      if (!result.validation.requiresChecklist) return null;
+      const validationInfo = {
+        candidateId: candidate._id,
+        currentLane: candidate.status,
+        targetLane: newStatus,
+        checklist:
+          'checklist' in result.validation ? result.validation.checklist : null,
+        isMandatory: result.validation.isMandatory,
+        checklistType: result.type,
+      };
+      return {
+        requiresChecklist: true,
+        validationInfo: JSON.stringify(validationInfo),
+      };
+    },
+    [validateCompleteMovement],
+  );
+
+  const onDeferStatusToChecklist = useCallback(
+    (validationInfo: string, newStatus: string) => {
+      setOpenRemarksFor(validationInfo);
+      try {
+        const parsed = JSON.parse(validationInfo) as { candidateId: string };
+        setPendingStatusAfterChecklist({
+          candidateId: parsed.candidateId,
+          newStatus,
+        });
+      } catch {
+        setPendingStatusAfterChecklist(null);
+      }
+    },
+    [setOpenRemarksFor],
+  );
+
+  const processBulkStatusQueue = useCallback(
+    (queue: BulkStatusQueueItem[]) => {
+      if (queue.length === 0) {
+        setBulkStatusQueue(null);
+        refetch();
+        toast({ title: 'Success', description: 'Bulk status update complete' });
+        return;
+      }
+      const first = queue[0];
+      if (first.validationInfo) {
+        setOpenRemarksFor(first.validationInfo);
+        setPendingStatusAfterChecklist({
+          candidateId: first.candidateId,
+          newStatus: first.newStatus,
+        });
+        setBulkStatusQueue(queue);
+      } else {
+        (async () => {
+          let i = 0;
+          while (i < queue.length && !queue[i].validationInfo) {
+            await updateCandidate({
+              _id: queue[i].candidateId,
+              status: queue[i].newStatus as CandidateStatus,
+            }).unwrap();
+            i += 1;
+          }
+          if (i < queue.length) {
+            setOpenRemarksFor(queue[i].validationInfo!);
+            setPendingStatusAfterChecklist({
+              candidateId: queue[i].candidateId,
+              newStatus: queue[i].newStatus,
+            });
+            setBulkStatusQueue(queue.slice(i));
+          } else {
+            setBulkStatusQueue(null);
+            refetch();
+            toast({ title: 'Success', description: 'Bulk status update complete' });
+          }
+        })();
+      }
+    },
+    [setOpenRemarksFor, refetch, toast, updateCandidate],
+  );
+
+  const onBulkStatusRequiresChecklist = useCallback(
+    (queue: BulkStatusQueueItem[]) => {
+      setBulkStatusQueue(queue);
+      processBulkStatusQueue(queue);
+    },
+    [processBulkStatusQueue],
+  );
+
+  const onBulkQueueStepComplete = useCallback(() => {
+    setBulkStatusQueue((prev) => {
+      if (!prev || prev.length <= 1) {
+        if (prev?.length === 1) {
+          refetch();
+          toast({ title: 'Success', description: 'Bulk status update complete' });
+        }
+        return null;
+      }
+      const rest = prev.slice(1);
+      processBulkStatusQueue(rest);
+      return rest;
+    });
+  }, [processBulkStatusQueue, refetch, toast]);
+
+  const onApplyToRemaining = useCallback(
+    (payload: ChecklistSubmissionData) => {
+      if (!bulkStatusQueue || bulkStatusQueue.length <= 1) return;
+      const remaining = bulkStatusQueue.slice(1);
+      (async () => {
+        try {
+          for (const item of remaining) {
+            await submitChecklist({
+              candidateId: item.candidateId,
+              data: payload,
+            }).unwrap();
+            await updateCandidate({
+              _id: item.candidateId,
+              status: item.newStatus as CandidateStatus,
+            }).unwrap();
+          }
+          setBulkStatusQueue(null);
+          setPendingStatusAfterChecklist(null);
+          await refetch();
+          toast({
+            title: 'Success',
+            description: `Checklist applied to ${remaining.length + 1} candidates`,
+          });
+        } catch (err) {
+          toast({
+            title: 'Error',
+            description:
+              (err as { data?: { error?: string } })?.data?.error ??
+              (err as Error)?.message ??
+              'Failed to apply checklist to remaining candidates',
+            variant: 'destructive',
+          });
+        }
+      })();
+    },
+    [bulkStatusQueue, submitChecklist, updateCandidate, refetch, toast],
+  );
 
   const {
     handleAddLane,
@@ -192,7 +361,6 @@ export default function JobProgressPage() {
     handleDeleteClick,
     handleDeleteConfirm,
     pendingMoves,
-    // completePendingMove,
     cancelPendingMove,
     handleChecklistComplete,
   } = useCandidate({
@@ -205,10 +373,13 @@ export default function JobProgressPage() {
     setIsDeleteDialogOpen,
     setSelectedCandidate,
     selectedCandidate,
-    refetch: () => Promise.resolve(),
+    refetch,
     candidateToDelete,
     jobLaneConfig,
     job,
+    pendingStatusAfterChecklist,
+    setPendingStatusAfterChecklist,
+    onBulkQueueStepComplete,
   });
 
   // Use normalized candidates (already merged and normalized)
@@ -277,6 +448,8 @@ export default function JobProgressPage() {
         onFilterChange={setFilterConditions}
         showArchived={showArchived}
         onShowArchivedChange={setShowArchived}
+        onValidateStatusChange={onValidateStatusChange}
+        onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
       />
 
       <JobKanbanBoard
@@ -303,6 +476,8 @@ export default function JobProgressPage() {
         onConfigureChecklist={handleConfigureChecklist}
         pendingMoves={pendingMoves}
         jobLaneConfig={jobLaneConfig}
+        onValidateStatusChange={onValidateStatusChange}
+        onDeferStatusToChecklist={onDeferStatusToChecklist}
       />
 
       {job && (
@@ -363,6 +538,12 @@ export default function JobProgressPage() {
           mergedCandidates={mergedCandidates}
           isAssigning={isAssigning}
           setIsAssigning={setIsAssigning}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={onDeferStatusToChecklist}
+          bulkRemainingCount={
+            bulkStatusQueue ? Math.max(0, bulkStatusQueue.length - 1) : 0
+          }
+          onApplyToRemaining={onApplyToRemaining}
         />
       )}
     </div>

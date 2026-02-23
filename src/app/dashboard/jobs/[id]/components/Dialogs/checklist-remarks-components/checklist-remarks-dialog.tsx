@@ -43,6 +43,8 @@ function ChecklistRemarksDialog({
   checklistInfo,
   onChecklistSuccess,
   onChecklistCancel,
+  bulkRemainingCount = 0,
+  onApplyToRemaining,
 }: ChecklistRemarksDialogProps) {
   const [newRemark, setNewRemark] = useState('');
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
@@ -50,6 +52,7 @@ function ChecklistRemarksDialog({
     null,
   );
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
+  const [applyToRemaining, setApplyToRemaining] = useState(false);
   const [checklistResponses, setChecklistResponses] = useState<
     Record<string, ChecklistHistoryResponseItem>
   >({});
@@ -341,6 +344,8 @@ function ChecklistRemarksDialog({
 
     setIsSubmitting(true);
 
+    let submittedChecklistPayload: import('@/types/checklist').ChecklistSubmissionData | null = null;
+
     try {
       if (hasChecklist && parsedChecklistInfo) {
         const checklist = parsedChecklistInfo.checklist!;
@@ -445,10 +450,10 @@ function ChecklistRemarksDialog({
             responses: responsesToSubmit,
             remark: newRemark.trim()
               ? {
-                  description: newRemark.trim(),
-                  isPrivate: isSubRemarkPrivate,
-                  rating: remarkRating || undefined,
-                }
+                description: newRemark.trim(),
+                isPrivate: isSubRemarkPrivate,
+                rating: remarkRating || undefined,
+              }
               : undefined,
           },
         }).unwrap();
@@ -471,6 +476,34 @@ function ChecklistRemarksDialog({
             rating: remarkRating || undefined,
           },
         );
+
+        if (applyToRemaining && onApplyToRemaining) {
+          const laneConfigForPayload = jobLaneConfig?.laneConfigs.find(
+            (lc) =>
+              lc.laneId ===
+              (parsedChecklistInfo.checklistType === 'incoming'
+                ? parsedChecklistInfo.targetLane
+                : parsedChecklistInfo.currentLane),
+          );
+          submittedChecklistPayload = {
+            checklistId: checklist.id,
+            checklistName: checklist.name,
+            checklistType: parsedChecklistInfo.checklistType,
+            laneId:
+              parsedChecklistInfo.checklistType === 'incoming'
+                ? parsedChecklistInfo.targetLane
+                : parsedChecklistInfo.currentLane,
+            laneName: laneConfigForPayload?.laneName ?? '',
+            responses: responsesToSubmit,
+            remark: newRemark.trim()
+              ? {
+                description: newRemark.trim(),
+                isPrivate: isSubRemarkPrivate,
+                rating: remarkRating ?? undefined,
+              }
+              : undefined,
+          };
+        }
       } else if (newRemark.trim()) {
         // Only submit remark if no checklist
         const newRemarkObj = {
@@ -548,8 +581,10 @@ function ChecklistRemarksDialog({
           : 'Remark added successfully',
       });
 
-      // Call success callback if it's a checklist completion
-      if (hasChecklist && onChecklistSuccess) {
+      // If "apply to remaining" was checked, parent will submit same form for rest of bulk queue
+      if (submittedChecklistPayload && onApplyToRemaining) {
+        onApplyToRemaining(submittedChecklistPayload);
+      } else if (hasChecklist && onChecklistSuccess) {
         onChecklistSuccess(candidate._id);
       }
     } catch (error: unknown) {
@@ -580,15 +615,30 @@ function ChecklistRemarksDialog({
         <DialogHeader className="border-b px-6 py-4 pr-12">
           <DialogTitle className="flex items-center gap-2">
             {hasChecklist && <ClipboardCheck className="h-5 w-5" />}
-            {hasChecklist
-              ? `${parsedChecklistInfo?.checklist?.name || 'Checklist'} - ${candidate.name}`
-              : `Add Remarks for ${candidate.name}`}
+            {(() => {
+              if (!hasChecklist) return `Add Remarks for ${candidate.name}`;
+              const checklistName =
+                parsedChecklistInfo?.checklist?.name || 'Checklist';
+              if (applyToRemaining && bulkRemainingCount > 0) {
+                return `${checklistName} - ${candidate.name} (apply same to ${bulkRemainingCount} remaining)`;
+              }
+              return `${checklistName} - ${candidate.name}`;
+            })()}
           </DialogTitle>
           <DialogDescription>
-            {hasChecklist
-              ? parsedChecklistInfo?.checklist?.description ||
+            {(() => {
+              if (!hasChecklist) {
+                return 'Add your observations and feedback for this candidate.';
+              }
+              if (applyToRemaining && bulkRemainingCount > 0) {
+                const plural = bulkRemainingCount === 1 ? '' : 's';
+                return `Your answers will be applied to this candidate and the remaining ${bulkRemainingCount} candidate${plural}.`;
+              }
+              return (
+                parsedChecklistInfo?.checklist?.description ||
                 'Please complete the checklist before proceeding.'
-              : 'Add your observations and feedback for this candidate.'}
+              );
+            })()}
           </DialogDescription>
         </DialogHeader>
 
@@ -638,6 +688,9 @@ function ChecklistRemarksDialog({
           submitPhase={submitPhase}
           handleCancel={handleCancel}
           handleSubmit={handleSubmit}
+          bulkRemainingCount={bulkRemainingCount}
+          applyToRemaining={applyToRemaining}
+          onApplyToRemainingChange={setApplyToRemaining}
         />
       </DialogContent>
     </Dialog>

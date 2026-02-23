@@ -1,10 +1,14 @@
+import React, { useRef } from 'react';
 import logger from '@/lib/logger';
 import { Candidate, CandidateColumn } from '@/types/candidate';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
 import { JobAnalyticsModal } from '@/app/dashboard/jobs-board/components/JobAnalyticsModal';
 import { Job } from '@/types/job';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import type {
+  CandidateActionType,
+  StatusChangeValidationResult,
+} from '@/components/unified-candidate-dialog/types';
 import { CandidateDetailsDialog } from './Dialogs/candidate-details-dialog';
 import EditLaneDialog from './Lanes/edit-lane-dialog';
 import ConfirmationDialog from './Dialogs/ConfirmationDialog';
@@ -71,6 +75,15 @@ interface JobPageDialogsProps {
   isChecklistConfigOpen: boolean;
   setIsChecklistConfigOpen: (open: boolean) => void;
   mergedCandidates: Candidate[];
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => StatusChangeValidationResult | null;
+  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  bulkRemainingCount?: number;
+  onApplyToRemaining?: (
+    data: import('@/types/checklist').ChecklistSubmissionData,
+  ) => void;
 }
 
 export function JobPageDialogs({
@@ -119,29 +132,71 @@ export function JobPageDialogs({
   isChecklistConfigOpen,
   setIsChecklistConfigOpen,
   mergedCandidates,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  bulkRemainingCount = 0,
+  onApplyToRemaining,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
-  // Find candidate for checklist remarks dialog
+  const openRemarksForRef = useRef(openRemarksFor);
+  openRemarksForRef.current = openRemarksFor;
+
+  // When unified dialog closes, only clear openRemarksFor if it's not checklist JSON
+  // (defer sets it to JSON; clearing would prevent checklist from showing)
+  const handleUnifiedOpenChange = (open: boolean) => {
+    if (open) return;
+    queueMicrotask(() => {
+      if (
+        typeof openRemarksForRef.current !== 'string' ||
+        !openRemarksForRef.current.startsWith('{')
+      ) {
+        setOpenRemarksFor(null);
+      }
+    });
+  };
+
+  // Find candidate for checklist remarks dialog (columns first, then mergedCandidates)
   const checklistCandidate = openRemarksFor
-    ? columns
-        .flatMap((col) => col.candidates)
-        .find((c) => {
-          if (c._id === openRemarksFor) return true;
-          if (openRemarksFor.startsWith('{')) {
-            try {
-              const parsed = JSON.parse(openRemarksFor);
-              return parsed.candidateId === c._id;
-            } catch (e) {
-              logger.error(
-                'Failed to parse openRemarksFor JSON:',
-                openRemarksFor,
-                e,
-              );
-              return false;
+    ? (() => {
+        const fromColumns = columns
+          .flatMap((col) => col.candidates)
+          .find((c) => {
+            if (c._id === openRemarksFor) return true;
+            if (openRemarksFor.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(openRemarksFor) as {
+                  candidateId?: string;
+                };
+                return parsed.candidateId === c._id;
+              } catch (e) {
+                logger.error(
+                  'Failed to parse openRemarksFor JSON:',
+                  openRemarksFor,
+                  e,
+                );
+                return false;
+              }
             }
+            return false;
+          });
+        if (fromColumns) return fromColumns;
+        if (openRemarksFor.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(openRemarksFor) as {
+              candidateId?: string;
+            };
+            if (parsed.candidateId) {
+              return (
+                mergedCandidates.find((c) => c._id === parsed.candidateId) ??
+                null
+              );
+            }
+          } catch {
+            // ignore
           }
-          return false;
-        })
+        }
+        return null;
+      })()
     : null;
 
   const checklistInfo = openRemarksFor?.startsWith('{')
@@ -194,7 +249,9 @@ export function JobPageDialogs({
         setIsOpen={setIsConfirmLaneDeleteOpen}
         title="Are you sure?"
         message="This will remove the lane from this job only. Other jobs will not be affected."
-        onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
+        onConfirm={() => {
+          if (laneToDelete) handleConfirmDeleteLane(laneToDelete);
+        }}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
       />
 
@@ -268,6 +325,8 @@ export function JobPageDialogs({
           checklistInfo={checklistInfo}
           onChecklistSuccess={handleChecklistComplete}
           onChecklistCancel={cancelPendingMove}
+          bulkRemainingCount={bulkRemainingCount}
+          onApplyToRemaining={onApplyToRemaining}
         />
       )}
 
@@ -286,13 +345,15 @@ export function JobPageDialogs({
         <UnifiedCandidateActionsDialog
           candidate={generalRemarksCandidate}
           isOpen={!!openRemarksFor && !checklistInfo}
-          onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+          onOpenChange={handleUnifiedOpenChange}
           initialAction={'addRemark' as CandidateActionType}
           refetch={refetch}
           onUpdate={handleCandidateUpdate}
           setLocalCandidate={() => {}}
           refetchAssignment={refetch}
           onSuccess={() => setOpenRemarksFor(null)}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={onDeferStatusToChecklist}
         />
       )}
     </>
