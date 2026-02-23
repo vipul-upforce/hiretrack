@@ -28,6 +28,12 @@
   outline: none !important;
 }
 
+/* reCAPTCHA v3 badge: bottom left instead of default bottom right */
+.grecaptcha-badge {
+  right: auto !important;
+  left: 0cap !important;
+}
+
 /* Hide the default Google badge (we show disclosure text instead; Google allows this) */
 /* .grecaptcha-badge {
   visibility: hidden !important;

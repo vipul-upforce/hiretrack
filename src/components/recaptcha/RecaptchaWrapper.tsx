@@ -65,7 +65,6 @@ const RecaptchaWrapperComponent = forwardRef<
 
   // For v3, use the v3 component
   if (captchaType === 'v3') {
-    console.log("V3 ECATCAH COMPENT OADED!")
     return (
       <RecaptchaV3
         siteKey={siteKey}
