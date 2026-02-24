@@ -85,9 +85,10 @@ export function JobEmailNotificationSettingsDialog({
       fetchAdminOverrides();
     }
   }, [organizationSettings, isOpen, currentUser?.id]);
+  // Re-sync from server when dialog opens so unsaved changes are discarded on close
   useEffect(() => {
+    if (!isOpen) return;
     if (settings?.currentJobSettings) {
-      // Merge with defaults to ensure all notification types are present
       const defaults = createDefaultNotificationSettings();
       setLocalSettings({ ...defaults, ...settings.currentJobSettings });
     } else if (settings?.effectiveSettings) {
@@ -99,7 +100,7 @@ export function JobEmailNotificationSettingsDialog({
       });
       setLocalSettings(effective);
     }
-  }, [settings]);
+  }, [settings, isOpen]);
 
   const handleToggle = (type: EmailNotificationType, enabled: boolean) => {
     // Check if disabled by admin override
@@ -158,10 +159,11 @@ export function JobEmailNotificationSettingsDialog({
 
     return visibleNotificationTypes.some((key) => {
       const localValue = safeGetNotificationValue(localSettings, key);
-      const originalSetting = safeGetNotificationValue(compareSource, key) as
-        | { enabled: boolean }
-        | undefined;
-      const originalValue = originalSetting?.enabled ?? true;
+      const raw = safeGetNotificationValue(compareSource, key);
+      const originalValue =
+        typeof raw === 'object' && raw !== null && 'enabled' in raw
+          ? (raw as { enabled: boolean }).enabled
+          : (raw as boolean | undefined) ?? true;
       return localValue !== originalValue;
     });
   };

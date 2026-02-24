@@ -100,6 +100,8 @@ export async function createBulkNotifications(
       priority: baseParams.priority || 'medium',
       metadata: baseParams.metadata || {},
       isRead: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
 
     const createdNotifications = await Notification.insertMany(notifications);

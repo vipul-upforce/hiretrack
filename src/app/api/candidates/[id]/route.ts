@@ -880,7 +880,7 @@ export async function PUT(
                     interviewerName: newInterviewer.name,
                     triggerUserId: userData?.id?.toString() || '',
                     triggerUserName: userData?.name || '',
-                    skipAdminHr: true,
+                    skipAdminHr: false,
                   });
                 }
 
