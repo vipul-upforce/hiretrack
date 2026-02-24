@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, AuthenticatedUser } from '@/app/actions/auth';
-import connectToDatabase, { Settings, Job } from '@/lib/mongodb';
+import connectToDatabase, { Settings, Job, FileUrlMapping } from '@/lib/mongodb';
 import { saveFileLocally, uploadFile, uploadFileToS3 } from '@/lib/fileUtils';
 import { logger } from '@/lib/logger/logger.server';
 import { v4 as uuidv4 } from 'uuid';
 import mongoose from 'mongoose';
+
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '51mb',
+    },
+  },
+};
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -46,23 +54,52 @@ async function processFileUpload(
   // Convert to data URL for existing utilities
   const dataUrl = bufferToDataUrl(buffer, mimeType);
 
-  let url = '';
+  // Generate fileId before upload
+  const fileId = uuidv4();
+
+  let realUrl = '';
   switch (fileStorage) {
     case 'cloudinary':
-      url = await uploadFile(dataUrl, targetFolder, organizationId, fileName);
+      realUrl = await uploadFile(dataUrl, targetFolder, organizationId, fileName);
       break;
     case 's3':
-      url = await uploadFileToS3(dataUrl, targetFolder, organizationId, fileName);
+      realUrl = await uploadFileToS3(
+        dataUrl,
+        targetFolder,
+        organizationId,
+        fileName,
+      );
       break;
     default: // local
-      url = await saveFileLocally(dataUrl, targetFolder, fileName);
+      realUrl = await saveFileLocally(dataUrl, targetFolder, fileName);
       break;
   }
 
+  // For cloudinary/s3, create mapping entry and return proxied URL
+  if (
+    (fileStorage === 'cloudinary' || fileStorage === 's3') &&
+    realUrl &&
+    FileUrlMapping
+  ) {
+    await FileUrlMapping.findOneAndUpdate(
+      { fileId },
+      { fileId, realUrl },
+      { upsert: true, new: true },
+    );
+    return {
+      id: fileId,
+      name: fileName,
+      url: `/api/file/${fileId}`,
+      type: mimeType,
+      size: file.size,
+    };
+  }
+
+  // For local storage, return the local URL directly (no mapping needed)
   return {
-    id: uuidv4(),
+    id: fileId,
     name: fileName,
-    url,
+    url: realUrl,
     type: mimeType,
     size: file.size,
   };
@@ -113,11 +150,13 @@ export async function POST(request: NextRequest) {
           );
         }
         try {
-          const job = await Job.findById(new mongoose.Types.ObjectId(jobIdParam))
+          const job = await Job.findById(
+            new mongoose.Types.ObjectId(jobIdParam),
+          )
             .select('organizationId')
             .lean()
             .exec();
-          
+
           if (!job) {
             return NextResponse.json(
               { error: 'Job not found' },
@@ -134,7 +173,10 @@ export async function POST(request: NextRequest) {
         }
       } else {
         return NextResponse.json(
-          { error: 'organizationId or jobId query parameter is required for public access' },
+          {
+            error:
+              'organizationId or jobId query parameter is required for public access',
+          },
           { status: 400 },
         );
       }
@@ -149,7 +191,8 @@ export async function POST(request: NextRequest) {
 
     // Get organization settings to determine file storage type
     const settings = await Settings.findOne({ organizationId });
-    const storageType = settings?.fileStorage?.storageType || fileStorage || 'local';
+    const storageType =
+      settings?.fileStorage?.storageType || fileStorage || 'local';
 
     // Parse multipart form data using Next.js native FormData API
     const formData = await request.formData();
@@ -218,9 +261,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         files: uploadedFiles,
-        customFields: Object.keys(customFieldFiles).length > 0
-          ? customFieldFiles
-          : undefined,
+        customFields:
+          Object.keys(customFieldFiles).length > 0
+            ? customFieldFiles
+            : undefined,
       });
     } catch (error) {
       logger.error({ error }, 'Error processing file uploads');

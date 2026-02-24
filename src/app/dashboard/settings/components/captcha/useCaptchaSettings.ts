@@ -51,6 +51,8 @@ export const useCaptchaSettings = (onClose: () => void) => {
 
   const initialValues: CaptchaValues = {
     enableCaptcha: !!data?.captcha?.enableCaptcha,
+    captchaType: (data?.captcha?.captchaType as 'v2' | 'v3') || 'v2',
+    captchaVariant: (data?.captcha?.captchaVariant as 'checkbox' | 'invisible') || 'checkbox',
     siteKey: decryptedValues.siteKey,
     secretKey: decryptedValues.secretKey,
   };
@@ -71,6 +73,8 @@ export const useCaptchaSettings = (onClose: () => void) => {
     try {
       await updateCaptchaConfigs({
         enableCaptcha: values.enableCaptcha,
+        captchaType: values.captchaType,
+        captchaVariant: values.captchaVariant,
         siteKey: values.siteKey,
         secretKey: values.secretKey,
       }).unwrap();

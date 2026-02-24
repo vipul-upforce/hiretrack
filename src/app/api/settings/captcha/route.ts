@@ -124,7 +124,13 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { enableCaptcha, siteKey, secretKey } = body;
+    const {
+      enableCaptcha,
+      captchaType,
+      captchaVariant,
+      siteKey,
+      secretKey,
+    } = body;
 
     if (enableCaptcha && (!siteKey || !secretKey)) {
       return NextResponse.json(
@@ -136,11 +142,38 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Validate captchaType
+    if (enableCaptcha && captchaType && !['v2', 'v3'].includes(captchaType)) {
+      return NextResponse.json(
+        {
+          error: 'Invalid captcha type. Must be v2 or v3',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Validate captchaVariant for v2
+    if (
+      enableCaptcha &&
+      captchaType === 'v2' &&
+      captchaVariant &&
+      !['checkbox', 'invisible'].includes(captchaVariant)
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Invalid captcha variant. Must be checkbox or invisible',
+        },
+        { status: 400 },
+      );
+    }
+
     // Encrypt before saving
     const encryptedProviders = encryptProviderKeys(
       {
         captcha: {
           enableCaptcha: enableCaptcha || false,
+          captchaType: captchaType || 'v2',
+          captchaVariant: captchaVariant || 'checkbox',
           siteKey: siteKey || '',
           secretKey: secretKey || '',
         },

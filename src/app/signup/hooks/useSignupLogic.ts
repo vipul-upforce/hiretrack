@@ -202,6 +202,11 @@ export const useSignupLogic = () => {
     portalSettings,
     orgName,
     decryptedSiteKey,
+    captchaType:
+      (captchaConfig?.captcha?.captchaType as 'v2' | 'v3') || 'v2',
+    captchaVariant:
+      (captchaConfig?.captcha?.captchaVariant as 'checkbox' | 'invisible') ||
+      'checkbox',
     captchaConfig,
     showTermsDialog,
     setShowTermsDialog,

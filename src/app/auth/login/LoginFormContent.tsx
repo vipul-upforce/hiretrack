@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { cx } from '@/lib/cx';
@@ -11,7 +11,7 @@ import LoadingScreen from '@/app/loading-screen';
 import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
 import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
 import OrganizationDialog from '@/components/auth/OrganizationDialog';
-import { useAppSelector } from '@/lib/redux/hooks';
+// import { getBetaFlag } from '@/lib/configUtils';
 import { usePortalBranding } from './hooks/use-portal-branding';
 import { useCaptchaHandler } from './hooks/use-captcha-handler';
 
@@ -36,7 +36,6 @@ export default function LoginFormContent({
 }: LoginFormContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAppSelector((state) => state.auth || {});
 
   const redirectPath = searchParams?.get('redirect');
 
@@ -50,17 +49,22 @@ export default function LoginFormContent({
   const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
     [],
   );
+  // const [isBeta, setIsBeta] = useState(false);
   const [selectedOrgId, setSelectedOrgId] = useState<string>();
   const [loginValues, setLoginValues] = useState<LoginFormValues>();
   const [isMultipleOrgs, setIsMultipleOrgs] = useState(false);
-
-  const [hasJustLoggedIn, setHasJustLoggedIn] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleLoginSuccess = useCallback(() => {
+    setIsSuccess(true);
+  }, []);
 
   // Custom Hooks
   const { branding, isLoading: isPortalLoading } = usePortalBranding();
   const {
     isEnabled: isCaptchaEnabled,
+    captchaType,
+    captchaVariant,
     siteKey: captchaSiteKey,
     captchaToken,
     setCaptchaToken,
@@ -73,23 +77,26 @@ export default function LoginFormContent({
     setOrganizations,
     setOrganizationDialogOpen,
     setLoginFormValues: setLoginValues,
+    onLoginSuccess: handleLoginSuccess,
   });
 
-  // Redirect if logged in
-  useEffect(() => {
-    if (user?.id && user?.role) {
-      // Guard against stale Redux state triggering infinite loops on 401 redirects
-      if (redirectPath && !hasJustLoggedIn) {
-        return;
-      }
+  // const getBetaFlagVal = async () => {
+  //   const betaFlag: boolean = await getBetaFlag();
+  //   setIsBeta(betaFlag);
+  // };
 
-      setIsSuccess(true);
-      const target = redirectPath
-        ? decodeURIComponent(redirectPath)
-        : '/dashboard';
-      router.push(target);
-    }
-  }, [user, router, redirectPath, hasJustLoggedIn]);
+  // useEffect(() => {
+  //   getBetaFlagVal();
+  // }, []);
+
+  // Redirecting indicator is shown only after successful login and auto-resets in 10s.
+  useEffect(() => {
+    if (!isSuccess) return undefined;
+    const timeoutId = setTimeout(() => {
+      setIsSuccess(false);
+    }, 10000);
+    return () => clearTimeout(timeoutId);
+  }, [isSuccess]);
 
   // Determine multiple orgs
   useEffect(() => {
@@ -98,27 +105,27 @@ export default function LoginFormContent({
 
   // Handle Org selection
   useEffect(() => {
+
     if (selectedOrgId && loginValues?.email) {
       // Trigger submission again when org is selected
       handleSubmit(
         { email: loginValues.email, password: loginValues.password },
-        () => {},
-        { setStatus: () => {} },
+        () => { },
+        { setStatus: () => { } },
       );
     }
   }, [selectedOrgId]);
 
-  const onFormSubmit = (
+  const onFormSubmit = async (
     data: LoginSchemaType,
     setSubmitting: (isSubmitting: boolean) => void,
-  ) => {
+  ): Promise<void> => {
+    setIsSuccess(false);
     setLoginValues(data);
-    setHasJustLoggedIn(true);
-
-    handleSubmit(
+    await handleSubmit(
       { email: data.email, password: data.password },
       setSubmitting,
-      { setStatus: () => {} },
+      { setStatus: () => { } },
     );
   };
 
@@ -183,6 +190,8 @@ export default function LoginFormContent({
           isSuccess={isSuccess}
           showCompanyField={showCompanyField}
           captchaEnabled={isCaptchaEnabled}
+          captchaType={captchaType}
+          captchaVariant={captchaVariant}
           captchaSiteKey={captchaSiteKey}
           captchaToken={captchaToken}
           onCaptchaChange={setCaptchaToken}

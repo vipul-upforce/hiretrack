@@ -1,0 +1,9 @@
+------------------
+20 Feb 2026: 16:18
+------------------
+- fixed dashboard assingment counts, notification timestamps, and apply-jobs page dialog not opening properly.
+
+-------------------
+20 Feb 2026: 17:11
+___________________
+- fixed logic page redirection state issue.

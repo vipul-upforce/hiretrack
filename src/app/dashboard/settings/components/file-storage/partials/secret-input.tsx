@@ -14,7 +14,11 @@ interface SecretInputProps {
 
 export function SecretInput({ name, label }: SecretInputProps) {
   const [show, setShow] = useState(false);
-  const { values, setFieldValue } = useFormikContext<{ name: string }>();
+  const { values, setFieldValue } = useFormikContext<
+    Record<string, string | undefined>
+  >();
+
+  const currentValue = values[name] ?? '';
 
   return (
     <div>
@@ -24,7 +28,7 @@ export function SecretInput({ name, label }: SecretInputProps) {
           id={name}
           name={name}
           type={show ? 'text' : 'password'}
-          value={values.name}
+          value={currentValue}
           onChange={(e) => setFieldValue(name, e.target.value.trim())}
         />
         <Button
