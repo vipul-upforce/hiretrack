@@ -6,6 +6,10 @@ import { CustomFields } from '@/Custom_Fields/Types/CustomField';
 import logger from '@/lib/logger';
 import { refreshAccessToken } from '@/lib/api/baseApi';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  filterSensitiveRedFlagsForInterviewer,
+  filterSensitiveRedFlagsForInterviewerList,
+} from '@/lib/filterSensitiveRedFlags';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
@@ -352,6 +356,7 @@ export function useNotificationSSE(
 ) {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth || {});
+  const userRole = user?.role;
   const isCandidate = user?.role === 'candidate';
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
@@ -364,9 +369,9 @@ export function useNotificationSSE(
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [customFields, setCustomFields] = useState<CustomFields | null>(null);
-   const subscriberIdRef = useRef<string>(
-     `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-   );
+  const subscriberIdRef = useRef<string>(
+    `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+  );
 
   const handleNotificationCountUpdated = useCallback((count: number) => {
     setTotalCount((c) => c + 1);
@@ -383,31 +388,48 @@ export function useNotificationSSE(
     setNotifications((prev) => [...notificationTokens, ...prev]);
   }, []);
 
-  const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
-    setCandidates((prev) => {
-      const index = prev.findIndex((c) => c._id === updatedCandidate._id);
-      if (index >= 0) {
-        return [
-          ...prev.slice(0, index),
-          updatedCandidate,
-          ...prev.slice(index + 1),
-        ];
-      }
-      return [...prev, updatedCandidate];
-    });
-  }, []);
+  const handleCandidateUpdate = useCallback(
+    (updatedCandidate: Candidate) => {
+      const roleFilteredCandidate =
+        filterSensitiveRedFlagsForInterviewer<Candidate>(
+        updatedCandidate,
+        userRole,
+      );
+
+      setCandidates((prev) => {
+        const index = prev.findIndex(
+          (c) => c._id === roleFilteredCandidate._id,
+        );
+        if (index >= 0) {
+          return [
+            ...prev.slice(0, index),
+            roleFilteredCandidate,
+            ...prev.slice(index + 1),
+          ];
+        }
+        return [...prev, roleFilteredCandidate];
+      });
+    },
+    [userRole],
+  );
 
   const handleMultipleCandidateUpdate = useCallback(
     (updatedCandidates: Candidate[]) => {
+      const roleFilteredCandidates =
+        filterSensitiveRedFlagsForInterviewerList<Candidate>(
+          updatedCandidates,
+          userRole,
+        );
+
       setCandidates((prev: Candidate[]) => {
         const updatedIds = new Set(
-          updatedCandidates.map((c: Candidate) => c._id),
+          roleFilteredCandidates.map((c: Candidate) => c._id),
         );
         const filtered = prev.filter((c) => !updatedIds.has(c._id));
-        return [...filtered, ...updatedCandidates];
+        return [...filtered, ...roleFilteredCandidates];
       });
     },
-    [],
+    [userRole],
   );
 
   const handleLanesUpdate = useCallback(
