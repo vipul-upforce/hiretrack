@@ -1,24 +1,36 @@
-import { useEffect, useState } from "react";
-import JobModal from "./JobModal";
-import { useFetchOpenJobQuery } from "@/lib/features/job/jobApi";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { LogOut, Search } from "lucide-react";
-import Cookies from "js-cookie";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
-import { useFetchAppliedApplicationQuery } from "@/lib/features/candidate/candidateApi";
-import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { SerializedError } from "@reduxjs/toolkit";
-import Image from "next/image";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import InvalidPage from "@/components/InvalidPage";
-import { Input } from "@/components/ui/input";
-import { JobCardSkeleton } from "./JobCardSkeleton";
-import { ISettings } from "@/lib/models/settings";
-import useCustomForm from "@/Custom_Fields/hooks/useCustomForm";
-import CustomFieldBadge from "../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useFetchOpenJobQuery } from '@/lib/features/job/jobApi';
+import { useToast } from '@/hooks/use-toast';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
+import { useFetchAppliedApplicationQuery } from '@/lib/features/candidate/candidateApi';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import type { SerializedError } from '@reduxjs/toolkit';
+import useCustomForm, {
+  CustomFieldValues,
+} from '@/Custom_Fields/hooks/useCustomForm';
+import {
+  useFetchOrgQuery,
+  useLazyGetCustomFieldsByOrgNameQuery,
+} from '@/lib/features/org/orgApi';
+import { useGetPortalConfigsQuery } from '@/lib/features/settings';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useLogoutUserMutation } from '@/lib/features/auth/authApi';
+import { refreshAccessToken } from '@/lib/api/baseApi';
+import logger from '@/lib/logger';
+import Cookies from 'js-cookie';
+import { useIsIframe } from './IframeDetector';
+import { HeaderSection } from './components/header-section';
+import { SearchBar } from './components/search-bar';
+import { JobGrid } from './components/job-grid';
+import { ErrorState } from './components/error-state';
+import JobModal from './JobModal';
+import {
+  buildEmbedUrlWithJobId,
+  useShouldRedirectToEmbedOnJobClick,
+} from './utils/embed-redirect';
 
 interface Job {
   _id: string;
@@ -27,18 +39,18 @@ interface Job {
   skills: string[];
   experience: number;
   salary?: {
-    min: 0;
-    max: 0;
+    min: number;
+    max: number;
     inText: string;
-    isPrivate: false;
+    isPrivate: boolean;
   };
-  customFields?: Record<string, any>;
+  customFields?: CustomFieldValues;
 }
 
 function isFetchBaseQueryError(
-  error: FetchBaseQueryError | SerializedError | unknown
+  error: FetchBaseQueryError | SerializedError | unknown,
 ): error is FetchBaseQueryError {
-  return typeof error === "object" && error !== null && "status" in error;
+  return typeof error === 'object' && error !== null && 'status' in error;
 }
 
 export default function ApplyJobsContent({
@@ -46,58 +58,234 @@ export default function ApplyJobsContent({
 }: {
   showHeaderFooter?: boolean;
 }) {
-  const [orgName, setOrgName] = useState<string>("");
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const isIframe = useIsIframe();
+  const shouldRedirectToEmbed = useShouldRedirectToEmbedOnJobClick(isIframe);
+  const searchParams = useSearchParams();
+
+  const [orgName, setOrgName] = useState<string>(searchParams?.get('o') || '');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
+
+  const { data: orgResponse, isLoading: isOrgLoading } =
+    useFetchOrgQuery(undefined);
+  const { data: portalResponse, isLoading: isPortalLoading } =
+    useGetPortalConfigsQuery(undefined);
+  const [triggerGetCustomFields] = useLazyGetCustomFieldsByOrgNameQuery();
+  const { user } = useAppSelector((state) => state.auth);
+  const { toast } = useToast();
+
+  const { setUserLoggedIn, userLoggedIn, setCustomFields } = useCustomFields();
+  const [triggerLogout] = useLogoutUserMutation();
+
+  function escapeRegExp(string: string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  useEffect(() => {
+    const resolveOrgName = async () => {
+      const urlOrgName = searchParams?.get('o');
+
+      // Priority 1: URL Parameter
+      if (urlOrgName) {
+        setOrgName(urlOrgName);
+        return;
+      }
+
+      // Priority 2: Logged In User
+      if (user) {
+        try {
+          if (user.organizationInfo && user.organizationInfo.name) {
+            setOrgName(user.organizationInfo.name);
+            setUserLoggedIn(true);
+            return;
+          }
+        } catch {
+          setOrgName('');
+          toast({
+            title: 'Authentication Error',
+            description: 'Please log in again',
+            variant: 'destructive',
+          });
+          await triggerLogout();
+          router.push('/auth/login');
+          return;
+        }
+      }
+
+      // Priority 3: Portal Config Default
+      if (!isPortalLoading && portalResponse?.portalName) {
+        setOrgName(portalResponse.portalName);
+        return;
+      }
+
+      // Fallback
+      if (!isPortalLoading && !portalResponse) {
+        setOrgName('');
+      }
+    };
+
+    resolveOrgName();
+  }, [
+    searchParams,
+    user,
+    portalResponse,
+    isPortalLoading,
+    router,
+    toast,
+    triggerLogout,
+    setUserLoggedIn,
+  ]);
+
+  // Manually fetch custom fields if OrgName is resolved but URL param is missing
+  useEffect(() => {
+    const urlOrgParam = searchParams?.get('o');
+
+    if (orgName && !urlOrgParam) {
+      triggerGetCustomFields(orgName)
+        .unwrap()
+        .then((payload) => {
+          setCustomFields(payload);
+        })
+        .catch((err) => {
+          logger.error('Failed to manual fetch custom fields', err);
+        });
+    }
+  }, [orgName, searchParams, triggerGetCustomFields, setCustomFields]);
+
+  const hideHeaderParam = searchParams?.get('hideHeader');
+  const hideFooterParam = searchParams?.get('hideFooter');
+  const hideHeader = hideHeaderParam === 'true';
+  const hideFooter = hideFooterParam === 'true';
+
+  const hasHeaderParam = hideHeaderParam !== null;
+  const hasFooterParam = hideFooterParam !== null;
+  const authState = Cookies.get('auth_state');
+  const shouldShowHeader =
+    showHeaderFooter && (hasHeaderParam ? !hideHeader : !isIframe);
+  const shouldShowFooter =
+    showHeaderFooter && (hasFooterParam ? !hideFooter : !isIframe);
+
+  const isCandidate = user?.role === 'candidate';
+
+  const shouldSkipQuery =
+    !isCandidate && (orgName === '' || authState === 'true');
+
   const { data } = useFetchAppliedApplicationQuery(
     {},
-    { skip: orgName === "" }
+    { skip: shouldSkipQuery || user == null },
   );
 
-  const { toast } = useToast();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { setUserLoggedIn, userLoggedIn } = useCustomFields();
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [queryTitle, setQueryTitle] = useState<string>("");
-  const [invalidPage, setInvalidPage] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [queryTitle, setQueryTitle] = useState<string>('');
   const [layoutState, setLayoutState] = useState<{
     headerHTML: string;
     footerHTML: string;
   }>({
-    headerHTML: "",
-    footerHTML: "",
+    headerHTML: '',
+    footerHTML: '',
   });
+
+  const [primaryColor, setPrimaryColor] = useState<string>('#6366f1');
+  const [secondaryColor, setSecondaryColor] = useState<string>('#8b5cf6');
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [portalName, setPortalName] = useState<string>('');
 
   const {
     data: jobs,
     isLoading,
     error,
   } = useFetchOpenJobQuery(
-    { orgName: orgName, title: queryTitle },
-    { skip: orgName === null }
+    { orgName, title: queryTitle },
+    {
+      skip: !orgName,
+      refetchOnMountOrArgChange: true,
+    },
   ) as {
     data: Job[];
     isLoading: boolean;
     error: FetchBaseQueryError | SerializedError;
   };
-  const { formNameObject } = useCustomForm("Job Position");
+
+  const { formNameObject } = useCustomForm('Job Position');
 
   async function checkAllowance() {
-    const urlOrgName = searchParams?.get("o") || orgName;
+    const urlOrgName = searchParams?.get('o') || orgName;
 
-    const data = await fetch("/api/organization");
-    if (!data.ok) {
-      return;
-    }
-    const allowance = await data?.json();
+    if (!orgResponse || !orgResponse.data) return;
 
-    if (urlOrgName) {
-      setInvalidPage(false);
-      const config = allowance?.data?.find(
-        (org: ISettings) => org?.portalConfigs?.portalName === urlOrgName
-      ).portalConfigs;
+    try {
+      const allowance = orgResponse;
+      const portalData = portalResponse || null;
+
+      if (urlOrgName) {
+        const config = allowance?.data?.find(
+          (org: { portalConfigs: { portalName: string } }) =>
+            org?.portalConfigs?.portalName === urlOrgName,
+        )?.portalConfigs;
+
+        if (config?.primaryColor) setPrimaryColor(config.primaryColor);
+        if (config?.secondaryColor) setSecondaryColor(config.secondaryColor);
+        if (config?.portalLogo?.url) setLogoUrl(config.portalLogo.url);
+        if (config?.portalName) setPortalName(config.portalName);
+
+        if (portalData) {
+          if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
+          if (portalData.secondaryColor)
+            setSecondaryColor(portalData.secondaryColor);
+          if (portalData.portalLogo) {
+            const logoUrl2 =
+              typeof portalData.portalLogo === 'string'
+                ? portalData.portalLogo
+                : portalData.portalLogo?.url;
+            if (logoUrl2) setLogoUrl(logoUrl2);
+          }
+          if (portalData.portalName) setPortalName(portalData.portalName);
+        }
+
+        if (config?.portalHeader?.url && config?.portalFooter?.url) {
+          try {
+            const [headerRes, footerRes] = await Promise.all([
+              fetch(config.portalHeader.url),
+              fetch(config.portalFooter.url),
+            ]);
+            const [headerHTML, footerHTML] = await Promise.all([
+              headerRes.text(),
+              footerRes.text(),
+            ]);
+            setLayoutState({ headerHTML, footerHTML });
+          } catch (err) {
+            logger.error('Failed to fetch header/footer:', err);
+            setLayoutState({ headerHTML: '', footerHTML: '' });
+          }
+        }
+
+        return;
+      }
+
+      const config = allowance?.data?.[0]?.portalConfigs;
+
+      if (config?.primaryColor) setPrimaryColor(config.primaryColor);
+      if (config?.secondaryColor) setSecondaryColor(config.secondaryColor);
+      if (config?.portalLogo?.url) setLogoUrl(config.portalLogo.url);
+      if (config?.portalName) setPortalName(config.portalName);
+
+      if (portalData) {
+        if (portalData.primaryColor) setPrimaryColor(portalData.primaryColor);
+        if (portalData.secondaryColor)
+          setSecondaryColor(portalData.secondaryColor);
+        if (portalData.portalLogo) {
+          const logoUrl3 =
+            typeof portalData.portalLogo === 'string'
+              ? portalData.portalLogo
+              : portalData.portalLogo?.url;
+          if (logoUrl3) setLogoUrl(logoUrl3);
+        }
+        if (portalData.portalName) setPortalName(portalData.portalName);
+      }
+
       if (config?.portalHeader?.url && config?.portalFooter?.url) {
         const [headerRes, footerRes] = await Promise.all([
           fetch(config.portalHeader.url),
@@ -107,342 +295,238 @@ export default function ApplyJobsContent({
           headerRes.text(),
           footerRes.text(),
         ]);
-
-        setLayoutState({
-          headerHTML,
-          footerHTML,
-        });
+        setLayoutState({ headerHTML, footerHTML });
       }
-      return;
-    }
-
-    if (allowance.allow) {
-      setInvalidPage(true);
-    }
-    const config = allowance?.data?.[0]?.portalConfigs;
-
-    if (config?.portalHeader?.url && config?.portalFooter?.url) {
-      const [headerRes, footerRes] = await Promise.all([
-        fetch(config.portalHeader.url),
-        fetch(config.portalFooter.url),
-      ]);
-      const [headerHTML, footerHTML] = await Promise.all([
-        headerRes.text(),
-        footerRes.text(),
-      ]);
-
-      setLayoutState({
-        headerHTML,
-        footerHTML,
-      });
+    } catch (e) {
+      logger.error('Error processing portal settings:', e);
     }
   }
+  const orgId = Cookies.get('org_id');
+  // Add this useEffect to proactively refresh token if refresh_token exists
 
   useEffect(() => {
-    checkAllowance();
-  }, [searchParams, orgName]);
+    const checkAndRefreshToken = async () => {
+      // Check if refresh_token exists in cookies
 
-  const pageInit = async () => {
-    // debugger;
-    const token = Cookies.get("token");
-    const urlOrgName = searchParams?.get("o");
-    if (token) {
-      try {
-        const decryptedResponse = await verifyAndDecryptJWTToken(token);
-        if (
-          decryptedResponse.success &&
-          decryptedResponse.user &&
-          decryptedResponse.user.organizationInfo &&
-          decryptedResponse.user.organizationInfo.name
-        ) {
-          setOrgName(decryptedResponse.user.organizationInfo.name);
-          setUserLoggedIn(true);
-        } else {
-          setOrgName(urlOrgName || "");
+      // If we have refresh_token and orgId, but auth_state is not 'true' or user is null,
+      // proactively refresh the token
+      if (orgId && (!authState || authState !== 'true')) {
+        try {
+          await refreshAccessToken(dispatch).then(() => setUserLoggedIn(true));
+        } catch {
+          // Silently fail - don't disrupt the page if refresh fails
+          // The user can still use public endpoints
+          logger.warn('Proactive token refresh failed:', error);
         }
-      } catch {
-        setOrgName(urlOrgName || "");
-        toast({
-          title: "Authentication Error",
-          description: "Please log in again",
-          variant: "destructive",
-        });
-        router.push("/auth/login");
       }
-    } else {
-      setOrgName(urlOrgName || "");
-    }
-  };
+    };
+
+    checkAndRefreshToken();
+  }, [dispatch, user, orgId, authState]);
 
   useEffect(() => {
-    pageInit();
-  }, [searchParams]);
+    document.documentElement.style.setProperty(
+      '--portal-primary',
+      primaryColor,
+    );
+    document.documentElement.style.setProperty(
+      '--portal-secondary',
+      secondaryColor,
+    );
+    document.documentElement.style.setProperty(
+      '--portal-logo',
+      logoUrl ? `url('${logoUrl}')` : 'none',
+    );
+    document.documentElement.style.setProperty(
+      '--portal-name',
+      `"${portalName || 'Your Portal Name'}"`,
+    );
+  }, [primaryColor, secondaryColor, logoUrl, portalName]);
+
+  useEffect(() => {
+    if (!isOrgLoading && !isPortalLoading && orgResponse) {
+      checkAllowance();
+    }
+  }, [orgResponse, portalResponse, searchParams, orgName]);
 
   useEffect(() => {
     if (data) {
       setAppliedApplications(data.appliedApplications);
     }
-  }, [data]);
+  }, [data, isModalOpen, selectedJob]);
 
-  const handleSearch = () => {
-    setQueryTitle(searchTerm);
+  /** Auto-open job modal when jobId is present in URL (deep link from cross-origin redirect) */
+  const jobIdFromUrl = searchParams?.get('jobId');
+  useEffect(() => {
+    if (!jobIdFromUrl || !jobs?.length || isModalOpen) return;
+    const job = jobs.find((j) => j._id === jobIdFromUrl);
+    if (job) {
+      setSelectedJob(job);
+      setIsJobModalOpen(true);
+    }
+  }, [jobIdFromUrl, jobs, isModalOpen]);
+
+  /** Redirect to embed URL when cross-origin iframe; otherwise open modal in place */
+  const handleJobClick = (job: Job) => {
+    if (shouldRedirectToEmbed && typeof window !== 'undefined') {
+      window.top!.location.href = buildEmbedUrlWithJobId(job._id);
+      return;
+    }
+    setSelectedJob(job);
+    setIsJobModalOpen(true);
   };
 
-  if (invalidPage) {
-    return <InvalidPage message="Page Doesn't Exist" />;
-  }
+  const handleSearch = () => {
+    if (!searchTerm) {
+      setQueryTitle('');
+      return;
+    }
 
-  if (isLoading)
-    return <div className="flex justify-center p-8">Loading...</div>;
+    const sanitizedTerm = escapeRegExp(searchTerm.trim());
+    setQueryTitle(sanitizedTerm);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setQueryTitle('');
+  };
+
+  const handleCloseJobModal = () => {
+    setIsJobModalOpen(false);
+    setSelectedJob(null);
+    if (searchParams?.get('jobId') && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('jobId');
+      const query = params.toString();
+      const path = query ? `/apply-jobs?${query}` : '/apply-jobs';
+      router.replace(path, { scroll: false });
+
+    }
+
+  };
+
+  const handleLogout = async () => {
+    try {
+      await triggerLogout().unwrap();
+    } catch (e) {
+      logger.error('Logout failed', e);
+    } finally {
+      toast({
+        title: 'Logged out',
+        description: 'You have been successfully logged out',
+      });
+      router.push('/auth/login');
+    }
+  };
 
   if (error && !isLoading) {
     if (isFetchBaseQueryError(error) && error.status !== 404) {
       return (
-        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
-          <Image
-            src="/error.webp"
-            alt="No data illustration"
-            width={600}
-            height={600}
-          />
-          {isFetchBaseQueryError(error) &&
-            "data" in error &&
-            (error.data as { error: string })?.error}
-        </div>
-      );
-    } else {
-      return (
-        <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
-          <Image
-            src="/notfound.jpg"
-            alt="No data illustration"
-            width={600}
-            height={600}
-          />
-          {isFetchBaseQueryError(error) &&
-            "data" in error &&
-            (error.data as { error: string })?.error}
-        </div>
+        <ErrorState
+          imageUrl="/error.webp"
+          errorMessage={
+            isFetchBaseQueryError(error) &&
+            'data' in error &&
+            (error.data as { error: string })?.error
+          }
+        />
       );
     }
+    return (
+      <ErrorState
+        imageUrl="/notfound.jpg"
+        errorMessage={
+          isFetchBaseQueryError(error) &&
+          'data' in error &&
+          (error.data as { error: string })?.error
+        }
+      />
+    );
   }
 
-  const handleLogout = () => {
-    // Clear user data and token
-    Cookies.remove("token");
-
-    toast({
-      title: "Logged out",
-      description: "You have been successfully logged out",
-    });
-
-    router.push("/auth/login");
-  };
-  console.log(jobs);
   return (
-    <div className={showHeaderFooter ? "flex flex-col min-h-screen" : ""}>
-      {showHeaderFooter && (
+    <div
+      className={
+        shouldShowHeader || shouldShowFooter
+          ? 'relative flex min-h-screen flex-col'
+          : 'relative'
+      }
+    >
+      {/* Background pattern */}
+      <div className="fixed inset-0 -z-10">
+        <div
+          className="absolute inset-0 opacity-5"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 80%, ${primaryColor}22 0%, transparent 60%), 
+                             radial-gradient(circle at 80% 20%, ${secondaryColor}22 0%, transparent 60%),
+                             radial-gradient(circle at 40% 40%, ${primaryColor}11 0%, transparent 50%)`,
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `linear-gradient(90deg, transparent 0%, ${primaryColor}05 50%, transparent 100%)`,
+          }}
+        />
+      </div>
+
+      {shouldShowHeader && (
+        // eslint-disable-next-line react/no-danger
         <div dangerouslySetInnerHTML={{ __html: layoutState?.headerHTML }} />
       )}
-      <main className={showHeaderFooter ? "flex-1 p-4" : ""}>
+
+      <main
+        className={
+          shouldShowHeader || shouldShowFooter
+            ? 'relative z-10 flex-1 p-4'
+            : 'relative z-10'
+        }
+      >
         <div className="container mx-auto p-2">
-          <div className="py-2 flex flex-row justify-between items-start">
-            <div>
-              <h1 className="lg:text-2xl sm:text-xl text-lg font-bold mb-4 ">
-                Open Positions {orgName ? `for ${orgName}` : ""}
-              </h1>
-            </div>
-
-            {userLoggedIn && (
-              <Button
-                variant="ghost"
-                className={cn(
-                  "flex items-start gap-3 rounded-lg px-3 py-2 text-sm transition-all text-red-500 hover:text-red-600 hover:bg-red-50",
-                  "justify-start"
-                )}
-                onClick={handleLogout}
-              >
-                <LogOut className="h-5 w-5" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2 mb-4 w-full  flex-row ">
-            <div className="relative w-full flex flex-row items-center max-w-md">
-              <Input
-                type="text"
-                placeholder="Search jobs..."
-                className="pl-10 pr-4  border rounded-lg w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch();
-                  }
-                }}
-              />
-              <Search className="absolute left-3 text-gray-400 h-5 w-5" />
-            </div>
-            <Button onClick={handleSearch} className="px-4 py-2 text-sm">
-              Search
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isLoading ? (
-              // Show skeleton loading cards
-              <>
-                {[...Array(6)].map((_, index) => (
-                  <JobCardSkeleton key={index} />
-                ))}
-              </>
-            ) : error ? (
-              // Show error state
-              <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
-                <Image
-                  src={
-                    isFetchBaseQueryError(error) && error.status !== 404
-                      ? "/error.webp"
-                      : "/notfound.jpg"
-                  }
-                  alt="No data illustration"
-                  width={600}
-                  height={600}
-                />
-                {isFetchBaseQueryError(error) &&
-                  "data" in error &&
-                  (error.data as { error: string })?.error}
-              </div>
-            ) : jobs && jobs.length > 0 ? (
-              // Show job cards
-              jobs.map((job, index) => (
-                <div
-                  key={index}
-                  className="bg-white break-words rounded-lg border inset-shadow-sm p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow flex flex-col justify-between"
-                  onClick={() => {
-                    setSelectedJob(job);
-                    setIsJobModalOpen(true);
-                  }}
-                >
-                  <div className="h-full">
-                    <h2 className="text-lg lg:text-xl font-semibold mb-2 line-clamp-3">
-                      {job.title}
-                    </h2>
-                    <p
-                      className="text-gray-600 mb-4 line-clamp-2 text-sm lg:text-lg"
-                      dangerouslySetInnerHTML={{
-                        __html: job?.description || "No description found",
-                      }}
-                    ></p>
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap gap-2">
-                      {job.skills.slice(0, 3).map((skill, i) => (
-                        <span
-                          key={i}
-                          className="break-all bg-blue-100 text-blue-800 text-sm  px-3 py-1 rounded-full h-7 max-w-[30%] overflow-clip"
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 text-sm text-gray-500 flex flex-rw items-center justify-between">
-                      <p>Experience: {job.experience} years</p>
-
-                      {job.salary ? (
-                        <div className="flex items-center">
-                          {job.salary?.inText || job.salary?.inText === "" ? (
-                            <span className="text-sm font-medium">
-                              {job.salary.inText}
-                            </span>
-                          ) : (
-                            <>
-                              {job.salary?.min && job.salary.min !== 0 && (
-                                <span className="text-sm font-medium">
-                                  {job.salary.min} LPA
-                                </span>
-                              )}
-                              {job.salary?.min &&
-                                job.salary.min !== 0 &&
-                                job.salary?.max &&
-                                job.salary.max !== 0 && (
-                                  <span className="mx-1 text-muted-foreground">
-                                    -
-                                  </span>
-                                )}
-                              {job.salary?.max && job.salary.max !== 0 && (
-                                <span className="text-sm font-medium">
-                                  {job.salary.max} LPA
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      ) : (
-                        ""
-                      )}
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2 ">
-                      {job?.customFields &&
-                        Object.entries(job?.customFields)
-                          .filter(([key, value]) => {
-                            const field = formNameObject?.fields.find(
-                              (f) => f.label === key
-                            );
-                            if (field?.jobId && field.jobId !== job?._id)
-                              return false;
-                            if (
-                              (typeof value === "string" && value === "") ||
-                              (typeof value === "object" &&
-                                Object.keys(value).length === 0)
-                            ) {
-                              return false;
-                            }
-                            return field?.showOnCard;
-                          })
-                          .map(([key, value], i) => (
-                            <div key={i}>
-                              <CustomFieldBadge kii={key} value={value} />
-                            </div>
-                          ))}
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              ""
-            )}
-          </div>
-          {error && !jobs && (
-            <div className="px-3 font-bold text-gray-500 w-[100vw] flex flex-col items-center justify-center">
-              <Image
-                src="/notfound.jpg"
-                alt="No data illustration"
-                width={600}
-                height={600}
-              />
-              No Jobs Found
-            </div>
-          )}
-          <JobModal
-            job={selectedJob}
-            isOpen={isModalOpen}
-            onClose={() => setIsJobModalOpen(false)}
+          <HeaderSection
             orgName={orgName}
-            readOnly={
-              !!(
-                appliedApplications &&
-                selectedJob &&
-                appliedApplications.includes(selectedJob?._id)
-              )
-            }
+            userLoggedIn={userLoggedIn}
+            onLogout={handleLogout}
           />
-          {/* )} */}
+
+          <SearchBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onSearch={handleSearch}
+            primaryColor={primaryColor}
+            secondaryColor={secondaryColor}
+          />
+
+          <JobGrid
+            jobs={jobs || []}
+            isLoading={isLoading}
+            primaryColor={primaryColor}
+            formNameObject={formNameObject}
+            onJobClick={handleJobClick}
+            hasSearch={queryTitle !== ''}
+            onClearSearch={handleClearSearch}
+          />
         </div>
       </main>
-      {showHeaderFooter && (
+
+      {shouldShowFooter && (
+        // eslint-disable-next-line react/no-danger
         <div dangerouslySetInnerHTML={{ __html: layoutState.footerHTML }} />
       )}
+
+      <JobModal
+        job={selectedJob}
+        isOpen={isModalOpen}
+        onClose={handleCloseJobModal}
+        orgName={orgName}
+        readOnly={
+          !!(
+            appliedApplications &&
+            selectedJob &&
+            appliedApplications.includes(selectedJob?._id)
+          )
+        }
+      />
     </div>
   );
 }

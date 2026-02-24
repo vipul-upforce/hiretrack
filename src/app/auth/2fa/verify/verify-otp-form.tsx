@@ -1,99 +1,178 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import Cookies from "js-cookie";
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { fetchUserFromToken } from '@/lib/redux/authSlice';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/redux/store';
+import {
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+} from '@/lib/features/auth/authApi';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { getRedirectUrlFromSearchParams } from '@/lib/utils/redirectUtils';
 
 export default function VerifyOtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [otp, setOtp] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [cooldownSeconds, setCooldownSeconds] = useState(60);
-  const email = searchParams?.get("email");
-  const organizationId = searchParams?.get("orgId");
+  const [otp, setOtp] = useState('');
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
 
-  // Countdown timer effect
+  const email = searchParams?.get('email');
+  const organizationId = searchParams?.get('orgId');
+  const isCandidate = searchParams?.get('isCandidate') === 'true';
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+
+  const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
+  const [sendOtp, { isLoading: isSending }] = useSendOtpMutation();
+
+  const isLoading = isVerifying || isSending;
+  const storageKey = `otp_cooldown_${email}_${organizationId}`;
   useEffect(() => {
-    if (cooldownSeconds <= 0) return;
+    if (!email || !organizationId) return undefined;
 
-    const timer = setInterval(() => {
-      setCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
+    const tick = () => {
+      const ts = localStorage.getItem(storageKey);
 
-    return () => clearInterval(timer);
-  }, [cooldownSeconds]);
+      if (!ts) {
+        setCooldownSeconds(0);
+        return;
+      }
+
+      const elapsed = Math.floor((Date.now() - Number(ts)) / 1000);
+      const remaining = Math.max(0, 60 - elapsed);
+
+      if (remaining === 0) {
+        localStorage.removeItem(storageKey);
+      }
+      setCooldownSeconds(remaining);
+    };
+
+    tick(); // run immediately on mount
+    const interval = setInterval(tick, 1000);
+
+    return () => clearInterval(interval);
+  }, [email, organizationId, storageKey]);
+
+  // Redirect after successful authentication
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const redirectUrl = getRedirectUrlFromSearchParams(
+        searchParams,
+        user,
+        false, // isMultiple - could be enhanced if needed
+      );
+      if (redirectUrl !== '/') {
+        router.push(redirectUrl);
+      }
+    }
+  }, [isAuthenticated, user, searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+
+    if (!email) {
+      toast({
+        title: 'Error',
+        description: 'Email is missing',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
-      const response = await fetch("/api/auth/2fa/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
+      const res = await verifyOtp({
+        email,
+        otp,
+        isCandidate: isCandidate || false,
+      }).unwrap();
 
-      if (response.ok) {
-        const { user } = await response.json();
-        Cookies.set("token", user, { expires: 30 });
-        toast({ title: "Success", description: "Login successful" });
-        router.push("/dashboard");
-      } else {
-        const { message } = await response.json();
-        toast({ title: "Error", description: message, variant: "destructive" });
+      if (res?.loggedIn && res?.loggedIn === true) {
+        toast({ title: 'Success', description: 'Login successful' });
+
+        // Clear cooldown on successful verification
+        if (email && organizationId) {
+          localStorage.removeItem(storageKey);
+        }
+
+        await dispatch(fetchUserFromToken()).unwrap();
       }
-    } catch (error) {
+    } catch (err) {
+      const errorMessage =
+        (err as { data?: { message: string } })?.data?.message ||
+        'Failed to verify OTP';
       toast({
-        title: "Error",
-        description: "An unknown error occurred",
-        variant: "destructive",
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleResendOtp = async () => {
     if (!email) {
       toast({
-        title: "Error",
-        description: "Email missing",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Email missing',
+        variant: 'destructive',
       });
       return;
     }
 
-    setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/2fa/send-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, organizationId }),
-      });
+      await sendOtp({
+        email,
+        organizationId,
+        isCandidate: isCandidate || false,
+      }).unwrap();
 
-      if (response.ok) {
-        toast({ title: "Success", description: "New OTP sent" });
-        setCooldownSeconds(60); // Reset cooldown to 1 minute
-      } else {
-        const { message } = await response.json();
-        toast({ title: "Error", description: message, variant: "destructive" });
+      toast({ title: 'Success', description: 'New OTP sent' });
+
+      // Store timestamp in localStorage
+      if (organizationId) {
+        localStorage.setItem(storageKey, Date.now().toString());
       }
-    } catch (error) {
+    } catch (err) {
+      const errorMessage =
+        (err as { data?: { message: string } })?.data?.message ||
+        'Failed to resend OTP';
+
+      // If rate limited, try to extract remaining time from error response
+      const errorStatus = (err as { status?: number })?.status;
+      if (errorStatus === 429) {
+        const errorData = err as {
+          data?: { retryAfter?: number; message?: string };
+        };
+        const retryAfter = errorData?.data?.retryAfter;
+
+        if (retryAfter && retryAfter > 0) {
+          setCooldownSeconds(retryAfter);
+          // Store timestamp adjusted for remaining time
+          if (organizationId) {
+            const adjustedTime = Date.now() - (60 - retryAfter) * 1000;
+            localStorage.setItem(storageKey, adjustedTime.toString());
+          }
+        } else {
+          // If no retryAfter provided, set to 60 seconds
+          setCooldownSeconds(60);
+          if (organizationId) {
+            localStorage.setItem(storageKey, Date.now().toString());
+          }
+        }
+      }
+
       toast({
-        title: "Error",
-        description: "Failed to resend OTP",
-        variant: "destructive",
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -101,11 +180,27 @@ export default function VerifyOtpForm() {
   const formatCooldown = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
+  function renderResendSection() {
+    if (cooldownSeconds > 0) {
+      return (
+        <p>
+          Please wait {formatCooldown(cooldownSeconds)} before requesting a new
+          OTP
+        </p>
+      );
+    }
+
+    return (
+      <Button variant="link" onClick={handleResendOtp} disabled={isLoading}>
+        {isSending ? 'Sending...' : 'Resend OTP'}
+      </Button>
+    );
+  }
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Enter OTP</CardTitle>
@@ -123,26 +218,16 @@ export default function VerifyOtpForm() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Verifying..." : "Verify"}
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isVerifying ? 'Verifying...' : 'Verify'}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            {cooldownSeconds > 0 ? (
-              <p>
-                Please wait {formatCooldown(cooldownSeconds)} before requesting
-                a new OTP
-              </p>
-            ) : (
-              <Button
-                variant="link"
-                onClick={handleResendOtp}
-                disabled={isLoading}
-              >
-                Resend OTP
-              </Button>
-            )}
-          </div>
+          <div className="mt-4 text-center">{renderResendSection()}</div>
         </CardContent>
       </Card>
     </div>

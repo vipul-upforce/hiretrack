@@ -1,75 +1,62 @@
-import { useRef } from "react";
-import { FormikProps } from "formik";
+import { useRef } from 'react';
+import { FormikProps, FormikTouched, FormikValues } from 'formik';
+import { scrollToError } from '@/lib/formUtils';
 
-export const useApplyHandler = <T extends Record<string, any>>() => {
+export const useApplyHandler = <T extends FormikValues>() => {
   const formikRef = useRef<FormikProps<T>>(null);
 
-  // const handleApply = async () => {
-  //   const formik = formikRef.current;
-  //   if (!formik) return;
-
-  //   const errors = await formik.validateForm();
-
-  //   const touched: Partial<Record<keyof T, boolean>> = {};
-  //   for (const key in formik.initialValues) {
-  //     touched[key] = true;
-  //   }
-
-  //   formik.setTouched(touched as any, true);
-
-  //   const firstErrorKey = Object.keys(errors)[0];
-  //   if (firstErrorKey) {
-  //     const el = document.querySelector(`[id="${firstErrorKey}"]`);
-  //     el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  //     (el as HTMLElement)?.focus();
-  //     return;
-  //   }
-
-  //   formik.handleSubmit();
-  // };
   const handleApply = async () => {
     const formik = formikRef.current;
     if (!formik) return;
 
     const errors = await formik.validateForm();
-    // ✅ Log full errors object
-    if (Object.keys(errors).length > 0) {
-      console.error("Validation Errors:", errors);
-    }
-    const touched: Partial<Record<keyof T, any>> = {};
+
+    const touched: Record<string, unknown> = {};
     for (const key in formik.initialValues) {
-      if (
-        key === "customFields" &&
-        formik.initialValues[key] &&
-        typeof formik.initialValues[key] === "object"
-      ) {
-        // Mark every key inside customFields as true
-        touched[key] = {};
-        Object.keys(formik.initialValues[key]).forEach((subKey) => {
-          touched[key][subKey] = true;
+      if (key === 'customFields') {
+        const customFieldsTouched: Record<string, boolean> = {};
+        const cfValues =
+          ((formik.values as Record<string, unknown>).customFields as Record<
+            string,
+            unknown
+          >) || {};
+        const cfInits =
+          ((formik.initialValues as Record<string, unknown>)
+            .customFields as Record<string, unknown>) || {};
+
+        const allCfKeys = new Set([
+          ...Object.keys(cfInits),
+          ...Object.keys(cfValues),
+        ]);
+
+        allCfKeys.forEach((subKey) => {
+          customFieldsTouched[subKey] = true;
         });
+        touched[key] = customFieldsTouched;
       } else {
         touched[key] = true;
       }
     }
 
-    formik.setTouched(touched as any, true);
-    // new Promise(() => setTimeout(() => {}, 400));
+    formik.setTouched(touched as FormikTouched<T>, true);
 
-    const firstErrorKey = Object.keys(errors)[0];
-    // debugger;
-    if (firstErrorKey) {
-      if (firstErrorKey === "customFields") {
-        if (!errors.customFields) return;
-        const cfKey = Object.keys(errors.customFields)[0];
-        const el = document.querySelector(`[id="${firstErrorKey}.${cfKey}"]`);
-        el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        (el as HTMLElement)?.focus();
-        return;
-      }
-      const el = document.querySelector(`[id="${firstErrorKey}"]`);
-      el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      (el as HTMLElement)?.focus();
+    const hasErrors = (errs: Record<string, unknown>): boolean => {
+      if (!errs || typeof errs !== 'object') return false;
+      return Object.keys(errs).some((key) => {
+        if (
+          key === 'customFields' &&
+          errs[key] &&
+          typeof errs[key] === 'object'
+        ) {
+          const customFieldErrors = errs[key] as Record<string, unknown>;
+          return Object.keys(customFieldErrors).length > 0;
+        }
+        return !!errs[key];
+      });
+    };
+
+    if (hasErrors(errors)) {
+      scrollToError(errors);
       return;
     }
 

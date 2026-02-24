@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/**/*.{ts,tsx}", "pages/**/*.{ts,tsx}"],
+  "project": ["src/**/*.{ts,tsx}", "pages/**/*.{ts,tsx}"],
+  "ignore": ["**/*.test.ts", "**/*.spec.ts", "**/node_modules/**"],
+  "ignoreDependencies": ["eslint-config-next"],
+  "eslint": false
+}

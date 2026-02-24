@@ -1,124 +1,189 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Lane } from "@/lib/mongodb";
-import connectToDatabase from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
-import { Organization } from "@/lib/mongodb";
-import { broadcastLaneUpdate } from "@/lib/broadcast/broadCastCandidate";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Lane, Job, Organization } from '@/lib/mongodb';
+import { broadcastLaneUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+
+const DEFAULT_LANES = [
+  'applied',
+  'screening',
+  'shortlisted',
+  'processing',
+  'accepted',
+  'rejected',
+];
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
-    const userId = searchParams?.get("userId");
-    const session = await auth(request);
-    const organizationId = session?.user.organizationId;
+    const userId = searchParams?.get('userId');
+    const jobId = searchParams?.get('jobId');
+    const { organizationId } = user;
 
     if (!userId) {
       return NextResponse.json(
-        { error: "User ID is required" },
-        { status: 400 }
+        { error: 'User ID is required' },
+        { status: 400 },
       );
     }
     if (!Organization || !Lane) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
-    const organization = (await Organization.findOne({
-      _id: organizationId,
-    }).lean()) as unknown as {
-      _id: string;
-      lanes?: string[];
-    };
-    if (!organization) {
-      return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
-      );
+
+    let organizationLaneOrder;
+
+    // NEW: If jobId is provided, get job-specific lanes
+    if (jobId && Job) {
+      const job = await Job.findOne({
+        _id: jobId,
+        organizationId,
+      })
+        .select('useCustomLanes lanes')
+        .lean()
+        .exec();
+
+      if (job) {
+        if (job.useCustomLanes && job.lanes) {
+          organizationLaneOrder = job.lanes;
+        } else {
+          // Fall back to organization default lanes
+          const organization = await Organization.findOne({
+            _id: organizationId,
+          })
+            .select('defaultLanes lanes')
+            .lean()
+            .exec();
+          organizationLaneOrder =
+            organization?.defaultLanes || organization?.lanes || DEFAULT_LANES;
+        }
+      } else {
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      }
+    } else {
+      // LEGACY: Use organization lanes (backward compatibility)
+      const organization = (await Organization.findOne({
+        _id: organizationId,
+      }).lean()) as unknown as {
+        _id: string;
+        lanes?: string[];
+        defaultLanes?: string[];
+      };
+
+      if (!organization) {
+        return NextResponse.json(
+          { error: 'Organization not found' },
+          { status: 404 },
+        );
+      }
+
+      // Use defaultLanes if available, fallback to old lanes field, then DEFAULT_LANES
+      organizationLaneOrder =
+        organization.defaultLanes || organization.lanes || DEFAULT_LANES;
     }
-    const organizationLaneOrder = organization.lanes || [];
 
-    const lane = await Lane.findOne({ userId }).lean();
-
-    if (lane) {
-      const updatedLane = await Lane.findOneAndUpdate(
-        { userId },
-        { $set: { lanes: organizationLaneOrder } },
-        { new: true }
-      ).lean();
-
-      return NextResponse.json(updatedLane);
-    }
-
-    const newLane = new Lane({
-      userId,
-      lanes: organizationLaneOrder,
-    });
-
-    await newLane.save();
-    return NextResponse.json(newLane);
+    return NextResponse.json({ lanes: organizationLaneOrder });
   } catch (err: unknown) {
     const error = err as Error;
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    await connectToDatabase();
-    const { lanes: newLanes } = await request.json();
-    const session = await auth(request);
-    const organizationId = session?.user.organizationId;
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: "Organization ID is required" },
-        { status: 400 }
-      );
+    const [user] = await Promise.all([
+      getAuthenticatedUser(request, ['admin', 'hr']),
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const { organizationId } = user;
+    const body = await request.json();
+    const { lanes: newLanes, jobId } = body;
 
-    // await Lane.findOneAndUpdate(
-    //   { userId },
-    //   { $set: { lanes: newLanes } },
-    //   { new: true, upsert: true }
-    // ).lean();
     if (!Lane || !Organization) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
-    }
-
-    const organization = await Organization.findOne({ _id: organizationId });
-
-    if (!organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Database not connected' },
+        { status: 400 },
       );
     }
 
-    const updatedOrganization = await Organization.findOneAndUpdate(
-      { _id: organizationId },
-      { $set: { lanes: newLanes } },
-      { new: true }
+    // If jobId is provided, update job-specific lanes
+    if (jobId && Job) {
+      const job = await Job.findOne({
+        _id: jobId,
+        organizationId,
+      });
+
+      if (!job) {
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      }
+
+      // Update job lanes
+      const updatedJob = await Job.findByIdAndUpdate(
+        jobId,
+        {
+          $set: {
+            lanes: newLanes,
+            useCustomLanes: true,
+          },
+        },
+        { new: true },
+      );
+
+      broadcastLaneUpdate(organizationId, newLanes, jobId);
+
+      return NextResponse.json({
+        message: 'Job lanes updated successfully',
+        jobId: updatedJob?._id,
+        lanes: updatedJob?.lanes,
+        useCustomLanes: updatedJob?.useCustomLanes,
+      });
+    }
+    // Update organization default lanes
+    const updatedOrganization = await Organization.findByIdAndUpdate(
+      organizationId,
+      { $set: { defaultLanes: newLanes } },
+      { new: true },
     );
-    broadcastLaneUpdate(organizationId, updatedOrganization?.lanes || []);
-    return NextResponse.json(updatedOrganization);
+
+    if (!updatedOrganization) {
+      return NextResponse.json(
+        { error: 'Organization not found' },
+        { status: 404 },
+      );
+    }
+    broadcastLaneUpdate(organizationId, updatedOrganization.defaultLanes || []);
+
+    return NextResponse.json({
+      message: 'Organization lanes updated successfully',
+      lanes: updatedOrganization.defaultLanes,
+    });
   } catch (err: unknown) {
     const error = err as Error;
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
-
 export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const data = await request.json();
 
     if (!Lane) {
-      return NextResponse.json({ error: "Lane not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Lane not found' }, { status: 404 });
     }
 
     const lastLane = await Lane.findOne({ userId: data.userId }).sort({
@@ -136,7 +201,7 @@ export async function POST(request: Request) {
   } catch (err: unknown) {
     const error = err as Error;
     const errorMessage =
-      error instanceof Error ? error.message : "An unknown error occurred";
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

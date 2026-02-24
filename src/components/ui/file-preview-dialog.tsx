@@ -1,15 +1,15 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
-import { File, Download, X } from "lucide-react"
-import { Button } from "./button"
+} from '@/components/ui/dialog';
+import { File, Download, X } from 'lucide-react';
+import { Button } from './button';
 
 interface FilePreviewDialogProps {
   file: File | null
@@ -24,28 +24,67 @@ export function FilePreviewDialog({
   isOpen,
   onClose,
 }: FilePreviewDialogProps) {
-  if (!file || !preview) return null
+  if (!file || !preview) return null;
 
   const downloadFile = () => {
-    const link = document.createElement('a')
-    link.href = preview
-    link.download = file.name
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const link = document.createElement('a');
+    link.href = preview;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const renderPreview = () => {
+    if (file.type.startsWith('image/')) {
+      return (
+        <div className="flex items-center justify-center min-h-full p-4">
+          <img
+            src={preview}
+            alt={file.name}
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      );
+    }
+
+    if (file.type === 'application/pdf') {
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={preview}
+            className="w-full h-full"
+            title={file.name}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-4 min-h-full">
+        <File className="h-16 w-16" />
+        <p>Preview not available for this file type</p>
+        <Button variant="secondary" onClick={downloadFile}>
+          <Download className="mr-2 h-4 w-4" />
+          Download File
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh] p-0 flex flex-col">
-        <DialogHeader className="p-4 pb-2 flex flex-row items-start justify-between space-y-0 border-b shrink-0">
+        <DialogHeader className="px-6 py-4 flex flex-row items-start justify-between space-y-0 border-b shrink-0">
           <div className="flex-1">
             <DialogTitle className="flex items-center gap-2 text-base font-medium">
               <File className="h-4 w-4" />
               <span className="truncate">{file.name}</span>
             </DialogTitle>
             <DialogDescription className="text-sm">
-              {Math.round(file.size / 1024)}KB - {file.type || 'Unknown type'}
+              {Math.round(file.size / 1024)}
+              KB -
+              {file.type || 'Unknown type'}
             </DialogDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -70,34 +109,9 @@ export function FilePreviewDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto">
-          {file.type.startsWith("image/") ? (
-            <div className="flex items-center justify-center min-h-full p-4">
-              <img
-                src={preview}
-                alt={file.name}
-                className="max-w-full max-h-full object-contain rounded-lg"
-              />
-            </div>
-          ) : file.type === "application/pdf" ? (
-            <div className="w-full h-full">
-              <iframe
-                src={preview}
-                className="w-full h-full"
-                title={file.name}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center p-8 text-muted-foreground gap-4 min-h-full">
-              <File className="h-16 w-16" />
-              <p>Preview not available for this file type</p>
-              <Button variant="secondary" onClick={downloadFile}>
-                <Download className="mr-2 h-4 w-4" />
-                Download File
-              </Button>
-            </div>
-          )}
+          {renderPreview()}
         </div>
       </DialogContent>
     </Dialog>
-  )
-} 
+  );
+}

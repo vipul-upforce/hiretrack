@@ -1,119 +1,79 @@
-import { NextRequest, NextResponse } from "next/server";
-import { User } from "@/lib/mongodb";
-import dbConnect from "@/lib/mongodb";
-import { signToken } from "@/app/actions/auth";
-// import { signToken } from "@/app/actions/auth";
-// import { returnTokenBasedResponse } from "../../login/route";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+} from '@/lib/mongodb';
+import { loginRateLimiter } from '@/lib/rateLimiter';
+import { returnTokenBasedResponse } from '@/lib/refreshToken';
+import { logger } from '@/lib/logger/logger.server';
 
-export async function POST(req: NextRequest) {
+async function handleVerifyOtp(req: NextRequest) {
   try {
-    await dbConnect();
-    const { email, otp } = await req.json();
+    await connectToDatabase();
 
+    const { email, otp, isCandidate = false } = await req.json();
     if (!email || !otp) {
       return NextResponse.json(
-        { message: "Email and OTP are required" },
-        { status: 400 }
+        { message: 'Email and OTP are required' },
+        { status: 400 },
       );
     }
-
-    const userData = await User?.aggregate([
-      {
-        $match: {
+    const user = isCandidate
+      ? await CandidateAccount?.findOne({
           email,
           otp: Number(otp),
           otpExpires: { $gt: new Date() },
-        },
-      },
-      {
-        $lookup: {
-          from: "organizations",
-          localField: "organizationId",
-          foreignField: "_id",
-          as: "organizationInfo",
-        },
-      },
-      {
-        $unwind: {
-          path: "$organizationInfo",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $lookup: {
-          from: "settings",
-          localField: "organizationId",
-          foreignField: "organizationId",
-          as: "settings",
-        },
-      },
-      {
-        $unwind: {
-          path: "$settings",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          id: { $toString: "$_id" },
-          name: 1,
-          email: 1,
-          role: 1,
-          organizationId: { $toString: "$organizationId" },
-          organizationInfo: {
-            _id: { $toString: "$organizationInfo._id" },
-            name: "$organizationInfo.name",
-            adminId: "$organizationInfo.adminId",
-            lanes: "$organizationInfo.lanes",
-            openJobCards: "$organizationInfo.openJobCards",
-            appliedApplications: "$organizationInfo.appliedApplications",
-            tags: "$organizationInfo.tags",
-          },
-          fileStorage: "$settings.fileStorage.storageType",
-          _id: 0,
-        },
-      },
-    ]);
-
-    if (userData) {
-      // Remove OTP and otpExpires
-      await User?.updateOne(
-        { email, otp },
-        { $unset: { otp: 1, otpExpires: 1 } }
-      );
-
-      const response = await returnTokenBasedResponse(userData);
-      return response;
-    } else {
+        })
+          .select('name email role organizationId tokenVersion')
+          .lean()
+      : await User?.findOne({
+          email,
+          otp: Number(otp),
+          otpExpires: { $gt: new Date() },
+          isDeleted: { $ne: true },
+        })
+          .select('name email role organizationId tokenVersion')
+          .lean();
+    if (!user) {
       return NextResponse.json(
-        { message: "Invalid or expired OTP" },
-        { status: 400 }
+        { message: 'Invalid or expired OTP' },
+        { status: 400 },
       );
     }
+
+    // Clear OTP immediately (atomic safety)
+    const [_, fileStorageResult] = await Promise.all([
+     isCandidate ? CandidateAccount!.updateOne({ _id: user._id }, { $unset: { otp: 1, otpExpires: 1 } }) : User!.updateOne({ _id: user._id }, { $unset: { otp: 1, otpExpires: 1 } }), 
+      Settings!.findOne({ organizationId: user.organizationId }, { _id: 0 }).select('fileStorage').lean(),
+    ]);
+    const fileStorage = fileStorageResult?.fileStorage?.storageType as string;
+
+    const userWithTokenVersion = user as typeof user & {
+      tokenVersion?: number;
+    };
+    const response = await returnTokenBasedResponse({
+      id: userWithTokenVersion._id.toString(),
+      name: userWithTokenVersion.name,
+      email: userWithTokenVersion.email,
+      role: userWithTokenVersion.role,
+      organizationId: userWithTokenVersion.organizationId.toString(),
+      tokenVersion: userWithTokenVersion.tokenVersion,
+      fileStorage,
+    });
+
+    return response;
   } catch (error) {
-    console.error("Error verifying OTP:", error);
+    logger.error({ error }, 'Error verifying OTP');
     return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
+      { message: 'Internal server error' },
+      { status: 500 },
     );
   }
 }
 
-const returnTokenBasedResponse = async (obj: any) => {
-  const token = await signToken(obj[0]);
-
-  const response = NextResponse.json({
-    message: "Logged In Successfully",
-    user: token,
-  });
-
-  response.cookies.set("token", token, {
-    httpOnly: false,
-    sameSite: "strict",
-    // expires: new Date(Date.now() + 2 * 60 * 1000),
-    expires: 30,
-    // maxAge: 30 * 24 * 60 * 60,
-  });
-
-  return response;
-};
+// Export with rate limiting
+export async function POST(req: Request) {
+  // SECURITY FIX: Apply rate limiting to prevent OTP brute force attacks
+  return loginRateLimiter(req as NextRequest, handleVerifyOtp);
+}

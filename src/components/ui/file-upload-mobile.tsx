@@ -1,23 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef } from "react";
-import { File as FileIcon, Pencil, X, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { RenameFileDialog } from "./rename-file-dialog";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import React, { useState, useRef } from 'react';
+import { File as FileIcon, Pencil, X, Plus, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { RenameFileDialog } from './rename-file-dialog';
 
 interface MobileFileUploadProps {
   onFileSelect: (files: File[]) => void;
-  onExistingFilesChange?: (
-    files: Array<{
-      id: string;
-      name: string;
-      url: string;
-      type: string;
-      size: number;
-    }>
-  ) => void;
   isEdit?: boolean;
   accept: Record<string, string[]>;
   maxFiles?: number;
@@ -33,6 +22,8 @@ interface MobileFileUploadProps {
   id?: string;
   buttonText?: string;
   showFileLimit?: boolean;
+  maxFileSizeLabel?: string;
+  errorMessage?: string;
 }
 
 interface RenameFileState {
@@ -47,21 +38,14 @@ interface RenameFileState {
   };
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return '0 Bytes';
 
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 };
 
 export function MobileFileUpload({
@@ -70,31 +54,20 @@ export function MobileFileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
-  id = "",
+  id = '',
   setter,
   isEdit = true,
-  buttonText = "Add Files",
+  buttonText = 'Add Files',
   showFileLimit = true,
+  maxFileSizeLabel = '3MB',
+  errorMessage,
 }: MobileFileUploadProps) {
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
   });
-  const [user, setUser] = useState<User | null>(null);
-  const [droppedFiles, setDroppedFiles] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setUser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -103,39 +76,31 @@ export function MobileFileUpload({
           type: renameFile.file.type,
         });
         const updatedFiles = files.map((f) =>
-          f === renameFile.file ? newFile : f
+          f === renameFile.file ? newFile : f,
         );
         setter?.(updatedFiles);
       } else {
-        // Assuming renameFile.file is an object with a url property
         const updatedFiles = files.map((f) =>
-          f === renameFile.file ? { ...f, name: newName } : f
+          f === renameFile.file ? { ...f, name: newName } : f,
         );
         setter?.(updatedFiles);
       }
-      setDroppedFiles((prev) => {
-        const combined = [...prev, newName];
-        return Array.from(new Set(combined));
-      });
     }
   };
 
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
-      (file) => file?.name !== fileNameToRemove
+      (file) => file?.name !== fileNameToRemove,
     );
     setter(updatedFiles);
-    setDroppedFiles((prev) => prev.filter(name => name !== fileNameToRemove));
   };
 
-  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const selectedFiles = Array.from(event.target.files || []);
     if (selectedFiles.length > 0) {
       onFileSelect(selectedFiles);
-      setDroppedFiles((prev) => {
-        const combined = [...prev, ...selectedFiles.map((file) => file?.name)];
-        return Array.from(new Set(combined));
-      });
     }
     // Reset the input value to allow selecting the same file again
     if (fileInputRef.current) {
@@ -172,7 +137,7 @@ export function MobileFileUpload({
         <Button
           type="button"
           variant="outline"
-          className="w-full flex items-center justify-center gap-2 py-3"
+          className="flex w-full items-center justify-center gap-2 py-3"
           onClick={handleButtonClick}
           disabled={!canAddMore}
         >
@@ -180,45 +145,50 @@ export function MobileFileUpload({
           {buttonText}
         </Button>
 
-        {/* File limit and size information */}
+        {/* Dynamic Helper Text */}
         {showFileLimit && (
-          <div className="text-xs text-gray-500 text-center space-y-1">
-            {user && user.role === "candidate" && maxFiles > 1 && (
-              <p>Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})</p>
+          <div className="flex flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+            {maxFiles > 1 && (
+              <p>
+                Maximum {maxFiles} files allowed ({totalFiles}/{maxFiles})
+              </p>
             )}
-            {user && user.role === "candidate" && (
-              <p>File size limit: 3MB per file</p>
-            )}
-            {user && ["hr", "admin", "interviewer"].includes(user.role || "") && (
-              <p>File size limit: 50MB per file</p>
-            )}
+            <p>File size limit: {maxFileSizeLabel} per file</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="flex items-center justify-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>{errorMessage}</span>
           </div>
         )}
       </div>
 
       {/* File List */}
-      <div className="space-y-2 max-h-48 overflow-y-auto">
+      <div className="max-h-48 space-y-2 overflow-y-auto">
         {/* Existing Files */}
         {existingFiles.map((file) => (
           <div
             key={file.id}
-            className="flex items-center justify-between p-3 border rounded-lg bg-gray-50"
+            className="flex items-center justify-between rounded-lg border bg-muted p-3"
           >
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <FileIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+            <div className="flex min-w-0 flex-1 items-center space-x-3">
+              <FileIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">
                   {file?.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(file?.size)}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 ml-2">
+            <div className="ml-2 flex items-center gap-1">
               <button
                 type="button"
-                className="p-2 hover:bg-gray-200 rounded-md transition-colors"
+                className="rounded-md p-2 transition-colors hover:bg-muted-foreground/10"
                 onClick={() =>
                   setRenameFile({
                     file: null,
@@ -227,7 +197,14 @@ export function MobileFileUpload({
                   })
                 }
               >
-                <Pencil className="h-4 w-4 text-gray-500" />
+                <Pencil className="h-4 w-4 text-muted-foreground" />
+              </button>
+              <button
+                type="button"
+                className="rounded-md p-2 transition-colors hover:bg-destructive/20"
+                aria-label="Remove file"
+              >
+                <X className="h-4 w-4 text-destructive" />
               </button>
             </div>
           </div>
@@ -237,24 +214,24 @@ export function MobileFileUpload({
         {files?.map((file) => (
           <div
             key={file?.name}
-            className="flex items-center justify-between p-3 border rounded-lg bg-blue-50"
+            className="bg-primary/10 flex items-center justify-between rounded-lg border p-3"
           >
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <FileIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
+            <div className="flex min-w-0 flex-1 items-center space-x-3">
+              <FileIcon className="h-4 w-4 flex-shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-foreground">
                   {file?.name}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(file?.size)}
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-1 ml-2">
+            <div className="ml-2 flex items-center gap-1">
               {isEdit && (
                 <button
                   type="button"
-                  className="p-2 hover:bg-blue-200 rounded-md transition-colors"
+                  className="hover:bg-primary/20 rounded-md p-2 transition-colors"
                   onClick={() =>
                     setRenameFile({
                       file,
@@ -262,27 +239,25 @@ export function MobileFileUpload({
                     })
                   }
                 >
-                  <Pencil className="h-4 w-4 text-blue-600" />
+                  <Pencil className="h-4 w-4 text-primary" />
                 </button>
               )}
-              {droppedFiles?.includes(file?.name) && (
-                <button
-                  type="button"
-                  className="p-2 hover:bg-red-200 rounded-md transition-colors"
-                  onClick={() => handleRemoveFile(file?.name)}
-                  aria-label="Remove file"
-                >
-                  <X className="h-4 w-4 text-red-500" />
-                </button>
-              )}
+              <button
+                type="button"
+                className="rounded-md p-2 transition-colors hover:bg-destructive/20"
+                onClick={() => handleRemoveFile(file?.name)}
+                aria-label="Remove file"
+              >
+                <X className="h-4 w-4 text-destructive" />
+              </button>
             </div>
           </div>
         ))}
 
         {/* Empty state */}
         {files.length === 0 && existingFiles.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <FileIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+          <div className="py-8 text-center text-muted-foreground">
+            <FileIcon className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
             <p className="text-sm">No files selected</p>
           </div>
         )}
@@ -292,7 +267,7 @@ export function MobileFileUpload({
       <RenameFileDialog
         isOpen={!!renameFile.file || !!renameFile.existingFile}
         onClose={() => setRenameFile({ file: null, isExisting: false })}
-        fileName={renameFile.file?.name || renameFile.existingFile?.name || ""}
+        fileName={renameFile.file?.name || renameFile.existingFile?.name || ''}
         onRename={handleRename}
       />
     </div>

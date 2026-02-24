@@ -1,15 +1,16 @@
-"use client";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { ErrorMessage, Form, Formik } from "formik";
-import * as Yup from "yup";
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { ErrorMessage, Form, Formik } from 'formik';
+import * as Yup from 'yup';
 import {
   useGetGeminiConfigsQuery,
   useUpdateGeminiMutation,
-} from "@/lib/features/settings/settingsApi";
-import React from "react";
+} from '@/lib/features/settings';
+import React from 'react';
 
 export interface PortalLogo {
   id: string;
@@ -39,7 +40,7 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
   };
 
   const validationSchema = Yup.object({
-    gemini_key: Yup.string().max(50, "Max length 50 chars"),
+    gemini_key: Yup.string().max(50, 'Max length 50 chars'),
   });
 
   const handleSubmit = async (values: typeof initialValues) => {
@@ -51,22 +52,22 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
 
         await updateGeminiConfigs(dataToSubmit).unwrap();
         toast({
-          title: "Success",
-          description: "Gemini settings updated successfully",
+          title: 'Success',
+          description: 'Gemini settings updated successfully',
         });
         refetch();
         onClose();
       }
     } catch {
       toast({
-        title: "Error",
-        description: "Failed to update portal settings",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update portal settings',
+        variant: 'destructive',
       });
     }
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
 
   const formFields: Array<{
     label: string;
@@ -75,9 +76,9 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
     type?: string;
   }> = [
     {
-      label: "Gemini Key",
-      name: "gemini_key",
-      placeholder: "Please enter your Gemini Key",
+      label: 'Gemini Key',
+      name: 'gemini_key',
+      placeholder: 'Please enter your Gemini Key',
     },
   ];
 
@@ -92,41 +93,55 @@ export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
         values,
         handleChange,
         handleBlur,
-        handleSubmit,
+        handleSubmit: formikHandleSubmit,
         isSubmitting,
         errors,
         touched,
       }) => (
-        <Form onSubmit={handleSubmit} className="space-y-4">
-          {formFields.map(({ label, name, placeholder }) => (
-            <div key={name} className="space-y-2">
-              <Label htmlFor={name}>{label}</Label>
-              <Input
-                id={name}
-                name={name}
-                value={
-                  typeof values[name] === "string"
-                    ? (values[name] as string)
-                    : ""
-                }
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder={placeholder}
-                className={
-                  errors[name] && touched[name] ? "border-red-500" : ""
-                }
-              />
-              <ErrorMessage
-                name={name}
-                component="div"
-                className="text-red-500 text-sm"
-              />
-            </div>
-          ))}
+        <Form onSubmit={formikHandleSubmit} className="flex h-full flex-col">
+          <div className="space-y-4 px-6 py-4">
+            {formFields.map(({ label, name, placeholder }) => (
+              <div key={name} className="space-y-2">
+                <Label htmlFor={name}>{label}</Label>
+                <Input
+                  id={name}
+                  name={name}
+                  value={
+                    typeof values[name] === 'string'
+                      ? (values[name] as string)
+                      : ''
+                  }
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder={placeholder}
+                  className={
+                    errors[name] && touched[name] ? 'border-red-500' : ''
+                  }
+                />
+                <ErrorMessage
+                  name={name}
+                  component="div"
+                  className="text-sm text-red-500"
+                />
+              </div>
+            ))}
+          </div>
 
-          <div className="w-full flex justify-end">
-            <Button type="submit" disabled={isSubmitting || isUpdating}>
-              {isSubmitting || isUpdating ? "Saving..." : "Save Settings"}
+          <div className="mt-auto flex justify-end gap-2 border-t border-border/10 px-6 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting || isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={isSubmitting || isUpdating}
+            >
+              {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </Form>

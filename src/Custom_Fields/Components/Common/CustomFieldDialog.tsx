@@ -1,12 +1,11 @@
-// import { useState } from "react";
 import {
   Dialog,
   DialogHeader,
   DialogTitle,
   DialogContent,
-} from "@/components/ui/dialog";
-import { CustomFieldDialogProps } from "../../Types";
-import React from "react";
+} from '@/components/ui/dialog';
+import React from 'react';
+import { CustomFieldDialogProps } from '../../Types';
 
 function CustomFieldDialog({
   isOpen,
@@ -17,21 +16,20 @@ function CustomFieldDialog({
   modal = true,
 }: CustomFieldDialogProps) {
   return (
-    <div>
-      <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
-        <DialogContent
-          className={`${
-            !regular ? "sm:max-w-[80vw] xl:max-w-[50vw] h-[90vh]" : ""
-          } p-6 flex flex-col overflow-y-auto`}
-          aria-describedby="custom-field-dialog-description"
-        >
-          <DialogHeader className="pb-4 border-b">
-            <DialogTitle className="text-xl font-bold">{title}</DialogTitle>
-          </DialogHeader>
-          {children}
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Dialog open={isOpen} onOpenChange={onClose} modal={modal}>
+      <DialogContent
+        size={!regular ? '2xl' : 'lg'}
+        className="flex flex-col overflow-hidden p-0"
+        aria-describedby="custom-field-dialog-description"
+      >
+        <DialogHeader className="px-6 py-4">
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-4 pb-4">
+          <div className="">{children}</div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

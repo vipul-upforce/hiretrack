@@ -1,20 +1,21 @@
-"use client";
+'use client';
 
-import { Formik, Form, FormikErrors } from "formik";
-import { jobSchema } from "../schemas/job-schema";
-import { JobForm } from "./job-form";
-import { Button } from "@/components/ui/button";
-import { useUpdateJobMutation } from "@/lib/features/job/jobApi";
-import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
+import { Formik, Form } from 'formik';
+import { Button } from '@/components/ui/button';
+import { useUpdateJobMutation } from '@/lib/features/job/jobApi';
+import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 import useCustomForm, {
   CustomFieldValues,
-} from "@/Custom_Fields/hooks/useCustomForm";
-import CustomFields from "@/Custom_Fields/Components/CustomFields";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AddSpecificCustomFieldButton } from "@/Custom_Fields/Components/AddSpecificCustomFieldButton";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { useContext, useEffect } from "react";
+} from '@/Custom_Fields/hooks/useCustomForm';
+import CustomFields from '@/Custom_Fields/Components/CustomFields';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AddSpecificCustomFieldButton } from '@/Custom_Fields/Components/AddSpecificCustomFieldButton';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { useContext, useEffect } from 'react';
+import { scrollToError } from '@/lib/formUtils';
+import { JobForm } from './job-form';
+import { jobSchema } from '../schemas/job-schema';
 
 interface Job {
   _id: string;
@@ -32,21 +33,21 @@ interface Job {
     inText: string;
     isPrivate: boolean;
   };
-  status: "open" | "closed" | "draft";
+  status: 'open' | 'closed' | 'draft';
   candidateCount?: number;
   attachments: {
     files: Array<{
       id: string;
       name: string;
       url: string; // Base64 string
-      type: "pdf";
+      type: 'pdf';
       size: number;
     }>;
     images: Array<{
       id: string;
       name: string;
       url: string; // Base64 string
-      type: "image";
+      type: 'image';
       size: number;
     }>;
   };
@@ -57,6 +58,12 @@ interface Job {
     updatedAt: Date;
   };
   customFields: CustomFieldValues;
+  evaluationWeights?: {
+    skills: number;
+    experience: number;
+    affordability: number;
+    overall: number;
+  };
 }
 
 interface EditJobFormProps {
@@ -65,19 +72,19 @@ interface EditJobFormProps {
   onCancel: () => void;
 }
 
-interface JobFormValues extends Omit<Job, "attachments"> {
+interface JobFormValues extends Omit<Job, 'attachments'> {
   files: {
     id: string;
     name: string;
     url: string;
-    type: "pdf";
+    type: 'pdf';
     size: number;
   }[];
   images: {
     id: string;
     name: string;
     url: string;
-    type: "image";
+    type: 'image';
     size: number;
   }[];
   removedFiles: string[];
@@ -91,7 +98,7 @@ type FileOrAttachment =
       id: string;
       name: string;
       url: string;
-      type: "pdf" | "image";
+      type: 'pdf' | 'image';
       size: number;
     };
 
@@ -107,49 +114,11 @@ const convertFileToBase64 = (file: FileOrAttachment): Promise<string> => {
   return Promise.resolve(file.url);
 };
 
-export const scrollToError = (errors: FormikErrors<any>) => {
-  if (!errors || Object.keys(errors).length === 0) return;
-
-  const firstErrorKey = Object.keys(errors)[0];
-  if (!firstErrorKey) return;
-
-  let element: HTMLElement | null = null;
-  console.log(errors);
-  if (firstErrorKey === "customFields" && errors.customFields) {
-    // Handle nested customFields errors
-    const customFieldErrors = errors.customFields as Record<string, string>;
-    const cfKey = Object.keys(customFieldErrors)[0];
-    if (cfKey) {
-      // Use name attribute for Formik fields
-      element = document.querySelector(
-        `[name="customFields.${cfKey}"]`
-      ) as HTMLElement;
-    }
-  } else {
-    // Use name attribute for top-level fields
-    element = document.querySelector(
-      `[name="${firstErrorKey}"]`
-    ) as HTMLElement;
-    if (firstErrorKey === "skills") {
-      element = document.querySelector(
-        `[id="${firstErrorKey}"]`
-      ) as HTMLElement;
-    }
-  }
-
-  if (element) {
-    console.log(element);
-    element.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    element.focus({ preventScroll: true });
-  } else {
-    console.warn(`No element found for error key: ${firstErrorKey}`);
-  }
-};
 export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
-  const formName = "Job Position";
+  const formName = 'Job Position';
   const { validationSchema, getDefaultValues } = useCustomForm(
     formName,
-    job._id
+    job._id,
   );
   const [updateJob] = useUpdateJobMutation();
   const { toast } = useToast();
@@ -161,11 +130,17 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
     removedFiles: [],
     removedImages: [],
     customFields: { ...getDefaultValues(job.customFields || {}) },
+    evaluationWeights: job.evaluationWeights || {
+      skills: 25,
+      experience: 25,
+      affordability: 25,
+      overall: 25,
+    },
   };
 
   const {
-    handleAddCustomField,
-    selectedFormId,
+    // handleAddCustomField,
+    // selectedFormId,
     customFields,
     setSelectedFormId,
   } = useContext(CustomFieldsContext);
@@ -173,16 +148,16 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
   useEffect(() => {
     if (customFields) {
       const jobForm = Object.entries(customFields).find(
-        ([, form]) => form.formName === formName
+        ([, form]) => form.formName === formName,
       );
 
       if (jobForm) {
         const [formId, form] = jobForm;
         const formFields = form.fields.filter(
-          (field) => field.jobId && field.jobId === job._id
+          (field) => field.jobId && field.jobId === job._id,
         );
         setSelectedFormId({
-          formId: formId,
+          formId,
           formName: form.formName,
           fields: formFields,
         });
@@ -200,10 +175,10 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
 
     if (hasDuplicates) {
       toast({
-        title: "Alert",
+        title: 'Alert',
         description:
-          "Duplicate file names found! Please rename before submitting.",
-        variant: "destructive",
+          'Duplicate file names found! Please rename before submitting.',
+        variant: 'destructive',
       });
       return;
     }
@@ -219,10 +194,10 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 id: uuidv4(),
                 name: file.name,
                 url: base64,
-                type: "pdf" as const,
+                type: 'pdf' as const,
                 size: file.size,
               };
-            })
+            }),
           )) || []),
         ],
         images: [
@@ -233,10 +208,10 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 id: uuidv4(),
                 name: image.name,
                 url: base64,
-                type: "image" as const,
+                type: 'image' as const,
                 size: image.size,
               };
-            })
+            }),
           )) || []),
         ],
       },
@@ -250,27 +225,27 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       await updateJob({ ...updatedJob, _id: job._id }).unwrap();
       onSave(updatedJob);
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
+      if (typeof error === 'object' && error !== null && 'data' in error) {
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === "object" &&
+          typeof errorData === 'object' &&
           errorData !== null &&
-          "error" in errorData
+          'error' in errorData
         ) {
           toast({
-            title: "Error",
-            description: errorData.error || "Failed to update job",
-            variant: "destructive",
+            title: 'Error',
+            description: errorData.error || 'Failed to update job',
+            variant: 'destructive',
           });
           return;
         }
       }
 
       toast({
-        title: "Error",
-        description: "Failed to update job due to an unexpected error.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update job due to an unexpected error.',
+        variant: 'destructive',
       });
     }
   };
@@ -280,49 +255,37 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
       initialValues={initialValues}
       validationSchema={jobSchema(validationSchema)}
       onSubmit={onSubmit}
+      enableReinitialize
     >
       {({ isSubmitting, setFieldValue, values, errors }) => (
-        <Form className="flex flex-col h-[calc(90vh-80px)] overflow-hidden border-t pt-4 mb-[70px] sticky top-0">
-          <div className="flex-1 overflow-y-auto px-6 py-4 pt-0 space-y-4">
-            <JobForm
-              job={job}
-              onRemoveExistingFile={(fileId) => {
-                setFieldValue("removedFiles", [
-                  ...(values.removedFiles ?? []),
-                  fileId,
-                ]);
-              }}
-              onRemoveExistingImage={(imageId) => {
-                setFieldValue("removedImages", [
-                  ...(values.removedImages || []),
-                  imageId,
-                ]);
-              }}
-            />
+        <Form className="sticky top-0 mb-[70px] flex flex-col overflow-y-hidden border-t pt-4">
+          <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4 pt-0">
+            <JobForm />
 
-            <CustomFields formName={formName} />
+            <CustomFields formName={formName} jobId={job._id} />
           </div>
 
-          <div className="flex justify-between space-x-2 border-t bg-background px-6 py-4 fixed bottom-0 w-full">
+          <div className="fixed bottom-0 flex w-full justify-between space-x-2 border-t bg-background px-6 py-4">
             <div>
               <AddSpecificCustomFieldButton
                 jobId={job._id}
-                onSave={(newField) => {
-                  handleAddCustomField(newField, selectedFormId?.formId || "");
-                }}
+                jobTitle={job.title}
+                // onSave={(newField) => {
+                //   handleAddCustomField(newField, selectedFormId?.formId || '');
+                // }}
               />
             </div>
             <div className="flex flex-row gap-4">
-              <div className="items-top flex space-x-2 items-center">
+              <div className="items-top flex items-center space-x-2">
                 <Checkbox
                   id="publish"
                   name="publish"
                   checked={values?.isPublished}
                   onCheckedChange={(checked) =>
-                    setFieldValue("isPublished", checked)
+                    setFieldValue('isPublished', checked)
                   }
                 />
-                <div className="grid gap-1.5 leading-none ">
+                <div className="grid gap-1.5 leading-none">
                   <label
                     htmlFor="publish"
                     className="text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -342,8 +305,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
                 type="submit"
                 onClick={() => scrollToError(errors)}
                 disabled={isSubmitting}
+                variant="primary"
               >
-                {isSubmitting ? "Saving..." : "Save"}
+                {isSubmitting ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </div>

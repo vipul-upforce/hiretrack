@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./dialog";
-import { Button } from "./button";
-import Image from "next/image";
+import * as React from 'react';
+import Image from 'next/image';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog';
+import { Button } from './button';
 
 interface Image {
   id: string;
@@ -25,25 +25,36 @@ export function ImageGallery({ images, maxPreview = 3 }: ImageGalleryProps) {
 
   return (
     <>
-      <div className="flex gap-2 mt-2">
-        {previewImages.map((image) =>  image.url === "" ? null : (
-          <div
-            key={image.id}
-            className="relative w-20 h-20 rounded-md overflow-hidden cursor-pointer"
-            onClick={() => setSelectedImage(image)}
-          >
-            <img
-              src={image.url || ""}
-              alt={image.name}
-              // fill
-              className="object-cover"
-            />
-          </div>
-        ))}
+      <div className="mt-2 flex gap-2">
+        {previewImages.map((image) =>
+          image.url === '' ? null : (
+            <div
+              key={image.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`View ${image.name}`}
+              className="relative h-20 w-20 cursor-pointer overflow-hidden rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              onClick={() => setSelectedImage(image)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedImage(image);
+                }
+              }}
+            >
+              <Image
+                src={image.url || ''}
+                alt={image.name}
+                fill
+                className="object-cover"
+              />
+            </div>
+          ),
+        )}
         {hasMore && (
           <Button
             variant="outline"
-            className="w-20 h-20"
+            className="h-20 w-20"
             onClick={() => setShowAll(true)}
           >
             +{images.length - maxPreview} more
@@ -58,12 +69,12 @@ export function ImageGallery({ images, maxPreview = 3 }: ImageGalleryProps) {
       >
         <DialogContent className="w-full max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="break-words sr-only">
+            <DialogTitle className="sr-only break-words">
               Image Preview
             </DialogTitle>
           </DialogHeader>
           {selectedImage && (
-            <div className="relative w-full aspect-[4/3]">
+            <div className="relative aspect-[4/3] w-full">
               <Image
                 src={selectedImage.url}
                 alt={selectedImage.name}
@@ -79,28 +90,39 @@ export function ImageGallery({ images, maxPreview = 3 }: ImageGalleryProps) {
       <Dialog open={showAll} onOpenChange={setShowAll}>
         <DialogContent className="w-full max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="break-words sr-only">
+            <DialogTitle className="sr-only break-words">
               Image Gallery
             </DialogTitle>
-          </DialogHeader> 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto max-h-[80vh]">
-            {images.map((image) =>  
-              image.url === "" ? null : (
+          </DialogHeader>
+          <div className="grid max-h-[80vh] grid-cols-2 gap-4 overflow-y-auto md:grid-cols-3">
+            {images.map((image) =>
+              image.url === '' ? null : (
                 <div
                   key={image.id}
-                  className="relative aspect-square rounded-md overflow-hidden cursor-pointer" 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${image.name}`}
+                  className="relative aspect-square cursor-pointer overflow-hidden rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                   onClick={() => {
                     setShowAll(false);
                     setSelectedImage(image);
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowAll(false);
+                      setSelectedImage(image);
+                    }
+                  }}
                 >
-                  <img
+                  <Image
                     src={image.url}
                     alt={image.name}
-                    className="object-cover w-full h-full object-contain"
+                    fill
+                    className="object-cover"
                   />
                 </div>
-              )
+              ),
             )}
           </div>
         </DialogContent>

@@ -1,28 +1,29 @@
-"use client";
-// import { useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import FormControl from "@mui/material/FormControl";
-import { Checkbox, FormGroup } from "@mui/material";
-import dayjs, { Dayjs } from "dayjs";
-import { FileDropZone } from "@/components/ui/file-drop-zone";
-import { ChipInput } from "@/components/ui/chip-input";
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import dayjs, { Dayjs } from 'dayjs';
+import { FileDropZone } from '@/components/ui/file-drop-zone';
+import { ChipInput } from '@/components/ui/chip-input';
 import {
   SelectValue,
   Select,
   SelectTrigger,
   SelectItem,
   SelectContent,
-} from "@/components/ui/select";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import PasswordField from "@/components/ui/PasswordField";
-import TimePicker from "@/components/ui/time-picker";
-import DatePicker from "@/components/ui/datepicker";
-import { Button } from "@/components/ui/button";
-import { wierdFileNamePattern } from "@/lib/constants";
+} from '@/components/ui/select';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import PasswordField from '@/components/ui/PasswordField';
+import TimePicker from '@/components/ui/time-picker';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Button } from '@/components/ui/button';
+import { wierdFileNamePattern } from '@/lib/constants';
+import { toast } from 'sonner';
+import React, { useEffect } from 'react';
+import { getValidatedValue } from '@/Custom_Fields/utils/fieldValueValidator';
 
 interface FileData {
   base64: string;
@@ -31,15 +32,34 @@ interface FileData {
   size: number;
 }
 
+interface FieldProps {
+  name: string;
+  value: unknown;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => void;
+  onBlur: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  error?: string;
+}
+
+interface FieldMeta {
+  touched: boolean;
+  error?: string;
+  initialTouched: boolean;
+  initialError?: string;
+  initialValue?: unknown;
+  value: unknown;
+}
+
 interface RenderFieldProps {
   getFieldProps: (fieldName: string) => {
     name: string;
     value: string;
     onChange: (
-      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => void;
     onBlur: (
-      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+      e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
     ) => void;
     error?: string;
   };
@@ -47,7 +67,7 @@ interface RenderFieldProps {
   label: string;
   setFieldValue: (
     field: string,
-    value: string | string[] | boolean | FileData[] | Dayjs
+    value: string | string[] | boolean | FileData[] | Dayjs,
   ) => void;
   type: string;
   values: {
@@ -59,28 +79,27 @@ interface RenderFieldProps {
   options: string[] | undefined;
   setFieldError: (field: string, error: string) => void;
   fieldHook?: {
-    fieldProps: any;
-    fieldMeta: any;
+    fieldProps: FieldProps;
+    fieldMeta: FieldMeta;
   };
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
-};
 
-const sanitizeFiles = (files: any[]): any[] => {
-  return files.map((file) => {
-    // debugger;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sanitizeFiles = (files: any[]): any[] =>
+  files.map((file) => {
     // Handle standard File objects
     if (file instanceof File) {
       const sanitizedBaseName = file.name
-        .replace(wierdFileNamePattern, "")
-        .replace("/ /", "_");
+        .replace(wierdFileNamePattern, '')
+        .replace('/ /', '_');
       return new File([file], sanitizedBaseName, {
         type: file.type,
         lastModified: file.lastModified,
@@ -88,10 +107,10 @@ const sanitizeFiles = (files: any[]): any[] => {
     }
 
     // Handle custom file objects with URL - while renaming
-    if (file && typeof file === "object" && "name" in file) {
+    if (file && typeof file === 'object' && 'name' in file) {
       const sanitizedBaseName = file.name
-        .replace(wierdFileNamePattern, "")
-        .replace("/ /", "_");
+        ?.replace(wierdFileNamePattern, '')
+        ?.replace('/ /', '_');
       return {
         ...file,
         name: sanitizedBaseName,
@@ -101,9 +120,8 @@ const sanitizeFiles = (files: any[]): any[] => {
     // Fallback: return unchanged if neither type matches
     return file;
   });
-};
 
-export const RenderField = ({
+export function RenderField({
   label,
   type,
   values,
@@ -112,97 +130,103 @@ export const RenderField = ({
   options,
   setFieldError,
   fieldHook,
-  isEditMode = false,
-}: RenderFieldProps) => {
-  // useEffect(() => {
-  //   if (isEditMode) {
-  //     setFieldTouched("customFields." + label, true);
-  //   }
-  // }, []);
+}: RenderFieldProps) {
+  // Get and validate the value for this field type
+  const rawValue = values.customFields[label];
+  const validatedValue = getValidatedValue(rawValue, type);
 
-  // console.log("🙇🙇🙇 ", values.customFields[label], fieldHook);
+  // If value was invalid and got reset, update the form value
+  useEffect(() => {
+    if (rawValue !== validatedValue && validatedValue === '') {
+      setFieldValue(`customFields.${label}`, validatedValue);
+    }
+  }, [rawValue, validatedValue, label, setFieldValue]);
 
   const commonProps = {
     id: `customFields.${label}`,
-    "data-field-name": label,
-    autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
+    'data-field-name': label,
+    // autoFocus: fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
     className:
-      fieldHook?.fieldMeta.touched &&
-      fieldHook?.fieldMeta.error &&
-      "border-2 border-red-500",
+      fieldHook?.fieldMeta.touched && fieldHook?.fieldMeta.error
+        ? 'border-2 border-red-500'
+        : undefined,
+
+    autoFocus: Boolean(
+      fieldHook?.fieldMeta.error && fieldHook?.fieldMeta.touched,
+    ),
   };
 
   switch (type) {
-    case "text":
+    case 'text':
       return (
         <Input
           {...commonProps}
-          name={"customFields." + label}
-          value={values.customFields[label] as string}
+          name={`customFields.${label}`}
+          value={String(validatedValue)}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setFieldValue("customFields." + label, e.target.value);
+            setFieldValue(`customFields.${label}`, e.target.value);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label.split(" |||||(")[0]}`}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+          placeholder={`Enter ${label.split(' |||||(')[0]}`}
         />
       );
 
-    case "password":
+    case 'password':
       return (
         <div>
           <PasswordField
             {...commonProps}
-            name={"customFields." + label}
-            value={values.customFields[label] as string}
+            name={`customFields.${label}`}
+            value={String(validatedValue)}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              setFieldValue("customFields." + label, e.target.value);
+              setFieldValue(`customFields.${label}`, e.target.value);
             }}
             onBlur={() => {
-              setFieldTouched("customFields." + label, true);
+              setFieldTouched(`customFields.${label}`, true);
             }}
           />
         </div>
       );
 
-    case "number":
+    case 'number':
       return (
         <Input
           {...commonProps}
           type="number"
-          name={"customFields." + label}
-          value={values.customFields[label] as string}
+          name={`customFields.${label}`}
+          value={String(validatedValue)}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            setFieldValue("customFields." + label, e.target.value);
+            setFieldValue(`customFields.${label}`, e.target.value);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label.split(" |||||(")[0]} in numbers`}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+          placeholder={`Enter ${label.split(' |||||(')[0]} in numbers`}
         />
       );
 
-    case "textarea":
+    case 'textarea':
       return (
         <Textarea
           {...commonProps}
-          name={"customFields." + label}
-          value={values.customFields[label] as string}
+          name={`customFields.${label}`}
+          value={String(validatedValue)}
           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-            setFieldValue("customFields." + label, e.target.value);
+            setFieldValue(`customFields.${label}`, e.target.value);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-          placeholder={`Enter ${label.split(" |||||(")[0]}`}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+          placeholder={`Enter ${label.split(' |||||(')[0]}`}
         />
       );
 
-    case "select":
+    case 'select':
       return (
         <Select
-          value={values.customFields[label] as string}
+          value={String(validatedValue)}
           onValueChange={(value: string) =>
-            setFieldValue("customFields." + label, value)
+            setFieldValue(`customFields.${label}`, value)
           }
         >
           <SelectTrigger {...commonProps}>
-            <SelectValue placeholder={`Select ${label.split(" |||||(")[0]}`} />
+            <SelectValue placeholder={`Select ${label.split(' |||||(')[0]}`} />
           </SelectTrigger>
           <SelectContent>
             {options?.map((option) => (
@@ -211,17 +235,17 @@ export const RenderField = ({
               </SelectItem>
             ))}
           </SelectContent>
-          {fieldHook?.fieldProps.required && (
+          {fieldHook?.fieldMeta.value !== '' && (
             <Button
               style={{
-                marginLeft: "-10px",
-                color: "rgb(121, 121, 121)",
-                display: "contents",
+                marginLeft: '-10px',
+                color: 'rgb(121, 121, 121)',
+                display: 'contents',
               }}
               variant="link"
               onClick={(e) => {
                 e.preventDefault();
-                setFieldValue("customFields." + label, "");
+                setFieldValue(`customFields.${label}`, '');
               }}
             >
               Clear
@@ -230,248 +254,279 @@ export const RenderField = ({
         </Select>
       );
 
-    case "checkbox":
+    case 'checkbox': {
+      const checkboxValue = (validatedValue as string[]) || [];
       return (
-        <FormControl component="fieldset">
-          <FormGroup
-            style={{ display: "flex", flexDirection: "row", gap: "10px" }}
-          >
-            {options?.map((option) => (
-              <FormControlLabel
-                key={option}
-                control={
-                  <Checkbox
-                    {...commonProps}
-                    checked={(values.customFields[label] as string[])?.includes(
-                      option
-                    )}
-                    className="capitalize"
-                    onBlur={() => {
-                      if (values.customFields[label] === undefined) {
-                        setFieldError("customFields." + label, "");
-                      }
-                      setFieldTouched("customFields." + label, true);
-                    }}
-                    onChange={(e) => {
-                      if (values.customFields[label] === undefined) {
-                        setFieldValue("customFields." + label, [option]);
-                        setFieldError("customFields." + label, "");
-                      } else {
-                        const currentValues = values.customFields[
-                          label
-                        ] as string[];
-                        const newValues = currentValues.includes(option)
-                          ? currentValues.filter((value) => value !== option)
-                          : [...currentValues, option];
+        <div className="flex flex-col gap-2">
+          {options?.map((option) => (
+            <div key={option} className="flex items-center space-x-2">
+              <Checkbox
+                id={`${label}-${option}`}
+                className="capitalize"
+                checked={checkboxValue.includes(option)}
+                onCheckedChange={(checked) => {
+                  if (checkboxValue.length === 0) {
+                    setFieldValue(`customFields.${label}`, [option]);
+                    setFieldError(`customFields.${label}`, '');
+                  } else {
+                    const newValues = checked
+                      ? [...checkboxValue, option]
+                      : checkboxValue.filter((value) => value !== option);
 
-                        setFieldValue("customFields." + label, newValues);
-                        if (newValues.length > 0 || !e.target.checked) {
-                          setFieldError("customFields." + label, "");
-                        }
-                      }
-                      setFieldTouched("customFields." + label, true);
-                    }}
-                    name={option}
-                  />
-                }
-                label={option}
+                    setFieldValue(`customFields.${label}`, newValues);
+                    if (newValues.length > 0) {
+                      setFieldError(`customFields.${label}`, '');
+                    }
+                  }
+                  setFieldTouched(`customFields.${label}`, true);
+                }}
+                onBlur={() => {
+                  if (checkboxValue.length === 0) {
+                    setFieldError(`customFields.${label}`, '');
+                  }
+                  setFieldTouched(`customFields.${label}`, true);
+                }}
               />
-            ))}
-          </FormGroup>
-        </FormControl>
+              <Label
+                htmlFor={`${label}-${option}`}
+                className="font-medium capitalize"
+              >
+                {option}
+              </Label>
+            </div>
+          ))}
+        </div>
       );
+    }
 
-    case "date":
+    // case "date":
+    //   return (
+    //     <DatePicker
+    //       value={new Date(values.customFields[label] as string)}
+    //       onChange={(e) =>
+    //         setFieldValue(
+    //           "customFields." + label,
+    //           e && e instanceof Date ? e.toISOString() : ""
+    //         )
+    //       }
+    //       onClose={() => setFieldTouched("customFields." + label, true)}
+    //     />
+    //   );
+
+    case 'date': {
+      const dateString = validatedValue as string;
+      const NewValue = dateString ? dayjs(dateString) : null;
+      const dateValue =
+        NewValue && NewValue.isValid() ? NewValue.toDate() : null;
+
       return (
         <DatePicker
-          {...commonProps}
-          value={new Date(values.customFields[label] as string)}
-          onChange={(e) =>
-            setFieldValue("customFields." + label, e?.toISOString() || "")
-          }
-          onBlur={() => setFieldTouched("customFields." + label, true)}
+          value={dateValue || null}
+          onChange={(e) => {
+            let selectedDate: string | null = null;
+
+            if (e && typeof e === 'object' && 'toDate' in e) {
+              const date = (e as { toDate: () => Date }).toDate();
+              selectedDate =
+                date && !Number.isNaN(date.getTime())
+                  ? dayjs(date).format('MM/DD/YYYY')
+                  : null;
+            } else if (e && e instanceof Date && !Number.isNaN(e.getTime())) {
+              selectedDate = dayjs(e).format('MM/DD/YYYY');
+            }
+
+            setFieldValue(`customFields.${label}`, selectedDate || '');
+          }}
+          onClose={() => setFieldTouched(`customFields.${label}`, true)}
+          format="MM/DD/YYYY"
+          placeholder="MM/DD/YYYY"
+          showTimePicker={false}
+          showNowButton={false}
         />
       );
+    }
+    case 'datetime': {
+      const datetimeString = validatedValue as string;
+      return (
+        <DateTimePicker
+          value={datetimeString ? dayjs(datetimeString) : null}
+          onChange={(e) => {
+            if (e) {
+              const formatted = e.format('MM/DD/YYYY hh:mm A');
+              setFieldValue(`customFields.${label}`, formatted);
+            } else {
+              setFieldValue(`customFields.${label}`, '');
+            }
+          }}
+        />
+      );
+    }
 
-    case "time":
+    case 'time':
       return (
         <TimePicker
           {...commonProps}
-          name={"customFields." + label}
-          value={values.customFields[label] as string}
+          name={`customFields.${label}`}
+          value={validatedValue as string}
           onChange={(e) => {
-            setFieldValue("customFields." + label, e);
+            setFieldValue(`customFields.${label}`, e);
           }}
-          onBlur={() => setFieldTouched("customFields." + label, true)}
+          onBlur={() => setFieldTouched(`customFields.${label}`, true)}
         />
       );
-
-    case "datetime":
+    case 'radio':
       return (
-        <DateTimePicker
-          value={
-            values.customFields[label]
-              ? dayjs(values.customFields[label] as string)
-              : null
-          }
-          onChange={(e) =>
-            setFieldValue("customFields." + label, e?.toISOString() || "")
-          }
-          onBlur={() => setFieldTouched("customFields." + label, true)}
-        />
-      );
-
-    case "radio":
-      return (
-        <FormControl className="flex">
+        <div className="flex items-center gap-4">
           <RadioGroup
-            {...commonProps}
-            value={values.customFields[label] as string}
-            onChange={(e) =>
-              setFieldValue("customFields." + label, e.target.value)
+            value={validatedValue as string}
+            onValueChange={(value) =>
+              setFieldValue(`customFields.${label}`, value)
             }
-            onBlur={() => setFieldTouched("customFields." + label, true)}
-            name={label}
-            className=""
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "10px",
-            }}
+            className="flex flex-col gap-2"
           >
             {options?.map((option) => (
-              <FormControlLabel
-                key={option}
-                className="capitalize"
-                value={option}
-                control={<Radio />}
-                label={option}
-              />
+              <div key={option} className="flex items-center space-x-2">
+                <RadioGroupItem value={option} id={`${label}-${option}`} />
+                <Label
+                  htmlFor={`${label}-${option}`}
+                  className="font-medium capitalize"
+                >
+                  {option}
+                </Label>
+              </div>
             ))}
           </RadioGroup>
           <Button
-            style={{
-              marginLeft: "-10px",
-              color: "rgb(121, 121, 121)",
-              display: "contents",
-            }}
             variant="link"
             onClick={(e) => {
               e.preventDefault();
-              setFieldValue("customFields." + label, "");
+              setFieldValue(`customFields.${label}`, '');
             }}
+            className="text-muted-foreground"
           >
             Clear
           </Button>
-        </FormControl>
+        </div>
       );
 
-    case "file":
+    case 'file': {
+      const fileValue = (validatedValue as FileData[]) || [];
       return (
         <div>
           <FileDropZone
             {...commonProps}
-            value={values.customFields[label] as FileData[]}
+            value={fileValue}
             onFilesChange={async (files: File[] | FileData[]) => {
               const sanitizedFiles = sanitizeFiles(files);
+              if (sanitizedFiles.length > 30) {
+                toast.error('Limit Exceeded', {
+                  description: 'You cannot upload more than 30 files.',
+                });
+                return;
+              }
+
               try {
-                const base64Files = await Promise.all(
-                  sanitizedFiles.map(async (file) => {
-                    let fileurl;
-                    if ((file as FileData).base64) {
-                      fileurl = (file as FileData).base64;
-                    } else {
-                      if ((file as FileData).base64 === "") {
-                        fileurl = "";
-                      } else {
-                        fileurl = await fileToBase64(file as File);
-                      }
-                    }
-                    return {
-                      base64: fileurl,
-                      name: file.name,
-                      type: file.type,
-                      size: file.size,
-                    };
-                  })
-                );
-                const fileNames = base64Files.map((file) => file.name);
+                // Separate new File objects from existing FileData objects (with base64/url)
+                const newFiles: File[] = [];
+                const existingFiles: FileData[] = [];
+
+                sanitizedFiles.forEach((file) => {
+                  // Check if it's a File object (new file - keep as File)
+                  if (file instanceof File) {
+                    newFiles.push(file);
+                  }
+                  // Check if it's an existing file with base64 or url (keep as-is)
+                  else if (
+                    typeof file === 'object' &&
+                    file !== null &&
+                    ('base64' in file || 'url' in file)
+                  ) {
+                    existingFiles.push(file as FileData);
+                  }
+                });
+
+                // Check for duplicate file names across all files
+                const allFileNames = [
+                  ...newFiles.map((f) => f.name),
+                  ...existingFiles.map((f) => f.name),
+                ];
                 const hasDuplicates =
-                  new Set(fileNames).size !== fileNames.length;
+                  new Set(allFileNames).size !== allFileNames.length;
+
                 if (hasDuplicates) {
+                  toast.error('Duplicate Files', {
+                    description: 'Duplicate file names are not allowed.',
+                  });
                   return;
                 }
-                setFieldValue("customFields." + label, base64Files);
+
+                // Store File objects directly for new files (like attachments pattern)
+                // Keep existing files as-is (with base64/url for backward compatibility)
+                const combinedFiles: Array<File | FileData> = [
+                  ...existingFiles,
+                  ...newFiles,
+                ];
+
+                setFieldValue(`customFields.${label}`, combinedFiles);
               } catch {
-                // Handle error
+                toast.error('Upload Error', {
+                  description: 'Failed to process files.',
+                });
               }
             }}
-            // existingFiles={
-            //   Array.isArray(values.customFields[label])
-            //     ? (() => {})() &&
-            //       (values.customFields[label] as FileData[]).map((file) => ({
-            //         name: file.name,
-            //         type: file.type,
-            //         size: file.size,
-            //         preview: file.base64,
-            //       }))
-            //     : []
-            // }
             existingFiles={
-              Array.isArray(values.customFields[label])
+              Array.isArray(fileValue) && fileValue.length > 0
                 ? sanitizeFiles(
-                    (values.customFields[label] as FileData[]).map((file) => ({
-                      // id: file.id || crypto.randomUUID(), // Add unique ID
+                    fileValue.map((file) => ({
                       name: file.name,
                       type: file.type,
                       size: file.size,
-                      url: file.base64 || "", // Map base64 to url
+                      url: file.base64 || '',
                       preview: file.base64,
-                    }))
+                    })),
                   )
                 : []
             }
           />
         </div>
       );
+    }
 
-    case "multiSelect":
+    case 'multiSelect': {
+      const multiSelectValue = (validatedValue as string[]) || [];
       return (
         <div className="space-y-2">
           <ChipInput
             {...commonProps}
-            value={(values.customFields[label] as string[]) || []}
+            value={multiSelectValue}
             onChange={(newOptions) => {
               setFieldValue(
-                "customFields." + label,
+                `customFields.${label}`,
                 newOptions
                   .map((option) => option.trim())
-                  .filter((option) => option.length > 0)
+                  .filter((option) => option.length > 0),
               );
             }}
-            onBlur={() => setFieldTouched("customFields." + label, true)}
-            placeholder={`Enter ${label.split(" |||||(")[0]}`}
+            onBlur={() => setFieldTouched(`customFields.${label}`, true)}
+            placeholder={`Enter ${label.split(' |||||(')[0]}`}
             onSuggestionClick={(suggestion) => {
-              const currentValues =
-                (values.customFields[label] as string[]) || [];
-              if (suggestion.trim() && !currentValues.includes(suggestion)) {
-                setFieldValue("customFields." + label, [
-                  ...currentValues,
+              if (suggestion.trim() && !multiSelectValue.includes(suggestion)) {
+                setFieldValue(`customFields.${label}`, [
+                  ...multiSelectValue,
                   suggestion,
                 ]);
               }
             }}
             suggestions={
-              options?.filter(
-                (option) =>
-                  !(values.customFields[label] as string[])?.includes(option)
-              ) || []
+              options?.filter((option) => !multiSelectValue.includes(option)) ||
+              []
             }
           />
         </div>
       );
+    }
 
     default:
       return null;
   }
-};
+}

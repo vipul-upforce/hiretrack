@@ -1,22 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Settings } from "@/lib/mongodb";
-import { Organization, User } from "@/lib/mongodb";
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import { verifyAndDecryptToken } from "../../../../middleware";
-import path from "path";
-import fs from "fs/promises";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings, Organization, User } from '@/lib/mongodb';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import path from 'path';
+import fs from 'fs/promises';
+import { apiRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
-const ORG_BASE_DIR = path.join(process.cwd(), "organizations");
+const ORG_BASE_DIR = path.join(process.cwd(), 'organizations');
 // Handle POST request
 async function ensureBaseDir() {
   try {
     await fs.mkdir(ORG_BASE_DIR, { recursive: true });
   } catch (error) {
-    console.error(
-      `Failed to create base directory ${ORG_BASE_DIR}: ${error instanceof Error ? error.message : "Unknown error"}`
+    logger.error(
+      { error },
+      `Failed to create base directory ${ORG_BASE_DIR}: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
-    throw new Error("Failed to initialize organization directory");
+    throw new Error('Failed to initialize organization directory');
   }
 }
 
@@ -24,47 +26,63 @@ export async function POST(req: NextRequest) {
   await connectToDatabase();
   let createdOrg = null;
   let admin = null;
-  let organizationId = "";
-  const token = req.cookies.get("token");
-  if (token?.value) {
-    const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
-    const userData = decryptedResponse.user;
-    if (decryptedResponse.success) {
-      organizationId = userData.organizationId || "";
-    }
-  }
   try {
     const { name, adminData } = await req.json();
 
     if (!Organization || !User || !Settings) {
       return NextResponse.json(
-        { error: "Database not connected." },
-        { status: 400 }
+        { error: 'Database not connected.' },
+        { status: 400 },
       );
     }
 
-    if (organizationId !== "") {
-      const settings = await Settings.findOne({
-        organizationId: organizationId,
-      });
-      if (settings?.multipleOrg === false) {
+    // Check if any organization exists
+    const orgCount = await Organization.countDocuments({}).lean().exec();
+    const isFirstOrg = orgCount === 0;
+
+    if (isFirstOrg) {
+      // Allow creating first organization without authentication
+      // userData can be null
+    } else {
+      // Organization(s) already exist - check multipleOrg setting
+      const firstOrg = await Organization.findOne({}, { _id: 1, createdAt: 1 })
+        .sort({ createdAt: 1 })
+        .lean();
+
+      if (!firstOrg) {
         return NextResponse.json(
-          { error: "You cannot create a new organization." },
-          { status: 401 }
+          { error: 'Failed to retrieve organization settings.' },
+          { status: 500 },
         );
       }
-    } else {
-      const totalOrgs = await Organization.find({}).lean();
-      if (totalOrgs.length === 1) {
-        const settings = await Settings.findOne({
-          organizationId: String(totalOrgs[0]._id),
-        });
-        if (!settings?.multipleOrg) {
-          return NextResponse.json(
-            { error: "You cannot create a new organization." },
-            { status: 401 }
-          );
-        }
+
+      const settings = await Settings.findOne(
+        {
+          organizationId: firstOrg._id.toString(),
+        },
+        { multipleOrg: 1 },
+      ).lean();
+
+      if (!settings?.multipleOrg) {
+        return NextResponse.json(
+          {
+            error:
+              'Enable multiple organizations from settings of the first organization.',
+          },
+          { status: 400 },
+        );
+      }
+
+      // Multiple org is enabled - require authentication
+      const userData = await getAuthenticatedUser(req, 'admin');
+      if (!userData) {
+        return NextResponse.json(
+          {
+            error:
+              'Authentication required to create additional organizations.',
+          },
+          { status: 400 },
+        );
       }
     }
     await ensureBaseDir();
@@ -72,11 +90,11 @@ export async function POST(req: NextRequest) {
       // 1. Create organization first
       createdOrg = await Organization.create([
         {
-          name: name,
+          name,
           adminId: new mongoose.Types.ObjectId(), // adminId is required
           customFields: {
-            h3qmln24v: { fields: [], formName: "Job Position" },
-            g2xh8hoe1: { fields: [], formName: "Candidate" },
+            h3qmln24v: { fields: [], formName: 'Job Position' },
+            g2xh8hoe1: { fields: [], formName: 'Candidate' },
           },
         },
       ]);
@@ -84,12 +102,13 @@ export async function POST(req: NextRequest) {
       try {
         await fs.mkdir(orgFolder, { recursive: true });
       } catch (error) {
-        console.error(
-          `Failed to create folder for organization ${name}: ${error instanceof Error ? error.message : "Unknown error"}`
+        logger.error(
+          { error, url: req.url },
+          `Failed to create folder for organization ${name}`,
         );
         // Optionally rollback organization creation
         await Organization.deleteOne({ _id: createdOrg[0]._id });
-        throw new Error("Failed to create organization folder");
+        throw new Error('Failed to create organization folder');
       }
 
       const hashedPassword = await bcrypt.hash(adminData.password, 10);
@@ -101,8 +120,8 @@ export async function POST(req: NextRequest) {
       });
       if (existingUser) {
         return NextResponse.json(
-          { error: "User with this email already exists in the organization." },
-          { status: 400 }
+          { error: 'User with this email already exists in the organization.' },
+          { status: 400 },
         );
       }
 
@@ -112,7 +131,7 @@ export async function POST(req: NextRequest) {
           ...adminData,
           password: hashedPassword,
           organizationId: createdOrg[0]._id,
-          role: "admin",
+          role: 'admin',
         },
       ]);
 
@@ -120,6 +139,9 @@ export async function POST(req: NextRequest) {
         {
           organizationId: createdOrg[0]._id,
           multipleOrg: false,
+          portalConfigs: {
+            portalName: name,
+          },
         },
       ]);
 
@@ -127,16 +149,17 @@ export async function POST(req: NextRequest) {
       await Organization.findByIdAndUpdate(
         createdOrg[0]._id,
         { adminId: admin[0]._id },
-        { new: true }
+        { new: true },
       );
 
       return NextResponse.json(
         {
-          message: "Organization and Admin Created Successfully",
+          message: 'Organization and Admin Created Successfully',
           organization: createdOrg[0],
           admin: admin[0],
+          logout: !!req.cookies.get('org_id')?.value,
         },
-        { status: 201 }
+        { status: 201 },
       );
     } catch (adminError) {
       // Manual rollback: Delete the created organization if admin creation fails
@@ -146,21 +169,22 @@ export async function POST(req: NextRequest) {
         try {
           await fs.rm(orgFolder, { recursive: true, force: true });
         } catch (cleanupError) {
-          console.warn(
-            `Failed to clean up folder ${orgFolder}: ${cleanupError instanceof Error ? cleanupError.message : "Unknown error"}`
+          logger.warn(
+            { cleanupError, url: req.url },
+            `Failed to clean up folder ${orgFolder}:`,
           );
         }
       }
       throw adminError; // Re-throw to be caught by outer catch block
     }
   } catch (error: unknown) {
-    console.log(error);
+    logger.error({ error, url: req.url });
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 400 }
+      { error: 'Unknown error occurred' },
+      { status: 400 },
     );
   }
 }
@@ -173,20 +197,20 @@ export async function PUT(req: Request) {
     const { orgId, lanes } = await req.json();
     if (!Organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 400 }
+        { error: 'Organization not found' },
+        { status: 400 },
       );
     }
     const updatedOrg = await Organization.findByIdAndUpdate(
       orgId,
       { lanes },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedOrg) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
     }
 
@@ -196,69 +220,98 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 400 }
+      { error: 'Unknown error occurred' },
+      { status: 400 },
     );
   }
 }
 
-// Handle unsupported methods
-export function OPTIONS() {
-  return NextResponse.json({ message: "Method Not Allowed" }, { status: 405 });
-}
+const handleChekOrg = async (req: NextRequest) => {
+  try {
+    await connectToDatabase();
 
-//!!! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
-export async function GET(req: NextRequest) {
-  // let organizationId;
-  // const token = req.cookies.get("token");
-  // if (token?.value) {
-  //   const decryptedResponse = await verifyAndDecryptToken(String(token?.value));
-  //   const userData = decryptedResponse.user;
-  //   if (decryptedResponse.success) {
-  //     organizationId = userData.organizationId || "";
-  //   }
-  // }
-  await connectToDatabase();
-  if (!Settings) {
-    throw new Error("Not connected to Database");
-  }
-  // if (organizationId != "") {
-  //   const settings = await Settings.find({
-  //     organizationId: String(organizationId),
-  //   });
-  //   console.log("✅✅✅ ", settings);
-  //   if (settings[0].multipleOrg !== false) {
-  //     return {
-  //       allow: true,
-  //     };
-  //   }
-  //   return {
-  //     allow: false,
-  //   };
-  // } else {
-  const settings = await Settings.find(
-    {},
-    {
-      fileStorage: 0,
-      mailConfig: 0,
-      gemini: 0,
+    if (!Settings) {
+      return NextResponse.json(
+        { error: 'Settings model not found' },
+        { status: 500 },
+      );
     }
-  );
-  // console.log("⛔⛔⛔ ", settings);
-  if (settings.length > 1 || settings.length === 0) {
+
+    // Get pagination parameters from query string
+    const { searchParams } = req.nextUrl;
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '30', 10);
+    const skip = (page - 1) * limit;
+
+    // Validate pagination parameters
+    if (page < 1 || limit < 1 || limit > 100) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid pagination parameters. Page must be >= 1, limit must be between 1 and 100.',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Fetch settings with pagination and optimized projection
+    const [settings, totalCount] = await Promise.all([
+      Settings.find(
+        {},
+        {
+          fileStorage: 0,
+          mailConfig: 0,
+          gemini: 0,
+          aiProviders: 0,
+          emailTemplates: 0,
+          googleCalendar: 0,
+          zoom: 0,
+          twoFA: 0,
+        },
+      )
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+      Settings.countDocuments({}),
+    ]);
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    // Determine if multiple orgs are allowed
+    let allow = false;
+    if (settings.length > 1 || settings.length === 0) {
+      allow = true;
+    } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
+      allow = true;
+    }
+
     return NextResponse.json({
-      allow: true,
+      allow,
       data: settings,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+      },
     });
-  } else if (settings.length === 1 && settings[0].multipleOrg !== false) {
-    return NextResponse.json({
-      allow: true,
-      data: settings,
-    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
+      { status: 500 },
+    );
   }
-  return NextResponse.json({
-    allow: false,
-    data: settings,
-  });
-  // }
+};
+
+//! !! THIS IMPLIES RESTRICT ACCESS TO REGISTER/ORG PAGE
+export async function GET(req: NextRequest) {
+  return apiRateLimiter(req as NextRequest, handleChekOrg);
 }

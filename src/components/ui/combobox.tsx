@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import * as React from 'react';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ComboboxProps {
   options: { value: string; label: string }[];
@@ -16,13 +16,13 @@ interface ComboboxProps {
 
 export function Combobox({
   options,
-  placeholder = "Select an option...",
+  placeholder = 'Select an option...',
   value,
   onValueChange,
-  width = "200px",
+  width = '200px',
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
@@ -30,18 +30,14 @@ export function Combobox({
   // Focus the input when the dropdown opens
   React.useEffect(() => {
     if (open && inputRef.current) {
-      console.log("Dropdown opened, attempting to focus input");
       const timer = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
-          console.log(
-            "Input focused:",
-            document.activeElement === inputRef.current
-          );
         }
       }, 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [open]);
 
   // Close dropdown when clicking outside
@@ -53,20 +49,18 @@ export function Combobox({
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
       ) {
-        console.log("Clicked outside, closing dropdown");
-        setOpen(false);
-        setSearch("");
+        setSearch('');
       }
     };
     if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
   // Filter options based on search input
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(search.toLowerCase())
+    option.label.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -77,9 +71,8 @@ export function Combobox({
         variant="outline"
         role="combobox"
         aria-expanded={open}
-        className={cn("justify-between", `w-full`)}
+        className={cn('justify-between', 'w-full')}
         onClick={() => {
-          console.log("Button clicked, current open state:", open);
           setOpen(true);
         }}
       >
@@ -91,52 +84,64 @@ export function Combobox({
       <div
         ref={dropdownRef}
         className={cn(
-          "absolute top-full left-0 mt-1 w-full bg-white border rounded-md shadow-lg z-[999] transition-all duration-200 ease-in-out",
+          'absolute left-0 top-full z-[999] mt-1 w-full rounded-md border bg-background shadow-lg transition-all duration-200 ease-in-out',
           open
-            ? "opacity-100 transform translate-y-0"
-            : "opacity-0 transform -translate-y-2 pointer-events-none"
+            ? 'translate-y-0 transform opacity-100'
+            : 'pointer-events-none -translate-y-2 transform opacity-0',
         )}
       >
         <input
           ref={inputRef}
           type="text"
           placeholder="Search..."
-          className="h-9 w-full border-b px-3 py-2 text-sm outline-none"
+          className="h-9 w-full border-b border-accent bg-background px-3 py-2 text-sm outline-none"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onMouseDown={(e) => e.stopPropagation()} // Prevent mousedown from closing dropdown
-          onFocus={() => console.log("Custom input focused")}
-          onBlur={() => console.log("Custom input blurred")}
         />
-        <div className="max-h-[200px] overflow-y-auto">
+        <div role="listbox" className="max-h-[200px] overflow-y-auto">
           {filteredOptions.length === 0 && (
             <div className="px-3 py-2 text-sm text-gray-500">
               No option found.
             </div>
           )}
-          {filteredOptions.map((option) => (
-            <div
-              key={option.value}
-              className={cn(
-                "flex cursor-pointer items-center px-3 py-2 text-sm hover:bg-gray-100",
-                value === option.value ? "bg-gray-50 font-medium" : ""
-              )}
-              onClick={() => {
-                console.log("Option selected:", option.value);
-                onValueChange(option.value === value ? "" : option.value);
-                setOpen(false);
-                setSearch("");
-              }}
-            >
-              {option.label}
-              <Check
+          {filteredOptions.map((option) => {
+            const isSelected = value === option.value;
+            const handleSelect = () => {
+              onValueChange(option.value === value ? '' : option.value);
+              setOpen(false);
+              setSearch('');
+            };
+            return (
+              <div
+                key={option.value}
+                role="option"
+                aria-selected={isSelected}
+                tabIndex={0}
                 className={cn(
-                  "ml-auto h-4 w-4",
-                  value === option.value ? "opacity-100" : "opacity-0"
+                  'flex cursor-pointer items-center bg-accent px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+                  isSelected
+                    ? 'bg-accent font-medium text-accent-foreground hover:bg-accent'
+                    : 'text-foreground',
                 )}
-              />
-            </div>
-          ))}
+                onClick={handleSelect}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelect();
+                  }
+                }}
+              >
+                {option.label}
+                <Check
+                  className={cn(
+                    'ml-auto h-4 w-4',
+                    isSelected ? 'opacity-100' : 'opacity-0',
+                  )}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

@@ -1,0 +1,67 @@
+import { logger } from '@/lib/logger/logger.server';
+import { getBetaFlag } from '@/lib/configUtils';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  try {
+    const licenseValidationUrl = process.env.LICENSE_VALIDATION_URL;
+
+    if (!licenseValidationUrl) {
+      return NextResponse.json(
+        { error: 'LICENSE_VALIDATION_URL not configured' },
+        { status: 500 },
+      );
+    }
+
+    const betaFlag = await getBetaFlag();
+    console.log('2222 betaFlag', betaFlag);
+    // Construct the URL for the version list endpoint
+    const versionListUrl = `${licenseValidationUrl}/api/version/list?beta=${betaFlag}`;
+
+    // Fetch version list from the license validation server
+    const response = await fetch(versionListUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add timeout to prevent hanging requests
+      signal: AbortSignal.timeout(10000), // 10 second timeout
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch version list from server' },
+        { status: response.status },
+      );
+    }
+
+    const versionData = await response.json();
+
+    return NextResponse.json(versionData);
+  } catch (error: unknown) {
+    logger.error({ error, url: request.url }, 'Error fetching version list');
+
+    // Handle timeout errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Request timeout - server may be unavailable',
+        },
+        { status: 408 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Internal server error while fetching version list',
+      },
+      { status: 500 },
+    );
+  }
+}

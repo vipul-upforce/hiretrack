@@ -1,172 +1,61 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { Formik, Form, Field, FieldProps } from "formik";
-import * as Yup from "yup";
+import React from 'react';
+import { Formik, Form } from 'formik';
+import ReCAPTCHA from 'react-google-recaptcha';
+import { Building2, User, Mail, Lock } from 'lucide-react';
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
   CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import {
-  CreateOrgResponse,
-  useCreateOrgMutation,
-} from "@/lib/features/org/orgApi";
-import { Eye, EyeOff } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
-import withAuthGuard from "@/components/withAuthGuard";
-
-interface OrgFormValues {
-  name: string;
-  fullName: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  role: "admin";
-}
-
-const OrgSchema = Yup.object().shape({
-  name: Yup.string()
-    .required("Organization Name is required")
-    .trim()
-    .matches(/^(?!\s+$).*/, "Organization Name cannot be only spaces")
-    .min(2, "Organization Name must be at least 2 characters")
-    .max(20, "Organization name must be 20 characters or fewer")
-    .required("Organization Name is required"),
-  fullName: Yup.string()
-    .required("Admin Name is required")
-    .trim()
-    .matches(/^(?!\s+$).*/, "Admin name cannot be only spaces")
-    .min(2, "Admin Name must be at least 2 characters long")
-    .max(20, "Admin name must be 20 characters or fewer")
-    .required("Admin Name is required"),
-  email: Yup.string()
-    .required("Email is required")
-    .trim("Email cannot be only spaces")
-    .matches(/^[a-z][a-z0-9._%+-]*@[a-z0-9.-]+\.[a-z]{2,}$/, "Invalid Email"),
-  password: Yup.string()
-    .min(6, "Password must be at least 6 characters.")
-    .matches(/[a-z]/, "Password must include at least one lowercase letter")
-    .matches(/[A-Z]/, "Password must include at least one uppercase letter")
-    .matches(/\d/, "Password must include at least one number")
-    .matches(
-      /[@$!%*?&]/,
-      "Password must include at least one special character (@$!%*?&)"
-    )
-    .required("Password is required"),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Passwords do not match")
-    .required("Please confirm your password"),
-});
-
-const lanes: string[] = [];
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import withAuthGuard from '@/components/withAuthGuard';
+import { OrgRegisterSchema, INITIAL_VALUES } from './schema';
+import { useOrgRegister } from './use-org-register';
+import { FormInputField, FormPasswordField } from './components/form-fields';
 
 function OrgRegisterPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [createOrg, { isLoading: isOrgLoading }] = useCreateOrgMutation();
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [captcha, setCaptcha] = useState<string>();
-  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+  const {
+    isOrgLoading,
+    captchaConfig,
+    decryptedSiteKey,
+    captchaToken,
+    setCaptchaToken,
+    handleSubmit,
+  } = useOrgRegister();
 
-  useEffect(() => {
-    async function checkAllowance() {
-      const data = await fetch("/api/organization");
-      const allowance = await data.json();
-      if (!allowance.allow) {
-        router.push("/auth/login");
-      }
-    }
-    checkAllowance();
-  }, []);
-
-  const initialValues: OrgFormValues = {
-    name: "",
-    fullName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "admin",
-  };
-
-  const handleSubmit = async (
-    values: OrgFormValues,
-    { setStatus }: { setStatus: (message: string) => void }
-  ) => {
-    if (!captcha) {
-      toast({
-        title: "Error",
-        description: "Captcha not verified. Please try again",
-        variant: "default",
-      });
-    }
-    try {
-      const { name, email, fullName, password, role } = values;
-      const adminData = { email, name: fullName, password, role };
-
-      // Create the admin
-      const orgResponse: CreateOrgResponse = await createOrg({
-        name,
-        lanes,
-        adminData,
-      }).unwrap();
-      if (orgResponse.organization) {
-        toast({
-          title: "Success",
-          description: "Admin account created successfully",
-          variant: "default",
-        });
-        router.push("/auth/login");
-      } else {
-        throw new Error("Failed to create admin");
-      }
-    } catch (err: unknown) {
-      let errorMessage = "An unknown error occurred";
-
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === "object" && err !== null && "data" in err) {
-        const errorObj = err as { data?: { error?: string } };
-        if (
-          errorObj.data &&
-          typeof errorObj.data === "object" &&
-          "error" in errorObj.data
-        ) {
-          errorMessage = errorObj.data.error || errorMessage;
-        }
-      }
-      setStatus(errorMessage);
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
+  const isCaptchaEnabled = captchaConfig?.captcha?.enableCaptcha;
+  const shouldShowCaptcha = isCaptchaEnabled && decryptedSiteKey;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background p-4">
+      {/* Decorative Background Elements */}
+      <div className="bg-primary/5 absolute left-[-10%] top-[-10%] h-[500px] w-[500px] rounded-full blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-blue-500/5 blur-[100px]" />
+
+      <Card className="z-10 w-full max-w-md border-border/50 shadow-xl backdrop-blur-sm">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold">
             Register Organization
           </CardTitle>
+          <CardDescription>
+            Create your workspace and admin account
+          </CardDescription>
         </CardHeader>
+
         <CardContent>
           <Formik
-            initialValues={initialValues}
-            validationSchema={OrgSchema}
+            initialValues={INITIAL_VALUES}
+            validationSchema={OrgRegisterSchema}
             onSubmit={handleSubmit}
           >
-            {({ errors, touched, isSubmitting, status }) => (
+            {({ isSubmitting, status }) => (
               <Form className="space-y-4">
                 {status && (
                   <Alert variant="destructive">
@@ -174,171 +63,74 @@ function OrgRegisterPage() {
                   </Alert>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="name">Organization Name</Label>
-                  <Field name="name">
-                    {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="name"
-                        type="text"
-                        disabled={isSubmitting}
-                        className={
-                          errors.name && touched.name ? "border-red-500" : ""
-                        }
-                      />
-                    )}
-                  </Field>
-                  {errors.name && touched.name && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.name}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Admin Full Name</Label>
-                  <Field name="fullName">
-                    {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="fullName"
-                        type="text"
-                        disabled={isSubmitting}
-                        className={
-                          errors.fullName && touched.fullName
-                            ? "border-red-500"
-                            : ""
-                        }
-                      />
-                    )}
-                  </Field>
-                  {errors.fullName && touched.fullName && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.fullName}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Admin Email</Label>
-                  <Field name="email">
-                    {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="email"
-                        type="email"
-                        disabled={isSubmitting}
-                        className={
-                          errors.email && touched.email ? "border-red-500" : ""
-                        }
-                      />
-                    )}
-                  </Field>
-                  {errors.email && touched.email && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.email}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Admin Password</Label>
-                  <div className="relative">
-                    <Field name="password">
-                      {({ field }: FieldProps) => (
-                        <Input
-                          {...field}
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          disabled={isSubmitting}
-                          className={
-                            errors.password && touched.password
-                              ? "border-red-500"
-                              : ""
-                          }
-                        />
-                      )}
-                    </Field>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {!showPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-500" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.password}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <div className="relative">
-                    <Field name="confirmPassword">
-                      {({ field }: FieldProps) => (
-                        <Input
-                          {...field}
-                          id="confirmPassword"
-                          type={showConfirmPassword ? "text" : "password"}
-                          disabled={isSubmitting}
-                          className={
-                            errors.confirmPassword && touched.confirmPassword
-                              ? "border-red-500"
-                              : ""
-                          }
-                        />
-                      )}
-                    </Field>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                    >
-                      {!showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4 text-gray-500" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-gray-500" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.confirmPassword && touched.confirmPassword && (
-                    <div className="text-red-500 text-xs mt-1">
-                      {errors.confirmPassword}
-                    </div>
-                  )}
-                </div>
-
-                <ReCAPTCHA
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                  onChange={(token) => {
-                    token && setCaptcha(token);
-                  }}
+                <FormInputField
+                  name="name"
+                  label="Organization Name"
+                  placeholder="Acme Inc."
+                  icon={Building2}
+                  disabled={isSubmitting}
                 />
 
-                <CardFooter className="px-0 pt-6 flex-col space-y-4">
+                <FormInputField
+                  name="fullName"
+                  label="Admin Full Name"
+                  placeholder="John Doe"
+                  icon={User}
+                  disabled={isSubmitting}
+                />
+
+                <FormInputField
+                  name="email"
+                  label="Admin Email"
+                  placeholder="admin@example.com"
+                  icon={Mail}
+                  disabled={isSubmitting}
+                />
+
+                <FormPasswordField
+                  name="password"
+                  label="Password"
+                  icon={Lock}
+                  disabled={isSubmitting}
+                />
+
+                <FormPasswordField
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  icon={Lock}
+                  disabled={isSubmitting}
+                />
+
+                {shouldShowCaptcha && (
+                  <div className="flex justify-center pt-2">
+                    <div className="recaptcha-container scale-90 transform">
+                      <ReCAPTCHA
+                        sitekey={decryptedSiteKey}
+                        onChange={(token) => setCaptchaToken(token)}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <CardFooter className="px-0 pt-4">
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={isSubmitting || !captcha}
+                    variant="primary"
+                    disabled={
+                      isSubmitting ||
+                      isOrgLoading ||
+                      (isCaptchaEnabled && !captchaToken)
+                    }
                   >
-                    {isSubmitting || isOrgLoading
-                      ? "Registering..."
-                      : "Register Organization"}
+                    {isSubmitting || isOrgLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        <span>Registering...</span>
+                      </div>
+                    ) : (
+                      'Register Organization'
+                    )}
                   </Button>
                 </CardFooter>
               </Form>
@@ -352,7 +144,7 @@ function OrgRegisterPage() {
 
 export default withAuthGuard(OrgRegisterPage, {
   requiredRoles: [],
-  fallbackPath: "/auth/login",
+  fallbackPath: '/auth/login',
   checkAllowance: true,
   allowAuthenticated: true,
 });

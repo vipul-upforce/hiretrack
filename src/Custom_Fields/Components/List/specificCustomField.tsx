@@ -1,11 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { CustomFieldsContext } from "../../Context";
-import React, { useCallback, useContext, useState } from "react";
-import Breadcrumbs from "../Breadcrums";
-import CustomFieldForm from "../Form/CustomFieldForm";
-import CustomFieldList from "./CustomFieldList";
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import React, { useCallback, useContext, useState } from 'react';
+import { CustomFieldsContext } from '../../Context';
+import Breadcrumbs from '../Breadcrums';
+import CustomFieldForm from '../Form/CustomFieldForm';
+import CustomFieldList from './CustomFieldList';
+
 function FormSpecificCustomFieldList() {
   const { selectedFormId, setStepName } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
@@ -19,8 +20,14 @@ function FormSpecificCustomFieldList() {
   }, [setIsOpen]);
 
   const breadcrumbs = [
-    <div key="custom-fields" onClick={() => setStepName("FormList")}>
-      Meta Fields
+    <div
+      key="custom-fields"
+      onClick={() => setStepName('FormList')}
+      role="button"
+      tabIndex={0}
+      className="cursor-pointer"
+    >
+      Personalized Form Fields
     </div>,
     <div key={selectedFormId?.formName}>{selectedFormId?.formName}</div>,
   ];

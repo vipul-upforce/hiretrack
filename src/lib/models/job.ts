@@ -1,10 +1,9 @@
-import mongoose, { Document } from "mongoose";
-import { Schema } from "mongoose";
+import mongoose, { Document, Schema } from 'mongoose';
 
 export const jobSchema = new mongoose.Schema({
   organizationId: {
     type: Schema.Types.ObjectId,
-    ref: "Organization",
+    ref: 'Organization',
   },
   title: { type: String, required: true },
   // company: { type: String, required: true },
@@ -21,8 +20,8 @@ export const jobSchema = new mongoose.Schema({
   // validTill: { type: Date, required: true },
   status: {
     type: String,
-    enum: ["open", "closed", "draft"],
-    default: "open",
+    enum: ['open', 'closed', 'draft'],
+    default: 'open',
   },
   isPublished: { type: Boolean, default: false },
   attachments: {
@@ -31,7 +30,7 @@ export const jobSchema = new mongoose.Schema({
         id: String,
         name: String,
         url: String,
-        type: { type: String, default: "pdf" },
+        type: { type: String, default: 'pdf' },
         size: Number,
       },
     ],
@@ -40,7 +39,7 @@ export const jobSchema = new mongoose.Schema({
         id: String,
         name: String,
         url: String,
-        type: { type: String, default: "image" },
+        type: { type: String, default: 'image' },
         size: Number,
       },
     ],
@@ -55,8 +54,67 @@ export const jobSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  lanes: {
+    type: [String],
+    default: undefined, // Will use organization default lanes if not set
+  },
+  useCustomLanes: {
+    type: Boolean,
+    default: false,
+  },
   isDeleted: Boolean,
+  promptForStatusChangeReason: {
+    type: Boolean,
+    default: true,
+  },
+  evaluationWeights: {
+    skills: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+    experience: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+    affordability: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+    overall: {
+      type: Number,
+      default: 25,
+      min: 0,
+      max: 100,
+    },
+  },
 });
+
+// Performance indexes for optimized queries
+// Index for organization-based queries with status filtering
+jobSchema.index(
+  { organizationId: 1, status: 1, isDeleted: 1 },
+  { name: 'idx_job_org_status_deleted', background: true },
+);
+
+// Index for organization + status + created date sorting
+jobSchema.index(
+  { organizationId: 1, status: 1, 'tracking.createdAt': -1 },
+  { name: 'idx_job_org_status_created', background: true },
+);
+
+// Index for published jobs lookup
+jobSchema.index(
+  {
+    organizationId: 1, status: 1, isPublished: 1, isDeleted: 1,
+  },
+  { name: 'idx_job_org_status_published', background: true },
+);
 
 export interface IJob extends Document<mongoose.Types.ObjectId> {
   organizationId: Schema.Types.ObjectId;
@@ -99,7 +157,16 @@ export interface IJob extends Document<mongoose.Types.ObjectId> {
   customFields: {
     [key: string]: object;
   };
+  lanes?: string[];
+  useCustomLanes: boolean;
   isDeleted?: boolean;
+  promptForStatusChangeReason?: boolean;
+  evaluationWeights?: {
+    skills: number;
+    experience: number;
+    affordability: number;
+    overall: number;
+  };
 }
 
 // export const Job = mongoose.model('Job', jobSchema);

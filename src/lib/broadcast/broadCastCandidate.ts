@@ -1,75 +1,224 @@
-import { signToken } from "../jwt";
-import { ICandidate } from "../models/candidate";
-import { ICandidateHistory } from "../models/history";
-// import { auth } from "../auth";
+import type { WebSocket } from 'ws';
+import { signAccessToken } from '@/app/actions/auth';
+import { ICandidate } from '../models/candidate';
+import { ICandidateHistory } from '../models/history';
+import logger from '../logger';
+import { isUsingHttpBridge, sendViaBridge } from './httpBridge';
 
-// Broadcast candidate updates to all SSE clients
-export function broadcastCandidateUpdate(
-  candidate: ICandidate & { history?: ICandidateHistory[] }
-) {
+/**
+ * WebSocket client interface for real-time broadcasting
+ * Compatible with both WebSocket (production) and SSE (legacy) connections
+ */
+interface WSClient {
+  id: number;
+  orgId: string;
+  userId: string;
+  socket: WebSocket;
+  // Backward compatibility with SSE
+  controller?: {
+    enqueue: (data: Uint8Array) => void;
+    desiredSize: number | null;
+  };
+}
+
+declare global {
+  // eslint-disable-next-line no-var, vars-on-top
+  var wsClients: Map<string, Map<number, WSClient>>;
+  // eslint-disable-next-line no-var, vars-on-top
+  var sseNotificationClients: Map<string, Map<number, WSClient>>;
+}
+
+/**
+ * Send data to a WebSocket client with error handling
+ * Returns false if the client connection is dead
+ */
+function sendToClient(client: WSClient, data: object): boolean {
+  try {
+    // WebSocket: Use socket.send directly
+    if (client.socket && client.socket.readyState === 1) { // WebSocket.OPEN = 1
+      client.socket.send(JSON.stringify(data));
+      return true;
+    }
+    // Fallback: Use controller.enqueue for SSE compatibility
+    if (client.controller && client.controller.desiredSize !== null) {
+      const encoder = new TextEncoder();
+      client.controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      return true;
+    }
+  } catch {
+    // Connection is dead
+  }
+  return false;
+}
+
+/**
+ * Broadcast candidate update to all WebSocket clients in the organization.
+ * CRITICAL FIX: Signs token ONCE before broadcasting to all clients (not N times).
+ * 
+ * Performance impact:
+ * - Before: O(N) token signings where N = number of clients (could be 50+)
+ * - After: O(1) token signing regardless of client count
+ * 
+ * Example: With 50 connected clients, moving 20 candidates:
+ * - Before: 20 candidates × 50 clients = 1,000 token signings
+ * - After: 1 token signing (batch broadcast)
+ * 
+ * This function is fire-and-forget - errors are handled internally and won't block the caller.
+ */
+export async function broadcastCandidateUpdate(
+  candidate: ICandidate & { history?: ICandidateHistory[] },
+): Promise<void> {
   const orgId = candidate.organizationId;
-  const orgClients = global.sseClients?.get(orgId);
-  if (!orgClients) return;
-  // let role = null;
-  // if (req) {
-  //   const cookie = await auth(req);
-  //   role = cookie?.user.role;
-  // }
-  const encoder = new TextEncoder();
-  orgClients?.forEach((client: any) => {
-    // const candidateToBeSent = {
-    //   ...candidate,
-    //   currentCTC: role === "interviewer" ? undefined : candidate.currentCTC,
-    //   expectedCTC: role === "interviewer" ? undefined : candidate.expectedCTC,
-    //   customFields: role === "interviewer" ? undefined : candidate.customFields,
-    //   history: candidate.history?.filter((entry) =>
-    //     role === "admin" || role === "hr"
-    //       ? true
-    //       : !entry.remark?.id || !entry.remark.isPrivate
-    //   ),
-    // };
-    // console.log("CANDIDATE HISTORY: ", candidateToBeSent.history);
-    const encodedSSE = signToken(candidate);
-    const data = `data: ${JSON.stringify({ type: "candidateUpdate", candidate: encodedSSE })}\n\n`;
+  if (!orgId) {
+    logger.warn('broadcastCandidateUpdate: Missing organizationId');
+    return;
+  }
 
-    const clientsCount = Array.from(global.sseClients.entries()).length;
-    // console.log("⛔⛔⛔⛔ ", candidate?.followUp);
-    client.controller.enqueue(encoder.encode(data));
-    client.controller.enqueue(
-      encoder.encode(
-        `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-      )
-    );
-  });
+  try {
+    // CRITICAL FIX: Sign token ONCE, not N times (where N = number of clients)
+    const encodedData = await signAccessToken(candidate, orgId);
+
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'candidateUpdate',
+        orgId,
+        data: { candidate: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients || orgClients.size === 0) return;
+
+    const clientsCount = orgClients.size;
+    const deadClients: number[] = [];
+    
+    for (const [clientId, client] of orgClients.entries()) {
+      const sent = sendToClient(client, { type: 'candidateUpdate', candidate: encodedData });
+      if (sent) {
+        sendToClient(client, { type: 'clients', clients: clientsCount, orgId });
+      } else {
+        deadClients.push(clientId);
+        logger.log(`Dead connection detected: client ${clientId}`);
+      }
+    }
+
+    // Clean up dead connections to prevent memory leaks
+    if (deadClients.length > 0) {
+      deadClients.forEach((clientId) => orgClients.delete(clientId));
+      if (orgClients.size === 0) {
+        global.wsClients?.delete(orgId);
+        global.sseNotificationClients?.delete(orgId);
+      }
+    }
+  } catch (error) {
+    logger.error({ error, orgId }, 'Failed to sign token for candidate broadcast');
+  }
 }
-export function broadcastMultipleCandidateUpdate(
-  candidates: (ICandidate & { history?: ICandidateHistory[] })[]
-) {
-  const encodedSSE = signToken(candidates);
+
+/**
+ * Broadcast multiple candidate updates in a single message.
+ * CRITICAL FIX: Signs token ONCE before broadcasting to all clients.
+ * Use this for bulk operations instead of calling broadcastCandidateUpdate in a loop.
+ * 
+ * Performance: O(1) token signing regardless of candidate or client count.
+ * 
+ * This function is fire-and-forget - errors are handled internally and won't block the caller.
+ */
+export async function broadcastMultipleCandidateUpdate(
+  candidates: (ICandidate & { history?: ICandidateHistory[] })[],
+): Promise<void> {
+  if (!candidates || candidates.length === 0) return;
+
   const orgId = candidates[0]?.organizationId;
-  const orgClients = global.sseClients?.get(orgId);
-  if (!orgClients) return;
-  const encoder = new TextEncoder();
-  orgClients?.forEach((client: any) => {
-    const data = `data: ${JSON.stringify({ type: "multipleCandidateUpdate", candidates: encodedSSE })}\n\n`;
-    client.controller.enqueue(encoder.encode(data));
-  });
-}
-export function broadcastLaneUpdate(orgId: string, lanes: string[]) {
-  // console.log("ORGID: ", orgId);
-  const orgClients = global.sseClients?.get(orgId);
-  // console.log("ORGID: ", orgId, orgClients);
-  if (!orgClients) return;
-  const encoder = new TextEncoder();
-  orgClients?.forEach((client: any) => {
-    const data = `data: ${JSON.stringify({ type: "lanesUpdate", lanes })}\n\n`;
-    const clientsCount = Array.from(global.sseClients.entries()).length;
+  if (!orgId) {
+    logger.warn('broadcastMultipleCandidateUpdate: Missing organizationId');
+    return;
+  }
 
-    client.controller.enqueue(encoder.encode(data));
-    client.controller.enqueue(
-      encoder.encode(
-        `data: ${JSON.stringify({ type: "clients", clients: clientsCount })}\n\n`
-      )
-    );
-  });
+  try {
+    // CRITICAL FIX: Sign token ONCE, not N times
+    const encodedData = await signAccessToken(candidates, orgId);
+
+    // Use HTTP bridge in development (separate WS server)
+    if (isUsingHttpBridge()) {
+      await sendViaBridge({
+        type: 'multipleCandidateUpdate',
+        orgId,
+        data: { candidates: encodedData },
+      });
+      return;
+    }
+
+    // Direct broadcast (production - same process)
+    const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+    if (!orgClients || orgClients.size === 0) return;
+
+    const deadClients: number[] = [];
+
+    for (const [clientId, client] of orgClients.entries()) {
+      const sent = sendToClient(client, { type: 'multipleCandidateUpdate', candidates: encodedData });
+      if (!sent) {
+        deadClients.push(clientId);
+        logger.log(`Dead connection detected: client ${clientId}`);
+      }
+    }
+
+    // Clean up dead connections
+    if (deadClients.length > 0) {
+      deadClients.forEach((clientId) => orgClients.delete(clientId));
+      if (orgClients.size === 0) {
+        global.wsClients?.delete(orgId);
+        global.sseNotificationClients?.delete(orgId);
+      }
+    }
+  } catch (error) {
+    logger.error({ error, orgId }, 'Failed to sign token for multiple candidate broadcast');
+  }
+}
+
+export async function broadcastLaneUpdate(
+  orgId: string,
+  lanes: string[],
+  jobId?: string,
+): Promise<void> {
+  if (!orgId) return;
+
+  // Use HTTP bridge in development (separate WS server)
+  if (isUsingHttpBridge()) {
+    await sendViaBridge({
+      type: 'lanesUpdate',
+      orgId,
+      data: { lanes, jobId },
+    });
+    return;
+  }
+
+  // Direct broadcast (production - same process)
+  const orgClients = global.wsClients?.get(orgId) ?? global.sseNotificationClients?.get(orgId);
+  if (!orgClients || orgClients.size === 0) return;
+
+  const clientsCount = orgClients.size;
+  const deadClients: number[] = [];
+
+  for (const [clientId, client] of orgClients.entries()) {
+    const sent = sendToClient(client, { type: 'lanesUpdate', lanes, jobId });
+    if (sent) {
+      sendToClient(client, { type: 'clients', clients: clientsCount, orgId });
+    } else {
+      deadClients.push(clientId);
+      logger.log(`Dead connection detected: client ${clientId}`);
+    }
+  }
+
+  // Clean up dead connections
+  if (deadClients.length > 0) {
+    deadClients.forEach((clientId) => orgClients.delete(clientId));
+    if (orgClients.size === 0) {
+      global.wsClients?.delete(orgId);
+      global.sseNotificationClients?.delete(orgId);
+    }
+  }
 }

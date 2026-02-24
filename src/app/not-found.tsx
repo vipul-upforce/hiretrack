@@ -1,22 +1,23 @@
-"use client";
-import React from "react";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+'use client';
+
+import React from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
+
 interface INoDataFound {
   name: string;
 }
-export const NoDataFound = (props: INoDataFound) => {
+export function NoDataFound(props: INoDataFound) {
   const { name } = props;
   const router = useRouter();
   const handleClick = () => {
-    const user = Cookies.get("user");
+    const user = Cookies.get('user');
     if (user) {
-      // debugger;
-      router.push("/dashboard");
+      router.push('/dashboard');
     } else {
-      router.push("/auth/login");
+      router.push('/auth/login');
     }
   };
   return (
@@ -28,8 +29,12 @@ export const NoDataFound = (props: INoDataFound) => {
           width={600}
           height={600}
         />
-        <h2 className="mt-4 text-xl font-semibold text-gray-700">
-          No {name} Found
+        <h2 className="mt-4 text-xl font-semibold text-gray-900 dark:text-gray-100">
+          No
+          {' '}
+          {name}
+          {' '}
+          Found
         </h2>
         <p className="mt-2 text-gray-600">
           We couldn&apos;t find any Page to display.
@@ -40,6 +45,6 @@ export const NoDataFound = (props: INoDataFound) => {
       </div>
     </div>
   );
-};
+}
 
 export default NoDataFound;

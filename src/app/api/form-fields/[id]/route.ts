@@ -1,10 +1,10 @@
-import { FormField } from "@/lib/models/FormField";
-import connectToDatabase from "@/lib/mongodb";
-import { NextResponse } from "next/server";
+import { FormField } from '@/lib/models/FormField';
+import connectToDatabase from '@/lib/mongodb';
+import { NextResponse } from 'next/server';
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectToDatabase();
@@ -12,10 +12,11 @@ export async function PUT(
     const { id } = await params;
     const updatedField = await FormField.findByIdAndUpdate(id, body, {
       new: true,
+      lean: true,
     });
 
     if (!updatedField) {
-      return NextResponse.json({ error: "Field not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Field not found' }, { status: 404 });
     }
 
     return NextResponse.json(updatedField);
@@ -23,19 +24,18 @@ export async function PUT(
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   try {
     await connectToDatabase();
     const { id } = await params;
     const deletedField = await FormField.findByIdAndDelete(id);
     if (!deletedField) {
-      return NextResponse.json({ error: "Field not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Field not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });
@@ -43,5 +43,7 @@ export async function DELETE(
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    return NextResponse.json({ error: 'Unknown error' }, { status: 500 });
   }
 }

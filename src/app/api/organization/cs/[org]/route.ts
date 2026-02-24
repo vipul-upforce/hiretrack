@@ -1,11 +1,11 @@
-import { Organization } from "@/lib/mongodb";
-import connectToDatabase from "@/lib/mongodb";
-import { NextResponse } from "next/server";
+import { logger } from '@/lib/logger/logger.server';
+import connectToDatabase, { Organization } from '@/lib/mongodb';
+import { NextResponse } from 'next/server';
 
 // Handle GET request
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ org: string }> }
+  { params }: { params: Promise<{ org: string }> },
 ) {
   await connectToDatabase();
 
@@ -13,25 +13,29 @@ export async function GET(
     const { org } = await params;
     if (!Organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 400 }
+        { error: 'Organization not found' },
+        { status: 400 },
       );
     }
     if (!org) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 400 }
+        { error: 'Organization not found' },
+        { status: 400 },
       );
     }
-    const orgInfo = await Organization.findById(org);
+    const orgInfo = await Organization.findById(org)
+      .select('customFields')
+      .lean()
+      .exec();
     return NextResponse.json(orgInfo?.customFields, { status: 200 });
   } catch (error: unknown) {
+    logger.error({ error, url: req.url }, 'Error in GET organization');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     return NextResponse.json(
-      { error: "Unknown error occurred" },
-      { status: 400 }
+      { error: 'Unknown error occurred' },
+      { status: 400 },
     );
   }
 }

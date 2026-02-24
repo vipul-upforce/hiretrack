@@ -1,11 +1,13 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import LoginFormContent from "./LoginFormContent";
+import { Suspense } from 'react';
+import LoadingScreen from '@/app/loading-screen';
+import LoginFormContent from './LoginFormContent';
+
 export default function Login() {
   return (
-    <Suspense fallback={<div>Loading login form...</div>}>
-      <LoginFormContent />
+    <Suspense fallback={<LoadingScreen />}>
+      <LoginFormContent showCompanyField={false} />
     </Suspense>
   );
 }

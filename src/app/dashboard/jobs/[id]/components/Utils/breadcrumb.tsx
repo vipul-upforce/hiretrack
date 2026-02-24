@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { ChevronRight, Home } from "lucide-react";
-import Link from "next/link";
-import React from "react";
+import { ChevronRight, Home } from 'lucide-react';
+import Link from 'next/link';
+import React from 'react';
 
 interface BreadcrumbProps {
   jobTitle?: string;
@@ -11,27 +11,29 @@ interface BreadcrumbProps {
 
 export function Breadcrumb({ jobTitle, links }: BreadcrumbProps) {
   return (
-    <nav className="flex items-center text-sm text-muted-foreground">
+    <nav className="flex items-center text-sm font-medium text-muted-foreground">
       <Link
         href="/dashboard"
-        className="flex items-center hover:text-foreground transition-colors"
+        className="flex items-center transition-colors hover:text-foreground"
       >
-        <Home className="h-4 w-4 mr-2" />
+        <Home className="mr-2 h-4 w-4" />
         Dashboard
       </Link>
-      {links.map((link, index) => (
-        <React.Fragment key={index}>
-          <ChevronRight className="h-4 w-4 mx-2" />
+      {links.map((link) => (
+        <React.Fragment key={link.href + link.title}>
+          <ChevronRight className="mx-2 h-4 w-4" />
           <Link
             href={link.href}
-            className="hover:text-foreground transition-colors"
+            className="transition-colors hover:text-foreground"
           >
             {link.title}
           </Link>
         </React.Fragment>
       ))}
-      <ChevronRight className="h-4 w-4 mx-2" />
-      <span className="text-foreground line-clamp-1">{jobTitle}</span>
+      <ChevronRight className="mx-2 h-4 w-4" />
+      <span className="line-clamp-1 font-semibold text-foreground">
+        {jobTitle}
+      </span>
     </nav>
   );
 }

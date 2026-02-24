@@ -1,0 +1,352 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Job, Organization, Candidate } from '@/lib/mongodb';
+import { isValidObjectId } from 'mongoose';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
+
+const DEFAULT_LANES = [
+  'applied',
+  'screening',
+  'shortlisted',
+  'processing',
+  'accepted',
+  'rejected',
+];
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const [user, { id: jobId }] = await Promise.all([
+      getAuthenticatedUser(request, ['admin', 'hr']),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!Job || !Organization) {
+      return NextResponse.json(
+        { error: 'Database not connected' },
+        { status: 400 },
+      );
+    }
+
+    // Validate ObjectId
+    if (!isValidObjectId(jobId)) {
+      return NextResponse.json({ error: 'Invalid job ID' }, { status: 400 });
+    }
+    // Find the job
+    const job = await Job.findOne({
+      _id: jobId,
+      organizationId: user.organizationId,
+    })
+      .select('lanes useCustomLanes organizationId title _id')
+      .lean()
+      .exec();
+
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    }
+
+    let lanes;
+    const useCustomLanes = Boolean(job.useCustomLanes || false);
+
+    if (useCustomLanes && job.lanes) {
+      lanes = job.lanes;
+    } else {
+      // Get organization default lanes
+      const organization = await Organization.findById(user.organizationId)
+        .select('lanes defaultLanes')
+        .lean()
+        .exec();
+      lanes =
+        organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
+    }
+
+    return NextResponse.json({
+      jobId: job._id,
+      jobTitle: job.title,
+      lanes,
+      useCustomLanes,
+      laneRestrictions: {
+        nonEditable: ['applied', 'accepted', 'rejected'],
+        nonDeletable: ['applied', 'accepted', 'rejected'],
+      },
+    });
+  } catch (error) {
+    logger.error({ error, url: request.url }, 'Get job lanes error');
+    return NextResponse.json(
+      { error: 'Failed to fetch job lanes' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const [user, { id: jobId }] = await Promise.all([
+      getAuthenticatedUser(request, ['admin', 'hr']),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!Job || !Candidate) {
+      return NextResponse.json(
+        { error: 'Database not connected' },
+        { status: 400 },
+      );
+    }
+
+    const body = await request.json();
+    const { lanes, useCustomLanes } = body;
+
+    // Find the job
+    const job = await Job.findOne({
+      _id: jobId,
+      organizationId: user.organizationId,
+    });
+
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    }
+
+    // Validation
+    if (useCustomLanes) {
+      if (!Array.isArray(lanes) || lanes.length === 0) {
+        return NextResponse.json(
+          { error: 'Lanes must be a non-empty array when using custom lanes' },
+          { status: 400 },
+        );
+      }
+
+      // Validate lane names
+      const validLaneNameRegex = /^[a-zA-Z0-9\s\-_]+$/;
+      for (const lane of lanes) {
+        if (typeof lane !== 'string' || !validLaneNameRegex.test(lane)) {
+          return NextResponse.json(
+            {
+              error: `Invalid lane name: ${lane}. Only alphanumeric characters, spaces, hyphens, and underscores allowed.`,
+            },
+            { status: 400 },
+          );
+        }
+      }
+
+      // Ensure required lanes are present
+      const requiredLanes = ['applied', 'accepted', 'rejected'];
+      for (const requiredLane of requiredLanes) {
+        if (!lanes.includes(requiredLane)) {
+          return NextResponse.json(
+            {
+              error: `Required lane '${requiredLane}' must be included in job lanes`,
+            },
+            { status: 400 },
+          );
+        }
+      }
+
+      // Check for duplicates
+      const uniqueLanes = [...new Set(lanes)];
+      if (uniqueLanes.length !== lanes.length) {
+        return NextResponse.json(
+          { error: 'Duplicate lane names are not allowed' },
+          { status: 400 },
+        );
+      }
+
+      // Check if any candidates would have invalid statuses after this change
+      const candidates = await Candidate.find({
+        jobId,
+        organizationId: user.organizationId,
+      })
+        .select('status')
+        .lean()
+        .exec();
+
+      const invalidCandidates = candidates.filter(
+        (candidate) => candidate.status && !lanes.includes(candidate.status),
+      );
+
+      if (invalidCandidates.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              'Cannot update lanes: some candidates have statuses not in the new lane list',
+            details: {
+              count: invalidCandidates.length,
+              invalidStatuses: [
+                ...new Set(invalidCandidates.map((c) => c.status)),
+              ],
+              suggestion:
+                'Move candidates to valid lanes before updating job lanes',
+            },
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Update job
+    const updateData: Record<string, unknown> = {
+      useCustomLanes: Boolean(useCustomLanes),
+    };
+
+    if (useCustomLanes) {
+      updateData.lanes = lanes;
+    } else {
+      // When switching to default lanes, clear custom lanes
+      updateData.$unset = { lanes: 1 };
+    }
+
+    const updatedJob = await Job.findByIdAndUpdate(jobId, updateData, {
+      new: true,
+    });
+
+    // Get effective lanes for response
+    let effectiveLanes;
+    if (updatedJob?.useCustomLanes && updatedJob.lanes) {
+      effectiveLanes = updatedJob.lanes;
+    } else {
+      const organization = await Organization?.findById(user.organizationId)
+        .select('lanes defaultLanes _id')
+        .lean()
+        .exec();
+      effectiveLanes =
+        organization?.lanes || organization?.defaultLanes || DEFAULT_LANES;
+    }
+
+    return NextResponse.json({
+      message: 'Job lanes updated successfully',
+      jobId: updatedJob?._id,
+      lanes: effectiveLanes,
+      useCustomLanes: updatedJob?.useCustomLanes,
+    });
+  } catch (error) {
+    logger.error({ error, url: request.url }, 'Update job lanes error');
+    return NextResponse.json(
+      { error: 'Failed to update job lanes' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const [user, { id: jobId }] = await Promise.all([
+      getAuthenticatedUser(request, ['admin', 'hr']),
+      params,
+      connectToDatabase(),
+    ]);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    if (!Job || !Organization) {
+      return NextResponse.json(
+        { error: 'Database not connected' },
+        { status: 400 },
+      );
+    }
+
+    const body = await request.json();
+    const { laneName, position } = body;
+
+    // Validation
+    if (!laneName || typeof laneName !== 'string') {
+      return NextResponse.json(
+        { error: 'Lane name is required and must be a string' },
+        { status: 400 },
+      );
+    }
+
+    const validLaneNameRegex = /^[a-zA-Z0-9\s\-_]+$/;
+    if (!validLaneNameRegex.test(laneName)) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid lane name. Only alphanumeric characters, spaces, hyphens, and underscores allowed.',
+        },
+        { status: 400 },
+      );
+    }
+
+    const job = await Job.findOne({
+      _id: jobId,
+      organizationId: user.organizationId,
+    });
+
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    }
+
+    // Get current lanes
+    let currentLanes;
+    if (job.useCustomLanes && job.lanes) {
+      currentLanes = [...job.lanes];
+    } else {
+      const organization = await Organization.findById(user.organizationId)
+        .select('lanes defaultLanes')
+        .lean()
+        .exec();
+      currentLanes = [
+        ...(organization?.lanes || organization?.defaultLanes || DEFAULT_LANES),
+      ];
+    }
+
+    // Check if lane already exists
+    if (currentLanes.includes(laneName)) {
+      return NextResponse.json(
+        { error: 'Lane already exists' },
+        { status: 400 },
+      );
+    }
+
+    // Add lane at specified position
+    const newLanes = [...currentLanes];
+    if (
+      typeof position === 'number' &&
+      position >= 0 &&
+      position <= newLanes.length
+    ) {
+      newLanes.splice(position, 0, laneName);
+    } else {
+      newLanes.push(laneName);
+    }
+
+    // Update job to use custom lanes
+    const updatedJob = await Job.findByIdAndUpdate(
+      jobId,
+      {
+        $set: {
+          lanes: newLanes,
+          useCustomLanes: true,
+        },
+      },
+      { new: true },
+    );
+
+    return NextResponse.json({
+      message: 'Lane added successfully',
+      jobId: updatedJob?._id,
+      lanes: updatedJob?.lanes,
+      useCustomLanes: updatedJob?.useCustomLanes,
+    });
+  } catch (error) {
+    logger.error({ error, url: request.url }, 'Add job lane error');
+    return NextResponse.json(
+      { error: 'Failed to add job lane' },
+      { status: 500 },
+    );
+  }
+}

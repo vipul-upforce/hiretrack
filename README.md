@@ -1,103 +1,438 @@
-# HireTrack
+# HireTrack - AI-Powered Hiring Management Platform
 
-## Getting started
+## 🚀 Overview
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+HireTrack is a comprehensive, AI-powered hiring management platform designed to streamline and optimize the entire recruitment process. Built with modern technologies including Next.js, TypeScript, and MongoDB, HireTrack provides a complete solution for organizations to manage job postings, candidate applications, interview scheduling, and hiring workflows with intelligent automation.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## 🎯 Key Features
 
-## Add your files
+### 🤖 AI-Powered Resume Analysis
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- **Google Gemini AI Integration**: Advanced resume parsing and candidate evaluation
+- **Intelligent Scoring System**: Multi-dimensional candidate assessment (Skills, Experience, Affordability, Overall)
+- **Automated Resume Processing**: Batch CV processing with AI-powered data extraction
+- **Smart Recommendations**: AI-generated candidate insights and hiring recommendations
 
+### 📋 Job Management
+
+- **Dynamic Job Postings**: Create and manage job positions with rich descriptions
+- **Custom Job Forms**: Flexible application forms with custom fields
+- **Job Status Tracking**: Open, closed, and draft status management
+- **Branded Career Portal**: Customizable job application portal for candidates
+
+### 👥 Candidate Management
+
+- **Comprehensive Candidate Profiles**: Detailed candidate information and tracking
+- **Drag-and-Drop Kanban Board**: Visual candidate pipeline management
+- **Custom Status Workflows**: Configurable hiring stages (Applied, Screening, Shortlisted, Processing, Accepted, Rejected)
+- **Candidate History Tracking**: Complete audit trail of candidate interactions
+
+### 📅 Interview Scheduling
+
+- **Calendar Integration**: Full calendar view for interview scheduling
+- **Interviewer Assignment**: Assign candidates to specific interviewers
+- **Email Notifications**: Automated interview scheduling emails with calendar links
+- **Real-time Updates**: Live updates for interview assignments and status changes
+
+### 🔍 Advanced Search & Filtering
+
+- **Multi-criteria Search**: Search candidates by name, skills, location, experience
+- **Salary Range Filtering**: Filter by current and expected CTC ranges
+- **Date-based Filtering**: Search by application date ranges
+- **Custom Field Filtering**: Filter by organization-specific custom fields
+- **Advanced Logic Operators**: AND/OR logic for complex search queries
+
+### 📧 Communication & Notifications
+
+- **Email Template System**: Customizable email templates for various scenarios
+- **Multi-provider Email Support**: SMTP, Resend, and Brevo integration
+- **Automated Notifications**: Application confirmations, interview schedules, status updates
+- **Two-Factor Authentication**: Secure login with OTP verification
+
+### 📄 File Management
+
+- **Multi-cloud Storage**: Support for Local, Cloudinary, and AWS S3 storage
+- **Document Management**: Resume and attachment handling with preview
+- **Batch File Processing**: Bulk CV upload and processing capabilities
+- **Secure File Storage**: Encrypted file storage with access controls
+
+### 🎨 Customization & Branding
+
+- **Custom Fields System**: Dynamic form fields for jobs and candidates
+- **Organization Branding**: Custom logos, colors, and branding
+- **Email Template Customization**: Fully customizable email templates
+- **Multi-organization Support**: Separate workspaces for different organizations
+
+### 📊 Analytics & Reporting
+
+- **Dashboard Analytics**: Real-time hiring metrics and insights
+- **Candidate Tracking**: Detailed candidate journey tracking
+- **Interview Analytics**: Interview scheduling and completion statistics
+- **Performance Metrics**: Hiring funnel analysis and optimization
+
+### 🔐 Security & Access Control
+
+- **Role-based Access Control**: Admin, HR, Interviewer, and Candidate roles
+- **Secure Authentication**: JWT-based authentication with encryption
+- **Data Privacy**: GDPR-compliant data handling
+- **Backup & Recovery**: Automated database backups and recovery
+
+## 👥 User Roles & Permissions
+
+### 🤴 Administrator
+
+- **Full System Access**: Complete control over all platform features
+- **User Management**: Create, edit, and manage user accounts
+- **System Configuration**: Configure email, storage, and organization settings
+- **Backup Management**: Create and manage database backups
+- **Custom Fields**: Create and manage dynamic form fields
+- **Email Templates**: Customize email templates and notifications
+
+### 🤝 HR Manager
+
+- **Job Management**: Create, edit, and manage job postings
+- **Candidate Management**: Full access to candidate data and workflows
+- **Interview Coordination**: Schedule and manage interviews
+- **Reporting**: Access to hiring analytics and reports
+- **Email Communications**: Send notifications and updates
+
+### 👨‍💼 Interviewer
+
+- **Assigned Candidates**: View and manage assigned candidates
+- **Interview Scheduling**: Schedule and conduct interviews
+- **Candidate Evaluation**: Add remarks and ratings
+- **Calendar Access**: View interview calendar and assignments
+- **Limited Data Access**: Restricted access to sensitive candidate information
+
+### 👤 Candidate
+
+- **Job Applications**: Apply to open positions
+- **Application Tracking**: Track application status
+- **Profile Management**: Update personal information
+- **Document Upload**: Upload resumes and supporting documents
+- **Communication**: Receive notifications and updates
+
+## 🛠️ Technical Architecture
+
+### Frontend Technologies
+
+- **Next.js 14**: React framework with App Router
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first CSS framework
+- **Radix UI**: Accessible component library
+- **Redux Toolkit**: State management
+- **React Hook Form**: Form handling and validation
+
+### Backend Technologies
+
+- **Node.js**: Server-side runtime
+- **MongoDB**: NoSQL database
+- **Mongoose**: MongoDB object modeling
+- **Next.js API Routes**: Serverless API endpoints
+- **JWT Authentication**: Secure token-based authentication
+
+### AI & External Integrations
+
+- **Google Gemini AI**: Advanced AI capabilities for resume analysis
+- **Cloudinary**: Cloud image and video management
+- **AWS S3**: Scalable cloud storage
+- **Email Providers**: SMTP, Resend, Brevo integration
+- **Calendar Integration**: Google Calendar and Outlook support
+
+### Development Tools
+
+- **ESLint**: Code linting and formatting
+- **Prettier**: Code formatting
+- **TypeScript**: Static type checking
+- **Git**: Version control
+- **PM2**: Process management for production
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- MongoDB 5.0+
+- npm or yarn package manager
+
+## System Requirements
+
+### Minimum Requirements:
+
+- **RAM**: 1GB
+- **CPU**:
+- **Storage**: 4GB
+
+### Recommended Requirements:
+
+- **RAM**: 4GB
+- **CPU**:
+- **Storage**: 10GB
+
+### Installation
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/your-org/hiretrack.git
+   cd hiretrack
+   ```
+
+2. **Install Dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Environment Configuration**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Configure the following environment variables:
+
+   ```env
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret_key
+   NEXTAUTH_SECRET=your_nextauth_secret
+   ```
+
+4. **Database Setup**
+
+   ```bash
+   npm run db:setup
+   ```
+
+5. **Start Development Server**
+
+   ```bash
+   npm run dev
+   ```
+
+6. **Build for Production**
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## 📋 Configuration Guide
+
+### Organization Setup
+
+1. Create a new organization through the registration portal
+2. Configure organization settings and branding
+3. Set up email templates and notifications
+4. Configure file storage (Local/Cloudinary/AWS S3)
+5. Set up custom fields for jobs and candidates
+
+### AI Configuration
+
+1. Obtain Google Gemini API key
+2. Configure AI settings in organization dashboard
+3. Set up resume processing parameters
+4. Configure evaluation criteria and scoring
+
+### Email Setup
+
+1. Choose email provider (SMTP/Resend/Brevo)
+2. Configure SMTP settings or API keys
+3. Customize email templates
+4. Test email delivery
+
+### File Storage Configuration
+
+1. **Local Storage**: Default file storage on server
+2. **Cloudinary**: Configure cloud name, API key, and secret
+3. **AWS S3**: Configure region, access keys, and bucket name
+
+## 📊 API Endpoints
+
+### Authentication
+
+- `POST /api/auth/login` - User login
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/forgot-password` - Password reset
+- `POST /api/auth/reset-password` - Password reset confirmation
+
+### Jobs
+
+- `GET /api/jobs` - List all jobs
+- `POST /api/jobs` - Create new job
+- `PUT /api/jobs/[id]` - Update job
+- `DELETE /api/jobs/[id]` - Delete job
+- `GET /api/jobs/open` - Get open jobs for candidates
+
+### Candidates
+
+- `GET /api/candidates` - List candidates
+- `POST /api/candidates` - Create candidate
+- `PUT /api/candidates/[id]` - Update candidate
+- `GET /api/candidates/filter` - Advanced candidate search
+- `PUT /api/candidates/evaluate` - AI-powered candidate evaluation
+
+### Interviews & Scheduling
+
+- `GET /api/candidates/assignments` - Get interview assignments
+- `POST /api/event-mail` - Send interview notifications
+- `GET /api/calendar` - Get calendar events
+
+### Settings & Configuration
+
+- `GET /api/settings` - Get organization settings
+- `PUT /api/settings/fs` - Update file storage settings
+- `PUT /api/settings/templates` - Update email templates
+- `GET /api/backups` - List database backups
+
+## 📊 Database Schema
+
+### Core Collections
+
+- **Organizations**: Organization settings and configuration
+- **Users**: User accounts and authentication
+- **Jobs**: Job postings and requirements
+- **Candidates**: Candidate profiles and applications
+- **History**: Candidate interaction history
+- **Settings**: Organization-specific settings
+- **Lanes**: Custom workflow stages
+
+### Key Relationships
+
+- Organizations have multiple Users
+- Jobs belong to Organizations
+- Candidates are associated with Jobs
+- History tracks all candidate interactions
+- Settings are organization-specific
+
+## 🔒 Security Features
+
+### Authentication & Authorization
+
+- JWT-based authentication with encryption
+- Role-based access control (RBAC)
+- Session management with secure cookies
+- Two-factor authentication (2FA)
+- Password reset with secure tokens
+
+### Data Protection
+
+- Encrypted data transmission (HTTPS)
+- Secure file upload and storage
+- Input validation and sanitization
+- SQL injection prevention
+- XSS protection
+
+### Privacy Compliance
+
+- GDPR-compliant data handling
+- User consent management
+- Data retention policies
+- Right to be forgotten implementation
+- Privacy policy integration
+
+## 🚀 Deployment
+
+### Production Deployment
+
+1. **Environment Setup**
+
+   ```bash
+   npm run build
+   npm start
+   ```
+
+2. **PM2 Process Management**
+
+   ```bash
+   pm2 start "npm run start" --name "hiretrack"
+   ```
+
+3. **Nginx Configuration**
+
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/upforcetech/hiretrack.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+## 📈 Performance Optimization
 
-- [ ] [Set up project integrations](https://gitlab.com/upforcetech/hiretrack/-/settings/integrations)
+### Frontend Optimization
 
-## Collaborate with your team
+- Code splitting and lazy loading
+- Image optimization and compression
+- Caching strategies
+- Bundle size optimization
+- Progressive Web App (PWA) features
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Backend Optimization
 
-## Test and Deploy
+- Database indexing and query optimization
+- API response caching
+- File compression and CDN integration
+- Connection pooling
+- Rate limiting and throttling
 
-Use the built-in continuous integration in GitLab.
+### Monitoring & Analytics
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+- Application performance monitoring
+- Error tracking and logging
+- User analytics and behavior tracking
+- Database performance monitoring
+- Server resource monitoring
 
----
+## 🤝 Contributing
 
-# Editing this README
+### Development Guidelines
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+1. Fork the repository
+2. Create a feature branch
+3. Follow coding standards and conventions
+4. Write comprehensive tests
+5. Submit a pull request with detailed description
 
-## Suggestions for a good README
+### Code Standards
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+- TypeScript for type safety
+- ESLint for code linting
+- Prettier for code formatting
+- Conventional commits for version control
+- Comprehensive documentation
 
-## Name
+## 📄 License
 
-Choose a self-explaining name for your project.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Description
+## 🆘 Support
 
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Documentation
 
-## Badges
+- [User Guide](docs/user-guide.md)
+- [API Documentation](docs/api.md)
+- [Deployment Guide](docs/deployment.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-
-Show your appreciation to those who have contributed to the project.
-
-## License
-
-For open source projects, say how it is licensed.
-
-## Project status
-
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+_Built with ❤️ in India, using Next.js, TypeScript, and MongoDB_

@@ -1,12 +1,11 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { useDropzone } from "react-dropzone";
-import { Upload, X } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { RenameFileDialog } from "./rename-file-dialog";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useCallback, useState } from 'react';
+import Image from 'next/image';
+import { useDropzone } from 'react-dropzone';
+import { Upload, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { RenameFileDialog } from './rename-file-dialog';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -17,7 +16,7 @@ interface FileUploadProps {
       url: string;
       type: string;
       size: number;
-    }>
+    }>,
   ) => void;
   isEdit?: boolean;
   accept: Record<string, string[]>;
@@ -54,19 +53,12 @@ interface RenameFileState {
   };
 }
 
-// interface User {
-//   id: string;
-//   name: string;
-//   email: string;
-//   role: string;
-// }
-
 export const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return "0 Bytes";
+  if (bytes === 0) return '0 Bytes';
   const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 };
 
 export function PortalFileUpload({
@@ -75,29 +67,13 @@ export function PortalFileUpload({
   maxFiles = 1,
   files,
   existingFiles = [],
-  id = "",
+  id = '',
   setter,
-  isEdit = true,
 }: FileUploadProps) {
-  // console.log('files :>> ', files);
   const [renameFile, setRenameFile] = useState<RenameFileState>({
     file: null,
     isExisting: false,
   });
-  // const [user, setuser] = useState<User | null>(null);
-  // const [droppedFiles, setDroppedFiles] = useState<string[]>();
-
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          // setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
 
   const handleRename = (newName: string) => {
     if (renameFile.file) {
@@ -105,16 +81,15 @@ export function PortalFileUpload({
         type: renameFile.file.type,
       });
       const updatedFiles = files.map((f) =>
-        f === renameFile.file ? newFile : f
+        f === renameFile.file ? newFile : f,
       );
       setter?.(updatedFiles);
-      // setDroppedFiles((prev = []) => [...new Set([...prev, newName])]);
     }
   };
 
   const handleRemoveFile = (fileNameToRemove: string) => {
     const updatedFiles = files.filter(
-      (file) => file?.name !== fileNameToRemove
+      (file) => file?.name !== fileNameToRemove,
     );
     setter(updatedFiles);
   };
@@ -122,11 +97,8 @@ export function PortalFileUpload({
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
       onFileSelect(acceptedFiles);
-      // setDroppedFiles((prev = []) => [
-      //   ...new Set([...prev, ...acceptedFiles.map((file) => file.name)]),
-      // ]);
     },
-    [onFileSelect]
+    [onFileSelect],
   );
 
   const { getRootProps, getInputProps } = useDropzone({
@@ -144,39 +116,43 @@ export function PortalFileUpload({
 
   return (
     <div className="space-y-4" id={id}>
-      <div className="flex justify-center items-center gap-4">
-        <Card className="w-16 h-16 flex-shrink-0" {...getRootProps()}>
+      <div className="flex items-center justify-center gap-4">
+        <Card className="h-16 w-16 flex-shrink-0" {...getRootProps()}>
           <input {...getInputProps()} />
-          <CardContent className="p-2 h-full">
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-md h-full flex items-center justify-center hover:border-muted-foreground/50 transition-colors cursor-pointer group">
+          <CardContent className="h-full p-2">
+            <div className="group flex h-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-muted-foreground/50">
               <Upload className="h-4 w-4 text-muted-foreground group-hover:text-muted-foreground/70" />
             </div>
           </CardContent>
         </Card>
 
         <div className="flex-1">
-          <div className="flex items-center justify-between gap-4 p-2 bg-muted/30 rounded-md border">
+          <div className="flex items-center justify-between gap-4 rounded-md border bg-muted/30 p-2">
             <div className="flex items-center gap-2">
-              {previewFile?.type?.startsWith("image/") ? (
-                <img
-                  src={
-                    isExistingFile(previewFile)
-                      ? previewFile.url
-                      : URL.createObjectURL(previewFile)
-                  }
-                  alt={previewFile.name}
-                  className="w-8 h-8 rounded object-cover"
-                />
+              {previewFile?.type?.startsWith('image/') ? (
+                <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded">
+                  <Image
+                    src={
+                      isExistingFile(previewFile)
+                        ? previewFile.url
+                        : URL.createObjectURL(previewFile)
+                    }
+                    alt={previewFile.name}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
               ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">
-                  {previewFile?.name?.charAt(0).toUpperCase() || "N"}
+                <div className="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-bold text-white">
+                  {previewFile?.name?.charAt(0).toUpperCase() || 'N'}
                 </div>
               )}
               <div className="flex flex-col">
                 <p className="text-sm font-medium">
-                  {previewFile?.name || "No file uploaded"}
+                  {previewFile?.name || 'No file uploaded'}
                   {previewFile?.size && (
-                    <span className="text-xs text-muted-foreground ml-2">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       ({formatFileSize(previewFile.size)})
                     </span>
                   )}
@@ -186,23 +162,10 @@ export function PortalFileUpload({
 
             {previewFile?.name && (
               <div className="flex items-center gap-2">
-                {/* <button
-                  type="button"
-                  className="p-2 hover:bg-muted rounded-md"
-                  onClick={() =>
-                    setRenameFile({
-                      file: files[0] || null,
-                      isExisting: !files[0],
-                      existingFile: existingFiles[0] || undefined,
-                    })
-                  }
-                >
-                  <Pencil className="h-4 w-4 text-muted-foreground" />
-                </button> */}
                 {files[0] && (
                   <button
                     type="button"
-                    className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                    className="rounded-md p-2 hover:bg-muted hover:text-red-500"
                     onClick={() => handleRemoveFile(files[0].name)}
                   >
                     <X className="h-4 w-4 text-muted-foreground" />
@@ -217,7 +180,7 @@ export function PortalFileUpload({
       <RenameFileDialog
         isOpen={!!renameFile.file || !!renameFile.existingFile}
         onClose={() => setRenameFile({ file: null, isExisting: false })}
-        fileName={renameFile.file?.name || renameFile.existingFile?.name || ""}
+        fileName={renameFile.file?.name || renameFile.existingFile?.name || ''}
         onRename={handleRename}
       />
     </div>

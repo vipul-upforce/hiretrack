@@ -1,5 +1,7 @@
-import { Attachment } from "@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema";
-import { Schema } from "mongoose";
+import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
+import { Schema } from 'mongoose';
+import { ChecklistResponses } from '@/types/checklist';
+
 export interface IinfoUpdateLog {
   title: string;
   previousValue?: unknown;
@@ -36,23 +38,23 @@ const candidateHistory = {
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: false,
     },
   },
   previousInterviewer: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     default: null,
   },
   currentInterviewer: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     default: null,
   },
   assignmentBy: {
     type: Schema.Types.ObjectId,
-    ref: "User",
+    ref: 'User',
     default: null,
   },
   note: {
@@ -71,24 +73,47 @@ const candidateHistory = {
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    }
   },
   attachments: [
     {
       id: String,
       name: String,
       url: String,
-      type: { type: String, default: "pdf" },
+      type: { type: String, default: 'pdf' },
       size: Number,
     },
   ],
+  checklistForm: {
+    checklistId: String,
+    checklistName: String,
+    checklistType: {
+      type: String,
+      enum: ['incoming', 'outgoing'],
+    },
+    laneId: String,
+    laneName: String,
+    responses: {
+      type: Map,
+      of: Schema.Types.Mixed,
+    },
+    completedAt: Date,
+    completedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+    },
+  },
 };
 
 export const historySchema = new Schema({
   jobId: {
     type: String,
-    required: true,
+    default: null,
   },
   candidateId: {
     type: String,
@@ -96,8 +121,18 @@ export const historySchema = new Schema({
   },
   history: [candidateHistory],
 });
+// 4. History - Candidate + Job + DateTime (N+1 queries)
+historySchema.index(
+  {
+    candidateId: 1,
+    jobId: 1,
+    'history.dateTime': -1,
+  },
+  { name: 'idx_history_candidate_job_datetime', background: true },
+);
 
 export interface ICandidateHistory {
+  _id?: string;
   dateTime: string;
   title: string | null;
   remark?: {
@@ -148,7 +183,9 @@ export interface ICandidateHistory {
           name: string;
           email: string;
         }
+      | string
       | null;
+    isPrivate?: boolean;
   };
   attachments: {
     id: string;
@@ -157,9 +194,23 @@ export interface ICandidateHistory {
     type: string;
     size: number;
   }[];
+  checklistForm?: {
+    checklistId: string;
+    checklistName: string;
+    checklistType: 'incoming' | 'outgoing';
+    laneId: string;
+    laneName: string;
+    responses: ChecklistResponses;
+    completedAt: Date;
+    completedBy: {
+      _id: string;
+      name: string;
+      email: string;
+    };
+  };
 }
 export interface IHistory {
-  jobId: string;
+  jobId: string | null;
   candidateId: string;
   history: ICandidateHistory[];
 }

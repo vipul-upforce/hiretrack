@@ -1,13 +1,13 @@
-import * as React from "react";
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 interface RenameFileDialogProps {
   isOpen: boolean;
@@ -36,8 +36,8 @@ export function RenameFileDialog({
     const hasExtension = /\.[^/.]+$/.test(newName);
 
     // If original filename has an extension and new name doesn't, copy the extension
-    if (!hasExtension && fileName.includes(".")) {
-      const originalExt = fileName.split(".").pop();
+    if (!hasExtension && fileName.includes('.')) {
+      const originalExt = fileName.split('.').pop();
       const nameWithExt = `${newName}.${originalExt}`;
       onRename(nameWithExt);
     } else {
@@ -49,12 +49,12 @@ export function RenameFileDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="p-0 overflow-hidden flex flex-col z-[99999]">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Rename File</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="py-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+          <div className="flex-1 overflow-y-auto px-6 py-4">
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -62,11 +62,15 @@ export function RenameFileDialog({
               placeholder="Enter new file name"
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-t bg-background px-6 py-4 sticky bottom-0 z-10">
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={newName.length < 3}>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={newName.length < 3}
+            >
               Rename
             </Button>
           </DialogFooter>

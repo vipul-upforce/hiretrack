@@ -1,16 +1,23 @@
-"use client";
+'use client';
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useToast } from "@/hooks/use-toast";
-import { useLoginMutation } from "@/lib/features/auth/authApi";
-import { useCustomFields } from "@/Custom_Fields/hooks/use-customFields";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import * as jose from "jose";
-import CryptoJS from "crypto-js";
-import { LoginFormValues, UserWithoutCF } from "@/types/login";
-import { useCallback } from "react";
-import { OneOfMulOrganization } from "@/components/auth/OrganizationDialog";
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
+import {
+  useLoginMutation,
+  useSendOtpMutation,
+  useLazyValidateLicenseQuery,
+} from '@/lib/features/auth/authApi';
+import { useCustomFields } from '@/Custom_Fields/hooks/use-customFields';
+
+import { LoginFormValues } from '@/types/login';
+import { useCallback, useRef } from 'react';
+import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
+import { useDispatch } from 'react-redux';
+import { fetchUserFromToken } from '@/lib/redux/authSlice';
+import { AppDispatch } from '@/lib/redux/store';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { getRedirectUrlFromSearchParams } from '@/lib/utils/redirectUtils';
 
 interface HandleLoginSubmitProps {
   selectedOrg?: string;
@@ -30,63 +37,98 @@ export const useHandleLoginSubmit = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [login, { isLoading }] = useLoginMutation();
+
+  const [login, { isLoading: isLoggingIn }] = useLoginMutation();
+  const [sendOtp, { isLoading: isSendingOtp }] = useSendOtpMutation();
+  const [triggerLicenseCheck, { isLoading: isCheckingLicense }] =
+    useLazyValidateLicenseQuery();
+
   const { setUserLoggedIn } = useCustomFields();
+  const dispatch = useDispatch<AppDispatch>();
 
-  const signToken = async (payload: unknown) => {
-    const JWT_SECRET = "your_jwt_secret_key";
-    try {
-      const parsedPayload = payload;
-      const encryptedPayload = CryptoJS.AES.encrypt(
-        JSON.stringify(parsedPayload),
-        JWT_SECRET
-      ).toString();
-      const secretKey = new TextEncoder().encode(JWT_SECRET);
-      const jwt = await new jose.SignJWT({ user: encryptedPayload })
-        .setProtectedHeader({ alg: "HS256" })
-        .setIssuedAt()
-        .setExpirationTime("30d")
-        .sign(secretKey);
-      return jwt;
-    } catch {
-      throw new Error("Failed to sign token");
-    }
-  };
-
-  const getRedirectUrl = (userRole: string, organizationName?: string) => {
-    const redirectTo =
-      searchParams?.get("redirect") || searchParams?.get("returnUrl");
-
-    if (redirectTo) {
-      try {
-        const decodedUrl = decodeURIComponent(redirectTo);
-        if (decodedUrl.startsWith("/") && !decodedUrl.startsWith("//")) {
-          return decodedUrl;
-        }
-      } catch (error) {
-        console.warn("Invalid redirect URL:", redirectTo);
-      }
-    }
-
-    if (userRole === "candidate") {
-      return isMultiple ? `/apply-jobs?o=${organizationName}` : "/apply-jobs";
-    } else if (
-      userRole === "admin" ||
-      userRole === "interviewer" ||
-      userRole === "hr"
-    ) {
-      return "/dashboard";
-    }
-
-    return "/";
-  };
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+    // Cache license check result to prevent duplicate calls
+    const licenseCheckCache = useRef<{ checked: boolean; valid: boolean } | null>(null);
 
   const handleSubmit = useCallback(
     async (
       values: LoginFormValues,
-      { setStatus }: { setStatus: (message: string) => void }
+      setIsSubmitting: (isSubmitting: boolean) => void,
+      { setStatus }: { setStatus: (message: string) => void },
     ) => {
       setLoginFormValues(values);
+
+      // // firstly check the license
+      // try {
+      //   const data = await triggerLicenseCheck().unwrap();
+
+      //   if (!data.valid) {
+      //     throw new Error(data.error || 'License validation failed');
+      //   }
+      //   // Keep button disabled during login process - don't set to false here
+      // } catch (e: unknown) {
+      //   // Handle license check failure
+      //   let errorMessage =
+      //     'License not verified. Please contact support or try re-installing the platform.';
+
+      //   if (e && typeof e === 'object' && 'data' in e) {
+      //     const errorData = e as { data?: { message?: string } };
+      //     errorMessage = errorData.data?.message || 'License check failed';
+      //   } else if (e instanceof Error) {
+      //     errorMessage = e.message;
+      //   }
+
+      //   toast({
+      //     title: 'Error',
+      //     description: errorMessage,
+      //     variant: 'destructive',
+      //   });
+      //   setIsSubmitting(false);
+      //   return;
+      // }
+         // Check license only once per login session
+         if (!licenseCheckCache.current) {
+          try {
+            const data = await triggerLicenseCheck().unwrap();
+  
+            if (!data.valid) {
+              licenseCheckCache.current = { checked: true, valid: false };
+              throw new Error(data.error || 'License validation failed');
+            }
+            
+            // Cache successful license check
+            licenseCheckCache.current = { checked: true, valid: true };
+          } catch (e: unknown) {
+            // Handle license check failure
+            let errorMessage =
+              'License not verified. Please contact support or try re-installing the platform.';
+  
+            if (e && typeof e === 'object' && 'data' in e) {
+              const errorData = e as { data?: { message?: string } };
+              errorMessage = errorData.data?.message || 'License check failed';
+            } else if (e instanceof Error) {
+              errorMessage = e.message;
+            }
+  
+            toast({
+              title: 'Error',
+              description: errorMessage,
+              variant: 'destructive',
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } else if (!licenseCheckCache.current.valid) {
+          // If license was already checked and invalid, return early
+          toast({
+            title: 'Error',
+            description: 'License validation failed',
+            variant: 'destructive',
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      // Login
       try {
         const response = await login({
           ...values,
@@ -94,6 +136,7 @@ export const useHandleLoginSubmit = ({
           orgId: selectedOrg,
         }).unwrap();
 
+        // Handle Multiple Organizations
         if (
           response.organizations &&
           response.organizations.length > 1 &&
@@ -101,121 +144,114 @@ export const useHandleLoginSubmit = ({
         ) {
           setOrganizations(response.organizations);
           setOrganizationDialogOpen(true);
+          setIsSubmitting(false);
           return;
         }
 
-        const decryptedResponse = await verifyAndDecryptJWTToken(
-          String(response.user)
-        );
-
-        if (!decryptedResponse.success || !decryptedResponse.user) {
-          setStatus(decryptedResponse.error || "Failed to process login.");
-          toast({
-            title: "Error",
-            description: decryptedResponse.error || "Failed to process login.",
-            variant: "destructive",
-          });
-          return;
-        }
-        let is2FAEnabled = false;
-        try {
-          const check2FA = await fetch(
-            `/api/settings/twofa?orgId=${decryptedResponse.user.organizationId}`
-          );
-          const data = await check2FA.json();
-          is2FAEnabled = data.twoFA.enable2FA;
-          if (!check2FA.ok) {
-            throw new Error("Failed to fetch 2FA info");
-          }
-        } catch (error) {
-          console.error(error);
-          setStatus("Failed to fetch 2FA info");
-          toast({
-            title: "Error",
-            description: "Failed to fetch 2FA info",
-            variant: "destructive",
-          });
-        }
-        // const { is2FAEnabled } = await check2FA(String(response.user));
-
+        // Handle 2FA
+        const is2FAEnabled = response.twofa;
         if (is2FAEnabled) {
+          const { organizationId } = response;
           try {
-            const otpResponse = await fetch("/api/auth/2fa/send-otp", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email: values.email.toLowerCase().trim(),
-                organizationId: decryptedResponse.user.organizationId,
-              }),
-            });
-            // const data = await otpResponse.json();
-            if (!otpResponse.ok) {
-              throw new Error("Failed to send OTP");
-            }
-
-            toast({
-              title: "Check your email",
-              description: "An OTP has been sent to your email address.",
-              variant: "default",
-            });
-            router.push(
-              `/auth/2fa/verify?email=${values.email.toLowerCase().trim()}&orgId=${decryptedResponse.user.organizationId}`
+            // Ensure URL components are properly encoded to prevent issues with special characters
+            const encodedEmail = encodeURIComponent(
+              values.email.toLowerCase().trim(),
             );
+            const encodedOrgId = encodeURIComponent(
+              organizationId?.toString() || '',
+            );
+            const url =
+              `/auth/2fa/verify?email=${encodedEmail}&orgId=${encodedOrgId}${response?.isCandidate ? '&isCandidate=true' : ''}` as string;
+
+            // Keep button disabled during OTP sending - button will be disabled via isLoading state
+            await sendOtp({
+              email: values.email.toLowerCase().trim(),
+              organizationId,
+              isCandidate: response.isCandidate,
+            })
+              .unwrap()
+              .then(() => {
+                setIsSubmitting(false);
+                toast({
+                  title: 'Check your email',
+                  description: 'An OTP has been sent to your email address.',
+                  variant: 'default',
+                });
+                router.push(url);
+                localStorage.setItem(
+                  `otp_cooldown_${values.email.toLowerCase().trim()}_${organizationId}`,
+                  Date.now().toString()
+                );
+              });
           } catch (error) {
-            console.error(error);
-            setStatus("Failed to send OTP.");
+            logger.error(error);
+            const errorMessage =
+              (error as { data?: { message: string } })?.data?.message ||
+              (error instanceof Error ? error.message : 'Failed to send OTP');
+
+            setStatus(errorMessage);
+            setIsSubmitting(false);
             toast({
-              title: "Error",
-              description: "Failed to send OTP.",
-              variant: "destructive",
+              title: 'Error',
+              description: errorMessage,
+              variant: 'destructive',
             });
           }
-          return;
+          return; // Return early after OTP handling to prevent further execution
         }
 
-        const userWithoutCustomFields: UserWithoutCF = {
-          ...decryptedResponse.user,
-        };
-        if (userWithoutCustomFields.organizationInfo) {
-          userWithoutCustomFields.organizationInfo = {
-            ...userWithoutCustomFields.organizationInfo,
-          };
-          delete userWithoutCustomFields.organizationInfo.customFields;
+        // Only proceed if login was successful
+        if (response.loggedIn === true) {
+          // Handle Redirects & Redux State
+          const redirectUrl = getRedirectUrlFromSearchParams(
+            searchParams,
+            user,
+            isMultiple,
+          );
+          dispatch(fetchUserFromToken());
+          if (isAuthenticated) {
+            if (redirectUrl !== '/') {
+              router.push(redirectUrl);
+            }
+            setUserLoggedIn(true);
+            setIsSubmitting(false);
+            toast({
+              title: 'Success',
+              description: 'Login successful',
+              variant: 'default',
+            });
+          }
+        } else {
+          // Explicitly handle case where loggedIn is false/undefined
+          // This prevents any accidental execution
+          logger.warn('Login response indicates not logged in', {
+            loggedIn: response.loggedIn,
+            hasOrganizations: !!response.organizations,
+          });
+          setIsSubmitting(false);
         }
-        const token = await signToken(userWithoutCustomFields);
-        Cookies.set("token", String(token), { expires: 30 });
-        setUserLoggedIn(true);
-
-        toast({
-          title: "Success",
-          description: "Login successful",
-          variant: "default",
-        });
-
-        const redirectUrl = getRedirectUrl(
-          decryptedResponse.user.role,
-          decryptedResponse.user.organizationInfo?.name
-        );
-
-        router.push(redirectUrl);
       } catch (err: unknown) {
+        logger.error(err);
         const errorMessage =
           err &&
-          typeof err === "object" &&
-          "data" in err &&
+          typeof err === 'object' &&
+          'data' in err &&
           (err.data as { error: string }).error
             ? (err.data as { error: string }).error
-            : "An unknown error occurred";
+            : 'An unknown error occurred';
         setStatus(errorMessage);
+        setIsSubmitting(false);
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
     [
       login,
+      sendOtp,
+      triggerLicenseCheck,
       selectedOrg,
       isMultiple,
       setOrganizations,
@@ -224,9 +260,12 @@ export const useHandleLoginSubmit = ({
       router,
       toast,
       searchParams,
-      // check2FA,
-    ]
+      user,
+    ],
   );
 
-  return { handleSubmit, isLoading };
+  return {
+    handleSubmit,
+    isLoading: isLoggingIn || isSendingOtp || isCheckingLicense,
+  };
 };

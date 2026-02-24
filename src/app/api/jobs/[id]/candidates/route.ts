@@ -1,100 +1,227 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { History } from "@/lib/mongodb";
-import { Candidate } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
-import { ICandidate } from "@/lib/models/candidate";
-import { ProjectionType } from "mongoose";
-// import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Candidate } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { Types } from 'mongoose';
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    await connectToDatabase();
-    let role = "";
-    const token = _request.cookies.get("token");
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+    // Resolve params and authenticate in parallel
+    const [{ id }, userData] = await Promise.all([
+      params,
+      getAuthenticatedUser(_request, ['interviewer', 'admin', 'hr']),
+    ]);
+
+    // Handle authentication errors
+    if (!userData) {
+      return NextResponse.json(
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        role = userData.role;
-      }
     }
 
-    if (role === "candidate") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Validate job ID
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: 'Invalid job ID' }, { status: 400 });
     }
 
-    const { id } = await params;
+    // Connect to database
+    await connectToDatabase();
+
     if (!Candidate) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Database model not available' },
+        { status: 500 },
       );
     }
-    let candidates = null;
-    const projection: ProjectionType<ICandidate> =
-      role === "interviewer"
-        ? {
-            currentCTC: 0,
-            expectedCTC: 0,
-            customFields: 0,
-          }
-        : {};
 
-    candidates = await Candidate.find({ jobId: id }, projection)
-      .populate("remarks.userId", "name email")
-      .populate([
-        {
-          path: "assignment.interviewerId",
-          select: "_id name email",
+    // Use aggregation to efficiently get candidates with remarksCount
+    // Excludes large arrays (history, remarks) to reduce payload size
+    // Includes resume and attachments to prevent data loss when updating candidates
+    const jobObjectId = new Types.ObjectId(id);
+
+    const candidates = await Candidate.aggregate([
+      // Match candidates for this job
+      { $match: { jobId: jobObjectId } },
+
+      // Add remarksCount field
+      {
+        $addFields: {
+          remarksCount: { $size: { $ifNull: ['$remarks', []] } },
         },
-        {
-          path: "remarks.userId",
-          select: "name email",
+      },
+
+      // Project fields (exclude large arrays: history and remarks)
+      // Include resume and attachments to prevent null overwrites
+      {
+        $project: {
+          history: 0,
+          remarks: 0, // Exclude full remarks array
+          ...(userData?.role === 'interviewer'
+            ? {
+                currentCTC: 0,
+                expectedCTC: 0,
+                customFields: 0,
+              }
+            : {}),
         },
-        {
-          path: "jobId",
-          select: "title description ",
+      },
+
+      // Sort by createdAt
+      { $sort: { 'tracking.createdAt': -1 } },
+
+      // Lookup interviewer
+      {
+        $lookup: {
+          from: 'users',
+          let: { interviewerId: '$assignment.interviewerId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$interviewerId'] } } },
+            { $project: { _id: 1, name: 1, email: 1 } },
+          ],
+          as: 'interviewerData',
         },
-      ])
-      .lean();
+      },
+      {
+        $unwind: {
+          path: '$interviewerData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          assignment: {
+            $cond: {
+              if: {
+                // Convert object to array (Key-Value pairs).
+                // If it has 0 keys (it's empty or null), this logic returns false.
+                $gt: [
+                  {
+                    $size: { $objectToArray: { $ifNull: ['$assignment', {}] } },
+                  },
+                  0,
+                ],
+              },
+              then: {
+                $mergeObjects: [
+                  '$assignment',
+                  { interviewerId: '$interviewerData' },
+                ],
+              },
+              else: null, // Force null if object is empty
+            },
+          },
+        },
+      },
+      { $project: { interviewerData: 0 } },
 
-    if (!History) return;
+      // Lookup followUp user
+      {
+        $lookup: {
+          from: 'users',
+          let: { followUpUserId: '$followUp.userId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$followUpUserId'] } } },
+            { $project: { _id: 1, name: 1, email: 1 } },
+          ],
+          as: 'followUpUser',
+        },
+      },
+      {
+        $unwind: {
+          path: '$followUpUser',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          'followUp.userId': '$followUpUser',
+        },
+      },
+      { $project: { followUpUser: 0 } },
 
-    const candidatesWithHistory = await Promise.all(
-      candidates.map(async (candidate) => {
-        const history = await History?.findOne({
-          jobId: id,
-          candidateId: candidate._id.toString(),
-        })
-          .populate("history.currentInterviewer", "_id name email")
-          .populate("history.previousInterviewer", "_id name email")
-          .populate("history.assignmentBy", "_id name email")
-          .populate("history.note.userId", "_id name email")
-          .lean();
+      // Lookup job
+      {
+        $lookup: {
+          from: 'jobs',
+          let: { jobId: '$jobId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$jobId'] } } },
+            { $project: { _id: 1, title: 1, description: 1 } },
+          ],
+          as: 'jobData',
+        },
+      },
+      {
+        $unwind: {
+          path: '$jobData',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $addFields: {
+          jobId: '$jobData',
+        },
+      },
+      { $project: { jobData: 0 } },
 
-        return {
-          ...candidate,
-          history: history
-            ? history.history.filter((entry) =>
-                role === "admin" || role === "hr"
-                  ? true
-                  : !entry.remark?.isPrivate
-              )
-            : [],
-        };
-      })
-    );
+      // Add empty remarks array for compatibility
+      {
+        $addFields: {
+          remarks: [],
+        },
+      },
 
-    // console.log("Candidate with History: ",candidatesWithHistory)
-    return NextResponse.json(candidatesWithHistory);
+      // Lookup DuplicateCandidate to get duplicate information
+      {
+        $lookup: {
+          from: 'duplicatecandidates',
+          let: {
+            candidateEmail: { $toLower: { $trim: { input: '$email' } } },
+            orgId: { $toObjectId: '$organizationId' },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$email', '$$candidateEmail'] },
+                    { $eq: ['$orgId', '$$orgId'] },
+                  ],
+                },
+              },
+            },
+            { $project: { count: { $size: '$duplicates' } } },
+          ],
+          as: 'duplicateInfo',
+        },
+      },
+      {
+        $addFields: {
+          duplicateCount: {
+            $ifNull: [{ $arrayElemAt: ['$duplicateInfo.count', 0] }, 0],
+          },
+        },
+      },
+      {
+        $project: {
+          duplicateInfo: 0,
+        },
+      },
+    ]).exec();
+
+    // SAFE OPTIMIZATION: Add cache header (doesn't change response structure)
+    const response = NextResponse.json(candidates);
+    response.headers.set('Cache-Control', 'private, max-age=10'); // 10s cache
+    return response;
   } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
+      { status: 500 },
+    );
   }
 }

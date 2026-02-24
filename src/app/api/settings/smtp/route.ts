@@ -1,88 +1,73 @@
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId;
-    let role;
-    let userData;
-    const token = req.cookies.get("token");
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
-      );
-      userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId;
-        role = userData.role;
-      }
-    }
-    if (!userData || role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, 'admin'),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
-    const settings = await Settings.findOne({ organizationId: organizationId });
+    const settings = await Settings.findOne({
+      organizationId: userData.organizationId,
+    })
+      .select('mailConfig')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json({
-        smtp_host: "",
-        smtp_port: "",
-        smtp_user: "",
-        smtp_password: "",
-        smtp_from: "",
-        mailProvider: "",
-        resend_api_key: "",
-        resend_from: "",
-        resend_reply_to: "",
+        smtp_host: '',
+        smtp_port: '',
+        smtp_user: '',
+        smtp_password: '',
+        smtp_from: '',
+        mailProvider: '',
+        resend_api_key: '',
+        resend_from: '',
+        resend_reply_to: '',
       });
     }
 
     return NextResponse.json(settings.mailConfig);
   } catch {
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
-    let userData;
-    const token = req.cookies.get("token");
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
-      );
-      if (decryptedResponse.success) {
-        userData = decryptedResponse.user;
-      }
-    }
-
-    if (!userData || userData.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const [userData, mailConfig] = await Promise.all([
+      getAuthenticatedUser(req, 'admin'),
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
 
-    const mailConfig = await req.json();
-
     let mailConfigObj;
 
-    if (mailConfig.mailProvider === "smtp") {
+    if (mailConfig.mailProvider === 'smtp') {
       mailConfigObj = {
         smtp_user: mailConfig.smtp_user,
         smtp_password: mailConfig.smtp_password,
@@ -91,14 +76,14 @@ export async function PUT(req: NextRequest) {
         smtp_from: mailConfig.smtp_from,
         mailProvider: mailConfig.mailProvider,
       };
-    } else if (mailConfig.mailProvider === "resend") {
+    } else if (mailConfig.mailProvider === 'resend') {
       mailConfigObj = {
         mailProvider: mailConfig.mailProvider,
         resend_api_key: mailConfig.resend_api_key,
         resend_from: mailConfig.resend_from,
         resend_reply_to: mailConfig.resend_reply_to,
       };
-    } else if (mailConfig.mailProvider === "brevo") {
+    } else if (mailConfig.mailProvider === 'brevo') {
       mailConfigObj = {
         mailProvider: mailConfig.mailProvider,
         brevo_api_key: mailConfig.brevo_api_key,
@@ -116,21 +101,21 @@ export async function PUT(req: NextRequest) {
         new: true,
         runValidators: true,
         upsert: true,
-      }
+      },
     );
 
     if (!updatedUser) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
-    return NextResponse.json({ message: "Settings updated successfully" });
+    return NextResponse.json({ message: 'Settings updated successfully' });
   } catch {
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
 }

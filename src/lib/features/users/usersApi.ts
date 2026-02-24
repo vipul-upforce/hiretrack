@@ -1,4 +1,4 @@
-import { apiSlice } from "../api/apiSlice";
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface User {
   organizationId: string | object;
@@ -6,7 +6,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: "hr" | "interviewer" | "admin" | "candidate";
+  role: 'hr' | 'interviewer' | 'admin' | 'candidate' | 'system';
   createdAt: string;
   isDeleted?: boolean;
 }
@@ -18,30 +18,30 @@ export interface UserEdit {
   role?: string;
 }
 
-export const usersApi = apiSlice.injectEndpoints({
+export const usersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getUsers: builder.query<User[], void>({
-      query: () => "/api/users",
-      providesTags: ["Users"],
+      query: () => '/users',
+      providesTags: ['Users'],
     }),
     getUserById: builder.query<User, string>({
-      query: (id) => `/api/users/${id}`,
-      providesTags: ["Users"],
+      query: (id) => `/users/${id}`,
+      providesTags: ['Users'],
     }),
     deleteUser: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/api/users/${id}`,
-        method: "DELETE",
+        url: `/users/${id}`,
+        method: 'DELETE',
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'],
     }),
     updateUser: builder.mutation<void, UserEdit>({
       query: ({ id, ...userData }) => ({
-        url: `/api/users/${id}`,
-        method: "PUT",
+        url: `/users/${id}`,
+        method: 'PUT',
         body: { ...userData },
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'],
     }),
   }),
   overrideExisting: true,

@@ -1,47 +1,47 @@
-"use client";
+'use client';
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Formik, Form, Field } from "formik";
-import * as Yup from "yup";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff } from "lucide-react";
-import { useResetPasswordbyUserMutation } from "@/lib/features/auth/authApi";
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Formik, Form, Field, FieldProps } from 'formik';
+import * as Yup from 'yup';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff } from 'lucide-react';
+import { useResetPasswordbyUserMutation } from '@/lib/features/auth/authApi';
 
 const ResetPasswordSchema = Yup.object().shape({
   password: Yup.string()
-    .min(6, "Password must be at least 6 characters")
-    .matches(/[a-z]/, "Password must contain at least one lowercase letter")
-    .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .matches(/\d/, "Password must contain at least one number")
+    .min(6, 'Password must be at least 6 characters')
+    .matches(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .matches(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .matches(/\d/, 'Password must contain at least one number')
     .matches(
       /[@$!%*?&]/,
-      "Password must contain at least one special character"
+      'Password must contain at least one special character',
     )
-    .required("Password is required"),
+    .required('Password is required'),
   confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password")], "Passwords must match")
-    .required("Please confirm your password"),
+    .oneOf([Yup.ref('password')], 'Passwords must match')
+    .required('Please confirm your password'),
 });
 
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [token, setToken] = useState<string>("");
+  const [token, setToken] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetPasswordbyUser] = useResetPasswordbyUserMutation();
 
   useEffect(() => {
-    const tokenParam = searchParams?.get("token");
+    const tokenParam = searchParams?.get('token');
     if (!tokenParam) {
-      router.push("/auth/login");
+      router.push('/auth/login');
     } else {
       setToken(tokenParam);
     }
@@ -49,31 +49,31 @@ function ResetPasswordContent() {
 
   const handleSubmit = async (
     values: { password: string; confirmPassword: string },
-    { setStatus }: { setStatus: (message: string) => void }
+    { setStatus }: { setStatus: (message: string) => void },
   ) => {
     try {
       await resetPasswordbyUser({ password: values.password, token });
 
       toast({
-        title: "Success",
+        title: 'Success',
         description:
-          "Password reset successful. Please login with your new password.",
+          'Password reset successful. Please login with your new password.',
       });
-      router.push("/auth/login");
+      router.push('/auth/login');
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "An error occurred");
+      setStatus(error instanceof Error ? error.message : 'An error occurred');
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Reset Password</CardTitle>
         </CardHeader>
         <CardContent>
           <Formik
-            initialValues={{ password: "", confirmPassword: "" }}
+            initialValues={{ password: '', confirmPassword: '' }}
             validationSchema={ResetPasswordSchema}
             onSubmit={handleSubmit}
           >
@@ -89,15 +89,15 @@ function ResetPasswordContent() {
                   <Label htmlFor="password">New Password</Label>
                   <div className="relative">
                     <Field name="password">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           id="password"
                           className={
                             errors.password && touched.password
-                              ? "border-red-500"
-                              : ""
+                              ? 'border-red-500'
+                              : ''
                           }
                         />
                       )}
@@ -106,7 +106,7 @@ function ResetPasswordContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                      className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {!showPassword ? (
@@ -117,7 +117,7 @@ function ResetPasswordContent() {
                     </Button>
                   </div>
                   {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs">
+                    <div className="text-xs text-red-500">
                       {errors.password}
                     </div>
                   )}
@@ -127,15 +127,15 @@ function ResetPasswordContent() {
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
                     <Field name="confirmPassword">
-                      {({ field }: any) => (
+                      {({ field }: FieldProps) => (
                         <Input
                           {...field}
-                          type={showConfirmPassword ? "text" : "password"}
+                          type={showConfirmPassword ? 'text' : 'password'}
                           id="confirmPassword"
                           className={
                             errors.confirmPassword && touched.confirmPassword
-                              ? "border-red-500"
-                              : ""
+                              ? 'border-red-500'
+                              : ''
                           }
                         />
                       )}
@@ -144,7 +144,7 @@ function ResetPasswordContent() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
+                      className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent"
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
@@ -157,13 +157,13 @@ function ResetPasswordContent() {
                     </Button>
                   </div>
                   {errors.confirmPassword && touched.confirmPassword && (
-                    <div className="text-red-500 text-xs">
+                    <div className="text-xs text-red-500">
                       {errors.confirmPassword}
                     </div>
                   )}
                 </div>
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" variant="primary" className="w-full">
                   Reset Password
                 </Button>
               </Form>
@@ -179,7 +179,7 @@ export default function ResetPassword() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex min-h-screen items-center justify-center bg-background">
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>Loading...</CardTitle>

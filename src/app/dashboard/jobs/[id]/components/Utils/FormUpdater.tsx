@@ -1,6 +1,6 @@
-import { Resume } from "@/lib/redux/types";
-import { useFormikContext } from "formik";
-import { useEffect } from "react";
+import { Resume } from '@/lib/redux/types';
+import { useFormikContext } from 'formik';
+import { useEffect } from 'react';
 
 type WorkExperience = {
   company: string;
@@ -13,41 +13,42 @@ type WorkExperience = {
 const parseDate = (dateStr: string): Date | null => {
   const currentDate = new Date();
   const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
   const monthAbbr = monthNames.map((m) => m.slice(0, 3));
 
   // Handle "Present"
-  if (dateStr.includes("Present")) return currentDate;
+  if (dateStr.includes('Present')) return currentDate;
 
   // Match full month names, abbreviations, and spacing inconsistencies
+  // eslint-disable-next-line security/detect-non-literal-regexp
   const dateRegex = new RegExp(
-    `(${monthNames.join("|")}|${monthAbbr.join("|")})\\s?\\d{0,2},?\\s?(\\d{4})`,
-    "i"
+    `(${monthNames.join('|')}|${monthAbbr.join('|')})\\s?\\d{0,2},?\\s?(\\d{4})`,
+    'i',
   );
   const match = dateStr.match(dateRegex);
 
   if (match) {
     const month =
       monthNames.findIndex(
-        (m) => m.toLowerCase() === match[1].toLowerCase()
+        (m) => m.toLowerCase() === match[1].toLowerCase(),
       ) !== -1
         ? monthNames.findIndex(
-            (m) => m.toLowerCase() === match[1].toLowerCase()
+            (m) => m.toLowerCase() === match[1].toLowerCase(),
           )
         : monthAbbr.findIndex(
-            (m) => m.toLowerCase() === match[1].toLowerCase()
+            (m) => m.toLowerCase() === match[1].toLowerCase(),
           );
 
     const year = parseInt(match[2], 10);
@@ -60,14 +61,14 @@ const parseDate = (dateStr: string): Date | null => {
 
 // Calculate total experience in years
 const calculateTotalExperience = (
-  workExperiences: WorkExperience[]
+  workExperiences: WorkExperience[],
 ): number => {
   let totalDays = 0;
 
   workExperiences.forEach(({ date }) => {
-    const [startStr, endStr] = date.split("-");
+    const [startStr, endStr] = date.split('-');
     const startDate = parseDate(startStr.trim());
-    const endDate = parseDate(endStr?.trim() || "Present");
+    const endDate = parseDate(endStr?.trim() || 'Present');
 
     if (startDate && endDate) {
       const differenceInMilliseconds = endDate.getTime() - startDate.getTime();
@@ -84,17 +85,17 @@ const calculateTotalExperience = (
 type FormValues = {
   name: string;
   email: string;
-  phone: string;
+  contact: string;
   location: string;
   skills: string[];
   experience: number;
 };
 
-const FormUpdater = ({
+function FormUpdater({
   parsedResumeData,
 }: {
   parsedResumeData: Resume | null;
-}) => {
+}) {
   const { values, setFieldValue, validateForm, setTouched } =
     useFormikContext<FormValues>();
 
@@ -102,59 +103,69 @@ const FormUpdater = ({
     if (parsedResumeData && parsedResumeData.profile) {
       const { profile } = parsedResumeData;
       if (!values.name && profile.name) {
-        setFieldValue("name", profile.name);
-        setTouched({ name: true });
+        setFieldValue('name', undefined);
+        setTouched({ name: false });
       }
       if (!values.email && profile.email) {
-        setFieldValue("email", profile.email);
-        setTouched({ email: true });
+        setFieldValue('email', undefined);
+        setTouched({ email: false });
+      }
+      if (!values.contact && profile.contact) {
+        setFieldValue('contact', undefined);
+        setTouched({ contact: false });
       }
 
       if (!values.location && profile.location) {
-        setFieldValue("location", profile.location);
-        setTouched({ location: true });
+        setFieldValue('location', undefined);
+        setTouched({ location: false });
       }
 
       if (
         values.skills.length === 0 &&
         parsedResumeData.skills?.descriptions.length > 0
       ) {
+        // Simple validation function - the heavy lifting is now done in the extraction
+        const isValidSkill = (skill: string) => {
+          const trimmed = skill.trim();
+          return (
+            trimmed.length >= 2 &&
+            trimmed.length <= 30 &&
+            trimmed.split(/\s+/).length <= 3 &&
+            /[a-zA-Z]/.test(trimmed) &&
+            !/^[\d\W_]+$/.test(trimmed)
+          );
+        };
+
         const splitSkills = [
           ...new Set([
             ...parsedResumeData.skills.featuredSkills
               .flatMap((desc) =>
                 desc.skill
-                  .replace(/^[^:]+:/, "")
-                  ?.split(/[,|;\/]+/)
+                  .replace(/^[^:]+:/, '')
+                  ?.split(/[,|;\/]+/) // eslint-disable-line no-useless-escape
                   .map((skill) => skill.trim())
-                  .filter((skill) => !/^[\d\W_]+$/.test(skill))
+                  .filter(isValidSkill),
               )
               .filter(Boolean),
             ...parsedResumeData.skills.descriptions
               .flatMap((desc) =>
                 desc
-                  .replace(/^[^:]+:/, "")
-                  ?.split(/[,|;\/]+/)
+                  .replace(/^[^:]+:/, '')
+                  ?.split(/[,|;\/]+/) // eslint-disable-line no-useless-escape
                   .map((skill) => skill.trim())
-                  .filter((skill) => !/^[\d\W_]+$/.test(skill))
+                  .filter(isValidSkill),
               )
               .filter(Boolean),
           ]),
-        ]
-          .filter(
-            (lineText) =>
-              lineText.trim().split(/\s+/).length <= 3 &&
-              lineText.trim().length <= 25
-          )
-          .slice(0, 20);
+        ].slice(0, 20);
 
-        setFieldValue("skills", splitSkills);
+        setFieldValue('skills', splitSkills);
         setTouched({ skills: true });
       }
 
       if (!values.experience && parsedResumeData.workExperiences.length > 0) {
         const exp = calculateTotalExperience(parsedResumeData.workExperiences);
-        setFieldValue("experience", exp);
+        setFieldValue('experience', exp);
         setTouched({ experience: true });
       }
     }
@@ -163,6 +174,6 @@ const FormUpdater = ({
   }, [parsedResumeData, setFieldValue]);
 
   return null; // This component doesn't render anything
-};
+}
 
 export default FormUpdater;

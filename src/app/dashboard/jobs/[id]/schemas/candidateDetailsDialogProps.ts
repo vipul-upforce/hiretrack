@@ -1,4 +1,4 @@
-import { Candidate } from "@/types/candidate";
+import { Candidate } from '@/types/candidate';
 
 export interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -11,4 +11,6 @@ export interface CandidateDetailsDialogProps {
   fromFilter?: boolean;
   refetchCandidates?: () => void;
   hideCloseButtons?: boolean;
+  isAssigning?: boolean;
+  setIsAssigning?: (open: boolean) => void;
 }

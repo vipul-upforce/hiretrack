@@ -1,58 +1,84 @@
-import { toast } from "@/hooks/use-toast";
-import { CandidateColumn, CandidateStatus } from "@/types/candidate";
-import { User } from "@/lib/features/users/usersApi";
+import { toast } from '@/hooks/use-toast';
+import { CandidateColumn, CandidateStatus } from '@/types/candidate';
 import {
   useUpdateLanesMutation,
   useDeleteLaneMutation,
+  useDeleteJobLaneMutation,
   useEditLaneMutation,
-} from "@/lib/features/lane/laneApi";
+  useRenameJobLaneMutation,
+} from '@/lib/features/lane/laneApi';
+import { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
+
 interface UseKanbanBoardProps {
   columns: CandidateColumn[];
   setColumns: (columns: CandidateColumn[]) => void;
-  user: User | null;
+  jobId?: string; // NEW: Add jobId for job-specific operations
   setIsConfirmLaneDeleteOpen: (open: boolean) => void;
   setIsLaneEditOpen: (open: boolean) => void;
-  refetch: () => Promise<any>;
+  refetch: () => Promise<unknown>;
 }
 
 export const useKanbanBoard = ({
   columns,
   setColumns,
-  user,
+  jobId,
   setIsConfirmLaneDeleteOpen,
   setIsLaneEditOpen,
   refetch,
 }: UseKanbanBoardProps) => {
   const [updateLanes] = useUpdateLanesMutation();
   const [editLane] = useEditLaneMutation();
-  const [deleteLane] = useDeleteLaneMutation();
+  const [deleteLane] = useDeleteLaneMutation(); // Keep for backward compatibility
+  const [deleteJobLane] = useDeleteJobLaneMutation(); // NEW: Job-specific deletion
+  const [renameJobLane] = useRenameJobLaneMutation(); // NEW: Job-specific renaming
+  const [migrationLanes, setMigrationLanes] = useState<string[]>([]);
+  const [isMigrationDialogOpen, setIsMigrationDialogOpen] = useState(false);
+  const [laneToDelete, setLaneToDelete] = useState<string | null>(null);
+
+  const { user } = useAppSelector((state) => state.auth);
 
   const updateLanesOrder = async (newColumns: CandidateColumn[]) => {
     const lansArray = newColumns.map((column) => column.id);
     try {
-      await updateLanes({
-        userId: user?.id || "",
+      // NEW: Use job-specific lanes if jobId is provided
+      const updateData: { userId: string; lanes: string[]; jobId?: string } = {
+        userId: user?.id || '',
         lanes: lansArray,
-      }).unwrap();
+        jobId: jobId || undefined,
+      };
+
+      if (jobId) {
+        updateData.jobId = jobId;
+      }
+
+      await updateLanes(updateData).unwrap();
+
+      toast({
+        title: 'Success',
+        description: jobId
+          ? 'Job lanes updated successfully'
+          : 'Lanes updated successfully',
+      });
     } catch (error: unknown) {
       if (error instanceof Error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: error.message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }
   };
 
   const handleAddLane = (title: string) => {
-    const newLaneId = title.toLowerCase().replace(/\s+/g, "-");
+    const newLaneId = title.toLowerCase().replace(/\s+/g, '-');
     const isDuplicate = columns.some((column) => column.id === newLaneId);
     if (isDuplicate) {
       toast({
-        title: "Error",
-        description: `Lane with title "${title}" already exists.`,
-        variant: "destructive",
+        title: 'Error',
+        description: `Lane with title "${title}" already exists.`, // Corrected escaping for consistency
+        variant: 'destructive',
       });
       return;
     }
@@ -76,32 +102,49 @@ export const useKanbanBoard = ({
     if (!user?.id) return;
 
     try {
-      await deleteLane({
-        organizationId: user.organizationId,
-        laneId,
-      }).unwrap();
-      toast({
-        title: "Lane deleted",
-        description: "Lane deleted successfully",
-        variant: "default",
-      });
+      // NEW: Use job-specific deletion if jobId is provided
+      if (jobId) {
+        await deleteJobLane({
+          jobId,
+          laneName: laneId,
+        }).unwrap();
+        toast({
+          title: 'Lane deleted',
+          description: 'Lane deleted from this job successfully',
+          variant: 'default',
+        });
+      } else {
+        // Fallback to organization-wide deletion (for default lanes management)
+        await deleteLane({
+          organizationId: user.organizationId,
+          laneId,
+        }).unwrap();
+        toast({
+          title: 'Lane deleted',
+          description: 'Lane deleted successfully',
+          variant: 'default',
+        });
+      }
+
       const newColumns = columns.filter((col) => col.id !== laneId);
       setColumns(newColumns);
     } catch (err: unknown) {
-      if (err && typeof err === "object" && "data" in err) {
-        const errorMessage =
-          (err.data as { error: string }).error || "Failed to delete the lane";
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
+      if (
+        (err as { data?: { migrationNeeded: boolean } }).data?.migrationNeeded
+      ) {
+        setLaneToDelete(laneId);
+        setMigrationLanes(
+          (err as { data?: { lanes: string[] } }).data?.lanes || [],
+        );
+        setIsMigrationDialogOpen(true);
       } else {
-        const errorMessage = "An unknown error occurred";
+        const errorMessage =
+          (err as { data?: { error: string } }).data?.error ||
+          'Failed to delete the lane';
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }
@@ -109,38 +152,82 @@ export const useKanbanBoard = ({
     await refetch();
   };
 
+  const handleMigrateAndDeleteLane = async (migrationLane: string) => {
+    if (!user?.id || !laneToDelete) return;
+
+    try {
+      if (jobId) {
+        await deleteJobLane({
+          jobId,
+          laneName: laneToDelete,
+          migrationLane,
+        }).unwrap();
+        toast({
+          title: 'Lane deleted',
+          description: 'Lane deleted and candidates migrated successfully',
+          variant: 'default',
+        });
+      }
+      const newColumns = columns.filter((col) => col.id !== laneToDelete);
+      setColumns(newColumns);
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { data?: { error: string } }).data?.error ||
+        'Failed to delete the lane';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    }
+    setIsMigrationDialogOpen(false);
+    await refetch();
+  };
+
   const handleEditLane = async (prevLaneId: string, laneId: string) => {
     if (!user?.id || !prevLaneId || !laneId) return;
-    // alert("THIS WILL BE THE EDIT DIALOG FOR " + laneId);
+
     try {
-      await editLane({
-        organizationId: user.organizationId as string,
-        prevLaneId: prevLaneId,
-        newLaneId: laneId,
-      }).unwrap();
-      // debugger;
-      toast({
-        title: "Success",
-        description: "Lane edited successfully",
-        variant: "default",
-      });
-      // const newColumns = columns.filter((col) => col.id !== laneId);
-      // setColumns(newColumns);
-    } catch (err: unknown) {
-      if (err && typeof err === "object" && "data" in err) {
-        const errorMessage =
-          (err.data as { error: string }).error || "Failed to delete the lane";
+      // NEW: Use job-specific renaming if jobId is provided
+      if (jobId) {
+        await renameJobLane({
+          jobId,
+          laneName: prevLaneId,
+          newLaneName: laneId,
+        }).unwrap();
         toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
+          title: 'Success',
+          description: 'Lane renamed for this job successfully',
+          variant: 'default',
         });
       } else {
-        const errorMessage = "An unknown error occurred";
+        // Fallback to organization-wide renaming (for default lanes management)
+        await editLane({
+          organizationId: user.organizationId as string,
+          prevLaneId,
+          newLaneId: laneId,
+        }).unwrap();
         toast({
-          title: "Error",
+          title: 'Success',
+          description: 'Lane edited successfully',
+          variant: 'default',
+        });
+      }
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'data' in err) {
+        const errorMessage =
+          (err.data as { error: string }).error || 'Failed to edit the lane';
+        toast({
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
+        });
+      } else {
+        const errorMessage = 'An unknown error occurred';
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
         });
       }
     }
@@ -155,5 +242,11 @@ export const useKanbanBoard = ({
     handleEditLaneClick,
     handleEditLane,
     handleConfirmDeleteLane,
+    handleMigrateAndDeleteLane,
+    migrationLanes,
+    isMigrationDialogOpen,
+    setIsMigrationDialogOpen,
+    laneToDelete,
+    setLaneToDelete,
   };
 };

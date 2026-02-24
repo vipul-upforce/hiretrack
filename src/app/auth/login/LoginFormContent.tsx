@@ -1,228 +1,237 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { Formik, Form, Field } from "formik";
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { cx } from '@/lib/cx';
+import packageJson from '@/../package.json';
+import LoadingScreen from '@/app/loading-screen';
+
+// Hooks
+import { useHandleLoginSubmit } from '@/app/auth/hooks/useLoginSubmit';
+import ForgotPasswordDialog from '@/components/auth/ForgotPasswordDialog';
+import OrganizationDialog from '@/components/auth/OrganizationDialog';
+import { useAppSelector } from '@/lib/redux/hooks';
+// import { getBetaFlag } from '@/lib/configUtils';
+import { usePortalBranding } from './hooks/use-portal-branding';
+import { useCaptchaHandler } from './hooks/use-captcha-handler';
+
+// Components
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { FormikErrors, FormikTouched, FieldProps } from "formik";
-import Cookies from "js-cookie";
-import { Eye, EyeOff } from "lucide-react";
-import { useEffect, useState } from "react";
-import ForgotPasswordDialog from "@/components/auth/ForgotPasswordDialog";
-import OrganizationDialog, {
-  OneOfMulOrganization,
-} from "@/components/auth/OrganizationDialog";
-import ReCAPTCHA from "react-google-recaptcha";
-import { LoginFormValues } from "@/types/login";
-import { LoginSchema } from "../schema/Login.schema";
-import { useHandleLoginSubmit } from "../hooks/useLoginSubmit";
+  AnimatedGridPattern,
+  FlickeringGrid,
+} from './components/animated-background';
+import { BrandingSection } from './components/branding-section';
+import { LoginForm } from './components/login-form';
 
-export default function LoginFormContent() {
+// Types & Schemas
+import { LoginSchemaType } from './schemas/login-schema';
+import { LoginFormValues, OneOfMulOrganization } from './types';
+
+interface LoginFormContentProps {
+  showCompanyField?: boolean;
+}
+
+export default function LoginFormContent({
+  showCompanyField = false,
+}: LoginFormContentProps) {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const { user } = useAppSelector((state) => state.auth || {});
+
+  const redirectPath = searchParams?.get('redirect');
+
+  const showCandidateSignup = redirectPath
+    ? redirectPath.includes('candidate')
+    : false;
+
+  // Local State
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [organizationDialogOpen, setOrganizationDialogOpen] = useState(false);
   const [organizations, setOrganizations] = useState<OneOfMulOrganization[]>(
-    []
+    [],
   );
-  const [loginFormValues, setLoginFormValues] = useState<LoginFormValues>();
-  const [selectedOrg, setSelectedOrg] = useState<string>();
-  const [captcha, setCaptcha] = useState<string>();
-  const [isMultiple, setIsMultiple] = useState<boolean>(false);
-  const initialValues: LoginFormValues = {
-    email: "",
-    password: "",
-  };
-  // useHandleLoginSubmit, which uses useSearchParams, is now called within this client component
-  const { handleSubmit, isLoading } = useHandleLoginSubmit({
-    selectedOrg,
-    isMultiple,
+  // const [isBeta, setIsBeta] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>();
+  const [loginValues, setLoginValues] = useState<LoginFormValues>();
+  const [isMultipleOrgs, setIsMultipleOrgs] = useState(false);
+
+  const [hasJustLoggedIn, setHasJustLoggedIn] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  // Custom Hooks
+  const { branding, isLoading: isPortalLoading } = usePortalBranding();
+  const {
+    isEnabled: isCaptchaEnabled,
+    siteKey: captchaSiteKey,
+    captchaToken,
+    setCaptchaToken,
+    isLoading: isCaptchaLoading,
+  } = useCaptchaHandler();
+
+  const { handleSubmit, isLoading: isAuthLoading } = useHandleLoginSubmit({
+    selectedOrg: selectedOrgId,
+    isMultiple: isMultipleOrgs,
     setOrganizations,
     setOrganizationDialogOpen,
-    setLoginFormValues,
+    setLoginFormValues: setLoginValues,
   });
 
-  useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
-      router.push("/dashboard");
-    }
-  }, [router]);
+  // const getBetaFlagVal = async () => {
+  //   const betaFlag: boolean = await getBetaFlag();
+  //   setIsBeta(betaFlag);
+  // };
 
+  // useEffect(() => {
+  //   getBetaFlagVal();
+  // }, []);
+
+  // Redirect if logged in
   useEffect(() => {
-    async function checkAllowance() {
-      const data = await fetch("/api/organization");
-      if (data.ok) {
-        const allowance = await data.json();
-        if (allowance.allow) {
-          setIsMultiple(true);
-        }
+    if (user?.id && user?.role) {
+      // Guard against stale Redux state triggering infinite loops on 401 redirects
+      if (redirectPath && !hasJustLoggedIn) {
+        return;
       }
+
+      setIsSuccess(true);
+      const target = redirectPath
+        ? decodeURIComponent(redirectPath)
+        : '/dashboard';
+      router.push(target);
     }
-    checkAllowance();
-  }, []);
+  }, [user, router, redirectPath, hasJustLoggedIn]);
+
+  // Determine multiple orgs
+  useEffect(() => {
+    if (organizations.length > 1) setIsMultipleOrgs(true);
+  }, [organizations]);
+
+  // Handle Org selection
+  useEffect(() => {
+
+    if (selectedOrgId && loginValues?.email) {
+      // Trigger submission again when org is selected
+      handleSubmit(
+        { email: loginValues.email, password: loginValues.password },
+        () => { },
+        { setStatus: () => { } },
+      );
+    }
+  }, [selectedOrgId]);
+
+  const onFormSubmit = (
+    data: LoginSchemaType,
+    setSubmitting: (isSubmitting: boolean) => void,
+  ) => {
+    setLoginValues(data);
+    setHasJustLoggedIn(true);
+
+    handleSubmit(
+      { email: data.email, password: data.password },
+      setSubmitting,
+      { setStatus: () => { } },
+    );
+  };
+
+  const isLoadingGlobal = isPortalLoading || isCaptchaLoading;
+
+  if (isLoadingGlobal) return <LoadingScreen />;
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold flex flex-row justify-between items-center">
-            Login
-            {selectedOrg && (
-              <span
-                className="text-lg font-medium text-gray-700 cursor-pointer"
-                style={{
-                  animation: selectedOrg
-                    ? "fadeInOrg 0.9s ease-in-out forwards"
-                    : "none",
-                }}
-                onClick={() => {
-                  setSelectedOrg("");
-                  setOrganizationDialogOpen(true);
-                }}
-              >
-                {organizations.find((org) => org.orgId === selectedOrg)?.name}
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Formik
-            initialValues={initialValues}
-            validationSchema={LoginSchema}
-            onSubmit={handleSubmit}
-          >
-            {({
-              errors,
-              touched,
-              isSubmitting,
-              status,
-            }: {
-              errors: FormikErrors<LoginFormValues>;
-              touched: FormikTouched<LoginFormValues>;
-              isSubmitting: boolean;
-              status?: string;
-            }) => (
-              <Form className="space-y-4">
-                {status && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{status}</AlertDescription>
-                  </Alert>
-                )}
+    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-4">
+      {/* Background Layer */}
+      <div className="absolute inset-0">
+        <AnimatedGridPattern
+          numSquares={30}
+          maxOpacity={0.1}
+          duration={3}
+          className={cx(
+            '[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]',
+            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
+          )}
+        />
+        <FlickeringGrid
+          className="absolute inset-0 size-full opacity-50"
+          squareSize={4}
+          gridGap={6}
+          color={branding.primaryColor}
+          maxOpacity={0.3}
+          flickerChance={0.1}
+        />
+      </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Field name="email">
-                    {({ field }: FieldProps) => (
-                      <Input
-                        {...field}
-                        id="email"
-                        type="email"
-                        disabled={isLoading || isSubmitting}
-                        className={
-                          errors.email && touched.email ? "border-red-500" : ""
-                        }
-                      />
-                    )}
-                  </Field>
-                  {errors.email && touched.email && (
-                    <div className="text-red-500 text-xs">{errors.email}</div>
-                  )}
-                </div>
+      {/* Decorative Orbs */}
+      <div
+        className="absolute left-1/4 top-1/4 h-72 w-72 animate-pulse rounded-full blur-3xl"
+        style={{
+          background: `linear-gradient(135deg, ${branding.primaryColor}20, ${branding.secondaryColor}20)`,
+        }}
+      />
+      <div
+        className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full blur-3xl delay-1000"
+        style={{
+          background: `linear-gradient(225deg, ${branding.secondaryColor}15, ${branding.primaryColor}15)`,
+        }}
+      />
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Field name="password">
-                      {({ field }: FieldProps) => (
-                        <Input
-                          {...field}
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          disabled={isLoading || isSubmitting}
-                          className={
-                            errors.password && touched.password
-                              ? "border-red-500"
-                              : ""
-                          }
-                        />
-                      )}
-                    </Field>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {!showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.password && touched.password && (
-                    <div className="text-red-500 text-xs">
-                      {errors.password}
-                    </div>
-                  )}
-                </div>
+      {/* Theme Toggle */}
+      <div className="absolute right-4 top-4 z-[999]">
+        <ThemeToggle
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10 rounded-full border border-border bg-background/80 shadow-sm backdrop-blur-sm hover:bg-background/90"
+        />
+      </div>
 
-                <ReCAPTCHA
-                  sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                  onChange={(token) => {
-                    if (token) setCaptcha(token);
-                  }}
-                />
+      {/* Main Content Area */}
+      <div className="relative z-10 mx-auto w-full max-w-6xl items-center gap-8 lg:grid lg:grid-cols-2">
+        <BrandingSection branding={branding} />
 
-                <CardFooter className="px-0 pt-6 flex-col space-y-4">
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isLoading || isSubmitting || !captcha}
-                  >
-                    {isLoading || isSubmitting ? "Logging in..." : "Login"}
-                  </Button>
-                  <div className="flex justify-end w-full p-0">
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="text-sm text-primary p-0"
-                      onClick={() => setForgotPasswordOpen(true)}
-                    >
-                      Forgot Password?
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Form>
-            )}
-          </Formik>
-        </CardContent>
-      </Card>
+        <LoginForm
+          branding={branding}
+          onSubmit={onFormSubmit}
+          isLoading={isAuthLoading}
+          isSuccess={isSuccess}
+          showCompanyField={showCompanyField}
+          captchaEnabled={isCaptchaEnabled}
+          captchaSiteKey={captchaSiteKey}
+          captchaToken={captchaToken}
+          onCaptchaChange={setCaptchaToken}
+          onForgotPassword={() => setForgotPasswordOpen(true)}
+          onOrgClick={() => {
+            setSelectedOrgId(undefined);
+            setOrganizationDialogOpen(true);
+          }}
+          selectedOrgId={selectedOrgId}
+          organizations={organizations}
+          showCandidateSignup={showCandidateSignup}
+          onSignupClick={() => router.push('/signup')}
+        />
+      </div>
 
+      {/* Dialogs */}
       <ForgotPasswordDialog
         isOpen={forgotPasswordOpen}
         onClose={() => setForgotPasswordOpen(false)}
       />
 
-      {loginFormValues && !selectedOrg && (
+      {loginValues && !selectedOrgId && (
         <OrganizationDialog
           isOpen={organizationDialogOpen}
           onClose={() => setOrganizationDialogOpen(false)}
-          data={{ ...loginFormValues, organizations }}
-          setSelectedOrgId={(orgId: string) => setSelectedOrg(orgId)}
+          data={{ ...loginValues, organizations }}
+          setSelectedOrgId={setSelectedOrgId}
         />
       )}
+
+      {/* Footer */}
+      <div
+        className="pointer-events-none fixed bottom-2 right-4 z-50 select-none text-xs text-gray-400"
+        aria-label="App Version"
+      >
+        v{packageJson.version}
+      </div>
     </div>
   );
 }

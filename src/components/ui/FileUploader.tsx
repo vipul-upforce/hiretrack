@@ -1,6 +1,8 @@
-"use client";
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+'use client';
+
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Button } from '@/components/ui/button';
 
 interface FileUploaderProps {
   onSubmit: (files: File[]) => void;
@@ -16,11 +18,11 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      "application/zip": [".zip"],
-      "application/pdf": [".pdf"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
+      'application/zip': ['.zip'],
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
     },
   });
 
@@ -33,8 +35,7 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
     <div className="mb-6">
       <div
         {...getRootProps()}
-        className={`border-2 border-dashed p-8 text-center cursor-pointer
-          ${isDragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
+        className={`cursor-pointer border-2 border-dashed p-8 text-center ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
       >
         <input {...getInputProps()} />
         {isDragActive ? (
@@ -49,15 +50,13 @@ export function FileUploader({ onSubmit }: FileUploaderProps) {
           <h3 className="font-semibold">Selected Files:</h3>
           <ul className="list-disc pl-5">
             {files.map((file, index) => (
+              /* eslint-disable-next-line react/no-array-index-key */
               <li key={index}>{file.name}</li>
             ))}
           </ul>
-          <button
-            onClick={handleSubmit}
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
+          <Button onClick={handleSubmit} variant="info" className="mt-4">
             Process Files
-          </button>
+          </Button>
         </div>
       )}
     </div>

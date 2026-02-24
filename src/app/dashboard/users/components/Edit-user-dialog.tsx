@@ -1,26 +1,30 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@radix-ui/react-label";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/dialog';
+import { Label } from '@radix-ui/react-label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Formik, Form, ErrorMessage, Field } from "formik";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
-import { useUpdateUserMutation } from "@/lib/features/users/usersApi";
-import { userFormVaidationSchema } from "../schemas/userFormValidation.schema";
+} from '@/components/ui/select';
+import { Formik, Form, ErrorMessage, Field } from 'formik';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useToast } from '@/hooks/use-toast';
+import { useUpdateUserMutation } from '@/lib/features/users/usersApi';
+import { useDispatch } from 'react-redux';
+import { updateUser as updateUserInState } from '@/lib/redux/authSlice';
+import { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { userFormVaidationSchema } from '../schemas/userFormValidation.schema';
 
 interface SelectedUser {
   id?: string;
@@ -28,6 +32,10 @@ interface SelectedUser {
   email: string;
   role: string;
   isDeleted?: boolean;
+  organizationId?: string;
+  password?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 interface EditUserDialogProps {
@@ -44,34 +52,62 @@ export function EditUserDialog({
   onSuccess,
 }: EditUserDialogProps) {
   const { toast } = useToast();
+  const dispatch = useDispatch();
+  const { user } = useAppSelector((state) => state.auth || {});
   const [updateUser, { isLoading: isUpdating }] = useUpdateUserMutation();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleUpdate = async (values: SelectedUser) => {
+    setIsLoading(true);
     try {
       await updateUser({
-        id: selectedUser?.id,
+        id: selectedUser?.id || '',
         ...values,
         email: values.email.toLowerCase().trim(),
         name: values.name.trim(),
       }).unwrap();
-      toast({ title: "Success", description: "User updated successfully" });
+      
+      const getIsoString = (date?: Date | string) => {
+        if (!date) return new Date().toISOString();
+        return new Date(date).toISOString();
+      };
+
+      // Check if the updated user's email matches the current user's email in state
+      if (user && user.id === selectedUser?.id) {
+        // Update the Redux state with the new user data
+        dispatch(
+          updateUserInState({
+            ...values,
+            email: values.email.toLowerCase().trim(),
+            name: values.name.trim(),
+            id: selectedUser?.id || '',
+            organizationId: user.organizationId || selectedUser?.organizationId || '',
+            password: selectedUser?.password || '',
+            createdAt: getIsoString(selectedUser?.createdAt),
+            updatedAt: new Date().toISOString(),
+          }),
+        );
+      }
+
+      toast({ title: 'Success', description: 'User updated successfully' });
       onOpenChange(false);
       onSuccess();
     } catch (error: unknown) {
       toast({
-        title: "Error",
-        description:
-          "Error: " +
-          (typeof error === "object" &&
+        title: 'Error',
+        description: ` ${typeof error === 'object' &&
           error !== null &&
-          "data" in error &&
-          typeof error.data === "object" &&
+          'data' in error &&
+          typeof error.data === 'object' &&
           error.data &&
-          "error" in error.data
-            ? (error.data as { error: string }).error
-            : "Unknown error"),
-        variant: "destructive",
+          'error' in error.data
+          ? (error.data as { error: string }).error
+          : 'Unknown error'
+          }`,
+        variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,8 +115,8 @@ export function EditUserDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 py-4 pr-12">
           <DialogTitle>Edit User</DialogTitle>
         </DialogHeader>
         <Formik
@@ -100,7 +136,7 @@ export function EditUserDialog({
             values,
             setFieldValue,
           }) => (
-            <Form className="space-y-4">
+            <Form className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
               <div>
                 <Label>Name</Label>
                 <Field
@@ -113,7 +149,7 @@ export function EditUserDialog({
                 <ErrorMessage
                   name="name"
                   component="div"
-                  className="text-red-500 text-sm"
+                  className="text-sm text-red-500"
                 />
               </div>
               <div>
@@ -128,51 +164,56 @@ export function EditUserDialog({
                 <ErrorMessage
                   name="email"
                   component="div"
-                  className="text-red-500 text-sm"
+                  className="text-sm text-red-500"
                 />
               </div>
-              <div>
-                <Label>Role</Label>
-                <Select
-                  value={values.role}
-                  onValueChange={(value) => setFieldValue("role", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="hr">HR</SelectItem>
-                    <SelectItem value="interviewer">Interviewer</SelectItem>
-                  </SelectContent>
-                </Select>
-                <ErrorMessage
-                  name="role"
-                  component="div"
-                  className="text-red-500 text-sm"
-                />
-              </div>
-
-              <div>
-                <Label className="flex flex-row items-center">
-                  <Checkbox
-                    id="isDeleted"
-                    checked={values.isDeleted}
-                    onCheckedChange={(checked) => {
-                      setFieldValue("isDeleted", checked);
-                    }}
+              {values.role !== 'system' && (
+                <div>
+                  <Label>Role</Label>
+                  <Select
+                    value={values.role}
+                    onValueChange={(value) => setFieldValue('role', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="hr">HR</SelectItem>
+                      <SelectItem value="interviewer">Interviewer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <ErrorMessage
+                    name="role"
+                    component="div"
+                    className="text-sm text-red-500"
                   />
-                  <p className="ml-2">Deactivate user</p>
-                </Label>
-              </div>
+                </div>
+              )}
 
-              <div className="flex justify-end">
+              {values.role !== 'system' && (
+                <div>
+                  <Label className="flex flex-row items-center">
+                    <Checkbox
+                      id="isDeleted"
+                      checked={values.isDeleted}
+                      onCheckedChange={(checked) => {
+                        setFieldValue('isDeleted', checked);
+                      }}
+                    />
+                    <p className="ml-2">Deactivate user</p>
+                  </Label>
+                </div>
+              )}
+
+              <div className="sticky bottom-0 z-10 flex justify-end border-t bg-background pt-4">
                 <Button
                   type="submit"
-                  disabled={isUpdating}
+                  disabled={isUpdating || isLoading}
                   onClick={() => handleSubmit()}
+                  variant="primary"
                 >
-                  Update
+                  {isUpdating && isLoading ? 'Updating...' : 'Update User'}
                 </Button>
               </div>
             </Form>

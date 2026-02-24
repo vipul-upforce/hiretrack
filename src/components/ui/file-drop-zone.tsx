@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useDropzone } from "react-dropzone";
-import { cn } from "@/lib/utils";
-import { Cloud, Pencil, X } from "lucide-react";
-import { FilePreviewDialog } from "./file-preview-dialog";
-import { RenameFileDialog } from "./rename-file-dialog";
-import { v4 as uuidv4 } from "uuid";
+import * as React from 'react';
+import { useDropzone, FileRejection } from 'react-dropzone';
+import { cn } from '@/lib/utils';
+import { Cloud, Pencil, X } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import logger from '@/lib/logger';
+import { toast } from '@/hooks/use-toast';
+import { FilePreviewDialog } from './file-preview-dialog';
+import { RenameFileDialog } from './rename-file-dialog';
 
 interface FileData {
   base64: string;
@@ -28,13 +30,13 @@ interface FileDropZoneProps {
   }>;
 }
 
-export const FileDropZone = ({
+export function FileDropZone({
   value,
   onFilesChange,
   maxFiles = 30,
   maxSize = 30 * 1024 * 1024,
   existingFiles = [],
-}: FileDropZoneProps) => {
+}: FileDropZoneProps) {
   const [previews, setPreviews] = React.useState<{ [key: string]: string }>({});
   const [previewFile, setPreviewFile] = React.useState<File | null>(null);
   const [files, setFiles] = React.useState<File[]>([]);
@@ -54,11 +56,11 @@ export const FileDropZone = ({
     const initializeFiles = async () => {
       const convertedFiles = await Promise.all(
         (value || []).map(async (item) => {
-          if ("base64" in item) {
-            return await convertToFile(item);
+          if ('base64' in item) {
+            return convertToFile(item);
           }
           return item;
-        })
+        }),
       );
       setFiles(convertedFiles);
     };
@@ -72,49 +74,40 @@ export const FileDropZone = ({
           ...acc,
           [file.name]: file.preview,
         }),
-        {}
+        {},
       );
-
-      setPreviews((prev) => ({
-        ...prev,
-        ...existingPreviews,
-      }));
+      setPreviews((prev) => ({ ...prev, ...existingPreviews }));
     }
   }, [existingFiles]);
 
   const generatePreviews = React.useCallback(async (newFiles: File[]) => {
     const newPreviews: { [key: string]: string } = {};
+    const fileToBase64 = (file: File): Promise<string> =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+      });
 
     for (const file of newFiles) {
       try {
         const base64 = await fileToBase64(file);
         newPreviews[file.name] = base64;
-      } catch (error) {}
+      } catch (error) {
+        logger.log(error);
+      }
     }
-
-    setPreviews((prev) => ({
-      ...prev,
-      ...newPreviews,
-    }));
+    setPreviews((prev) => ({ ...prev, ...newPreviews }));
   }, []);
-
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
 
   React.useEffect(() => {
     if (files.length > 0) {
       generatePreviews(files);
     }
-
     return () => {
       Object.values(previews).forEach((preview) => {
-        if (preview.startsWith("blob:")) {
+        if (typeof preview === 'string' && preview.startsWith('blob:')) {
           URL.revokeObjectURL(preview);
         }
       });
@@ -128,26 +121,22 @@ export const FileDropZone = ({
     setDroppedFiles((prev) => prev.filter((name) => name !== fileNameToRemove));
   };
 
-  const isFileNameDuplicate = (fileName: string): boolean => {
-    return (
-      existingFiles.some((file) => file.name === fileName) ||
-      files.some((file) => file.name === fileName)
-    );
-  };
+  const isFileNameDuplicate = (fileName: string): boolean =>
+    existingFiles.some((file) => file.name === fileName) ||
+    files.some((file) => file.name === fileName);
 
   const generateUniqueFileName = (file: File): string => {
     if (!isFileNameDuplicate(file.name)) {
       return file.name;
     }
-
-    const fileExtension = file.name.split(".").pop() || "";
-    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const fileExtension = file.name.split('.').pop() || '';
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
     return `${baseName}_${uuidv4()}.${fileExtension}`;
   };
 
   const renameFileWithUUID = async (
     file: File,
-    newFileName: string
+    newFileName: string,
   ): Promise<File> => {
     const arrayBuffer = await file.arrayBuffer();
     const blob = new Blob([arrayBuffer], { type: file.type });
@@ -155,7 +144,6 @@ export const FileDropZone = ({
       const combined = [...prev, newFileName];
       return Array.from(new Set(combined));
     });
-
     return new File([blob], newFileName, {
       type: file.type,
       lastModified: file.lastModified,
@@ -163,47 +151,73 @@ export const FileDropZone = ({
   };
 
   const onDrop = React.useCallback(
-    async (acceptedFiles: File[]) => {
+    async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+      if (fileRejections.length > 0) {
+        const isSizeError = fileRejections.some((r) =>
+          r.errors.some((e) => e.code === 'file-too-large'),
+        );
+
+        if (isSizeError) {
+          toast({
+            title: 'File Too Large',
+            description: `One or more files exceed the ${(maxSize / 1024 / 1024).toFixed(0)}MB limit.`,
+            variant: 'destructive',
+          });
+        }
+      }
+
+      const totalCount = files.length + acceptedFiles.length;
+
+      if (totalCount > maxFiles) {
+         toast({
+          title: 'Limit Exceeded',
+          description: `You can only upload a maximum of ${maxFiles} files.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const processedFiles = await Promise.all(
         acceptedFiles.map(async (file) => {
           const uniqueFileName = generateUniqueFileName(file);
           if (uniqueFileName === file.name) {
             return file;
           }
-          return await renameFileWithUUID(file, uniqueFileName);
-        })
+          return renameFileWithUUID(file, uniqueFileName);
+        }),
       );
 
-      const newFiles = [...files, ...processedFiles];
-      setFiles(newFiles);
-      onFilesChange(newFiles);
-      setDroppedFiles((prev) => {
-        const newFileNames = processedFiles.map((file) => file.name);
-        return Array.from(new Set([...prev, ...newFileNames]));
-      });
+      if (processedFiles.length > 0) {
+        const newFiles = [...files, ...processedFiles];
+        setFiles(newFiles);
+        onFilesChange(newFiles);
+        setDroppedFiles((prev) => {
+          const newFileNames = processedFiles.map((file) => file.name);
+          return Array.from(new Set([...prev, ...newFileNames]));
+        });
+      }
     },
-    [files, onFilesChange, existingFiles]
+    [files, onFilesChange, existingFiles, maxFiles, maxSize],
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+ const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    maxFiles: maxFiles - files.length,
-    maxSize,
+    maxSize, 
     accept: {
-      "image/*": [".png", ".jpg", ".jpeg", ".gif"],
-      "application/pdf": [".pdf"],
-      "application/zip": [".zip"],
-      "application/msword": [".doc"],
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-        [".docx"],
-      "application/vnd.ms-excel": [".xls"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
+      'image/*': ['.png', '.jpg', '.jpeg', '.gif'],
+      'application/pdf': ['.pdf'],
+      'application/zip': ['.zip'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [
+        '.xlsx',
       ],
-      "application/vnd.ms-powerpoint": [".ppt"],
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-        [".pptx"],
-      "text/plain": [".txt"],
+      'application/vnd.ms-powerpoint': ['.ppt'],
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+        ['.pptx'],
+      'text/plain': ['.txt'],
     },
   });
 
@@ -214,14 +228,22 @@ export const FileDropZone = ({
     }
   };
 
+  const handlePreviewKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    file: File,
+  ) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openPreview(file);
+    }
+  };
+
   const handleRename = async (newName: string) => {
     if (!renameFile) return;
-
     const fileIndex = files.findIndex((f) => f === renameFile);
     if (fileIndex === -1) return;
 
     const newFile = await renameFileWithUUID(renameFile, newName);
-
     const updatedFiles = [...files];
     updatedFiles[fileIndex] = newFile;
 
@@ -233,15 +255,13 @@ export const FileDropZone = ({
     if (droppedFiles.includes(renameFile.name)) {
       setDroppedFiles((prev) => {
         const updatedDroppedFiles = prev.filter(
-          (name) => name !== renameFile.name
+          (name) => name !== renameFile.name,
         );
         updatedDroppedFiles.push(newName);
         return updatedDroppedFiles;
       });
     }
-    setDroppedFiles((prev) => {
-      return Array.from(new Set([...prev, newName]));
-    });
+    setDroppedFiles((prev) => Array.from(new Set([...prev, newName])));
     setFiles(updatedFiles);
     onFilesChange(updatedFiles);
   };
@@ -251,8 +271,8 @@ export const FileDropZone = ({
       <div
         {...getRootProps()}
         className={cn(
-          "border-2 border-dashed rounded-lg p-6 cursor-pointer transition-colors",
-          isDragActive ? "border-primary bg-primary/10" : "border-muted"
+          'cursor-pointer rounded-lg border-2 border-dashed p-6 transition-colors',
+          isDragActive ? 'bg-primary/10 border-primary' : 'border-muted',
         )}
       >
         <input {...getInputProps()} />
@@ -266,8 +286,9 @@ export const FileDropZone = ({
                 Drag & drop files here, or click to select files
                 <br />
                 <span className="text-xs">
-                  (Max {maxFiles} files, up to{" "}
-                  {Math.round(maxSize / 1024 / 1024)}MB each)
+                  (Max {maxFiles} files, up to{' '}
+                  {Math.round(maxSize / 1024 / 1024)}
+                  MB each)
                 </span>
                 <br />
                 <span className="text-xs text-muted-foreground">
@@ -291,43 +312,48 @@ export const FileDropZone = ({
         <div className="mb-2 w-full overflow-clip">
           {files.map((file, i) => (
             <div
+              /* eslint-disable-next-line react/no-array-index-key */
               key={i}
-              className="flex items-center w-full mb-2 gap-2 rounded-md border p-2 hover:bg-muted/50 transition-colors group"
+              className="group mb-2 flex w-full items-center gap-2 rounded-md border p-2 transition-colors hover:bg-muted/50"
             >
               <div
+                role="button"
+                tabIndex={0}
+                aria-label={`Preview ${file.name}`}
                 className="cursor-pointer transition-transform group-hover:scale-105"
                 onClick={() => openPreview(file)}
-              >
-                {/* <PreviewComponent file={file} /> */}
-              </div>
+                onKeyDown={(e) => handlePreviewKeyDown(e, file)}
+              />
               <div
-                className="flex-1 min-w-0 text-sm cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`Preview ${file.name}`}
+                className="min-w-0 flex-1 cursor-pointer text-sm"
                 onClick={() => openPreview(file)}
+                onKeyDown={(e) => handlePreviewKeyDown(e, file)}
               >
-                <p className="font-medium truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {Math.round(file.size / 1024)}KB -{" "}
-                  {file.type || "Unknown type"}
+                <p className="truncate font-medium">{file.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {Math.round(file.size / 1024)}
+                  KB - {file.type || 'Unknown type'}
                 </p>
               </div>
 
               <button
                 type="button"
-                className="p-2 hover:bg-muted rounded-md"
+                className="rounded-md p-2 hover:bg-muted"
                 onClick={() => setRenameFile(file)}
               >
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </button>
-              {/* {droppedFiles.includes(file.name) && ( */}
               <button
                 type="button"
-                className="p-2 hover:bg-muted rounded-md hover:text-red-500"
+                className="rounded-md p-2 hover:bg-muted hover:text-red-500"
                 onClick={() => handleRemoveFile(file.name)}
                 aria-label="Remove file"
               >
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
-              {/* )} */}
             </div>
           ))}
         </div>
@@ -336,9 +362,9 @@ export const FileDropZone = ({
       <RenameFileDialog
         isOpen={!!renameFile}
         onClose={() => setRenameFile(null)}
-        fileName={renameFile?.name || ""}
+        fileName={renameFile?.name || ''}
         onRename={handleRename}
       />
     </div>
   );
-};
+}

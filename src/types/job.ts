@@ -1,5 +1,5 @@
-import { ISalary } from "@/app/dashboard/jobs-board/schemas/job-schema";
-import { CustomFieldValues } from "@/Custom_Fields/hooks/useCustomForm";
+import { ISalary } from '@/app/dashboard/jobs-board/schemas/job-schema';
+import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 
 export interface JobAssignment {
   interviewerId: string;
@@ -13,27 +13,28 @@ export interface Job {
   title: string;
   // company?: string;
   description: string;
+  promptForStatusChangeReason?: boolean;
   skills: string[];
   experience: number;
   isPublished?: boolean;
   links: string[];
   salary?: ISalary;
   // validTill?: Date;
-  status: "open" | "closed" | "draft";
+  status: 'open' | 'closed' | 'draft';
   candidateCount?: number;
   attachments: {
     files: Array<{
       id: string;
       name: string;
       url: string;
-      type: "pdf";
+      type: 'pdf';
       size: number;
     }>;
     images: Array<{
       id: string;
       name: string;
       url: string;
-      type: "image";
+      type: 'image';
       size: number;
     }>;
   };

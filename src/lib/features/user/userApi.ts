@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface Interviewer {
   _id: string;
@@ -6,12 +6,11 @@ export interface Interviewer {
   email: string;
 }
 
-export const userApi = createApi({
-  reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
+export const userApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchInterviewers: builder.query<Interviewer[], void>({
-      query: () => "/users/interviewers",
+      query: () => '/users/interviewers',
+      providesTags: ['Users'],
     }),
   }),
 });

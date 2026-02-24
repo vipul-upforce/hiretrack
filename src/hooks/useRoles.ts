@@ -1,23 +1,13 @@
-import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
+import { useAppSelector } from '@/lib/redux/hooks';
 
 const useRoles = () => {
-  const [role, setRole] = useState<string | null>("");
+  const { user } = useAppSelector((state) => state.auth);
 
-  useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setRole(decryptedResponse.user.role);
-        }
-      }
-    })();
-  }, []);
+  if (user === null) {
+    return '';
+  }
 
-  return role;
+  return user?.role;
 };
 
 export default useRoles;

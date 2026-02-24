@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFetchAssignedCandidatesQuery } from "@/lib/features/candidate/candidateApi";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import { useEffect, useState, useRef } from "react";
-import { EventClickArg } from "@fullcalendar/core";
-import { DateClickArg } from "@fullcalendar/interaction";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { CandidateDetailsDialog } from "../jobs/[id]/components/Dialogs/candidate-details-dialog";
-import { formatTime } from "../jobs/[id]/hooks/dateTimeFormatting";
-import { Candidate, CandidateStatus } from "@/types/candidate";
-import { Assignment } from "@/types/assignment";
-import LoaderSkeletonCalender from "./components/loader-skeleton-calender";
-import { RenderEvent } from "./components/renderCalendarEvent";
-import { useSSE } from "@/hooks/useSSE";
-import useRoles from "@/hooks/useRoles";
+import { Card, CardContent } from '@/components/ui/card';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
+import interactionPlugin from '@fullcalendar/interaction';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Search, X, Calendar as CalendarIcon } from 'lucide-react';
+import { CandidateStatus, Assignment, Candidate } from '@/types/candidate';
+import LoaderSkeletonCalender from './components/loader-skeleton-calender';
+import { formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
+import { CandidateDetailsDialog } from '../jobs/[id]/components/Dialogs/candidate-details-dialog';
+import { StatsCards } from './components/stats-cards';
+import { CalendarSidebar } from './components/calendar-sidebar';
+import { useCalendar } from './hooks/useCalendar';
+import './calendar.css';
 
 interface Interviewer {
   _id: string;
@@ -41,6 +41,7 @@ export interface CandidateAssignment {
   };
   location: string;
   experience: number;
+  relevantExperience: number;
   skills: string[];
   expectedCTC?: number;
   currentCTC?: number;
@@ -87,6 +88,8 @@ export interface CustomCalendarEvent {
   endStr: string;
   url: string;
   display: string;
+  backgroundColor?: string;
+  borderColor?: string;
   extendedProps: {
     candidate: CandidateAssignment;
     interviewer: Interviewer;
@@ -95,461 +98,383 @@ export interface CustomCalendarEvent {
 
 export default function CalendarPage() {
   const {
-    data: assignments,
+    selectedEvent,
+    isDetailsOpen,
+    setIsDetailsOpen,
+    calendarRef,
+    searchText,
+    setSearchText,
+    filterText,
+    setFilterText,
+    selectedDate,
+    setSelectedDate,
+    calendarView,
     isLoading,
-    refetch,
-  } = useFetchAssignedCandidatesQuery();
-  const [selectedEvent, setSelectedEvent] = useState<
-    CustomCalendarEvent | Candidate | null
-  >(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const calendarRef = useRef<FullCalendar>(null);
-  const [searchText, setSearchText] = useState("");
-  const [filterText, setFilterText] = useState("");
+    isInitialLoading,
+    events,
+    qnEventDates,
+    todayCount,
+    thisWeekCount,
+    totalInterviews,
+    upcomingCount,
+    applyFilter,
+    handleEventClick,
+    handleSidebarEventClick,
+    handleDateClick,
+    handleDateSelect,
+    handleViewChange,
+    handleDatesSet,
+    handleUpdate,
+  } = useCalendar();
 
-  const role = useRoles();
-  const { candidates: sseCandidates } = useSSE(
-    role || "",
-    setSelectedEvent,
-    selectedEvent
-  );
-
-  useEffect(() => {
-    refetch();
-  }, []);
-
-  useEffect(() => {
-    if (!isDetailsOpen) {
-      setSelectedEvent(null);
-    }
-  }, [isDetailsOpen]);
-
-  const applyFilter = () => {
-    setFilterText(searchText.trim());
-  };
-
-  // Merge assignments with sseCandidates, prioritizing sseCandidates for updates
-  const mergedAssignments = (
-    assignments && assignments[0]?.data ? [...assignments[0].data] : []
-  ).map((assignment: CandidateAssignment) => {
-    const sseCandidate = sseCandidates.find(
-      (c: CandidateAssignment) => c._id === assignment._id
-    );
-    return sseCandidate || assignment;
-  });
-  // Add any new candidates from sseCandidates that aren't in assignments
-  sseCandidates.forEach((sseCandidate: CandidateAssignment) => {
-    if (
-      !mergedAssignments.some(
-        (a: CandidateAssignment) => a._id === sseCandidate._id
-      )
-    ) {
-      mergedAssignments.push(sseCandidate);
-    }
-  });
-
-  const filteredAssignments = mergedAssignments.filter(
-    (assignment: CandidateAssignment) => {
-      if (!filterText) return true;
-      const searchRegex = new RegExp(filterText, "i");
-
-      const jobSkills =
-        (typeof assignment.jobId === "object" && assignment.jobId?.skills) ||
-        [];
-      const assignmentSkills = assignment.skills || [];
-      const assignmentJobSkills =
-        (typeof assignment.assignment?.jobId !== "string" &&
-          assignment.assignment?.jobId?.skills) ||
-        [];
-      const allSkills = [
-        ...jobSkills,
-        ...assignmentSkills,
-        ...assignmentJobSkills,
-      ];
-
-      return (
-        searchRegex.test(assignment.name || "") ||
-        searchRegex.test(
-          assignment.jobId && typeof assignment.jobId === "object"
-            ? assignment.jobId.title
-            : ""
-        ) ||
-        searchRegex.test(
-          (typeof assignment?.assignment?.interviewerId === "object" &&
-            assignment?.assignment?.interviewerId?.name) ||
-            ""
-        ) ||
-        (allSkills.length > 0 &&
-          allSkills.some((skill) => searchRegex.test(skill || "")))
-      );
-    }
-  );
-
-  const events: CustomCalendarEvent[] =
-    filteredAssignments?.map((candidate: CandidateAssignment) => {
-      const startTime = candidate?.assignment?.time
-        ? new Date(candidate?.assignment?.time)
-        : undefined;
-      const endTime = candidate?.assignment?.time
-        ? new Date(candidate?.assignment?.time)
-        : undefined;
-
-      return {
-        id: candidate._id,
-        title:
-          candidate?.jobId && typeof candidate.jobId === "object"
-            ? candidate?.jobId?.title
-            : "Unknown",
-        start: startTime,
-        end: endTime,
-        allDay: false,
-        startStr: startTime?.toISOString() || "",
-        endStr: endTime?.toISOString() || "",
-        url: "",
-        display: "auto",
-        extendedProps: {
-          candidate: {
-            ...candidate,
-            jobId:
-              typeof candidate?.jobId === "string"
-                ? candidate?.jobId
-                : (candidate?.jobId as Job)?._id,
-            jobDetails:
-              typeof candidate?.jobId === "string"
-                ? undefined
-                : {
-                    title: (candidate?.jobId as Job)?.title,
-                    description: (candidate?.jobId as Job)?.description,
-                  },
-          },
-          interviewer:
-            typeof candidate?.assignment?.interviewerId === "string"
-              ? {
-                  _id: candidate?.assignment?.interviewerId,
-                  name: "Unknown",
-                  email: "Unknown",
-                }
-              : candidate?.assignment?.interviewerId || {
-                  _id: "",
-                  name: "Unknown",
-                  email: "Unknown",
-                },
-        },
-      };
-    }) || [];
-
-  const handleEventClick = (arg: EventClickArg) => {
-    const event = arg.event;
-    if (event.extendedProps?.candidate && event.extendedProps?.interviewer) {
-      const calendarEvent = event as unknown as CustomCalendarEvent;
-      setSelectedEvent(calendarEvent);
-      setIsDetailsOpen(true);
-    }
-  };
-
-  const handleInterviewClick = (event: CustomCalendarEvent) => {
-    setSelectedEvent(event);
-    setIsDetailsOpen(true);
-  };
-
-  const handleDateClick = (arg: DateClickArg) => {
-    const eventsOnDate = events.filter(
-      (event) => event?.start?.toISOString().split("T")[0] === arg?.dateStr
-    );
-
-    if (eventsOnDate.length === 1) {
-      const eventDate = new Date(eventsOnDate[0].start!);
-      const event: CustomCalendarEvent = {
-        id: eventsOnDate[0].id,
-        title: eventsOnDate[0].title,
-        start: eventDate,
-        end: eventDate,
-        allDay: false,
-        startStr: eventDate.toISOString(),
-        endStr: eventDate.toISOString(),
-        url: "",
-        display: "auto",
-        extendedProps: {
-          candidate: {
-            ...eventsOnDate[0].extendedProps.candidate,
-            assignment: eventsOnDate[0].extendedProps.candidate.assignment || {
-              interviewerId: "",
-              time: "",
-              assignedAt: new Date().toISOString(),
-              status: "",
-            },
-            tracking: {
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          },
-          interviewer: eventsOnDate[0].extendedProps.interviewer,
-        },
-      };
-
-      setSelectedEvent(event);
-      setIsDetailsOpen(true);
-    }
-  };
-
-  const getInterviewerName = (candidate: CandidateAssignment) => {
-    if (candidate?.assignment?.interviewerId) {
-      return typeof candidate.assignment.interviewerId === "object"
-        ? candidate.assignment.interviewerId.name
-        : "Unknown";
-    }
-    return "Unknown";
-  };
-
-  if (isLoading) {
+  // Only show skeleton on INITIAL load, never on navigation
+  if (isInitialLoading) {
     return <LoaderSkeletonCalender />;
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Interview Calendar</CardTitle>
-        </CardHeader>
-      </Card>
+    <div className="flex h-screen flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 border-b border-border/50 px-4 py-4 sm:px-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          {/* Left */}
+          <div className="flex items-center gap-3">
+            <div className="bg-primary/10 rounded-lg p-2">
+              <CalendarIcon className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                Interview Calendar
+              </h1>
+              <p className="text-xs text-muted-foreground sm:text-sm">
+                Manage interviews, screenings, assignments, and follow-ups
+              </p>
+            </div>
+          </div>
 
-      {/* Search Input and Filter Button */}
-      <div className="flex gap-2 items-center">
-        <Input
-          placeholder="Search assignments..."
-          value={searchText}
-          onChange={(e) => {
-            const value = e.target.value;
-            const sanitizedValue = value.replace(
-              /[\/\\*+\?|\{\}\[\]()^$\.]/g,
-              ""
-            );
-            setSearchText(sanitizedValue);
-          }}
-          className="max-w-md"
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              applyFilter();
-            }
-          }}
-        />
-        <Button onClick={applyFilter}>Filter</Button>
-        <Button
-          onClick={() => {
-            setFilterText("");
-            setSearchText("");
-          }}
-        >
-          Clear
-        </Button>
-      </div>
+          {/* Search + View Switch */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:justify-between">
+            {/* Search */}
+            <div className="flex w-full gap-2 sm:w-auto">
+              <Input
+                placeholder="Search by name, job, or skills..."
+                value={searchText}
+                onChange={(e) => {
+                  const value = e.target.value.replace(
+                    /[\/\\*+\?|\{\}\[\]()^$\.]/g,
+                    '',
+                  );
+                  setSearchText(value);
+                }}
+                className="flex-1 sm:w-64"
+                onKeyPress={(e) => e.key === 'Enter' && applyFilter()}
+              />
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6 flex-1 min-h-0">
-        <Card className="h-full">
-          <CardContent className="p-4 h-full">
-            <FullCalendar
-              ref={calendarRef}
-              plugins={[dayGridPlugin]}
-              initialView="dayGridMonth"
-              events={events}
-              eventClick={handleEventClick}
-              dateClick={handleDateClick}
-              headerToolbar={{
-                left: "prev,next today",
-                center: "title",
-                right: "",
-              }}
-              customButtons={{
-                today: {
-                  text: "Today",
-                  click: () => {
-                    calendarRef.current?.getApi().today();
-                  },
-                },
-              }}
-              height="100%"
-              contentHeight="100%"
-              handleWindowResize={true}
-              eventTextColor="var(--primary-foreground)"
-              eventContent={(arg) => {
-                return (
-                  <div className="bg-white w-full rounded-lg border border-gray-200 p-1.5 shadow-sm hover:shadow-md transition-shadow overflow-hidden cursor-pointer">
-                    <div className="flex items-baseline gap-1 items-center justify-between">
-                      <span className="font-medium text-sm truncate">
-                        {arg.event._def.extendedProps.candidate.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {arg.event.start ? formatTime(arg.event.start) : ""}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-700 truncate">
-                      {arg.event._def.extendedProps.interviewer.name}
-                    </div>
-                    <div className="text-[10px] text-gray-500 truncate">
-                      {arg.event.title}
-                    </div>
-                  </div>
-                );
-              }}
-            />
-          </CardContent>
-        </Card>
-        <div className="flex flex-col gap-4 sticky top-6 h-[calc(100vh-140px)] overflow-auto">
-          {/* Unscheduled interviews */}
-          {/* <Card>
-            <CardHeader>
-              <CardTitle>Scheduled Interviews</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {filteredAssignments.filter(
-                (candidate) => !candidate.assignment?.time
-              ).length > 0 ? (
-                filteredAssignments
-                  .filter((candidate) => !candidate.assignment?.time)
-                  .map((candidate, index) => (
-                    <div
-                      key={index}
-                      className="rounded-lg  mb-3 shadow-sm  bg-white"
-                    >
-                      <div className="font-bold text-md truncate">
-                        {candidate.name}
-                      </div>
-                      <div className="text-xs text-gray-600 truncate">
-                        {typeof candidate.jobId === "object"
-                          ? candidate.jobId.title
-                          : "Unknown Job"}
-                      </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        Interviewer:{" "}
-                        {typeof candidate.assignment?.interviewerId === "object"
-                          ? candidate.assignment?.interviewerId.name
-                          : "Unknown"}
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                <div className="text-center text-muted-foreground py-8">
-                  No interviews are scheduled
-                </div>
+              <Button variant="outline" size="icon" onClick={applyFilter}>
+                <Search className="h-4 w-4" />
+              </Button>
+
+              {filterText && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setFilterText('');
+                    setSearchText('');
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               )}
-            </CardContent>
-          </Card> */}
+            </div>
 
-          {/* today's interview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Today's Interview</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-2">
-              {events
-                .filter(
-                  (event) =>
-                    new Date(event.start!).toLocaleDateString() ===
-                    new Date().toLocaleDateString()
-                )
-                .map((event, i) => (
-                  <RenderEvent
-                    key={i}
-                    event={event}
-                    events={events}
-                    getInterviewerName={getInterviewerName}
-                    index={i}
-                    handleInterviewClick={handleInterviewClick}
-                  />
-                ))}
-              <div className="text-center text-muted-foreground">
-                {events.filter(
-                  (event) =>
-                    event?.start?.toISOString().split("T")[0] ===
-                    new Date().toISOString().split("T")[0]
-                ).length > 0
-                  ? ""
-                  : "No interviews scheduled "}
-              </div>
-            </CardContent>
-            <CardHeader className="">
-              <CardTitle>Not Scheduled</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {events
-                .filter(
-                  (candidate) =>
-                    !candidate.extendedProps.candidate.assignment?.time
-                )
-                .map((event, i) => (
-                  // <div className="border-b border-gray-200 pb-2 mb-2">
-                  <RenderEvent
-                    key={i}
-                    event={event}
-                    events={events}
-                    getInterviewerName={getInterviewerName}
-                    index={i}
-                    handleInterviewClick={handleInterviewClick}
-                  />
-                  // </div>
-                ))}
-
-              <div className="text-center text-muted-foreground">
-                {events.filter(
-                  (candidate) =>
-                    !candidate.extendedProps.candidate.assignment?.time
-                ).length > 0
-                  ? ""
-                  : "No scheduled interviews"}
-              </div>
-            </CardContent>
-          </Card>
+            {/* Views */}
+            <div className="flex gap-1 overflow-hidden rounded-lg border p-1">
+              <Button
+                variant={calendarView === 'dayGridMonth' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handleViewChange('dayGridMonth')}
+              >
+                Month
+              </Button>
+              <Button
+                variant={calendarView === 'timeGridWeek' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handleViewChange('timeGridWeek')}
+              >
+                Week
+              </Button>
+              <Button
+                variant={calendarView === 'timeGridDay' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handleViewChange('timeGridDay')}
+              >
+                Day
+              </Button>
+              <Button
+                variant={calendarView === 'listWeek' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => handleViewChange('listWeek')}
+              >
+                Agenda
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-      {selectedEvent && (
+
+      {/* BODY scrollable */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* Stats */}
+        <div className="px-4 pb-6 pt-4 sm:px-6">
+          <StatsCards
+            todayCount={todayCount}
+            thisWeekCount={thisWeekCount}
+            totalInterviews={totalInterviews}
+            upcomingCount={upcomingCount}
+          />
+        </div>
+
+        {/* Main Content */}
+        <div className="px-4 pb-6 sm:px-6">
+          <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]">
+            {/* Sidebar */}
+            <div className="min-h-0">
+              <CalendarSidebar
+                events={events}
+                qnEventDates={qnEventDates}
+                selectedDate={selectedDate}
+                onDateSelect={handleDateSelect}
+                onEventClick={handleSidebarEventClick}
+              />
+            </div>
+
+            {/* Calendar */}
+            <Card className="relative flex h-full min-h-[500px] flex-col border border-border/50">
+              {/* Loading overlay - shown during navigation fetches */}
+              {isLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                    <span className="text-sm text-muted-foreground">
+                      Loading...
+                    </span>
+                  </div>
+                </div>
+              )}
+              <CardContent className="min-h-0 flex-1 overflow-auto p-3 sm:p-6">
+                <FullCalendar
+                  ref={calendarRef}
+                  plugins={[
+                    dayGridPlugin,
+                    timeGridPlugin,
+                    listPlugin,
+                    interactionPlugin,
+                  ]}
+                  initialView="dayGridMonth"
+                  // Filter out events without start dates (unscheduled candidates)
+                  // These will still appear in the sidebar "Not Scheduled" section
+                  events={events.filter((e) => e.start)}
+                  eventClick={handleEventClick}
+                  dateClick={handleDateClick}
+                  datesSet={handleDatesSet}
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: '',
+                  }}
+                  customButtons={{
+                    today: {
+                      text: 'Today',
+                      click: () => {
+                        calendarRef.current?.getApi().today();
+                        setSelectedDate(new Date());
+                      },
+                    },
+                  }}
+                  height="100%"
+                  contentHeight="100%"
+                  handleWindowResize
+                  nowIndicator
+                  allDaySlot={false}
+                  eventTextColor="#fff"
+                  slotMinTime="00:00:00"
+                  slotMaxTime="24:00:00"
+                  // Hide days from previous/next months in month view
+                  showNonCurrentDates={false}
+                  // Don't force 6 weeks - only show weeks with current month days
+                  fixedWeekCount={false}
+                  // eslint-disable-next-line react/no-unstable-nested-components
+                  eventContent={(arg) => {
+                    const extendedProps = arg.event.extendedProps as {
+                      candidate: CandidateAssignment;
+                      interviewer: { _id: string; name: string; email: string };
+                    };
+                    const { candidate, interviewer } = extendedProps;
+
+                    const jobTitle =
+                      typeof candidate.jobId !== 'string' &&
+                        candidate.jobId?.title
+                        ? candidate.jobId.title
+                        : candidate.jobDetails?.title || '';
+
+                    const currentView = arg.view.type;
+
+                    if (currentView === 'listWeek') {
+                      return (
+                        <div className="flex flex-col gap-0.5 py-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">
+                              {candidate.name}
+                            </span>
+                            {jobTitle && (
+                              <span className="text-xs text-muted-foreground">
+                                • {jobTitle}
+                              </span>
+                            )}
+                          </div>
+                          {interviewer.name &&
+                            interviewer.name !== 'Unknown' && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <span className="font-medium">
+                                  Interviewer:
+                                </span>
+                                {interviewer.name}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    }
+
+                    if (
+                      currentView === 'timeGridWeek' ||
+                      currentView === 'timeGridDay'
+                    ) {
+                      return (
+                        <div className="h-full w-full overflow-hidden break-words px-2 py-1">
+                          <div className="mb-0.5 flex max-w-full items-center gap-1 overflow-hidden">
+                            <div className="min-w-0 flex-1 overflow-hidden truncate text-[11px] font-medium">
+                              {candidate.name}
+                            </div>
+                            {arg.event.start && (
+                              <span className="shrink-0 whitespace-nowrap text-[10px] opacity-80">
+                                {formatTime(arg.event.start)}
+                              </span>
+                            )}
+                          </div>
+                          {jobTitle && (
+                            <div className="max-w-full overflow-hidden truncate text-[10px] capitalize opacity-80">
+                              {jobTitle}
+                            </div>
+                          )}
+                          {interviewer.name &&
+                            interviewer.name !== 'Unknown' && (
+                              <div className="max-w-full overflow-hidden truncate text-[10px] capitalize opacity-75">
+                                {interviewer.name}
+                              </div>
+                            )}
+                        </div>
+                      );
+                    }
+
+                    // Month view
+                    return (
+                      <div className="h-full w-full overflow-hidden break-words px-1.5 py-0.5">
+                        <div className="mb-0.5 flex max-w-full items-center gap-1 overflow-hidden">
+                          <div className="min-w-0 flex-1 overflow-hidden truncate text-[11px] font-medium">
+                            {candidate.name}
+                          </div>
+                          {arg.event.start && (
+                            <span className="shrink-0 whitespace-nowrap text-[10px] opacity-80">
+                              {formatTime(arg.event.start)}
+                            </span>
+                          )}
+                        </div>
+                        {jobTitle && (
+                          <div className="max-w-full overflow-hidden truncate text-[9px] capitalize opacity-75">
+                            {jobTitle}
+                          </div>
+                        )}
+                        {interviewer.name && interviewer.name !== 'Unknown' && (
+                          <div className="max-w-full overflow-hidden truncate text-[9px] capitalize opacity-70">
+                            {interviewer.name}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Candidate Dialog */}
+      {selectedEvent && 'extendedProps' in selectedEvent && (
         <CandidateDetailsDialog
-          candidate={{
-            ...selectedEvent.extendedProps.candidate,
-            jobId: {
-              _id:
-                typeof selectedEvent.extendedProps.candidate.jobId === "string"
-                  ? selectedEvent.extendedProps.candidate.jobId
-                  : selectedEvent.extendedProps.candidate.jobId?._id,
-              title:
-                selectedEvent.extendedProps.candidate.jobDetails?.title || "",
-              description:
-                selectedEvent.extendedProps.candidate.jobDetails?.description ||
-                "",
-            },
-            status: selectedEvent.extendedProps.candidate.status || "applied",
-            assignment: {
-              interviewerId:
-                selectedEvent.extendedProps.candidate.assignment
-                  ?.interviewerId || "",
-              time:
-                selectedEvent.start?.toISOString() || new Date().toISOString(),
-              assignedAt: new Date().toISOString(),
-              assignment: {
-                status:
-                  selectedEvent.extendedProps.candidate.assignment?.assignment
-                    ?.status || "",
+          isAssigning={false}
+          setIsAssigning={() => { }}
+          candidate={
+            {
+              ...selectedEvent.extendedProps.candidate,
+              jobId: {
+                _id:
+                  typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'string'
+                    ? selectedEvent.extendedProps.candidate.jobId
+                    : selectedEvent.extendedProps.candidate.jobId?._id || '',
+                title:
+                  selectedEvent.extendedProps.candidate.jobDetails?.title ||
+                  (typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'object' &&
+                    selectedEvent.extendedProps.candidate.jobId !== null
+                    ? selectedEvent.extendedProps.candidate.jobId.title
+                    : '') ||
+                  '',
+                description:
+                  selectedEvent.extendedProps.candidate.jobDetails
+                    ?.description ||
+                  (typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'object' &&
+                    selectedEvent.extendedProps.candidate.jobId !== null
+                    ? selectedEvent.extendedProps.candidate.jobId.description
+                    : '') ||
+                  '',
+                skills:
+                  typeof selectedEvent.extendedProps.candidate.jobId ===
+                    'object' &&
+                    selectedEvent.extendedProps.candidate.jobId !== null
+                    ? selectedEvent.extendedProps.candidate.jobId.skills || []
+                    : [],
               },
-            },
-          }}
+              status: selectedEvent.extendedProps.candidate.status || 'applied',
+              assignment: {
+                ...selectedEvent.extendedProps.candidate.assignment,
+                interviewerId:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.interviewerId || null,
+                time:
+                  selectedEvent.start?.toISOString() ||
+                  selectedEvent.extendedProps.candidate.assignment?.time ||
+                  new Date().toISOString(),
+                assignedAt:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.assignedAt || new Date().toISOString(),
+                googleMeet:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.googleMeet || undefined,
+                zoomMeet:
+                  selectedEvent.extendedProps.candidate.assignment
+                    ?.zoomMeet || undefined,
+              } as Assignment,
+            } as unknown as Candidate
+          }
           isOpen={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
-          onUpdate={async () => {
-            const { data } = await refetch();
-            const updatedCandidate = data?.find(
-              (candidate) =>
-                candidate._id === selectedEvent?.extendedProps.candidate._id
-            );
-            if (updatedCandidate) {
-              setSelectedEvent({
-                ...selectedEvent,
-                extendedProps: {
-                  ...selectedEvent.extendedProps,
-                  candidate: updatedCandidate,
-                },
-              });
-            }
-          }}
-          hideEditButton={true}
+          onUpdate={handleUpdate}
+          refetchAssignment={handleUpdate}
+          hideEditButton
         />
       )}
     </div>

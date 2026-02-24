@@ -1,11 +1,11 @@
-import Image from "next/image";
+import Image from 'next/image';
 
 interface InvalidPageProps {
   message?: string;
 }
 
 export default function InvalidPage({
-  message = "This page is not accessible",
+  message = 'This page is not accessible',
 }: InvalidPageProps) {
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center px-4">

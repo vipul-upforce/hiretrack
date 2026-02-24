@@ -1,27 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import dbConnect, { CandidateAccount } from "@/lib/mongodb";
-import { User } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "../../../../../middleware";
+import { NextRequest, NextResponse } from 'next/server';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import connectToDatabase, { CandidateAccount, User } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { passwordResetTokenRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
 
-export async function POST(req: Request) {
+async function handleResetPassword(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { token, password } = await req.json();
 
     if (!User || !CandidateAccount) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 500 }
+        { error: 'Database not connected' },
+        { status: 500 },
       );
     }
 
     // Hash the token from the request
     const resetTokenHash = crypto
-      .createHash("sha256")
+      .createHash('sha256')
       .update(token)
-      .digest("hex");
+      .digest('hex');
 
     // Find user with valid reset token
     let user = null;
@@ -32,10 +33,8 @@ export async function POST(req: Request) {
         resetToken: resetTokenHash,
         resetTokenExpiry: { $gt: new Date() },
       });
-      // console.log("Checking user collection:", user ? "Found" : "Not found");
-    } catch (e) {
+    } catch {
       user = null;
-      console.log("ERROR FINDING USER:", e);
     }
 
     if (!user) {
@@ -49,13 +48,13 @@ export async function POST(req: Request) {
           isCandidate = true;
         }
       } catch (e) {
-        console.log("ERROR FINDING CANDIDATE:", e);
+        logger.error({ error: e, url: req.url }, 'ERROR FINDING CANDIDATE');
         user = null;
       }
     }
 
     if (!user) {
-      throw new Error("Invalid or expired reset token");
+      throw new Error('Invalid or expired reset token');
     }
 
     // Hash the new password
@@ -77,70 +76,60 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json(
-      { message: "Password reset successful" },
-      { status: 200 }
+      { message: 'Password reset successful' },
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error({ error, url: req.url }, 'Reset password error');
     return NextResponse.json(
-      { error: "Failed to reset password" },
-      { status: 500 }
+      { error: 'Failed to reset password' },
+      { status: 500 },
     );
   }
 }
 
+// Export with rate limiting for POST
+export async function POST(req: Request) {
+  return passwordResetTokenRateLimiter(req as NextRequest, handleResetPassword);
+}
+
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { candidateId, password } = await req.json();
 
     if (!candidateId || !password) {
       return NextResponse.json(
-        { error: "Candidate ID and password are required" },
-        { status: 400 }
+        { error: 'Candidate ID and password are required' },
+        { status: 400 },
       );
     }
     if (!User) {
       return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 404 }
+        { error: 'Database not connected' },
+        { status: 404 },
       );
     }
 
     if (password.length < 7) {
       return NextResponse.json(
-        { error: "Password must be at least 6 characters long" },
-        { status: 400 }
+        { error: 'Password must be at least 6 characters long' },
+        { status: 400 },
       );
     }
 
-    const token = req.cookies.get("token");
-    if (!token?.value) {
+    const userData = await getAuthenticatedUser(req, 'admin');
+    if (!userData) {
       return NextResponse.json(
-        { error: "Authentication token missing" },
-        { status: 401 }
-      );
-    }
-
-    const decryptedResponse = await verifyAndDecryptToken(token.value);
-    if (!decryptedResponse?.user) {
-      return NextResponse.json(
-        { error: "Invalid or expired token" },
-        { status: 401 }
-      );
-    }
-    const role = decryptedResponse.user.role;
-    if (role !== "admin") {
-      return NextResponse.json(
-        { error: "Only Admins can perform this action" },
-        { status: 401 }
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
     }
     const user = await User.findById(candidateId);
     if (!user) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
 
@@ -154,14 +143,14 @@ export async function PUT(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: "Password reset successful" },
-      { status: 200 }
+      { message: 'Password reset successful' },
+      { status: 200 },
     );
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error({ error, url: req.url }, 'Reset password error');
     return NextResponse.json(
-      { error: "Failed to reset password" },
-      { status: 500 }
+      { error: 'Failed to reset password' },
+      { status: 500 },
     );
   }
 }

@@ -1,33 +1,247 @@
-"use server";
+'use server';
 
-import jwt from "jsonwebtoken";
-import CryptoJS from "crypto-js";
+import jwt from 'jsonwebtoken';
+import CryptoJS from 'crypto-js';
+import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
+import { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { getUserRole } from '@/lib/utils/checklistVisibility';
+import type { UserRole } from '@/lib/models/JobLaneConfig';
+import connectToDatabase, {
+  CandidateAccount,
+  Settings,
+  User,
+} from '@/lib/mongodb';
+import { IUser } from '@/lib/models/user';
+import { IUCandidateAccount } from '@/lib/models/candidateAccount';
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
-export async function verifyAndDecryptToken(token: string) {
+export interface OrganizationTag {
+  title: string;
+  color: string;
+  _id: string;
+}
+
+export interface LaneRestrictions {
+  nonEditable?: string[];
+  nonDeletable?: string[];
+  _id?: string;
+}
+
+export interface OrganizationInfo {
+  _id?: string;
+  name?: string;
+  adminId?: string;
+  defaultLanes?: string[];
+  laneRestrictions?: LaneRestrictions;
+  openJobCards?: string[];
+  tags?: OrganizationTag[];
+  __v?: number;
+  lanes?: string[];
+}
+
+export interface AuthenticatedUser {
+  id?: string;
+  name?: string;
+  email: string;
+  role: string;
+  organizationId: string;
+  organizationInfo?: OrganizationInfo;
+  fileStorage?: string;
+  tokenVersion?: number;
+}
+export async function verifyAndDecryptToken(token: string, orgId: string) {
   try {
-    if (!JWT_SECRET) throw new Error("JWT_SECRET is not defined");
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (!decoded || typeof decoded !== "object" || !decoded.user) {
-      throw new Error("Invalid token structure");
+    // Early validation
+    if (!token || !orgId) {
+      return { success: false, error: 'Token or organization ID missing' };
     }
 
+    const JWT_SECRET = generateOrgJwtSecret(orgId);
+    if (!JWT_SECRET) {
+      return { success: false, error: 'JWT_SECRET is not defined' };
+    }
+
+    // Verify JWT first (fast operation, no DB call)
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded || typeof decoded !== 'object' || !decoded.user) {
+      return { success: false, error: 'Invalid token structure' };
+    }
+
+    // Decrypt user data
     const bytes = CryptoJS.AES.decrypt(decoded.user, JWT_SECRET);
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-    return { success: true, user: decryptedData };
-  } catch (err) {
+
+    const oldTokenVersion = decryptedData?.tokenVersion;
+    const organizationId = decryptedData?.organizationId;
+    const userId = decryptedData?.id;
+    const isCandidate = decryptedData?.role === 'candidate';
+
+    if (!userId) {
+      return { success: false, error: 'User ID not found' };
+    }
+
+    // Parallelize database operations
+    await connectToDatabase();
+
+    // Support fetching either CandidateAccount or User depending on isCandidate flag.
+    // Always prefer explicit, typed models, and minimize selected fields for performance and privacy.
+
+    let user: IUser | IUCandidateAccount | undefined | null;
+    if (isCandidate) {
+      // Fetch candidate account info by userId
+      user = await CandidateAccount!
+        .findById(userId)
+        .populate({
+          path: 'organizationId',
+          select: 'name _id',
+        })
+        .select(
+          'name email role organizationId tokenVersion appliedApplications isDeleted',
+        )
+        .lean();
+    } else {
+      // Fetch regular user info by userId
+      user = await User!
+        .findById(userId)
+        .populate({
+          path: 'organizationId',
+          select: (decryptedData?.role === 'interviewer')
+            ? 'name _id'
+            : '-customFields',
+        })
+        .select('name email role organizationId tokenVersion isDeleted')
+        .lean();
+    }
+    // File storage is always per-organization, so fetch regardless of user type
+    const fileStorage = await Settings!
+      .findOne({ organizationId })
+      .select('fileStorage')
+      .lean();
+
+    if (!user || user?.isDeleted) {
+      return { success: false, error: 'User not found' };
+    }
+
+    // Check token version (critical for security)
+    if (
+      oldTokenVersion !== undefined &&
+      user?.tokenVersion !== undefined &&
+      Number(user?.tokenVersion) !== Number(oldTokenVersion)
+    ) {
+
+      const newRole = user?.role;
+      const oldRole = decryptedData?.role;
+      // Token version mismatch, log out
+      const cookieStore = await cookies();
+      const cookiesToDelete = ['auth_token', 'auth_state'];
+      if (newRole !== oldRole) {
+        cookiesToDelete.push('refresh_token');
+        cookiesToDelete.push('org_id');
+      }
+      const mutableCookieStore = cookieStore as unknown as {
+        delete?: (name: string) => void;
+      };
+
+      cookiesToDelete.forEach((cookieName) => {
+        try {
+          mutableCookieStore.delete?.(cookieName);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'unknown error';
+          process.stderr.write(
+            `Failed to delete cookie ${cookieName}: ${message}\n`,
+          );
+        }
+      });
+
+      return {
+        success: false,
+        error: 'Session expired. Please log in again.',
+        logout: true,
+      };
+    }
+
+    return {
+      success: true,
+      user: {
+        id: user?._id.toString(),
+        name: user?.name,
+        email: user?.email,
+        role: user?.role,
+        organizationId: organizationId.toString(),
+        organizationInfo: user?.organizationId,
+        tokenVersion: user?.tokenVersion,
+        fileStorage: fileStorage?.fileStorage?.storageType || 'local',
+      } as AuthenticatedUser,
+    };
+  } catch (error) {
     return {
       success: false,
-      error: err instanceof Error ? err.message : "Unknown Error Occurred",
+      error: error instanceof Error ? error.message : 'Unknown Error Occurred',
     };
   }
 }
 
-export const signToken = async (payload: unknown) => {
+export async function getAuthenticatedUser(
+  request: NextRequest,
+  requiredRole?: string | string[],
+): Promise<AuthenticatedUser | null> {
+  // Early return - check cookies first (synchronous, fast)
+  const token = request.cookies.get('auth_token')?.value;
+  const orgId = request.cookies.get('org_id')?.value;
+
+  if (!token || !orgId) {
+    return null;
+  }
+
+  // Verify token and get user
+  const { success, user } = await verifyAndDecryptToken(token, orgId);
+  if (!success || !user) {
+    return null;
+  }
+
+  // Validate user role is valid using the same validation as getUserRole
+  const validatedRole = getUserRole(user.role);
+  if (!validatedRole) {
+    return null; // Invalid role
+  }
+
+  // If a role is specified, validate it matches
+  if (requiredRole) {
+    const rolesToCheck = Array.isArray(requiredRole)
+      ? requiredRole
+      : [requiredRole];
+
+    // Validate each required role and check if user's role matches
+    const validRequiredRoles = rolesToCheck
+      .map((role) => getUserRole(role))
+      .filter((role): role is UserRole => role !== null);
+
+    if (
+      validRequiredRoles.length === 0 ||
+      !validRequiredRoles.includes(validatedRole)
+    ) {
+      return null; // Role doesn't match required role(s) or required roles are invalid
+    }
+  }
+
+  return user as AuthenticatedUser;
+}
+
+export const signToken = async (payload: unknown, orgId: string) => {
+  const JWT_SECRET = generateOrgJwtSecret(orgId);
+
+  if (!JWT_SECRET) throw new Error('JWT_SECRET is not defined');
+
   const encryptedPayload = CryptoJS.AES.encrypt(
     JSON.stringify(payload),
-    JWT_SECRET
+    String(JWT_SECRET),
   ).toString();
-  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: "30d" });
+
+  return jwt.sign({ user: encryptedPayload }, JWT_SECRET, { expiresIn: '15m' });
 };
+
+// Helper function for access tokens (15 minutes)
+export async function signAccessToken(payload: unknown, orgId: string) {
+  return signToken(payload, orgId);
+}

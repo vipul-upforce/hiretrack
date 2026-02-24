@@ -1,109 +1,168 @@
-"use client";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import SettingDialog from "./components/setting-dialog";
-import AddCustomFieldButton from "@/Custom_Fields/Components/AddCustomFieldButton";
-import withAuthGuard from "@/components/withAuthGuard";
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Card, CardContent, CardHeader, CardTitle,
+} from '@/components/ui/card';
+import AddCustomFieldButton from '@/Custom_Fields/Components/AddCustomFieldButton';
+import withAuthGuard from '@/components/withAuthGuard';
+import { Tags, Palette } from 'lucide-react';
+import SettingDialog from './components/setting-dialog';
+import { settingGroups, settingsByKey } from './constants';
+import SettingsCard from './components/settings/setting-card';
 
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const settings = [
-    {
-      title: "Storage Settings",
-      key: "fs",
-      description: "Configure your organization's storage settings.",
-    },
-    {
-      title: "Email Configs",
-      key: "mail",
-      description: "Configure the SMTP configurations for your organization.",
-    },
-    {
-      title: "Portal",
-      key: "portal",
-      description: "Update the Portal configurations of your organization.",
-    },
-    {
-      title: "Gemini",
-      key: "gemini",
-      description: "Update the Gemini configurations of your organization.",
-    },
-    {
-      title: "Multiple Organizations",
-      key: "multipleorgs",
-      description: "Choose if there could be multiple organizations or not.",
-    },
-    {
-      title: "Backups",
-      key: "backups",
-      description: "Create and manage database backups",
-    },
-    {
-      title: "Assets",
-      key: "assets",
-      description: "Download media assets of your server",
-    },
-    {
-      title: "Time Zone",
-      key: "timezone",
-      description: "Select the Time Zone for your organization.",
-    },
-    {
-      title: "Email Template",
-      key: "templates",
-      description: "Customize your E-mail templates.",
-    },
-    {
-      title: "Logs",
-      key: "logs",
-      description:
-        "Inspect the logs and all the activity on your organization and server.",
-    },
-    {
-      title: "Tags",
-      key: "tags",
-      description: "Manage the tags for candidates.",
-    },
-    {
-      title: "Two Factor Authentication",
-      key: "twoFA",
-      description: "Enable Two Factor Authentication for Your Organization.",
-    },
-  ];
+  useEffect(() => {
+    const config = searchParams?.get('config');
+    if (config) {
+      if (config === 'users') {
+        router.push('/dashboard/users');
+        return;
+      }
+      if (config === 'portal') {
+        router.push('/dashboard/settings/portal');
+        return;
+      }
+      if (config === 'templates') {
+        router.push('/dashboard/settings/templates');
+        return;
+      }
+      if (config === 'logs') {
+        router.push('/dashboard/settings/logs');
+        return;
+      }
+      setOpenDialog(config);
+    }
+  }, [searchParams, router]);
+
+  // Helper function to check if setting opens in new page
+  const opensInNewPage = (key: string) => ['users', 'portal', 'templates', 'logs'].includes(key);
+  const visibleKeys = useMemo(
+    () =>
+      new Set(
+        settingGroups.flatMap((group) =>
+          group.settings.map((setting) => setting.key),
+        ),
+      ),
+    [settingGroups],
+  );
+
+  const primaryGroup = settingGroups[0];
+  const remainingGroups = settingGroups.slice(1);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-full">
-      {settings.map((option) => (
-        <div key={option.key} className="h-full">
-          <Card
-            className="hover:bg-gray-100 h-full dark:hover:bg-gray-800 min-w-[25vw] transition cursor-pointer mr-4"
-            onClick={() => setOpenDialog(option.key)}
-          >
-            <CardHeader>
-              <CardTitle>{option.title}</CardTitle>
-            </CardHeader>
-            <CardContent>{option.description}</CardContent>
-          </Card>
+    <div className="h-screen flex flex-col overflow-hidden w-full">
+      {/* Header section with improved design */}
+      <div className="flex-shrink-0 px-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+        <Card className="border-0 shadow-none bg-transparent">
+          <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-y-2 py-3 px-0">
+            {/* Title */}
+            <CardTitle className="line-clamp-2 md:mr-2 text-xl font-bold">
+              Settings
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
 
-          {/* Dialog Component */}
-          {openDialog === option.key && (
+      <div className="flex-1 min-h-0 px-4 pb-4 mt-4 space-y-8 overflow-y-auto">
+        {primaryGroup && (
+          <SettingsCard
+            group={primaryGroup}
+            openDialog={openDialog}
+            opensInNewPage={opensInNewPage}
+            setOpenDialog={setOpenDialog}
+            key={primaryGroup.title}
+          />
+        )}
+
+        {/* Custom Fields Section */}
+        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 pb-2">
+            <div className="p-2 rounded-lg bg-gray-100 dark:bg-black">
+              <Palette className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Custom Fields
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Create and manage custom form fields for candidates
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AddCustomFieldButton />
+            <Card
+              className="h-full transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-800 hover:shadow-lg bg-white dark:bg-black card-hover-border"
+              onClick={() => setOpenDialog('tags')}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700">
+                    <Tags className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                      Candidate Tags
+                    </CardTitle>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                  Organize candidates with custom tags
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Dialog Component for Tags */}
+          {openDialog === 'tags' && (
             <SettingDialog
-              isOpen={openDialog === option.key}
+              isOpen={openDialog === 'tags'}
               onClose={() => setOpenDialog(null)}
-              setting={option}
+              setting={{
+                title: 'Candidate Tags',
+                key: 'tags',
+                description: 'Organize candidates with custom tags',
+              }}
             />
           )}
         </div>
-      ))}
-      <AddCustomFieldButton />
+
+        {remainingGroups.map((group) => (
+          <SettingsCard
+            group={group}
+            openDialog={openDialog}
+            opensInNewPage={opensInNewPage}
+            setOpenDialog={setOpenDialog}
+            key={group.title}
+          />
+        ))}
+
+        {openDialog
+          && !visibleKeys.has(openDialog)
+          && !opensInNewPage(openDialog)
+          && settingsByKey[openDialog] && (
+            <SettingDialog
+              isOpen={openDialog === settingsByKey[openDialog].key}
+              onClose={() => setOpenDialog(null)}
+              setting={settingsByKey[openDialog]}
+            />
+        )}
+      </div>
     </div>
   );
 }
 
 export default withAuthGuard(Settings, {
-  requiredRoles: ["admin"],
-  fallbackPath: "/dashboard",
+  requiredRoles: ['admin'],
+  fallbackPath: '/dashboard',
   checkAllowance: false,
   allowAuthenticated: true,
 });

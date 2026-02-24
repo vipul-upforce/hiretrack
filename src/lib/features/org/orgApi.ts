@@ -1,5 +1,5 @@
-import { ITag } from "@/lib/models/organization";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { ITag } from '@/lib/models/organization';
+import { baseApi } from '@/lib/api/baseApi';
 
 export interface CreateAdminRequest {
   email: string;
@@ -48,6 +48,8 @@ export interface IScheduledMailRequest {
   interviewerName: string;
   candidateName: string;
   status: string;
+  jobId?: string;
+  eventId?: string;
   // remark?: string;
   // rating?: number;
 }
@@ -59,11 +61,20 @@ export interface IScheduledStatusMailRequest {
   status: string;
   remark?: string;
   rating?: string;
+  jobName?: string;
+  startTime?: string;
+  endTime?: string;
+  jobId?: string;
+}
+export interface OrgAllowanceResponse {
+  allow: boolean;
+  data?: { organizationId: string }[];
 }
 
 export interface CreateOrgResponse {
   message: string;
   organization: string;
+  logout?: boolean;
   _id?: string;
 }
 
@@ -71,7 +82,7 @@ export interface CreateOrgResponse {
 export interface ProcessedItem {
   filename: string;
   candidateId: string;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   message: string;
   processedAt: string;
   _id: string;
@@ -83,7 +94,7 @@ export interface Batch {
   totalFiles: number;
   successCount: number;
   failureCount: number;
-  status: "pending" | "processing" | "completed" | "failed";
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   items: ProcessedItem[];
   startedAt: string;
   completedAt?: string;
@@ -91,60 +102,60 @@ export interface Batch {
   updatedAt: string;
 }
 
-export const orgApi = createApi({
-  reducerPath: "orgApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: "/api",
-    credentials: "include",
-  }),
-  tagTypes: ["Users", "Batches", "Tags"], // Add Batches to tagTypes
+export const orgApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     createAdmin: builder.mutation<CreateAdminResponse, CreateAdminRequest>({
       query: (credentials) => ({
-        url: "/auth/signup",
-        method: "POST",
+        url: '/auth/signup',
+        method: 'POST',
         body: credentials,
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'],
     }),
     updateAdmin: builder.mutation<UpdateAdminResponse, UpdateAdminRequest>({
       query: (data) => ({
-        url: "/users",
-        method: "PUT",
+        url: '/users',
+        method: 'PUT',
         body: data,
       }),
-      invalidatesTags: ["Users"],
+      invalidatesTags: ['Users'],
     }),
     createOrg: builder.mutation<CreateOrgResponse, CreateOrgRequest>({
       query: (data) => ({
-        url: "/organization",
-        method: "POST",
+        url: '/organization',
+        method: 'POST',
         body: data,
+      }),
+    }),
+    fetchOrg: builder.query({
+      query: () => ({
+        url: '/organization',
+        method: 'GET',
       }),
     }),
     updateCustomFields: builder.mutation({
       query: (data) => ({
-        url: "/organization/cs",
-        method: "POST",
+        url: '/organization/cs',
+        method: 'POST',
         body: data,
       }),
     }),
     getCustomFields: builder.query({
       query: (orgId) => ({
         url: `/organization/cs/${orgId}`,
-        method: "GET",
+        method: 'GET',
       }),
     }),
     getCustomFieldsByOrgName: builder.query({
       query: (orgName) => ({
-        url: orgName ? `/organization/cf/${orgName}` : "/organization/cf",
-        method: "GET",
+        url: orgName ? `/organization/cf/${orgName}` : '/organization/cf',
+        method: 'GET',
       }),
     }),
     sendMail: builder.mutation<{ message: string }, IScheduledMailRequest>({
       query: (data) => ({
-        url: `/event-mail`,
-        method: "POST",
+        url: '/event-mail',
+        method: 'POST',
         body: data,
       }),
     }),
@@ -153,22 +164,42 @@ export const orgApi = createApi({
       IScheduledStatusMailRequest
     >({
       query: (data) => ({
-        url: `/status-mail`,
-        method: "POST",
+        url: '/status-mail',
+        method: 'POST',
         body: data,
       }),
     }),
-    sendUnassignMail: builder.mutation<{ message: string }, any>({
+    sendUnassignMail: builder.mutation<
+      { message: string },
+      Record<string, unknown>
+    >({
       query: (data) => ({
-        url: `/event-mail`,
-        method: "PUT",
+        url: '/event-mail',
+        method: 'PUT',
         body: data,
+      }),
+    }),
+    getOrganizationAllowance: builder.query<
+      OrgAllowanceResponse,
+      { limit?: number } | void
+    >({
+      query: (params) => ({
+        url: params?.limit
+          ? `/organization?limit=${params.limit}`
+          : '/organization',
+        method: 'GET',
+      }),
+    }),
+    checkOrg: builder.query<{ exists: boolean }, string>({
+      query: (organizationId) => ({
+        url: `/checkorg?organizationId=${organizationId}`,
+        method: 'GET',
       }),
     }),
     // New endpoint to fetch batches
     fetchBatches: builder.query<Batch[], string>({
       query: (organizationId) => `/process-cv?organizationId=${organizationId}`,
-      providesTags: ["Batches"], // Tag for refetching
+      providesTags: ['Batches'], // Tag for refetching
     }),
     // New endpoint to post a batch
     postBatch: builder.mutation<
@@ -177,17 +208,17 @@ export const orgApi = createApi({
     >({
       query: ({ formData, organizationId }) => ({
         url: `/process-cv?organizationId=${organizationId}`,
-        method: "POST",
+        method: 'POST',
         body: formData,
       }),
-      invalidatesTags: ["Batches"], // Invalidate Batches tag to refetch
+      invalidatesTags: ['Batches'], // Invalidate Batches tag to refetch
     }),
     fetchOrgTags: builder.query<{ tags: ITag[] }, { organizationId: string }>({
       query: ({ organizationId }) => ({
         url: `/organization/tags?organizationId=${organizationId}`,
-        method: "GET",
+        method: 'GET',
       }),
-      providesTags: ["Tags"],
+      providesTags: ['Tags'],
     }),
     updateOrgTags: builder.mutation<
       { tags: ITag[] },
@@ -195,10 +226,10 @@ export const orgApi = createApi({
     >({
       query: ({ tags, organizationId }) => ({
         url: `/organization/tags?organizationId=${organizationId}`,
-        method: "PUT",
+        method: 'PUT',
         body: tags,
       }),
-      invalidatesTags: ["Tags"],
+      invalidatesTags: ['Tags'],
     }),
   }),
 });
@@ -208,6 +239,7 @@ export const {
   useCreateAdminMutation,
   useSendMailMutation,
   useSendStatusMailMutation,
+  useFetchOrgQuery,
   useSendUnassignMailMutation,
   useCreateOrgMutation,
   useUpdateAdminMutation,
@@ -215,9 +247,11 @@ export const {
   useGetCustomFieldsQuery,
   useLazyGetCustomFieldsQuery,
   useLazyGetCustomFieldsByOrgNameQuery,
-  useFetchBatchesQuery, // Hook for fetching batches
-  usePostBatchMutation, // Hook for posting a batch,,
+  useFetchBatchesQuery,
+  usePostBatchMutation,
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
+  useGetOrganizationAllowanceQuery,
+  useLazyGetOrganizationAllowanceQuery,
+  useCheckOrgQuery,
 } = orgApi;
-// export const { useCreateAdminMutation } = orgApi;

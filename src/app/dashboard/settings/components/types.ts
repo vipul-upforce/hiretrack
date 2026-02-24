@@ -5,8 +5,8 @@ export interface IEmailTemplate {
     html: string
     variables ?: string[]
   }
-  
-  export interface IEmailTemplatesConfig {
+
+export interface IEmailTemplatesConfig {
     templates: {
       [key: string]: IEmailTemplate
     }

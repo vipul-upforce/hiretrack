@@ -1,65 +1,80 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import readline from "readline";
+import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ file: string[] }> }
+  { params }: { params: Promise<{ file: string[] }> },
 ) {
   const { file } = await params;
   const { searchParams } = new URL(req.url);
-  const offset = parseInt(searchParams.get("offset") || "0", 10);
-  const limit = parseInt(searchParams.get("limit") || "100", 10);
-  const query = searchParams.get("query")?.toLowerCase() || "";
+
+  const mode = searchParams.get('mode') || 'tail'; // 'tail' | 'range'
+  const startParam = parseInt(searchParams.get('start') || '0', 10);
+  const endParam = parseInt(searchParams.get('end') || '0', 10);
+  const limit = parseInt(searchParams.get('limit') || '100', 10);
+  const query = searchParams.get('query')?.toLowerCase() || '';
 
   const logDir =
-    process.platform === "linux"
-      ? "/var/log/nginx"
-      : "/Users/UpforceTech/hiretrack";
+    process.platform === 'linux'
+      ? '/var/log/nginx'
+      : '/Users/UpforceTech/hiretrack';
 
   const filePath = path.join(logDir, ...file);
 
   try {
-    // Check if file exists
     if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { error: "Log file not found" },
-        { status: 404 }
+        { error: 'Log file not found' },
+        { status: 404 },
       );
     }
 
-    // Read all matching lines into memory (reversible)
     const allLines: string[] = [];
     const rl = readline.createInterface({
-      input: fs.createReadStream(filePath, "utf-8"),
+      input: fs.createReadStream(filePath, 'utf-8'),
       crlfDelay: Infinity,
     });
 
     for await (const line of rl) {
-      if (line.trim() && (!query || line.toLowerCase().includes(query))) {
+      if (!query || line.toLowerCase().includes(query)) {
         allLines.push(line);
       }
     }
 
     const totalLines = allLines.length;
+    let slicedLines: string[] = [];
+    let nextStart = 0;
+    let nextEnd = 0;
 
-    // Reverse the lines to show latest first
-    const reversedLines = allLines.reverse();
+    if (mode === 'tail') {
+      const startIndex = Math.max(0, totalLines - limit);
+      slicedLines = allLines.slice(startIndex, totalLines);
 
+      nextStart = startIndex;
+      nextEnd = totalLines;
+    } else {
+      const safeStart = Math.max(0, startParam);
+      const safeEnd = Math.min(totalLines, endParam);
+
+      slicedLines = allLines.slice(safeStart, safeEnd);
+      nextStart = safeStart;
+      nextEnd = safeEnd;
+    }
 
     return NextResponse.json({
-      content: reversedLines,
+      content: slicedLines,
       totalLines,
-      offset,
-      limit,
-      query,
+      start: nextStart,
+      end: nextEnd,
     });
   } catch (error) {
-    console.error("Log file read error:", error);
+    logger.error({ error, url: req.url }, 'Log file read error');
     return NextResponse.json(
-      { error: "Failed to read nginx log file" },
-      { status: 500 }
+      { error: 'Failed to read log file' },
+      { status: 500 },
     );
   }
 }

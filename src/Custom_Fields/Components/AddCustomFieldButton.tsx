@@ -1,47 +1,72 @@
-"use client";
+'use client';
 
-import CustomFieldDialog from "./Common/CustomFieldDialog";
-import React, { useContext, useEffect, useState, useCallback } from "react";
-import Stepper from "./Stepper";
-import { CustomFieldsContext } from "../Context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FolderOpen } from 'lucide-react';
+import Stepper from './Stepper';
+import { CustomFieldsContext } from '../Context';
+import CustomFieldDialog from './Common/CustomFieldDialog';
+
 function AddCustomFields() {
   const { setStepName } = useContext(CustomFieldsContext);
   const [isOpen, setIsOpen] = useState(false);
+  const searchParams = useSearchParams();
+
   const onClick = () => {
     setTimeout(() => {
       setIsOpen(true);
     }, 200);
   };
 
+  useEffect(() => {
+    const config = searchParams?.get('config');
+    if (config === 'cf') {
+      setIsOpen(true);
+    }
+  }, [searchParams]);
+
   const handleClose = useCallback(() => {
-    setStepName("FormList");
+    setStepName('FormList');
     setIsOpen(false);
   }, [setStepName]);
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       handleClose();
-    };
-  }, [handleClose]);
+    },
+    [handleClose],
+  );
 
   return (
-    <div className="h-full">
+    <div className="group">
       <Card
-        className="hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer mr-4 h-full"
+        className="h-full cursor-pointer border border-gray-200 bg-white transition-all duration-200 hover:border-gray-300 hover:shadow-lg dark:border-gray-800 dark:bg-black dark:hover:border-gray-600"
         onClick={onClick}
       >
-        <CardHeader>
-          <CardTitle>Global Meta Fields</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
+              <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                Personalized form fields
+              </CardTitle>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          Update the global meta fields for your organization
+        <CardContent className="pt-0">
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            Configure global metadata fields for your organization
+          </p>
         </CardContent>
       </Card>
+
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Global Meta Fields"
+        title="Personalized form fields"
       >
         <Stepper />
       </CustomFieldDialog>

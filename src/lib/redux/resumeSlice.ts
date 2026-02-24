@@ -1,5 +1,5 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "@/lib/redux/store";
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '@/lib/redux/store';
 import type {
   FeaturedSkill,
   Resume,
@@ -8,40 +8,40 @@ import type {
   ResumeProject,
   ResumeSkills,
   ResumeWorkExperience,
-} from "@/lib/redux/types";
-import type { ShowForm } from "@/lib/redux/settingsSlice";
+} from '@/lib/redux/types';
+import type { ShowForm } from '@/lib/redux/settingsSlice';
 
 export const initialProfile: ResumeProfile = {
-  name: "",
-  summary: "",
-  email: "",
-  phone: "",
-  location: "",
-  url: "",
+  name: '',
+  summary: '',
+  email: '',
+  contact: '',
+  location: '',
+  url: '',
 };
 
 export const initialWorkExperience: ResumeWorkExperience = {
-  company: "",
-  jobTitle: "",
-  date: "",
+  company: '',
+  jobTitle: '',
+  date: '',
   descriptions: [],
 };
 
 export const initialEducation: ResumeEducation = {
-  school: "",
-  degree: "",
-  gpa: "",
-  date: "",
+  school: '',
+  degree: '',
+  gpa: '',
+  date: '',
   descriptions: [],
 };
 
 export const initialProject: ResumeProject = {
-  project: "",
-  date: "",
+  project: '',
+  date: '',
   descriptions: [],
 };
 
-export const initialFeaturedSkill: FeaturedSkill = { skill: "", rating: 4 };
+export const initialFeaturedSkill: FeaturedSkill = { skill: '', rating: 4 };
 export const initialFeaturedSkills: FeaturedSkill[] = Array(9).fill({
   ...initialFeaturedSkill,
 });
@@ -68,19 +68,19 @@ export type CreateChangeActionWithDescriptions<T> = {
   idx: number;
 } & (
   | {
-      field: Exclude<keyof T, "descriptions">;
+      field: Exclude<keyof T, 'descriptions'>;
       value: string;
     }
-  | { field: "descriptions"; value: string[] }
+  | { field: 'descriptions'; value: string[] }
 );
 
 export const resumeSlice = createSlice({
-  name: "resume",
+  name: 'resume',
   initialState: initialResumeState,
   reducers: {
     changeProfile: (
       draft,
-      action: PayloadAction<{ field: keyof ResumeProfile; value: string }>
+      action: PayloadAction<{ field: keyof ResumeProfile; value: string }>,
     ) => {
       const { field, value } = action.payload;
       draft.profile[field] = value;
@@ -89,42 +89,44 @@ export const resumeSlice = createSlice({
       draft,
       action: PayloadAction<
         CreateChangeActionWithDescriptions<ResumeWorkExperience>
-      >
+      >,
     ) => {
       const { idx, field, value } = action.payload;
       const workExperience = draft.workExperiences[idx];
-      workExperience[field] = value as any;
+      workExperience[field] = value as string[] & string;
     },
     changeEducations: (
       draft,
-      action: PayloadAction<CreateChangeActionWithDescriptions<ResumeEducation>>
+      action: PayloadAction<
+        CreateChangeActionWithDescriptions<ResumeEducation>
+      >,
     ) => {
       const { idx, field, value } = action.payload;
       const education = draft.educations[idx];
-      education[field] = value as any;
+      education[field] = value as string[] & string;
     },
     changeProjects: (
       draft,
-      action: PayloadAction<CreateChangeActionWithDescriptions<ResumeProject>>
+      action: PayloadAction<CreateChangeActionWithDescriptions<ResumeProject>>,
     ) => {
       const { idx, field, value } = action.payload;
       const project = draft.projects[idx];
-      project[field] = value as any;
+      project[field] = value as string[] & string;
     },
     changeSkills: (
       draft,
       action: PayloadAction<
-        | { field: "descriptions"; value: string[] }
+        | { field: 'descriptions'; value: string[] }
         | {
-            field: "featuredSkills";
+            field: 'featuredSkills';
             idx: number;
             skill: string;
             rating: number;
           }
-      >
+      >,
     ) => {
       const { field } = action.payload;
-      if (field === "descriptions") {
+      if (field === 'descriptions') {
         const { value } = action.payload;
         draft.skills.descriptions = value;
       } else {
@@ -136,7 +138,7 @@ export const resumeSlice = createSlice({
     },
     changeCustom: (
       draft,
-      action: PayloadAction<{ field: "descriptions"; value: string[] }>
+      action: PayloadAction<{ field: 'descriptions'; value: string[] }>,
     ) => {
       const { value } = action.payload;
       draft.custom.descriptions = value;
@@ -144,16 +146,19 @@ export const resumeSlice = createSlice({
     addSectionInForm: (draft, action: PayloadAction<{ form: ShowForm }>) => {
       const { form } = action.payload;
       switch (form) {
-        case "workExperiences": {
+        case 'workExperiences': {
           draft.workExperiences.push(structuredClone(initialWorkExperience));
           return draft;
         }
-        case "educations": {
+        case 'educations': {
           draft.educations.push(structuredClone(initialEducation));
           return draft;
         }
-        case "projects": {
+        case 'projects': {
           draft.projects.push(structuredClone(initialProject));
+          return draft;
+        }
+        default: {
           return draft;
         }
       }
@@ -163,20 +168,20 @@ export const resumeSlice = createSlice({
       action: PayloadAction<{
         form: ShowForm;
         idx: number;
-        direction: "up" | "down";
-      }>
+        direction: 'up' | 'down';
+      }>,
     ) => {
       const { form, idx, direction } = action.payload;
-      if (form !== "skills" && form !== "custom") {
+      if (form !== 'skills' && form !== 'custom') {
         if (
-          (idx === 0 && direction === "up") ||
-          (idx === draft[form].length - 1 && direction === "down")
+          (idx === 0 && direction === 'up') ||
+          (idx === draft[form].length - 1 && direction === 'down')
         ) {
           return draft;
         }
 
         const section = draft[form][idx];
-        if (direction === "up") {
+        if (direction === 'up') {
           draft[form][idx] = draft[form][idx - 1];
           draft[form][idx - 1] = section;
         } else {
@@ -184,19 +189,18 @@ export const resumeSlice = createSlice({
           draft[form][idx + 1] = section;
         }
       }
+      return draft;
     },
     deleteSectionInFormByIdx: (
       draft,
-      action: PayloadAction<{ form: ShowForm; idx: number }>
+      action: PayloadAction<{ form: ShowForm; idx: number }>,
     ) => {
       const { form, idx } = action.payload;
-      if (form !== "skills" && form !== "custom") {
+      if (form !== 'skills' && form !== 'custom') {
         draft[form].splice(idx, 1);
       }
     },
-    setResume: (draft, action: PayloadAction<Resume>) => {
-      return action.payload;
-    },
+    setResume: (_draft, action: PayloadAction<Resume>) => action.payload,
   },
 });
 

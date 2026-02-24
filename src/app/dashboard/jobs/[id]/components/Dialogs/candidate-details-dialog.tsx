@@ -1,40 +1,41 @@
-"use client";
+'use client';
 
-import { DialogHeader } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Candidate } from "@/types/candidate";
-import { EditCandidateDialog } from "./edit-candidate-dialog";
-import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
+import { DialogHeader } from '@/components/ui/dialog';
+import logger from '@/lib/logger';
+import { Candidate } from '@/types/candidate';
+import { useState, useEffect } from 'react';
+import { toast } from '@/hooks/use-toast';
 import {
   useEvaluateCandidateMutation,
   useLazyFetchCandidatesQuery,
-} from "@/lib/features/candidate/candidateApi";
-import { useParams } from "next/navigation";
-import Cookies from "js-cookie";
-import { AssignCandidateDialog } from "./assign-candidate-dialog";
-import { usePathname } from "next/navigation";
-import { ICandidateHistory } from "@/lib/models/history";
-import { AssignJobDialog } from "./assign-job-dialog";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { User } from "@/lib/features/users/usersApi";
-import { evaluateCandidate } from "@/app/apply-jobs/ApplyAsGuest";
-import { CandidateDetailsDialogProps } from "../../schemas/candidateDetailsDialogProps";
-import { IEditRemark } from "../../schemas/EditRemarkDialog";
-import EditRemarkDialog from "./EditRemarkDialog";
-import ConfirmationDialog from "./ConfirmationDialog";
-import handleCandidateInfoCopy from "../../hooks/handleCandidateInfoCopy";
-import DetailsDialogHeader from "../Candidate/candidate-details-header";
-import RemarkInputSection from "../Remarks/RemarkInputSection";
-import { useRemarkHandlers } from "../../hooks/useRemarkHandlers";
-import { useUnassignHandlers } from "../../hooks/useUnassignHandlers";
-import { DetailsDialog } from "./DetailsDialog";
-import { candidateDetailsFields } from "../Candidate/candidate-details-fields";
-import AddFollowUpDialog from "./add-followup-dialog";
-import ConfirmAndRemarkDialog from "./mark-as-done-dialog";
-
-const labelClass = "font-semibold text-base";
+  useLazyFetchCandidateHistoryQuery,
+  useLazyFetchCandidateDetailsQuery,
+} from '@/lib/features/candidate/candidateApi';
+import { useParams, usePathname } from 'next/navigation';
+import { ICandidateHistory } from '@/lib/models/history';
+import dayjs from 'dayjs';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { EvaluationResult } from '@/lib/ai-providers/evaluation-provider';
+import { followUpSepretorPatternRegex } from '@/lib/constants';
+import { useSSE } from '@/hooks/useSSE';
+import { evaluateCandidate } from '@/app/apply-jobs/utils/guestApplicationUtils';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import { EditCandidateDialog } from './edit-candidate-dialog';
+import { UnifiedCandidateActionsDialog } from './unified-candidate-actions-dialog';
+import { CandidateDetailsDialogProps } from '../../schemas/candidateDetailsDialogProps';
+import { IEditRemark } from '../../schemas/EditRemarkDialog';
+import EditRemarkDialog from './EditRemarkDialog';
+import ConfirmationDialog from './ConfirmationDialog';
+import handleCandidateInfoCopy from '../../hooks/handleCandidateInfoCopy';
+import DetailsDialogHeader from '../Candidate/candidate-details-header';
+import RemarkInputSection from '../Remarks/RemarkInputSection';
+import { useRemarkHandlers } from '../../hooks/useRemarkHandlers';
+import { useUnassignHandlers } from '../../hooks/useUnassignHandlers';
+import { DetailsDialog } from './DetailsDialog';
+import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
+import { CandidateDetailsActions } from './tabs/CandidateDetailsActions';
+import { getJobId } from '../../utils/candidateAccessors';
+/* eslint-disable max-lines */
 
 export function CandidateDetailsDialog({
   candidate,
@@ -46,18 +47,29 @@ export function CandidateDetailsDialog({
   fromFilter,
   refetchCandidates,
   hideCloseButtons = false,
+  isAssigning,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
 
-  const [refetchCandidate, { data: candidateData }] =
-    useLazyFetchCandidatesQuery();
+  const [refetchCandidate] = useLazyFetchCandidatesQuery();
+  const [
+    fetchHistory,
+    {
+      data: historyData,
+      isFetching: isHistoryFetching,
+      isError: isHistoryError,
+    },
+  ] = useLazyFetchCandidateHistoryQuery();
+  const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
+
   const [isEditing, setIsEditing] = useState(false);
   const [isReEvaluating, setIsReEvaluating] = useState(false);
-  const [isAssigning, setIsAssigning] = useState(false);
-  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
-  const [isAssigningJob, setIsAssigningJob] = useState(false);
-  const [user, setuser] = useState<User | null>(null);
+  const [isUnifiedOpen, setIsUnifiedOpen] = useState(false);
+  const [unifiedInitialAction, setUnifiedInitialAction] = useState<
+    CandidateActionType | undefined
+  >(undefined);
+  const { user } = useAppSelector((state) => state.auth || {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
@@ -65,28 +77,162 @@ export function CandidateDetailsDialog({
   const [timeLineItems, setTimeLineItems] = useState<ICandidateHistory[]>([]);
   const [isEvaluatingFor, setIsEvaluatingFor] = useState<string | null>(null);
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
-    candidate
+    candidate,
   );
-  const refetch = async () => {
-    const result = await refetchCandidate(
-      (id as string) || candidate?.jobId._id || ""
-    );
-    const updatedCandidate = result.data!.find((c) => {
-      return c._id === localCandidate?._id;
-    });
-    setLocalCandidate(updatedCandidate!);
-  };
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // History loading state
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [isRefetching, setIsRefetching] = useState(false);
+
+  // Get job ID from URL params or fallback to extracting from candidate
+  // This ensures SSE works when dialog is opened from notifications page (no job ID in URL)
+  const effectiveJobId = id || getJobId(localCandidate) || undefined;
+
+  // useSSE handles updating localCandidate when SSE updates arrive
+  useSSE(setLocalCandidate, localCandidate || null, effectiveJobId);
+
+  // Fetch full candidate details (including remarks) when dialog opens.
   useEffect(() => {
-    (async () => {
-      const token = Cookies.get("token");
-      if (token) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(String(token));
-        if (decryptedResponse.success && decryptedResponse.user) {
-          setuser(decryptedResponse.user);
-        }
-      }
-    })();
-  }, []);
+    if (!isOpen || !localCandidate?._id) return undefined;
+
+    const hasLoadedRemarks =
+      Array.isArray(localCandidate.remarks) &&
+      (localCandidate.remarks.length > 0 ||
+        localCandidate.remarksCount === 0);
+
+    if (hasLoadedRemarks) return undefined;
+
+    let cancelled = false;
+
+    const loadDetails = async () => {
+      const result = await fetchCandidateDetails(localCandidate._id, true);
+      const details = result.data;
+
+      if (cancelled || !details || details._id !== localCandidate._id) return;
+
+      setLocalCandidate((prev) => {
+        if (!prev || prev._id !== details._id) return prev;
+        return {
+          ...prev,
+          remarks: details.remarks || [],
+          remarksCount: Array.isArray(details.remarks)
+            ? details.remarks.length
+            : prev.remarksCount,
+          resume: details.resume ?? prev.resume,
+          attachments: details.attachments || prev.attachments,
+        };
+      });
+    };
+
+    loadDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isOpen,
+    localCandidate?._id,
+    localCandidate?.remarks,
+    localCandidate?.remarksCount,
+    fetchCandidateDetails,
+  ]);
+
+  // Load history when history tab is activated
+  useEffect(() => {
+    if (
+      (activeTab === 'history' || activeTab === 'logs') &&
+      !historyLoaded &&
+      localCandidate?._id
+    ) {
+      fetchHistory(localCandidate._id);
+    }
+  }, [activeTab, historyLoaded, localCandidate?._id, fetchHistory]);
+
+  useEffect(() => {
+    if (historyData?.history) {
+      setHistoryLoaded(true);
+      setTimeLineItems(historyData.history);
+    }
+  }, [historyData]);
+
+  // Merge SSE history updates into timeLineItems
+  // SSE updates come via: localCandidate.history (job page) or candidate.history (calendar page)
+  useEffect(() => {
+    if (localCandidate?._id !== candidate?._id) return;
+
+    const localHistory = localCandidate?.history;
+    const candidateHistory = candidate?.history;
+    const sseHistory = (localHistory?.length ? localHistory : candidateHistory) || [];
+
+    if (!Array.isArray(sseHistory) || sseHistory.length === 0) return;
+
+    // Helper: get stable key (prefer remark.id as it uniquely identifies remarks)
+    const getKey = (item: ICandidateHistory): string =>
+      item.remark?.id || item._id?.toString() || `${item.dateTime}-${item.title || ''}`;
+
+    setTimeLineItems((prev) => {
+      const sseMap = new Map(sseHistory.map((item) => [getKey(item), item]));
+      const existingKeys = new Set(prev.map(getKey));
+
+      // Update existing items with SSE data + add new items
+      const updated = prev.map((item) => sseMap.get(getKey(item)) || item);
+      const newItems = sseHistory.filter((item) => !existingKeys.has(getKey(item)));
+
+      return [...updated, ...newItems].sort(
+        (a, b) => new Date(b.dateTime ?? 0).getTime() - new Date(a.dateTime ?? 0).getTime()
+      );
+    });
+  }, [localCandidate?.history, candidate?.history, localCandidate?._id, candidate?._id]);
+
+  // Handle History Error
+  useEffect(() => {
+    if (isHistoryError && !isRefetching) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load candidate history',
+        variant: 'destructive',
+      });
+    }
+  }, [isHistoryError, isRefetching]);
+
+  // Note: History and details reset is now handled in the candidate prop useEffect below
+
+  const refetch = async () => {
+    setIsRefetching(true);
+    const jobId = (id as string) || getJobId(candidate) || '';
+    const result = await refetchCandidate(jobId);
+    const updatedCandidate = result.data?.find(
+      (c) => c._id === localCandidate?._id,
+    );
+
+    // Only fetch updated history if it's not already loaded via SSE
+    // This prevents unnecessary refetches when SSE has already updated the data
+    if (
+      historyLoaded &&
+      localCandidate?._id &&
+      !localCandidate?.history?.length
+    ) {
+      await fetchHistory(localCandidate._id);
+    }
+
+    // Update local candidate with the new data
+    if (updatedCandidate) {
+      const remarksToUse =
+        updatedCandidate.remarks && updatedCandidate.remarks.length > 0
+          ? updatedCandidate.remarks
+          : localCandidate?.remarks || [];
+
+      setLocalCandidate({
+        ...updatedCandidate,
+        remarks: remarksToUse,
+        remarksCount:
+          updatedCandidate.remarksCount ??
+          (Array.isArray(remarksToUse) ? remarksToUse.length : 0),
+        history: historyData?.history || localCandidate?.history || [],
+      });
+    }
+    setIsRefetching(false);
+  };
 
   const {
     newRemark,
@@ -99,53 +245,27 @@ export function CandidateDetailsDialog({
     handleRemarkUpdate,
     isRemarkSubmitting,
     handleAddRemark,
-    handleAddFollowUp,
     setNewFollowUp,
     setNewFollowUpDate,
-    newFollowUp,
-    newFollowUpDate,
-
+    setMADFollowup,
     handleRemoveFollowUp,
+    isFollowUpSubmitting,
   } = useRemarkHandlers(
     localCandidate,
-    user,
-    refetch,
     refetchAssignment,
     onUpdate,
-    refetchCandidates
+    refetchCandidates,
   );
 
-  const {
-    confirmUnassignOpen,
-    setConfirmUnassignOpen,
-    isLoading,
-    handleUnassign,
-    confirmUnassign,
-  } = useUnassignHandlers(
+  const { isLoading } = useUnassignHandlers(
     localCandidate,
-    user,
     refetch,
-    setLocalCandidate,
+    setLocalCandidate as (c: Candidate) => void,
     onUpdate,
     refetchAssignment,
-    onOpenChange
+    onOpenChange,
   );
 
-  // const {
-  //   handleFollowUp,
-  //   setConfirmUnassignOpen,
-  //   isLoading,
-  //   handleUnassign,
-  //   confirmUnassign,
-  // } = useUnassignHandlers(
-  //   localCandidate,
-  //   user,
-  //   refetch,
-  //   setLocalCandidate,
-  //   onUpdate,
-  //   refetchAssignment,
-  //   onOpenChange
-  // );
   const handleEditClick = () => {
     setIsEditing(true);
   };
@@ -155,138 +275,251 @@ export function CandidateDetailsDialog({
     try {
       setIsReEvaluating(true);
       setIsEvaluatingFor(localCandidate?._id as string);
-      const result = await evaluateCandidate(
+      const result: {
+        candidate?: EvaluationResult;
+      } = (await evaluateCandidate(
         localCandidate?._id as string,
-        evaluateCandidateMutation
-      );
-      if (!result) {
+        evaluateCandidateMutation,
+      )) as {
+        candidate?: EvaluationResult;
+      };
+      if (!result.candidate) {
         return toast({
-          title: "Error",
-          description: "Failed to Re-evaluate the resume",
-          variant: "destructive",
+          title: 'Error',
+          description: (result as string) || 'Failed to Re-evaluate the resume',
+          variant: 'destructive',
         });
       }
       toast({
-        title: "Success",
-        description: "Candidate re-evaluation completed successfully",
-        variant: "default",
+        title: 'Success',
+        description: 'Candidate re-evaluation completed successfully',
+        variant: 'default',
       });
     } catch (error) {
-      console.error("Re-evaluation error:", error);
+      logger.error('Re-evaluation error:', error);
       toast({
-        title: "Error",
-        description: "Failed to re-evaluate candidate",
-        variant: "destructive",
+        title: 'Error',
+        description: (error as string) || 'Failed to re-evaluate candidate',
+        variant: 'destructive',
       });
     } finally {
       setIsReEvaluating(false);
-      // if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-      //   await refetch();
-      // } else {
-      //   await refetchAssignment?.();
-      // }
+    }
+    return candidate;
+  };
+
+  const handleReEvaluationClick = () => {
+    // Check if candidate already has AI scores (indicating previous evaluation)
+    const hasExistingScores =
+      localCandidate?.scores &&
+      (localCandidate.scores.overall !== undefined ||
+        localCandidate.scores.experience !== undefined ||
+        localCandidate.scores.skills !== undefined ||
+        localCandidate.scores.affordability !== undefined);
+
+    if (hasExistingScores && !confirmReEvaluateOpen) {
+      // Show confirmation dialog for re-evaluation
+      setConfirmReEvaluateOpen(true);
+    } else {
+      // First time evaluation - proceed directly
+      handleReEvaluation();
     }
   };
 
-  useEffect(() => {
-    return () => {
-      setNewRemark("");
+  useEffect(
+    () => () => {
+      setNewRemark('');
       setRemarkRating(0);
       setRemarkRatingHistory(0);
-    };
-  }, []);
+    },
+    [],
+  );
+
+  const isFollowUpMode =
+    isUnifiedOpen && unifiedInitialAction === 'addFollowUp';
 
   useEffect(() => {
-    // if (candidateData || localCandidate) {
-    //   console.log("🛴🛴🛴 ", localCandidate?.history);
-    //   console.log(
-    //     "🛹🛹🛹 ",
-    //     candidateData?.find((c) => c._id === localCandidate?._id)?.history
-    //   );
-    //   if (!candidateData && localCandidate) {
-    //     const currentCandidate = localCandidate;
-    //     if (currentCandidate && currentCandidate.history) {
-    //       setTimeLineItems(currentCandidate.history || []);
-    //     }
-    //   } else if (candidateData && localCandidate) {
-    //     const currentCandidate = candidateData.find(
-    //       (c) => c._id === localCandidate._id
-    //     );
-    //     if (currentCandidate && currentCandidate.history) {
-    //       setTimeLineItems(currentCandidate.history || []);
-    //     }
-    //   }
-    // }
-    const currentCandidate = localCandidate;
-    setTimeLineItems(currentCandidate?.history || []);
-  }, [candidateData, localCandidate]);
+    if (!isFollowUpMode) return;
 
-  useEffect(() => {
-    if (isAddingFollowUp) {
-      setNewFollowUp(localCandidate?.followUp?.note || "");
+    const parts = localCandidate?.followUp?.note
+      ? localCandidate.followUp.note
+        .split(followUpSepretorPatternRegex)
+        .map((p) => p.trim())
+        .filter(Boolean)
+      : [];
+
+    const followUpParts = parts.filter((p) => {
+      if (p.endsWith('has completed the last step.')) {
+        setMADFollowup(p);
+        return false;
+      }
+      return true;
+    });
+
+    const userNote =
+      followUpParts.length > 0 ? followUpParts[followUpParts.length - 1] : '';
+    setNewFollowUp(userNote);
+
+    if (localCandidate?.followUp?.date) {
+      setNewFollowUpDate(dayjs(localCandidate.followUp.date));
+    } else {
+      setNewFollowUpDate(null);
     }
-  }, [isAddingFollowUp, localCandidate]);
+  }, [isFollowUpMode, localCandidate]);
 
   useEffect(() => {
     if (candidate) {
-      setLocalCandidate(candidate);
+      const isSameCandidate = candidate._id === localCandidate?._id;
+
+      if (isSameCandidate && localCandidate) {
+        // Same candidate - merge candidate prop with localCandidate
+        // Use candidate.history if it has data (may have SSE updates from parent like calendar)
+        // Otherwise keep localCandidate.history (dialog's own SSE updates)
+        const historyToUse = (candidate.history?.length ? candidate.history : localCandidate.history) || [];
+        const remarksToUse =
+          candidate.remarks && candidate.remarks.length > 0
+            ? candidate.remarks
+            : localCandidate.remarks || [];
+
+        setLocalCandidate({
+          ...candidate,
+          assignment: localCandidate.assignment || candidate.assignment,
+          remarks: remarksToUse,
+          remarksCount:
+            candidate.remarksCount ??
+            (Array.isArray(remarksToUse) ? remarksToUse.length : 0),
+          resume: candidate.resume ?? localCandidate.resume,
+          attachments:
+            candidate.attachments && candidate.attachments.length > 0
+              ? candidate.attachments
+              : localCandidate.attachments,
+          history: historyToUse,
+        });
+      } else {
+        // Different candidate or no localCandidate - use candidate prop as-is
+        setLocalCandidate(candidate);
+      }
+
+      // Only reset history state when candidate ID actually changes
+      if (!isSameCandidate) {
+        // CRITICAL: Always reset historyLoaded to false so API fetch happens
+        // candidate.history from props may be partial (e.g., from SSE or single job)
+        // The API endpoint merges ALL history documents for complete data
+        setHistoryLoaded(false);
+
+        // Use candidate.history as initial display data while API loads
+        // But do NOT set historyLoaded = true (API fetch must still happen)
+        if (
+          candidate.history &&
+          Array.isArray(candidate.history) &&
+          candidate.history.length > 0
+        ) {
+          setTimeLineItems(candidate.history);
+        } else {
+          setTimeLineItems([]);
+        }
+      }
+      // For same candidate, don't reset - let SSE merge effect handle updates
     }
-  }, [candidate, id]);
+  }, [candidate, id, localCandidate?._id]);
+
+  // Check if interviewer can access this candidate
+  const canInterviewerAccess = () => {
+    if (user?.role !== 'interviewer') return true; // Non-interviewers can access
+    if (!localCandidate?.assignment?.interviewerId) return false; // No assignment means can't access
+
+    const interviewerId =
+      typeof localCandidate.assignment.interviewerId === 'object'
+        ? localCandidate.assignment.interviewerId._id
+        : localCandidate.assignment.interviewerId;
+
+    return interviewerId === user.id;
+  };
+
+  // Close dialog if interviewer loses access
+  useEffect(() => {
+    if (isOpen && user?.role === 'interviewer' && !canInterviewerAccess()) {
+      onOpenChange(false);
+    }
+  }, [
+    isOpen,
+    user?.role,
+    localCandidate?.assignment?.interviewerId,
+    user?.id,
+    onOpenChange,
+  ]);
 
   if (!localCandidate) return null;
-  // console.log("TimeLine Items: ", timeLineItems);
-  const validTimeLineItems = timeLineItems.filter((item) => item.title !== "");
+
+  const validTimeLineItems = timeLineItems
+    .filter((item) => item.title !== '')
+    .map((item) => {
+      if (user?.role !== 'admin' && user?.role !== 'hr') {
+        if (item.note && item.note.isPrivate) {
+          return {
+            ...item,
+            note: {
+              ...item.note,
+              description: '',
+            },
+          };
+        }
+      }
+      return item;
+    });
   const header = (
-    <DialogHeader className="px-6 pt-6">
+    <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}
           handleCandidateInfoCopy={handleCandidateInfoCopy}
-          user={user}
           refetch={async () => {
             if (
-              pathname !== "/dashboard" &&
-              pathname !== "/dashboard/calendar"
+              pathname !== '/dashboard' &&
+              pathname !== '/dashboard/calendar'
             ) {
               await refetch();
             } else {
               await refetchAssignment?.();
             }
           }}
+          onAssignClick={() => {
+            setUnifiedInitialAction('assignTo');
+            setIsUnifiedOpen(true);
+          }}
         />
       )}
     </DialogHeader>
   );
   const body = (
-    <div className="flex-1 overflow-y-auto px-6 py-4 pt-4 border-y space-y-6">
-      {candidateDetailsFields.map((field, index) => {
-        if (field.shouldRender && !field.shouldRender(localCandidate))
-          return null;
-        return (
-          <div key={index} className="space-y-2">
-            <Label className={labelClass}>
-              {field.label.split(" |||||(")[0]}
-            </Label>
-            {field.id === "ai-evaluation"
-              ? field.render(
-                  localCandidate,
-                  user,
-                  isReEvaluating,
-                  isEvaluatingFor,
-                  () => setConfirmReEvaluateOpen(true)
-                )
-              : field.render(
-                  localCandidate,
-                  user,
-                  validTimeLineItems,
-                  handleRemarkUpdate,
-                  setEditingRemark,
-                  setIsEditRemarkDialogOpen
-                )}
-          </div>
-        );
-      })}
-      {user?.role !== "candidate" && (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      <CandidateDetailsTabs
+        candidate={localCandidate}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onEditFollowUp={() => {
+          setUnifiedInitialAction('addFollowUp');
+          setIsUnifiedOpen(true);
+        }}
+        onRemoveFollowUp={handleRemoveFollowUp}
+        isReEvaluating={isReEvaluating}
+        isEvaluatingFor={isEvaluatingFor}
+        onReEvaluate={() => setConfirmReEvaluateOpen(true)}
+        isHistoryLoading={isHistoryFetching}
+        isRemarkSubmitting={isRemarkSubmitting}
+        isFollowUpSubmitting={isFollowUpSubmitting}
+        validTimeLineItems={validTimeLineItems}
+        handleRemarkUpdate={handleRemarkUpdate}
+        setEditingRemark={setEditingRemark}
+        setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+        historyLoaded={historyLoaded}
+      />
+    </div>
+  );
+  const footer = (
+    <div className="flex flex-col space-y-4 bg-background px-6 py-4 pt-0">
+      {/* Remark Input Section - Always visible */}
+      {user?.role !== 'candidate' && (
         <RemarkInputSection
           newRemark={newRemark}
           setNewRemark={setNewRemark}
@@ -295,86 +528,54 @@ export function CandidateDetailsDialog({
           setRemarkRatingHistory={setRemarkRatingHistory}
           isSubRemarkPrivate={isSubRemarkPrivate}
           setIsSubRemarkPrivate={setIsSubRemarkPrivate}
-          user={user}
-          localCandidate={candidate}
+          localCandidate={localCandidate}
           handleRemoveFollowUp={handleRemoveFollowUp}
           handleAddRemark={handleAddRemark}
           isRemarkSubmitting={isRemarkSubmitting}
         />
       )}
-    </div>
-  );
-  const footer = (
-    <div className="flex space-x-2  bg-background px-6 py-4 pt-0">
-      {!fromFilter ? (
-        <div className="flex justify-between w-full">
-          {user?.role !== "candidate" && (
-            <div className="flex gap-2">
-              <Button
-                className={user?.role == "interviewer" ? "hidden" : ""}
-                onClick={() => setIsAssigning(true)}
-              >
-                Assign To
-              </Button>
-              <Button
-                onClick={handleUnassign}
-                disabled={!localCandidate.assignment}
-                variant="outline"
-              >
-                Mark As Done
-              </Button>
 
-              {user?.role !== "interviewer" && (
-                <Button
-                  onClick={() => setIsAddingFollowUp(true)}
-                  // disabled={!localCandidate.assignment}
-                  variant="outline"
-                >
-                  Add A Follow Up
-                </Button>
-              )}
-            </div>
-          )}
-          <div className="flex gap-2">
-            {!hideEditButton && user?.role !== "interviewer" && (
-              <Button
-                disabled={
-                  user?.role === "candidate" && user.email !== candidate?.email
-                }
-                onClick={handleEditClick}
-              >
-                Edit
-              </Button>
-            )}
-            {!hideCloseButtons && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setNewRemark("");
-                  setRemarkRating(null);
-                  setRemarkRatingHistory(null);
-                }}
-              >
-                Close
-              </Button>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div>
-          <Button onClick={() => setIsAssigningJob(true)}>Assign Job</Button>
-        </div>
-      )}
+      {/* Action Buttons */}
+      <div className="flex space-x-2 border-t border-gray-200 pt-4 dark:border-gray-700">
+        <CandidateDetailsActions
+          candidate={localCandidate}
+          fromFilter={fromFilter || false}
+          hideEditButton={hideEditButton}
+          hideCloseButtons={hideCloseButtons}
+          onAssign={() => {
+            setUnifiedInitialAction('assignTo');
+            setIsUnifiedOpen(true);
+          }}
+          onUnassign={() => {
+            setUnifiedInitialAction('markAsDone');
+            setIsUnifiedOpen(true);
+          }}
+          onAddFollowUp={() => {
+            setUnifiedInitialAction('addFollowUp');
+            setIsUnifiedOpen(true);
+          }}
+          onEdit={handleEditClick}
+          onClose={() => {
+            onOpenChange(false);
+            setNewRemark('');
+            setRemarkRating(null);
+            setRemarkRatingHistory(null);
+          }}
+          onAssignJob={() => {
+            setUnifiedInitialAction('switchJob');
+            setIsUnifiedOpen(true);
+          }}
+        />
+      </div>
     </div>
   );
 
   return (
     <>
       <DetailsDialog
-        open={isOpen && !isAssigning && !isEditing}
+        open={isOpen && !isAssigning && !isEditing && canInterviewerAccess()}
         onOpenChange={(e) => {
-          setNewRemark("");
+          setNewRemark('');
           setRemarkRating(null);
           setRemarkRatingHistory(null);
           onOpenChange(e);
@@ -383,62 +584,25 @@ export function CandidateDetailsDialog({
         {header}
         {body}
 
-        {user?.role !== "candidate" && footer}
+        {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
-      {isAssigning && localCandidate && (
-        <AssignCandidateDialog
+      {localCandidate && (
+        <UnifiedCandidateActionsDialog
           candidate={localCandidate}
+          isOpen={isUnifiedOpen}
+          onOpenChange={setIsUnifiedOpen}
+          initialAction={unifiedInitialAction}
           refetch={refetch}
-          isOpen={isAssigning}
-          onOpenChange={setIsAssigning}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
-          onSuccess={() => {
-            if (pathname === "/dashboard/calendar") {
-              setIsAssigning(false);
+          onSuccess={async () => {
+            await refetch();
+            setUnifiedInitialAction(undefined);
+            // Close candidate details dialog if interviewer marked as done
+            if (unifiedInitialAction === 'markAsDone') {
               onOpenChange(false);
-            } else {
-              refetch();
             }
-          }}
-        />
-      )}
-      {isAssigningJob && localCandidate && (
-        <AssignJobDialog
-          candidate={localCandidate}
-          isOpen={isAssigningJob}
-          onOpenChange={setIsAssigningJob}
-          onJobAssignment={() => {
-            refetchCandidates?.();
-            onOpenChange(false);
-            setIsAssigningJob(false);
-          }}
-        />
-      )}
-      {isAddingFollowUp && localCandidate && (
-        <AddFollowUpDialog
-          candidate={localCandidate}
-          handleRemoveFollowUp={handleRemoveFollowUp}
-          isOpen={isAddingFollowUp}
-          onOpenChange={setIsAddingFollowUp}
-          // onJobAssignment={() => {
-          //   refetchCandidates?.();
-          //   onOpenChange(false);
-          //   setIsAssigningJob(false);
-          // }}
-          refetch={refetch}
-          handleAddFollowUp={handleAddFollowUp}
-          setNewFollowUp={setNewFollowUp}
-          setNewFollowUpDate={setNewFollowUpDate}
-          newFollowUp={newFollowUp}
-          newFollowUpDate={newFollowUpDate}
-          onAddingFollowup={async () => {
-            // await refetchCandidates?.();
-            // refetch();
-            setIsAddingFollowUp(false);
-            setNewFollowUp("");
-            setNewFollowUpDate(null);
           }}
         />
       )}
@@ -447,7 +611,7 @@ export function CandidateDetailsDialog({
           candidate={localCandidate}
           isOpen={isEditing}
           onOpenChange={setIsEditing}
-          onUpdate={onUpdate || (() => {})}
+          onUpdate={onUpdate || (() => { })}
           refetchAssignment={refetchAssignment}
           onSuccess={async () => {
             await refetch();
@@ -457,42 +621,16 @@ export function CandidateDetailsDialog({
           }}
         />
       )}
-      <ConfirmAndRemarkDialog
-        title="Mark as Done"
-        message="Candidate will be Un-Assigned after marking as done."
-        isOpen={confirmUnassignOpen}
-        setIsOpen={setConfirmUnassignOpen}
-        onConfirm={(note, rating) => {
-          // debugger;
-          confirmUnassign(note, rating);
-        }}
-        onCancel={() => setConfirmUnassignOpen(false)}
-        isLoading={isLoading}
-        loadingText="Marking as done..."
-        // className="sm:max-w-[300px]"
-      />
-      {/* <ConfirmationDialog
-        title="Mark as Done"
-        message="Are you sure you want to mark this assignment as completed?"
-        isOpen={confirmUnassignOpen}
-        setIsOpen={setConfirmUnassignOpen}
-        onConfirm={confirmUnassign}
-        onCancel={() => setConfirmUnassignOpen(false)}
-        isLoading={isLoading}
-        loadingText="Marking as done..."
-        className="sm:max-w-[300px]"
-      /> */}
       <ConfirmationDialog
-        title="Are You Sure?"
-        message="This will overwrite existing candidate score data with new
-              results."
+        title="Re-evaluate Candidate with AI?"
+        message="This will use your active AI provider to re-analyze the candidate's resume and may incur additional costs based on your AI provider's pricing. The existing evaluation scores will be overwritten with new results."
         isOpen={confirmReEvaluateOpen}
         setIsOpen={setConfirmReEvaluateOpen}
-        onConfirm={() => handleReEvaluation()}
+        onConfirm={handleReEvaluationClick}
         onCancel={() => setConfirmReEvaluateOpen(false)}
         isLoading={isLoading}
-        loadingText="Re-Evaluating"
-        className="sm:max-w-[400px]"
+        loadingText="Re-Evaluating with AI..."
+        className="sm:max-w-[500px]"
       />
       <EditRemarkDialog
         isEditRemarkDialogOpen={isEditRemarkDialogOpen}

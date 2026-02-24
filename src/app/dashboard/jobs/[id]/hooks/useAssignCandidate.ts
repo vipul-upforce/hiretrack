@@ -1,28 +1,30 @@
-import { useState } from "react";
-import { toast } from "@/hooks/use-toast";
-import { FormikHelpers } from "formik";
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { FormikHelpers } from 'formik';
 import {
   useSendMailMutation,
   useSendUnassignMailMutation,
-} from "@/lib/features/org/orgApi";
+} from '@/lib/features/org/orgApi';
 import {
   useUpdateCandidateMutation,
   useUpdateCandidateHistoryMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { sentAssignmentMail } from "@/lib/utils";
-import { ICandidateHistory } from "@/lib/models/history";
+} from '@/lib/features/candidate/candidateApi';
+import { sentAssignmentMail } from '@/lib/utils';
+import { ICandidateHistory } from '@/lib/models/history';
+import { usePathname } from 'next/navigation';
+import { Interviewer } from '@/lib/features/user/userApi';
+import { Candidate } from '@/types/candidate';
+import { Schema } from 'mongoose';
+import { useAppSelector } from '@/lib/redux/hooks';
 import {
   FormValues,
-  User,
   AssignCandidateDialogProps,
-} from "../schemas/AssignCandidateSchema";
-import { usePathname } from "next/navigation";
-import { Interviewer } from "@/lib/features/user/userApi";
-import { Candidate } from "@/types/candidate";
+} from '../schemas/AssignCandidateSchema';
+import { getJobId } from '../utils/candidateAccessors';
 
 export const useAssignCandidate = ({
   candidate,
-  refetch,
+  refetch: _refetch, // No longer used - kept for API compatibility
   onOpenChange,
   onUpdate,
   setLocalCandidate,
@@ -31,40 +33,50 @@ export const useAssignCandidate = ({
 }: AssignCandidateDialogProps) => {
   const pathname = usePathname();
   const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [isUnassigning, setIsUnassigning] = useState(false);
   const [sendEmail] = useSendMailMutation();
   const [sendUnassignEmail] = useSendUnassignMailMutation();
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
 
+  const { user } = useAppSelector((state) => state.auth || {});
+
   const handleSubmit = async (
     values: FormValues,
     { setSubmitting }: FormikHelpers<FormValues>,
-    user: User | null,
-    interviewers: Interviewer[] | undefined
+    // user: ILocalUser | null,
+    interviewers: Interviewer[] | undefined,
   ) => {
     if (!user) {
       toast({
-        title: "Error",
-        description: "User information is missing.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'User information is missing.',
+        variant: 'destructive',
       });
       setSubmitting(false);
       return;
     }
 
-    const fileNames = candidate.attachments.map((file) => file.name);
-    const hasDuplicates = new Set(fileNames).size !== fileNames.length;
+    // const fileNames = candidate.attachments.map((file) => file.name);
+    // const hasDuplicates = new Set(fileNames).size !== fileNames.length;
 
-    if (hasDuplicates) {
-      toast({
-        title: "Alert",
-        description:
-          "A file with the same name already exists in this candidate. Please rename before submitting.",
-        variant: "destructive",
-      });
-      setSubmitting(false);
-      return;
-    }
+    const existingNames = new Set(candidate.attachments.map((a) => a.name));
+    // debugger;
+
+    const uniqueAttachments = [
+      ...candidate.attachments, // existing attachments from candidate
+      ...values.attachments.filter((a) => !existingNames.has(a.name)),
+    ];
+    // if (hasDuplicates) {
+    //   toast({
+    //     title: "Alert",
+    //     description:
+    //       "A file with the same name already exists in this candidate. Please rename before submitting.",
+    //     variant: "destructive",
+    //   });
+    //   setSubmitting(false);
+    //   return;
+    // }
 
     try {
       const newRemarkObj = {
@@ -78,6 +90,14 @@ export const useAssignCandidate = ({
         },
       };
 
+      // Normalize interviewerId: convert empty string or "-1" to null
+      const normalizedInterviewerId =
+        !values.interviewerId ||
+        values.interviewerId === '' ||
+        values.interviewerId === '-1'
+          ? null
+          : values.interviewerId;
+
       const updatedCandidate = {
         ...candidate,
         remarks:
@@ -85,102 +105,108 @@ export const useAssignCandidate = ({
             ? [...(candidate.remarks || []), newRemarkObj]
             : candidate.remarks,
         assignment: {
-          interviewerId: values.interviewerId,
-          time: values?.time?.toISOString(),
+          interviewerId: normalizedInterviewerId,
+          // Explicitly set time to null if values.time is null/undefined, otherwise convert to ISO string
+          time: values?.time ? values.time.toISOString() : null,
           assignedAt: new Date().toISOString(),
+          // Include Google Meet data if available
+          ...(values?.googleMeetData && { googleMeet: values?.googleMeetData }),
+          ...(values?.zoomMeetData && { zoomMeet: values?.zoomMeetData }),
         },
-        attachments: [...candidate.attachments, ...values.attachments],
+        attachments: uniqueAttachments,
       };
 
       const previousInterviewer =
-        typeof candidate.assignment?.interviewerId === "object"
-          ? candidate.assignment.interviewerId.name
-          : "";
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? candidate.assignment.interviewerId?.name
+          : null;
       const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === "object"
-          ? Object(candidate.assignment.interviewerId._id)
+        typeof candidate.assignment?.interviewerId === 'object' &&
+        candidate.assignment.interviewerId &&
+        Object.keys(candidate.assignment.interviewerId).length > 0
+          ? Object(candidate.assignment.interviewerId?._id)
           : null;
 
-      let nextInterviewer = "No Next interviewer";
+      let nextInterviewer = 'No Next interviewer';
       let nextInterviewerId = null;
       if (values.interviewerId && interviewers) {
         const foundNextInterviewer = interviewers.find(
-          (interviewer) => interviewer._id === values.interviewerId
+          (interviewer) => interviewer._id === values.interviewerId,
         );
         if (foundNextInterviewer) {
           nextInterviewer = foundNextInterviewer.name;
-          nextInterviewerId = Object(foundNextInterviewer._id);
+          nextInterviewerId = foundNextInterviewer._id;
         }
       }
 
       const title =
-        !previousInterviewer || previousInterviewer === ""
+        !previousInterviewer || previousInterviewer === ''
           ? `Assigned to ${nextInterviewer} : Assigned by ${user.name}`
           : `${previousInterviewer} → ${nextInterviewer} : Assigned by ${user.name}`;
 
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
-        currentInterviewer: nextInterviewerId,
+        currentInterviewer: nextInterviewerId as Schema.Types.ObjectId | null,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user.id,
-        title: title,
+        title,
         note: newRemarkObj,
         attachments: values.attachments,
       };
 
       const { data: result, error } = await updateCandidate(
-        updatedCandidate as Candidate
+        updatedCandidate as Candidate,
       );
       if (!error) {
         sentAssignmentMail(result, sendEmail);
       }
-      await updateCandidateHistory({
+      const updatedHistory = await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: candidate.jobId._id || candidate.jobId,
+        jobId: getJobId(candidate) || null,
         newEntry: newHistoryEntry,
       }).unwrap();
 
       if (result) {
-        onUpdate(result);
+        onUpdate({ ...result, history: updatedHistory });
         onOpenChange(false);
         setLocalCandidate(result);
       }
 
-      if (pathname === "/dashboard") {
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
         refetchAssignment?.();
       }
+      // Note: Removed individual candidate refetch - we already have the updated result
 
       toast({
-        title: "Success",
-        description: "Candidate assigned successfully",
+        title: 'Success',
+        description: 'Candidate assigned successfully',
       });
 
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        refetch();
-      }
       onSuccess();
     } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
+      if (typeof error === 'object' && error !== null && 'data' in error) {
         const errorData = (error as { data?: { error?: string } }).data;
 
         if (
-          typeof errorData === "object" &&
+          typeof errorData === 'object' &&
           errorData !== null &&
-          "error" in errorData
+          'error' in errorData
         ) {
           toast({
-            title: "Error",
-            description: errorData.error || "Failed to update job",
-            variant: "destructive",
+            title: 'Error',
+            description: errorData.error || 'Failed to update job',
+            variant: 'destructive',
           });
           return;
         }
       }
 
       toast({
-        title: "Error",
-        description: "Failed to update job due to an unexpected error.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update job due to an unexpected error.',
+        variant: 'destructive',
       });
     } finally {
       setSubmitting(false);
@@ -191,72 +217,99 @@ export const useAssignCandidate = ({
     setConfirmUnassignOpen(true);
   };
 
-  const confirmUnassign = async (user: User | null) => {
+  const confirmUnassign = async (
+    description: string,
+    rating: number | null,
+  ) => {
     if (!user) {
       toast({
-        title: "Error",
-        description: "User information is missing.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'User information is missing.',
+        variant: 'destructive',
       });
       return;
     }
 
+    setIsUnassigning(true);
     try {
+      const newRemarkObj = {
+        description: description.trim(),
+        date: new Date().toISOString(),
+        rating: rating ? Number(rating) : 0,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+
       const updatedCandidate = {
         ...candidate,
         assignment: null,
+        remarks:
+          newRemarkObj.description || rating
+            ? [...(candidate.remarks || []), newRemarkObj]
+            : candidate.remarks,
       };
       const result = await updateCandidate(updatedCandidate).unwrap();
+      
+      // Update local state with the result - no need to refetch individual candidate
       onUpdate(result);
       onOpenChange(false);
       setLocalCandidate(result);
 
-      if (pathname !== "/dashboard" && pathname !== "/dashboard/calendar") {
-        await refetch();
-      } else {
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
         refetchAssignment?.();
       }
+      // Note: Removed individual candidate refetch - we already have the updated result
       onSuccess();
 
       const previousInterviewerId =
-        typeof candidate.assignment?.interviewerId === "object"
-          ? Object(candidate.assignment.interviewerId._id)
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? Object(candidate.assignment.interviewerId?._id)
           : null;
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
         previousInterviewer: previousInterviewerId,
         assignmentBy: user.id,
-        title: "Unassigned",
-        note: {
-          description: "",
-          date: "",
-          rating: 0,
-          userId: null,
-        },
+        title: 'Unassigned',
+        note: newRemarkObj,
         attachments: [],
       };
 
       await updateCandidateHistory({
         candidateId: updatedCandidate._id,
-        jobId: candidate.jobId._id || candidate.jobId,
+        jobId: getJobId(candidate) || null,
         newEntry: newHistoryEntry,
       }).unwrap();
-      sendUnassignEmail({ name: result.name });
+      // sendUnassignEmail({ name: result.name });
+      sendUnassignEmail({
+        name: result.name,
+        candidateId: updatedCandidate._id,
+        jobId: candidate.jobId.title || candidate.jobId,
+        title: candidate.jobId.title || candidate.jobId,
+        dateTime: new Date().toISOString(),
+        status: candidate?.status,
+        feedback: newRemarkObj,
+      });
       toast({
-        title: "Success",
-        description: "Interviewer has been unassigned successfully",
+        title: 'Success',
+        description: 'Interviewer has been unassigned successfully',
       });
     } catch (error: unknown) {
       toast({
-        title:
-          "Error: " +
-          (error instanceof Error ? error.message : "Unknown error"),
-        description: "Failed to unassign interviewer",
-        variant: "destructive",
+        title: `Error: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        description: 'Failed to unassign interviewer',
+        variant: 'destructive',
       });
     } finally {
       setConfirmUnassignOpen(false);
+      setIsUnassigning(false);
     }
   };
 
@@ -266,5 +319,6 @@ export const useAssignCandidate = ({
     handleSubmit,
     handleUnassign,
     confirmUnassign,
+    isUnassigning,
   };
 };

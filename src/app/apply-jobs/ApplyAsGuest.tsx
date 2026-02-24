@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -6,93 +6,36 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Formik, Form } from "formik";
-import { useState, useEffect } from "react";
-import { CandidateForm } from "../dashboard/jobs/[id]/components/Candidate/candidate-form";
-import {
-  useApplicationEventMailMutation,
-  useCreateGuestCandidateMutation,
-  useEvaluateCandidateMutation,
-} from "@/lib/features/candidate/candidateApi";
-import { v4 as uuidv4 } from "uuid";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Formik, Form, FormikProps } from 'formik';
+import { useState, useEffect, type CSSProperties } from 'react';
+import React from 'react';
 import useCustomForm, {
   CustomFieldValues,
-} from "@/Custom_Fields/hooks/useCustomForm";
-import { Resume } from "@/lib/redux/types";
-import { parseResumeFromPdf } from "@/lib/parse-resume-from-pdf";
-import FormUpdater from "../dashboard/jobs/[id]/components/Utils/FormUpdater";
-import * as pdfjs from "pdfjs-dist";
-import { candidateSchema } from "../dashboard/jobs/[id]/schemas/candidate-schema";
-import { useApplyHandler } from "./useApplyHandler";
+} from '@/Custom_Fields/hooks/useCustomForm';
+import { Resume } from '@/lib/redux/types';
+import * as pdfjs from 'pdfjs-dist';
+import { TermsConfirmationDialog } from '@/components/TermsConfirmationDialog';
+import { Spinner } from '@/components/ui/spinner';
+import { useApplyHandler } from './useApplyHandler';
+import { useUnsavedChangesProtection } from './useUnsavedChangesProtection';
+import { candidateSchema } from '../dashboard/jobs/[id]/schemas/candidate-schema';
+import FormUpdater from '../dashboard/jobs/[id]/components/Utils/FormUpdater';
+import { CandidateForm } from '../dashboard/jobs/[id]/components/Candidate/candidate-form';
+import {
+  hasAppliedAsGuest,
+  handleFileParse,
+  getInitialValues,
+} from './utils/guestApplicationUtils';
+import { useGuestApplicationSubmit } from './utils/useGuestApplicationSubmit';
+import { useScreenSize } from './utils/useScreenSize';
+import { GuestApplyTrigger } from './components/GuestApplyTrigger';
+import { AlreadyAppliedView } from './components/AlreadyAppliedView';
+import ConfirmationDialog from '../dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 
-// New function to store application status in localStorage
-const storeGuestApplication = (jobId: string, candidateId: string) => {
-  try {
-    // Get existing applications or initialize empty object
-    const existingApplications = JSON.parse(
-      localStorage.getItem("guestApplications") || "{}"
-    );
-
-    // Add this application
-    existingApplications[jobId] = {
-      candidateId,
-      appliedAt: new Date().toISOString(),
-    };
-
-    // Save back to localStorage
-    localStorage.setItem(
-      "guestApplications",
-      JSON.stringify(existingApplications)
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Failed to store guest application status:", error);
-    return false;
-  }
-};
-
-// Function to check if user has already applied to this job
-export const hasAppliedAsGuest = (jobId: string): boolean => {
-  try {
-    const applications = JSON.parse(
-      localStorage.getItem("guestApplications") || "{}"
-    );
-    return !!applications[jobId];
-  } catch {
-    return false;
-  }
-};
-
-// New function to call the evaluate API
-export async function evaluateCandidate(
-  candidateId: string,
-  evaluateCandidateMutation: ReturnType<typeof useEvaluateCandidateMutation>[0]
-) {
-  try {
-    const result = await evaluateCandidateMutation({ candidateId }).unwrap();
-    return result;
-  } catch {
-    return null;
-  }
-}
-
-//event mail handler function
-async function sendAppliedEventMail(
-  candidateId: string,
-  applicationEventMailMutation: ReturnType<
-    typeof useApplicationEventMailMutation
-  >[0]
-) {
-  try {
-    const resp = await applicationEventMailMutation({ candidateId }).unwrap();
-    return resp;
-  } catch {
-    return null;
-  }
+if (typeof window !== 'undefined' && !pdfjs.GlobalWorkerOptions.workerSrc) {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 }
 
 interface CreateCandidateDialogProps {
@@ -101,67 +44,11 @@ interface CreateCandidateDialogProps {
   setIsOpen: (isOpen: boolean) => void;
   resumeFile?: File | null;
   closeParent: () => void;
+  jobTitle?: string;
+  primaryColor?: string;
 }
 
-const getInitialValues = (customFields: CustomFieldValues) => ({
-  name: "",
-  location: "",
-  experience: 0,
-  skills: [],
-  expectedCTC: 0,
-  currentCTC: 0,
-  noticePeriod: 0,
-  resume: null as File | null,
-  remarks: "",
-  attachments: [] as File[],
-  assignee: "",
-  time: undefined,
-  customFields: { ...customFields },
-  email: "",
-});
-
-const handleFileParse = async (
-  file: File | null,
-  setParsedResume: (data: Resume | null) => void
-) => {
-  if (file && file.type === "application/pdf") {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const result = reader.result;
-      if (result && typeof result === "string") {
-        try {
-          const fileUrl = result;
-          const parsedData = await parseResumeFromPdf(fileUrl);
-          setParsedResume(parsedData);
-        } catch {
-          setParsedResume(null);
-        }
-      }
-    };
-    reader.onerror = () => {};
-    reader.readAsDataURL(file);
-  }
-};
-
 type CandidateFormValues = ReturnType<typeof getInitialValues>;
-
-// Add this function before handleSubmit
-const checkPdfPageCount = async (file: File): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const arrayBuffer = reader.result as ArrayBuffer;
-      try {
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        resolve(pdf.numPages);
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = (error) => reject(error);
-    reader.readAsArrayBuffer(file);
-  });
-};
 
 export function ApplyAsGuestDialog({
   jobId,
@@ -169,29 +56,43 @@ export function ApplyAsGuestDialog({
   setIsOpen,
   resumeFile,
   closeParent,
+  jobTitle,
+  primaryColor = '#6366f1',
 }: CreateCandidateDialogProps) {
-  const { toast } = useToast();
-  const [createGuestCandidate] = useCreateGuestCandidateMutation();
-  const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
-  const [applicationEventMailMutation, { isLoading: isSendingEmail }] =
-    useApplicationEventMailMutation();
   const [parsedResumeData, setParsedResume] = useState<Resume | null>(null);
-  const formName = "Candidate";
+  const formName = 'Candidate';
   const { validationSchema, initialValues: inits } = useCustomForm(
     formName,
+    jobId,
     undefined,
-    undefined,
-    true
+    true,
   );
   const [resetForm, setResetForm] = useState(false);
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
   const { formikRef, handleApply } = useApplyHandler<CandidateFormValues>();
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [pendingFormValues, setPendingFormValues] =
+    useState<CandidateFormValues | null>(null);
+  const isSmallScreen = useScreenSize();
+  const { submitApplication, isSubmitting: isSubmittingApplication } =
+    useGuestApplicationSubmit(jobId, parsedResumeData);
+
+  const {
+    showUnsavedChangesDialog,
+    handleDialogClose,
+    handleCancelClick,
+    handleConfirmClose,
+    handleCancelClose,
+  } = useUnsavedChangesProtection({
+    formikRef: formikRef as React.RefObject<FormikProps<CandidateFormValues> | null>,
+    isOpen,
+    setIsOpen,
+    onCloseCallback: closeParent,
+  });
 
   useEffect(() => {
     if (isOpen) {
-      // Check if user has already applied when dialog opens
       setHasAlreadyApplied(hasAppliedAsGuest(jobId));
-
       if (resumeFile) {
         setParsedResume(null);
         handleFileParse(resumeFile, setParsedResume);
@@ -203,208 +104,73 @@ export function ApplyAsGuestDialog({
   }, [isOpen, resumeFile, jobId]);
 
   const handleSubmit = async (values: CandidateFormValues) => {
-    // console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    // First check if already applied
-    if (hasAppliedAsGuest(jobId)) {
-      toast({
-        title: "Already Applied",
-        description: "You have already applied for this job as a guest.",
-        variant: "destructive",
-      });
-      setIsOpen(false);
-      return;
-    }
+    setPendingFormValues(values);
+    setShowTermsDialog(true);
+  };
 
-    const fileNames = values.attachments.map((file) => file.name);
-    const hasDuplicates = new Set(fileNames).size !== fileNames.length;
-
-    if (hasDuplicates) {
-      toast({
-        title: "Alert",
-        description:
-          "Duplicate file names found! Please rename before submitting.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const hasOnlySpaces = Object.entries(values).some((value) => {
-        if (typeof value[1] === "string") {
-          return value[1].length > 0 && value[1].trim() === "";
-        }
-        return false;
-      });
-
-      if (hasOnlySpaces) {
-        toast({
-          title: "Validation Error",
-          description: "Fields cannot contain only spaces",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const resumeBase64 = values.resume
-        ? await convertFileToBase64(values.resume)
-        : null;
-
-      const attachmentsBase64 = await Promise.all(
-        values.attachments.map((file) => convertFileToBase64(file))
-      );
-
-      const candidateData = {
-        ...values,
-        jobId: {
-          _id: jobId,
-          title: "",
-          description: "",
-        },
-        currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
-        expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
-        experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        noticePeriod: Number(
-          parseFloat(String(values.noticePeriod)).toFixed(0)
-        ),
-        email: values.email || parsedResumeData?.profile?.email,
-        ...(values.assignee && values.time
-          ? {
-              assignee: values.assignee === "-1" ? "" : values.assignee,
-              time: values.time,
-            }
-          : {}),
-        resume: resumeBase64
-          ? {
-              id: uuidv4(),
-              name: values.resume?.name || "",
-              url: resumeBase64, // Using base64 as URL for now; adjust if backend changes
-              type: "pdf",
-              size: values.resume?.size || 0,
-            }
-          : undefined,
-        attachments: attachmentsBase64.map((base64, index) => ({
-          id: uuidv4(),
-          name: values.attachments[index].name,
-          url: base64,
-          type: values.attachments[index].type,
-          size: values.attachments[index].size,
-        })),
-        remarks: [],
-      };
-
-      // Step 1: Create the candidate
-      const createdCandidate =
-        await createGuestCandidate(candidateData).unwrap();
-      const candidateId = createdCandidate._id;
-
-      // Store application status in localStorage
-      storeGuestApplication(jobId, candidateId);
-
-      if (values.resume && values.resume.type === "application/pdf") {
-        const pageCount = await checkPdfPageCount(values.resume);
-        if (pageCount <= 4) {
-          evaluateCandidate(candidateId, evaluateCandidateMutation);
-        }
-      }
-
-      // Send application confirmation email
-      sendAppliedEventMail(candidateId, applicationEventMailMutation);
-
-      // Show success message for guest application
-      toast({
-        title: "Application Submitted",
-        description: "Your application has been successfully submitted.",
-      });
-
+  const actualSubmit = async (values: CandidateFormValues) => {
+    const success = await submitApplication(values);
+    if (success) {
       setIsOpen(false);
       closeParent();
-    } catch (error) {
-      if (typeof error === "object" && error !== null && "data" in error) {
-        const errorData = (error as { data?: { error?: string } }).data;
-        if (
-          typeof errorData === "object" &&
-          errorData !== null &&
-          "error" in errorData
-        ) {
-          toast({
-            title: "Error",
-            description: errorData.error || "Failed to create candidate",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-      toast({
-        title: "Error",
-        description: "Failed to create candidate due to an unexpected error.",
-        variant: "destructive",
-      });
     }
   };
 
-  const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
+  const handleTermsConfirm = () => {
+    if (pendingFormValues) {
+      setShowTermsDialog(false);
+      actualSubmit(pendingFormValues);
+      setPendingFormValues(null);
+    }
   };
 
+
+  const dialogContentStyle = isSmallScreen
+    ? ({
+        position: 'fixed',
+        inset: '0',
+        transform: 'none',
+        left: '0',
+        top: '0',
+        width: '100vw',
+        height: '100dvh',
+        maxWidth: 'none',
+        maxHeight: 'none',
+        margin: '0',
+        borderRadius: '0',
+        border: 'none',
+        zIndex: 9999,
+      } as CSSProperties)
+    : undefined;
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogTrigger asChild>
-        <button
-          type="button"
-          disabled={isSendingEmail || hasAlreadyApplied}
-          className={`w-full md:w-fit inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${hasAlreadyApplied && "bg-gray-200 text-gray-600"}`}
-        >
-          {isSendingEmail
-            ? "Processing..."
-            : hasAlreadyApplied
-              ? "Applied"
-              : "Apply As Guest"}
-        </button>
+        <GuestApplyTrigger
+          hasAlreadyApplied={hasAlreadyApplied}
+          isSendingEmail={isSubmittingApplication}
+          primaryColor={primaryColor}
+          onClick={() => setIsOpen(true)}
+        />
       </DialogTrigger>
-      <DialogContent className="w-full h-full max-w-none max-h-none m-0 p-0 rounded-none sm:rounded-lg sm:w-[95vw] sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] md:w-[90vw] md:h-[90vh] md:max-w-[90vw] md:max-h-[90vh] lg:w-[85vw] lg:h-[85vh] lg:max-w-[85vw] lg:max-h-[85vh] xl:w-[80vw] xl:h-[80vh] xl:max-w-[80vw] xl:max-h-[80vh] overflow-hidden flex flex-col justify-center">
+      <DialogContent
+        className={`${isSmallScreen ? 'fixed inset-0 m-0 max-h-none w-screen max-w-none rounded-none border-0 p-0' : 'lg:h-[85dvh] lg:max-h-[85dvh] lg:w-[85vw] lg:max-w-[85vw] lg:rounded-lg lg:border xl:h-[80dvh] xl:max-h-[80dvh] xl:w-[80vw] xl:max-w-[80vw]'} flex flex-col justify-center overflow-hidden`}
+        style={dialogContentStyle}
+      >
         <DialogHeader
-          className={`px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0 ${hasAlreadyApplied && "hidden"}`}
+          className={`flex-shrink-0 px-6 py-4 text-left ${hasAlreadyApplied && 'hidden'}`}
         >
-          <DialogTitle className="text-lg sm:text-xl">Apply</DialogTitle>
+          <DialogTitle className="text-left text-lg font-bold text-gray-900 dark:text-white sm:text-xl">
+            Apply
+          </DialogTitle>
+          {jobTitle && (
+            <p className="mt-1 text-left text-sm text-gray-600 dark:text-gray-400">
+              Applying for: {jobTitle}
+            </p>
+          )}
         </DialogHeader>
         {hasAlreadyApplied ? (
-          <div className="p-4 sm:p-6 text-center flex flex-col justify-center items-center h-full">
-            <div className="w-full max-w-md space-y-4">
-              <div className="w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-16 h-16 sm:w-20 sm:h-20 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold mb-2">
-                Application Already Submitted
-              </h3>
-              <p className="text-sm sm:text-base text-muted-foreground mb-4">
-                We've received your application for this job. No further action
-                is needed at this time.
-              </p>
-              <Button
-                onClick={() => setIsOpen(false)}
-                className="w-full sm:w-auto"
-              >
-                Close
-              </Button>
-            </div>
-          </div>
+          <AlreadyAppliedView onClose={() => setIsOpen(false)} />
         ) : (
           <Formik
             innerRef={formikRef}
@@ -415,34 +181,58 @@ export function ApplyAsGuestDialog({
             }}
             validationSchema={candidateSchema(validationSchema)}
             onSubmit={handleSubmit}
-            enableReinitialize={false}
+            enableReinitialize
           >
-            {({ isSubmitting, errors, touched, setFieldValue }) => (
-              <Form className="flex flex-col h-full overflow-hidden">
+            {({ isSubmitting, setFieldValue }) => (
+              <Form className="sticky top-0 flex min-h-0 flex-1 flex-col overflow-y-clip">
                 <FormUpdater parsedResumeData={parsedResumeData} />
-                <div className="flex-1 overflow-hidden px-4 py-2">
+                <div className="flex-1 overflow-hidden border-t px-6 py-4">
                   <CandidateForm
+                    jobId={jobId}
                     onFileUpload={async (file: File) => {
-                      setFieldValue("resume", file);
+                      setFieldValue('resume', file);
                       await handleFileParse(file, setParsedResume);
                     }}
                   />
                 </div>
-                <div className="flex-shrink-0 flex justify-end space-x-2 border-t bg-background px-4 sm:px-6 py-3 sm:py-4 safe-area-inset-bottom">
+                <div className="safe-area-inset-bottom sticky bottom-0 z-10 flex flex-shrink-0 justify-end space-x-2 border-t bg-background px-6 py-4">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsOpen(false)}
-                    className="flex-1 sm:flex-none"
+                    onClick={handleCancelClick}
+                    className="flex-1 transition-all duration-200 hover:shadow-md sm:flex-none"
+                    style={{
+                      borderColor: '#d1d5db',
+                      color: '#6b7280',
+                    }}
+                    onMouseEnter={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.borderColor = '#9ca3af';
+                      target.style.backgroundColor = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      const target = e.target as HTMLElement;
+                      target.style.borderColor = '#d1d5db';
+                      target.style.backgroundColor = 'transparent';
+                    }}
                   >
                     Cancel
                   </Button>
                   <Button
-                    type={Object.keys(errors).length == 0 ? "button" : "submit"}
+                    type="button"
                     onClick={handleApply}
-                    className="flex-1 sm:flex-none"
+                    variant="primary"
+                    disabled={isSubmitting || isSubmittingApplication}
+                    className="flex-1 text-white transition-all duration-200 hover:shadow-md sm:flex-none"
                   >
-                    {isSubmitting ? "Saving..." : "Apply"}
+                    {isSubmitting || isSubmittingApplication ? (
+                      <>
+                        <Spinner />
+                        Saving...
+                      </>
+                    ) : (
+                      'Apply'
+                    )}
                   </Button>
                 </div>
               </Form>
@@ -450,6 +240,28 @@ export function ApplyAsGuestDialog({
           </Formik>
         )}
       </DialogContent>
+
+      <TermsConfirmationDialog
+        isOpen={showTermsDialog}
+        onClose={() => {
+          setShowTermsDialog(false);
+          setPendingFormValues(null);
+        }}
+        onConfirm={handleTermsConfirm}
+        isLoading={isSubmittingApplication}
+      />
+
+      <ConfirmationDialog
+        isOpen={showUnsavedChangesDialog}
+        setIsOpen={(open) => {
+          if (!open) handleCancelClose();
+        }}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to close? All unsaved data will be lost."
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+        buttonName="Discard Changes"
+      />
     </Dialog>
   );
 }

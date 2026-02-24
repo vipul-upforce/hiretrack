@@ -1,4 +1,4 @@
-import type { Lines, TextItem } from "@/lib/parse-resume-from-pdf/types";
+import type { Lines, TextItem } from '@/lib/parse-resume-from-pdf/types';
 
 /**
  * List of bullet points
@@ -11,25 +11,37 @@ import type { Lines, TextItem } from "@/lib/parse-resume-from-pdf/types";
  * U+26AB   MEDIUM BLACK CIRCLE (⚫︎)
  * U+25CF   BLACK CIRCLE (●)
  * U+2B24   BLACK LARGE CIRCLE (⬤)
- * U+26AC   MEDIUM SMALL WHITE CIRCLE ⚬
- * U+25CB   WHITE CIRCLE ○
+ * U+26AC   MEDIUM SMALL WHITE CIRCLE (⚬)
+ * U+25CB   WHITE CIRCLE (○)
  */
 export const BULLET_POINTS = [
-  "⋅",
-  "∙",
-  "🞄",
-  "•",
-  "⦁",
-  "⚫︎",
-  "●",
-  "⬤",
-  "⚬",
-  "○",
+  '⋅',
+  '∙',
+  '🞄',
+  '•',
+  '⦁',
+  '⚫︎',
+  '●',
+  '⬤',
+  '⚬',
+  '○',
 ];
 
 /**
  * Convert bullet point lines into a string array aka descriptions.
  */
+
+const getFirstBulletPointLineIdx = (lines: Lines): number | undefined => {
+  for (let i = 0; i < lines.length; i += 1) {
+    for (const item of lines[i]) {
+      if (BULLET_POINTS.some((bullet) => item.text.includes(bullet))) {
+        return i;
+      }
+    }
+  }
+  return undefined;
+};
+
 export const getBulletPointsFromLines = (lines: Lines): string[] => {
   // debugger;
   // Simply return all lines with text item joined together if there is no bullet point
@@ -39,7 +51,7 @@ export const getBulletPointsFromLines = (lines: Lines): string[] => {
       line
         .map((item) => item.text)
         // .filter((lineText) => lineText.trim().split(/\s+/).length <= 3)
-        .join("|")
+        .join('|'),
     );
     // return lines.map((line) => line.map((item) => item.text).join("|"));
   }
@@ -47,15 +59,36 @@ export const getBulletPointsFromLines = (lines: Lines): string[] => {
   // Otherwise, process and remove bullet points
 
   // Combine all lines into a single string
-  let lineStr = "";
-  for (let item of lines.flat()) {
-    const text = item.text;
+  let lineStr = '';
+  for (const item of lines.flat()) {
+    const { text } = item;
     // Make sure a space is added between 2 words
-    if (!lineStr.endsWith(" ") && !text.startsWith(" ")) {
-      lineStr += " ";
+    if (!lineStr.endsWith(' ') && !text.startsWith(' ')) {
+      lineStr += ' ';
     }
     lineStr += text;
   }
+
+  const getMostCommonBulletPoint = (str: string): string => {
+    const bulletToCount: { [bullet: string]: number } = BULLET_POINTS.reduce(
+      (acc: { [bullet: string]: number }, cur) => {
+        acc[cur] = 0;
+        return acc;
+      },
+      {},
+    );
+    let bulletWithMostCount = BULLET_POINTS[0];
+    const bulletMaxCount = 0;
+    for (const char of str) {
+      if (Object.prototype.hasOwnProperty.call(bulletToCount, char)) {
+        bulletToCount[char] += 1;
+        if (bulletToCount[char] > bulletMaxCount) {
+          bulletWithMostCount = char;
+        }
+      }
+    }
+    return bulletWithMostCount;
+  };
 
   // Get the most common bullet point
   const commonBulletPoint = getMostCommonBulletPoint(lineStr);
@@ -73,38 +106,6 @@ export const getBulletPointsFromLines = (lines: Lines): string[] => {
     .filter((text) => !!text || text.trim().split(/\s+/).length <= 3);
 };
 
-const getMostCommonBulletPoint = (str: string): string => {
-  const bulletToCount: { [bullet: string]: number } = BULLET_POINTS.reduce(
-    (acc: { [bullet: string]: number }, cur) => {
-      acc[cur] = 0;
-      return acc;
-    },
-    {}
-  );
-  let bulletWithMostCount = BULLET_POINTS[0];
-  let bulletMaxCount = 0;
-  for (let char of str) {
-    if (bulletToCount.hasOwnProperty(char)) {
-      bulletToCount[char]++;
-      if (bulletToCount[char] > bulletMaxCount) {
-        bulletWithMostCount = char;
-      }
-    }
-  }
-  return bulletWithMostCount;
-};
-
-const getFirstBulletPointLineIdx = (lines: Lines): number | undefined => {
-  for (let i = 0; i < lines.length; i++) {
-    for (let item of lines[i]) {
-      if (BULLET_POINTS.some((bullet) => item.text.includes(bullet))) {
-        return i;
-      }
-    }
-  }
-  return undefined;
-};
-
 // Only consider words that don't contain numbers
 const isWord = (str: string) => /^[^0-9]+$/.test(str);
 const hasAtLeast8Words = (item: TextItem) =>
@@ -117,7 +118,7 @@ export const getDescriptionsLineIdx = (lines: Lines): number | undefined => {
   // Fallback heuristic if the main heuristic doesn't apply (e.g. LinkedIn resume) to
   // check if the line has at least 8 words
   if (idx === undefined) {
-    for (let i = 0; i < lines.length; i++) {
+    for (let i = 0; i < lines.length; i += 1) {
       const line = lines[i];
       if (line.length === 1 && hasAtLeast8Words(line[0])) {
         idx = i;

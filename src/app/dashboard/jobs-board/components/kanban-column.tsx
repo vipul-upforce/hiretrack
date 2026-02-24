@@ -1,12 +1,9 @@
-"use client";
+'use client';
 
-import { Droppable } from "@hello-pangea/dnd";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Job } from "@/types/job";
-// import { Button } from "@/components/ui/button";
-// import { Info, Trash2, ArchiveRestore } from "lucide-react";
-// import { useRouter } from "next/navigation";
-import JobCard from "./job-card";
+import { Droppable, DroppableProvided } from '@hello-pangea/dnd';
+import { Job } from '@/types/job';
+import { CustomScrollbar } from '@/components/ui/custom-scrollbar';
+import JobCard from './job-card';
 
 interface KanbanColumnProps {
   column: {
@@ -17,131 +14,73 @@ interface KanbanColumnProps {
   isCreatingJob: boolean;
   setSelectedJob: (job: Job | null) => void;
   setIsDetailsOpen: (open: boolean) => void;
+  setIsEditMode: (editMode: boolean) => void;
   handleDeleteClick: (jobId: string) => void;
   setDuplicate: (x: boolean) => void;
+  onEmailSettingsClick?: (job: Job) => void;
 }
 
-const KanbanColumn = ({
+function KanbanColumn({
   column,
   isCreatingJob,
   setSelectedJob,
   setIsDetailsOpen,
+  setIsEditMode,
   handleDeleteClick,
   setDuplicate,
-}: KanbanColumnProps) => {
-  //   const router = useRouter();
-
+  onEmailSettingsClick,
+}: KanbanColumnProps) {
   return (
-    <div className="space-y-4 min-h-[50vh] h-full">
-      <Card className="h-full">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold">
-            {column.title}
-            <span className="ml-2 text-sm text-muted-foreground">
-              ({column.jobs.length})
+    <div className="min-w-[30px] flex-1 px-2">
+      <div className="flex h-full w-full min-w-0 max-w-full flex-col rounded-lg bg-white/70 p-3 dark:bg-black/30">
+        <div className="mb-4 flex-shrink-0 px-2 py-3">
+          <div className="flex items-center justify-between">
+            <h3 className="truncate text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">
+              {column.title}
+            </h3>
+            <span className="min-w-[24px] rounded-full bg-white px-2 py-1 text-center text-xs font-medium text-gray-500 shadow-sm dark:bg-gray-700 dark:text-gray-400">
+              {column.jobs.length}
             </span>
-            <span
-              className="ml-2 cursor-pointer"
-              onClick={() => alert("Job info")}
-            >
-              <i className="fas fa-info-circle" aria-hidden="true"></i>
-            </span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="h-full">
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 space-y-3 overflow-hidden pr-2">
           <Droppable droppableId={column.id}>
-            {(provided: any) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="space-y-3 min-h-full"
-              >
-                {isCreatingJob && column.id === "draft" && (
-                  <div className="animate-pulse bg-muted/50 border rounded-lg p-3 shadow-sm">
-                    <div className="h-5 w-2/3 bg-muted rounded mb-2"></div>
-                    <div className="h-4 w-1/3 bg-muted rounded"></div>
-                  </div>
-                )}
+            {(provided: DroppableProvided) => (
+              <CustomScrollbar className="h-full">
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="h-auto min-w-0 space-y-3 pb-4"
+                >
+                  {isCreatingJob && column.id === 'draft' && (
+                    <div className="animate-pulse rounded-xl bg-gray-100 p-4 shadow-sm dark:bg-black">
+                      <div className="mb-2 h-5 w-2/3 rounded bg-gray-300 dark:bg-gray-700" />
+                      <div className="h-4 w-1/3 rounded bg-gray-300 dark:bg-gray-700" />
+                    </div>
+                  )}
 
-                {column.jobs.map((job, index) => (
-                  //   <Draggable key={job._id} draggableId={job._id} index={index}>
-                  //     {(provided: any) => (
-                  //       <div
-                  //         ref={provided.innerRef}
-                  //         {...provided.draggableProps}
-                  //         {...provided.dragHandleProps}
-                  //         className="bg-card flex justify-between border rounded-lg p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                  //         onClick={() => {
-                  //           router.push(`/dashboard/jobs/${job._id}`);
-                  //         }}
-                  //       >
-                  //         <div className="text-wrap break-words w-[90%]">
-                  //           <h3 className="font-medium">{job.title}</h3>
-                  //           <p className="text-sm text-muted-foreground">
-                  //             {job.candidateCount} Candidates
-                  //           </p>
-                  //         </div>
-                  //         <div className="flex items-center justify-end gap-1">
-                  //           <Button
-                  //             variant="ghost"
-                  //             size="icon"
-                  //             className="h-8 w-8"
-                  //             onClick={(e) => {
-                  //               e.stopPropagation();
-                  //               setSelectedJob(job);
-                  //               setIsDetailsOpen(true);
-                  //             }}
-                  //           >
-                  //             <Info className="h-4 w-4" />
-                  //           </Button>
-                  //           {!job.isDeleted ? (
-                  //             <Button
-                  //               variant="ghost"
-                  //               size="icon"
-                  //               className="text-destructive hover:text-destructive/90"
-                  //               onClick={(e) => {
-                  //                 e.stopPropagation();
-                  //                 handleDeleteClick(job._id);
-                  //               }}
-                  //             >
-                  //               <Trash2 className="h-4 w-4" />
-                  //             </Button>
-                  //           ) : (
-                  //             <Button
-                  //               variant="ghost"
-                  //               size="icon"
-                  //               className="text-blue-500 hover:text-blue-500/90"
-                  //               onClick={(e) => {
-                  //                 e.stopPropagation();
-                  //                 handleDeleteClick(job._id);
-                  //                 setSelectedJob(job);
-                  //               }}
-                  //             >
-                  //               <ArchiveRestore className="h-4 w-4" />
-                  //             </Button>
-                  //           )}
-                  //         </div>
-                  //       </div>
-                  //     )}
-                  //   </Draggable>
-                  <JobCard
-                    key={job._id}
-                    job={job}
-                    index={index}
-                    setSelectedJob={setSelectedJob}
-                    setIsDetailsOpen={setIsDetailsOpen}
-                    handleDeleteClick={handleDeleteClick}
-                    setDuplicate={setDuplicate}
-                  />
-                ))}
-                {provided.placeholder}
-              </div>
+                  {column.jobs.map((job, index) => (
+                    <JobCard
+                      key={job._id}
+                      job={job}
+                      index={index}
+                      setSelectedJob={setSelectedJob}
+                      setIsDetailsOpen={setIsDetailsOpen}
+                      setIsEditMode={setIsEditMode}
+                      handleDeleteClick={handleDeleteClick}
+                      setDuplicate={setDuplicate}
+                      onEmailSettingsClick={onEmailSettingsClick}
+                    />
+                  ))}
+                  {provided.placeholder}
+                </div>
+              </CustomScrollbar>
             )}
           </Droppable>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
-};
+}
 
 export default KanbanColumn;

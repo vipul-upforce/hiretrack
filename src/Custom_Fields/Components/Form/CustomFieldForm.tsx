@@ -1,41 +1,62 @@
+/* eslint-disable max-lines */
 import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Formik, FormikHelpers } from "formik";
-import { SelectValue } from "@/components/ui/select";
+  SelectValue,
+  Select,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Formik, FormikHelpers } from 'formik';
 import React, {
   useState,
   useContext,
   memo,
   useEffect,
   useCallback,
-} from "react";
+} from 'react';
 import {
   CustomField,
   CustomFieldFormProps,
-} from "@/Custom_Fields/Types/CustomField";
-// import {
-//   AlertDialog,
-//   AlertDialogAction,
-//   AlertDialogContent,
-//   AlertDialogDescription,
-//   AlertDialogFooter,
-//   AlertDialogHeader,
-//   AlertDialogTitle,
-// } from "@/components/ui/alert-dialog";
-import CustomFieldDialog from "../Common/CustomFieldDialog";
-import { toast } from "@/Custom_Fields/hooks/use-toast";
-import { CustomFieldsContext } from "@/Custom_Fields/Context";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
-import { ChipInput } from "@/components/ui/chip-input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { fieldTypes } from "@/Custom_Fields/utils";
-import { validationSchema } from "@/Custom_Fields/utils/validations";
+} from '@/Custom_Fields/Types/CustomField';
+import { toast } from '@/Custom_Fields/hooks/use-toast';
+import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { Label } from '@/components/ui/label';
+import { ChipInput } from '@/components/ui/chip-input';
+import { Button } from '@/components/ui/button';
+import { fieldTypes } from '@/Custom_Fields/utils';
+import { validationSchema } from '@/Custom_Fields/utils/validations';
+import {
+  Type,
+  FileText,
+  Hash,
+  ChevronDown,
+  List,
+  Circle,
+  CheckSquare,
+  Calendar,
+  Clock,
+  CalendarClock,
+  Lock,
+  Upload,
+  Check,
+} from 'lucide-react';
+import CustomFieldDialog from '../Common/CustomFieldDialog';
+
+const fieldTypeIcons: Record<string, React.ElementType> = {
+  text: Type,
+  textarea: FileText,
+  number: Hash,
+  select: ChevronDown,
+  multiSelect: List,
+  radio: Circle,
+  checkbox: CheckSquare,
+  date: Calendar,
+  time: Clock,
+  datetime: CalendarClock,
+  password: Lock,
+  file: Upload,
+};
 
 const CustomFieldForm = memo(
   ({ isOpen, handleClose, initialValue, isEditMode }: CustomFieldFormProps) => {
@@ -49,12 +70,12 @@ const CustomFieldForm = memo(
     const existingFields = selectedFormId?.fields || [];
     // const [duplicationAlert, setDuplicationAlert] = useState<boolean>(false);
     const [initialValues, setInitialValues] = useState<CustomField>({
-      id: "",
-      label: "",
-      type: "text",
+      id: '',
+      label: '',
+      type: 'text',
       options: [],
-      persistance: "permanent",
-      defaultValue: "",
+      persistance: 'permanent',
+      defaultValue: '',
       required: false,
       private: false,
       privateInt: false,
@@ -62,12 +83,15 @@ const CustomFieldForm = memo(
     });
     // const [dupLabel, setDupLabel] = useState<string | null>(null);
     const [hasDuplicate, setHasDuplicate] = useState(false);
+    const [duplicateType, setDuplicateType] = useState<
+      'global' | 'job-specific' | null
+    >(null);
 
     useEffect(() => {
       if (initialValue) {
         setInitialValues({
           ...initialValue,
-          label: initialValue.label.split(" |||||(")[0],
+          label: initialValue.label.split(' |||||(')[0],
         });
       }
     }, [initialValue]);
@@ -75,62 +99,96 @@ const CustomFieldForm = memo(
     const checkForDuplicate = useCallback(
       (label: string, excludeId?: string) => {
         const trimmedLabel = label.trim().toLowerCase();
-        return existingFields?.some(
-          (field) =>
-            (field.label.toLowerCase() === trimmedLabel ||
-              field.label.toLowerCase() === trimmedLabel + " |||||(g)") &&
+
+        // Normalize function to strip the suffix for comparison
+        const normalizeLabel = (fieldLabel: string): string =>
+          fieldLabel.toLowerCase().split(' |||||(')[0].trim();
+
+        const normalizedInputLabel = normalizeLabel(trimmedLabel);
+
+        // Check for global field duplicates
+        const globalDuplicate = existingFields?.some((field) => {
+          const normalizedFieldLabel = normalizeLabel(field.label);
+          return (
+            normalizedFieldLabel === normalizedInputLabel &&
             !field.candidateId &&
             !field.jobId &&
             field.id !== excludeId
-        );
+          );
+        });
+
+        if (globalDuplicate) {
+          setDuplicateType('global');
+          return true;
+        }
+
+        // Check for job-specific field duplicates
+        const currentJobId = initialValue?.jobId;
+
+        if (currentJobId) {
+          const jobSpecificDuplicate = existingFields?.some((field) => {
+            const normalizedFieldLabel = normalizeLabel(field.label);
+            return (
+              normalizedFieldLabel === normalizedInputLabel &&
+              field.jobId === currentJobId &&
+              field.id !== excludeId
+            );
+          });
+
+          if (jobSpecificDuplicate) {
+            setDuplicateType('job-specific');
+            return true;
+          }
+        }
+
+        setDuplicateType(null);
+        return false;
       },
-      [existingFields]
+      [existingFields, initialValue],
     );
 
     const onSubmit = useCallback(
       async (
         values: CustomField,
-        { resetForm, setFieldError }: FormikHelpers<CustomField>
+        { resetForm, setFieldError }: FormikHelpers<CustomField>,
       ) => {
         if (isEditMode && values.label === initialValue?.label) {
+          // No label change in edit mode, proceed without duplicate check
         } else {
+          // Check for duplicates, including job-specific ones
           const isDuplicate = checkForDuplicate(
             values.label,
-            isEditMode ? initialValue?.id : undefined
+            isEditMode ? initialValue?.id : undefined,
           );
+
           if (isDuplicate) {
-            setFieldError("label", "");
+            setFieldError('label', '');
             setHasDuplicate(true);
-            return;
+            return; // Don't submit if there's a duplicate
           }
 
-          // const hasGlobalDuplicate =
-          selectedFormId &&
+          // Handle potential conflicts with other fields
+
+          if (selectedFormId) {
             customFields[selectedFormId.formId].fields.some((field) => {
-              // debugger;
               if (
                 (field.jobId || field.candidateId) &&
                 field.label === values.label &&
                 (!isEditMode || field.id !== initialValue?.id)
               ) {
-                values.label = `${values.label} |||||(g)`;
-                // setDupLabel(field.label);
-                // setDuplicationAlert(true);
-                return true;
+                values.label = `${values.label} |||||(${Date.now()})`;
+                return true; // Stops the loop once found
               }
               return false;
             });
-
-          // if (hasGlobalDuplicate) {
-          //   return;
-          // }
+          }
         }
 
         try {
           if (isEditMode) {
             handleEditCustomField(
               values as CustomField,
-              selectedFormId?.formId || null
+              selectedFormId?.formId || null,
             );
           } else {
             const fieldData = {
@@ -139,18 +197,19 @@ const CustomFieldForm = memo(
             };
             handleAddCustomField(
               fieldData as CustomField,
-              selectedFormId?.formId || null
+              selectedFormId?.formId || null,
             );
           }
           handleClose();
           resetForm();
         } catch (error: unknown) {
-          if (error instanceof Error)
+          if (error instanceof Error) {
             toast({
               title: `Error: ${error.message}`,
-              description: "Failed to save field",
-              variant: "destructive",
+              description: 'Failed to save field',
+              variant: 'destructive',
             });
+          }
         }
       },
       [
@@ -161,7 +220,7 @@ const CustomFieldForm = memo(
         handleAddCustomField,
         handleClose,
         checkForDuplicate,
-      ]
+      ],
     );
 
     const onValuesChange = useCallback(
@@ -170,36 +229,36 @@ const CustomFieldForm = memo(
         values: CustomField,
         setFieldValue: (
           field: string,
-          value: string | string[] | undefined
-        ) => void
+          value: string | string[] | undefined, // eslint-disable-line no-shadow
+        ) => void,
       ) => {
         if (value !== values.type) {
-          if (["select", "multiSelect", "radio", "checkbox"].includes(value)) {
-            setFieldValue("options", values.options);
-            if (["select", "radio"].includes(value)) {
-              setFieldValue("defaultValue", "");
+          if (['select', 'multiSelect', 'radio', 'checkbox'].includes(value)) {
+            setFieldValue('options', values.options);
+            if (['select', 'radio'].includes(value)) {
+              setFieldValue('defaultValue', '');
             } else {
-              setFieldValue("defaultValue", []);
+              setFieldValue('defaultValue', []);
             }
           } else {
-            setFieldValue("defaultValue", "");
+            setFieldValue('defaultValue', '');
           }
         }
-        setFieldValue("type", value);
+        setFieldValue('type', value);
       },
-      []
+      [],
     );
 
     const handleNumberInputChange = (
       e: React.ChangeEvent<HTMLInputElement>,
       setFieldValue: (
         field: string,
-        value: string | string[] | undefined
-      ) => void
+        value: string | string[] | undefined,
+      ) => void,
     ) => {
-      const value = e.target.value;
-      if (value === "" || /^[0-9]+$/.test(value)) {
-        setFieldValue("defaultValue", value);
+      const { value } = e.target;
+      if (value === '' || /^[0-9]+$/.test(value)) {
+        setFieldValue('defaultValue', value);
       }
     };
 
@@ -208,58 +267,45 @@ const CustomFieldForm = memo(
         e: React.ChangeEvent<HTMLInputElement>,
         setFieldValue: (
           field: string,
-          value: string | string[] | undefined
+          value: string | string[] | undefined,
         ) => void,
-        setFieldError: (field: string, message: string | undefined) => void
+        setFieldError: (field: string, message: string | undefined) => void,
       ) => {
-        const value = e.target.value;
-        setFieldValue("label", value);
+        const { value } = e.target;
+        setFieldValue('label', value);
+
+        if (!value.trim()) {
+          setHasDuplicate(false);
+          setDuplicateType(null);
+          return;
+        }
+
         const isDuplicate = checkForDuplicate(
           value,
-          isEditMode ? initialValue?.id : undefined
+          isEditMode ? initialValue?.id : undefined,
         );
+
         setHasDuplicate(isDuplicate);
+
         if (isDuplicate) {
-          setFieldError("label", "");
+          setFieldError('label', '');
         }
       },
-      [checkForDuplicate, isEditMode, initialValue]
+      [checkForDuplicate, isEditMode, initialValue],
     );
 
     return (
       <CustomFieldDialog
         isOpen={isOpen}
         onClose={handleClose}
-        title="Global Meta Fields"
-        regular
+        title="Meta Field"
+        regular={false}
       >
-        {/* <AlertDialog open={duplicationAlert} onOpenChange={setDuplicationAlert}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Duplication Alert</AlertDialogTitle>
-              <AlertDialogDescription>
-                <p className="text-lg">{dupLabel}</p> This action was not
-                completed because a field with this label already exists in
-                global meta fields.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogAction
-                onClick={() => setDuplicationAlert(false)}
-                className={
-                  "text-blue-500 bg-blue hover:bg-blue hover:text-blue-500/90"
-                }
-              >
-                Okay
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog> */}
-
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={onSubmit}
+          enableReinitialize
         >
           {({
             values,
@@ -270,239 +316,603 @@ const CustomFieldForm = memo(
             setFieldValue,
             setFieldError,
           }) => (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="label" className="flex pb-2">
-                  Field Label<p className="text-red-500">*</p>
-                </Label>
-                <Input
-                  id="label"
-                  {...getFieldProps("label")}
-                  onChange={(e) =>
-                    handleLabelChange(e, setFieldValue, setFieldError)
-                  }
-                />
-                {errors.label && touched.label && (
-                  <div className="text-red-500 text-xs pt-1">
-                    {errors.label}
-                  </div>
-                )}
-                {hasDuplicate && touched.label && (
-                  <div className="text-red-500 text-xs pt-1">
-                    Already exists
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="fieldType">Field Type</Label>
-                <Select
-                  onValueChange={(value) =>
-                    onValuesChange(value, values, setFieldValue)
-                  }
-                  value={values.type}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select field type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {["select", "multiSelect", "radio", "checkbox"].includes(
-                values.type
-              ) && (
+            <form onSubmit={handleSubmit} className="flex h-full flex-col">
+              <div className="flex-1 space-y-8 overflow-y-auto overflow-x-hidden px-1 pb-6">
                 <div>
-                  <Label htmlFor="options">Options ( Hit Enter to Add )</Label>
-                  <ChipInput
-                    value={values.options}
-                    onChange={(newOptions) =>
-                      setFieldValue(
-                        "options",
-                        newOptions
-                          .map((option) => option.trim())
-                          .filter((option) => option !== "")
-                      )
+                  <Label
+                    htmlFor="label"
+                    className="flex items-center gap-1 pb-3 text-lg font-medium"
+                  >
+                    Field Label
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="label"
+                    {...getFieldProps('label')}
+                    onChange={(e) =>
+                      handleLabelChange(e, setFieldValue, setFieldError)
                     }
-                    placeholder="Add options..."
-                    suggestions={[]}
+                    className="px-4 py-3 text-lg"
+                    placeholder="Enter field label..."
                   />
-                  {errors.options && touched.options && (
-                    <div className="text-red-500">{errors.options}</div>
+                  {errors.label && touched.label && (
+                    <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                      <span>⚠️</span> {errors.label}
+                    </div>
+                  )}
+                  {hasDuplicate && touched.label && (
+                    <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                      <span>⚠️</span>{' '}
+                      {duplicateType === 'job-specific'
+                        ? "A field with this label already exists for this job's candidates"
+                        : 'Label already exists'}
+                    </div>
                   )}
                 </div>
-              )}
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isRequired"
-                  checked={values.required}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("required", checked)
-                  }
-                />
-                <Label htmlFor="isRequired">Required Field</Label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isPrivate"
-                  checked={values.private}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("private", checked)
-                  }
-                />
-                <Label htmlFor="isPrivate">Hide from Candidates</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isPrivateInt"
-                  checked={values.privateInt}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("privateInt", checked)
-                  }
-                />
-                <Label htmlFor="isPrivateInt">Hide from Interviewer</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="showOnCard"
-                  checked={values.showOnCard}
-                  onCheckedChange={(checked) =>
-                    setFieldValue("showOnCard", checked)
-                  }
-                />
-                <Label htmlFor="showOnCard">Show On Card</Label>
-              </div>
-
-              {[
-                "date",
-                "datetime",
-                "time",
-                "file",
-                "textarea",
-                "password",
-              ].includes(values.type) ? null : (
-                <>
-                  {["select", "radio", "checkbox", "multiSelect"].includes(
-                    values.type
-                  ) ? (
-                    <div>
-                      <Label htmlFor="defaultValue">Default Value</Label>
-                      {values.type === "multiSelect" ||
-                      values.type === "checkbox" ? (
-                        <ChipInput
-                          value={values.defaultValue as string[]}
-                          onChange={(newOptions) =>
-                            setFieldValue(
-                              "defaultValue",
-                              newOptions
-                                .map((option) => option.trim())
-                                .filter((option) => option !== "")
-                            )
+                <div>
+                  <Label htmlFor="fieldType" className="text-lg font-medium">
+                    Field Type
+                  </Label>
+                  <div className="mt-3 grid grid-cols-2 gap-3 px-3 md:grid-cols-3 lg:grid-cols-4">
+                    {fieldTypes.map((type) => {
+                      const IconComponent = fieldTypeIcons[type.value];
+                      const isSelected = values.type === type.value;
+                      return (
+                        <div
+                          tabIndex={0}
+                          role="button"
+                          key={type.value}
+                          className={`relative cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                            isSelected
+                              ? 'shadow-md'
+                              : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                          }`}
+                          style={
+                            isSelected
+                              ? {
+                                  borderColor: 'var(--portal-primary, #6366f1)',
+                                  backgroundColor:
+                                    'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                                }
+                              : {}
                           }
-                          onSuggestionClick={(suggestion) => {
-                            setFieldValue("defaultValue", [
-                              ...(values.defaultValue as string[]),
-                              suggestion,
-                            ]);
-                          }}
-                          suggestions={
-                            values.options
-                              ?.filter(
-                                (option) =>
-                                  !values.defaultValue?.includes(option)
-                              )
-                              .map((option) => option.trim())
-                              .filter((option) => option !== "") || []
+                          onClick={() =>
+                            onValuesChange(type.value, values, setFieldValue)
                           }
-                        />
-                      ) : (
-                        <Select
-                          {...getFieldProps("defaultValue")}
-                          onValueChange={(value) => {
-                            if (value === "-1") {
-                              setFieldValue("defaultValue", "");
-                            } else {
-                              setFieldValue("defaultValue", value.trim());
-                            }
-                          }}
-                          value={String(values.defaultValue || "")}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select default value" />
-                          </SelectTrigger>
-                          <Button
-                            style={{
-                              marginLeft: "-10px",
-                              color: "#797979",
-                            }}
-                            variant="link"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setFieldValue("defaultValue", "");
-                            }}
-                          >
-                            Clear
-                          </Button>
-                          <SelectContent>
-                            {values.options?.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-                  ) : (
-                    <div>
-                      <Label htmlFor="defaultValue">Default Value</Label>
-                      {values.type === "number" ? (
-                        <Input
-                          id="defaultValue"
-                          value={values.defaultValue || ""}
-                          onChange={(e) =>
-                            handleNumberInputChange(e, setFieldValue)
-                          }
-                          type="text"
-                          inputMode="numeric"
-                          pattern="[0-9]*"
-                        />
-                      ) : (
-                        <Input
-                          id="defaultValue"
-                          {...getFieldProps("defaultValue")}
-                        />
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
+                          {isSelected && (
+                            <div
+                              className="absolute -right-2 -top-2 rounded-full p-1 text-white"
+                              style={{
+                                backgroundColor:
+                                  'var(--portal-primary, #6366f1)',
+                              }}
+                            >
+                              <Check className="h-3 w-3" />
+                            </div>
+                          )}
+                          <div className="flex flex-col items-center gap-2 text-center">
+                            <IconComponent
+                              className={`h-6 w-6 ${
+                                isSelected
+                                  ? ''
+                                  : 'text-gray-500 dark:text-gray-400'
+                              }`}
+                              style={
+                                isSelected
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
+                                  : {}
+                              }
+                            />
+                            <span
+                              className={`text-sm font-medium ${
+                                isSelected
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                              style={
+                                isSelected
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
+                                  : {}
+                              }
+                            >
+                              {type.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-              <Button
-                type="submit"
-                disabled={
-                  !isEditMode &&
-                  (hasDuplicate || Object.keys(errors).length > 0)
-                }
-              >
-                Save
-              </Button>
+                {['select', 'multiSelect', 'radio', 'checkbox'].includes(
+                  values.type,
+                ) && (
+                  <div>
+                    <Label
+                      htmlFor="options"
+                      className="block pb-3 text-lg font-medium"
+                    >
+                      Options{' '}
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        (Hit Enter to Add)
+                      </span>
+                    </Label>
+                    <ChipInput
+                      value={values.options}
+                      onChange={(newOptions) => {
+                        const cleanedOptions = newOptions
+                          .map((option) => option.trim())
+                          .filter((option) => option !== '');
+                        setFieldValue('options', cleanedOptions);
+
+                        // Clean up default values that are no longer in options
+                        if (
+                          values.type === 'multiSelect' ||
+                          values.type === 'checkbox'
+                        ) {
+                          const currentDefaults =
+                            (values.defaultValue as string[]) || [];
+                          const validDefaults = currentDefaults.filter(
+                            (def) => cleanedOptions.includes(def),
+                          );
+                          if (validDefaults.length !== currentDefaults.length) {
+                            setFieldValue('defaultValue', validDefaults);
+                          }
+                        } else if (
+                          values.type === 'select' ||
+                          values.type === 'radio'
+                        ) {
+                          const currentDefault = values.defaultValue as string;
+                          if (
+                            currentDefault &&
+                            !cleanedOptions.includes(currentDefault)
+                          ) {
+                            setFieldValue('defaultValue', '');
+                          }
+                        }
+                      }}
+                      placeholder="Type an option and press Enter..."
+                      suggestions={[]}
+                      showAddButton
+                    />
+                    {errors.options && touched.options && (
+                      <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                        <span>⚠️</span> {errors.options}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <Label className="mb-4 block text-lg font-medium">
+                    Field Options
+                  </Label>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                        values.required
+                          ? 'shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                      }`}
+                      style={
+                        values.required
+                          ? {
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                            }
+                          : {}
+                      }
+                      onClick={() =>
+                        setFieldValue('required', !values.required)
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
+                              values.required
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            style={
+                              values.required
+                                ? {
+                                    backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                    borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  }
+                                : {}
+                            }
+                          >
+                            {values.required && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.required
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                              style={
+                                values.required
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
+                                  : {}
+                              }
+                            >
+                              Required Field
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Users must fill this field
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                        values.private
+                          ? 'shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                      }`}
+                      style={
+                        values.private
+                          ? {
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                            }
+                          : {}
+                      }
+                      onClick={() => setFieldValue('private', !values.private)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
+                              values.private
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            style={
+                              values.private
+                                ? {
+                                    backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                    borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  }
+                                : {}
+                            }
+                          >
+                            {values.private && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.private
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                              style={
+                                values.private
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
+                                  : {}
+                              }
+                            >
+                              Hide from Candidates
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Candidates cannot see this field
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                        values.privateInt
+                          ? 'shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                      }`}
+                      style={
+                        values.privateInt
+                          ? {
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                            }
+                          : {}
+                      }
+                      onClick={() =>
+                        setFieldValue('privateInt', !values.privateInt)
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
+                              values.privateInt
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            style={
+                              values.privateInt
+                                ? {
+                                    backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                    borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  }
+                                : {}
+                            }
+                          >
+                            {values.privateInt && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.privateInt
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                              style={
+                                values.privateInt
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
+                                  : {}
+                              }
+                            >
+                              Hide from Interviewer
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Interviewers cannot see this field
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      tabIndex={0}
+                      role="button"
+                      className={`cursor-pointer rounded-lg border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                        values.showOnCard
+                          ? 'shadow-md'
+                          : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600'
+                      }`}
+                      style={
+                        values.showOnCard
+                          ? {
+                              borderColor: 'var(--portal-primary, #6366f1)',
+                              backgroundColor:
+                                'rgba(var(--portal-primary-rgb, 99, 102, 241), 0.1)',
+                            }
+                          : {}
+                      }
+                      onClick={() =>
+                        setFieldValue('showOnCard', !values.showOnCard)
+                      }
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`flex h-5 w-5 items-center justify-center rounded border-2 ${
+                              values.showOnCard
+                                ? ''
+                                : 'border-gray-300 dark:border-gray-600'
+                            }`}
+                            style={
+                              values.showOnCard
+                                ? {
+                                    backgroundColor:
+                                      'var(--portal-primary, #6366f1)',
+                                    borderColor:
+                                      'var(--portal-primary, #6366f1)',
+                                  }
+                                : {}
+                            }
+                          >
+                            {values.showOnCard && (
+                              <Check className="h-3 w-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div
+                              className={`font-medium ${
+                                values.showOnCard
+                                  ? ''
+                                  : 'text-gray-700 dark:text-gray-300'
+                              }`}
+                              style={
+                                values.showOnCard
+                                  ? { color: 'var(--portal-primary, #6366f1)' }
+                                  : {}
+                              }
+                            >
+                              Show On Card
+                            </div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              Display this field on candidate cards
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {[
+                  'date',
+                  'datetime',
+                  'time',
+                  'file',
+                  'textarea',
+                  'password',
+                ].includes(values.type) ? null : (
+                  <div>
+                    {['select', 'radio', 'checkbox', 'multiSelect'].includes(
+                      values.type,
+                    ) ? (
+                      <div>
+                        <Label
+                          htmlFor="defaultValue"
+                          className="block pb-3 text-lg font-medium"
+                        >
+                          Default Value
+                        </Label>
+                        {values.type === 'multiSelect' ||
+                        values.type === 'checkbox' ? (
+                          <ChipInput
+                            value={values.defaultValue as string[]}
+                            onChange={(newOptions) => {
+                              // Only allow values that exist in options
+                              const validOptions = newOptions
+                                .map((option) => option.trim())
+                                .filter(
+                                  (option) =>
+                                    option !== '' &&
+                                    values.options?.includes(option),
+                                );
+                              setFieldValue('defaultValue', validOptions);
+                            }}
+                            onSuggestionClick={(suggestion) => {
+                              // Only add if it's a valid option
+                              if (values.options?.includes(suggestion)) {
+                                setFieldValue('defaultValue', [
+                                  ...(values.defaultValue as string[]),
+                                  suggestion,
+                                ]);
+                              }
+                            }}
+                            suggestions={
+                              values.options
+                                ?.filter(
+                                  (option) =>
+                                    !values.defaultValue?.includes(option),
+                                )
+                                .map((option) => option.trim())
+                                .filter((option) => option !== '') || []
+                            }
+                            placeholder="Select from options below..."
+                          />
+                        ) : (
+                          <Select
+                            {...getFieldProps('defaultValue')}
+                            onValueChange={(value) => {
+                              if (value === '-1') {
+                                setFieldValue('defaultValue', '');
+                              } else {
+                                setFieldValue('defaultValue', value.trim());
+                              }
+                            }}
+                            value={String(values.defaultValue || '')}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select default value" />
+                            </SelectTrigger>
+                            <Button
+                              style={{
+                                marginLeft: '-10px',
+                                color: '#797979',
+                              }}
+                              variant="link"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setFieldValue('defaultValue', '');
+                              }}
+                            >
+                              Clear
+                            </Button>
+                            <SelectContent>
+                              {values.options?.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        {errors.defaultValue && touched.defaultValue && (
+                          <div className="flex items-center gap-1 pt-2 text-sm text-red-500">
+                            <span>⚠️</span> {String(errors.defaultValue)}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <Label
+                          htmlFor="defaultValue"
+                          className="block pb-3 text-lg font-medium"
+                        >
+                          Default Value
+                        </Label>
+                        {values.type === 'number' ? (
+                          <Input
+                            id="defaultValue"
+                            value={values.defaultValue || ''}
+                            onChange={(e) =>
+                              handleNumberInputChange(e, setFieldValue)
+                            }
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="px-4 py-3 text-lg"
+                            placeholder="Enter default number..."
+                          />
+                        ) : (
+                          <Input
+                            id="defaultValue"
+                            {...getFieldProps('defaultValue')}
+                            className="px-4 py-3 text-lg"
+                            placeholder="Enter default value..."
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="sticky bottom-0 border-t border-gray-200 bg-background px-6 py-4 pb-0 dark:border-gray-600">
+                <div className="flex justify-end">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    disabled={
+                      !isEditMode &&
+                      (hasDuplicate || Object.keys(errors).length > 0)
+                    }
+                  >
+                    {isEditMode ? 'Update Field' : 'Create Field'}
+                  </Button>
+                </div>
+              </div>
             </form>
           )}
         </Formik>
       </CustomFieldDialog>
     );
-  }
+  },
 );
 
-CustomFieldForm.displayName = "CustomFieldForm";
+CustomFieldForm.displayName = 'CustomFieldForm';
 
 export default React.memo(CustomFieldForm);

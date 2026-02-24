@@ -1,8 +1,10 @@
-import Cookies from "js-cookie";
+import { useAppSelector } from '@/lib/redux/hooks';
 
 export const useAuth = () => {
-  const isAuthenticated = !!Cookies.get("token");
-  const userRole = Cookies.get("role");
+  const { user } = useAppSelector((state) => state.auth || {});
+  const isAuthenticated = !!user?.id;
+  const userRole = user?.role;
+  const email = user?.email;
 
-  return { isAuthenticated, userRole };
+  return { isAuthenticated, userRole, email };
 };

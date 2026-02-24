@@ -1,111 +1,98 @@
-import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase, { Organization } from "@/lib/mongodb";
-import { Job } from "@/lib/mongodb";
-import { Candidate } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
-import { handleCustomFieldFiles, handleFileAttachments } from "@/lib/fileUtils";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Organization, Job, Candidate } from '@/lib/mongodb';
+import { handleCustomFieldFiles, handleFileAttachments } from '@/lib/fileUtils';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { NotificationService } from '@/lib/notifications/notificationService';
+import { logger } from '@/lib/logger/logger.server';
+import { IJob } from '@/lib/models/job';
+import { Document } from 'mongoose';
+
+// Type for lean (plain object) version of IJob
+type JobLean = Omit<IJob, keyof Document> & { _id: IJob['_id'] };
 
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase();
-
-    // Check authentication
-    const session = await auth(request);
-    if (
-      !session ||
-      !session.user?.organizationId ||
-      session.user.role === "candidate"
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(request, ['admin', 'hr', 'interviewer']),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const { organizationId } = userData;
 
-    if (!Organization || !Job || !Candidate) {
-      return NextResponse.json(
-        { error: "Database not connected" },
-        { status: 400 }
-      );
+    const [jobs, organization] = await Promise.all([
+      Job?.find({ organizationId }).lean().exec(),
+      Organization?.findById(organizationId).lean().exec(),
+    ]);
+
+    if (!jobs?.length) {
+      return NextResponse.json([]);
     }
-    const organizationId = session.user.organizationId;
-
-    // Fetch organization
-    const organization = await Organization.findById(organizationId);
     if (!organization) {
       return NextResponse.json(
-        { error: "Organization not found" },
-        { status: 404 }
+        { error: 'Organization not found' },
+        { status: 404 },
       );
-    }
-
-    const jobs = await Job.find({ organizationId });
-    if (!jobs.length) {
-      return NextResponse.json([]);
     }
 
     const openJobCardsOrder = organization.openJobCards || [];
-    const openJobIds = new Set(openJobCardsOrder.map((id) => id.toString()));
+    const openJobIds = new Set(openJobCardsOrder.map((id) => id?.toString()));
     const jobsMap = new Map(jobs.map((job) => [job._id.toString(), job]));
 
     const sortedJobs = openJobCardsOrder
-      .map((id) => jobsMap.get(id.toString()))
+      .map((id) => jobsMap.get(id?.toString()))
       .filter((job): job is NonNullable<typeof job> => !!job);
-    const otherJobs = jobs.filter((job) => !openJobIds.has(job._id.toString()));
+    const otherJobs = jobs.filter(
+      (job) => !openJobIds.has(job._id?.toString()),
+    );
 
-    const candidateCounts = await Candidate.aggregate([
+    const candidateCounts = await Candidate?.aggregate([
       { $match: { jobId: { $in: jobs.map((job) => job._id) } } },
-      { $group: { _id: "$jobId", count: { $sum: 1 } } },
+      { $group: { _id: '$jobId', count: { $sum: 1 } } },
     ]);
     const candidateCountMap = new Map(
-      candidateCounts.map((item) => [item._id.toString(), item.count])
+      candidateCounts?.map((item) => [item._id?.toString(), item.count]),
     );
 
     const jobsWithCount = [...sortedJobs, ...otherJobs].map((job) => ({
-      ...job.toObject(),
-      candidateCount: candidateCountMap.get(job._id.toString()) || 0,
+      ...(job as JobLean),
+      candidateCount: candidateCountMap.get(job._id?.toString()) || 0,
     }));
 
     return NextResponse.json(jobsWithCount);
   } catch (error: unknown) {
-    console.error("Error fetching jobs:", error);
+    logger.error({ error, url: request.url }, 'Error fetching jobs');
     const errorMessage =
-      error instanceof Error ? error.message : "Internal server error";
+      error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
-  let fileStorage = "local";
-  let organizationId;
   try {
     await connectToDatabase();
-    const data = await request.json();
+    const [userData, data] = await Promise.all([
+      getAuthenticatedUser(request, ['admin', 'hr']),
+      request.json(),
+      connectToDatabase(),
+    ]);
 
     if (!data || !data.title || !data.attachments) {
-      return NextResponse.json({ error: "Invalid data" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
     }
 
-    try {
-      const token = request.cookies.get("token");
-      if (token?.value) {
-        const decryptedResponse = await verifyAndDecryptToken(
-          String(token?.value)
-        );
-        const userData = decryptedResponse.user;
-        if (decryptedResponse.success) {
-          fileStorage = userData.fileStorage || "local";
-          organizationId = userData.organizationId || "";
-        }
-      }
-    } catch {
-      throw Error();
+    if (!userData) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
+    const { organizationId } = userData;
+    const fileStorage = userData.fileStorage || 'local';
     // Handle file uploads
     if (data.attachments) {
       data.attachments = await handleFileAttachments(
         data.attachments,
         fileStorage,
-        organizationId
+        organizationId,
       );
     }
 
@@ -113,30 +100,48 @@ export async function POST(request: NextRequest) {
       const cs = await handleCustomFieldFiles(
         data.customFields,
         fileStorage,
-        organizationId
+        organizationId,
       );
       data.customFields = cs;
     }
 
     if (!Job) {
-      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
     delete data._id;
     const newJob = new Job(data);
     await newJob.save();
 
+    // Send job creation notification
+    if (userData && organizationId) {
+      try {
+        await NotificationService.notifyJobCreated({
+          organizationId,
+          jobId: newJob._id?.toString(),
+          jobTitle: newJob.title,
+          triggerUserId: userData?.id as string,
+          triggerUserName: userData?.name as string,
+        });
+      } catch (notificationError) {
+        logger.error(
+          { error: notificationError, url: request.url },
+          'Failed to send job creation notification',
+        );
+        // Don't fail the API call if notification fails
+      }
+    }
+
     return NextResponse.json(newJob, { status: 201 });
   } catch (error: unknown) {
     if (error instanceof Error) {
       return NextResponse.json(
-        { error: "Failed to create job", message: error.message },
-        { status: 500 }
-      );
-    } else {
-      return NextResponse.json(
-        { error: "Failed to create job", message: "An unknown error occurred" },
-        { status: 500 }
+        { error: 'Failed to create job', message: error.message },
+        { status: 500 },
       );
     }
+    return NextResponse.json(
+      { error: 'Failed to create job', message: 'An unknown error occurred' },
+      { status: 500 },
+    );
   }
 }

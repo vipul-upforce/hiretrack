@@ -1,16 +1,15 @@
-import mongoose, { Schema } from "mongoose";
-
-export interface ILane {
-  userId: string;
-  lanes: LaneItem[];
-  order: number;
-  organizationId: object;
-}
+import mongoose, { Schema } from 'mongoose';
 
 export interface LaneItem {
   id: string; // or whatever properties are relevant
   name: string;
   // Add other properties as needed
+}
+export interface ILane {
+  userId: string;
+  lanes: LaneItem[];
+  order: number;
+  organizationId: object;
 }
 
 export const laneSchema = new mongoose.Schema<ILane>({
@@ -19,7 +18,7 @@ export const laneSchema = new mongoose.Schema<ILane>({
   order: { type: Number, default: 0 },
   organizationId: {
     type: Schema.Types.ObjectId,
-    ref: "Organization",
+    ref: 'Organization',
   },
 });
 

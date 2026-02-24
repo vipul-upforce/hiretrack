@@ -1,58 +1,89 @@
 // src/components/candidate/CandidateInfoSection.tsx
-import { MapPin, Briefcase, Clock, IndianRupee } from "lucide-react";
-import { Candidate } from "@/types/candidate";
-import { Label } from "@/components/ui/label";
+import { MapPin, Briefcase, Clock, IndianRupee } from 'lucide-react';
+import { Candidate } from '@/types/candidate';
+import { User } from '../../schemas/AssignCandidateSchema';
 
 interface CandidateInfoSectionProps {
   candidate: Candidate;
-  user: any;
-  labelClass: string;
+  user: User | null;
 }
 
-export const CandidateInfoSection = ({
+export function CandidateInfoSection({
   candidate,
   user,
-  labelClass,
-}: CandidateInfoSectionProps) => (
-  <div className="grid grid-cols-2 gap-6">
-    <div className="space-y-2">
-      <Label className={labelClass}>Location</Label>
-      <div className="text-sm flex items-center gap-2">
-        <MapPin className="h-4 w-4" />
-        {candidate.location}
-      </div>
-    </div>
-    <div className="space-y-2">
-      <Label className={labelClass}>Experience</Label>
-      <div className="text-sm flex items-center gap-2">
-        <Briefcase className="h-4 w-4" />
-        {candidate.experience} years
-      </div>
-    </div>
-    <div className="space-y-2">
-      <Label className={labelClass}>Notice Period</Label>
-      <div className="text-sm flex items-center gap-2">
-        <Clock className="h-4 w-4" />
-        {candidate.noticePeriod} days
-      </div>
-    </div>
-    {user?.role !== "interviewer" && (
-      <>
-        <div className="space-y-2">
-          <Label className={labelClass}>Current CTC</Label>
-          <div className="text-sm flex items-center gap-2">
-            <IndianRupee className="h-4 w-4" />
-            {candidate.currentCTC} LPA
-          </div>
+}: CandidateInfoSectionProps) {
+  return (
+    <div className="grid grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <MapPin className="h-3.5 w-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+        <div className="flex min-w-0 items-baseline gap-1">
+          <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            Location:
+          </span>
+          <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+            {candidate.location}
+          </span>
         </div>
-        <div className="space-y-2">
-          <Label className={labelClass}>Expected CTC</Label>
-          <div className="text-sm flex items-center gap-2">
-            <IndianRupee className="h-4 w-4" />
-            {candidate.expectedCTC} LPA
-          </div>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Briefcase className="h-3.5 w-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+        <div className="flex min-w-0 items-baseline gap-1">
+          <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            Rel. Exp:
+          </span>
+          <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+            {candidate.relevantExperience}y
+          </span>
         </div>
-      </>
-    )}
-  </div>
-);
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Briefcase className="h-3.5 w-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+        <div className="flex min-w-0 items-baseline gap-1">
+          <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            Total Exp:
+          </span>
+          <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+            {candidate.experience}y
+          </span>
+        </div>
+      </div>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <Clock className="h-3.5 w-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+        <div className="flex min-w-0 items-baseline gap-1">
+          <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+            Notice:
+          </span>
+          <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+            {candidate.noticePeriod}d
+          </span>
+        </div>
+      </div>
+      {user?.role !== 'interviewer' && (
+        <>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <IndianRupee className="h-3.5 w-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+            <div className="flex min-w-0 items-baseline gap-1">
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Current:
+              </span>
+              <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                {candidate.currentCTC}L
+              </span>
+            </div>
+          </div>
+          <div className="flex min-w-0 items-center gap-1.5">
+            <IndianRupee className="h-3.5 w-3.5 flex-shrink-0 text-gray-500 dark:text-gray-400" />
+            <div className="flex min-w-0 items-baseline gap-1">
+              <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
+                Expected:
+              </span>
+              <span className="truncate text-sm font-medium text-gray-900 dark:text-gray-100">
+                {candidate.expectedCTC}L
+              </span>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

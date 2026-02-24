@@ -1,7 +1,8 @@
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { Settings } from "@/lib/mongodb";
-import { auth } from "@/lib/auth";
-import { NextRequest } from "next/server";
+import { formatInTimeZone } from 'date-fns-tz';
+import { Settings } from '@/lib/mongodb';
+import { NextRequest } from 'next/server';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import logger from '@/lib/logger';
 
 interface TimeZone {
   name: string;
@@ -17,72 +18,109 @@ export async function getFormattedDate(
   req: NextRequest,
   date: Date | string,
   iso?: boolean,
-  directOrganizationId?: string
+  directOrganizationId?: string,
 ): Promise<string | Date> {
   try {
-    // Get user data from auth (server-side, using cookies)
-    // const cookieStore = cookies();
-    const cookies = await auth(req);
-    const userData = cookies?.user;
-    const organizationId = userData?.organizationId;
-
-    if (!organizationId && !directOrganizationId) {
-      throw new Error("User not authenticated or organizationId missing");
+    // Convert date to Date object first - validate early
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (Number.isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date');
     }
 
-    const orgId = organizationId || directOrganizationId;
+    // Try to get authenticated user (optional for guest users)
+    const user = await getAuthenticatedUser(req);
 
-    // Fetch settings from MongoDB
-    const settings: SettingsDoc[] | undefined = await Settings?.find({
-      organizationId: orgId,
-    });
+    // Determine organizationId: prioritize directOrganizationId, then authenticated user's orgId
+    const orgId = directOrganizationId || user?.organizationId;
 
-    if (!settings || settings.length === 0) {
-      throw new Error("Settings not found");
+    let timeZone = 'UTC'; // Default fallback timezone
+
+    // If organizationId is available, try to fetch timezone settings
+    if (orgId) {
+      try {
+        const settings: SettingsDoc[] | undefined = await Settings?.find(
+          {
+            organizationId: orgId,
+          },
+          { timeZone: 1, organizationId: 1 },
+        ).lean();
+
+        if (settings && settings.length > 0) {
+          const orgSettings = settings.find((s) => s.organizationId === orgId);
+          timeZone = orgSettings?.timeZone?.name || 'UTC';
+        }
+      } catch (settingsError) {
+        // Log but don't fail - use UTC fallback
+        logger.warn(
+          `Failed to fetch timezone settings for orgId ${orgId}, using UTC:`,
+          settingsError,
+        );
+      }
     }
 
-    const orgSettings = settings.find((s) => s.organizationId === orgId);
-    const timeZone = orgSettings?.timeZone?.name || "UTC";
-
-    // Convert date to Date object
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-    if (isNaN(dateObj.getTime())) {
-      throw new Error("Invalid date");
-    }
-
-    // Convert to user's timezone
-    const zonedDate = fromZonedTime(dateObj, timeZone);
-    console.log("TZ: ZONED TIME ISO TO BE FORMATTED: ", zonedDate);
-    // if (iso) {
-    //   return zonedDate;
-    // }
+    // Format date using the determined timezone
     if (iso) {
       const isoLikeString = formatInTimeZone(
         dateObj,
         timeZone,
-        "yyyy-MM-dd'T'HH:mm:ssXXX"
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
       );
-      console.log("TZ: ZONED TIME ISO TO BE RETURNED: ", isoLikeString);
       return new Date(isoLikeString);
     }
 
-    // console.log("BEFORE FORMATINGL: ", zonedDate);
     // Format date using Intl.DateTimeFormat
-    const formatter = new Intl.DateTimeFormat("en-IN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+    const formatter = new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
       timeZone,
     });
 
     const dateTime = formatter.format(dateObj);
-    console.log("TZ: LocalStringLike formatted date:  ", dateTime);
     return dateTime;
   } catch (err) {
-    console.error("Error formatting date:", err);
-    return "Invalid Date";
+    // Only return 'Invalid Date' if the date itself is invalid
+    // For other errors (auth, settings), still format with UTC fallback
+    if (err instanceof Error && err.message === 'Invalid date') {
+      logger.error('Error formatting date - invalid date provided:', err);
+      return 'Invalid Date';
+    }
+
+    // For other errors, log but still format with UTC
+    logger.warn('Error in getFormattedDate, using UTC fallback:', err);
+
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (Number.isNaN(dateObj.getTime())) {
+        return 'Invalid Date';
+      }
+
+      if (iso) {
+        const isoLikeString = formatInTimeZone(
+          dateObj,
+          'UTC',
+          "yyyy-MM-dd'T'HH:mm:ssXXX",
+        );
+        return new Date(isoLikeString);
+      }
+
+      const formatter = new Intl.DateTimeFormat('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC',
+      });
+
+      return formatter.format(dateObj);
+    } catch (fallbackError) {
+      logger.error('Error in fallback date formatting:', fallbackError);
+      return 'Invalid Date';
+    }
   }
 }

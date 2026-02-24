@@ -1,15 +1,15 @@
-import { CalendarClockIcon, XIcon } from "lucide-react";
-import { formatDate, formatTime } from "../../hooks/dateTimeFormatting";
+import { CalendarClockIcon, XIcon } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import ConfirmationDialog from "../Dialogs/ConfirmationDialog";
-import { useState } from "react";
+} from '@/components/ui/tooltip';
+import React, { useState } from 'react';
+import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
+import ConfirmationDialog from '../Dialogs/ConfirmationDialog';
 
-const FollowupDisplay = ({
+function FollowupDisplay({
   note,
   date,
   showToolTip = true,
@@ -19,52 +19,41 @@ const FollowupDisplay = ({
   date: Date | null;
   showToolTip?: boolean;
   handleRemoveFollowUp?: () => void;
-}) => {
+}) {
   const [removeFUOpen, setRemoveFUOpen] = useState(false);
   const contentWithDate = (
-    <div className="border cursor-default border-blue-200/60 rounded-lg w-fit px-2 py-1 flex flex-row items-center justify-between bg-gradient-to-r from-blue-50/80 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/60 transition-all duration-200 shadow-sm hover:shadow-md">
-      <CalendarClockIcon size={18} className="mr-2 text-blue-600" />
-      <div className=" flex flex-row items-center justify-between w-full">
-        <p
-          className="text-slate-700"
-          style={{
-            fontSize: "11px",
-          }}
-        >
-          {formatDate(date || new Date())} at {formatTime(date || new Date())}
+    <div className="flex w-fit cursor-default flex-row items-center justify-between rounded border bg-blue-50 px-2 py-1 transition-colors duration-200 hover:bg-blue-100 dark:border-accent dark:bg-black dark:hover:bg-gray-900">
+      <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
+      <div className="flex w-full flex-row items-center justify-between">
+        <p className="text-xs text-foreground">
+          {formatDate(date || new Date())} at
+          {formatTime(date || new Date())}
         </p>
       </div>
       {showToolTip && (
         <button
+          type="button"
           onClick={() => setRemoveFUOpen(true)}
-          className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
+          className="ml-1 h-4 w-4 rounded bg-transparent text-muted-foreground transition-colors duration-200 hover:text-destructive"
         >
-          {/* <X size={1} className="w-1 h-1" /> */}
-          <XIcon size={14} strokeWidth={1.25} />
+          <XIcon size={10} strokeWidth={1.5} />
         </button>
       )}
     </div>
   );
   const contentWODate = (
-    <div className="border cursor-default border-blue-200/60 rounded-lg w-fit px-2 py-1 flex flex-row items-center justify-between bg-gradient-to-r from-blue-50/80 to-indigo-50/60 hover:from-blue-100/80 hover:to-indigo-100/60 transition-all duration-200 shadow-sm hover:shadow-md">
-      <CalendarClockIcon size={18} className="mr-2 text-blue-600" />
-      <div className=" flex flex-row items-center justify-between w-full">
-        <p
-          className=" text-slate-700"
-          style={{
-            fontSize: "11px",
-          }}
-        >
-          Follow Up
-        </p>
+    <div className="flex w-fit cursor-default flex-row items-center justify-between rounded border border-blue-200 bg-blue-50 px-2 py-1 transition-colors duration-200 hover:bg-blue-100">
+      <CalendarClockIcon size={14} className="mr-1 text-blue-600" />
+      <div className="flex w-full flex-row items-center justify-between">
+        <p className="text-xs text-foreground">Follow Up</p>
       </div>
       {showToolTip && (
         <button
+          type="button"
           onClick={() => setRemoveFUOpen(true)}
-          className="w-4 h-4 ml-1 bg-transparent rounded-full text-black hover:bg-gray-200 transition duration-300 "
+          className="ml-1 h-4 w-4 rounded bg-transparent text-muted-foreground transition-colors duration-200 hover:text-destructive"
         >
-          {/* <X size={1} className="w-1 h-1" /> */}
-          <XIcon size={14} strokeWidth={1.25} />
+          <XIcon size={10} strokeWidth={1.5} />
         </button>
       )}
     </div>
@@ -84,31 +73,30 @@ const FollowupDisplay = ({
       />
     );
   }
-  return showToolTip ? (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {date ? contentWithDate : contentWODate}
-        </TooltipTrigger>
-        <TooltipContent className="bg-white border border-slate-200 text-slate-900 max-w-80 break-words shadow-lg">
-          <div className="text-sm font-semibold text-blue-700 mb-1 w-full flex items-center justify-between">
-            <p className="mr-2">Followup</p>
-            {/* <Button
-              onClick={handleRemoveFollowUp}
-              className="w-5 h-5 p-1 rounded-full bg-gray-200 text-black hover:bg-gray-300 transition duration-300"
-            >
-              <XIcon size={10} strokeWidth={1.25} />
-            </Button> */}
-          </div>
-          <p className="text-md text-slate-600 leading-relaxed">{note}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  ) : date ? (
-    contentWithDate
-  ) : (
-    contentWODate
-  );
-};
+  let displayContent: React.ReactNode;
+
+  if (showToolTip) {
+    displayContent = (
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {date ? contentWithDate : contentWODate}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-80 break-words border border-border bg-popover text-popover-foreground shadow-lg">
+            <p className="text-md leading-relaxed text-muted-foreground">
+              {note}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  } else if (date) {
+    displayContent = contentWithDate;
+  } else {
+    displayContent = contentWODate;
+  }
+
+  return displayContent;
+}
 
 export default FollowupDisplay;

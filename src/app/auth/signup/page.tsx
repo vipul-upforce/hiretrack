@@ -1,34 +1,39 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { Formik, Form, Field } from "formik";
+import { useRouter } from 'next/navigation';
+import {
+  Formik,
+  Form,
+  Field,
+  FormikErrors,
+  FormikTouched,
+  FieldProps,
+} from 'formik';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardFooter,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useSignupMutation } from "@/lib/features/auth/authApi";
-import { FormikErrors, FormikTouched, FieldProps } from "formik";
-import { useToast } from "@/hooks/use-toast";
-import Cookies from "js-cookie";
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useSignupMutation } from '@/lib/features/auth/authApi';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
-import Link from "next/link";
-import { verifyAndDecryptJWTToken } from "@/lib/auth";
-import { SignupSchema } from "../schema/Signup.schema";
-import { SignupFormValues } from "@/types/signup";
+} from '@/components/ui/select';
+import { Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { SignupFormValues } from '@/types/signup';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { SignupSchema } from '../schema/Signup.schema';
 
 export default function Signup() {
   const router = useRouter();
@@ -36,77 +41,74 @@ export default function Signup() {
   const [signup, { isLoading }] = useSignupMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { user: userData } = useAppSelector((state) => state.auth);
 
   const initialValues: SignupFormValues = {
-    email: "",
-    password: "",
-    name: "",
-    confirmPassword: "",
-    role: "",
-    organizationId: "",
+    email: '',
+    password: '',
+    name: '',
+    confirmPassword: '',
+    role: '',
+    organizationId: '',
   };
 
   const handleSubmit = async (
     values: SignupFormValues,
-    { setStatus }: { setStatus: (message: string) => void }
+    { setStatus }: { setStatus: (message: string) => void },
   ) => {
     try {
-      const userData = Cookies.get("token");
       if (userData) {
-        const decryptedResponse = await verifyAndDecryptJWTToken(
-          String(userData)
-        );
-        if (decryptedResponse.success && decryptedResponse.user) {
-          try {
-            const orgID_cookie = decryptedResponse.user.organizationId || "";
-            const signupData = {
-              ...values,
-              email: values.email.toLowerCase().trim(),
-              organizationId: orgID_cookie,
-              name: values.name.trim(),
-            };
-            const response = await signup(signupData).unwrap();
+        try {
+          const orgIdCookie = userData.organizationId || '';
+          const signupData = {
+            ...values,
+            email: values.email.toLowerCase().trim(),
+            organizationId: orgIdCookie,
+            name: values.name.trim(),
+            triggerUserId: userData.id,
+            triggerUserName: userData.name,
+          };
+          const response = await signup(signupData).unwrap();
 
-            if (response.user) {
-              toast({
-                title: "Success",
-                description: "Account created successfully",
-                variant: "default",
-              });
-              router.push("/dashboard/users");
-            } else {
-              throw new Error("No user data received");
-            }
-          } catch (error: unknown) {
-            if (error && typeof error === "object" && "data" in error) {
-              const errorMessage =
-                (error.data as { error: string }).error ||
-                "Failed to parse user data from cookie";
-              throw new Error(errorMessage);
-            } else {
-              throw new Error("Failed to parse user data from cookie");
-            }
+          if (response.user) {
+            toast({
+              title: 'Success',
+              description: 'Account created successfully',
+              variant: 'default',
+            });
+            router.push('/dashboard/users');
+          } else {
+            throw new Error('No user data received');
+          }
+        } catch (error: unknown) {
+          if (error && typeof error === 'object' && 'data' in error) {
+            const errorMessage =
+              (error.data as { error: string }).error ||
+              'Failed to parse user data from cookie';
+            throw new Error(errorMessage);
+          } else {
+            throw new Error('Failed to parse user data from cookie');
           }
         }
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        const errorMessage = err.message || "Failed to create account";
+        const errorMessage = err.message || 'Failed to create account';
         setStatus(errorMessage);
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardTitle className="text-center text-2xl">Create Account</CardTitle>
         </CardHeader>
         <CardContent>
           <Formik
@@ -135,11 +137,11 @@ export default function Signup() {
                           type="text"
                           disabled={isLoading || isSubmitting}
                           className={
-                            errors.name && touched.name ? "border-red-500" : ""
+                            errors.name && touched.name ? 'border-red-500' : ''
                           }
                         />
                         {errors.name && touched.name && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.name}
                           </div>
                         )}
@@ -160,12 +162,12 @@ export default function Signup() {
                           disabled={isLoading || isSubmitting}
                           className={
                             errors.email && touched.email
-                              ? "border-red-500"
-                              : ""
+                              ? 'border-red-500'
+                              : ''
                           }
                         />
                         {errors.email && touched.email && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.email}
                           </div>
                         )}
@@ -183,16 +185,16 @@ export default function Signup() {
                           <Input
                             {...field}
                             id="password"
-                            type={showPassword ? "text" : "password"}
+                            type={showPassword ? 'text' : 'password'}
                             disabled={isLoading || isSubmitting}
                             className={
                               errors.password && touched.password
-                                ? "border-red-500"
-                                : ""
+                                ? 'border-red-500'
+                                : ''
                             }
                           />
                           {errors.password && touched.password && (
-                            <div className="text-red-500 text-sm">
+                            <div className="text-sm text-red-500">
                               {errors.password}
                             </div>
                           )}
@@ -203,7 +205,7 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.password && touched.password ? "translate-y-[-25px]" : ""}`}
+                      className={`absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent ${errors.password && touched.password ? 'translate-y-[-25px]' : ''}`}
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {!showPassword ? (
@@ -224,17 +226,17 @@ export default function Signup() {
                           <Input
                             {...field}
                             id="confirmPassword"
-                            type={showConfirmPassword ? "text" : "password"}
+                            type={showConfirmPassword ? 'text' : 'password'}
                             disabled={isLoading || isSubmitting}
                             className={
                               errors.confirmPassword && touched.confirmPassword
-                                ? "border-red-500"
-                                : ""
+                                ? 'border-red-500'
+                                : ''
                             }
                           />
                           {errors.confirmPassword &&
                             touched.confirmPassword && (
-                              <div className="text-red-500 text-sm">
+                              <div className="text-sm text-red-500">
                                 {errors.confirmPassword}
                               </div>
                             )}
@@ -245,7 +247,7 @@ export default function Signup() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className={`absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? "translate-y-[-25px]" : ""}`}
+                      className={`absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 hover:bg-transparent ${errors.confirmPassword && touched.confirmPassword ? 'translate-y-[-25px]' : ''}`}
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
@@ -284,7 +286,7 @@ export default function Signup() {
                           </SelectContent>
                         </Select>
                         {errors.role && touched.role && (
-                          <div className="text-red-500 text-sm">
+                          <div className="text-sm text-red-500">
                             {errors.role}
                           </div>
                         )}
@@ -293,15 +295,16 @@ export default function Signup() {
                   </Field>
                 </div>
 
-                <CardFooter className="px-0 pt-6 flex-col space-y-4">
+                <CardFooter className="flex-col space-y-4 px-0 pt-6">
                   <Button
                     type="submit"
                     className="w-full"
                     disabled={isLoading || isSubmitting}
+                    variant="primary"
                   >
                     {isLoading || isSubmitting
-                      ? "Creating User..."
-                      : "Create User"}
+                      ? 'Creating User...'
+                      : 'Create User'}
                   </Button>
                 </CardFooter>
               </Form>

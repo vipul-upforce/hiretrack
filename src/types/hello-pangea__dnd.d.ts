@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ComponentType } from "react";
-declare module "@hello-pangea/dnd" {
+import { ComponentType } from 'react';
+
+declare module '@hello-pangea/dnd' {
   export const DragDropContext: ComponentType<any>;
   export const Droppable: ComponentType<any>;
   export const Draggable: ComponentType<any>;

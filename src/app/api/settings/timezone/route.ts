@@ -1,111 +1,97 @@
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect, { Settings } from "@/lib/mongodb";
-import { verifyAndDecryptToken } from "@/app/actions/auth";
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("token");
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
-      );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
-    }
+    await connectToDatabase();
 
+    const userData = await getAuthenticatedUser(req, 'admin');
+    if (!userData) {
+      return NextResponse.json(
+        { message: 'Unauthorised Access' },
+        { status: 401 },
+      );
+    }
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
     const settings = await Settings.findOne({
-      // organizationId: userData.organizationId,
-      organizationId: organizationId,
-    });
+      organizationId: userData?.organizationId,
+    })
+      .select('timeZone')
+      .lean()
+      .exec();
 
     if (!settings) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
-
-    // console.log(settings)
 
     return NextResponse.json({ timezone: settings.timeZone });
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    await dbConnect();
-    let organizationId = "";
-    const token = req.cookies.get("token");
-    if (token?.value) {
-      const decryptedResponse = await verifyAndDecryptToken(
-        String(token?.value)
+    await connectToDatabase();
+    const userData = await getAuthenticatedUser(req, 'admin');
+    if (!userData) {
+      return NextResponse.json(
+        { message: 'Unauthorised Access' },
+        { status: 401 },
       );
-      const userData = decryptedResponse.user;
-      if (decryptedResponse.success) {
-        organizationId = userData.organizationId || "";
-        if (userData.role !== "admin") {
-          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-      }
     }
 
     if (!Settings) {
       return NextResponse.json(
-        { error: "Settings Model Not Found" },
-        { status: 404 }
+        { error: 'Settings Model Not Found' },
+        { status: 404 },
       );
     }
 
     const timeZoneSetting = await req.json();
-    console.log("🟢🟢 TZ settings: ", timeZoneSetting);
 
     const updatedUser = await Settings.findOneAndUpdate(
       {
-        // organizationId: userData.organizationId,
-        organizationId: organizationId,
+        organizationId: userData?.organizationId || '',
       },
       { timeZone: timeZoneSetting },
       {
         new: true,
         runValidators: true,
         upsert: true,
-      }
+      },
     );
 
     if (!updatedUser) {
       return NextResponse.json(
-        { error: "Settings not found" },
-        { status: 404 }
+        { error: 'Settings not found' },
+        { status: 404 },
       );
     }
 
-    return NextResponse.json({ message: "Settings updated successfully" });
+    return NextResponse.json({ message: 'Settings updated successfully' });
   } catch (error) {
+    logger.error({ error, url: req.url }, 'Error updating timezone setting');
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

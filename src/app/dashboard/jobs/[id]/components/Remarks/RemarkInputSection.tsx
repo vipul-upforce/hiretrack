@@ -1,14 +1,21 @@
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Eye, EyeOff } from "lucide-react";
-import Rating from "@mui/material/Rating";
+import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Eye, EyeOff } from 'lucide-react';
+import Rating from '@mui/material/Rating';
 
-import { User } from "@/lib/features/users/usersApi";
-import { Candidate } from "@/types/candidate";
-import { Checkbox } from "@mui/material";
-import { useState } from "react";
+import { Candidate } from '@/types/candidate';
+import { Checkbox } from '@/components/ui/checkbox';
+import React, { useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
+
+interface MentionUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface RemarkInputSectionProps {
   newRemark: string;
@@ -18,8 +25,7 @@ interface RemarkInputSectionProps {
   setRemarkRatingHistory: (value: number | null) => void;
   isSubRemarkPrivate: boolean;
   setIsSubRemarkPrivate: (value: boolean) => void;
-  user: User | null;
-  handleAddRemark: () => void;
+  handleAddRemark: (selectedMentionUserIds?: string[], removeFollowUp?: boolean) => void;
   localCandidate: Candidate | null;
   handleRemoveFollowUp: () => void;
   isRemarkSubmitting: boolean;
@@ -33,98 +39,132 @@ export default function RemarkInputSection({
   setRemarkRatingHistory,
   isSubRemarkPrivate,
   setIsSubRemarkPrivate,
-  user,
   isRemarkSubmitting,
   handleAddRemark,
   localCandidate,
   handleRemoveFollowUp,
 }: RemarkInputSectionProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const hasFollowUp =
-    localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0;
+    !!(localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 0);
   const [removeFU, setRemoveFU] = useState(false);
-  const handleFollowUpCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    if (event.target.checked && hasFollowUp) {
-      // handleRemoveFollowUp();
-      setRemoveFU(true);
-    } else {
-      setRemoveFU(false);
-    }
-  };
+  const [selectedMentions, setSelectedMentions] = useState<MentionUser[]>([]);
+
+  const dynamicRows = Math.min(Math.max((newRemark.match(/\n/g) || []).length + 1, 1), 3);
 
   return (
-    <div className="space-y-4 border-t pt-4">
-      <div className="space-y-4">
-        <Textarea
-          placeholder="Add a remark..."
+    <div className="space-y-3 border-t pt-3">
+      <div className="space-y-3">
+        <MentionTextarea
+          placeholder="Add a remark... (Alt+Enter to submit)"
           value={newRemark}
-          onChange={(e) => setNewRemark(e.target.value)}
+          onChange={setNewRemark}
+          onKeyDown={(e) => {
+            if (e.altKey && e.key === 'Enter') {
+              e.preventDefault();
+              if (newRemark.trim() && !isRemarkSubmitting) {
+                handleAddRemark(selectedMentions.map((m) => m._id), removeFU && hasFollowUp);
+              }
+            }
+          }}
+          organizationId={String(user?.organizationId) || ''}
+          currentUserRole={user?.role || ''}
+          rows={dynamicRows}
+          className="min-h-[38px] w-full resize-none overflow-y-auto leading-relaxed transition-all"
+          isRemarkPrivate={isSubRemarkPrivate}
+          onSelectedMentionsChange={setSelectedMentions}
         />
-        <div className="flex justify-between items-center">
+
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Label htmlFor="rating">Rating:</Label>
+            <Label htmlFor="rating" className="text-xs font-medium text-muted-foreground">
+              Rating:
+            </Label>
             <Rating
               name="half-rating"
               value={remarkRating}
-              onChange={(e, value) => {
-                setRemarkRating(value ? value : null);
-                setRemarkRatingHistory(value ? value : null);
+              onChange={(_, value) => {
+                setRemarkRating(value || null);
+                setRemarkRatingHistory(value || null);
               }}
               defaultValue={0}
               precision={0.5}
+              size="small"
+              sx={{
+                '& .MuiRating-iconEmpty': {
+                  color: 'rgb(156 163 175)', // gray-400
+                },
+                '& .MuiRating-iconFilled': {
+                  color: '#f59e0b', // amber-500
+                },
+                '& .MuiRating-iconHover': {
+                  color: '#d97706', // amber-600
+                },
+              }}
             />
           </div>
-          <div className="flex flex-row items-center justify-evenly">
-            <div className="flex items-center justify-between px-2 py-2">
-              {(user?.role === "admin" || user?.role === "hr") &&
-                hasFollowUp && (
-                  <>
-                    <div className="flex flex-row items-center justify-center space-x-2">
-                      <Checkbox
-                        onChange={handleFollowUpCheckboxChange}
-                        inputProps={{ "aria-label": "Remove follow-up" }}
-                      />
-                      <Label htmlFor="followup-checkbox" className="text-sm">
-                        Remove Follow-up
-                      </Label>
-                    </div>
-                  </>
-                )}
-            </div>
-            <div className="flex items-center justify-between px-2 py-2">
-              {(user?.role === "admin" || user?.role === "hr") && (
-                <>
-                  <div className="flex items-center space-x-2">
-                    {isSubRemarkPrivate ? (
-                      <EyeOff className="h-4 w-4 text-gray-500" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-500" />
-                    )}
-                    <Label htmlFor="privacy-toggle" className="text-sm">
-                      {isSubRemarkPrivate ? "Private" : "Public"}
-                    </Label>
-                  </div>
-                  <Switch
-                    id="privacy-toggle-submit"
-                    checked={isSubRemarkPrivate}
-                    onCheckedChange={() =>
-                      setIsSubRemarkPrivate(!isSubRemarkPrivate)
+
+          <div className="flex flex-row items-center justify-end gap-3">
+            {(user?.role === 'admin' || user?.role === 'hr') && hasFollowUp && (
+              <div className="flex flex-row items-center space-x-2">
+                <Checkbox
+                  id="followup-checkbox"
+                  onCheckedChange={(checked) => {
+                    if (checked && hasFollowUp) {
+                      setRemoveFU(true);
+                    } else {
+                      setRemoveFU(false);
                     }
-                    className="w-8 h-4 drop-shadow-lg border border-1 border-solid ml-2"
-                  />
-                </>
-              )}
-            </div>
+                  }}
+                  aria-label="Remove follow-up"
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="followup-checkbox" className="text-xs text-muted-foreground">
+                  Remove Follow-up
+                </Label>
+              </div>
+            )}
+
+            {(user?.role === 'admin' || user?.role === 'hr') && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  {isSubRemarkPrivate ? (
+                    <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                  <Label
+                    htmlFor="privacy-toggle-submit"
+                    className="cursor-pointer text-xs text-muted-foreground"
+                  >
+                    {isSubRemarkPrivate ? 'Private' : 'Public'}
+                  </Label>
+                </div>
+                <Switch
+                  id="privacy-toggle-submit"
+                  checked={isSubRemarkPrivate}
+                  onCheckedChange={() => setIsSubRemarkPrivate(!isSubRemarkPrivate)}
+                  className="h-4 w-7"
+                />
+              </div>
+            )}
 
             <Button
+              variant="primary"
+              size="sm"
+              className="h-8 px-3 text-xs"
               onClick={() => {
-                removeFU && handleRemoveFollowUp();
-                handleAddRemark();
+                const hasRemark = newRemark.trim();
+
+                if (hasRemark) {
+                  handleAddRemark(selectedMentions.map((m) => m._id), removeFU && hasFollowUp);
+                } else if (removeFU && hasFollowUp) {
+                  handleRemoveFollowUp();
+                }
               }}
               disabled={isRemarkSubmitting}
             >
-              {isRemarkSubmitting ? "Submitting..." : "Add Remark"}
+              {isRemarkSubmitting ? 'Submitting...' : 'Add Remark'}
             </Button>
           </div>
         </div>

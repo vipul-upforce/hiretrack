@@ -1,27 +1,27 @@
-"use client";
+'use client';
 
-import type { Candidate } from "@/types/candidate";
+import type { Candidate } from '@/types/candidate';
 // import { \ } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from '@/components/ui/tooltip';
 
-const TagsList = ({ candidate }: { candidate: Candidate }) => {
+function TagsList({ candidate }: { candidate: Candidate }) {
   // const [hoveredTag, setHoveredTag] = useState<number | null>(null);
 
   if (!candidate.tags || candidate.tags.length === 0) return null;
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="w-full flex flex-row items-center justify-start gap-1 mb-2 relative max-w-[90%] flex-wrap z-10">
+      <div className="relative z-10 my-2 flex w-full max-w-[90%] flex-row flex-wrap items-center justify-start gap-1">
         {candidate.tags?.map((tag, i) => (
-          <Tooltip key={i}>
+          <Tooltip key={`${tag.title}-${tag.color}`}>
             <TooltipTrigger asChild>
               <div
-                className="rounded-full flex-1 h-2 min-w-2 max-w-[80px] cursor-pointer transition-all duration-200 hover:shadow-md"
+                className="h-2 min-w-2 max-w-[80px] flex-1 cursor-pointer rounded-full transition-all duration-200 hover:shadow-md"
                 style={{ backgroundColor: tag.color }}
                 // onMouseEnter={() => setHoveredTag(i)}
                 // onMouseLeave={() => setHoveredTag(null)}
@@ -30,7 +30,7 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
             <TooltipContent
               side="top"
               align="center"
-              className="px-2 py-1 text-xs bg-gray-900 text-white rounded shadow-lg max-w-[500px]  break-words"
+              className="max-w-[500px] break-words rounded bg-popover px-2 py-1 text-xs text-popover-foreground shadow-lg"
             >
               <p className="px-2">{tag.title || `Tag ${i + 1}`}</p>
             </TooltipContent>
@@ -39,6 +39,6 @@ const TagsList = ({ candidate }: { candidate: Candidate }) => {
       </div>
     </TooltipProvider>
   );
-};
+}
 
 export default TagsList;

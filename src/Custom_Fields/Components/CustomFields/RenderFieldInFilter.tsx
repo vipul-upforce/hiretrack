@@ -1,33 +1,33 @@
-"use client";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import { Checkbox } from "@mui/material";
-import dayjs, { Dayjs } from "dayjs";
-import { FileDropZone } from "@/components/ui/file-drop-zone";
-import { ChipInput } from "@/components/ui/chip-input";
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import dayjs, { Dayjs } from 'dayjs';
+import { FileDropZone } from '@/components/ui/file-drop-zone';
+import { ChipInput } from '@/components/ui/chip-input';
 import {
   SelectValue,
   Select,
   SelectTrigger,
   SelectItem,
   SelectContent,
-} from "@/components/ui/select";
-import { DateTimePicker } from "@/components/ui/DateTimePicker";
-import PasswordField from "@/components/ui/PasswordField";
-import TimePicker from "@/components/ui/time-picker";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/select';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import PasswordField from '@/components/ui/PasswordField';
+import TimePicker from '@/components/ui/time-picker';
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Label } from '@/components/ui/label';
+import React from 'react';
 
 interface FileData {
   base64: string;
@@ -48,7 +48,7 @@ interface RenderFieldProps {
     | [Dayjs, Dayjs]
     | undefined;
   onChange?: (
-    value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs]
+    value: string | string[] | boolean | FileData[] | Dayjs | [Dayjs, Dayjs],
   ) => void;
   onBlur?: (
     value:
@@ -58,38 +58,31 @@ interface RenderFieldProps {
       | FileData[]
       | Dayjs
       | [Dayjs, Dayjs]
-      | Date
+      | Date,
   ) => void;
   options?: string[];
-  error?: string;
-  min?: Dayjs | [Dayjs, Dayjs] | undefined;
-  max?: Dayjs | [Dayjs, Dayjs] | undefined;
   name?: string;
 }
 
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = (error) => reject(error);
   });
-};
 
-export const RenderFieldInFilter = ({
+export function RenderFieldInFilter({
   label,
   type,
   value,
   onChange,
   onBlur,
   options = [],
-  error,
-  min,
-  max,
   name,
-}: RenderFieldProps) => {
+}: RenderFieldProps) {
   switch (type) {
-    case "text":
+    case 'text':
       return (
         <Input
           id={label}
@@ -104,7 +97,7 @@ export const RenderFieldInFilter = ({
         />
       );
 
-    case "password":
+    case 'password':
       return (
         <PasswordField
           value={value as string}
@@ -118,7 +111,7 @@ export const RenderFieldInFilter = ({
         />
       );
 
-    case "number":
+    case 'number':
       return (
         <Input
           type="number"
@@ -134,7 +127,7 @@ export const RenderFieldInFilter = ({
         />
       );
 
-    case "textarea":
+    case 'textarea':
       return (
         <Textarea
           id={label}
@@ -149,7 +142,7 @@ export const RenderFieldInFilter = ({
         />
       );
 
-    case "select":
+    case 'select':
       return (
         <Select
           value={value as string}
@@ -167,14 +160,14 @@ export const RenderFieldInFilter = ({
           </SelectContent>
           <Button
             style={{
-              marginLeft: "-10px",
-              color: "rgb(121, 121, 121)",
-              display: "contents",
+              marginLeft: '-10px',
+              color: 'rgb(121, 121, 121)',
+              display: 'contents',
             }}
             variant="link"
             onClick={(e) => {
               e.preventDefault();
-              onChange?.("");
+              onChange?.('');
             }}
           >
             Clear
@@ -182,30 +175,29 @@ export const RenderFieldInFilter = ({
         </Select>
       );
 
-    case "checkbox":
+    case 'checkbox':
       return (
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-col gap-2">
           {options?.map((option, index) => (
             <div className="flex items-center space-x-2" key={option}>
               <Checkbox
-                name={option}
+                id={`${option}-${index}`}
                 checked={(value as string[])?.includes(option)}
-                className="capitalize"
-                onChange={(e) => {
+                onCheckedChange={(checked) => {
                   const currentValues = (value as string[]) || [];
-                  const newValues = currentValues.includes(option)
-                    ? currentValues.filter((val) => val !== option)
-                    : [...currentValues, option];
+                  const newValues = checked
+                    ? [...currentValues, option]
+                    : currentValues.filter((val) => val !== option);
                   onChange?.(newValues);
                 }}
               />
-              <Label htmlFor={`${option}-${option}-${index}`}>{option}</Label>
+              <Label htmlFor={`${option}-${index}`}>{option}</Label>
             </div>
           ))}
         </div>
       );
 
-    case "date":
+    case 'date':
       return (
         <div className="flex gap-2">
           {/* Start Date */}
@@ -217,28 +209,29 @@ export const RenderFieldInFilter = ({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {value && (value as [Dayjs, Dayjs])[0] ? (
-                  format((value as [Dayjs, Dayjs])[0].toDate(), "PPP")
+                  format((value as [Dayjs, Dayjs])[0].toDate(), 'PPP')
                 ) : (
                   <span>Start date</span>
                 )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={
+              <DatePicker
+                value={
                   value && (value as [Dayjs, Dayjs])[0]
                     ? (value as [Dayjs, Dayjs])[0].toDate()
-                    : undefined
+                    : null
                 }
-                onSelect={(date) => {
+                onChange={(date) => {
                   const newRange = [
-                    date ? dayjs(date) : undefined,
+                    date ? dayjs(date as Date) : undefined,
                     (value as [Dayjs, Dayjs])?.[1],
                   ] as [Dayjs, Dayjs];
                   onChange?.(newRange);
                 }}
-                initialFocus
+                showTimePicker={false}
+                format="MM/DD/YYYY"
+                placeholder="Select start date"
               />
             </PopoverContent>
           </Popover>
@@ -252,43 +245,44 @@ export const RenderFieldInFilter = ({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {value && (value as [Dayjs, Dayjs])[1] ? (
-                  format((value as [Dayjs, Dayjs])[1].toDate(), "PPP")
+                  format((value as [Dayjs, Dayjs])[1].toDate(), 'PPP')
                 ) : (
                   <span>End date</span>
                 )}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={
+              <DatePicker
+                value={
                   value && (value as [Dayjs, Dayjs])[1]
                     ? (value as [Dayjs, Dayjs])[1].toDate()
-                    : undefined
+                    : null
                 }
-                onSelect={(date) => {
+                onChange={(date) => {
                   const newRange = [
                     (value as [Dayjs, Dayjs])?.[0],
-                    date ? dayjs(date) : undefined,
+                    date ? dayjs(date as Date) : undefined,
                   ] as [Dayjs, Dayjs];
                   onChange?.(newRange);
                 }}
-                initialFocus
+                showTimePicker={false}
+                format="MM/DD/YYYY"
+                placeholder="Select end date"
               />
             </PopoverContent>
           </Popover>
         </div>
       );
 
-    case "time":
+    case 'time':
       return (
         <div className="flex gap-2">
           <TimePicker
-            value={(value as [string, string])?.[0] || ""}
+            value={(value as [string, string])?.[0] || ''}
             onChange={(time) => {
               const newRange = [
                 time,
-                (value as [string, string])?.[1] || "",
+                (value as [string, string])?.[1] || '',
               ] as [string, string];
               onChange?.(newRange);
             }}
@@ -296,10 +290,10 @@ export const RenderFieldInFilter = ({
             name={name as string}
           />
           <TimePicker
-            value={(value as [string, string])?.[1] || ""}
+            value={(value as [string, string])?.[1] || ''}
             onChange={(time) => {
               const newRange = [
-                (value as [string, string])?.[0] || "",
+                (value as [string, string])?.[0] || '',
                 time,
               ] as [string, string];
               onChange?.(newRange);
@@ -310,64 +304,98 @@ export const RenderFieldInFilter = ({
         </div>
       );
 
-    case "datetime":
+    case 'datetime':
       return (
         <div className="flex gap-2">
-          <DateTimePicker
-            value={value ? (value as [Dayjs, Dayjs])[0] : undefined}
-            onChange={(date) => {
-              const newRange = [date, (value as [Dayjs, Dayjs])?.[1]] as [
-                Dayjs,
-                Dayjs,
-              ];
-              onChange?.(newRange);
-            }}
-            onBlur={() => {}}
-            // min={min ? dayjs(min) : undefined}
-            // max={max ? dayjs(max) : undefined}
-          />
-          <DateTimePicker
-            value={value ? (value as [Dayjs, Dayjs])[1] : undefined}
-            onChange={(date) => {
-              const newRange = [(value as [Dayjs, Dayjs])?.[0], date] as [
-                Dayjs,
-                Dayjs,
-              ];
-              onChange?.(newRange);
-            }}
-            onBlur={() => {}}
-            // min={min ? dayjs(min) : undefined}
-            // max={max ? dayjs(max) : undefined}
-          />
+          {/* Start DateTime */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value && (value as [Dayjs, Dayjs])[0] ? (
+                  format((value as [Dayjs, Dayjs])[0].toDate(), 'PPp')
+                ) : (
+                  <span>Start date & time</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <DateTimePicker
+                value={
+                  value && (value as [Dayjs, Dayjs])[0]
+                    ? (value as [Dayjs, Dayjs])[0]
+                    : undefined
+                }
+                onChange={(date) => {
+                  const newRange = [
+                    date || undefined,
+                    (value as [Dayjs, Dayjs])?.[1],
+                  ] as [Dayjs | undefined, Dayjs | undefined];
+                  onChange?.(newRange as [Dayjs, Dayjs]);
+                }}
+                placeholder="Select start date & time"
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* End DateTime */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {value && (value as [Dayjs, Dayjs])[1] ? (
+                  format((value as [Dayjs, Dayjs])[1].toDate(), 'PPp')
+                ) : (
+                  <span>End date & time</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <DateTimePicker
+                value={
+                  value && (value as [Dayjs, Dayjs])[1]
+                    ? (value as [Dayjs, Dayjs])[1]
+                    : undefined
+                }
+                onChange={(date) => {
+                  const newRange = [
+                    (value as [Dayjs, Dayjs])?.[0],
+                    date || undefined,
+                  ] as [Dayjs | undefined, Dayjs | undefined];
+                  onChange?.(newRange as [Dayjs, Dayjs]);
+                }}
+                placeholder="Select end date & time"
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       );
 
-    case "radio":
+    case 'radio':
       return (
         <RadioGroup
           value={value as string}
-          onChange={(e) => onChange?.(e.target.value)}
-          onBlur={() => {}}
-          name={label}
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "10px",
-          }}
+          onValueChange={(newValue) => onChange?.(newValue)}
+          className="flex flex-col gap-2"
         >
           {options?.map((option) => (
-            <FormControlLabel
-              key={option}
-              className="capitalize"
-              value={option}
-              control={<Radio />}
-              label={option}
-            />
+            <div key={option} className="flex items-center space-x-2">
+              <RadioGroupItem value={option} id={`${label}-${option}`} />
+              <Label htmlFor={`${label}-${option}`} className="capitalize">
+                {option}
+              </Label>
+            </div>
           ))}
         </RadioGroup>
       );
 
-    case "file":
+    case 'file':
       return (
         <FileDropZone
           value={value as FileData[]}
@@ -378,12 +406,10 @@ export const RenderFieldInFilter = ({
                   let fileurl;
                   if ((file as FileData).base64) {
                     fileurl = (file as FileData).base64;
+                  } else if ((file as FileData).base64 === '') {
+                    fileurl = '';
                   } else {
-                    if ((file as FileData).base64 === "") {
-                      fileurl = "";
-                    } else {
-                      fileurl = await fileToBase64(file as File);
-                    }
+                    fileurl = await fileToBase64(file as File);
                   }
                   return {
                     base64: fileurl,
@@ -391,7 +417,7 @@ export const RenderFieldInFilter = ({
                     type: file.type,
                     size: file.size,
                   };
-                })
+                }),
               );
               const fileNames = base64Files.map((file) => file.name);
               const hasDuplicates =
@@ -417,7 +443,7 @@ export const RenderFieldInFilter = ({
         />
       );
 
-    case "multiSelect":
+    case 'multiSelect':
       return (
         <ChipInput
           value={(value as string[]) || []}
@@ -425,7 +451,7 @@ export const RenderFieldInFilter = ({
             onChange?.(
               newOptions
                 .map((option) => option.trim())
-                .filter((option) => option.length > 0)
+                .filter((option) => option.length > 0),
             );
           }}
           //   onBlur={onBlur}
@@ -438,7 +464,7 @@ export const RenderFieldInFilter = ({
           }}
           suggestions={
             options?.filter(
-              (option) => !(value as string[])?.includes(option)
+              (option) => !(value as string[])?.includes(option),
             ) || []
           }
         />
@@ -447,4 +473,4 @@ export const RenderFieldInFilter = ({
     default:
       return null;
   }
-};
+}

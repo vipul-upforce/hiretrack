@@ -1,66 +1,102 @@
-import { NextRequest, NextResponse } from "next/server";
-import { sendMail } from "@/app/api/event-mail";
-import { Candidate, Organization, User } from "@/lib/mongodb"; // Add User import
-import { ICandidate } from "@/lib/models/candidate";
-import mongoose from "mongoose";
-import { getFormattedDate } from "@/components/timezoneFormat/getFormattedTZ";
-import { getMappedEmailTemplate } from "@/app/actions/getMappedEmailTemplate";
+import { NextRequest, NextResponse } from 'next/server';
+import { sendSmartNotification } from '@/lib/services/unifiedEmailService'; // Import sendSmartNotificationEmail
+import connectToDatabase, {
+  Candidate,
+  Organization,
+  Settings,
+  User,
+  EmailHistory,
+} from '@/lib/mongodb';
+import { ICandidate } from '@/lib/models/candidate';
+import mongoose from 'mongoose';
+import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
+import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
+// import { getAuthenticatedUser } from '@/app/actions/auth';
+import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { logger } from '@/lib/logger/logger.server';
+import { NotificationService } from '@/lib/notifications';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 
 export async function POST(req: NextRequest) {
   try {
+    await connectToDatabase();
     const { candidateId } = await req.json();
+
+    // // Get user information from token
+    const user = await getAuthenticatedUser(req);
     if (!Candidate || !User) {
-      throw new Error("Database not connected");
+      throw new Error('Database not connected');
     }
 
     // Get candidate data
-    const candidateData = await Candidate.findOne({
-      _id: candidateId,
-    }).populate({
-      path: "jobId",
-      select: "title",
-    });
-
-    // console.log("############# candidateData: ", candidateData);
+    const candidateData = await Candidate.findById(candidateId)
+      .select('name email contact organizationId jobId')
+      .populate({
+        path: 'jobId',
+        select: 'title description',
+      })
+      .lean();
 
     if (!candidateData || !Organization) {
       return NextResponse.json(
-        { error: "Candidate not found" },
-        { status: 404 }
+        { error: 'Candidate not found' },
+        { status: 404 },
       );
     }
 
-    const { name, email } = candidateData as ICandidate;
-    const organizationId = candidateData.organizationId;
+    const { name, email, contact } = candidateData as ICandidate;
+    const { organizationId } = candidateData;
 
     if (!organizationId) {
       return NextResponse.json(
-        { error: "Organization ID is missing." },
-        { status: 400 }
+        { error: 'Organization ID is missing.' },
+        { status: 400 },
       );
     }
-    const orgData = await Organization.findById(organizationId);
-    let orgName = "";
-    if (orgData) {
-      orgName = orgData.name;
-    }
+    const candidateObjectId = new mongoose.Types.ObjectId(candidateId);
+    const organizationObjectId = new mongoose.Types.ObjectId(
+      organizationId.toString(),
+    );
+
+    const [orgData, hrUsers, settings] = await Promise.all([
+      Organization.findById(organizationObjectId).select('name').lean().exec(),
+      User.find({
+        organizationId: organizationObjectId,
+        role: { $in: ['hr', 'admin'] },
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      })
+        .select('_id name email')
+        .lean(),
+      Settings?.findOne({
+        organizationId: organizationObjectId,
+      })
+        .select('mailConfig')
+        .lean(),
+    ]);
+
+    const orgName = orgData?.name || '';
 
     // Get job information
     const jobName =
-      (typeof candidateData.jobId === "object" &&
-        "title" in candidateData.jobId &&
+      (typeof candidateData.jobId === 'object' &&
+        'title' in candidateData.jobId &&
         (candidateData.jobId?.title as string)) ||
-      "Not specified";
+      'Not specified';
+    const jobIdString =
+      (typeof candidateData.jobId === 'object' &&
+        '_id' in candidateData.jobId &&
+        (candidateData.jobId?._id as string)) ||
+      'Not specified';
     const candidateName = name;
-    const status = "Applied";
+    const status = 'Applied';
 
     // Prepare candidate email content
-    const eventTitle = "Application Successful";
+    const eventTitle = 'Application Successful';
 
     if (!email || !eventTitle) {
       return NextResponse.json(
-        { error: "Email and event title are required." },
-        { status: 400 }
+        { error: 'Email and event title are required.' },
+        { status: 400 },
       );
     }
 
@@ -68,88 +104,224 @@ export async function POST(req: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: "Invalid email format." },
-        { status: 400 }
+        { error: 'Invalid email format.' },
+        { status: 400 },
       );
     }
 
-    // const candidateHtmlContent = loadTemplate("job-application-(candidate)", {
-    //   orgName,
-    //   eventTitle,
-    //   name,
-    //   jobName,
-    //   candidateName,
-    //   status,
-    // });
-
     // Find all HR users in the organization
-    const hrUsers = await User.find({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ["hr", "admin"] },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-    })
-      .select("email")
-      .lean();
-
-    const hrEmails: string[] = [];
-    hrUsers?.map((user) => {
-      hrEmails.push(user.email);
-    });
+    const hrEmails: string[] = hrUsers.map((hrUser) => hrUser.email);
+    const hrUserIds: string[] = hrUsers.map((hrUser) => hrUser._id.toString());
 
     const applicationDate = (await getFormattedDate(
       req,
       new Date(),
       false,
-      organizationId
+      organizationId,
     )) as string;
+    await NotificationService.notifyCandidateApplied({
+      organizationId: organizationId.toString(),
+      candidateId: candidateId.toString(),
+      candidateName: candidateData.name,
+      candidateEmail: candidateData.email,
+      jobId: jobIdString.toString(),
+      jobTitle: jobName || 'Unknown Job',
+      triggerUserId: user ? user.id : candidateId,
+      triggerUserName: user ? user.name : candidateData.name,
 
-    // console.log("⛔⛔⛔ APLPICTION DATE: ", applicationDate);
-    // Prepare HR notification email contentEmail, event title, start time, and end time are required
-    const hrNotificationTitle = `${candidateName} applied for ${jobName}`;
-    const candidateDetails = `${req.headers.get("Origin")}/candidate/${candidateId}`;
-    const { emailContent, emailSubject } = await getMappedEmailTemplate(
-      "job-application-(hr)",
+      // No trigger user for guest applications
+    });
+    // Inside the try block where sendSmartNotificationEmail is called
+
+    const {
+      emailContent: candidateEmailContent,
+      emailSubject: candidateEmailSubject,
+    } = await getMappedEmailTemplate(
+      'job-application-hr',
       {
         orgName,
-        hrNotificationTitle,
+        hrNotificationTitle: `${candidateName} applied for ${jobName}`,
         status,
-        email,
+        candidateEmail: email,
         candidateName,
-        jobName,
+        jobTitle: jobName,
         applicationDate,
-        candidateDetails,
+        candidatePhone: contact || 'N/A',
+        dashboardLink: `${req.headers.get('Origin')}/candidate/${candidateId}`,
       },
-      organizationId
-    );
-
-    const candidateAndHr = [email, ...hrEmails];
-
-    const candidateEmailStatus = await sendMail(
       organizationId,
-      candidateAndHr,
-      emailSubject,
-      emailContent
     );
-    console.log("candidateEmailStatus", candidateEmailStatus);
 
-    // Prepare response
-    if (candidateEmailStatus.status === 200) {
-      return NextResponse.json({ message: "Email sent successfully" });
-    } else {
+    if (!settings || !settings.mailConfig) {
       return NextResponse.json(
-        {
-          error: candidateEmailStatus.message,
-        },
-        { status: candidateEmailStatus.status }
+        { error: 'Mail configuration not found' },
+        { status: 500 },
       );
     }
+
+    // const fromEmail =
+    //   settings.mailConfig.resend_from ||
+    //   settings.mailConfig.brevo_from ||
+    //   settings.mailConfig.smtp_from ||
+    //   'system@hiretrack.com';
+
+    // const systemUser = await User.findOneAndUpdate(
+    //   { email: fromEmail, organizationId },
+    //   {
+    //     $setOnInsert: {
+    //       name: 'HireTrack System',
+    //       email: fromEmail,
+    //       role: 'system',
+    //       organizationId,
+    //     },
+    //   },
+    //   { upsert: true, new: true },
+    // );
+
+    // Create history record for candidate
+    const candidateHistory = await EmailHistory?.create({
+      organizationId: organizationObjectId,
+      sentBy: user ? user.id : candidateId,
+      sentByEmail: user ? user.email : candidateData.email,
+      sentByName: user ? user.name : candidateData.name,
+      recipientType: 'Candidate',
+      recipientId: candidateObjectId,
+      recipientEmail: email,
+      recipientName: candidateName,
+      subject: candidateEmailSubject,
+      body: candidateEmailContent,
+      cc: [],
+      bcc: hrEmails,
+      replyTo: candidateData?.email,
+      attachments: [],
+      status: 'pending',
+      provider: settings.mailConfig.mailProvider || 'unknown',
+      metadata: {
+        candidateId: candidateObjectId,
+        templateUsed: 'job-application-hr',
+        eventType: 'job_application',
+      },
+    });
+
+    const hrHistoryPayload = hrEmails.map((hrEmail) => {
+      const hrUser = hrUsers.find((u) => u.email === hrEmail);
+      return {
+        organizationId: organizationObjectId,
+        sentBy: user ? user.id : candidateId,
+        sentByEmail: user ? user.email : candidateData.email,
+        sentByName: user ? user.name : candidateData.name,
+        recipientType: 'user',
+        recipientId: hrUser?._id || new mongoose.Types.ObjectId(),
+        recipientEmail: hrEmail,
+        recipientName: hrUser?.name || hrEmail,
+        subject: candidateEmailSubject,
+        body: candidateEmailContent,
+        cc: [],
+        bcc: [],
+        replyTo: candidateData?.email,
+        attachments: [],
+        status: 'pending',
+        provider: settings.mailConfig.mailProvider || 'unknown',
+        metadata: {
+          candidateId: candidateObjectId,
+          templateUsed: 'job-application-hr',
+          eventType: 'job_application',
+        },
+      };
+    });
+
+    const hrHistoryRecords = hrHistoryPayload.length
+      ? await EmailHistory?.insertMany(hrHistoryPayload, { ordered: false })
+      : [];
+
+    type EmailDispatchResult = {
+      status: number;
+      message?: string;
+    };
+
+    let emailStatus: EmailDispatchResult = {
+      status: 202,
+      message: 'Pending notification dispatch',
+    };
+
+    // Inside the try block where sendSmartNotificationEmail is called
+    try {
+      const jobId =
+        (
+          candidateData.jobId as {
+            _id: string;
+            title: string;
+            description: string;
+          }
+        )._id.toString() || '';
+      emailStatus = await sendSmartNotification(
+        organizationId,
+        NotificationType.NEW_APPLICATIONS,
+        {
+          triggererUserId: user ? user.id : candidateId,
+          triggererEmail: user ? user.email : candidateData?.email,
+          triggererName: user ? user.name : candidateData?.name,
+          jobId,
+          candidateId,
+          eventType: 'job_application',
+          templateUsed: 'job-application-hr',
+        },
+        {
+          subject: candidateEmailSubject,
+          html: candidateEmailContent,
+        },
+        [...hrUserIds, candidateId],
+      );
+    } catch (emailError) {
+      logger.error(
+        { emailError, url: req.url },
+        'Failed to send email notification',
+      );
+      emailStatus = {
+        status: 500,
+        message:
+          emailError instanceof Error
+            ? emailError.message
+            : 'Failed to send email',
+      };
+    }
+    const historyUpdatePayload = {
+      status: emailStatus.status === 200 ? 'sent' : 'failed',
+      sentAt: emailStatus.status === 200 ? new Date() : undefined,
+      error: emailStatus.status !== 200 ? emailStatus.message : undefined,
+    };
+
+    await Promise.all([
+      EmailHistory?.findByIdAndUpdate(
+        candidateHistory?._id,
+        historyUpdatePayload,
+      ),
+      hrHistoryRecords?.length
+        ? EmailHistory?.updateMany(
+            { _id: { $in: hrHistoryRecords.map((record) => record._id) } },
+            historyUpdatePayload,
+          )
+        : Promise.resolve(),
+    ]);
+
+    // Prepare response
+    if (emailStatus.status === 200) {
+      return NextResponse.json({ message: 'Email sent successfully' });
+    }
+    return NextResponse.json(
+      {
+        error: emailStatus.message || 'Failed to send email',
+      },
+      { status: emailStatus.status },
+    );
   } catch (error: unknown) {
+    logger.error({ error, url: req.url }, 'Error in even-mail route.');
     return NextResponse.json(
       {
         error:
-          error instanceof Error ? error.message : "Unknown Error Occurred",
+          error instanceof Error ? error.message : 'Unknown Error Occurred',
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

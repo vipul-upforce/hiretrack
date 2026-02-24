@@ -1,27 +1,35 @@
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useToast } from "@/hooks/use-toast";
-import { useUpdateCandidateMutation } from "@/lib/features/candidate/candidateApi";
-import { useFetchOrgTagsQuery } from "@/lib/features/org/orgApi";
-import { User } from "@/lib/features/users/usersApi";
-import { ITag } from "@/lib/models/organization";
-import { Candidate } from "@/types/candidate";
-import { Settings } from "lucide-react";
-import { useEffect, useState } from "react";
-import ManageTagsDialog from "./manage-tags-dialog";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
+import { useUpdateCandidateMutation } from '@/lib/features/candidate/candidateApi';
+import { useFetchOrgTagsQuery } from '@/lib/features/org/orgApi';
+import { ITag } from '@/lib/models/organization';
+import { Candidate } from '@/types/candidate';
+import { Settings } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { Skeleton } from '@/components/ui/skeleton';
+import ManageTagsDialog from './manage-tags-dialog';
 
 interface TagsDialogProps {
-  user: User | null;
   candidate: Candidate;
   refetch: () => void;
   onClose: () => void;
+  isDialog?: boolean;
 }
 
-const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
+function TagsDialog({
+  candidate,
+  refetch,
+  onClose,
+  isDialog,
+}: TagsDialogProps) {
+  const { user } = useAppSelector((state) => state.auth);
   const orgId: string =
-    user && typeof user.organizationId === "string" ? user?.organizationId : "";
+    user && typeof user.organizationId === 'string' ? user?.organizationId : '';
   const {
     data: tagsObj,
     isLoading,
@@ -42,7 +50,7 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
       uniqueTagsMap.set(tag.title, tag);
     });
     const combinedTags = Array.from(uniqueTagsMap.values()).sort((a, b) =>
-      a.title.localeCompare(b.title)
+      a.title.localeCompare(b.title),
     );
     setAllTags(combinedTags);
   }, [tagsObj, candidate.tags]);
@@ -57,7 +65,7 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
     setSelectedTags((prev) =>
       prev.some((t) => t.title === tag.title)
         ? prev.filter((t) => t.title !== tag.title)
-        : [...prev, tag]
+        : [...prev, tag],
     );
   };
 
@@ -67,15 +75,16 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
       await updateCandidate({ ...candidate, tags: selectedTags }).unwrap();
       refetch();
       toast({
-        title: "Success",
-        description: "Candidate tags updated successfully.",
+        title: 'Success',
+        description: 'Candidate tags updated successfully.',
       });
-    } catch (error) {
-      console.error("Failed to update candidate tags:", error);
+      onClose();
+    } catch (er) {
+      logger.error('Failed to update candidate tags:', er);
       toast({
-        title: "Error",
-        description: "Failed to update candidate tags. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to update candidate tags. Please try again.',
+        variant: 'destructive',
       });
     }
   };
@@ -95,26 +104,35 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
 
   return (
     <div
-      className="p-4 w-[300px] max-h-[570px] flex flex-col"
+      role="dialog"
+      className="flex max-h-[570px] w-[300px] flex-col p-4 pt-2"
       onClick={(e) => e.stopPropagation()}
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold mr-4">Assign Tags</h3>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="mr-4 text-lg font-semibold">Assign Tags</h3>
         <Button variant="outline" size="sm" onClick={handleOpenManageTags}>
-          <Settings className="w-4 h-4" />
+          <Settings className="h-3 w-3" />
         </Button>
       </div>
-      {isLoading ? (
-        <div className="flex justify-center">
-          <LoadingSpinner w={4} />
+      {isLoading && (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <div key={i} className="flex items-center gap-3">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-6 w-[120px] rounded-md" />
+            </div>
+          ))}
         </div>
-      ) : error || candidateError ? (
+      )}
+      {!isLoading && (error || candidateError) && (
         <p className="text-red-500">An error occurred. Please try again.</p>
-      ) : allTags.length === 0 ? (
+      )}
+      {!isLoading && !(error || candidateError) && allTags.length === 0 && (
         <p className="text-gray-500">No tags available.</p>
-      ) : (
+      )}
+      {!isLoading && !(error || candidateError) && allTags.length > 0 && (
         <div className="flex-1 overflow-y-auto">
-          {" "}
           <div className="flex flex-col gap-3">
             {allTags.map((tag) => (
               <div key={tag.title} className="flex items-center gap-3">
@@ -127,7 +145,7 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
                 />
                 <label htmlFor={`tag-${tag.title}`}>
                   <Badge
-                    className="text-white cursor-pointer break-all w-fit"
+                    className="w-fit cursor-pointer break-all text-white"
                     style={{ backgroundColor: tag.color }}
                   >
                     {tag.title}
@@ -138,13 +156,14 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
           </div>
         </div>
       )}
-      <div className="flex justify-end mt-4">
+      <div className={`mt-4 flex justify-end ${isDialog ? 'w-[110%]' : ''}`}>
         <Button
+          variant="primary"
           onClick={handleSave}
           disabled={isUpdating || !hasChanges}
           className="min-w-[80px]"
         >
-          {isUpdating ? <LoadingSpinner w={4} /> : "Save"}
+          {isUpdating ? <LoadingSpinner width={4} /> : 'Save'}
         </Button>
       </div>
       {isManageTagsOpen && (
@@ -156,6 +175,6 @@ const TagsDialog = ({ user, candidate, refetch, onClose }: TagsDialogProps) => {
       )}
     </div>
   );
-};
+}
 
 export default TagsDialog;
