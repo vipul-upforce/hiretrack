@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { useTheme } from '@/components/theme-provider';
 import { useGetEmailTemplatesQuery } from '@/lib/features/settings/configApi';
 import { useSendEmailToCandidateMutation } from '@/lib/features/candidate/candidateApi';
-import { useUploadFilesMutation } from '@/lib/features/files/fileSharesApi';
+import { useUploladFileSharesMutation } from '@/lib/features/files/fileSharesApi';
 import {
   DEFAULT_TEMPLATE_IDS,
   DEFAULT_VARIABLES,
@@ -68,7 +68,7 @@ export function EmailCandidateDialog({
   } = useGetEmailTemplatesQuery(undefined, { skip: !isOpen });
 
   const [sendEmail] = useSendEmailToCandidateMutation();
-  const [uploadFiles] = useUploadFilesMutation();
+  const [uploadFiles] = useUploladFileSharesMutation();
 
   const userEmail = user?.email || '';
   const userName = user?.name || userEmail;

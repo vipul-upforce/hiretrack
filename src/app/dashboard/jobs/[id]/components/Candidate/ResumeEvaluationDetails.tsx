@@ -38,6 +38,7 @@ export default function ResumeEvaluationDetails({
   const [showRedFlags, setShowRedFlags] = useState(false);
   const [showSkillsMatrix, setShowSkillsMatrix] = useState(false);
   const role = useRoles();
+
   if (!localCandidate.scores) {
     return (
       <AIReEvaluateTrigger
@@ -51,24 +52,6 @@ export default function ResumeEvaluationDetails({
     );
   }
 
-  // if (
-  //   !localCandidate.scores.strengths?.length &&
-  //   !localCandidate.scores.notes &&
-  //   !localCandidate.scores.areas_for_improvement?.length &&
-  //   !localCandidate.scores.recommendation
-  // ) {
-  //   return (
-  //     <AIReEvaluateTrigger
-  //       labelClass={labelClass}
-  //       role={role}
-  //       onReEvaluate={onReEvaluate}
-  //       isReEvaluating={isReEvaluating}
-  //       isEvaluatingFor={isEvaluatingFor}
-  //       localCandidate={localCandidate}
-  //     />
-  //   );
-  // }
-
   return (
     <>
       <div className="space-y-2">
@@ -76,7 +59,7 @@ export default function ResumeEvaluationDetails({
           <div className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-3">
               <Label className={labelClass}>AI Evaluation</Label>
-              {role !== 'candidate' && (
+              {role !== 'candidate' && role !== 'interviewer' && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -121,20 +104,20 @@ export default function ResumeEvaluationDetails({
         ((localCandidate.scores.evidenceLinks.overall &&
           localCandidate.scores.evidenceLinks.overall !== 'N/A' &&
           localCandidate.scores.evidenceLinks.overall.toLowerCase() !==
-            'n/a') ||
+          'n/a') ||
           (localCandidate.scores.evidenceLinks.skills &&
             localCandidate.scores.evidenceLinks.skills !== 'N/A' &&
             localCandidate.scores.evidenceLinks.skills.toLowerCase() !==
-              'n/a') ||
+            'n/a') ||
           (localCandidate.scores.evidenceLinks.experience &&
             localCandidate.scores.evidenceLinks.experience !== 'N/A' &&
             localCandidate.scores.evidenceLinks.experience.toLowerCase() !==
-              'n/a') ||
+            'n/a') ||
           (role !== 'interviewer' &&
             localCandidate.scores.evidenceLinks.affordability &&
             localCandidate.scores.evidenceLinks.affordability !== 'N/A' &&
             localCandidate.scores.evidenceLinks.affordability.toLowerCase() !==
-              'n/a')) && (
+            'n/a')) && (
           <div className="rounded-lg border bg-gray-50 p-3 dark:bg-gray-900/50">
             <div className="mb-2 flex items-center gap-2">
               <Award className="h-4 w-4 text-gray-600 dark:text-gray-400" />
@@ -152,7 +135,7 @@ export default function ResumeEvaluationDetails({
               {localCandidate.scores.evidenceLinks.overall &&
                 localCandidate.scores.evidenceLinks.overall !== 'N/A' &&
                 localCandidate.scores.evidenceLinks.overall.toLowerCase() !==
-                  'n/a' && (
+                'n/a' && (
                   <div className="rounded border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-transparent">
                     <div className="flex items-start gap-2">
                       <span className="min-w-[90px] text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -169,7 +152,7 @@ export default function ResumeEvaluationDetails({
               {localCandidate.scores.evidenceLinks.skills &&
                 localCandidate.scores.evidenceLinks.skills !== 'N/A' &&
                 localCandidate.scores.evidenceLinks.skills.toLowerCase() !==
-                  'n/a' && (
+                'n/a' && (
                   <div className="rounded border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-transparent">
                     <div className="flex items-start gap-2">
                       <span className="min-w-[90px] text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -186,7 +169,7 @@ export default function ResumeEvaluationDetails({
               {localCandidate.scores.evidenceLinks.experience &&
                 localCandidate.scores.evidenceLinks.experience !== 'N/A' &&
                 localCandidate.scores.evidenceLinks.experience.toLowerCase() !==
-                  'n/a' && (
+                'n/a' && (
                   <div className="rounded border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-transparent">
                     <div className="flex items-start gap-2">
                       <span className="min-w-[90px] text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -204,7 +187,7 @@ export default function ResumeEvaluationDetails({
                 localCandidate.scores.evidenceLinks.affordability &&
                 localCandidate.scores.evidenceLinks.affordability !== 'N/A' &&
                 localCandidate.scores.evidenceLinks.affordability.toLowerCase() !==
-                  'n/a' && (
+                'n/a' && (
                   <div className="rounded border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-transparent">
                     <div className="flex items-start gap-2">
                       <span className="min-w-[90px] text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -255,7 +238,7 @@ export default function ResumeEvaluationDetails({
               {/* Required and Present */}
               {localCandidate.scores.skillsMatrix.requiredAndPresent &&
                 localCandidate.scores.skillsMatrix.requiredAndPresent.length >
-                  0 && (
+                0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -303,7 +286,7 @@ export default function ResumeEvaluationDetails({
               {/* Required but Missing */}
               {localCandidate.scores.skillsMatrix.requiredButMissing &&
                 localCandidate.scores.skillsMatrix.requiredButMissing.length >
-                  0 && (
+                0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <XCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
@@ -434,19 +417,16 @@ export default function ResumeEvaluationDetails({
               {localCandidate.scores.redFlags.map((flag) => (
                 <div
                   key={Math.random()}
-                  className={`rounded-lg border p-3 ${
-                    flag.severity === 'high'
-                      ? 'border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-950/40'
-                      : ''
-                  }${
-                    flag.severity === 'medium'
+                  className={`rounded-lg border p-3 ${flag.severity === 'high'
+                    ? 'border-red-300 bg-red-100 dark:border-red-800 dark:bg-red-950/40'
+                    : ''
+                    }${flag.severity === 'medium'
                       ? 'border-orange-300 bg-orange-100 dark:border-orange-800 dark:bg-orange-950/40'
                       : ''
-                  }${
-                    flag.severity === 'low'
+                    }${flag.severity === 'low'
                       ? 'border-yellow-300 bg-yellow-100 dark:border-yellow-800 dark:bg-yellow-950/40'
                       : ''
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start gap-2">
                     <div className="flex-1">
