@@ -1,3 +1,5 @@
+import type { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
+
 export interface EvaluationConfig {
   temperature: number;
   customPrompt: string;
@@ -8,6 +10,9 @@ export interface EvaluationConfig {
   enableRedFlagsDetection: boolean;
   enableSkillsMatrix: boolean;
   enableComparativeRanking: boolean;
+  useCustomFieldsPrompt: boolean;
+  customFieldsPrompt: string;
+  selectedCustomFields: EvaluationCustomFieldSelection[];
 }
 
 export type EvaluationConfigKey = keyof EvaluationConfig;
@@ -16,6 +21,6 @@ export interface SectionProps {
   config: EvaluationConfig;
   updateConfig: <K extends EvaluationConfigKey>(
     key: K,
-    value: EvaluationConfig[K]
+    value: EvaluationConfig[K],
   ) => void;
 }

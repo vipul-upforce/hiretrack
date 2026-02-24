@@ -37,6 +37,7 @@ import {
   IMicrosoftTeamsConfig,
 } from '@/lib/models/settings';
 import { CancelMeetingDialog } from '@/components/unified-candidate-dialog/cancel-meeting-dialog';
+import { useUploadFilesMutation } from '@/lib/features/candidate/candidateApi';
 import {
   validationSchema,
   FormValues,
@@ -52,7 +53,6 @@ import { AssignmentDetailsSection } from './assign-candidate-components/Assignme
 import ConfirmAndRemarkDialog from './mark-as-done-dialog';
 import { useAssignCandidate } from '../../hooks/useAssignCandidate';
 import { useCancelMeeting } from '../../hooks/useCancelMeeting';
-import { useUploadFilesMutation } from '@/lib/features/candidate/candidateApi';
 import { uploadAttachments } from '../../hooks/fileUploadUtils';
 
 function LoadingSpinner({ w = 4 }: { w?: number }) {
@@ -183,7 +183,7 @@ export function AssignCandidateDialog({
         uploadedAttachments = await uploadAttachments({
           attachments: uploadedAttachments,
           uploadFiles,
-          organizationId: user?.organizationId,
+          organizationId: user?.organizationId as string,
         });
       } catch (error) {
         logger.error('Failed to upload attachments:', error);
@@ -245,7 +245,7 @@ export function AssignCandidateDialog({
           return uploadAttachments({
             attachments: attachmentsToProcess,
             uploadFiles,
-            organizationId: user?.organizationId,
+            organizationId: user?.organizationId as string,
           });
         };
 

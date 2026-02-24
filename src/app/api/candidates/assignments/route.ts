@@ -11,6 +11,7 @@ import { Types, PipelineStage } from 'mongoose';
 import { parseGMTOffset, getTimeZoneDates } from '@/lib/utils/dateHelpers';
 import { logger } from '@/lib/logger/logger.server';
 import { ICandidate } from '@/lib/models/candidate';
+import { filterSensitiveRedFlagsForInterviewerList } from '@/lib/filterSensitiveRedFlags';
 
 export async function GET(req: NextRequest) {
   try {
@@ -654,11 +655,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const candidatesWithFilteredRedFlags =
+      filterSensitiveRedFlagsForInterviewerList(
+        candidatesWithPrivateCF,
+        userData.role,
+      );
+
     const totalPages = isPagination ? Math.ceil(totalInterviews / limit) : 1;
 
     return NextResponse.json([
       {
-        data: candidatesWithPrivateCF,
+        data: candidatesWithFilteredRedFlags,
         totalInterviews,
         todaysInterviews,
         thisweeksInterviews,

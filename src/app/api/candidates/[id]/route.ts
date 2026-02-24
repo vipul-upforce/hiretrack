@@ -19,6 +19,7 @@ import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import logger from '@/lib/logger';
 import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
+import { filterSensitiveRedFlagsForInterviewer } from '@/lib/filterSensitiveRedFlags';
 import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
 import { Attachment } from '../route';
 
@@ -502,7 +503,6 @@ export async function PUT(
           (newFollowUp.note !== oldFollowUp.note ||
             newFollowUp.date !== oldFollowUp.date?.toISOString())
         ) {
-          console.log('notifyFollowupUpdated');
           await NotificationService.notifyFollowupUpdated({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -1219,8 +1219,13 @@ export async function GET(
       userData.organizationId,
     );
 
+    const roleFilteredCandidate = filterSensitiveRedFlagsForInterviewer(
+      filteredCandidate as ICandidate,
+      userData.role,
+    );
+
     return NextResponse.json({
-      ...filteredCandidate,
+      ...roleFilteredCandidate,
       history: allHistory,
       duplicateCount,
     });

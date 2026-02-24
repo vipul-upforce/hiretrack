@@ -1,5 +1,14 @@
 export const DEFAULT_TEMPERATURE = 0.1;
 export const DEFAULT_MAX_PAGES = 4;
+export const DEFAULT_CUSTOM_FIELDS_PROMPT = `These are our custom form fields, you can parse the label and its value and consider them in the evaluation if they affect the score of any individual points.
+
+Job-related custom fields:
+
+{job_custom_fields}
+
+Candidate related custom fields (filled by the candidate):
+
+{candidate_custom_fields}`;
 
 export const DEFAULT_PROMPT = `As a seasoned senior technology leader with expertise in talent acquisition, you are conducting a rigorous evaluation of a candidate.
 

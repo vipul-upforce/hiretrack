@@ -5,7 +5,11 @@ import {
   useUpdateEvaluationConfigsMutation,
 } from '@/lib/features/settings';
 import { EvaluationConfig, EvaluationConfigKey } from '../types';
-import { DEFAULT_TEMPERATURE, DEFAULT_MAX_PAGES } from '../constants';
+import {
+  DEFAULT_TEMPERATURE,
+  DEFAULT_MAX_PAGES,
+  DEFAULT_CUSTOM_FIELDS_PROMPT,
+} from '../constants';
 
 export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
   const { toast } = useToast();
@@ -20,6 +24,9 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
     enableRedFlagsDetection: true,
     enableSkillsMatrix: true,
     enableComparativeRanking: false,
+    useCustomFieldsPrompt: false,
+    customFieldsPrompt: DEFAULT_CUSTOM_FIELDS_PROMPT,
+    selectedCustomFields: [],
   });
 
   const {
@@ -48,6 +55,12 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
         enableRedFlagsDetection: apiConfig.enableRedFlagsDetection !== false,
         enableSkillsMatrix: apiConfig.enableSkillsMatrix !== false,
         enableComparativeRanking: apiConfig.enableComparativeRanking || false,
+        useCustomFieldsPrompt: apiConfig.useCustomFieldsPrompt || false,
+        customFieldsPrompt:
+          apiConfig.customFieldsPrompt || DEFAULT_CUSTOM_FIELDS_PROMPT,
+        selectedCustomFields: Array.isArray(apiConfig.selectedCustomFields)
+          ? apiConfig.selectedCustomFields
+          : [],
       });
     }
   }, [data]);
@@ -81,6 +94,9 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
         enableRedFlagsDetection: config.enableRedFlagsDetection,
         enableSkillsMatrix: config.enableSkillsMatrix,
         enableComparativeRanking: config.enableComparativeRanking,
+        useCustomFieldsPrompt: config.useCustomFieldsPrompt,
+        customFieldsPrompt: config.customFieldsPrompt,
+        selectedCustomFields: config.selectedCustomFields,
       };
 
       await updateSettings(payload).unwrap();
@@ -113,6 +129,9 @@ export const useEvaluationSettings = (isOpen: boolean, onClose: () => void) => {
       enableRedFlagsDetection: true,
       enableSkillsMatrix: true,
       enableComparativeRanking: false,
+      useCustomFieldsPrompt: false,
+      customFieldsPrompt: DEFAULT_CUSTOM_FIELDS_PROMPT,
+      selectedCustomFields: [],
     });
   };
 

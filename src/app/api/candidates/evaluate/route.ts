@@ -8,6 +8,7 @@ import { IHistory, ICandidateHistory } from '@/lib/models/history';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
 import mongoose from 'mongoose';
 import logger from '@/lib/logger';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 import { EvaluateCandidateRequest, PopulatedJob } from './types';
 import {
   isPopulatedJob,
@@ -39,6 +40,14 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
     await connectToDatabase();
 
+    const user = await getAuthenticatedUser(request, [
+      'admin',
+      'hr',
+      'interviewer',
+      'guest',
+      'candidate',
+    ]);
+
     if (!Candidate || !Settings) {
       return NextResponse.json(
         { error: 'Database not connected' },
@@ -56,11 +65,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     const { candidateId } = data;
     const candidate = await Candidate.findById(candidateId)
-      .select('resume jobId contact scores expectedCTC currentCTC')
+      .select('resume jobId contact scores expectedCTC currentCTC customFields')
       .populate({
         path: 'jobId',
         select:
-          'description organizationId title skills salary experience evaluationWeights',
+          'description organizationId title skills salary experience evaluationWeights customFields',
       });
 
     if (!candidate) {
@@ -135,6 +144,9 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         maxPdfPages: 4,
         temperature: 0.1,
         customPrompt: null,
+        useCustomFieldsPrompt: false,
+        customFieldsPrompt: null,
+        selectedCustomFields: [],
       };
 
     await validatePdfPageCount(base64Resume, evaluationConfig);
@@ -303,6 +315,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         'Failed to broadcast candidate evaluation update',
       );
     });
+
+    if (user?.role !== 'admin' && user?.role !== 'hr') {
+      return NextResponse.json(
+        {
+          message: 'Candidate scores updated successfully',
+        },
+        { status: 200 },
+      );
+    }
+
     return NextResponse.json(
       {
         message: 'Candidate scores updated successfully',
