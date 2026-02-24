@@ -1,10 +1,15 @@
+import React, { useRef } from 'react';
 import logger from '@/lib/logger';
 import { Candidate, CandidateColumn } from '@/types/candidate';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
 import { JobAnalyticsModal } from '@/app/dashboard/jobs-board/components/JobAnalyticsModal';
 import { Job } from '@/types/job';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import type {
+  BulkStatusQueueItem,
+  CandidateActionType,
+  StatusChangeValidationResult,
+} from '@/components/unified-candidate-dialog/types';
 import { CandidateDetailsDialog } from './Dialogs/candidate-details-dialog';
 import EditLaneDialog from './Lanes/edit-lane-dialog';
 import ConfirmationDialog from './Dialogs/ConfirmationDialog';
@@ -71,6 +76,20 @@ interface JobPageDialogsProps {
   isChecklistConfigOpen: boolean;
   setIsChecklistConfigOpen: (open: boolean) => void;
   mergedCandidates: Candidate[];
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => StatusChangeValidationResult | null;
+  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** When > 0: bulk checklist mode – apply same answers to all (one API call). */
+  bulkTotalCount?: number;
+  onApplyToRemaining?: (
+    data: import('@/types/checklist').ChecklistSubmissionData,
+  ) => void;
+  bulkStatusQueue?: BulkStatusQueueItem[] | null;
+  /** When user closes checklist in bulk context: cancel entire bulk (no re-open). */
+  onBulkChecklistCancel?: () => void;
 }
 
 export function JobPageDialogs({
@@ -119,29 +138,98 @@ export function JobPageDialogs({
   isChecklistConfigOpen,
   setIsChecklistConfigOpen,
   mergedCandidates,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
+  bulkTotalCount = 0,
+  onApplyToRemaining,
+  bulkStatusQueue,
+  onBulkChecklistCancel,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
-  // Find candidate for checklist remarks dialog
-  const checklistCandidate = openRemarksFor
-    ? columns
-        .flatMap((col) => col.candidates)
-        .find((c) => {
-          if (c._id === openRemarksFor) return true;
-          if (openRemarksFor.startsWith('{')) {
-            try {
-              const parsed = JSON.parse(openRemarksFor);
-              return parsed.candidateId === c._id;
-            } catch (e) {
-              logger.error(
-                'Failed to parse openRemarksFor JSON:',
-                openRemarksFor,
-                e,
-              );
-              return false;
-            }
-          }
+  const openRemarksForRef = useRef(openRemarksFor);
+  openRemarksForRef.current = openRemarksFor;
+
+  /** When checklist dialog closes in bulk context: cancel entire bulk (no re-open for next). */
+  const handleChecklistOpenChange = (open: boolean) => {
+    if (open) return;
+    const { current } = openRemarksForRef;
+    const [firstInQueue] = bulkStatusQueue ?? [];
+    const isBulkChecklistOpen =
+      firstInQueue &&
+      typeof current === 'string' &&
+      current.startsWith('{') &&
+      (() => {
+        try {
+          const { candidateId } = JSON.parse(current) as { candidateId?: string };
+          return candidateId === firstInQueue.candidateId;
+        } catch {
           return false;
-        })
+        }
+      })();
+    if (isBulkChecklistOpen && onBulkChecklistCancel) {
+      onBulkChecklistCancel();
+    } else {
+      setOpenRemarksFor(null);
+    }
+  };
+
+  // When unified dialog closes, only clear openRemarksFor if it's not checklist JSON
+  // (defer sets it to JSON; clearing would prevent checklist from showing)
+  const handleUnifiedOpenChange = (open: boolean) => {
+    if (open) return;
+    queueMicrotask(() => {
+      if (
+        typeof openRemarksForRef.current !== 'string' ||
+        !openRemarksForRef.current.startsWith('{')
+      ) {
+        setOpenRemarksFor(null);
+      }
+    });
+  };
+
+  // Find candidate for checklist remarks dialog (columns first, then mergedCandidates)
+  const checklistCandidate = openRemarksFor
+    ? (() => {
+        const fromColumns = columns
+          .flatMap((col) => col.candidates)
+          .find((c) => {
+            if (c._id === openRemarksFor) return true;
+            if (openRemarksFor.startsWith('{')) {
+              try {
+                const parsed = JSON.parse(openRemarksFor) as {
+                  candidateId?: string;
+                };
+                return parsed.candidateId === c._id;
+              } catch (e) {
+                logger.error(
+                  'Failed to parse openRemarksFor JSON:',
+                  openRemarksFor,
+                  e,
+                );
+                return false;
+              }
+            }
+            return false;
+          });
+        if (fromColumns) return fromColumns;
+        if (openRemarksFor.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(openRemarksFor) as {
+              candidateId?: string;
+            };
+            if (parsed.candidateId) {
+              return (
+                mergedCandidates.find((c) => c._id === parsed.candidateId) ??
+                null
+              );
+            }
+          } catch {
+            // ignore
+          }
+        }
+        return null;
+      })()
     : null;
 
   const checklistInfo = openRemarksFor?.startsWith('{')
@@ -194,7 +282,9 @@ export function JobPageDialogs({
         setIsOpen={setIsConfirmLaneDeleteOpen}
         title="Are you sure?"
         message="This will remove the lane from this job only. Other jobs will not be affected."
-        onConfirm={() => laneToDelete && handleConfirmDeleteLane(laneToDelete)}
+        onConfirm={() => {
+          if (laneToDelete) handleConfirmDeleteLane(laneToDelete);
+        }}
         onCancel={() => setIsConfirmLaneDeleteOpen(false)}
       />
 
@@ -262,12 +352,14 @@ export function JobPageDialogs({
         <ChecklistRemarksDialog
           candidate={checklistCandidate}
           isOpen={!!openRemarksFor}
-          onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+          onOpenChange={handleChecklistOpenChange}
           setOpenRemarksFor={setOpenRemarksFor}
           refetch={refetch}
           checklistInfo={checklistInfo}
           onChecklistSuccess={handleChecklistComplete}
           onChecklistCancel={cancelPendingMove}
+          bulkTotalCount={bulkTotalCount}
+          onApplyToRemaining={onApplyToRemaining}
         />
       )}
 
@@ -286,13 +378,16 @@ export function JobPageDialogs({
         <UnifiedCandidateActionsDialog
           candidate={generalRemarksCandidate}
           isOpen={!!openRemarksFor && !checklistInfo}
-          onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+          onOpenChange={handleUnifiedOpenChange}
           initialAction={'addRemark' as CandidateActionType}
           refetch={refetch}
           onUpdate={handleCandidateUpdate}
           setLocalCandidate={() => {}}
           refetchAssignment={refetch}
           onSuccess={() => setOpenRemarksFor(null)}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={onOpenChecklistAfterSave}
         />
       )}
     </>

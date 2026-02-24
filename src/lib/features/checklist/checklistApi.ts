@@ -201,6 +201,27 @@ export const checklistApi = baseApi.injectEndpoints({
         { type: 'CandidateChecklist', id: candidateId },
       ],
     }),
+
+    /** Submit the same checklist data for multiple candidates and set their status in one request */
+    bulkSubmitChecklist: builder.mutation<
+      { success: boolean; data: { updatedCount: number; candidateIds: string[] } },
+      {
+        data: SubmitChecklistRequest;
+        candidates: { candidateId: string; newStatus: string }[];
+      }
+    >({
+      query: ({ data, candidates }) => ({
+        url: '/candidates/bulk-submit-checklist',
+        method: 'POST',
+        body: {
+          data,
+          candidates,
+          currentTime: new Date().toISOString(),
+        },
+      }),
+      invalidatesTags: (_result, _error, { candidates }) =>
+        candidates.map((c) => ({ type: 'CandidateChecklist' as const, id: c.candidateId })),
+    }),
   }),
 });
 
@@ -216,6 +237,7 @@ export const {
   useDeleteChecklistTemplateMutation,
   useValidateCandidateChecklistMutation,
   useSubmitCandidateChecklistMutation,
+  useBulkSubmitChecklistMutation,
 } = checklistApi;
 
 // Export types for use in other files
