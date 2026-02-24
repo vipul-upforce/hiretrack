@@ -26,8 +26,8 @@ export interface ChecklistRemarksDialogProps {
   checklistInfo?: string; // JSON stringified ChecklistInfo
   onChecklistSuccess?: (candidateId: string) => void;
   onChecklistCancel?: (candidateId: string) => void;
-  /** When in bulk checklist flow: number of remaining candidates after this one */
-  bulkRemainingCount?: number;
-  /** When user chooses "apply same to remaining": submit same checklist data for all remaining in bulk queue */
+  /** When > 0: bulk mode – apply same checklist to all (one API call); dialog only calls onApplyToRemaining, no per-candidate submit */
+  bulkTotalCount?: number;
+  /** In bulk mode: parent submits same checklist data for all candidates in one bulk-submit-checklist call */
   onApplyToRemaining?: (data: ChecklistSubmissionData) => void;
 }

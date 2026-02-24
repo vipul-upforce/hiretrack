@@ -85,6 +85,7 @@ export function useCandidateActions({
   onOpenChange,
   onValidateStatusChange,
   onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
   onBulkStatusRequiresChecklist,
 }: UnifiedCandidateActionsDialogProps) {
   const isBulkMode = candidates && candidates.length > 1;
@@ -970,16 +971,24 @@ export function useCandidateActions({
       // (so checklist is shown even if they did not check "Update status"). Only apply status
       // when checklist not required and they checked the box.
       let deferredStatusChecklist: { validationInfo: string; newStatus: string } | null = null;
+      /** When set, checklist is optional: apply status in this save, then open checklist after API returns */
+      let openChecklistAfterSaveInfo: string | null = null;
       const hasStatusChange =
         values.newStatus && values.newStatus !== candidate.status;
       if (hasStatusChange) {
-        if (onValidateStatusChange && onDeferStatusToChecklist) {
+        if (onValidateStatusChange && (onDeferStatusToChecklist || onOpenChecklistAfterSave)) {
           const validation = onValidateStatusChange(candidate, values.newStatus as string);
           if (validation?.requiresChecklist && validation.validationInfo) {
-            deferredStatusChecklist = {
-              validationInfo: validation.validationInfo,
-              newStatus: values.newStatus as string,
-            };
+            const isMandatory = validation.isMandatory === true;
+            if (isMandatory && onDeferStatusToChecklist) {
+              deferredStatusChecklist = {
+                validationInfo: validation.validationInfo,
+                newStatus: values.newStatus as string,
+              };
+            } else if (!isMandatory && onOpenChecklistAfterSave && actions.updateStatus) {
+              updates.status = values.newStatus as CandidateStatus;
+              openChecklistAfterSaveInfo = validation.validationInfo;
+            }
           } else if (actions.updateStatus) {
             updates.status = values.newStatus as CandidateStatus;
           }
@@ -1159,6 +1168,7 @@ export function useCandidateActions({
         values.newStatus &&
         values.newStatus !== candidate.status
       ) {
+        // Status was applied in this request (either no checklist or optional checklist)
         sentStatusMailHandler(
           { ...result, prev_status: candidate.status },
           sendStatusMail,
@@ -1177,12 +1187,21 @@ export function useCandidateActions({
         }).unwrap();
       }
 
-      // If status was deferred to checklist, open checklist dialog and exit (parent will switch view)
+      // If status was deferred to mandatory checklist, open checklist dialog and exit (parent will switch view)
       if (deferredStatusChecklist) {
         onDeferStatusToChecklist?.(
           deferredStatusChecklist.validationInfo,
           deferredStatusChecklist.newStatus,
         );
+        onOpenChange(false);
+        setIsSubmitting(false);
+        helpers.setSubmitting(false);
+        return;
+      }
+
+      // If optional checklist: status was applied above; open checklist for optional fill now
+      if (openChecklistAfterSaveInfo) {
+        onOpenChecklistAfterSave?.(openChecklistAfterSaveInfo);
         onOpenChange(false);
         setIsSubmitting(false);
         helpers.setSubmitting(false);

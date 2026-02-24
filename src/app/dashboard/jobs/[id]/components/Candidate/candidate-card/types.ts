@@ -30,4 +30,5 @@ export interface CandidateCardProps {
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }

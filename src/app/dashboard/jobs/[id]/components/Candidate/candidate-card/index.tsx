@@ -47,6 +47,7 @@ export const CandidateCard = memo(
     isShiftPressed,
     onValidateStatusChange,
     onDeferStatusToChecklist,
+    onOpenChecklistAfterSave,
   }: CandidateCardProps) => {
     const triggerRef = useRef<HTMLButtonElement>(
       null,
@@ -397,6 +398,7 @@ export const CandidateCard = memo(
           setIsDuplicateDialogOpen={setIsDuplicateDialogOpen}
           onValidateStatusChange={onValidateStatusChange}
           onDeferStatusToChecklist={onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={onOpenChecklistAfterSave}
         />
       </>
     );

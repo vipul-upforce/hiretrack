@@ -49,6 +49,7 @@ interface JobKanbanBoardProps {
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 
 export function JobKanbanBoard({
@@ -77,6 +78,7 @@ export function JobKanbanBoard({
   jobLaneConfig,
   onValidateStatusChange,
   onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: JobKanbanBoardProps) {
   return (
     <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
@@ -131,6 +133,7 @@ export function JobKanbanBoard({
                     laneConfig={laneConfig}
                     onValidateStatusChange={onValidateStatusChange}
                     onDeferStatusToChecklist={onDeferStatusToChecklist}
+                    onOpenChecklistAfterSave={onOpenChecklistAfterSave}
                   />
                 );
               })}

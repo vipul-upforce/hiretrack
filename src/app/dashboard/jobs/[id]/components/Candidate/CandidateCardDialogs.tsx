@@ -71,6 +71,7 @@ interface CandidateCardDialogsProps {
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 
 export function CandidateCardDialogs({
@@ -117,6 +118,7 @@ export function CandidateCardDialogs({
   setIsDuplicateDialogOpen,
   onValidateStatusChange,
   onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: CandidateCardDialogsProps) {
   const unifiedOpen =
     isAssigning ||
@@ -223,6 +225,14 @@ export function CandidateCardDialogs({
               ? (validationInfo, newStatus) => {
                   closeUnified();
                   onDeferStatusToChecklist(validationInfo, newStatus);
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (validationInfo) => {
+                  closeUnified();
+                  onOpenChecklistAfterSave(validationInfo);
                 }
               : undefined
           }

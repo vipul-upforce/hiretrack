@@ -6,6 +6,7 @@ import { JobAnalyticsModal } from '@/app/dashboard/jobs-board/components/JobAnal
 import { Job } from '@/types/job';
 import { useAppSelector } from '@/lib/redux/hooks';
 import type {
+  BulkStatusQueueItem,
   CandidateActionType,
   StatusChangeValidationResult,
 } from '@/components/unified-candidate-dialog/types';
@@ -80,10 +81,15 @@ interface JobPageDialogsProps {
     newStatus: string,
   ) => StatusChangeValidationResult | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
-  bulkRemainingCount?: number;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** When > 0: bulk checklist mode – apply same answers to all (one API call). */
+  bulkTotalCount?: number;
   onApplyToRemaining?: (
     data: import('@/types/checklist').ChecklistSubmissionData,
   ) => void;
+  bulkStatusQueue?: BulkStatusQueueItem[] | null;
+  /** When user closes checklist in bulk context: cancel entire bulk (no re-open). */
+  onBulkChecklistCancel?: () => void;
 }
 
 export function JobPageDialogs({
@@ -134,12 +140,39 @@ export function JobPageDialogs({
   mergedCandidates,
   onValidateStatusChange,
   onDeferStatusToChecklist,
-  bulkRemainingCount = 0,
+  onOpenChecklistAfterSave,
+  bulkTotalCount = 0,
   onApplyToRemaining,
+  bulkStatusQueue,
+  onBulkChecklistCancel,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   const openRemarksForRef = useRef(openRemarksFor);
   openRemarksForRef.current = openRemarksFor;
+
+  /** When checklist dialog closes in bulk context: cancel entire bulk (no re-open for next). */
+  const handleChecklistOpenChange = (open: boolean) => {
+    if (open) return;
+    const { current } = openRemarksForRef;
+    const [firstInQueue] = bulkStatusQueue ?? [];
+    const isBulkChecklistOpen =
+      firstInQueue &&
+      typeof current === 'string' &&
+      current.startsWith('{') &&
+      (() => {
+        try {
+          const { candidateId } = JSON.parse(current) as { candidateId?: string };
+          return candidateId === firstInQueue.candidateId;
+        } catch {
+          return false;
+        }
+      })();
+    if (isBulkChecklistOpen && onBulkChecklistCancel) {
+      onBulkChecklistCancel();
+    } else {
+      setOpenRemarksFor(null);
+    }
+  };
 
   // When unified dialog closes, only clear openRemarksFor if it's not checklist JSON
   // (defer sets it to JSON; clearing would prevent checklist from showing)
@@ -319,13 +352,13 @@ export function JobPageDialogs({
         <ChecklistRemarksDialog
           candidate={checklistCandidate}
           isOpen={!!openRemarksFor}
-          onOpenChange={(open) => !open && setOpenRemarksFor(null)}
+          onOpenChange={handleChecklistOpenChange}
           setOpenRemarksFor={setOpenRemarksFor}
           refetch={refetch}
           checklistInfo={checklistInfo}
           onChecklistSuccess={handleChecklistComplete}
           onChecklistCancel={cancelPendingMove}
-          bulkRemainingCount={bulkRemainingCount}
+          bulkTotalCount={bulkTotalCount}
           onApplyToRemaining={onApplyToRemaining}
         />
       )}
@@ -354,6 +387,7 @@ export function JobPageDialogs({
           onSuccess={() => setOpenRemarksFor(null)}
           onValidateStatusChange={onValidateStatusChange}
           onDeferStatusToChecklist={onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={onOpenChecklistAfterSave}
         />
       )}
     </>

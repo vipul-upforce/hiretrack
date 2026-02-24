@@ -84,6 +84,7 @@ const CandidateRow = memo(
           isShiftPressed={context.isShiftPressed}
           onValidateStatusChange={context.onValidateStatusChange}
           onDeferStatusToChecklist={context.onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={context.onOpenChecklistAfterSave}
         />
       </div>
     );
@@ -136,6 +137,7 @@ const KanbanColumn = memo(
     laneConfig,
     onValidateStatusChange,
     onDeferStatusToChecklist,
+    onOpenChecklistAfterSave,
   }: KanbanColumnProps) => {
     const dispatch = useAppDispatch();
     const isShiftPressed = useShiftKey();
@@ -304,6 +306,7 @@ const KanbanColumn = memo(
         isShiftPressed,
         onValidateStatusChange,
         onDeferStatusToChecklist,
+        onOpenChecklistAfterSave,
       }),
       [
         column.id,
@@ -318,6 +321,7 @@ const KanbanColumn = memo(
         isShiftPressed,
         onValidateStatusChange,
         onDeferStatusToChecklist,
+        onOpenChecklistAfterSave,
       ],
     );
 

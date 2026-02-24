@@ -40,6 +40,8 @@ interface UseCandidateProps {
   setPendingStatusAfterChecklist?: (v: PendingStatusAfterChecklist | null) => void;
   /** After applying deferred status (single or bulk), call so page can process next in bulk queue */
   onBulkQueueStepComplete?: () => void;
+  /** Current bulk status queue; used so checklist complete can advance queue for optional bulk items */
+  bulkStatusQueue?: { candidateId: string; newStatus: string; validationInfo?: string }[] | null;
 }
 
 interface PendingMove {
@@ -76,7 +78,7 @@ export const useCandidate = ({
     pendingStatusAfterChecklist,
     setPendingStatusAfterChecklist,
     onBulkQueueStepComplete,
-    // promptForStatusChangeReason,
+    bulkStatusQueue,
 }: UseCandidateProps) => {
   const [updateCandidate] = useUpdateCandidateMutation();
   const [deleteCandidate] = useDeleteCandidateMutation();
@@ -216,6 +218,15 @@ export const useCandidate = ({
       return;
     }
 
+    // Bulk optional: status was already applied; just advance the queue
+    if (
+      bulkStatusQueue?.length &&
+      bulkStatusQueue[0].candidateId === candidateId
+    ) {
+      onBulkQueueStepComplete?.();
+      return;
+    }
+
     const pendingChecklist = pendingChecklists.find(
       (pc) => pc.candidateId === candidateId,
     );
@@ -341,6 +352,9 @@ export const useCandidate = ({
     }
 
     if (source.droppableId !== destination.droppableId) {
+      /** When set, optional checklist: open after updateCandidate succeeds */
+      let optionalChecklistValidationInfo: string | null = null;
+
       try {
         // Add a class to prevent flicker during the critical update phase
         document.body.classList.add('dnd-updating');
@@ -416,19 +430,13 @@ export const useCandidate = ({
             ]);
 
             // Show dialog with checklist - NO database update yet
-            // if (promptForStatusChangeReason) {
             setOpenRemarksFor(JSON.stringify(validationInfo));
-            // }
             return; // Exit early, don't update database
           }
-          // For OPTIONAL checklists: Move the card optimistically
+          // For OPTIONAL checklists: Move the card optimistically; do NOT open checklist yet.
+          // Checklist will open after updateCandidate succeeds below.
+          optionalChecklistValidationInfo = JSON.stringify(validationInfo);
           setColumns(newColumns);
-          // Continue to database update below
-
-          // Show dialog with checklist for optional checklists
-          // if (promptForStatusChangeReason) {
-          setOpenRemarksFor(JSON.stringify(validationInfo));
-          // }
         } else {
           // No checklist required, proceed with optimistic update and normal remarks dialog
           setColumns(newColumns);
@@ -453,6 +461,11 @@ export const useCandidate = ({
           sendStatusMail,
           { remark: '' },
         );
+
+        // Optional checklist: open after save so user can fill optionally
+        if (optionalChecklistValidationInfo) {
+          setOpenRemarksFor(optionalChecklistValidationInfo);
+        }
       } catch {
         // Revert on error
         setColumns([...columns]);

@@ -36,6 +36,7 @@ export interface CandidateContextType {
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 
 export interface KanbanColumnProps {
@@ -73,4 +74,5 @@ export interface KanbanColumnProps {
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
