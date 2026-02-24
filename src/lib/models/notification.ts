@@ -154,6 +154,9 @@ export const notificationSchema = new mongoose.Schema<INotification>(
       type: Schema.Types.Mixed,
       default: {},
     },
+    // createdAt and updatedAt are handled by timestamps: true
+    // createdAt is explicitly set in notificationCore.ts for guaranteed presence
+    // updatedAt is automatically managed by Mongoose timestamps
   },
   {
     timestamps: true,

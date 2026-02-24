@@ -14,12 +14,16 @@ interface SectionSwitcherProps {
   options: SectionOption[];
   activeId: string;
   onChange: (id: string) => void;
+  showDescription?: boolean;
+  showBadge?: boolean;
 }
 
 export function SectionSwitcher({
   options,
   activeId,
   onChange,
+  showDescription = true,
+  showBadge = true,
 }: SectionSwitcherProps) {
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -62,15 +66,17 @@ export function SectionSwitcher({
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {option.title}
                   </p>
-                  {option.badge && (
+                  {showBadge && option.badge && (
                     <Badge variant="secondary" className="text-[10px]">
                       {option.badge}
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-slate-600 dark:text-slate-400">
-                  {option.description}
-                </p>
+                {showDescription && (
+                  <p className="text-xs text-slate-600 dark:text-slate-400">
+                    {option.description}
+                  </p>
+                )}
               </div>
             </div>
           </button>

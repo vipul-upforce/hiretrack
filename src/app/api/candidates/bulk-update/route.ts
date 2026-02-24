@@ -246,7 +246,9 @@ export async function POST(
           candidateCount: candidateIds.length,
           userId: user.id,
           organizationId: user.organizationId,
-          operation: parsed.request?.operations?.[0]?.operation ?? parsed.singleParams?.operation,
+          operation:
+            parsed.request?.operations?.[0]?.operation ??
+            parsed.singleParams?.operation,
         },
         'Large bulk update request received',
       );
@@ -306,33 +308,58 @@ export async function POST(
           }
           if (result.assignNotificationMeta) {
             if (!assignNotificationMeta) {
-              assignNotificationMeta = { ...result.assignNotificationMeta, candidates: [] };
+              assignNotificationMeta = {
+                ...result.assignNotificationMeta,
+                candidates: [],
+              };
             }
-            assignNotificationMeta.candidates.push(...result.assignNotificationMeta.candidates);
+            assignNotificationMeta.candidates.push(
+              ...result.assignNotificationMeta.candidates,
+            );
           }
           if (result.unassignNotificationMeta) {
             if (!unassignNotificationMeta) {
-              unassignNotificationMeta = { ...result.unassignNotificationMeta, unassignments: [] };
+              unassignNotificationMeta = {
+                ...result.unassignNotificationMeta,
+                unassignments: [],
+              };
             }
-            unassignNotificationMeta.unassignments.push(...result.unassignNotificationMeta.unassignments);
+            unassignNotificationMeta.unassignments.push(
+              ...result.unassignNotificationMeta.unassignments,
+            );
           }
           if (result.addRemarkNotificationMeta) {
             if (!addRemarkNotificationMeta) {
-              addRemarkNotificationMeta = { ...result.addRemarkNotificationMeta, candidates: [] };
+              addRemarkNotificationMeta = {
+                ...result.addRemarkNotificationMeta,
+                candidates: [],
+              };
             }
-            addRemarkNotificationMeta.candidates.push(...result.addRemarkNotificationMeta.candidates);
+            addRemarkNotificationMeta.candidates.push(
+              ...result.addRemarkNotificationMeta.candidates,
+            );
           }
           if (result.addFollowUpNotificationMeta) {
             if (!addFollowUpNotificationMeta) {
-              addFollowUpNotificationMeta = { ...result.addFollowUpNotificationMeta, candidates: [] };
+              addFollowUpNotificationMeta = {
+                ...result.addFollowUpNotificationMeta,
+                candidates: [],
+              };
             }
-            addFollowUpNotificationMeta.candidates.push(...result.addFollowUpNotificationMeta.candidates);
+            addFollowUpNotificationMeta.candidates.push(
+              ...result.addFollowUpNotificationMeta.candidates,
+            );
           }
           if (result.statusUpdateNotificationMeta) {
             if (!statusUpdateNotificationMeta) {
-              statusUpdateNotificationMeta = { ...result.statusUpdateNotificationMeta, candidates: [] };
+              statusUpdateNotificationMeta = {
+                ...result.statusUpdateNotificationMeta,
+                candidates: [],
+              };
             }
-            statusUpdateNotificationMeta.candidates.push(...result.statusUpdateNotificationMeta.candidates);
+            statusUpdateNotificationMeta.candidates.push(
+              ...result.statusUpdateNotificationMeta.candidates,
+            );
           }
           if (chunks.length > 1) {
             await new Promise<void>((r) => {
@@ -360,33 +387,58 @@ export async function POST(
         }
         if (result.assignNotificationMeta) {
           if (!assignNotificationMeta) {
-            assignNotificationMeta = { ...result.assignNotificationMeta, candidates: [] };
+            assignNotificationMeta = {
+              ...result.assignNotificationMeta,
+              candidates: [],
+            };
           }
-          assignNotificationMeta.candidates.push(...result.assignNotificationMeta.candidates);
+          assignNotificationMeta.candidates.push(
+            ...result.assignNotificationMeta.candidates,
+          );
         }
         if (result.unassignNotificationMeta) {
           if (!unassignNotificationMeta) {
-            unassignNotificationMeta = { ...result.unassignNotificationMeta, unassignments: [] };
+            unassignNotificationMeta = {
+              ...result.unassignNotificationMeta,
+              unassignments: [],
+            };
           }
-          unassignNotificationMeta.unassignments.push(...result.unassignNotificationMeta.unassignments);
+          unassignNotificationMeta.unassignments.push(
+            ...result.unassignNotificationMeta.unassignments,
+          );
         }
         if (result.addRemarkNotificationMeta) {
           if (!addRemarkNotificationMeta) {
-            addRemarkNotificationMeta = { ...result.addRemarkNotificationMeta, candidates: [] };
+            addRemarkNotificationMeta = {
+              ...result.addRemarkNotificationMeta,
+              candidates: [],
+            };
           }
-          addRemarkNotificationMeta.candidates.push(...result.addRemarkNotificationMeta.candidates);
+          addRemarkNotificationMeta.candidates.push(
+            ...result.addRemarkNotificationMeta.candidates,
+          );
         }
         if (result.addFollowUpNotificationMeta) {
           if (!addFollowUpNotificationMeta) {
-            addFollowUpNotificationMeta = { ...result.addFollowUpNotificationMeta, candidates: [] };
+            addFollowUpNotificationMeta = {
+              ...result.addFollowUpNotificationMeta,
+              candidates: [],
+            };
           }
-          addFollowUpNotificationMeta.candidates.push(...result.addFollowUpNotificationMeta.candidates);
+          addFollowUpNotificationMeta.candidates.push(
+            ...result.addFollowUpNotificationMeta.candidates,
+          );
         }
         if (result.statusUpdateNotificationMeta) {
           if (!statusUpdateNotificationMeta) {
-            statusUpdateNotificationMeta = { ...result.statusUpdateNotificationMeta, candidates: [] };
+            statusUpdateNotificationMeta = {
+              ...result.statusUpdateNotificationMeta,
+              candidates: [],
+            };
           }
-          statusUpdateNotificationMeta.candidates.push(...result.statusUpdateNotificationMeta.candidates);
+          statusUpdateNotificationMeta.candidates.push(
+            ...result.statusUpdateNotificationMeta.candidates,
+          );
         }
         if (chunks.length > 1) {
           await new Promise<void>((r) => {
@@ -449,10 +501,6 @@ export async function POST(
 
     // Bulk assign: interviewer gets one per candidate; admin/hr get one bulk
     if (assignNotificationMeta && user.organizationId) {
-      console.log(
-        'notifyBulkCandidateAssigned',
-        assignNotificationMeta.candidates.length,
-      );
       try {
         await NotificationService.notifyBulkCandidateAssigned({
           organizationId: user.organizationId,
@@ -463,6 +511,7 @@ export async function POST(
           candidates: assignNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
         });
       } catch (notificationError) {
         logger.error(
@@ -480,6 +529,7 @@ export async function POST(
           unassignments: unassignNotificationMeta.unassignments,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
         });
       } catch (notificationError) {
         logger.error(
@@ -488,6 +538,7 @@ export async function POST(
         );
       }
     }
+    console.log('addRemarkNotificationMeta', addRemarkNotificationMeta);
 
     // Bulk add remark: mentioned users get one per candidate (as MENTIONS); admin/hr get one bulk (as NEW_REMARKS)
     if (addRemarkNotificationMeta && user.organizationId) {
@@ -500,6 +551,7 @@ export async function POST(
           candidates: addRemarkNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
         });
       } catch (notificationError) {
         logger.error(
@@ -537,6 +589,7 @@ export async function POST(
           candidates: statusUpdateNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
         });
       } catch (notificationError) {
         logger.error(

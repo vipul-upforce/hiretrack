@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Candidate } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { Types } from 'mongoose';
+import { filterSensitiveRedFlagsForInterviewerList } from '@/lib/filterSensitiveRedFlags';
 
 export async function GET(
   _request: NextRequest,
@@ -212,8 +213,13 @@ export async function GET(
       },
     ]).exec();
 
+    const filteredCandidates = filterSensitiveRedFlagsForInterviewerList(
+      candidates,
+      userData.role,
+    );
+
     // SAFE OPTIMIZATION: Add cache header (doesn't change response structure)
-    const response = NextResponse.json(candidates);
+    const response = NextResponse.json(filteredCandidates);
     response.headers.set('Cache-Control', 'private, max-age=10'); // 10s cache
     return response;
   } catch (error) {

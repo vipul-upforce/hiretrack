@@ -75,13 +75,14 @@ export function GlobalEmailNotificationSettingsDialog({
     }
   }, [currentUser?.id, isOpen]);
 
+  // Re-sync from server when dialog opens so unsaved changes are discarded on close
   useEffect(() => {
+    if (!isOpen) return;
     if (settings) {
-      // Merge with defaults to ensure all notification types are present
       const defaults = createDefaultNotificationSettings();
       setLocalSettings({ ...defaults, ...settings });
     }
-  }, [settings]);
+  }, [settings, isOpen]);
 
   const handleToggle = (type: EmailNotificationType, enabled: boolean) => {
     // Check if disabled by admin override

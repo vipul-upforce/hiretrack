@@ -37,6 +37,10 @@ export function useCaptchaHandler() {
 
   return {
     isEnabled: captchaConfig?.captcha?.enableCaptcha,
+    captchaType: (captchaConfig?.captcha?.captchaType as 'v2' | 'v3') || 'v2',
+    captchaVariant:
+      (captchaConfig?.captcha?.captchaVariant as 'checkbox' | 'invisible') ||
+      'checkbox',
     siteKey: decryptedSiteKey,
     captchaToken,
     setCaptchaToken,

@@ -33,7 +33,12 @@ export default function FileStorageOptions({
     useUpdateFSConfigsMutation();
 
   // Connection Testing
-  const { testConnection, isConnectionSuccessful, isTesting } =
+  const {
+    testConnection,
+    isConnectionSuccessful,
+    isTesting,
+    resetConnectionStatus,
+  } =
     useTestConnection();
 
   const signToken = async (payload: unknown, orgId: string) => {
@@ -130,6 +135,7 @@ export default function FileStorageOptions({
       initialValues={initialValues}
       onSubmit={handleSubmit}
       onTestConnection={handleTestConnection}
+      onStorageTypeChange={resetConnectionStatus}
       onClose={onClose}
       isSubmitting={false}
       isUpdating={isUpdating}

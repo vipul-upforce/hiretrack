@@ -445,10 +445,10 @@ function ChecklistRemarksDialog({
             responses: responsesToSubmit,
             remark: newRemark.trim()
               ? {
-                  description: newRemark.trim(),
-                  isPrivate: isSubRemarkPrivate,
-                  rating: remarkRating || undefined,
-                }
+                description: newRemark.trim(),
+                isPrivate: isSubRemarkPrivate,
+                rating: remarkRating || undefined,
+              }
               : undefined,
           },
         }).unwrap();
@@ -587,7 +587,7 @@ function ChecklistRemarksDialog({
           <DialogDescription>
             {hasChecklist
               ? parsedChecklistInfo?.checklist?.description ||
-                'Please complete the checklist before proceeding.'
+              'Please complete the checklist before proceeding.'
               : 'Add your observations and feedback for this candidate.'}
           </DialogDescription>
         </DialogHeader>

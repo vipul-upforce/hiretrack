@@ -5,6 +5,7 @@ import { SectionProps } from './types';
 import { GeneralSettingsSection } from './sections/general-settings';
 import { EnhancedFeaturesSection } from './sections/enhanced-features';
 import { PromptSettingsSection } from './sections/prompt-settings';
+import { CustomFieldsPromptSettingsSection } from './sections/custom-fields-prompt-settings';
 
 export function EvaluationSettingsContent(props: SectionProps) {
   return (
@@ -14,6 +15,7 @@ export function EvaluationSettingsContent(props: SectionProps) {
       <EnhancedFeaturesSection {...props} />
 
       <PromptSettingsSection {...props} />
+      <CustomFieldsPromptSettingsSection {...props} />
 
       {/* Warning Alert */}
       <Alert variant="destructive">

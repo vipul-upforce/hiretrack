@@ -59,11 +59,10 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   }>;
   /** Additional guest emails for Zoom */
   zoomAdditionalGuests?: string[];
+  
 }
 
-export interface BulkUnassignParams extends BulkUpdateBaseParams {
-  unassignerId: string;
-}
+export type BulkUnassignParams = BulkUpdateBaseParams;
 
 export interface BulkArchiveParams extends BulkUpdateBaseParams {
   action: 'archive' | 'unarchive';
@@ -86,9 +85,7 @@ export interface BulkAddFollowUpParams extends BulkUpdateBaseParams {
   date?: string | null;
 }
 
-export interface BulkRemoveFollowUpParams extends BulkUpdateBaseParams {
-  followUpId: string;
-}
+export type BulkRemoveFollowUpParams = BulkUpdateBaseParams;
 
 export interface BulkStatusUpdateParams extends BulkUpdateBaseParams {
   status: string;
@@ -187,9 +184,37 @@ export interface BulkUpdateResult {
   /** For unassign: used to send bulk unassign notifications */
   unassignNotificationMeta?: BulkUnassignNotificationMeta;
   /** For addRemark: used to send bulk remark notifications (mentioned users = separate per candidate; admin/hr = one bulk) */
-  addRemarkNotificationMeta?: unknown;
+  addRemarkNotificationMeta?: {
+    remarkText: string;
+    roles: string[];
+    validMentionUserIds?: string[];
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+    }>;
+  };
   /** For addFollowUp: used to send bulk follow-up notifications */
-  addFollowUpNotificationMeta?: unknown;
+  addFollowUpNotificationMeta?: {
+    followupNote: string;
+    followupDate?: string | null;
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+    }>;
+  };
   /** For statusUpdate: used to send bulk status update notifications */
-  statusUpdateNotificationMeta?: unknown;
+  statusUpdateNotificationMeta?: {
+    newStatus: string;
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+      oldStatus: string;
+    }>;
+  };
 }

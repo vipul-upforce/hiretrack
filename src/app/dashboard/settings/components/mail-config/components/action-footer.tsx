@@ -22,7 +22,7 @@ export function ActionFooter({
   const { isSubmitting } = useFormikContext<SMTPFormValues>();
 
   return (
-    <div className="flex justify-end gap-2 border-t border-border/10 px-6 py-4 mt-auto">
+    <div className="sticky bottom-0 z-20 mt-auto flex justify-end gap-2 border-t border-border/10 bg-background px-6 py-4">
       <Button
         type="button"
         variant="outline"

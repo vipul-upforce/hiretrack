@@ -8,6 +8,7 @@ export interface JobForEvaluate {
   skills: string[];
   salary?: string;
   experience?: number;
+  customFields?: Record<string, unknown>;
 }
 
 export interface EvaluationResult {
@@ -39,7 +40,7 @@ export interface EvaluationResult {
   };
   redFlags?: Array<{
     type: string;
-    severity: "low" | "medium" | "high";
+    severity: 'low' | 'medium' | 'high';
     description: string;
     evidence: string;
   }>;
@@ -65,7 +66,7 @@ export interface EvaluationResult {
     affordabilityPercentile: number;
     hasTie: boolean;
     tiedWithCount: number;
-    rankingBasedOn: "overall" | "weighted";
+    rankingBasedOn: 'overall' | 'weighted';
   };
 }
 
@@ -96,4 +97,3 @@ export type ParsedEvaluationObject = Partial<EvaluationResult> & {
   projects?: number | ScoreObject;
   certifications?: number | ScoreObject;
 };
-

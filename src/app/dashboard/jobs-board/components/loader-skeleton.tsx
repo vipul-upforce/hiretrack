@@ -2,8 +2,8 @@
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { useMemo } from 'react';
+import { JobCardLoadingSkeleton } from './job-card-loading-skeleton';
 
 const getRandom = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
@@ -92,62 +92,12 @@ function LoaderSkeleton() {
                   {/* Job List */}
                   <div className="min-w-0 flex-1 space-y-3 overflow-hidden pr-2">
                     {column.cards.map((card) => (
-                      <div
+                      <JobCardLoadingSkeleton
                         key={Math.random()}
-                        className="relative w-full rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-black"
-                      >
-                        {/* Title row */}
-                        <div className="flex flex-wrap-reverse items-center justify-between gap-3">
-                          <Skeleton className={`h-5 ${card.titleWidth} mb-4`} />
-
-                          <div className="flex flex-row gap-1">
-                            <Skeleton className="mb-4 h-5 w-6" />
-                            <Skeleton className="mb-4 h-5 w-6" />
-                            <Skeleton className="mb-4 h-5 w-6" />
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Candidates */}
-                        <div className="mb-3 mt-4 flex gap-2">
-                          <Skeleton className="h-4 w-4 rounded-full" />
-                          <Skeleton className="h-4 w-32" />
-                        </div>
-
-                        {/* Experience */}
-                        <div className="mb-3 flex gap-2">
-                          <Skeleton className="h-4 w-4 rounded-full" />
-                          <Skeleton className="h-4 w-24" />
-                        </div>
-
-                        {/* Skills */}
-                        <div className="mb-3 flex flex-wrap gap-2">
-                          {card.skills.map((w) => (
-                            <Skeleton
-                              key={Math.random()}
-                              className={`h-6 ${w} rounded-md`}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Custom Fields */}
-                        <div className="mb-4 space-y-2">
-                          {card.customFields.map((w) => (
-                            <Skeleton
-                              key={Math.random()}
-                              className={`h-4 ${w}`}
-                            />
-                          ))}
-                        </div>
-
-                        <Separator />
-
-                        <div className="flex w-full flex-row justify-between">
-                          <div className="w-36" />
-                          <Skeleton className="mt-3 h-4 w-32" />
-                        </div>
-                      </div>
+                        titleWidth={card.titleWidth}
+                        skillWidths={card.skills}
+                        customFieldWidths={card.customFields}
+                      />
                     ))}
                   </div>
                 </div>
