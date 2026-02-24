@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 interface RedFlagWithType {
   type?: string | null;
 }
@@ -7,6 +8,11 @@ interface CandidateWithScores {
     redFlags?: RedFlagWithType[];
     notes?: string;
   };
+}
+
+interface MaskResult<T> {
+  value: T;
+  changed: boolean;
 }
 
 const SALARY_RELATED_TYPE_KEYWORDS = new Set([
@@ -469,6 +475,65 @@ export function maskSensitiveSalaryMentionsInNotes(note: string): string {
   return applyMaskRanges(note, maskRanges);
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  return Object.getPrototypeOf(value) === Object.prototype;
+}
+
+function maskSensitiveSalaryMentionsInValue(value: unknown): MaskResult<unknown> {
+  if (typeof value === 'string') {
+    const masked = maskSensitiveSalaryMentionsInNotes(value);
+    return { value: masked, changed: masked !== value };
+  }
+
+  if (Array.isArray(value)) {
+    let changed = false;
+    const next = value.map((entry) => {
+      const result = maskSensitiveSalaryMentionsInValue(entry);
+      if (result.changed) {
+        changed = true;
+      }
+      return result.value;
+    });
+
+    return changed ? { value: next, changed: true } : { value, changed: false };
+  }
+
+  if (!isPlainObject(value)) {
+    return { value, changed: false };
+  }
+
+  let changed = false;
+  const next: Record<string, unknown> = {};
+
+  for (const [key, nestedValue] of Object.entries(value)) {
+    if (key === 'redFlags') {
+      next[key] = nestedValue;
+    } else {
+      const result = maskSensitiveSalaryMentionsInValue(nestedValue);
+      if (result.changed) {
+        changed = true;
+      }
+      next[key] = result.value;
+    }
+  }
+
+  return changed ? { value: next, changed: true } : { value, changed: false };
+}
+
+function maskSensitiveSalaryMentionsInScores<T extends CandidateWithScores['scores']>(
+  scores: T,
+): MaskResult<T> {
+  const result = maskSensitiveSalaryMentionsInValue(scores);
+  return {
+    value: result.value as T,
+    changed: result.changed,
+  };
+}
+
 export function isSalaryRelatedRedFlagType(
   type: string | null | undefined,
 ): boolean {
@@ -505,7 +570,7 @@ export function filterSensitiveRedFlagsForInterviewer<
   }
 
   const { scores } = candidate;
-  const { redFlags, notes } = scores;
+  const { redFlags } = scores;
   const hasRedFlags = Array.isArray(redFlags);
   const filteredRedFlags = hasRedFlags
     ? redFlags.filter((flag) => !isSalaryRelatedRedFlagType(flag?.type))
@@ -513,22 +578,19 @@ export function filterSensitiveRedFlagsForInterviewer<
   const redFlagsChanged =
     hasRedFlags && filteredRedFlags?.length !== redFlags.length;
 
-  const maskedNotes =
-    typeof notes === 'string'
-      ? maskSensitiveSalaryMentionsInNotes(notes)
-      : notes;
-  const notesChanged = typeof notes === 'string' && maskedNotes !== notes;
+  const maskedScoresResult = maskSensitiveSalaryMentionsInScores(scores);
+  const scoresTextChanged = maskedScoresResult.changed;
+  const maskedScores = maskedScoresResult.value;
 
-  if (!redFlagsChanged && !notesChanged) {
+  if (!redFlagsChanged && !scoresTextChanged) {
     return candidate;
   }
 
   return {
     ...candidate,
     scores: {
-      ...scores,
+      ...(maskedScores as typeof scores),
       ...(hasRedFlags ? { redFlags: filteredRedFlags } : {}),
-      ...(notesChanged ? { notes: maskedNotes } : {}),
     },
   } as T;
 }

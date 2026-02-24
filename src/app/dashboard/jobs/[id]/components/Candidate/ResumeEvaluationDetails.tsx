@@ -29,18 +29,18 @@ interface ResumeEvaluationDetailsProps {
 
 const SENSITIVE_BLUR_MARKER = '|||###|||';
 
-function renderBlurredSensitiveNote(note: string): ReactNode {
-  if (!note.includes(SENSITIVE_BLUR_MARKER)) {
-    return note;
+function renderBlurredSensitiveText(text: string): ReactNode {
+  if (!text.includes(SENSITIVE_BLUR_MARKER)) {
+    return text;
   }
 
-  const segments = note.split(SENSITIVE_BLUR_MARKER);
+  const segments = text.split(SENSITIVE_BLUR_MARKER);
   let offset = 0;
 
   return segments.map((segment) => {
     const segmentOffset = offset;
     offset += segment.length;
-    const hasMaskedTokenAfter = offset < note.length;
+    const hasMaskedTokenAfter = offset < text.length;
 
     if (hasMaskedTokenAfter) {
       offset += SENSITIVE_BLUR_MARKER.length;
@@ -177,7 +177,9 @@ export default function ResumeEvaluationDetails({
                         Overall Fit:
                       </span>
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {localCandidate.scores.evidenceLinks.overall}
+                        {renderBlurredSensitiveText(
+                          localCandidate.scores.evidenceLinks.overall,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -194,7 +196,9 @@ export default function ResumeEvaluationDetails({
                         Skills Match:
                       </span>
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {localCandidate.scores.evidenceLinks.skills}
+                        {renderBlurredSensitiveText(
+                          localCandidate.scores.evidenceLinks.skills,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -211,7 +215,9 @@ export default function ResumeEvaluationDetails({
                         Experience:
                       </span>
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {localCandidate.scores.evidenceLinks.experience}
+                        {renderBlurredSensitiveText(
+                          localCandidate.scores.evidenceLinks.experience,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -229,7 +235,9 @@ export default function ResumeEvaluationDetails({
                         Affordability:
                       </span>
                       <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {localCandidate.scores.evidenceLinks.affordability}
+                        {renderBlurredSensitiveText(
+                          localCandidate.scores.evidenceLinks.affordability,
+                        )}
                       </span>
                     </div>
                   </div>
@@ -309,7 +317,7 @@ export default function ResumeEvaluationDetails({
                               </p>
                             )}
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {skill.evidence}
+                              {renderBlurredSensitiveText(skill.evidence)}
                             </p>
                           </div>
                         ),
@@ -389,7 +397,7 @@ export default function ResumeEvaluationDetails({
           <Label className={labelClass}>Strengths</Label>
           <ul className="list-disc pl-5">
             {localCandidate.scores.strengths.map((strength) => (
-              <li key={Math.random()}>{strength}</li>
+              <li key={Math.random()}>{renderBlurredSensitiveText(strength)}</li>
             ))}
           </ul>
         </div>
@@ -401,7 +409,7 @@ export default function ResumeEvaluationDetails({
             <Label className={labelClass}>Areas for Improvement</Label>
             <ul className="list-disc pl-5">
               {localCandidate.scores.areas_for_improvement.map((area) => (
-                <li key={Math.random()}>{area}</li>
+                <li key={Math.random()}>{renderBlurredSensitiveText(area)}</li>
               ))}
             </ul>
           </div>
@@ -410,14 +418,14 @@ export default function ResumeEvaluationDetails({
       {showEvalDetails && localCandidate.scores.recommendation && (
         <div className="space-y-2">
           <Label className={labelClass}>Recommendation</Label>
-          <p>{localCandidate.scores.recommendation}</p>
+          <p>{renderBlurredSensitiveText(localCandidate.scores.recommendation)}</p>
         </div>
       )}
 
       {showEvalDetails && localCandidate.scores.notes && (
         <div className="space-y-1">
           <Label className={labelClass}>Note</Label>
-          <p>{renderBlurredSensitiveNote(localCandidate.scores.notes)}</p>
+          <p>{renderBlurredSensitiveText(localCandidate.scores.notes)}</p>
         </div>
       )}
 
