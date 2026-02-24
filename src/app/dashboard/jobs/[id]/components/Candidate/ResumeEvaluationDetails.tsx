@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Fragment, ReactNode, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,6 +25,41 @@ interface ResumeEvaluationDetailsProps {
   isReEvaluating: boolean;
   isEvaluatingFor: string;
   onReEvaluate: () => void;
+}
+
+const SENSITIVE_BLUR_MARKER = '|||###|||';
+
+function renderBlurredSensitiveNote(note: string): ReactNode {
+  if (!note.includes(SENSITIVE_BLUR_MARKER)) {
+    return note;
+  }
+
+  const segments = note.split(SENSITIVE_BLUR_MARKER);
+  let offset = 0;
+
+  return segments.map((segment) => {
+    const segmentOffset = offset;
+    offset += segment.length;
+    const hasMaskedTokenAfter = offset < note.length;
+
+    if (hasMaskedTokenAfter) {
+      offset += SENSITIVE_BLUR_MARKER.length;
+    }
+
+    return (
+      <Fragment key={`note-segment-${segmentOffset}`}>
+        {segment}
+        {hasMaskedTokenAfter && (
+        <span
+          aria-label="Sensitive value hidden"
+          className="inline-block rounded bg-gray-300/70 px-2 text-gray-700 blur-[2px] dark:bg-gray-600/70 dark:text-gray-300"
+        >
+          ##
+        </span>
+      )}
+      </Fragment>
+    );
+  });
 }
 
 export default function ResumeEvaluationDetails({
@@ -382,7 +417,7 @@ export default function ResumeEvaluationDetails({
       {showEvalDetails && localCandidate.scores.notes && (
         <div className="space-y-1">
           <Label className={labelClass}>Note</Label>
-          <p>{localCandidate.scores.notes}</p>
+          <p>{renderBlurredSensitiveNote(localCandidate.scores.notes)}</p>
         </div>
       )}
 

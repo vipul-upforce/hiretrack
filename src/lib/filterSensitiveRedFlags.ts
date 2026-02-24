@@ -46,6 +46,11 @@ interface TextToken {
   end: number;
 }
 
+interface MaskRange {
+  start: number;
+  end: number;
+}
+
 function normalizeTypeValue(type: string): string {
   return type.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
@@ -142,8 +147,56 @@ function getCombinedSalaryUnit(tokenLower: string): 'lpa' | 'ctc' | null {
   return null;
 }
 
-function maskedUnit(unitLower: string): string {
-  return `** ${unitLower.toUpperCase()}`;
+function getNumericRangeForCombinedSalaryToken(
+  token: TextToken,
+  unitLower: 'lpa' | 'ctc',
+): MaskRange | null {
+  const unitLength = unitLower.length;
+
+  if (token.lower.endsWith(unitLower)) {
+    const numericPart = token.value.slice(0, token.value.length - unitLength);
+    if (isNumericToken(numericPart)) {
+      return { start: token.start, end: token.start + numericPart.length };
+    }
+  }
+
+  if (token.lower.startsWith(unitLower)) {
+    const numericPart = token.value.slice(unitLength);
+    if (isNumericToken(numericPart)) {
+      return { start: token.start + unitLength, end: token.end };
+    }
+  }
+
+  return null;
+}
+
+function applyMaskRanges(note: string, ranges: MaskRange[]): string {
+  if (ranges.length === 0) {
+    return note;
+  }
+
+  const sortedRanges = [...ranges].sort((a, b) => a.start - b.start);
+  const mergedRanges: MaskRange[] = [];
+
+  for (const range of sortedRanges) {
+    const lastRange = mergedRanges[mergedRanges.length - 1];
+    if (!lastRange || range.start > lastRange.end) {
+      mergedRanges.push({ ...range });
+    } else if (range.end > lastRange.end) {
+      lastRange.end = range.end;
+    }
+  }
+
+  let result = '';
+  let cursor = 0;
+
+  for (const range of mergedRanges) {
+    result += `${note.slice(cursor, range.start)} |||###|||`;
+    result += `${note.slice(cursor, range.start)} |||###|||`;
+    cursor = range.end;
+  }
+
+  return `${result}${note.slice(cursor)}`;
 }
 
 export function maskSensitiveSalaryMentionsInNotes(note: string): string {
@@ -156,21 +209,23 @@ export function maskSensitiveSalaryMentionsInNotes(note: string): string {
     return note;
   }
 
-  let result = '';
-  let cursor = 0;
+  const maskRanges: MaskRange[] = [];
 
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
-    let consumedUntilIndex = -1;
-    let replacement = '';
 
     const combinedUnit = getCombinedSalaryUnit(token.lower);
     if (combinedUnit) {
-      replacement = maskedUnit(combinedUnit);
-      consumedUntilIndex = i;
+      const numericRange = getNumericRangeForCombinedSalaryToken(
+        token,
+        combinedUnit,
+      );
+      if (numericRange) {
+        maskRanges.push(numericRange);
+      }
     }
 
-    if (consumedUntilIndex === -1 && isSalaryUnitToken(token.lower)) {
+    if (isSalaryUnitToken(token.lower)) {
       let numericIndex = i + 1;
       while (
         numericIndex < tokens.length &&
@@ -183,29 +238,23 @@ export function maskSensitiveSalaryMentionsInNotes(note: string): string {
         numericIndex < tokens.length &&
         isNumericToken(tokens[numericIndex].value)
       ) {
-        replacement = maskedUnit(token.lower);
-        consumedUntilIndex = numericIndex;
+        maskRanges.push({
+          start: tokens[numericIndex].start,
+          end: tokens[numericIndex].end,
+        });
       }
     }
 
     if (
-      consumedUntilIndex === -1 &&
       isNumericToken(token.value) &&
       i + 1 < tokens.length &&
       isSalaryUnitToken(tokens[i + 1].lower)
     ) {
-      replacement = maskedUnit(tokens[i + 1].lower);
-      consumedUntilIndex = i + 1;
-    }
-
-    if (consumedUntilIndex !== -1) {
-      result += `${note.slice(cursor, token.start)}${replacement}`;
-      cursor = tokens[consumedUntilIndex].end;
-      i = consumedUntilIndex;
+      maskRanges.push({ start: token.start, end: token.end });
     }
   }
 
-  return `${result}${note.slice(cursor)}`;
+  return applyMaskRanges(note, maskRanges);
 }
 
 export function isSalaryRelatedRedFlagType(
