@@ -1,6 +1,10 @@
 'use client';
 
-import { Draggable, DraggableProvided } from '@hello-pangea/dnd';
+import {
+  Draggable,
+  DraggableProvided,
+  type DraggableStateSnapshot,
+} from '@hello-pangea/dnd';
 import React, { useRef, memo, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
@@ -48,6 +52,8 @@ export const CandidateCard = memo(
     onValidateStatusChange,
     onDeferStatusToChecklist,
     onOpenChecklistAfterSave,
+    isBulkPlaceholder = false,
+    bulkDragCount,
   }: CandidateCardProps) => {
     const triggerRef = useRef<HTMLButtonElement>(
       null,
@@ -291,8 +297,12 @@ export const CandidateCard = memo(
           {renderCardContent}
         </div>
         ) : (
-          <Draggable draggableId={localCandidate._id} index={index}>
-            {(provided: DraggableProvided) => (
+          <Draggable
+            draggableId={localCandidate._id}
+            index={index}
+            isDragDisabled={isBulkPlaceholder}
+          >
+            {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
               <div
                 role="button"
                 tabIndex={0}
@@ -302,6 +312,7 @@ export const CandidateCard = memo(
                 className={cn(
                   'group relative cursor-grab overflow-visible rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md active:cursor-grabbing dark:border-gray-800 dark:bg-black',
                   isPending && 'opacity-50',
+                  isBulkPlaceholder && 'pointer-events-none opacity-0',
                   className,
                   isSelected
                     ? "border-2 border-primary dark:border-primary hover:border-primary/50"
@@ -309,6 +320,12 @@ export const CandidateCard = memo(
                 )}
                 onClick={handleDraggableCardClick}
               >
+                {/* Bulk drag: show count on the dragged card */}
+                {!onDashboard && bulkDragCount != null && snapshot.isDragging && (
+                  <div className="absolute right-2 top-2 z-30 flex h-7 min-w-7 items-center justify-center rounded-full border-2 border-primary bg-primary px-2 text-xs font-semibold text-primary-foreground shadow-md">
+                    {bulkDragCount}
+                  </div>
+                )}
                 {/* Circular checkbox in top-left, partially cropped from border */}
                 {!onDashboard && (
                   <div

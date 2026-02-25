@@ -42,11 +42,15 @@ const CandidateRow = memo(
     index,
     isPending,
     context,
+    isBulkPlaceholder = false,
+    bulkDragCount,
   }: {
     candidate: Candidate;
     index: number;
     isPending: boolean;
     context: CandidateContextType;
+    isBulkPlaceholder?: boolean;
+    bulkDragCount?: number;
   }) => {
     // Helper handlers using context
     const handleViewDetails = (candidateToView?: Candidate) => {
@@ -85,6 +89,8 @@ const CandidateRow = memo(
           onValidateStatusChange={context.onValidateStatusChange}
           onDeferStatusToChecklist={context.onDeferStatusToChecklist}
           onOpenChecklistAfterSave={context.onOpenChecklistAfterSave}
+          isBulkPlaceholder={isBulkPlaceholder}
+          bulkDragCount={bulkDragCount}
         />
       </div>
     );
@@ -103,6 +109,17 @@ function renderCandidateItem(
     (pm) =>
       pm.candidateId === candidate._id && pm.targetLaneId === context.laneId,
   );
+  const bulk = context.bulkDrag;
+  const isBulkPlaceholder =
+    !!bulk?.isBulkDrag &&
+    bulk.bulkIds.includes(candidate._id) &&
+    candidate._id !== bulk.draggedId;
+  const bulkDragCount =
+    bulk?.isBulkDrag &&
+    candidate._id === bulk.draggedId &&
+    bulk.bulkIds.length > 1
+      ? bulk.bulkIds.length
+      : undefined;
 
   return (
     <CandidateRow
@@ -110,6 +127,8 @@ function renderCandidateItem(
       index={index}
       isPending={isPending}
       context={context}
+      isBulkPlaceholder={isBulkPlaceholder}
+      bulkDragCount={bulkDragCount}
     />
   );
 }
@@ -138,6 +157,7 @@ const KanbanColumn = memo(
     onValidateStatusChange,
     onDeferStatusToChecklist,
     onOpenChecklistAfterSave,
+    bulkDragState,
   }: KanbanColumnProps) => {
     const dispatch = useAppDispatch();
     const isShiftPressed = useShiftKey();
@@ -307,6 +327,7 @@ const KanbanColumn = memo(
         onValidateStatusChange,
         onDeferStatusToChecklist,
         onOpenChecklistAfterSave,
+        bulkDrag: bulkDragState,
       }),
       [
         column.id,
@@ -322,6 +343,7 @@ const KanbanColumn = memo(
         onValidateStatusChange,
         onDeferStatusToChecklist,
         onOpenChecklistAfterSave,
+        bulkDragState,
       ],
     );
 

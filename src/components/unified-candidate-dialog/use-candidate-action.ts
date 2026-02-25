@@ -867,16 +867,23 @@ export function useCandidateActions({
           if (onValidateStatusChange && onBulkStatusRequiresChecklist) {
             const queue: BulkStatusQueueItem[] = candidateList
               .filter((c) => c.status !== newStatus)
-              .map((c) => {
+              .flatMap((c) => {
                 const validation = onValidateStatusChange(c, newStatus);
-                return {
-                  candidateId: c._id,
-                  newStatus,
-                  validationInfo:
-                    validation?.requiresChecklist && validation.validationInfo
-                      ? validation.validationInfo
-                      : undefined,
-                };
+                if (!validation?.requiresChecklist) return [];
+                if (validation.validationSteps?.length) {
+                  return validation.validationSteps.map((s) => ({
+                    candidateId: c._id,
+                    newStatus: s.newStatusAfterStep,
+                    validationInfo: s.validationInfo,
+                  }));
+                }
+                return [
+                  {
+                    candidateId: c._id,
+                    newStatus,
+                    validationInfo: validation.validationInfo!,
+                  },
+                ];
               });
             const anyRequiresChecklist = queue.some(
               (item) => item.validationInfo != null,

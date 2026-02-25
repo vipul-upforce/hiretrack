@@ -98,6 +98,8 @@ export interface StatusChangeValidationResult {
   validationInfo?: string;
   /** When true, checklist must be completed before status is applied; when false, status is applied first then checklist opens for optional fill */
   isMandatory?: boolean;
+  /** When moving requires both outgoing and incoming checklist, one item per step in order (outgoing first). newStatusAfterStep is used for bulk-submit. */
+  validationSteps?: { validationInfo: string; newStatusAfterStep: string }[];
 }
 
 /** One candidate in a bulk status-update queue (checklist required or direct update) */

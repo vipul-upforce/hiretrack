@@ -31,4 +31,8 @@ export interface CandidateCardProps {
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
   onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** During bulk drag: hide this card (other selected), keep layout */
+  isBulkPlaceholder?: boolean;
+  /** During bulk drag: show this count on the dragged card */
+  bulkDragCount?: number;
 }

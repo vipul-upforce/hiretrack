@@ -3,6 +3,7 @@ import {
   Droppable,
   DroppableProvided,
   DropResult,
+  type DragStart,
 } from '@hello-pangea/dnd';
 import { mergeRefs } from 'react-merge-refs';
 import { Candidate, CandidateColumn } from '@/types/candidate';
@@ -16,6 +17,12 @@ interface JobKanbanBoardProps {
   isDragging: boolean;
   setIsDndDragging: (dragging: boolean) => void;
   onDragEnd: (result: DropResult) => void;
+  onBeforeDragStart?: (start: DragStart) => void;
+  bulkDragState?: {
+    isBulkDrag: boolean;
+    draggedId: string | null;
+    bulkIds: string[];
+  };
   isFileOver: boolean;
   setIsFileOver: (over: boolean) => void;
   handleFileDrop: (file: File) => void;
@@ -58,6 +65,8 @@ export function JobKanbanBoard({
   isDragging,
   setIsDndDragging,
   onDragEnd,
+  onBeforeDragStart,
+  bulkDragState,
   isFileOver,
   setIsFileOver,
   handleFileDrop,
@@ -83,8 +92,9 @@ export function JobKanbanBoard({
   return (
     <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
       <DragDropContext
-        onBeforeDragStart={() => {
+        onBeforeDragStart={(start: DragStart) => {
           document.body.classList.add('dnd-dragging');
+          onBeforeDragStart?.(start);
         }}
         onDragStart={() => {
           setIsDndDragging(true);
@@ -134,6 +144,7 @@ export function JobKanbanBoard({
                     onValidateStatusChange={onValidateStatusChange}
                     onDeferStatusToChecklist={onDeferStatusToChecklist}
                     onOpenChecklistAfterSave={onOpenChecklistAfterSave}
+                    bulkDragState={bulkDragState}
                   />
                 );
               })}

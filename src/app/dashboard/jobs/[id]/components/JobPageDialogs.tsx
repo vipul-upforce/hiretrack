@@ -90,6 +90,7 @@ interface JobPageDialogsProps {
   bulkStatusQueue?: BulkStatusQueueItem[] | null;
   /** When user closes checklist in bulk context: cancel entire bulk (no re-open). */
   onBulkChecklistCancel?: () => void;
+  bulkDragTwoPhase?: { phase: 'outgoing' | 'incoming'; candidateIds: string[] } | null;
 }
 
 export function JobPageDialogs({
@@ -145,6 +146,7 @@ export function JobPageDialogs({
   onApplyToRemaining,
   bulkStatusQueue,
   onBulkChecklistCancel,
+  bulkDragTwoPhase,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   const openRemarksForRef = useRef(openRemarksFor);
@@ -167,7 +169,9 @@ export function JobPageDialogs({
           return false;
         }
       })();
-    if (isBulkChecklistOpen && onBulkChecklistCancel) {
+    if (bulkDragTwoPhase && cancelPendingMove) {
+      cancelPendingMove(bulkDragTwoPhase.candidateIds[0]);
+    } else if (isBulkChecklistOpen && onBulkChecklistCancel) {
       onBulkChecklistCancel();
     } else {
       setOpenRemarksFor(null);

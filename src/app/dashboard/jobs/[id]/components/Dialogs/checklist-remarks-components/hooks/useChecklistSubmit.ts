@@ -1,9 +1,11 @@
-import type { ChecklistHistoryResponseItem } from '@/types/checklist';
-import type { ChecklistFileItem } from '@/types/checklist';
-import type { ChecklistSubmissionData } from '@/types/checklist';
+import type {
+  ChecklistHistoryResponseItem,
+  ChecklistFileItem,
+  ChecklistSubmissionData,
+} from '@/types/checklist';
 import type { Candidate } from '@/types/candidate';
 import { CandidateStatus } from '@/types/candidate';
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { sentStatusMailHandler } from '@/lib/utils';
 import type { ChecklistInfo } from '../types';
@@ -44,7 +46,9 @@ export interface UseChecklistSubmitParams {
     onOpenChange: (open: boolean) => void;
     setOpenRemarksFor: (id: string | null) => void;
     refetch: () => void | Promise<unknown>;
-    onApplyToRemaining?: (data: ChecklistSubmissionData) => void;
+    onApplyToRemaining?: (
+      data: ChecklistSubmissionData,
+    ) => void | Promise<{ transitionedToIncoming?: boolean } | void>;
     onChecklistSuccess?: (candidateId: string) => void;
     onChecklistCancel?: (candidateId: string) => void;
     onSuccess: (result: {
@@ -52,6 +56,8 @@ export interface UseChecklistSubmitParams {
       candidateId: string;
       hasChecklist: boolean;
       successMessage: string;
+      /** Set when bulk two-phase submit opened the next (incoming) dialog; dialog should not close/clear */
+      transitionedToIncoming?: boolean;
     }) => void | Promise<void>;
   };
   user: { id: string; name: string; email: string } | null;
@@ -59,7 +65,9 @@ export interface UseChecklistSubmitParams {
   /** RTK mutation triggers; typed loosely to accept actual API types. */
   mutations: {
     updateCandidate: (arg: unknown) => { unwrap: () => Promise<Candidate> };
-    updateCandidateHistory: (arg: unknown) => { unwrap: () => Promise<unknown> };
+    updateCandidateHistory: (arg: unknown) => {
+      unwrap: () => Promise<unknown>;
+    };
     sendStatusMail: (arg?: unknown) => unknown;
     submitChecklist: (arg: unknown) => { unwrap: () => Promise<unknown> };
     uploadFiles: (arg: unknown) => {
@@ -156,7 +164,7 @@ export function useChecklistSubmit({
 
     try {
       if (hasChecklist && parsedChecklistInfo?.checklist) {
-        const checklist = parsedChecklistInfo.checklist;
+        const { checklist } = parsedChecklistInfo;
         const laneConfig = getLaneConfig(jobLaneConfig, parsedChecklistInfo);
         let responsesToSubmit = checklistResponses;
 
@@ -217,12 +225,15 @@ export function useChecklistSubmit({
                 }
               : undefined,
           });
-          onApplyToRemaining(payload);
+          const applyResult = (await onApplyToRemaining(payload)) as
+            | { transitionedToIncoming?: boolean }
+            | undefined;
           await onSuccess({
             payload: null,
             candidateId: candidate._id,
             hasChecklist: true,
             successMessage: `Checklist applied to ${bulk.bulkTotalCount} candidate(s)`,
+            transitionedToIncoming: applyResult?.transitionedToIncoming,
           });
           return;
         }
@@ -240,18 +251,32 @@ export function useChecklistSubmit({
             : undefined,
         });
 
-        await mutations.submitChecklist({
-          candidateId: candidate._id,
-          data: {
-            ...submitData,
-            checklistType: parsedChecklistInfo.checklistType!,
-          },
-        }).unwrap();
+        await mutations
+          .submitChecklist({
+            candidateId: candidate._id,
+            data: {
+              ...submitData,
+              checklistType: parsedChecklistInfo.checklistType!,
+            },
+          })
+          .unwrap();
 
-        const updatedCandidate = await mutations.updateCandidate({
-          _id: candidate._id,
-          status: parsedChecklistInfo.targetLane as CandidateStatus,
-        }).unwrap();
+        if (parsedChecklistInfo.hasPendingChecklist) {
+          await onSuccess({
+            payload: submittedChecklistPayload ?? null,
+            candidateId: candidate._id,
+            hasChecklist: true,
+            successMessage: 'Checklist submitted successfully',
+          });
+          return;
+        }
+
+        const updatedCandidate = await mutations
+          .updateCandidate({
+            _id: candidate._id,
+            status: parsedChecklistInfo.targetLane as CandidateStatus,
+          })
+          .unwrap();
 
         await sentStatusMailHandler(
           {
@@ -335,22 +360,30 @@ export function useChecklistSubmit({
           attachments: [],
         };
 
-        await mutations.updateCandidateHistory({
-          candidateId: candidate._id,
-          jobId: candidate.jobId,
-          newEntry: newHistoryEntry,
-        }).unwrap();
+        await mutations
+          .updateCandidateHistory({
+            candidateId: candidate._id,
+            jobId: candidate.jobId,
+            newEntry: newHistoryEntry,
+          })
+          .unwrap();
 
-        const updatedCandidate = await mutations.updateCandidate({
-          _id: candidate._id,
-          name: candidate.name,
-          remarks: [...(candidate.remarks || []), newRemarkObj],
-        }).unwrap();
+        const updatedCandidate = await mutations
+          .updateCandidate({
+            _id: candidate._id,
+            name: candidate.name,
+            remarks: [...(candidate.remarks || []), newRemarkObj],
+          })
+          .unwrap();
 
-        await sentStatusMailHandler(updatedCandidate, mutations.sendStatusMail, {
-          remark: remark.newRemark.trim(),
-          rating: remark.remarkRating ?? undefined,
-        });
+        await sentStatusMailHandler(
+          updatedCandidate,
+          mutations.sendStatusMail,
+          {
+            remark: remark.newRemark.trim(),
+            rating: remark.remarkRating ?? undefined,
+          },
+        );
 
         await onSuccess({
           payload: null,
