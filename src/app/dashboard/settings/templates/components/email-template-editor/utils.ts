@@ -22,20 +22,28 @@ export function mergeTemplatesWithDefaults(args: {
   return merged;
 }
 
+/**
+ * Replaces `{{key}}` placeholders in a template string using safe split/join.
+ * Suitable for both previewing (frontend) and applying real values.
+ */
+export function substituteTemplateVariables(
+  template: string,
+  data: Record<string, string>,
+): string {
+  let processed = template;
+  for (const [key, value] of Object.entries(data)) {
+    processed = processed.split(`{{${key}}}`).join(value);
+  }
+  return processed;
+}
+
 export function processTemplate(args: {
   template: string;
   data: Record<string, string>;
   isDemoEnabled: boolean;
 }): string {
   if (!args.isDemoEnabled) return args.template;
-
-  let processed = args.template;
-  Object.entries(args.data).forEach(([key, value]) => {
-    // Avoid RegExp injection and keep a simple global replacement
-    processed = processed.split(`{{${key}}}`).join(value);
-  });
-
-  return processed;
+  return substituteTemplateVariables(args.template, args.data);
 }
 
 export function extractVariablesFromContent(content: string): string[] {
@@ -44,7 +52,10 @@ export function extractVariablesFromContent(content: string): string[] {
 
   let match = variableRegex.exec(content);
   while (match) {
-    matches.push(match[1]?.trim());
+    const variableName = match[1]?.trim();
+    if (variableName) {
+      matches.push(variableName);
+    }
     match = variableRegex.exec(content);
   }
 

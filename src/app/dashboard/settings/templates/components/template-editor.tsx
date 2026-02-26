@@ -65,7 +65,7 @@ export function TemplateEditor(props: TemplateEditorProps) {
     editorContent = (
       <div className="overflow-hidden rounded-lg border">
         <Editor
-          height="400px"
+          height="500px"
           language="html"
           theme={theme === 'dark' ? 'vs-dark' : 'vs'}
           value={currentTemplate.content}

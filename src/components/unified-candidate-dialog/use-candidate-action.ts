@@ -368,7 +368,9 @@ export function useCandidateActions({
     const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
     if (scheduleGoogle || scheduleZoom || scheduleTeams) {
-      const processMeetingAttachments = async (files: unknown[]): Promise<Attachment[]> => {
+      const processMeetingAttachments = async (
+        files: unknown[],
+      ): Promise<Attachment[]> => {
         const attachmentsToProcess: Attachment[] = await Promise.all(
           (files || []).map(async (file): Promise<Attachment> => {
             if (file instanceof File) {
@@ -389,7 +391,7 @@ export function useCandidateActions({
             return file as Attachment;
           }),
         );
-          // Upload meeting attachments
+        // Upload meeting attachments
         return uploadAttachments({
           attachments: attachmentsToProcess,
           uploadFiles,
@@ -570,9 +572,10 @@ export function useCandidateActions({
 
     // Use uploaded attachments (passed from handleSubmit)
     const existingNames = new Set(candidate.attachments.map((a) => a.name));
-    const attachmentsToUse = uploadedAttachments.length > 0 
-      ? uploadedAttachments 
-      : (values.attachments || []);
+    const attachmentsToUse =
+      uploadedAttachments.length > 0
+        ? uploadedAttachments
+        : values.attachments || [];
     updates.attachments = [
       ...candidate.attachments,
       ...attachmentsToUse.filter((a) => !existingNames.has(a.name)),
@@ -755,24 +758,28 @@ export function useCandidateActions({
 
           // Process meeting attachments - convert File to Attachment format, then upload
           const meetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.meetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
+            (values.meetingAttachments || []).map(
+              async (file): Promise<Attachment> => {
+                if (file instanceof File) {
+                  const reader = new FileReader();
+                  const dataUrl = await new Promise<string>(
+                    (resolve, reject) => {
+                      reader.onload = () => resolve(reader.result as string);
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    },
+                  );
+                  return {
+                    id: Math.random().toString(36).slice(2),
+                    name: file.name,
+                    url: dataUrl,
+                    type: file.type,
+                    size: file.size,
+                  };
+                }
+                return file as Attachment;
+              },
+            ),
           );
           const processedMeetingAttachments = await uploadAttachments({
             attachments: meetingAttachmentsToProcess,
@@ -780,26 +787,31 @@ export function useCandidateActions({
             organizationId: user?.organizationId as string,
           });
 
-          const zoomMeetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.zoomMeetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
-          );
+          const zoomMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.zoomMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
           const processedZoomMeetingAttachments = await uploadAttachments({
             attachments: zoomMeetingAttachmentsToProcess,
             uploadFiles,
@@ -810,6 +822,10 @@ export function useCandidateActions({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
             time: values.time ? values.time.toISOString() : undefined,
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
             attachments: uploadedAttachments,
             scheduleGoogleMeet: values.scheduleGoogleMeet || false,
             meetDuration: values.meetDuration || 30,
@@ -824,15 +840,28 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Mark as Done
+        // Bulk Mark as Done (pass remark when both unassign + add remark selected)
         if (actions.markAsDone) {
           operations.push({
             operation: 'unassign',
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
           });
         }
 
-        // Bulk Add Remark
-        if (actions.addRemark && values.remarkDescription?.trim()) {
+        // Bulk Add Remark - only when remark is standalone (not combined with unassign/assign/statusUpdate)
+        // When combined, remark is passed to the primary op; no separate remark entry or notification
+        const isRemarkCombinedWithOther =
+          actions.addRemark &&
+          values.remarkDescription?.trim() &&
+          (actions.markAsDone || (actions.assignTo && values.interviewerId));
+        if (
+          actions.addRemark &&
+          values.remarkDescription?.trim() &&
+          !isRemarkCombinedWithOther
+        ) {
           operations.push({
             operation: 'addRemark',
             description: values.remarkDescription.trim(),
@@ -856,11 +885,15 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Status Update
+        // Bulk Status Update (pass remark when both status + remark selected)
         if (actions.updateStatus && values.newStatus) {
           operations.push({
             operation: 'statusUpdate',
             status: values.newStatus as string,
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
           });
         }
 
@@ -915,7 +948,12 @@ export function useCandidateActions({
       const existingRemarks = candidateWithDetailsForRemark.remarks || [];
 
       if (actions.assignTo) {
-        await handleAssignTo(values, updates, historyEntries, uploadedAttachments);
+        await handleAssignTo(
+          values,
+          updates,
+          historyEntries,
+          uploadedAttachments,
+        );
       }
 
       if (actions.switchJob && values.jobId) {

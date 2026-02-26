@@ -28,7 +28,7 @@ import {
   isAdminOverrideDisabled,
   safeGetNotificationValue,
   safeSetNotificationValue,
-} from '@/lib/utils/notificationSettings';
+} from '@/lib/notifications/settings/constants';
 import logger from '@/lib/logger';
 import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';
 

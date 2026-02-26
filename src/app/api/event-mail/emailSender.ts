@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Settings } from '@/lib/mongodb';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { sendSmartNotification } from '@/lib/notifications/email/unifiedEmailService';
+import { NotificationType } from '@/lib/notifications/decision';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { getOrganizationName } from '@/lib/utils/organization';
 import { resolveSentByToObjectId } from '@/lib/utils/userResolution';

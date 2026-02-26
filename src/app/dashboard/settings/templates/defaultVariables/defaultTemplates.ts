@@ -294,19 +294,37 @@ export const defaultTemplates: EmailTemplate[] = [
   {
     id: 'bulk-assign',
     name: 'Bulk Assign',
-    subject: '{{candidateCount}} candidates assigned to you for {{jobTitle}}',
+    subject:
+      'Bulk Candidates Assigned: {{candidateCount}} candidates for {{jobTitle}} | Assigned To: {{interviewerName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">Candidates Assigned</h2>
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Candidates Assigned</h2>
         <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
         <p style="margin: 0 0 15px 0;">{{triggererName}} has assigned {{candidateCount}} candidate(s) to {{interviewerName}} for the <strong>{{jobTitle}}</strong> position.</p>
-        <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; border: 1px solid #dee2e6;">
-            <p style="margin: 0 0 10px 0;"><strong>Affected candidates:</strong></p>
-            <p style="margin: 0;">{{candidateListHtml}}</p>
-            <p style="margin-top: 10px;"><a href="{{viewAllCandidatesLink}}" style="color: #007bff; text-decoration: none;">View all {{candidateCount}} candidates</a></p>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Assignment Details</h3>
+            <p style="margin: 5px 0;"><strong>Interviewer:</strong> {{interviewerName}}</p>
+            <p style="margin: 5px 0;"><strong>Position:</strong> {{jobTitle}}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> {{interviewDate}}</p>
+            <p style="margin: 5px 0;"><strong>Type:</strong> {{interviewType}}</p>
+            <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
+                <p style="margin: 0 0 10px 0;"><strong>Next Steps:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li style="margin: 5px 0;">Review the candidates' profiles and resumes</li>
+                    <li style="margin: 5px 0;">Prepare interview questions</li>
+                    <li style="margin: 5px 0;">Schedule and conduct interviews</li>
+                    <li style="margin: 5px 0;">Submit feedback after each interview</li>
+                </ul>
+            </div>
+            <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
+                <p style="margin: 0 0 10px 0;"><strong>Assigned Candidates:</strong></p>
+                <div style="margin: 0;">{{candidateListHtml}}</div>
+            </div>
         </div>
-        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Job</a></div>
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View All Candidates</a>
+        </div>
         <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team</p>
     </div>
 </div>`,
@@ -322,57 +340,98 @@ export const defaultTemplates: EmailTemplate[] = [
       'recipientName',
       'candidateListHtml',
       'viewAllCandidatesLink',
+      'candidateName',
+      'interviewDate',
+      //   'interviewTime',
+      //   'duration',
+      'interviewType',
+      //   'meetingLink',
+      //   'outlookCalendarLink',
+      'candidateProfileLink',
     ],
   },
   {
     id: 'bulk-unassign',
     name: 'Bulk Unassign',
-    subject: '{{candidateCount}} candidates unassigned from you',
+    subject:
+      'Bulk Candidates Unassigned: {{candidateCount}} candidates | {{jobTitle}} by {{triggererName}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">Candidates Unassigned</h2>
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Candidates Unassigned</h2>
         <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
         <p style="margin: 0 0 15px 0;">{{triggererName}} has unassigned {{candidateCount}} candidate(s) from the <strong>{{jobTitle}}</strong> position.</p>
-        <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; border: 1px solid #dee2e6;">
-            <p style="margin: 0 0 10px 0;"><strong>Affected candidates:</strong></p>
-            <p style="margin: 0;">{{candidateListHtml}}</p>
-            <p style="margin-top: 10px;"><a href="{{viewAllCandidatesLink}}" style="color: #007bff; text-decoration: none;">View all {{candidateCount}} candidates</a></p>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Unassignment Details</h3>
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                <p style="margin: 0; font-weight: bold; color: #856404;">{{stepName}}</p>
+                <p style="margin: 5px 0 0 0;">Unassigned by: {{completedBy}}</p>
+                <p style="margin: 5px 0 0 0;">Date: {{completionDate}}</p>
+            </div>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>Feedback:</strong></p>
+                <p style="margin: 0;">{{feedback}}</p>
+            </div>
+            <div style="background-color: #e7f3ff; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #007bff;">
+                <p style="margin: 0;"><strong>Next Step:</strong> {{nextStep}}</p>
+            </div>
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                <p style="margin: 0 0 10px 0;"><strong>Unassigned Candidates:</strong></p>
+                <div style="margin: 0;">{{candidateListHtml}}</div>
+            </div>
         </div>
-        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Job</a></div>
-        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team</p>
+        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View All Candidates</a></div>
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Team</p>
     </div>
 </div>`,
     variables: [
       'candidateCount',
       'triggererName',
       'jobTitle',
-      'jobId',
+      //   'jobId',
       'dashboardLink',
       'actionUrl',
       'organizationName',
       'recipientName',
       'candidateListHtml',
       'viewAllCandidatesLink',
+      'candidateName',
+      'stepName',
+      'completedBy',
+      'completionDate',
+      'feedback',
+      'nextStep',
+      'candidateProfileLink',
     ],
   },
   {
     id: 'bulk-status-update',
     name: 'Bulk Status Update',
-    subject: '{{candidateCount}} candidates updated to {{newStatus}}',
+    subject:
+      'Bulk Status Update: {{candidateCount}} candidates | {{jobTitle}} ➜ {{newStatus}}',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">Bulk Status Update</h2>
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Bulk Status Update</h2>
         <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
         <p style="margin: 0 0 15px 0;">{{triggererName}} has updated the status of {{candidateCount}} candidate(s) to <strong>{{newStatus}}</strong> for the <strong>{{jobTitle}}</strong> position.</p>
-        <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; border: 1px solid #dee2e6;">
-            <p style="margin: 0 0 10px 0;"><strong>Affected candidates:</strong></p>
-            <p style="margin: 0;">{{candidateListHtml}}</p>
-            <p style="margin-top: 10px;"><a href="{{viewAllCandidatesLink}}" style="color: #007bff; text-decoration: none;">View all {{candidateCount}} candidates</a></p>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Current Status</h3>
+            <div style="background-color: #e7f3ff; padding: 15px; border-radius: 5px; border-left: 4px solid #007bff;">
+                <p style="margin: 0; font-size: 18px; font-weight: bold; color: #0056b3;">{{newStatus}}</p>
+            </div>
+            <p style="margin: 15px 0 0 0;">{{statusMessage}}</p>
+            <div style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #28a745;">
+                <p style="margin: 0 0 10px 0;"><strong>Next Steps:</strong></p>
+                <p style="margin: 0;">{{nextSteps}}</p>
+            </div>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>Candidates list:</strong></p>
+                <div style="margin: 0;">{{candidateListHtml}}</div>
+            </div>
         </div>
-        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Job</a></div>
-        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team</p>
+        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View All Candidates</a></div>
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team<br>{{hrContactInfo}}</p>
     </div>
 </div>`,
     variables: [
@@ -380,36 +439,45 @@ export const defaultTemplates: EmailTemplate[] = [
       'newStatus',
       'triggererName',
       'jobTitle',
-      'jobId',
+      //   'jobId',
       'dashboardLink',
       'actionUrl',
       'organizationName',
       'recipientName',
       'candidateListHtml',
       'viewAllCandidatesLink',
+      'candidateName',
+      'statusMessage',
+      'nextSteps',
+      'hrContactInfo',
     ],
   },
   {
     id: 'bulk-remark',
     name: 'Bulk Remark Added',
     subject:
-      '{{triggererName}} added a remark to {{candidateCount}} candidates',
+      'Bulk Remark Added: {{candidateCount}} candidates by {{triggererName}} for {{jobTitle}} position',
     isDefault: true,
     content: `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #2c3e50; margin-top: 0;">Bulk Remark Added</h2>
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px;">Bulk Remark Added</h2>
         <p style="margin: 0 0 15px 0;">Hello {{recipientName}},</p>
-        <p style="margin: 0 0 15px 0;">{{triggererName}} has added a remark to {{candidateCount}} candidate(s) for the <strong>{{jobTitle}}</strong> position.</p>
-        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #007bff;">
-            <p style="margin: 0 0 10px 0;"><strong>Remark:</strong></p>
-            <p style="margin: 0;">{{remarkText}}</p>
+        <p style="margin: 0 0 15px 0;">{{reviewerName}} has added a remark to {{candidateCount}} candidate(s) for the <strong>{{jobTitle}}</strong> position.</p>
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Remark Details</h3>
+            <p style="margin: 5px 0;"><strong>Added by:</strong> {{reviewerName}}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> {{remarkDate}}</p>
+            <p style="margin: 5px 0;"><strong>Rating:</strong> {{rating}}</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <p style="margin: 0 0 10px 0;"><strong>Comments:</strong></p>
+                <p style="margin: 0;">{{remarkText}}</p>
+            </div>
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107;">
+                <p style="margin: 0 0 10px 0;"><strong>Candidates list:</strong></p>
+                <div style="margin: 0;">{{candidateListHtml}}</div>
+            </div>
         </div>
-        <div style="background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; border: 1px solid #dee2e6;">
-            <p style="margin: 0 0 10px 0;"><strong>Affected candidates:</strong></p>
-            <p style="margin: 0;">{{candidateListHtml}}</p>
-            <p style="margin-top: 10px;"><a href="{{viewAllCandidatesLink}}" style="color: #007bff; text-decoration: none;">View all {{candidateCount}} candidates</a></p>
-        </div>
-        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Job</a></div>
+        <div style="text-align: center; margin: 20px 0;"><a href="{{actionUrl}}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View All Candidates</a></div>
         <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team</p>
     </div>
 </div>`,
@@ -418,13 +486,18 @@ export const defaultTemplates: EmailTemplate[] = [
       'triggererName',
       'remarkText',
       'jobTitle',
-      'jobId',
+      //   'jobId',
       'dashboardLink',
       'actionUrl',
       'organizationName',
       'recipientName',
       'candidateListHtml',
       'viewAllCandidatesLink',
+      'candidateName',
+      'reviewerName',
+      'remarkDate',
+      'rating',
+      'candidateProfileLink',
     ],
   },
 ];

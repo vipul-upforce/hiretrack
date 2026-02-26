@@ -27,7 +27,7 @@ import {
   resolveNotificationSource,
   safeGetNotificationValue,
   safeSetNotificationValue,
-} from '@/lib/utils/notificationSettings';
+} from '@/lib/notifications/settings/constants';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import EmailNotificationSettingsSkeleton from './email-notification-settings-skeleton';

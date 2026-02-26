@@ -23,7 +23,7 @@ import {
   ILaneConfig,
   UserRole,
 } from '@/lib/models/JobLaneConfig';
-import { sendRemarkNotificationWithMentions } from '@/lib/services/unifiedEmailService';
+import { sendRemarkNotificationWithMentions } from '@/lib/notifications/email/unifiedEmailService';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { logger } from '@/lib/logger/logger.server';
 
