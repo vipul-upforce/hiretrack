@@ -92,6 +92,21 @@ export interface UnifiedFormValues {
   enabledActions: ActionCheckboxes;
 }
 
+/** Result of validating a status change (e.g. for checklist requirement) */
+export interface StatusChangeValidationResult {
+  requiresChecklist: boolean;
+  validationInfo?: string;
+  /** When true, checklist must be completed before status is applied; when false, status is applied first then checklist opens for optional fill */
+  isMandatory?: boolean;
+}
+
+/** One candidate in a bulk status-update queue (checklist required or direct update) */
+export interface BulkStatusQueueItem {
+  candidateId: string;
+  newStatus: string;
+  validationInfo?: string;
+}
+
 export interface UnifiedCandidateActionsDialogProps {
   candidate: Candidate;
   /** Optional array of candidates for bulk operations */
@@ -104,6 +119,17 @@ export interface UnifiedCandidateActionsDialogProps {
   setLocalCandidate?: (candidate: Candidate) => void;
   refetchAssignment?: () => void;
   onSuccess?: () => void;
+  /** When provided, status update is validated; if checklist required, defer to checklist dialog instead of updating */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => StatusChangeValidationResult | null;
+  /** Called when status update is deferred to checklist (open checklist, store pending status). Used for mandatory checklists. */
+  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  /** Called after status is saved when checklist is optional; opens checklist for optional fill. */
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** Bulk status update: when some candidates require checklist, called with queue to process one-by-one (checklist form for each) */
+  onBulkStatusRequiresChecklist?: (queue: BulkStatusQueueItem[]) => void;
 }
 
 export const getValidationSchema = (currentJobId: string | undefined) =>

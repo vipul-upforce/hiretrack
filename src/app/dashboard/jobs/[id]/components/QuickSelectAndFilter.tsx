@@ -40,6 +40,15 @@ interface QuickSelectAndFilterProps {
   onFilterChange: (filterConditions: FilterState) => void;
   showArchived: boolean;
   onShowArchivedChange: (show: boolean) => void;
+  /** When provided, bulk status update is validated; if any require checklist, queue is processed one-by-one */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist: boolean; validationInfo?: string } | null;
+  /** When bulk status update has candidates that require checklist, process queue (checklist form for each) */
+  onBulkStatusRequiresChecklist?: (
+    queue: import('@/components/unified-candidate-dialog/types').BulkStatusQueueItem[],
+  ) => void;
 }
 
 export function QuickSelectAndFilter({
@@ -48,6 +57,8 @@ export function QuickSelectAndFilter({
   onFilterChange,
   showArchived,
   onShowArchivedChange,
+  onValidateStatusChange,
+  onBulkStatusRequiresChecklist,
 }: QuickSelectAndFilterProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -525,7 +536,22 @@ export function QuickSelectAndFilter({
         </div>
       )}
       {isBulkDialogOpen && selectedCandidates.length > 0 && (
-        <UnifiedCandidateActionsDialog candidate={selectedCandidates[0]} candidates={selectedCandidates} isOpen={isBulkDialogOpen} onOpenChange={(open) => { setIsBulkDialogOpen(open); if (!open) setBulkActionType(undefined); }} initialAction={bulkActionType} onSuccess={() => { setIsBulkDialogOpen(false); clearSelectedCandidates(); }} />
+        <UnifiedCandidateActionsDialog
+          candidate={selectedCandidates[0]}
+          candidates={selectedCandidates}
+          isOpen={isBulkDialogOpen}
+          onOpenChange={(open) => {
+            setIsBulkDialogOpen(open);
+            if (!open) setBulkActionType(undefined);
+          }}
+          initialAction={bulkActionType}
+          onSuccess={() => {
+            setIsBulkDialogOpen(false);
+            clearSelectedCandidates();
+          }}
+          onValidateStatusChange={onValidateStatusChange}
+          onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
+        />
       )}
       <ArchiveConfirmDialog isOpen={isArchiveConfirmOpen} setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }} action={pendingArchiveAction} count={selectedCandidateIds.length} isLoading={isArchiving} onConfirm={handleBulkArchive} onClose={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }} />
       <style jsx>{`
