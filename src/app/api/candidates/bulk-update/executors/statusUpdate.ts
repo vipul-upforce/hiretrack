@@ -1,6 +1,7 @@
 import { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
 import { logger } from '@/lib/logger/logger.server';
+import { getNextStep } from '@/lib/utils/organization';
 import type {
   BulkStatusUpdateParams,
   BulkUpdateContext,
@@ -114,9 +115,31 @@ export async function runBulkStatusUpdate(
       };
     });
 
+    let nextStep = 'N/A';
+    if (statusUpdateCandidates.length > 0 && user.organizationId) {
+      try {
+        const firstJobId = statusUpdateCandidates[0]?.jobId ?? null;
+        nextStep = await getNextStep(
+          firstJobId,
+          status,
+          user.organizationId as string,
+        );
+      } catch (err) {
+        logger.warn(
+          { err },
+          'Bulk statusUpdate: failed to get next step from job',
+        );
+      }
+    }
+
     const statusUpdateNotificationMeta =
       statusUpdateCandidates.length > 0
-        ? { newStatus: status, candidates: statusUpdateCandidates }
+        ? {
+            newStatus: status,
+            nextStep,
+            statusMessage: params.remark?.trim() || undefined,
+            candidates: statusUpdateCandidates,
+          }
         : undefined;
 
     return {

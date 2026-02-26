@@ -9,38 +9,55 @@
   "
 >
   <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px">
-    <h2 style="color: #2c3e50; margin-top: 0">Bulk Remark Added</h2>
+    <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px">
+      Bulk Remark Added
+    </h2>
+
     <p style="margin: 0 0 15px 0">Hello {{recipientName}},</p>
 
     <p style="margin: 0 0 15px 0">
-      {{triggererName}} has added a remark to {{candidateCount}} candidate(s)
+      {{reviewerName}} has added a remark to {{candidateCount}} candidate(s)
       for the <strong>{{jobTitle}}</strong> position.
     </p>
 
     <div
       style="
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 5px;
-        margin: 15px 0;
-        border-left: 4px solid #007bff;
-      "
-    >
-      <p style="margin: 0 0 10px 0"><strong>Remark:</strong></p>
-      <p style="margin: 0">{{remarkText}}</p>
-    </div>
-
-    <div
-      style="
         background-color: white;
-        padding: 15px;
+        padding: 20px;
         border-radius: 5px;
-        margin: 15px 0;
+        margin: 20px 0;
         border: 1px solid #dee2e6;
       "
     >
-      <p style="margin: 0 0 10px 0"><strong>Affected candidates:</strong></p>
-      <div style="margin: 0">{{candidateListHtml}}</div>
+      <h3 style="margin-top: 0; color: #495057">Remark Details</h3>
+      <p style="margin: 5px 0"><strong>Added by:</strong> {{reviewerName}}</p>
+      <p style="margin: 5px 0"><strong>Date:</strong> {{remarkDate}}</p>
+      <p style="margin: 5px 0"><strong>Rating:</strong> {{rating}}</p>
+
+      <div
+        style="
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+        "
+      >
+        <p style="margin: 0 0 10px 0"><strong>Comments:</strong></p>
+        <p style="margin: 0">{{remarkText}}</p>
+      </div>
+
+      <div
+        style="
+          background-color: #fff3cd;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+          border-left: 4px solid #ffc107;
+        "
+      >
+        <p style="margin: 0 0 10px 0"><strong>Affected Candidates:</strong></p>
+        <div style="margin: 0">{{candidateListHtml}}</div>
+      </div>
     </div>
 
     <div style="text-align: center; margin: 20px 0">
@@ -54,7 +71,7 @@
           border-radius: 5px;
           display: inline-block;
         "
-        >View all candidates</a
+        >View All Candidates</a
       >
     </div>
 

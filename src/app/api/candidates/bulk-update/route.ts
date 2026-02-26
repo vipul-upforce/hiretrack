@@ -83,11 +83,18 @@ function parseOperation(
             (op.zoomMeetingAttachments as BulkAssignParams['zoomMeetingAttachments']) ??
             [],
           zoomAdditionalGuests: (op.zoomAdditionalGuests as string[]) ?? [],
+          remark: (op.remark as string) ?? undefined,
         },
       };
     }
     case 'unassign':
-      return { params: { operation: 'unassign', ...base } };
+      return {
+        params: {
+          operation: 'unassign',
+          ...base,
+          remark: (op.remark as string) ?? undefined,
+        },
+      };
     case 'archive': {
       const { action } = op;
       if (action !== 'archive' && action !== 'unarchive') {
@@ -140,7 +147,14 @@ function parseOperation(
       if (status === undefined || typeof status !== 'string') {
         return { error: 'statusUpdate requires status (string)' };
       }
-      return { params: { operation: 'statusUpdate', ...base, status } };
+      return {
+        params: {
+          operation: 'statusUpdate',
+          ...base,
+          status,
+          remark: (op.remark as string) ?? undefined,
+        },
+      };
     }
     default:
       return { error: 'Unknown operation' };
@@ -498,7 +512,6 @@ export async function POST(
         );
       }
     }
-
     // Bulk assign: interviewer gets one per candidate; admin/hr get one bulk
     if (assignNotificationMeta && user.organizationId) {
       try {
@@ -512,6 +525,11 @@ export async function POST(
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
           triggerUserEmail: user.email,
+          scheduledTime: assignNotificationMeta.scheduledTime,
+          duration: assignNotificationMeta.duration,
+          meetingLink: assignNotificationMeta.meetingLink,
+          outlookCalendarLink: assignNotificationMeta.outlookCalendarLink,
+          interviewType: assignNotificationMeta.interviewType,
         });
       } catch (notificationError) {
         logger.error(
@@ -530,6 +548,8 @@ export async function POST(
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
           triggerUserEmail: user.email,
+          feedback: unassignNotificationMeta.feedback,
+          nextStep: unassignNotificationMeta.nextStep,
         });
       } catch (notificationError) {
         logger.error(
@@ -538,7 +558,6 @@ export async function POST(
         );
       }
     }
-    console.log('addRemarkNotificationMeta', addRemarkNotificationMeta);
 
     // Bulk add remark: mentioned users get one per candidate (as MENTIONS); admin/hr get one bulk (as NEW_REMARKS)
     if (addRemarkNotificationMeta && user.organizationId) {
@@ -548,6 +567,7 @@ export async function POST(
           remarkText: addRemarkNotificationMeta.remarkText,
           roles: addRemarkNotificationMeta.roles,
           validMentionUserIds: addRemarkNotificationMeta.validMentionUserIds,
+          rating: addRemarkNotificationMeta.rating,
           candidates: addRemarkNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
@@ -586,6 +606,8 @@ export async function POST(
         await NotificationService.notifyBulkCandidateStatusUpdated({
           organizationId: user.organizationId,
           newStatus: statusUpdateNotificationMeta.newStatus,
+          nextStep: statusUpdateNotificationMeta.nextStep,
+          statusMessage: statusUpdateNotificationMeta.statusMessage,
           candidates: statusUpdateNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',

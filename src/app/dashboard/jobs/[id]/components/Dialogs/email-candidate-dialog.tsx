@@ -19,6 +19,7 @@ import {
   DEFAULT_VARIABLES,
 } from '@/app/dashboard/settings/templates/constants';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { substituteTemplateVariables } from '@/app/dashboard/settings/templates/components/email-template-editor/utils';
 import { EmailTemplateSelector } from './email-candidate-components/EmailTemplateSelector';
 import { EmailEditor } from './email-candidate-components/EmailEditor';
 import { EmailRecipients } from './email-candidate-components/EmailRecipients';
@@ -101,7 +102,7 @@ export function EmailCandidateDialog({
     // Filter to show only custom templates (suitable for manual emails to candidates)
     return loadedTemplates.filter((template) => template.isCustom);
   }, [templatesData]);
-  
+
   // Initialize user-related state
   useEffect(() => {
     if (user?.email) {
@@ -110,11 +111,12 @@ export function EmailCandidateDialog({
   }, [user]);
 
   const replaceVariables = (content: string): string =>
-    content
-      .replace(/{{SenderName}}/g, userName || userEmail)
-      .replace(/{{ReceiverName}}/g, candidate.name)
-      .replace(/{{PortalName}}/g, organizationName)
-      .replace(/{{jobTitle}}/g, candidate.jobTitle || '');
+    substituteTemplateVariables(content, {
+      SenderName: userName || userEmail,
+      ReceiverName: candidate.name,
+      PortalName: organizationName,
+      jobTitle: candidate.jobTitle || '',
+    });
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);

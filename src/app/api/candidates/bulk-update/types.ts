@@ -59,10 +59,14 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   }>;
   /** Additional guest emails for Zoom */
   zoomAdditionalGuests?: string[];
-  
+  /** Optional remark when assign + add remark done together (in history note only) */
+  remark?: string;
 }
 
-export type BulkUnassignParams = BulkUpdateBaseParams;
+export interface BulkUnassignParams extends BulkUpdateBaseParams {
+  /** Optional remark/feedback for unassign notification email */
+  remark?: string;
+}
 
 export interface BulkArchiveParams extends BulkUpdateBaseParams {
   action: 'archive' | 'unarchive';
@@ -89,6 +93,8 @@ export type BulkRemoveFollowUpParams = BulkUpdateBaseParams;
 
 export interface BulkStatusUpdateParams extends BulkUpdateBaseParams {
   status: string;
+  /** Optional remark when status update is done with add-remark (statusMessage in email) */
+  remark?: string;
 }
 
 export type BulkUpdateParams =
@@ -153,7 +159,17 @@ export interface BulkAssignNotificationMeta {
   interviewerName: string;
   jobId: string;
   jobTitle: string;
-  candidates: Array<{ candidateId: string; candidateName: string }>;
+  candidates: Array<{ candidateId: string; candidateName: string; jobId?: string }>;
+  /** When meeting is scheduled: ISO string */
+  scheduledTime?: string | null;
+  /** Meeting duration in minutes */
+  duration?: number;
+  /** First candidate's meeting link (Google Meet or Zoom) when scheduled */
+  meetingLink?: string | null;
+  /** Outlook calendar add link when scheduled */
+  outlookCalendarLink?: string | null;
+  /** Interview type when meeting scheduled */
+  interviewType?: string;
 }
 
 /** Meta for bulk-unassign notification: each previous interviewer gets one per candidate, admin/hr get one bulk */
@@ -166,6 +182,10 @@ export interface BulkUnassignNotificationMeta {
     previousInterviewerId: string;
     previousInterviewerName: string;
   }>;
+  /** Feedback message for bulk-unassign email template */
+  feedback?: string;
+  /** Next step message for bulk-unassign email template */
+  nextStep?: string;
 }
 
 export interface BulkUpdateResult {
@@ -188,6 +208,8 @@ export interface BulkUpdateResult {
     remarkText: string;
     roles: string[];
     validMentionUserIds?: string[];
+    /** Rating (0-5) for bulk remark email template */
+    rating?: number;
     candidates: Array<{
       candidateId: string;
       candidateName: string;
@@ -209,6 +231,9 @@ export interface BulkUpdateResult {
   /** For statusUpdate: used to send bulk status update notifications */
   statusUpdateNotificationMeta?: {
     newStatus: string;
+    nextStep?: string;
+    /** Remark text when status update + remark done together (statusMessage in email) */
+    statusMessage?: string;
     candidates: Array<{
       candidateId: string;
       candidateName: string;

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/notifications/email/unifiedEmailService';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/notifications/decision';
 import { getNextStep } from '@/lib/utils/organization';
 import { resolveSentByToObjectId } from '@/lib/utils/userResolution';
 import { StepCompletedRequest } from './types';
@@ -62,7 +62,7 @@ export async function handleStepCompleted(req: NextRequest) {
       .select('organizationId')
       .populate({
         path: 'organizationId',
-        select: 'name defaultLanes',
+        select: 'name',
       })
       .lean(),
     Settings?.findOne({
@@ -91,7 +91,11 @@ export async function handleStepCompleted(req: NextRequest) {
   }
 
   const fromEmail = getFromEmail(settings);
-  const nextSteps = getNextStep(organization, data.status);
+  const nextSteps = await getNextStep(
+    data.jobId ?? null,
+    data.status,
+    organizationId,
+  );
   const candidateDetails = `${req.headers.get('Origin')}/candidate/${data.candidateId}`;
 
   // Resolve sentBy and fetch email template in parallel
@@ -108,15 +112,15 @@ export async function handleStepCompleted(req: NextRequest) {
       {
         candidateName: data.name || '',
         completedBy: user.name || '',
-        candidateProfileLink: candidateDetails || '' || 'N/A',
+        candidateProfileLink: candidateDetails || 'N/A',
         jobTitle: data.title || '',
         organizationName:
           typeof organization?.organizationId === 'object'
             ? organization.organizationId.name || ''
-            : user?.organizationInfo?.name || '' || 'N/A',
+            : user?.organizationInfo?.name || '',
         stepName: data?.status || '',
-        feedback: latestRemark?.description || 'N/A' || 'N/A',
-        rating: latestRemark?.rating?.toString() || 'N/A' || 'N/A',
+        feedback: latestRemark?.description || 'N/A',
+        rating: latestRemark?.rating?.toString() || 'N/A',
         completionDate,
         recipientName: '',
         nextStep: nextSteps,

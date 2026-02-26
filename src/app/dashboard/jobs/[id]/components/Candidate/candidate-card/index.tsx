@@ -45,6 +45,9 @@ export const CandidateCard = memo(
     refetchAssignment,
     onSelectCandidate,
     isShiftPressed,
+    onValidateStatusChange,
+    onDeferStatusToChecklist,
+    onOpenChecklistAfterSave,
   }: CandidateCardProps) => {
     const triggerRef = useRef<HTMLButtonElement>(
       null,
@@ -393,6 +396,9 @@ export const CandidateCard = memo(
           onOpenCandidateDetailsDialog={onViewDetails}
           isDuplicateDialogOpen={isDuplicateDialogOpen}
           setIsDuplicateDialogOpen={setIsDuplicateDialogOpen}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={onOpenChecklistAfterSave}
         />
       </>
     );

@@ -119,6 +119,7 @@ export async function runBulkAddRemark(
             remarkText: description,
             roles: ['admin', 'hr'],
             validMentionUserIds: params.selectedMentionUserIds,
+            rating,
             candidates: toBroadcast.map((c) => ({
               candidateId:
                 (c as unknown as { _id: unknown })._id?.toString() ?? '',

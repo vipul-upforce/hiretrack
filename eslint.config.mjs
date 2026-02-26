@@ -58,6 +58,7 @@ const eslintConfig = [
       'security/detect-object-injection': 'off',
       'import/no-cycle': 'off',
       'no-restricted-syntax': 'off',
+      'no-continue': 'off',
       'no-await-in-loop': 'off',
       'no-useless-escape': 'off',
       'no-param-reassign': 'off',

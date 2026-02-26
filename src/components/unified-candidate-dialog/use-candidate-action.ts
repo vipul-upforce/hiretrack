@@ -56,6 +56,7 @@ import {
   CandidateActionType,
   ActionCheckboxes,
   UnifiedCandidateActionsDialogProps,
+  BulkStatusQueueItem,
 } from './types';
 
 /**
@@ -82,6 +83,10 @@ export function useCandidateActions({
   refetchAssignment,
   onSuccess,
   onOpenChange,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
+  onBulkStatusRequiresChecklist,
 }: UnifiedCandidateActionsDialogProps) {
   const isBulkMode = candidates && candidates.length > 1;
   const candidateList = isBulkMode ? candidates : [candidate];
@@ -368,7 +373,9 @@ export function useCandidateActions({
     const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
     if (scheduleGoogle || scheduleZoom || scheduleTeams) {
-      const processMeetingAttachments = async (files: unknown[]): Promise<Attachment[]> => {
+      const processMeetingAttachments = async (
+        files: unknown[],
+      ): Promise<Attachment[]> => {
         const attachmentsToProcess: Attachment[] = await Promise.all(
           (files || []).map(async (file): Promise<Attachment> => {
             if (file instanceof File) {
@@ -389,7 +396,7 @@ export function useCandidateActions({
             return file as Attachment;
           }),
         );
-          // Upload meeting attachments
+        // Upload meeting attachments
         return uploadAttachments({
           attachments: attachmentsToProcess,
           uploadFiles,
@@ -570,9 +577,10 @@ export function useCandidateActions({
 
     // Use uploaded attachments (passed from handleSubmit)
     const existingNames = new Set(candidate.attachments.map((a) => a.name));
-    const attachmentsToUse = uploadedAttachments.length > 0 
-      ? uploadedAttachments 
-      : (values.attachments || []);
+    const attachmentsToUse =
+      uploadedAttachments.length > 0
+        ? uploadedAttachments
+        : values.attachments || [];
     updates.attachments = [
       ...candidate.attachments,
       ...attachmentsToUse.filter((a) => !existingNames.has(a.name)),
@@ -755,24 +763,28 @@ export function useCandidateActions({
 
           // Process meeting attachments - convert File to Attachment format, then upload
           const meetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.meetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
+            (values.meetingAttachments || []).map(
+              async (file): Promise<Attachment> => {
+                if (file instanceof File) {
+                  const reader = new FileReader();
+                  const dataUrl = await new Promise<string>(
+                    (resolve, reject) => {
+                      reader.onload = () => resolve(reader.result as string);
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    },
+                  );
+                  return {
+                    id: Math.random().toString(36).slice(2),
+                    name: file.name,
+                    url: dataUrl,
+                    type: file.type,
+                    size: file.size,
+                  };
+                }
+                return file as Attachment;
+              },
+            ),
           );
           const processedMeetingAttachments = await uploadAttachments({
             attachments: meetingAttachmentsToProcess,
@@ -780,26 +792,31 @@ export function useCandidateActions({
             organizationId: user?.organizationId as string,
           });
 
-          const zoomMeetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.zoomMeetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
-          );
+          const zoomMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.zoomMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
           const processedZoomMeetingAttachments = await uploadAttachments({
             attachments: zoomMeetingAttachmentsToProcess,
             uploadFiles,
@@ -810,6 +827,10 @@ export function useCandidateActions({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
             time: values.time ? values.time.toISOString() : undefined,
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
             attachments: uploadedAttachments,
             scheduleGoogleMeet: values.scheduleGoogleMeet || false,
             meetDuration: values.meetDuration || 30,
@@ -824,15 +845,28 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Mark as Done
+        // Bulk Mark as Done (pass remark when both unassign + add remark selected)
         if (actions.markAsDone) {
           operations.push({
             operation: 'unassign',
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
           });
         }
 
-        // Bulk Add Remark
-        if (actions.addRemark && values.remarkDescription?.trim()) {
+        // Bulk Add Remark - only when remark is standalone (not combined with unassign/assign/statusUpdate)
+        // When combined, remark is passed to the primary op; no separate remark entry or notification
+        const isRemarkCombinedWithOther =
+          actions.addRemark &&
+          values.remarkDescription?.trim() &&
+          (actions.markAsDone || (actions.assignTo && values.interviewerId));
+        if (
+          actions.addRemark &&
+          values.remarkDescription?.trim() &&
+          !isRemarkCombinedWithOther
+        ) {
           operations.push({
             operation: 'addRemark',
             description: values.remarkDescription.trim(),
@@ -856,11 +890,40 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Status Update
+        // Bulk Status Update (pass remark when both status + remark selected)
         if (actions.updateStatus && values.newStatus) {
+          const newStatus = values.newStatus as string;
+          if (onValidateStatusChange && onBulkStatusRequiresChecklist) {
+            const queue: BulkStatusQueueItem[] = candidateList
+              .filter((c) => c.status !== newStatus)
+              .map((c) => {
+                const validation = onValidateStatusChange(c, newStatus);
+                return {
+                  candidateId: c._id,
+                  newStatus,
+                  validationInfo:
+                    validation?.requiresChecklist && validation.validationInfo
+                      ? validation.validationInfo
+                      : undefined,
+                };
+              });
+            const anyRequiresChecklist = queue.some(
+              (item) => item.validationInfo != null,
+            );
+            if (queue.length > 0 && anyRequiresChecklist) {
+              onBulkStatusRequiresChecklist(queue);
+              onOpenChange(false);
+              setIsSubmitting(false);
+              return;
+            }
+          }
           operations.push({
             operation: 'statusUpdate',
             status: values.newStatus as string,
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
           });
         }
 
@@ -915,7 +978,12 @@ export function useCandidateActions({
       const existingRemarks = candidateWithDetailsForRemark.remarks || [];
 
       if (actions.assignTo) {
-        await handleAssignTo(values, updates, historyEntries, uploadedAttachments);
+        await handleAssignTo(
+          values,
+          updates,
+          historyEntries,
+          uploadedAttachments,
+        );
       }
 
       if (actions.switchJob && values.jobId) {
@@ -937,12 +1005,47 @@ export function useCandidateActions({
         }
       }
 
-      if (
-        actions.updateStatus &&
-        values.newStatus &&
-        values.newStatus !== candidate.status
-      ) {
-        updates.status = values.newStatus as CandidateStatus;
+      // Single-candidate status update: run validation whenever user selected a different status
+      // (so checklist is shown even if they did not check "Update status"). Only apply status
+      // when checklist not required and they checked the box.
+      let deferredStatusChecklist: {
+        validationInfo: string;
+        newStatus: string;
+      } | null = null;
+      /** When set, checklist is optional: apply status in this save, then open checklist after API returns */
+      let openChecklistAfterSaveInfo: string | null = null;
+      const hasStatusChange =
+        values.newStatus && values.newStatus !== candidate.status;
+      if (hasStatusChange) {
+        if (
+          onValidateStatusChange &&
+          (onDeferStatusToChecklist || onOpenChecklistAfterSave)
+        ) {
+          const validation = onValidateStatusChange(
+            candidate,
+            values.newStatus as string,
+          );
+          if (validation?.requiresChecklist && validation.validationInfo) {
+            const isMandatory = validation.isMandatory === true;
+            if (isMandatory && onDeferStatusToChecklist) {
+              deferredStatusChecklist = {
+                validationInfo: validation.validationInfo,
+                newStatus: values.newStatus as string,
+              };
+            } else if (
+              !isMandatory &&
+              onOpenChecklistAfterSave &&
+              actions.updateStatus
+            ) {
+              updates.status = values.newStatus as CandidateStatus;
+              openChecklistAfterSaveInfo = validation.validationInfo;
+            }
+          } else if (actions.updateStatus) {
+            updates.status = values.newStatus as CandidateStatus;
+          }
+        } else if (actions.updateStatus) {
+          updates.status = values.newStatus as CandidateStatus;
+        }
       }
 
       if (values.removeFollowUp) {
@@ -1076,7 +1179,16 @@ export function useCandidateActions({
       }
 
       if (Object.keys(updates).length === 0 && historyEntries.length === 0) {
-        toast({ title: 'Info', description: 'No changes to save' });
+        if (deferredStatusChecklist) {
+          onDeferStatusToChecklist?.(
+            deferredStatusChecklist.validationInfo,
+            deferredStatusChecklist.newStatus,
+          );
+          onOpenChange(false);
+        } else {
+          toast({ title: 'Info', description: 'No changes to save' });
+          onOpenChange(false);
+        }
         setIsSubmitting(false);
         helpers.setSubmitting(false);
         return;
@@ -1102,10 +1214,12 @@ export function useCandidateActions({
       if (actions.assignTo) sentAssignmentMail(result, sendEmail);
 
       if (
+        !deferredStatusChecklist &&
         actions.updateStatus &&
         values.newStatus &&
         values.newStatus !== candidate.status
       ) {
+        // Status was applied in this request (either no checklist or optional checklist)
         sentStatusMailHandler(
           { ...result, prev_status: candidate.status },
           sendStatusMail,
@@ -1115,12 +1229,34 @@ export function useCandidateActions({
           },
         );
       }
+
       for (const entry of historyEntries) {
         await updateCandidateHistory({
           candidateId: candidate._id,
           jobId: candidate.jobId || getJobId(candidate) || '',
           newEntry: entry,
         }).unwrap();
+      }
+
+      // If status was deferred to mandatory checklist, open checklist dialog and exit (parent will switch view)
+      if (deferredStatusChecklist) {
+        onDeferStatusToChecklist?.(
+          deferredStatusChecklist.validationInfo,
+          deferredStatusChecklist.newStatus,
+        );
+        onOpenChange(false);
+        setIsSubmitting(false);
+        helpers.setSubmitting(false);
+        return;
+      }
+
+      // If optional checklist: status was applied above; open checklist for optional fill now
+      if (openChecklistAfterSaveInfo) {
+        onOpenChecklistAfterSave?.(openChecklistAfterSaveInfo);
+        onOpenChange(false);
+        setIsSubmitting(false);
+        helpers.setSubmitting(false);
+        return;
       }
 
       // Send step completed email when marking as done
