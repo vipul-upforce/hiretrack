@@ -341,6 +341,7 @@ export const baseApi = createApi({
     'EmailNotificationJob',
     'EmailNotificationUser',
     'Profile',
+    'CronTimezone',
   ],
   endpoints: () => ({}),
 });
