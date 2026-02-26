@@ -3,10 +3,7 @@ import logger from '@/lib/logger';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
 import { batchCheckNotifications } from '../decision';
 import { getUsersByRole } from '../core/userHelpers';
-import {
-  createBulkNotificationsWithDecision,
-  createNotificationWithDecision,
-} from '../core/notificationHelpers';
+import { createBulkNotificationsWithDecision } from '../core/notificationHelpers';
 import { CreateNotificationParams } from '../types';
 import { createBulkNotifications } from '../core/notificationCore';
 
@@ -134,4 +131,3 @@ export async function notifyUserAdded(params: {
     logger.error('Failed to send user added notification:', error);
   }
 }
-
