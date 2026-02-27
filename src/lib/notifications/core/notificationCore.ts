@@ -87,9 +87,6 @@ export async function createBulkNotifications(
         id !== baseParams.metadata?.interviewerId,
     );
 
-    // Use same timestamp for all notifications in batch (ensures consistent ordering)
-    const createdAt = new Date();
-
     const notifications = recipients.map((recipientId) => ({
       organizationId: baseParams.organizationId,
       recipientId,
@@ -104,7 +101,8 @@ export async function createBulkNotifications(
       priority: baseParams.priority || 'medium',
       metadata: baseParams.metadata || {},
       isRead: false,
-      createdAt, // Explicit timestamp - guaranteed to exist and be accurate
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
 
     const createdNotifications = await Notification.insertMany(notifications);

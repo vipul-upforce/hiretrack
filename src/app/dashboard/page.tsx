@@ -97,6 +97,7 @@ export default function DashboardPage() {
     setCurrentPage: state.setCurrentPage,
     setHasMoreData: state.setHasMoreData,
     setAssignments: state.setAssignments,
+    assignmentsCounts: state.assignmentsCounts,
     isActivitiesSidebarOpen: state.isActivitiesSidebarOpen,
     sseCandidates,
     sseAddedCountRef: state.sseAddedCountRef,

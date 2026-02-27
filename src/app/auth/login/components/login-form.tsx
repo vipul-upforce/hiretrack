@@ -346,7 +346,6 @@ export function LoginForm({
               <motion.button
                 type="button"
                 onClick={onSignupClick}
-                disabled={isDisabled}
                 className="border-primary/50 hover:bg-primary/5 w-full rounded-lg border-2 py-2.5 text-sm font-medium text-foreground transition-all hover:border-primary disabled:opacity-50"
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}

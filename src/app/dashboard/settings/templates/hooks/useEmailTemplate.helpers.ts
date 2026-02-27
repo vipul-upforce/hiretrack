@@ -1,6 +1,7 @@
 import type { EmailTemplate, MailTemplatePayload } from '../types';
 import type { defaultTemplates as defaultTemplatesImport } from '../constants';
 import { Data } from '../constants';
+import { extractVariablesFromContent } from '../components/email-template-editor/utils';
 
 export type MailTemplateApiItem = {
   templateId: string;
@@ -123,29 +124,19 @@ function getPreviewData(): Record<string, string> {
   previewData.nextStep = 'Final Interview with Hiring Manager';
   previewData.otpCode = Data.otp;
   previewData.otp = Data.otp;
-  previewData.expirationTime = '10 minutes';
+  previewData.expirationTime = '10';
+
+  // Bulk template variables
+  previewData.candidateCount = '3';
+  previewData.triggererName = Data.actionBy;
+  previewData.actionUrl = Data.candidateDetailsPage;
+  previewData.viewAllCandidatesLink = Data.candidateDetailsPage;
+  previewData.jobId = 'job-123';
+  previewData.candidateListHtml = `<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;"><li style="margin: 4px 0;"><a href="${Data.candidateDetailsPage}" style="color: #007bff; text-decoration: none;">${Data.candidateName}</a></li><li style="margin: 4px 0;"><a href="${Data.candidateDetailsPage}" style="color: #007bff; text-decoration: none;">Jane Smith</a></li><li style="margin: 4px 0;"><a href="${Data.candidateDetailsPage}" style="color: #007bff; text-decoration: none;">Bob Wilson</a></li></ul>`;
 
   return previewData;
 }
 
-/**
- * Extracts all variables from content using regex pattern {{variableName}}
- */
-function extractVariablesFromContent(content: string): string[] {
-  const variableRegex = /\{\{([^}]+)\}\}/g;
-  const matches: string[] = [];
-  let match = variableRegex.exec(content);
-
-  while (match) {
-    const variableName = match[1]?.trim();
-    if (variableName) {
-      matches.push(variableName);
-    }
-    match = variableRegex.exec(content);
-  }
-
-  return [...new Set(matches)];
-}
 
 export function renderTemplatePreview(args: {
   content: string;

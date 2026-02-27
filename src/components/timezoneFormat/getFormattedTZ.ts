@@ -14,6 +14,105 @@ interface SettingsDoc {
   timeZone: TimeZone;
 }
 
+/**
+ * Formats a date using the organization's timezone settings.
+ * Use this when you have organizationId but no NextRequest (e.g. bulk handlers, background jobs).
+ * Same output format as getFormattedDate: "25 February 2025, 10:30 am" (en-IN, org timezone).
+ */
+export async function formatDateForOrganization(
+  date: Date | string,
+  organizationId: string,
+  iso?: boolean,
+): Promise<string | Date> {
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (Number.isNaN(dateObj.getTime())) {
+      throw new Error('Invalid date');
+    }
+
+    let timeZone = 'UTC';
+    if (organizationId) {
+      try {
+        const settings: SettingsDoc[] | undefined = await Settings?.find(
+          { organizationId },
+          { timeZone: 1, organizationId: 1 },
+        ).lean();
+
+        if (settings && settings.length > 0) {
+          const orgSettings = settings.find(
+            (s) => s.organizationId === organizationId,
+          );
+          timeZone = orgSettings?.timeZone?.name || 'UTC';
+        }
+      } catch (settingsError) {
+        logger.warn(
+          `Failed to fetch timezone settings for orgId ${organizationId}, using UTC:`,
+          settingsError,
+        );
+      }
+    }
+
+    if (iso) {
+      const isoLikeString = formatInTimeZone(
+        dateObj,
+        timeZone,
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+      );
+      return new Date(isoLikeString);
+    }
+
+    const formatter = new Intl.DateTimeFormat('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone,
+    });
+
+    return formatter.format(dateObj);
+  } catch (err) {
+    if (err instanceof Error && err.message === 'Invalid date') {
+      logger.error('Error formatting date - invalid date provided:', err);
+      return 'Invalid Date';
+    }
+
+    logger.warn('Error in formatDateForOrganization, using UTC fallback:', err);
+
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (Number.isNaN(dateObj.getTime())) {
+        return 'Invalid Date';
+      }
+
+      if (iso) {
+        const isoLikeString = formatInTimeZone(
+          dateObj,
+          'UTC',
+          "yyyy-MM-dd'T'HH:mm:ssXXX",
+        );
+        return new Date(isoLikeString);
+      }
+
+      const formatter = new Intl.DateTimeFormat('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC',
+      });
+
+      return formatter.format(dateObj);
+    } catch (fallbackError) {
+      logger.error('Error in fallback date formatting:', fallbackError);
+      return 'Invalid Date';
+    }
+  }
+}
+
 export async function getFormattedDate(
   req: NextRequest,
   date: Date | string,

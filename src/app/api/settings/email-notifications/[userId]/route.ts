@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { User } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
-import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
+import { getUserEffectiveNotificationSettings } from '@/lib/notifications/decision';
 
 // Valid notification setting keys (using Set for O(1) lookup)
 const VALID_NOTIFICATION_KEYS = new Set([

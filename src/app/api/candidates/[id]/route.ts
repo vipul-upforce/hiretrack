@@ -19,6 +19,7 @@ import { ITag } from '@/lib/models/organization';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import logger from '@/lib/logger';
 import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
+import { filterSensitiveRedFlagsForInterviewer } from '@/lib/filterSensitiveRedFlags';
 import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
 import { Attachment } from '../route';
 
@@ -447,34 +448,141 @@ export async function PUT(
     if ('tags' in data) {
       updateObj.$set.tags = data.tags;
     }
+    // if ('followUp' in data) {
+    //   updateObj.$set.followUp = data.followUp;
+    //   const oldFollowUp = existingCandidate.followUp;
+    //   const newFollowUp = data?.followUp;
+    //   console.log('$$$$$$$ OLD FOLLOW UP: ', oldFollowUp);
+    //   console.log('$$$$$$$ NEW FOLLOW UP: ', newFollowUp);
+
+    //   try {
+    //     const jobInfo = existingCandidate.jobId as IFJob;
+
+    //     // Follow-up notifications
+    //     // if ("followUp" in data) {
+    //     // Case 1: Follow-up Added
+    //     // Check if old follow-up is effectively empty (null/undefined OR both note and date are null)
+    //     const isOldFollowUpEmpty =
+    //       !oldFollowUp ||
+    //       oldFollowUp === null ||
+    //       oldFollowUp === undefined ||
+    //       ((oldFollowUp.note === null ||
+    //         oldFollowUp.note === undefined ||
+    //         oldFollowUp.note === '') &&
+    //         (oldFollowUp.date === null || oldFollowUp.date === undefined));
+
+    //     // Check if new follow-up has actual content
+    //     const hasNewFollowUpContent =
+    //       newFollowUp &&
+    //       ((newFollowUp.note != null && newFollowUp.note !== '') ||
+    //         newFollowUp.date != null);
+
+    //     if (isOldFollowUpEmpty && hasNewFollowUpContent) {
+    //       await NotificationService.notifyFollowUpAdded({
+    //         organizationId,
+    //         candidateId: existingCandidate._id?.toString() || '',
+    //         candidateName: existingCandidate.name,
+    //         jobId:
+    //           jobInfo?._id?.toString() ||
+    //           existingCandidate.jobId?.toString() ||
+    //           '',
+    //         jobTitle: jobInfo?.title || 'Unknown Job',
+    //         followupNote: newFollowUp.note || '',
+    //         followupDate: newFollowUp.date
+    //           ? new Date(newFollowUp.date)
+    //           : undefined,
+    //         triggerUserId: userData?.id || '',
+    //         triggerUserName: userData?.name || '',
+    //       });
+    //     }
+    //     // Case 2: Follow-up Updated
+    //     else if (
+    //       oldFollowUp &&
+    //       oldFollowUp.note !== null &&
+    //       oldFollowUp.note !== undefined &&
+    //       newFollowUp &&
+    //       newFollowUp.note !== null &&
+    //       (newFollowUp.note !== oldFollowUp.note ||
+    //         newFollowUp.date !== oldFollowUp.date?.toISOString())
+    //     ) {
+    //       await NotificationService.notifyFollowupUpdated({
+    //         organizationId,
+    //         candidateId: existingCandidate._id?.toString() || '',
+    //         candidateName: existingCandidate.name,
+    //         jobId:
+    //           jobInfo?._id?.toString() ||
+    //           existingCandidate.jobId?.toString() ||
+    //           '',
+    //         jobTitle: jobInfo?.title || 'Unknown Job',
+    //         triggerUserId: userData?.id || '',
+    //         triggerUserName: userData?.name || '',
+    //       });
+    //     }
+    //     // Case 3: Follow-up Removed
+    //     else if (
+    //       oldFollowUp &&
+    //       oldFollowUp !== undefined &&
+    //       (oldFollowUp.note !== null || oldFollowUp.date !== null) &&
+    //       newFollowUp &&
+    //       newFollowUp.note === null &&
+    //       newFollowUp.date === null
+    //     ) {
+    //       await NotificationService.notifyFollowupRemoved({
+    //         organizationId,
+    //         candidateId: existingCandidate._id?.toString() || '',
+    //         candidateName: existingCandidate.name,
+    //         jobId:
+    //           jobInfo?._id?.toString() ||
+    //           existingCandidate.jobId?.toString() ||
+    //           '',
+    //         jobTitle: jobInfo?.title || 'Unknown Job',
+    //         triggerUserId: userData?.id || '',
+    //         triggerUserName: userData?.name || '',
+    //       });
+    //     }
+    //     // }
+    //   } catch (notificationError) {
+    //     logger.error(
+    //       { notificationError, url: request.url },
+    //       'Failed to send follow-up notifications',
+    //     );
+    //     // Continue execution even if notification fails
+    //   }
+    // }
+    // Track follow-up history entry for assignment completion
+
     if ('followUp' in data) {
       updateObj.$set.followUp = data.followUp;
+
       const oldFollowUp = existingCandidate.followUp;
       const newFollowUp = data?.followUp;
 
       try {
         const jobInfo = existingCandidate.jobId as IFJob;
 
-        // Follow-up notifications
-        // if ("followUp" in data) {
-        // Case 1: Follow-up Added
-        // Check if old follow-up is effectively empty (null/undefined OR both note and date are null)
-        const isOldFollowUpEmpty =
-          !oldFollowUp ||
-          oldFollowUp === null ||
-          oldFollowUp === undefined ||
-          ((oldFollowUp.note === null ||
-            oldFollowUp.note === undefined ||
-            oldFollowUp.note === '') &&
-            (oldFollowUp.date === null || oldFollowUp.date === undefined));
+        // -----------------------------
+        // Normalize Values
+        // -----------------------------
+        const normalizeDate = (value: string | null | undefined) => {
+          if (!value) return null;
+          return new Date(value).toISOString();
+        };
 
-        // Check if new follow-up has actual content
-        const hasNewFollowUpContent =
-          newFollowUp &&
-          ((newFollowUp.note != null && newFollowUp.note !== '') ||
-            newFollowUp.date != null);
+        const oldNote = oldFollowUp?.note ?? null;
+        const newNote = newFollowUp?.note ?? null;
 
-        if (isOldFollowUpEmpty && hasNewFollowUpContent) {
+        const oldDate = normalizeDate(oldFollowUp?.date?.toISOString());
+        const newDate = normalizeDate(
+          newFollowUp?.date as string | null | undefined,
+        );
+
+        const hadOldContent = !!oldNote || !!oldDate;
+        const hasNewContent = !!newNote || !!newDate;
+
+        const noteChanged = oldNote !== newNote;
+        const dateChanged = oldDate !== newDate;
+
+        if (!hadOldContent && hasNewContent) {
           await NotificationService.notifyFollowUpAdded({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -484,25 +592,16 @@ export async function PUT(
               existingCandidate.jobId?.toString() ||
               '',
             jobTitle: jobInfo?.title || 'Unknown Job',
-            followupNote: newFollowUp.note || '',
-            followupDate: newFollowUp.date
-              ? new Date(newFollowUp.date)
-              : undefined,
+            followupNote: newNote || '',
+            followupDate: newDate ? new Date(newDate) : undefined,
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
           });
-        }
-        // Case 2: Follow-up Updated
-        else if (
-          oldFollowUp &&
-          oldFollowUp.note !== null &&
-          oldFollowUp.note !== undefined &&
-          newFollowUp &&
-          newFollowUp.note !== null &&
-          (newFollowUp.note !== oldFollowUp.note ||
-            newFollowUp.date !== oldFollowUp.date?.toISOString())
+        } else if (
+          hadOldContent &&
+          hasNewContent &&
+          (noteChanged || dateChanged)
         ) {
-          console.log('notifyFollowupUpdated');
           await NotificationService.notifyFollowupUpdated({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -515,16 +614,7 @@ export async function PUT(
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
           });
-        }
-        // Case 3: Follow-up Removed
-        else if (
-          oldFollowUp &&
-          oldFollowUp !== undefined &&
-          (oldFollowUp.note !== null || oldFollowUp.date !== null) &&
-          newFollowUp &&
-          newFollowUp.note === null &&
-          newFollowUp.date === null
-        ) {
+        } else if (hadOldContent && !hasNewContent) {
           await NotificationService.notifyFollowupRemoved({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -538,7 +628,6 @@ export async function PUT(
             triggerUserName: userData?.name || '',
           });
         }
-        // }
       } catch (notificationError) {
         logger.error(
           { notificationError, url: request.url },
@@ -547,7 +636,6 @@ export async function PUT(
         // Continue execution even if notification fails
       }
     }
-    // Track follow-up history entry for assignment completion
     let followUpHistoryEntry: ICandidateHistory | null = null;
 
     // Assignment completed follow-up notifications
@@ -853,11 +941,42 @@ export async function PUT(
 
               if (newAssignment && newInterviewer) {
                 // Check if interviewer changed
+                // const interviewerChanged =
+                //   oldAssignment &&
+                //   oldAssignment.interviewerId &&
+                //   oldAssignment.interviewerId.toString() !==
+                //     newAssignment.interviewerId;
+
+                // // Do not send assign notification when a meeting is already scheduled
+                // const hasMeeting =
+                //   newAssignment.googleMeet ||
+                //   newAssignment.zoomMeet ||
+                //   newAssignment.microsoftTeams;
+                // helper to normalize id (handles string or populated object)
+                const extractId = (value: string | { _id: string } | null) => {
+                  if (!value) return null;
+                  return typeof value === 'object'
+                    ? value._id?.toString()
+                    : value.toString();
+                };
+
+                const oldInterviewerId = extractId(
+                  oldAssignment?.interviewerId as
+                    | string
+                    | { _id: string }
+                    | null,
+                );
+                const newInterviewerId = extractId(
+                  newAssignment?.interviewerId as
+                    | string
+                    | { _id: string }
+                    | null,
+                );
+
                 const interviewerChanged =
-                  oldAssignment &&
-                  oldAssignment.interviewerId &&
-                  oldAssignment.interviewerId.toString() !==
-                    newAssignment.interviewerId;
+                  oldInterviewerId &&
+                  newInterviewerId &&
+                  oldInterviewerId !== newInterviewerId;
 
                 // Do not send assign notification when a meeting is already scheduled
                 const hasMeeting =
@@ -880,7 +999,7 @@ export async function PUT(
                     interviewerName: newInterviewer.name,
                     triggerUserId: userData?.id?.toString() || '',
                     triggerUserName: userData?.name || '',
-                    skipAdminHr: true,
+                    skipAdminHr: false,
                   });
                 }
 
@@ -1219,8 +1338,13 @@ export async function GET(
       userData.organizationId,
     );
 
+    const roleFilteredCandidate = filterSensitiveRedFlagsForInterviewer(
+      filteredCandidate as ICandidate,
+      userData.role,
+    );
+
     return NextResponse.json({
-      ...filteredCandidate,
+      ...roleFilteredCandidate,
       history: allHistory,
       duplicateCount,
     });

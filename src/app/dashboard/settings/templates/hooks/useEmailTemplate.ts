@@ -146,6 +146,11 @@ export const useEmailTemplates = () => {
     }
   }, [templateData, error]);
 
+  /** Reset preview mode when switching templates so user sees the editor for the new template. */
+  useEffect(() => {
+    setPreviewMode(false);
+  }, [selectedTemplate]);
+
   const renderPreview = (content: string, variables: string[]) => {
     const { html, missingVariables } = renderTemplatePreview({
       content,

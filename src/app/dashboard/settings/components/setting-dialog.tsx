@@ -131,6 +131,8 @@ function SettingDialog({
         return 'flex max-h-[90vh] w-[100vw] flex-col overflow-hidden p-0';
       case 'mail':
         return 'hide-scrollbar flex max-h-[90vh] min-w-[50vw] flex-col overflow-hidden p-0';
+      case 'captcha':
+        return 'hide-scrollbar flex max-h-[90vh] min-w-[50vw] flex-col overflow-hidden p-0';
       default:
         return 'overflow-hidden';
     }
@@ -166,7 +168,7 @@ function SettingDialog({
       setting.key === 'communication-meetings'
     ) {
       return (
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <ComponentToRender onClose={onClose} isOpen={isOpen} />
         </div>
       );

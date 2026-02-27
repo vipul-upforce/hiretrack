@@ -5,7 +5,7 @@ import connectToDatabase, {
   Settings,
   History,
 } from '@/lib/mongodb';
-import { sendMail } from '@/lib/emailUtils';
+import { sendMail } from '@/lib/notifications/email/emailService';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
 import { EmailAttachment } from '@/lib/features/candidate/candidateApi';

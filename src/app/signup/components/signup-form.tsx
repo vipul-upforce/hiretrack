@@ -47,10 +47,6 @@ export function SignupForm() {
   const pendingSubmitRef = useRef(false);
   const submitFormRef = useRef<(() => void) | null>(null);
 
-  const isInvisibleV2 =
-    captchaConfig?.captcha?.enableCaptcha &&
-    captchaType === 'v2' &&
-    captchaVariant === 'invisible';
 
   const onCaptchaChangeWrapped = useCallback((token: string | null) => {
     setCaptchaToken(token);

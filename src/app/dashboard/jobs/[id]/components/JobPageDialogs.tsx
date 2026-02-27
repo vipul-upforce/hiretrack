@@ -95,6 +95,8 @@ interface JobPageDialogsProps {
   /** When user closes checklist in bulk context: cancel entire bulk (no re-open). */
   onBulkChecklistCancel?: () => void;
   bulkDragTwoPhase?: { phase: 'outgoing' | 'incoming'; candidateIds: string[] } | null;
+  /** When the unified remark dialog (no checklist) closes; e.g. clear bulk selection. */
+  onUnifiedRemarkClose?: () => void;
 }
 
 export function JobPageDialogs({
@@ -151,6 +153,7 @@ export function JobPageDialogs({
   bulkStatusQueue,
   onBulkChecklistCancel,
   bulkDragTwoPhase,
+  onUnifiedRemarkClose,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   const openRemarksForRef = useRef(openRemarksFor);
@@ -192,6 +195,7 @@ export function JobPageDialogs({
         !openRemarksForRef.current.startsWith('{')
       ) {
         setOpenRemarksFor(null);
+        onUnifiedRemarkClose?.();
       }
     });
   };

@@ -21,6 +21,7 @@ export async function runBulkAssign(
     candidateIds,
     interviewerId,
     time,
+    remark,
     attachments = [],
     scheduleGoogleMeet = false,
     meetDuration = 30,
@@ -112,7 +113,13 @@ export async function runBulkAssign(
   const candidateUpdates: Array<{
     updateOne: {
       filter: { _id: string };
-      update: { $set: { assignment: unknown; attachments: unknown[] } };
+      update: {
+        $set: {
+          assignment: unknown;
+          attachments: unknown[];
+          'tracking.updatedAt': Date;
+        };
+      };
     };
   }> = [];
   const historyBulk: Array<{
@@ -123,6 +130,10 @@ export async function runBulkAssign(
     };
   }> = [];
   const ids: string[] = [];
+
+  /** Capture first candidate's meeting data for bulk email template variables */
+  let firstMeetingLink: string | null = null;
+  let firstOutlookLink: string | null = null;
 
   // Process each candidate to build updates (Google Meet must be per-candidate)
   for (const candidate of candidates) {
@@ -259,6 +270,12 @@ export async function runBulkAssign(
               meetingNotes,
               meetingAttachments: processedMeetingAttachments,
             };
+            if (!firstMeetingLink && scheduleResult.meetingLink) {
+              firstMeetingLink = scheduleResult.meetingLink;
+            }
+            if (!firstOutlookLink && scheduleResult.outlookCalendarLink) {
+              firstOutlookLink = scheduleResult.outlookCalendarLink;
+            }
           } else {
             logger.error(
               { status: scheduleResponse.status, candidateId },
@@ -363,6 +380,9 @@ export async function runBulkAssign(
               meetingNotes: zoomMeetingNotes,
               meetingAttachments: processedZoomMeetingAttachments,
             };
+            if (!firstMeetingLink && scheduleResult.meetingLink) {
+              firstMeetingLink = scheduleResult.meetingLink;
+            }
           } else {
             logger.error(
               { status: scheduleResponse.status, candidateId },
@@ -385,6 +405,10 @@ export async function runBulkAssign(
         meetingLinkLines.push(`Zoom meeting link: ${zoomMeetData.meetingLink}`);
       }
       const meetingLinkNote = meetingLinkLines.join('\n');
+      const noteDescription = [meetingLinkNote, remark?.trim()]
+        .filter(Boolean)
+        .join('\n\n');
+      const hasCombinedRemark = !!remark?.trim();
 
       const historyEntry: ICandidateHistory = {
         dateTime,
@@ -393,7 +417,13 @@ export async function runBulkAssign(
         previousInterviewer:
           previousInterviewerId as Schema.Types.ObjectId | null,
         assignmentBy: user.id ?? null,
-        note: { description: meetingLinkNote, date: '', rating: 0, userId: null },
+        note: {
+          description: noteDescription,
+          date: '',
+          rating: 0,
+          userId: null,
+          isPrivate: hasCombinedRemark, // Hide remark from interviewer when combined
+        },
         attachments: processedAttachments,
       };
 
@@ -424,6 +454,7 @@ export async function runBulkAssign(
             $set: {
               assignment: assignmentUpdate,
               attachments: mergedAttachments,
+              'tracking.updatedAt': new Date(dateTime),
             },
           },
         },
@@ -492,7 +523,19 @@ export async function runBulkAssign(
               candidateId:
                 (c as unknown as { _id: unknown })._id?.toString() ?? '',
               candidateName: (c as ICandidate).name ?? 'Candidate',
+              jobId: getJobIdString(c as ICandidate),
             })),
+            scheduledTime: time ?? undefined,
+            duration:
+              scheduleGoogleMeet && meetDuration
+                ? meetDuration
+                : scheduleZoomMeet && zoomMeetDuration
+                  ? zoomMeetDuration
+                  : undefined,
+            meetingLink: firstMeetingLink ?? undefined,
+            outlookCalendarLink: firstOutlookLink ?? undefined,
+            interviewType:
+              (toBroadcast[0] as ICandidate).status ?? 'Interview',
           }
         : undefined;
 

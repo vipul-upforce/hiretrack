@@ -1,8 +1,13 @@
 /* eslint-disable max-lines -- single module for all bulk notification handlers */
+import { formatDateForOrganization } from '@/components/timezoneFormat/getFormattedTZ';
 import { NotificationType } from '@/lib/models/notification';
 import logger from '@/lib/logger';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
-import { getUsersByRole } from '../core/userHelpers';
+import {
+  getUsersByRole,
+  getRecipientDisplayNameForBulkEmail,
+  getHrContactInfo,
+} from '../core/userHelpers';
 import {
   createBulkNotificationsWithDecision,
   createNotificationWithDecision,
@@ -71,10 +76,24 @@ export async function notifyBulkCandidateAssigned(params: {
   interviewerName: string;
   jobId: string;
   jobTitle: string;
-  candidates: Array<{ candidateId: string; candidateName: string }>;
+  candidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId?: string;
+  }>;
   triggerUserId: string;
   triggerUserName: string;
   triggerUserEmail?: string;
+  /** When meeting scheduled: ISO string */
+  scheduledTime?: string | null;
+  /** Meeting duration in minutes */
+  duration?: number;
+  /** First candidate's meeting link when scheduled */
+  meetingLink?: string | null;
+  /** Outlook calendar add link when scheduled */
+  outlookCalendarLink?: string | null;
+  /** Interview type when meeting scheduled */
+  interviewType?: string;
 }): Promise<void> {
   try {
     const count = params.candidates.length;
@@ -232,8 +251,38 @@ export async function notifyBulkCandidateAssigned(params: {
     const candidatesWithJobId = params.candidates.map((c) => ({
       candidateId: c.candidateId,
       candidateName: c.candidateName,
-      jobId: params.jobId,
+      jobId: c.jobId ?? params.jobId,
     }));
+
+    const interviewDate =
+      params.scheduledTime != null && params.scheduledTime
+        ? ((await formatDateForOrganization(
+            params.scheduledTime,
+            params.organizationId,
+          )) as string)
+        : 'N/A';
+    const interviewTime =
+      params.scheduledTime != null && params.scheduledTime ? '' : 'TBD';
+    const durationStr =
+      params.duration != null ? `${params.duration} minutes` : 'TBD';
+    const interviewTypeVal =
+      params.interviewType ??
+      (params.scheduledTime ? 'Interview' : 'Interview');
+
+    const baseVariables = {
+      candidateCount: count.toString(),
+      triggererName: params.triggerUserName,
+      jobTitle: params.jobTitle,
+      jobId: params.jobId,
+      candidateName: params.candidates[0]?.candidateName ?? '',
+      interviewDate,
+      interviewTime,
+      duration: durationStr,
+      interviewType: interviewTypeVal,
+      meetingLink: params.meetingLink ?? '',
+      outlookCalendarLink: params.outlookCalendarLink ?? '',
+    };
+
     const interviewerEmailRecipients: string[] = [];
     if (
       params.interviewerId !== params.triggerUserId &&
@@ -247,10 +296,7 @@ export async function notifyBulkCandidateAssigned(params: {
         notificationType: NotificationType.INTERVIEW_ASSIGNMENTS,
         templateKey: 'bulk-assign',
         variables: {
-          candidateCount: count.toString(),
-          triggererName: params.triggerUserName,
-          jobTitle: params.jobTitle,
-          jobId: params.jobId,
+          ...baseVariables,
           interviewerName: 'you',
           recipientName: params.interviewerName,
         },
@@ -265,17 +311,18 @@ export async function notifyBulkCandidateAssigned(params: {
       );
     }
     if (adminHrRecipients.length > 0) {
+      const adminRecipientName = await getRecipientDisplayNameForBulkEmail(
+        params.organizationId,
+        adminHrRecipients,
+      );
       sendBulkActionEmail({
         organizationId: params.organizationId,
         notificationType: NotificationType.INTERVIEW_ASSIGNMENTS,
         templateKey: 'bulk-assign',
         variables: {
-          candidateCount: count.toString(),
-          triggererName: params.triggerUserName,
-          jobTitle: params.jobTitle,
-          jobId: params.jobId,
+          ...baseVariables,
           interviewerName: params.interviewerName,
-          recipientName: 'there',
+          recipientName: adminRecipientName,
         },
         recipients: adminHrRecipients,
         candidates: candidatesWithJobId,
@@ -311,6 +358,10 @@ export async function notifyBulkCandidateUnassigned(params: {
   triggerUserId: string;
   triggerUserName: string;
   triggerUserEmail?: string;
+  /** Feedback message for bulk-unassign email template */
+  feedback?: string;
+  /** Next step message for bulk-unassign email template */
+  nextStep?: string;
 }): Promise<void> {
   try {
     const adminHrIds = await getUsersByRole(params.organizationId, [
@@ -483,6 +534,11 @@ export async function notifyBulkCandidateUnassigned(params: {
     const primaryJobId = params.unassignments[0]?.jobId ?? '';
     const primaryJobTitle = params.unassignments[0]?.jobTitle ?? '';
 
+    const completionDate = (await formatDateForOrganization(
+      new Date(),
+      params.organizationId,
+    )) as string;
+
     for (const [interviewerId, list] of byInterviewer) {
       if (list.length > BULK_SINGLE_NOTIFICATION_THRESHOLD) {
         const interviewerCandidates = list.map((u) => ({
@@ -500,6 +556,12 @@ export async function notifyBulkCandidateUnassigned(params: {
             jobTitle: list[0].jobTitle,
             jobId: list[0].jobId,
             recipientName: list[0].previousInterviewerName,
+            stepName: 'Interview Unassigned',
+            completedBy: params.triggerUserName,
+            completionDate,
+            feedback: params.feedback ?? 'N/A',
+            nextStep: params.nextStep ?? 'N/A',
+            candidateName: list[0].candidateName,
           },
           recipients: [interviewerId],
           candidates: interviewerCandidates,
@@ -513,6 +575,10 @@ export async function notifyBulkCandidateUnassigned(params: {
       }
     }
     if (adminHrRecipients.length > 0) {
+      const adminRecipientName = await getRecipientDisplayNameForBulkEmail(
+        params.organizationId,
+        adminHrRecipients,
+      );
       sendBulkActionEmail({
         organizationId: params.organizationId,
         notificationType: NotificationType.STEP_COMPLETED,
@@ -522,7 +588,13 @@ export async function notifyBulkCandidateUnassigned(params: {
           triggererName: params.triggerUserName,
           jobTitle: primaryJobTitle,
           jobId: primaryJobId,
-          recipientName: 'there',
+          recipientName: adminRecipientName,
+          stepName: 'Interview Unassigned',
+          completedBy: params.triggerUserName,
+          completionDate,
+          feedback: params.feedback ?? 'N/A',
+          nextStep: params.nextStep ?? 'N/A',
+          candidateName: params.unassignments[0]?.candidateName ?? '',
         },
         recipients: adminHrRecipients,
         candidates: candidatesForEmail,
@@ -548,6 +620,9 @@ export async function notifyBulkCandidateUnassigned(params: {
 export async function notifyBulkCandidateStatusUpdated(params: {
   organizationId: string;
   newStatus: string;
+  nextStep?: string;
+  /** Remark when status update + remark done together (statusMessage in email) */
+  statusMessage?: string;
   candidates: Array<{
     candidateId: string;
     candidateName: string;
@@ -565,6 +640,11 @@ export async function notifyBulkCandidateStatusUpdated(params: {
       'hr',
     ]);
     const filteredIds = adminHrIds.filter((id) => id !== params.triggerUserId);
+
+    const hrContactInfo = await getHrContactInfo(
+      params.organizationId,
+      params.triggerUserId,
+    );
 
     const count = params.candidates.length;
 
@@ -601,6 +681,11 @@ export async function notifyBulkCandidateStatusUpdated(params: {
         candidateName: c.candidateName,
         jobId: c.jobId,
       }));
+      const statusUpdateRecipientName =
+        await getRecipientDisplayNameForBulkEmail(
+          params.organizationId,
+          filteredIds,
+        );
       sendBulkActionEmail({
         organizationId: params.organizationId,
         notificationType: NotificationType.STATUS_UPDATES,
@@ -611,7 +696,14 @@ export async function notifyBulkCandidateStatusUpdated(params: {
           triggererName: params.triggerUserName,
           jobTitle: params.candidates[0]?.jobTitle ?? '',
           jobId: params.candidates[0]?.jobId ?? '',
-          recipientName: 'there',
+          recipientName: statusUpdateRecipientName,
+          statusMessage: params.statusMessage?.trim() || 'N/A',
+          nextSteps:
+            params.nextStep && params.nextStep !== 'N/A'
+              ? params.nextStep
+              : 'N/A',
+          hrContactInfo: hrContactInfo ?? 'N/A',
+          candidateName: params.candidates[0]?.candidateName ?? '',
         },
         recipients: filteredIds,
         candidates: candidatesForEmail,
@@ -640,6 +732,8 @@ export async function notifyBulkRemarkAdded(params: {
   remarkText: string;
   roles: string[];
   validMentionUserIds?: string[];
+  /** Rating (0-5) for bulk remark email template */
+  rating?: number;
   candidates: Array<{
     candidateId: string;
     candidateName: string;
@@ -747,6 +841,14 @@ export async function notifyBulkRemarkAdded(params: {
       const remarkTextTruncated =
         params.remarkText.substring(0, 100) +
         (params.remarkText.length > 100 ? '...' : '');
+      const remarkRecipientName = await getRecipientDisplayNameForBulkEmail(
+        params.organizationId,
+        allEmailRecipients,
+      );
+      const remarkDate = (await formatDateForOrganization(
+        new Date(),
+        params.organizationId,
+      )) as string;
       sendBulkActionEmail({
         organizationId: params.organizationId,
         notificationType: NotificationType.NEW_REMARKS,
@@ -754,10 +856,17 @@ export async function notifyBulkRemarkAdded(params: {
         variables: {
           candidateCount: params.candidates.length.toString(),
           triggererName: params.triggerUserName,
+          reviewerName: params.triggerUserName,
           remarkText: remarkTextTruncated,
+          remarkDate,
+          rating:
+            params.rating !== undefined && params.rating !== null
+              ? `${params.rating}/5`
+              : 'N/A',
           jobTitle: params.candidates[0]?.jobTitle ?? '',
           jobId: params.candidates[0]?.jobId ?? '',
-          recipientName: 'there',
+          recipientName: remarkRecipientName,
+          candidateName: params.candidates[0]?.candidateName ?? '',
         },
         recipients: allEmailRecipients,
         candidates: candidatesForEmail,

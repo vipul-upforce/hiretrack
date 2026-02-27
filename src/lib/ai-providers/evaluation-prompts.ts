@@ -1,5 +1,10 @@
-import { JobForEvaluate } from './evaluation-types';
+import {
+  DEFAULT_CUSTOM_FIELDS_PROMPT_TEMPLATE,
+  EvaluationCustomFieldSelection,
+} from '@/lib/evaluation/custom-field-context';
 import { ICandidate } from '../models/candidate';
+import { IEvaluationConfig } from '../models/settings';
+import { JobForEvaluate } from './evaluation-types';
 import { stripHtml } from './evaluation-utils';
 
 /**
@@ -243,4 +248,221 @@ export function buildPromptWithCustomTemplate(
   }
 
   return prompt;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isMeaningfulCustomFieldValue(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return false;
+    }
+    return value.some((item) => isMeaningfulCustomFieldValue(item));
+  }
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    if ('value' in record) {
+      return isMeaningfulCustomFieldValue(record.value);
+    }
+    const entries = Object.values(record);
+    if (entries.length === 0) {
+      return false;
+    }
+    return entries.some((entry) => isMeaningfulCustomFieldValue(entry));
+  }
+
+  return false;
+}
+
+function formatCustomFieldValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value).trim();
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => formatCustomFieldValue(item))
+      .filter((item) => item.length > 0)
+      .join(', ');
+  }
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+
+    if ('value' in record) {
+      return formatCustomFieldValue(record.value);
+    }
+
+    if (isNonEmptyString(record.name)) {
+      return record.name.trim();
+    }
+
+    if (isNonEmptyString(record.url)) {
+      return record.url.trim();
+    }
+
+    return JSON.stringify(record);
+  }
+
+  return '';
+}
+
+function getBaseFieldLabel(label: string): string {
+  return label.split(' |||||(')[0]?.trim() || label.trim();
+}
+
+function normalizeFieldKey(key: string): string {
+  return key.trim().toLowerCase();
+}
+
+function resolveCustomFieldValue(
+  values: Record<string, unknown>,
+  fieldLabel: string,
+): unknown {
+  const selectedBaseLabel = getBaseFieldLabel(fieldLabel);
+
+  if (Object.prototype.hasOwnProperty.call(values, fieldLabel)) {
+    return values[fieldLabel];
+  }
+
+  if (Object.prototype.hasOwnProperty.call(values, selectedBaseLabel)) {
+    return values[selectedBaseLabel];
+  }
+
+  const normalizedSelectedBase = normalizeFieldKey(selectedBaseLabel);
+  const exactBaseKey = Object.keys(values).find(
+    (key) => getBaseFieldLabel(key) === selectedBaseLabel,
+  );
+  if (exactBaseKey) {
+    return values[exactBaseKey];
+  }
+
+  const normalizedMatchKey = Object.keys(values).find(
+    (key) =>
+      normalizeFieldKey(getBaseFieldLabel(key)) === normalizedSelectedBase,
+  );
+  if (normalizedMatchKey) {
+    return values[normalizedMatchKey];
+  }
+
+  return undefined;
+}
+
+function buildCustomFieldLines(
+  selections: EvaluationCustomFieldSelection[],
+  values: Record<string, unknown> | undefined,
+): string[] {
+  if (!values || selections.length === 0) {
+    return [];
+  }
+
+  const lines: string[] = [];
+
+  selections.forEach((field) => {
+    const rawValue = resolveCustomFieldValue(values, field.label);
+    if (!isMeaningfulCustomFieldValue(rawValue)) {
+      return;
+    }
+
+    const formattedValue = formatCustomFieldValue(rawValue);
+    if (!formattedValue) {
+      return;
+    }
+
+    lines.push(`- ${getBaseFieldLabel(field.label)}: ${formattedValue}`);
+  });
+
+  return lines;
+}
+
+function replaceOrAppendSection(
+  template: string,
+  placeholder: string,
+  sectionTitle: string,
+  sectionContent: string,
+): string {
+  if (template.includes(placeholder)) {
+    return template.replaceAll(placeholder, sectionContent);
+  }
+
+  return `${template}\n\n${sectionTitle}\n\n${sectionContent}`;
+}
+
+/**
+ * Appends selected custom field context to the final evaluation prompt.
+ * Only fields with non-empty values are included in the prompt text.
+ */
+export function buildPromptWithCustomFieldsContext(
+  basePrompt: string,
+  evaluationConfig: IEvaluationConfig,
+  jobData: JobForEvaluate,
+  candidate: ICandidate,
+): string {
+
+  if (!evaluationConfig.useCustomFieldsPrompt) {
+    return basePrompt;
+  }
+
+  const selections = evaluationConfig.selectedCustomFields || [];
+  const jobSelections = selections.filter((field) => field.target === 'job');
+  const candidateSelections = selections.filter(
+    (field) => field.target === 'candidate',
+  );
+
+  const jobFieldLines = buildCustomFieldLines(
+    jobSelections,
+    jobData.customFields,
+  );
+  const candidateFieldLines = buildCustomFieldLines(
+    candidateSelections,
+    candidate.customFields as Record<string, unknown> | undefined,
+  );
+
+  const jobFieldsText =
+    jobFieldLines.length > 0 ? jobFieldLines.join('\n') : 'None';
+  const candidateFieldsText =
+    candidateFieldLines.length > 0 ? candidateFieldLines.join('\n') : 'None';
+
+  let customFieldPrompt =
+    evaluationConfig.customFieldsPrompt?.trim() ||
+    DEFAULT_CUSTOM_FIELDS_PROMPT_TEMPLATE;
+
+  customFieldPrompt = replaceOrAppendSection(
+    customFieldPrompt,
+    '{job_custom_fields}',
+    'Job-related custom fields:',
+    jobFieldsText,
+  );
+
+  customFieldPrompt = replaceOrAppendSection(
+    customFieldPrompt,
+    '{candidate_custom_fields}',
+    'Candidate related custom fields (filled by the candidate):',
+    candidateFieldsText,
+  );
+
+  return `${basePrompt}\n\n${customFieldPrompt}`.trim();
 }

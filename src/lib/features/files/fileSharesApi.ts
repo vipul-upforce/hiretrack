@@ -35,7 +35,7 @@ interface FileShareResponse {
 
 export const fileSharesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    uploadFiles: builder.mutation<FileShareResponse, FileShareRequest>({
+    uploladFileShares: builder.mutation<FileShareResponse, FileShareRequest>({
       query: (data) => ({
         url: '/file-shares',
         method: 'POST',
@@ -45,4 +45,4 @@ export const fileSharesApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useUploadFilesMutation } = fileSharesApi;
+export const { useUploladFileSharesMutation } = fileSharesApi;

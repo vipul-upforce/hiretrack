@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +109,13 @@ export function QuickSelectAndFilter({
     setBulkActionType(action);
     setIsBulkDialogOpen(true);
   };
+
+  /** Clear bulk dialog state and selection when the unified dialog submits or closes. */
+  const closeBulkDialogAndClearSelection = useCallback(() => {
+    setIsBulkDialogOpen(false);
+    setBulkActionType(undefined);
+    clearSelectedCandidates();
+  }, [clearSelectedCandidates]);
 
   const handleBulkArchive = async (action: 'archive' | 'unarchive') => {
     if (selectedCandidateIds.length === 0) return;
@@ -551,14 +558,11 @@ export function QuickSelectAndFilter({
           candidates={selectedCandidates}
           isOpen={isBulkDialogOpen}
           onOpenChange={(open) => {
-            setIsBulkDialogOpen(open);
-            if (!open) setBulkActionType(undefined);
+            if (!open) closeBulkDialogAndClearSelection();
+            else setIsBulkDialogOpen(true);
           }}
           initialAction={bulkActionType}
-          onSuccess={() => {
-            setIsBulkDialogOpen(false);
-            clearSelectedCandidates();
-          }}
+          onSuccess={closeBulkDialogAndClearSelection}
           onValidateStatusChange={onValidateStatusChange}
           onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
           onDeferStatusToChecklist={

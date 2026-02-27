@@ -15,7 +15,8 @@ import {
   useGetJobLanesQuery,
 } from '@/lib/features/lane/laneApi';
 import { NoDataFound } from '@/app/not-found';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
+import { clearSelectedCandidates } from '@/lib/redux/selectedCandidatesSlice';
 import logger from '@/lib/logger';
 import { initialCandidateColumns } from './data/initial-data';
 import LoaderSkeleton from './components/Lanes/loader-skeleton';
@@ -86,6 +87,11 @@ export default function JobProgressPage() {
     null,
   );
   const { user } = useAppSelector((state) => state.auth || {});
+  const dispatch = useAppDispatch();
+
+  const onUnifiedRemarkClose = useCallback(() => {
+    dispatch(clearSelectedCandidates());
+  }, [dispatch]);
 
   const {
     ref: scrollRef,
@@ -598,6 +604,7 @@ export default function JobProgressPage() {
           bulkStatusQueue={bulkStatusQueue}
           onBulkChecklistCancel={onBulkChecklistCancel}
           bulkDragTwoPhase={bulkDragTwoPhase}
+          onUnifiedRemarkClose={onUnifiedRemarkClose}
         />
       )}
     </div>

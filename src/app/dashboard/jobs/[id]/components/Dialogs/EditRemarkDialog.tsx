@@ -37,10 +37,19 @@ function EditRemarkDialog({
 }) {
   const { user } = useAppSelector((state) => state.auth || {});
 
-  // const [remarkRating, setRemarkRating] = useState(editingRemark?.rating || 0);
-  // const [remarkRatingHistory, setRemarkRatingHistory] = useState(
-  //   editingRemark?.rating || 0
-  // );
+  const handleSubmit = () => {
+    const trimmed = editingRemark?.description?.trim();
+
+    if (!trimmed || isLoading) return;
+
+    handleRemarkUpdate(
+      editingRemark?.id || '',
+      trimmed,
+      editingRemark?.isPrivate,
+    );
+
+    setIsEditRemarkDialogOpen(false);
+  };
 
   return (
     <Dialog
@@ -51,35 +60,24 @@ function EditRemarkDialog({
         <DialogHeader>
           <DialogTitle className="p-0">Edit Remark</DialogTitle>
         </DialogHeader>
+
         <div className="p-6">
           <MentionTextarea
             className="min-h-[120px] resize-none focus-visible:ring-offset-1"
             placeholder="Enter your remark here... (Alt+Enter to save)"
             value={editingRemark?.description || ''}
             onChange={(input) => {
-              const trimmed = input.trim();
-
-              // Disallow null/empty/whitespace-only input
-              if (trimmed === '') return;
-
               setEditingRemark({
                 id: editingRemark?.id || '',
                 rating: editingRemark?.rating,
                 isPrivate: editingRemark?.isPrivate || false,
-                description: input, // store original input, not trimmed
+                description: input,
               });
             }}
             onKeyDown={(e) => {
               if (e.altKey && e.key === 'Enter') {
                 e.preventDefault();
-                if (editingRemark?.description?.trim() && !isLoading) {
-                  handleRemarkUpdate(
-                    editingRemark?.id || '',
-                    editingRemark?.description || '',
-                    editingRemark?.isPrivate,
-                  );
-                  setIsEditRemarkDialogOpen(false);
-                }
+                handleSubmit();
               }
             }}
             organizationId={String(user?.organizationId) || ''}
@@ -87,6 +85,7 @@ function EditRemarkDialog({
             rows={5}
             isRemarkPrivate={editingRemark?.isPrivate ?? true}
           />
+
           <div className="mt-2 flex items-center gap-2">
             <Label htmlFor="rating">Rating:</Label>
             <Rating
@@ -100,6 +99,7 @@ function EditRemarkDialog({
             />
           </div>
         </div>
+
         <DialogFooter>
           <Button
             variant="outline"
@@ -107,17 +107,13 @@ function EditRemarkDialog({
           >
             Cancel
           </Button>
+
           <Button
-            disabled={isLoading}
+            disabled={
+              isLoading || !editingRemark?.description?.trim()
+            }
             variant="primary"
-            onClick={() => {
-              handleRemarkUpdate(
-                editingRemark?.id || '',
-                editingRemark?.description || '',
-                editingRemark?.isPrivate,
-              );
-              setIsEditRemarkDialogOpen(false);
-            }}
+            onClick={handleSubmit}
           >
             {isLoading ? 'Marking as done...' : 'Confirm'}
           </Button>

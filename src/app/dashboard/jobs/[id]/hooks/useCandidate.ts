@@ -624,6 +624,10 @@ export const useCandidate = ({
     if (!sourceColumn || !destColumn) return;
 
     if (bulkPayload && bulkPayload.bulkIds.length > 1) {
+      // Same-lane drop in multi-select: do not trigger status update or checklists
+      if (source.droppableId === destination.droppableId) {
+        return;
+      }
       const idsToMove = bulkPayload.bulkIds;
       type CandidateWithSource = { candidate: Candidate; sourceLaneId: string };
       const candidatesWithSource: CandidateWithSource[] = [];

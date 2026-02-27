@@ -53,7 +53,12 @@ export async function runBulkArchive(
     // Batch update: set isDeleted for all candidates that need updating
     await Candidate.updateMany(
       { _id: { $in: idsToUpdate } },
-      { $set: { isDeleted: targetIsDeleted } },
+      {
+        $set: {
+          isDeleted: targetIsDeleted,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     // Build history bulk operations

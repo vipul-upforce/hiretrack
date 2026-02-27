@@ -73,7 +73,7 @@ export function CandidateDetailsDialog({
   const [unifiedInitialAction, setUnifiedInitialAction] = useState<
     CandidateActionType | undefined
   >(undefined);
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state?.auth ?? {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
@@ -590,7 +590,7 @@ export function CandidateDetailsDialog({
 
         {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
-      {localCandidate && (
+      {localCandidate && isUnifiedOpen && (
         <UnifiedCandidateActionsDialog
           candidate={localCandidate}
           isOpen={isUnifiedOpen}

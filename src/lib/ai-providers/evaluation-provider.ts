@@ -13,6 +13,7 @@ import { parseEvaluationResponse } from './evaluation-parser';
 import {
   getEvaluationPrompt,
   buildPromptWithCustomTemplate,
+  buildPromptWithCustomFieldsContext,
 } from './evaluation-prompts';
 import { getEvaluationMetadata } from './evaluation-metadata';
 import logger from '../logger';
@@ -160,13 +161,20 @@ export class AIEvaluationService {
     jobData: JobForEvaluate,
     candidate: ICandidate,
   ): string {
-    return evaluationConfig.customPrompt
+    const basePrompt = evaluationConfig.customPrompt
       ? buildPromptWithCustomTemplate(
           evaluationConfig.customPrompt,
           jobData,
           candidate,
         )
       : getEvaluationPrompt(jobData, candidate);
+
+    return buildPromptWithCustomFieldsContext(
+      basePrompt,
+      evaluationConfig,
+      jobData,
+      candidate,
+    );
   }
 
   /**

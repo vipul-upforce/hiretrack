@@ -3,6 +3,7 @@ import connectToDatabase, { Organization, Job, Candidate } from '@/lib/mongodb';
 import { handleCustomFieldFiles, handleFileAttachments } from '@/lib/fileUtils';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { NotificationService } from '@/lib/notifications/notificationService';
+import { initJobLevelDefaultsForNewJob } from '@/lib/notifications/initJobLevelDefaults';
 import { logger } from '@/lib/logger/logger.server';
 import { IJob } from '@/lib/models/job';
 import { Document } from 'mongoose';
@@ -111,6 +112,20 @@ export async function POST(request: NextRequest) {
     delete data._id;
     const newJob = new Job(data);
     await newJob.save();
+
+    // Initialize job-level notification defaults (all true) for eligible users
+    try {
+      await initJobLevelDefaultsForNewJob(
+        organizationId.toString(),
+        newJob._id.toString(),
+      );
+    } catch (initError) {
+      logger.error(
+        { error: initError, jobId: newJob._id },
+        'Failed to init job-level notification defaults',
+      );
+      // Don't fail job creation
+    }
 
     // Send job creation notification
     if (userData && organizationId) {

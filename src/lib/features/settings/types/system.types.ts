@@ -159,3 +159,16 @@ export interface TriggerUpdateResponse {
   success: boolean;
   error?: string;
 }
+
+export interface CronTimezoneResponse {
+  timezone: string;
+}
+
+export interface CronTimezoneUpdateRequest {
+  timezone: string;
+}
+
+export interface CronTimezoneUpdateResponse {
+  success: boolean;
+  timezone: string;
+}

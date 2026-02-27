@@ -53,7 +53,10 @@ export async function runBulkAddRemark(
     // Batch update: push remark to all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $push: { remarks: newRemarkDoc } },
+      {
+        $push: { remarks: newRemarkDoc },
+        $set: { 'tracking.updatedAt': new Date(dateTime) },
+      },
     );
 
     // Build history bulk operations (each needs unique remarkId)
@@ -119,6 +122,7 @@ export async function runBulkAddRemark(
             remarkText: description,
             roles: ['admin', 'hr'],
             validMentionUserIds: params.selectedMentionUserIds,
+            rating,
             candidates: toBroadcast.map((c) => ({
               candidateId:
                 (c as unknown as { _id: unknown })._id?.toString() ?? '',

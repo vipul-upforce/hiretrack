@@ -29,6 +29,7 @@ import {
   UnifiedCandidateActionsDialogProps,
 } from '@/components/unified-candidate-dialog/types';
 import { ScrollToFormError } from '@/components/ui/scroll-to-error';
+import logger from '@/lib/logger';
 
 export function UnifiedCandidateActionsDialog(
   props: UnifiedCandidateActionsDialogProps,
@@ -37,6 +38,16 @@ export function UnifiedCandidateActionsDialog(
   const isBulkMode = candidates && candidates.length > 1;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const result = useCandidateActions(props);
+
+  if (!result) {
+    logger.error('[UnifiedCandidateActionsDialog] useCandidateActions returned undefined', {
+      isOpen: props.isOpen,
+      hasCandidate: !!props.candidate,
+    });
+    return null;
+  }
 
   const {
     state: {
@@ -64,7 +75,7 @@ export function UnifiedCandidateActionsDialog(
       setCancelMeetingProvider,
       toggleAction,
     },
-  } = useCandidateActions(props);
+  } = result;
 
   const currentJobId =
     typeof candidate.jobId === 'object'

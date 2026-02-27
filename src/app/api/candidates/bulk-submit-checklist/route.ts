@@ -325,7 +325,12 @@ export async function POST(req: NextRequest) {
 
       await Candidate!.collection.updateOne(
         { _id: new mongoose.Types.ObjectId(id) },
-        { $set: { status: newStatus } },
+        {
+          $set: {
+            status: newStatus,
+            'tracking.updatedAt': new Date(currentTime),
+          },
+        },
       );
 
       updatedIds.push(id);

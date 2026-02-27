@@ -1,3 +1,4 @@
+import { formatDateForOrganization } from '@/components/timezoneFormat/getFormattedTZ';
 import logger from '@/lib/logger';
 import mongoose from 'mongoose';
 import connectToDatabase, { User } from '@/lib/mongodb';
@@ -47,25 +48,36 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;');
 }
 
-/** Max candidate names shown in email before "View all X candidates" link. */
+/** Max candidate names shown in email before tiered summary (Option 2: fixed cap). */
 const BULK_CANDIDATE_LIST_MAX = 5;
 
+/**
+ * Builds HTML for bulk candidate list using tiered preview:
+ * - Shows first N names with links
+ * - For 50+ candidates: "...and X more. View all N candidates →"
+ * - Email length stays constant regardless of bulk size
+ */
 function buildCandidateListHtml(
   candidates: BulkActionEmailParams['candidates'],
   baseUrl: string,
   viewAllCandidatesLink: string,
 ): string {
   if (candidates.length === 0) return '';
-  const toItem = (c: (typeof candidates)[0]) =>
-    `<li style="margin: 4px 0;"><a href="${baseUrl}/candidate/${c.candidateId}" style="color: #007bff; text-decoration: none;">${escapeHtml(c.candidateName)}</a></li>`;
+  const toItem = (c: (typeof candidates)[0]) => {
+    const href = c.jobId
+      ? `${baseUrl}/dashboard/jobs/${c.jobId}?candidateId=${c.candidateId}`
+      : `${baseUrl}/candidate/${c.candidateId}`;
+    return `<li style="margin: 4px 0;"><a href="${href}" style="color: #007bff; text-decoration: none;">${escapeHtml(c.candidateName)}</a></li>`;
+  };
   const shown = candidates.slice(0, BULK_CANDIDATE_LIST_MAX);
   const items = shown.map(toItem).join('');
   const listHtml = `<ul style="margin: 10px 0; padding-left: 20px; list-style-type: disc;">${items}</ul>`;
   if (candidates.length <= BULK_CANDIDATE_LIST_MAX) {
     return listHtml;
   }
-  const moreLink = `<p style="margin: 10px 0 0 0;"><a href="${viewAllCandidatesLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">View all ${candidates.length} candidates →</a></p>`;
-  return `${listHtml}${moreLink}`;
+  const remainingCount = candidates.length - BULK_CANDIDATE_LIST_MAX;
+  const moreSection = `<p style="margin: 10px 0 0 0; color: #6c757d;">...and ${remainingCount} more. <a href="${viewAllCandidatesLink}" style="color: #007bff; text-decoration: none; font-weight: 500;">View all ${candidates.length} candidates →</a></p>`;
+  return `${listHtml}${moreSection}`;
 }
 
 async function processSmartNotificationRecipients(
@@ -291,7 +303,12 @@ export async function sendRemarkNotificationWithMentions(
   sentToUsers: string[]; // User IDs who received emails
   mentionedUsers?: string[];
 }> {
-  const { organizationName } = await getCommonEmailVariables(organizationId);
+  const [{ organizationName }, formattedRemarkDate] = await Promise.all([
+    getCommonEmailVariables(organizationId),
+    context.remarkDate
+      ? Promise.resolve(context.remarkDate)
+      : formatDateForOrganization(new Date(), organizationId),
+  ]);
   const { emailContent, emailSubject } = await getMappedEmailTemplate(
     'new-remark',
     {
@@ -299,7 +316,7 @@ export async function sendRemarkNotificationWithMentions(
       candidateName: context.candidateName || '',
       jobTitle: context.jobTitle || 'Unknown Position',
       reviewerName: context.reviewerName || 'Unknown',
-      remarkDate: context.remarkDate || new Date().toISOString().split('T')[0],
+      remarkDate: formattedRemarkDate as string,
       rating:
         context.rating !== undefined && context.rating !== null
           ? context.rating.toString()
@@ -380,6 +397,11 @@ export async function sendBulkActionEmail(
       actionUrl,
       dashboardLink,
       organizationName: organizationName || variables.organizationName || '',
+      candidateProfileLink:
+        variables.candidateProfileLink ||
+        (primaryJobId
+          ? `${baseUrl}/dashboard/jobs/${primaryJobId}`
+          : dashboardLink),
     };
 
     const { emailContent: finalContent, emailSubject: finalSubject } =
