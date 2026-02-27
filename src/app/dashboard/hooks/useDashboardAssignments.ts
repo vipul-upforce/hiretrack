@@ -56,6 +56,11 @@ interface UseDashboardAssignmentsParams {
   totalCountMembershipRef: React.MutableRefObject<Set<string>>;
 }
 
+interface FetchAssignmentsOptions {
+  /** When true, refetches data without toggling the full-page loading skeleton. */
+  silent?: boolean;
+}
+
 /**
  * Custom hook to manage assignment fetching and pagination logic.
  */
@@ -80,17 +85,22 @@ export function useDashboardAssignments({
   totalCountMembershipRef,
 }: UseDashboardAssignmentsParams) {
   const fetchAssignments = useCallback(
-    async (page = 1, isAppend = false) => {
+    async (
+      page = 1,
+      isAppend = false,
+      options: FetchAssignmentsOptions = {},
+    ) => {
       if (loadingRef.current) return;
+      const { silent = false } = options;
 
       loadingRef.current = true;
 
       if (!isAppend) {
-        setIsLoading(true);
+        if (!silent) {
+          setIsLoading(true);
+        }
         // Reset SSE offset counter on fresh fetch
         sseAddedCountRef.current = 0;
-        // Reset total-scope membership before rebuilding from fresh data
-        totalCountMembershipRef.current = new Set<string>();
       } else {
         setIsLoadingMore(true);
       }
