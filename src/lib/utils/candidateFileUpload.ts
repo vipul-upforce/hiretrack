@@ -37,7 +37,12 @@ type UploadFilesMutation = (arg: {
   formData: FormData;
   organizationId?: string;
   jobId?: string;
-}) => { unwrap: () => Promise<{ files: UploadedFileResult[]; customFields?: Record<string, UploadedFileResult[]> }> };
+}) => {
+  unwrap: () => Promise<{
+    files: UploadedFileResult[];
+    customFields?: Record<string, UploadedFileResult[]>;
+  }>;
+};
 
 function isNewCustomFieldFile(
   item: unknown,
@@ -53,9 +58,12 @@ function isNewCustomFieldFile(
   );
 }
 
-function base64ToFile(
-  item: { base64: string; name: string; type: string; size: number },
-): File {
+function base64ToFile(item: {
+  base64: string;
+  name: string;
+  type: string;
+  size: number;
+}): File {
   const base64Data = item.base64.split(',')[1] || item.base64;
   const mimeType = item.type || 'application/octet-stream';
   const byteCharacters = atob(base64Data);
@@ -114,12 +122,12 @@ export async function uploadCandidateFilesOneByOne(
 
   const { organizationId, jobId, onCustomFieldUploadError } = options;
   if (!organizationId && !jobId) {
-    throw new Error('Either organizationId or jobId is required for file upload');
+    throw new Error(
+      'Either organizationId or jobId is required for file upload',
+    );
   }
 
-  const uploadArg = organizationId
-    ? { organizationId }
-    : { jobId: jobId! };
+  const uploadArg = organizationId ? { organizationId } : { jobId: jobId! };
 
   // 1. Resume (single upload)
   if (hasResumeToUpload && values.resume instanceof File) {
@@ -130,7 +138,7 @@ export async function uploadCandidateFilesOneByOne(
       ...uploadArg,
     }).unwrap();
     if (uploadResult.files?.length > 0) {
-      result.resume = uploadResult.files[0];
+      result.resume = uploadResult.files[0] || null;
     }
   }
 
