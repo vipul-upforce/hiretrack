@@ -70,6 +70,7 @@ export async function runBulkMoveJob(
           jobId,
           status: lane,
           'tracking.assignedToJobDate': new Date().toISOString(),
+          'tracking.updatedAt': new Date(dateTime),
         },
       },
     );

@@ -66,7 +66,12 @@ export async function runBulkAddFollowUp(
     // Batch update: set followUp for all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $set: { followUp: followUpPayload } },
+      {
+        $set: {
+          followUp: followUpPayload,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     // Build history bulk operations

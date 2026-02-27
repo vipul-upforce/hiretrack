@@ -91,10 +91,11 @@ export async function POST(req: NextRequest) {
 
       // Update candidate
       await Candidate.findByIdAndUpdate(candidateId, {
-        jobId,
-        status: lane,
         $set: {
+          jobId,
+          status: lane,
           'tracking.assignedToJobDate': new Date().toISOString(),
+          'tracking.updatedAt': new Date(),
         },
       });
 

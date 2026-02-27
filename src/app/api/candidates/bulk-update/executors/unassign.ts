@@ -50,7 +50,12 @@ export async function runBulkUnassign(
     // Batch update: set assignment to null for all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $set: { assignment: null } },
+      {
+        $set: {
+          assignment: null,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     // Build history bulk operations

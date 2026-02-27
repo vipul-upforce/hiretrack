@@ -113,7 +113,13 @@ export async function runBulkAssign(
   const candidateUpdates: Array<{
     updateOne: {
       filter: { _id: string };
-      update: { $set: { assignment: unknown; attachments: unknown[] } };
+      update: {
+        $set: {
+          assignment: unknown;
+          attachments: unknown[];
+          'tracking.updatedAt': Date;
+        };
+      };
     };
   }> = [];
   const historyBulk: Array<{
@@ -448,6 +454,7 @@ export async function runBulkAssign(
             $set: {
               assignment: assignmentUpdate,
               attachments: mergedAttachments,
+              'tracking.updatedAt': new Date(dateTime),
             },
           },
         },
