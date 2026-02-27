@@ -77,12 +77,9 @@ export function useBulkStatusQueue({
       const optionalNeedChecklist = needChecklist.filter(
         (item) => !parseIsMandatory(item.validationInfo),
       );
-      const mandatoryNeedChecklist = needChecklist.filter((item) =>
-        parseIsMandatory(item.validationInfo),
-      );
       const toUpdateNow = [...noChecklist, ...optionalNeedChecklist];
 
-      if (mandatoryNeedChecklist.length === 0) {
+      if (needChecklist.length === 0) {
         setBulkStatusQueue(null);
         setRemainingChecklistSteps(null);
         (async () => {
@@ -123,16 +120,44 @@ export function useBulkStatusQueue({
         }
 
         // Group by same checklist key: one dialog per group, bulk-submit per group
-        const plan = buildChecklistPlan(mandatoryNeedChecklist);
-        const firstStep = plan.steps[0];
+        const plan = buildChecklistPlan(needChecklist);
+        // When we have both outgoing and incoming steps, open OUTGOING first (same as drag/single defer).
+        const steps = plan.steps.slice().sort((a, b) => {
+          if (a.type !== 'showChecklist' || b.type !== 'showChecklist') return 0;
+          let aOut = false; let bOut = false;
+          try {
+            aOut = (JSON.parse(a.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          try {
+            bOut = (JSON.parse(b.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          if (aOut && !bOut) return -1;
+          if (!aOut && bOut) return 1;
+          return 0;
+        });
+        const firstStep = steps[0];
         if (!firstStep || firstStep.type !== 'showChecklist') {
           setBulkStatusQueue(null);
           setRemainingChecklistSteps(null);
           return;
         }
+        const restSteps = plan.steps.length > 1 ? plan.steps.slice(1) : null;
+        const restStepsOrdered = restSteps ? restSteps.slice().sort((a, b) => {
+          if (a.type !== 'showChecklist' || b.type !== 'showChecklist') return 0;
+          let aOut = false; let bOut = false;
+          try {
+            aOut = (JSON.parse(a.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          try {
+            bOut = (JSON.parse(b.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          if (aOut && !bOut) return -1;
+          if (!aOut && bOut) return 1;
+          return 0;
+        }) : null;
 
         setBulkStatusQueue(firstStep.items);
-        setRemainingChecklistSteps(plan.steps.length > 1 ? plan.steps.slice(1) : null);
+        setRemainingChecklistSteps(restStepsOrdered && restStepsOrdered.length > 0 ? restStepsOrdered : null);
         setOpenRemarksFor(firstStep.validationInfo);
         setPendingStatusAfterChecklist({
           candidateId: firstStep.items[0].candidateId,

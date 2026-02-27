@@ -55,7 +55,11 @@ interface JobKanbanBoardProps {
     candidate: Candidate,
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
-  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 

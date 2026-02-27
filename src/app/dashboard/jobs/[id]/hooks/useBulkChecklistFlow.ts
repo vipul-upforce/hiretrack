@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { BulkStatusQueueItem } from '@/components/unified-candidate-dialog/types';
 import type { ChecklistSubmissionData } from '@/types/checklist';
-import type { ChecklistPlanStep } from '../utils/checklistGatekeeper';
+import { type ChecklistPlanStep, parseIsMandatory } from '../utils/checklistGatekeeper';
 import { useBulkSubmitChecklistMutation } from '@/lib/features/checklist/checklistApi';
 import { useBulkUpdateCandidatesMutation } from '@/lib/features/candidate/candidateApi';
 import { useToast } from '@/hooks/use-toast';
@@ -52,18 +52,24 @@ export function useBulkChecklistFlow({
       const candidateIds = bulkStatusQueue.map((item) => item.candidateId);
       const nextSteps = remainingChecklistSteps ?? [];
 
+      const isMandatory = parseIsMandatory(bulkStatusQueue[0]?.validationInfo);
+
       (async () => {
         try {
           await bulkSubmitChecklist({ data: payload, candidates }).unwrap();
-          await bulkUpdateCandidates({
-            operation: 'statusUpdate',
-            candidateIds,
-            status: newStatus,
-          }).unwrap();
+          if (isMandatory) {
+            await bulkUpdateCandidates({
+              operation: 'statusUpdate',
+              candidateIds,
+              status: newStatus,
+            }).unwrap();
+          }
           await refetch();
           toast({
             title: 'Success',
-            description: `Checklist applied and status updated for ${candidates.length} candidate(s)`,
+            description: isMandatory
+              ? `Checklist applied and status updated for ${candidates.length} candidate(s)`
+              : `Checklist applied for ${candidates.length} candidate(s)`,
           });
 
           if (nextSteps.length === 0) {

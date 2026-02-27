@@ -127,7 +127,11 @@ export interface UnifiedCandidateActionsDialogProps {
     newStatus: string,
   ) => StatusChangeValidationResult | null;
   /** Called when status update is deferred to checklist (open checklist, store pending status). Used for mandatory checklists. */
-  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
   /** Called after status is saved when checklist is optional; opens checklist for optional fill. */
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
   /** Bulk status update: when some candidates require checklist, called with queue to process one-by-one (checklist form for each) */

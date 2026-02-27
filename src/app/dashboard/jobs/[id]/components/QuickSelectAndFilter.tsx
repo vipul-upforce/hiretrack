@@ -49,6 +49,14 @@ interface QuickSelectAndFilterProps {
   onBulkStatusRequiresChecklist?: (
     queue: import('@/components/unified-candidate-dialog/types').BulkStatusQueueItem[],
   ) => void;
+  /** Defer status update until checklist is submitted (mandatory & optional) */
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  /** Open checklist after save (optional checklists) */
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 
 export function QuickSelectAndFilter({
@@ -59,6 +67,8 @@ export function QuickSelectAndFilter({
   onShowArchivedChange,
   onValidateStatusChange,
   onBulkStatusRequiresChecklist,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: QuickSelectAndFilterProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -551,6 +561,22 @@ export function QuickSelectAndFilter({
           }}
           onValidateStatusChange={onValidateStatusChange}
           onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (validationInfo, newStatus, next) => {
+                  setIsBulkDialogOpen(false);
+                  onDeferStatusToChecklist(validationInfo, newStatus, next);
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (validationInfo) => {
+                  setIsBulkDialogOpen(false);
+                  onOpenChecklistAfterSave(validationInfo);
+                }
+              : undefined
+          }
         />
       )}
       <ArchiveConfirmDialog isOpen={isArchiveConfirmOpen} setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }} action={pendingArchiveAction} count={selectedCandidateIds.length} isLoading={isArchiving} onConfirm={handleBulkArchive} onClose={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }} />

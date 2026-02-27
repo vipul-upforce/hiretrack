@@ -48,6 +48,10 @@ export function CandidateDetailsDialog({
   refetchCandidates,
   hideCloseButtons = false,
   isAssigning,
+  setIsAssigning,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -596,6 +600,23 @@ export function CandidateDetailsDialog({
           onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (info, status, next) => {
+                  setIsUnifiedOpen(false);
+                  onDeferStatusToChecklist(info, status, next);
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (info) => {
+                  setIsUnifiedOpen(false);
+                  onOpenChecklistAfterSave(info);
+                }
+              : undefined
+          }
           onSuccess={async () => {
             await refetch();
             setUnifiedInitialAction(undefined);

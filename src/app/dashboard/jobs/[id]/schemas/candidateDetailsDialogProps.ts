@@ -13,4 +13,15 @@ export interface CandidateDetailsDialogProps {
   hideCloseButtons?: boolean;
   isAssigning?: boolean;
   setIsAssigning?: (open: boolean) => void;
+  /** When provided, status update from unified dialog defers to checklist (outgoing then incoming) */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist?: boolean; isMandatory?: boolean; validationInfo?: string; validationSteps?: { validationInfo: string; newStatusAfterStep: string }[] } | null;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }

@@ -271,6 +271,28 @@ export function useChecklistSubmit({
           return;
         }
 
+        // Status was deferred from unified dialog; parent (handleChecklistComplete) will apply status
+        if (parsedChecklistInfo.statusDeferredFromUnified) {
+          await onSuccess({
+            payload: null,
+            candidateId: candidate._id,
+            hasChecklist: true,
+            successMessage: 'Checklist submitted successfully',
+          });
+          return;
+        }
+
+        // Second of two checklists from unified: status already applied after first; only submit checklist
+        if (parsedChecklistInfo.statusAlreadyApplied) {
+          await onSuccess({
+            payload: submittedChecklistPayload ?? null,
+            candidateId: candidate._id,
+            hasChecklist: true,
+            successMessage: 'Checklist submitted successfully',
+          });
+          return;
+        }
+
         const updatedCandidate = await mutations
           .updateCandidate({
             _id: candidate._id,

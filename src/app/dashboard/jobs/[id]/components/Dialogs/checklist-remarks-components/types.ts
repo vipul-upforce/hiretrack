@@ -17,6 +17,10 @@ export interface ChecklistInfo {
   checklistType?: 'incoming' | 'outgoing';
   /** When true, this is the first of two checklists; do not update candidate status on submit (second checklist will trigger move) */
   hasPendingChecklist?: boolean;
+  /** When true, checklist was opened after deferring status from unified dialog; parent will apply status via handleChecklistComplete */
+  statusDeferredFromUnified?: boolean;
+  /** When true, status was already applied (e.g. after first of two checklists); only submit checklist, do not update status */
+  statusAlreadyApplied?: boolean;
 }
 
 export interface ChecklistRemarksDialogProps {

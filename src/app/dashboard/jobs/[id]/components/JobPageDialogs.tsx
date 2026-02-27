@@ -80,7 +80,11 @@ interface JobPageDialogsProps {
     candidate: Candidate,
     newStatus: string,
   ) => StatusChangeValidationResult | null;
-  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
   /** When > 0: bulk checklist mode – apply same answers to all (one API call). */
   bulkTotalCount?: number;
@@ -255,6 +259,9 @@ export function JobPageDialogs({
         onUpdate={handleCandidateUpdate}
         isAssigning={isAssigning}
         setIsAssigning={setIsAssigning}
+        onValidateStatusChange={onValidateStatusChange}
+        onDeferStatusToChecklist={onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={onOpenChecklistAfterSave}
       />
 
       <EditLaneDialog

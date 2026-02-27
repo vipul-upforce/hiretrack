@@ -171,6 +171,8 @@ export default function JobProgressPage() {
     candidateId: string;
     newStatus: string;
   } | null>(null);
+  const [pendingIncomingChecklistAfterStatus, setPendingIncomingChecklistAfterStatus] =
+    useState<string | null>(null);
 
   const {
     bulkStatusQueue,
@@ -230,6 +232,7 @@ export default function JobProgressPage() {
         return {
           requiresChecklist: true,
           isMandatory: result.validation.isMandatory,
+          // Step 0 = outgoing (current lane), step 1 = incoming (target lane). Unified dialog opens by checklistType.
           validationSteps: [
             {
               validationInfo: JSON.stringify(validationInfo),
@@ -256,19 +259,112 @@ export default function JobProgressPage() {
   );
 
   const onDeferStatusToChecklist = useCallback(
-    (validationInfo: string, newStatus: string) => {
-      setOpenRemarksFor(validationInfo);
+    (
+      validationInfo: string,
+      newStatus: string,
+      nextChecklistValidationInfo?: string,
+    ) => {
       try {
-        const parsed = JSON.parse(validationInfo) as { candidateId: string };
+        const parsed = JSON.parse(validationInfo) as {
+          candidateId: string;
+          checklistType?: string;
+        };
+        // When we have two checklists, always open OUTGOING first and store INCOMING for after (same as drag/clubbing).
+        const hasNext = !!nextChecklistValidationInfo?.trim();
+        let toOpenNow: string = validationInfo;
+        let toStoreForAfter: string | null = null;
+        if (hasNext && nextChecklistValidationInfo) {
+          try {
+            const nextParsed = JSON.parse(nextChecklistValidationInfo) as {
+              checklistType?: string;
+            };
+            const firstOutgoing = (parsed.checklistType ?? '') === 'outgoing';
+            const nextIncoming =
+              (nextParsed.checklistType ?? '') === 'incoming';
+            const nextOutgoing =
+              (nextParsed.checklistType ?? '') === 'outgoing';
+            if (firstOutgoing && nextIncoming) {
+              toOpenNow = validationInfo;
+              toStoreForAfter = nextChecklistValidationInfo;
+            } else if (
+              (parsed.checklistType ?? '') === 'incoming' &&
+              nextOutgoing
+            ) {
+              toOpenNow = nextChecklistValidationInfo;
+              toStoreForAfter = validationInfo;
+            } else if (nextOutgoing && !firstOutgoing) {
+              toOpenNow = nextChecklistValidationInfo;
+              toStoreForAfter = validationInfo;
+            } else {
+              // Bulletproof: pick whichever has checklistType 'outgoing' so we never open incoming first
+              const firstIsOutgoing = (parsed.checklistType ?? '') === 'outgoing';
+              const nextIsOutgoing = (nextParsed.checklistType ?? '') === 'outgoing';
+              if (nextIsOutgoing && !firstIsOutgoing) {
+                toOpenNow = nextChecklistValidationInfo;
+                toStoreForAfter = validationInfo;
+              } else {
+                toOpenNow = validationInfo;
+                toStoreForAfter = nextChecklistValidationInfo;
+              }
+            }
+          } catch {
+            toOpenNow = validationInfo;
+            toStoreForAfter = nextChecklistValidationInfo;
+          }
+        }
+        const withFlag = {
+          ...(JSON.parse(toOpenNow) as Record<string, unknown>),
+          statusDeferredFromUnified: true,
+        };
+        // Last-moment guard: never open incoming first when we have two checklists (store has the other)
+        const openingType = (withFlag as { checklistType?: string }).checklistType ?? '';
+        if (
+          openingType === 'incoming' &&
+          toStoreForAfter
+        ) {
+          try {
+            const other = JSON.parse(toStoreForAfter) as { checklistType?: string };
+            if ((other.checklistType ?? '') === 'outgoing') {
+              const swap = toOpenNow;
+              toOpenNow = toStoreForAfter;
+              toStoreForAfter = swap;
+              Object.assign(withFlag, JSON.parse(toOpenNow) as Record<string, unknown>, {
+                statusDeferredFromUnified: true,
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
+        setOpenRemarksFor(JSON.stringify(withFlag));
+        const candidateId = (parsed.candidateId ||
+          (JSON.parse(toOpenNow) as { candidateId?: string }).candidateId) as string;
         setPendingStatusAfterChecklist({
-          candidateId: parsed.candidateId,
+          candidateId,
           newStatus,
         });
+        if (toStoreForAfter) {
+          try {
+            const nextParsed = JSON.parse(toStoreForAfter) as Record<string, unknown>;
+            setPendingIncomingChecklistAfterStatus(
+              JSON.stringify({
+                ...nextParsed,
+                statusAlreadyApplied: true,
+              }),
+            );
+          } catch {
+            setPendingIncomingChecklistAfterStatus(null);
+          }
+        } else {
+          setPendingIncomingChecklistAfterStatus(null);
+        }
       } catch {
+        setOpenRemarksFor(validationInfo);
         setPendingStatusAfterChecklist(null);
+        setPendingIncomingChecklistAfterStatus(null);
       }
     },
-    [setOpenRemarksFor],
+    [setOpenRemarksFor, setPendingStatusAfterChecklist],
   );
 
   const {
@@ -321,6 +417,8 @@ export default function JobProgressPage() {
     job,
     pendingStatusAfterChecklist,
     setPendingStatusAfterChecklist,
+    pendingIncomingChecklistAfterStatus,
+    setPendingIncomingChecklistAfterStatus,
     bulkStatusQueue,
     onBulkQueueStepComplete,
   });
@@ -393,6 +491,8 @@ export default function JobProgressPage() {
         onShowArchivedChange={setShowArchived}
         onValidateStatusChange={onValidateStatusChange}
         onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
+        onDeferStatusToChecklist={onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={onOpenChecklistAfterSave}
       />
 
       <JobKanbanBoard

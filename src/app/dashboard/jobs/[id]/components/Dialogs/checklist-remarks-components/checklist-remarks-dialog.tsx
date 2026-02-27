@@ -65,7 +65,8 @@ function ChecklistRemarksDialog({
   const parsedChecklistInfo: ChecklistInfo | null = useMemo(() => {
     if (!checklistInfo) return null;
     try {
-      return JSON.parse(checklistInfo);
+      const parsed = JSON.parse(checklistInfo);
+      return parsed;
     } catch (e) {
       logger.error(
         'ChecklistRemarksDialog: Failed to parse checklistInfo:',
@@ -139,10 +140,10 @@ function ChecklistRemarksDialog({
       },
       user: user
         ? {
-            id: (user as { id?: string }).id ?? '',
-            name: (user as { name?: string }).name ?? '',
-            email: (user as { email?: string }).email ?? '',
-          }
+          id: (user as { id?: string }).id ?? '',
+          name: (user as { name?: string }).name ?? '',
+          email: (user as { email?: string }).email ?? '',
+        }
         : null,
       organizationId,
       mutations: {

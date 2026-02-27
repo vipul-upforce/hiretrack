@@ -1,3 +1,5 @@
+/* eslint-disable max-lines */
+
 import { DropResult, type DragStart } from '@hello-pangea/dnd';
 import { toast } from '@/hooks/use-toast';
 import { Candidate, CandidateColumn, CandidateStatus } from '@/types/candidate';
@@ -41,11 +43,18 @@ interface UseCandidateProps {
   job?: Job;
   /** When checklist was opened from unified-dialog status update; on checklist success apply this status */
   pendingStatusAfterChecklist?: PendingStatusAfterChecklist | null;
-  setPendingStatusAfterChecklist?: (v: PendingStatusAfterChecklist | null) => void;
+  setPendingStatusAfterChecklist?: (
+    v: PendingStatusAfterChecklist | null,
+  ) => void;
+  /** When set, after applying deferred status open this checklist (second of two from unified dialog) */
+  pendingIncomingChecklistAfterStatus?: string | null;
+  setPendingIncomingChecklistAfterStatus?: (v: string | null) => void;
   /** After applying deferred status (single or bulk), call so page can process next in bulk queue */
   onBulkQueueStepComplete?: () => void;
   /** Current bulk status queue; used so checklist complete can advance queue for optional bulk items */
-  bulkStatusQueue?: { candidateId: string; newStatus: string; validationInfo?: string }[] | null;
+  bulkStatusQueue?:
+    | { candidateId: string; newStatus: string; validationInfo?: string }[]
+    | null;
 }
 
 /** When clubbing candidates with same two checklists (outgoing + incoming), one dialog per phase with bulk-submit for all */
@@ -54,6 +63,8 @@ export interface BulkDragTwoPhaseState {
   candidateIds: string[];
   sourceLaneId: string;
   targetLaneId: string;
+  /** When true, status was already applied before the checklist (optional checklists) — skip status update on submit */
+  statusAlreadyApplied?: boolean;
 }
 
 interface PendingMove {
@@ -98,10 +109,12 @@ export const useCandidate = ({
   candidateToDelete,
   jobLaneConfig,
   job,
-    pendingStatusAfterChecklist,
-    setPendingStatusAfterChecklist,
-    onBulkQueueStepComplete,
-    bulkStatusQueue,
+  pendingStatusAfterChecklist,
+  setPendingStatusAfterChecklist,
+  pendingIncomingChecklistAfterStatus,
+  setPendingIncomingChecklistAfterStatus,
+  onBulkQueueStepComplete,
+  bulkStatusQueue,
 }: UseCandidateProps) => {
   const [updateCandidate] = useUpdateCandidateMutation();
   const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
@@ -109,7 +122,9 @@ export const useCandidate = ({
   const [updateLanes] = useUpdateLanesMutation();
   const [sendStatusMail] = useSendStatusMailMutation();
   const [pendingMoves, setPendingMoves] = useState<PendingMove[]>([]);
-  const [pendingChecklists, setPendingChecklists] = useState<PendingChecklist[]>([]);
+  const [pendingChecklists, setPendingChecklists] = useState<
+    PendingChecklist[]
+  >([]);
   const [_bulkChecklistQueue, setBulkChecklistQueue] = useState<
     BulkChecklistQueueItem[]
   >([]);
@@ -156,8 +171,11 @@ export const useCandidate = ({
   );
 
   // Initialize client-side checklist validation
-  const { validateCompleteMovement, validateMovement } =
-    useClientSideChecklistValidation(jobLaneConfig, user?.role);
+  const {
+    validateCompleteMovement,
+    validateMovement,
+    getMandatoryOutgoingForLane,
+  } = useClientSideChecklistValidation(jobLaneConfig, user?.role);
 
   // Function to complete a pending move (move card and update database)
   const completePendingMove = async (candidateId: string) => {
@@ -251,6 +269,7 @@ export const useCandidate = ({
       bulkDragIncomingValidationInfoRef.current = null;
       bulkDragIncomingIsMandatoryRef.current = false;
       bulkMandatoryCandidateIdsRef.current = null;
+      setOpenRemarksFor(null);
       dispatch(clearSelectedCandidates());
       return;
     }
@@ -272,13 +291,34 @@ export const useCandidate = ({
       pendingStatusAfterChecklist?.candidateId === candidateId &&
       setPendingStatusAfterChecklist
     ) {
+      const { newStatus } = pendingStatusAfterChecklist;
       bulkUpdateCandidates({
         operation: 'statusUpdate',
         candidateIds: [candidateId],
-        status: pendingStatusAfterChecklist.newStatus,
+        status: newStatus,
       })
         .unwrap()
         .then(() => refetch())
+        .then(() => {
+          // So details dialog (if open) shows the new status instead of reverting
+          if (selectedCandidate && selectedCandidate._id === candidateId) {
+            setSelectedCandidate({
+              ...selectedCandidate,
+              status: newStatus as CandidateStatus,
+            });
+          }
+        })
+        .then(() => {
+          // Open second (incoming) checklist if deferred from unified two-step flow
+          if (
+            pendingIncomingChecklistAfterStatus &&
+            setOpenRemarksFor &&
+            setPendingIncomingChecklistAfterStatus
+          ) {
+            setOpenRemarksFor(pendingIncomingChecklistAfterStatus);
+            setPendingIncomingChecklistAfterStatus(null);
+          }
+        })
         .finally(() => {
           setPendingStatusAfterChecklist(null);
           onBulkQueueStepComplete?.();
@@ -368,12 +408,27 @@ export const useCandidate = ({
       const state = bulkDragTwoPhase;
       if (!state || !job?._id) return undefined;
       const { phase, candidateIds, sourceLaneId, targetLaneId } = state;
+      let resolvedStatus = targetLaneId;
+      if (!state.statusAlreadyApplied && phase === 'outgoing') {
+        resolvedStatus = sourceLaneId;
+      }
       const candidates = candidateIds.map((id) => ({
         candidateId: id,
-        newStatus: phase === 'outgoing' ? sourceLaneId : targetLaneId,
+        newStatus: resolvedStatus,
       }));
       try {
         await bulkSubmitChecklist({ data, candidates }).unwrap();
+
+        if (state.statusAlreadyApplied) {
+          setBulkDragTwoPhase(null);
+          bulkDragIncomingValidationInfoRef.current = null;
+          bulkDragIncomingIsMandatoryRef.current = false;
+          bulkMandatoryCandidateIdsRef.current = null;
+          await refetch();
+          dispatch(clearSelectedCandidates());
+          return undefined;
+        }
+
         if (phase === 'outgoing') {
           const incomingInfo = bulkDragIncomingValidationInfoRef.current;
           if (incomingInfo) {
@@ -405,45 +460,46 @@ export const useCandidate = ({
             candidateIds,
             status: targetLaneId,
           }).unwrap();
-            const sourceCol = columns.find((c) => c.id === sourceLaneId);
-            const targetCol = columns.find((c) => c.id === targetLaneId);
-            const idsSet = new Set(candidateIds);
-            if (sourceCol && targetCol) {
-              const movedCandidates = sourceCol.candidates.filter((c) =>
-                idsSet.has(c._id),
-              );
-              const firstMove = pendingMoves.find((pm) =>
-                idsSet.has(pm.candidateId),
-              );
-              const targetIndex = firstMove?.targetIndex ?? targetCol.candidates.length;
-              const newColumns = columns.map((col) => {
-                if (col.id === sourceLaneId)
-                  return {
-                    ...col,
-                    candidates: col.candidates.filter((c) => !idsSet.has(c._id)),
-                  };
-                if (col.id === targetLaneId)
-                  return {
-                    ...col,
-                    candidates: [
-                      ...targetCol.candidates.slice(0, targetIndex),
-                      ...movedCandidates,
-                      ...targetCol.candidates.slice(targetIndex),
-                    ],
-                  };
-                return col;
-              });
-              setColumns(newColumns);
-            }
-            setPendingMoves((prev) =>
-              prev.filter((pm) => !idsSet.has(pm.candidateId)),
+          const sourceCol = columns.find((c) => c.id === sourceLaneId);
+          const targetCol = columns.find((c) => c.id === targetLaneId);
+          const idsSet = new Set(candidateIds);
+          if (sourceCol && targetCol) {
+            const movedCandidates = sourceCol.candidates.filter((c) =>
+              idsSet.has(c._id),
             );
-            setBulkDragTwoPhase(null);
-            bulkDragIncomingValidationInfoRef.current = null;
+            const firstMove = pendingMoves.find((pm) =>
+              idsSet.has(pm.candidateId),
+            );
+            const targetIndex =
+              firstMove?.targetIndex ?? targetCol.candidates.length;
+            const newColumns = columns.map((col) => {
+              if (col.id === sourceLaneId)
+                return {
+                  ...col,
+                  candidates: col.candidates.filter((c) => !idsSet.has(c._id)),
+                };
+              if (col.id === targetLaneId)
+                return {
+                  ...col,
+                  candidates: [
+                    ...targetCol.candidates.slice(0, targetIndex),
+                    ...movedCandidates,
+                    ...targetCol.candidates.slice(targetIndex),
+                  ],
+                };
+              return col;
+            });
+            setColumns(newColumns);
+          }
+          setPendingMoves((prev) =>
+            prev.filter((pm) => !idsSet.has(pm.candidateId)),
+          );
+          setBulkDragTwoPhase(null);
+          bulkDragIncomingValidationInfoRef.current = null;
           bulkDragIncomingIsMandatoryRef.current = false;
-            bulkMandatoryCandidateIdsRef.current = null;
-            await refetch();
-            dispatch(clearSelectedCandidates());
+          bulkMandatoryCandidateIdsRef.current = null;
+          await refetch();
+          dispatch(clearSelectedCandidates());
         } else {
           const sourceCol = columns.find((c) => c.id === sourceLaneId);
           const targetCol = columns.find((c) => c.id === targetLaneId);
@@ -455,7 +511,8 @@ export const useCandidate = ({
             const firstMove = pendingMoves.find((pm) =>
               idsSet.has(pm.candidateId),
             );
-            const targetIndex = firstMove?.targetIndex ?? targetCol.candidates.length;
+            const targetIndex =
+              firstMove?.targetIndex ?? targetCol.candidates.length;
             const newColumns = columns.map((col) => {
               if (col.id === sourceLaneId)
                 return {
@@ -631,7 +688,9 @@ export const useCandidate = ({
             v.validationResult.validation.isMandatory,
         );
 
-        const hasTwoChecklists = (val: (typeof validationResults)[0]['validationResult']) =>
+        const hasTwoChecklists = (
+          val: (typeof validationResults)[0]['validationResult'],
+        ) =>
           'pendingValidation' in val &&
           val.pendingValidation?.requiresChecklist &&
           'pendingType' in val &&
@@ -655,13 +714,18 @@ export const useCandidate = ({
             mandatoryCandidates.map(({ candidate }) => candidate._id),
           );
           const first = mandatoryCandidates[0];
-          const { candidate: firstCandidate, sourceLaneId, validationResult: val } = first;
+          const {
+            candidate: firstCandidate,
+            sourceLaneId,
+            validationResult: val,
+          } = first;
           const hasIncoming = hasTwoChecklists(val);
           const outgoingValidationInfo: Record<string, unknown> = {
             candidateId: firstCandidate._id,
             currentLane: sourceLaneId,
             targetLane: targetLaneId,
-            checklist: 'checklist' in val.validation ? val.validation.checklist : null,
+            checklist:
+              'checklist' in val.validation ? val.validation.checklist : null,
             isMandatory: val.validation.isMandatory,
             checklistType: val.type,
             ...(hasIncoming ? { hasPendingChecklist: true } : {}),
@@ -681,7 +745,8 @@ export const useCandidate = ({
             : null;
           const incomingIsMandatory =
             hasIncoming &&
-            (val.pendingValidation as { isMandatory?: boolean }).isMandatory === true;
+            (val.pendingValidation as { isMandatory?: boolean }).isMandatory ===
+              true;
           bulkDragIncomingIsMandatoryRef.current = Boolean(incomingIsMandatory);
           bulkDragIncomingValidationInfoRef.current =
             incomingValidationInfo !== null
@@ -689,7 +754,9 @@ export const useCandidate = ({
               : null;
           setBulkDragTwoPhase({
             phase: 'outgoing',
-            candidateIds: mandatoryCandidates.map(({ candidate }) => candidate._id),
+            candidateIds: mandatoryCandidates.map(
+              ({ candidate }) => candidate._id,
+            ),
             sourceLaneId: first.sourceLaneId,
             targetLaneId,
           });
@@ -721,7 +788,8 @@ export const useCandidate = ({
           candidateId: candidate._id,
           currentLane: sourceLaneId,
           targetLane: targetLaneId,
-          checklist: 'checklist' in val.validation ? val.validation.checklist : null,
+          checklist:
+            'checklist' in val.validation ? val.validation.checklist : null,
           isMandatory: val.validation.isMandatory,
           checklistType: val.type,
         };
@@ -750,7 +818,8 @@ export const useCandidate = ({
             candidateId: item.candidate._id,
             currentLane: item.sourceLaneId,
             targetLane: targetLaneId,
-            checklist: 'checklist' in v.validation ? v.validation.checklist : null,
+            checklist:
+              'checklist' in v.validation ? v.validation.checklist : null,
             isMandatory: v.validation.isMandatory,
             checklistType: v.type,
           };
@@ -813,13 +882,22 @@ export const useCandidate = ({
         candidates: newDestCandidatesBulk,
       };
 
-      let optionalChecklistValidationInfo: string | null = null;
       setColumns(newColumnsBulk);
+
+      // Collect all candidates needing optional checklists
+      const optionalChecklistCandidates = validationResults.filter(
+        ({ candidate: c, validationResult: valResult }) =>
+          c.status !== destination.droppableId &&
+          valResult.validation.requiresChecklist &&
+          !valResult.validation.isMandatory,
+      );
 
       try {
         document.body.classList.add('dnd-updating');
         const idsNeedingUpdate = candidatesWithSource
-          .filter(({ candidate }) => candidate.status !== destination.droppableId)
+          .filter(
+            ({ candidate }) => candidate.status !== destination.droppableId,
+          )
           .map(({ candidate }) => candidate._id);
         if (idsNeedingUpdate.length > 0) {
           await bulkUpdateCandidates({
@@ -828,18 +906,40 @@ export const useCandidate = ({
             status: destination.droppableId,
           }).unwrap();
         }
-        for (const {
-          candidate: c,
-          sourceLaneId: srcLaneId,
-          validationResult: valResult,
-        } of validationResults) {
-          if (
-            !optionalChecklistValidationInfo &&
-            c.status !== destination.droppableId &&
-            valResult.validation.requiresChecklist &&
-            !valResult.validation.isMandatory
-          ) {
-            optionalChecklistValidationInfo = JSON.stringify({
+
+        if (optionalChecklistCandidates.length > 1) {
+          // 2+ candidates: use bulk two-phase with statusAlreadyApplied so we don't re-update status
+          const first = optionalChecklistCandidates[0];
+          const optionalValidationInfo: Record<string, unknown> = {
+            candidateId: first.candidate._id,
+            currentLane: first.sourceLaneId,
+            targetLane: destination.droppableId,
+            checklist:
+              'checklist' in first.validationResult.validation
+                ? first.validationResult.validation.checklist
+                : null,
+            isMandatory: false,
+            checklistType: first.validationResult.type,
+          };
+          setBulkDragTwoPhase({
+            phase: first.validationResult.type as 'outgoing' | 'incoming',
+            candidateIds: optionalChecklistCandidates.map(
+              ({ candidate: c }) => c._id,
+            ),
+            sourceLaneId: first.sourceLaneId,
+            targetLaneId: destination.droppableId,
+            statusAlreadyApplied: true,
+          });
+          bulkMandatoryCandidateIdsRef.current = new Set(
+            optionalChecklistCandidates.map(({ candidate: c }) => c._id),
+          );
+          const infoToOpen = JSON.stringify(optionalValidationInfo);
+          setTimeout(() => setOpenRemarksFor(infoToOpen), 0);
+        } else if (optionalChecklistCandidates.length === 1) {
+          const { candidate: c, sourceLaneId: srcLaneId, validationResult: valResult } =
+            optionalChecklistCandidates[0];
+          setOpenRemarksFor(
+            JSON.stringify({
               candidateId: c._id,
               currentLane: srcLaneId,
               targetLane: destination.droppableId,
@@ -849,13 +949,12 @@ export const useCandidate = ({
                   : null,
               isMandatory: false,
               checklistType: valResult.type,
-            });
-            break;
-          }
-        }
-        if (optionalChecklistValidationInfo) {
-          setOpenRemarksFor(optionalChecklistValidationInfo);
-        } else if (job?.promptForStatusChangeReason && candidatesWithSource.length > 0) {
+            }),
+          );
+        } else if (
+          job?.promptForStatusChangeReason &&
+          candidatesWithSource.length > 0
+        ) {
           setOpenRemarksFor(candidatesWithSource[0].candidate._id);
         }
       } catch {
@@ -955,22 +1054,43 @@ export const useCandidate = ({
         );
         const sourceRequiresMandatoryOutgoing =
           outgoingOnly.requiresChecklist && outgoingOnly.isMandatory;
-        const requiresChecklist =
+        let requiresChecklist =
           validationResult.validation.requiresChecklist ||
           sourceRequiresMandatoryOutgoing;
 
+        // Safety net: if validation said no checklist but config says source lane has mandatory outgoing, force require checklist (e.g. config loaded after memo or lane id mismatch)
+        let forceOutgoingValidation: ReturnType<
+          typeof validateMovement
+        > | null = null;
+        if (!requiresChecklist) {
+          const fo = getMandatoryOutgoingForLane(source.droppableId);
+          if (fo) {
+            requiresChecklist = true;
+            forceOutgoingValidation = fo;
+          }
+        }
+
         // Handle movement based on checklist requirements
         if (requiresChecklist) {
-          const validation = sourceRequiresMandatoryOutgoing &&
+          const validation =
+            forceOutgoingValidation ??
+            (sourceRequiresMandatoryOutgoing &&
             !validationResult.validation.requiresChecklist
-            ? outgoingOnly
-            : validationResult.validation;
-          const effectiveChecklistType =
+              ? outgoingOnly
+              : validationResult.validation);
+          let effectiveChecklistType: 'outgoing' | 'incoming' | null;
+          if (forceOutgoingValidation) {
+            effectiveChecklistType = 'outgoing';
+          } else if (
             sourceRequiresMandatoryOutgoing &&
             !validationResult.validation.requiresChecklist
-              ? ('outgoing' as const)
-              : validationResult.type;
+          ) {
+            effectiveChecklistType = 'outgoing';
+          } else {
+            effectiveChecklistType = validationResult.type;
+          }
           const hasPending =
+            !forceOutgoingValidation &&
             !sourceRequiresMandatoryOutgoing &&
             'pendingValidation' in validationResult &&
             validationResult.pendingValidation?.requiresChecklist &&
@@ -1060,14 +1180,41 @@ export const useCandidate = ({
               checklistType: 'outgoing',
             };
             setTimeout(
-              () =>
-                setOpenRemarksFor(JSON.stringify(recheckValidationInfo)),
+              () => setOpenRemarksFor(JSON.stringify(recheckValidationInfo)),
+              0,
+            );
+            document.body.classList.remove('dnd-updating');
+            return;
+          }
+          // Safety net: config says source lane has mandatory outgoing but validation said no (e.g. config loaded after memo) — force-open outgoing checklist
+          const forceOutgoing = getMandatoryOutgoingForLane(source.droppableId);
+          if (forceOutgoing) {
+            setColumns([...columns]);
+            setPendingMoves((prev) => [
+              ...prev,
+              {
+                candidateId: draggableId,
+                sourceLaneId: source.droppableId,
+                targetLaneId: destination.droppableId,
+                sourceIndex: source.index,
+                targetIndex: destination.index,
+              },
+            ]);
+            const recheckValidationInfo: Record<string, unknown> = {
+              ...dragInfo,
+              checklist: forceOutgoing.checklist ?? null,
+              isMandatory: true,
+              checklistType: 'outgoing',
+            };
+            setTimeout(
+              () => setOpenRemarksFor(JSON.stringify(recheckValidationInfo)),
               0,
             );
             document.body.classList.remove('dnd-updating');
             return;
           }
           // No checklist required, proceed with optimistic update and normal remarks dialog
+
           setColumns(newColumns);
           if (job?.promptForStatusChangeReason) {
             setOpenRemarksFor(draggableId);
@@ -1167,7 +1314,9 @@ export const useCandidate = ({
         (column) => column.id === updatedCandidate.status,
       );
       const candidateExists = prevColumns.some((column) =>
-        column.candidates.some((candidate) => candidate._id === updatedCandidate._id),
+        column.candidates.some(
+          (candidate) => candidate._id === updatedCandidate._id,
+        ),
       );
 
       if (!hasTargetLane || !candidateExists) {

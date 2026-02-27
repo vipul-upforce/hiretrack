@@ -373,7 +373,9 @@ export function useCandidateActions({
     const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
     if (scheduleGoogle || scheduleZoom || scheduleTeams) {
-      const processMeetingAttachments = async (files: unknown[]): Promise<Attachment[]> => {
+      const processMeetingAttachments = async (
+        files: unknown[],
+      ): Promise<Attachment[]> => {
         const attachmentsToProcess: Attachment[] = await Promise.all(
           (files || []).map(async (file): Promise<Attachment> => {
             if (file instanceof File) {
@@ -394,7 +396,7 @@ export function useCandidateActions({
             return file as Attachment;
           }),
         );
-          // Upload meeting attachments
+        // Upload meeting attachments
         return uploadAttachments({
           attachments: attachmentsToProcess,
           uploadFiles,
@@ -575,9 +577,10 @@ export function useCandidateActions({
 
     // Use uploaded attachments (passed from handleSubmit)
     const existingNames = new Set(candidate.attachments.map((a) => a.name));
-    const attachmentsToUse = uploadedAttachments.length > 0 
-      ? uploadedAttachments 
-      : (values.attachments || []);
+    const attachmentsToUse =
+      uploadedAttachments.length > 0
+        ? uploadedAttachments
+        : values.attachments || [];
     updates.attachments = [
       ...candidate.attachments,
       ...attachmentsToUse.filter((a) => !existingNames.has(a.name)),
@@ -760,24 +763,28 @@ export function useCandidateActions({
 
           // Process meeting attachments - convert File to Attachment format, then upload
           const meetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.meetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
+            (values.meetingAttachments || []).map(
+              async (file): Promise<Attachment> => {
+                if (file instanceof File) {
+                  const reader = new FileReader();
+                  const dataUrl = await new Promise<string>(
+                    (resolve, reject) => {
+                      reader.onload = () => resolve(reader.result as string);
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    },
+                  );
+                  return {
+                    id: Math.random().toString(36).slice(2),
+                    name: file.name,
+                    url: dataUrl,
+                    type: file.type,
+                    size: file.size,
+                  };
+                }
+                return file as Attachment;
+              },
+            ),
           );
           const processedMeetingAttachments = await uploadAttachments({
             attachments: meetingAttachmentsToProcess,
@@ -785,26 +792,31 @@ export function useCandidateActions({
             organizationId: user?.organizationId as string,
           });
 
-          const zoomMeetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.zoomMeetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
-          );
+          const zoomMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.zoomMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
           const processedZoomMeetingAttachments = await uploadAttachments({
             attachments: zoomMeetingAttachmentsToProcess,
             uploadFiles,
@@ -871,7 +883,37 @@ export function useCandidateActions({
                 const validation = onValidateStatusChange(c, newStatus);
                 if (!validation?.requiresChecklist) return [];
                 if (validation.validationSteps?.length) {
-                  return validation.validationSteps.map((s) => ({
+                  // Ensure outgoing step(s) come before incoming so bulk flow opens outgoing first
+                  const steps = validation.validationSteps
+                    .slice()
+                    .sort((a, b) => {
+                      let aOut = false;
+                      let bOut = false;
+                      try {
+                        aOut =
+                          (
+                            JSON.parse(a.validationInfo) as {
+                              checklistType?: string;
+                            }
+                          ).checklistType === 'outgoing';
+                      } catch {
+                        /* ignore */
+                      }
+                      try {
+                        bOut =
+                          (
+                            JSON.parse(b.validationInfo) as {
+                              checklistType?: string;
+                            }
+                          ).checklistType === 'outgoing';
+                      } catch {
+                        /* ignore */
+                      }
+                      if (aOut && !bOut) return -1;
+                      if (!aOut && bOut) return 1;
+                      return 0;
+                    });
+                  return steps.map((s) => ({
                     candidateId: c._id,
                     newStatus: s.newStatusAfterStep,
                     validationInfo: s.validationInfo,
@@ -952,7 +994,12 @@ export function useCandidateActions({
       const existingRemarks = candidateWithDetailsForRemark.remarks || [];
 
       if (actions.assignTo) {
-        await handleAssignTo(values, updates, historyEntries, uploadedAttachments);
+        await handleAssignTo(
+          values,
+          updates,
+          historyEntries,
+          uploadedAttachments,
+        );
       }
 
       if (actions.switchJob && values.jobId) {
@@ -977,24 +1024,118 @@ export function useCandidateActions({
       // Single-candidate status update: run validation whenever user selected a different status
       // (so checklist is shown even if they did not check "Update status"). Only apply status
       // when checklist not required and they checked the box.
-      let deferredStatusChecklist: { validationInfo: string; newStatus: string } | null = null;
-      /** When set, checklist is optional: apply status in this save, then open checklist after API returns */
+      let deferredStatusChecklist: {
+        validationInfo: string;
+        newStatus: string;
+        nextChecklistValidationInfo?: string;
+      } | null = null;
       let openChecklistAfterSaveInfo: string | null = null;
       const hasStatusChange =
         values.newStatus && values.newStatus !== candidate.status;
       if (hasStatusChange) {
-        if (onValidateStatusChange && (onDeferStatusToChecklist || onOpenChecklistAfterSave)) {
-          const validation = onValidateStatusChange(candidate, values.newStatus as string);
-          if (validation?.requiresChecklist && validation.validationInfo) {
+        if (
+          onValidateStatusChange &&
+          (onDeferStatusToChecklist || onOpenChecklistAfterSave)
+        ) {
+          const validation = onValidateStatusChange(
+            candidate,
+            values.newStatus as string,
+          );
+          // Contract: validationSteps[0] = outgoing, [1] = incoming. When both exist, open outgoing first (by checklistType).
+          const steps = validation?.validationSteps;
+          const firstStepInfo =
+            steps && steps.length >= 2
+              ? (() => {
+                  const outgoingStep = steps.find((s) => {
+                    try {
+                      const p = JSON.parse(s.validationInfo) as {
+                        checklistType?: string;
+                      };
+                      return p.checklistType === 'outgoing';
+                    } catch {
+                      return false;
+                    }
+                  });
+                  return (
+                    outgoingStep?.validationInfo ?? steps[0].validationInfo
+                  );
+                })()
+              : (validation?.validationInfo ?? steps?.[0]?.validationInfo);
+          const secondStepInfo =
+            steps && steps.length >= 2
+              ? (() => {
+                  const incomingStep = steps.find((s) => {
+                    try {
+                      const p = JSON.parse(s.validationInfo) as {
+                        checklistType?: string;
+                      };
+                      return p.checklistType === 'incoming';
+                    } catch {
+                      return false;
+                    }
+                  });
+                  return (
+                    incomingStep?.validationInfo ?? steps[1].validationInfo
+                  );
+                })()
+              : undefined;
+          // Guarantee we never pass incoming first when both exist (fallback steps[0] can be wrong order).
+          let validationInfoToUse = firstStepInfo;
+          let nextChecklistValidationInfoToUse = secondStepInfo;
+          if (steps && steps.length >= 2 && firstStepInfo && secondStepInfo) {
+            let firstType: string | undefined;
+            let secondType: string | undefined;
+            try {
+              firstType = (
+                JSON.parse(firstStepInfo) as { checklistType?: string }
+              ).checklistType;
+            } catch {
+              firstType = undefined;
+            }
+            try {
+              secondType = (
+                JSON.parse(secondStepInfo) as { checklistType?: string }
+              ).checklistType;
+            } catch {
+              secondType = undefined;
+            }
+            if (firstType === 'incoming' && secondType === 'outgoing') {
+              validationInfoToUse = secondStepInfo;
+              nextChecklistValidationInfoToUse = firstStepInfo;
+            }
+          }
+          const validationInfoToUseFinal = validationInfoToUse;
+          if (validation?.requiresChecklist && validationInfoToUseFinal) {
             const isMandatory = validation.isMandatory === true;
             if (isMandatory && onDeferStatusToChecklist) {
               deferredStatusChecklist = {
-                validationInfo: validation.validationInfo,
+                validationInfo: validationInfoToUseFinal,
                 newStatus: values.newStatus as string,
+                ...(nextChecklistValidationInfoToUse
+                  ? {
+                      nextChecklistValidationInfo:
+                        nextChecklistValidationInfoToUse,
+                    }
+                  : {}),
               };
-            } else if (!isMandatory && onOpenChecklistAfterSave && actions.updateStatus) {
-              updates.status = values.newStatus as CandidateStatus;
-              openChecklistAfterSaveInfo = validation.validationInfo;
+            } else if (!isMandatory) {
+              if (actions.updateStatus) {
+                updates.status = values.newStatus as CandidateStatus;
+              }
+              if (onOpenChecklistAfterSave) {
+                openChecklistAfterSaveInfo = validationInfoToUseFinal;
+              } else if (onDeferStatusToChecklist) {
+                deferredStatusChecklist = {
+                  validationInfo: validationInfoToUseFinal,
+                  newStatus: values.newStatus as string,
+                  ...(nextChecklistValidationInfoToUse
+                    ? {
+                        nextChecklistValidationInfo:
+                          nextChecklistValidationInfoToUse,
+                      }
+                    : {}),
+                };
+              }
             }
           } else if (actions.updateStatus) {
             updates.status = values.newStatus as CandidateStatus;
@@ -1139,7 +1280,11 @@ export function useCandidateActions({
           onDeferStatusToChecklist?.(
             deferredStatusChecklist.validationInfo,
             deferredStatusChecklist.newStatus,
+            deferredStatusChecklist.nextChecklistValidationInfo,
           );
+          onOpenChange(false);
+        } else if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
+          onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
           onOpenChange(false);
         } else {
           toast({ title: 'Info', description: 'No changes to save' });
@@ -1199,16 +1344,8 @@ export function useCandidateActions({
         onDeferStatusToChecklist?.(
           deferredStatusChecklist.validationInfo,
           deferredStatusChecklist.newStatus,
+          deferredStatusChecklist.nextChecklistValidationInfo,
         );
-        onOpenChange(false);
-        setIsSubmitting(false);
-        helpers.setSubmitting(false);
-        return;
-      }
-
-      // If optional checklist: status was applied above; open checklist for optional fill now
-      if (openChecklistAfterSaveInfo) {
-        onOpenChecklistAfterSave?.(openChecklistAfterSaveInfo);
         onOpenChange(false);
         setIsSubmitting(false);
         helpers.setSubmitting(false);
@@ -1275,7 +1412,11 @@ export function useCandidateActions({
       if (pathname === '/dashboard' && !actions.markAsDone) {
         refetchAssignment?.();
       }
-      // Note: Removed individual candidate refetch - we already have the updated result
+
+      // Open optional checklist form after save (status already applied)
+      if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
+        onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
+      }
     } catch (error) {
       toast({
         title: 'Error',
