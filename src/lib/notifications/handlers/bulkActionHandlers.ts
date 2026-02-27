@@ -286,7 +286,7 @@ export async function notifyBulkCandidateAssigned(params: {
     const interviewerEmailRecipients: string[] = [];
     if (
       params.interviewerId !== params.triggerUserId &&
-      (count > BULK_SINGLE_NOTIFICATION_THRESHOLD || isInterviewerAlsoAdminHr)
+      !isInterviewerAlsoAdminHr
     ) {
       interviewerEmailRecipients.push(params.interviewerId);
     }
@@ -538,41 +538,41 @@ export async function notifyBulkCandidateUnassigned(params: {
       new Date(),
       params.organizationId,
     )) as string;
-
     for (const [interviewerId, list] of byInterviewer) {
-      if (list.length > BULK_SINGLE_NOTIFICATION_THRESHOLD) {
-        const interviewerCandidates = list.map((u) => ({
-          candidateId: u.candidateId,
-          candidateName: u.candidateName,
-          jobId: u.jobId,
-        }));
-        sendBulkActionEmail({
-          organizationId: params.organizationId,
-          notificationType: NotificationType.STEP_COMPLETED,
-          templateKey: 'bulk-unassign',
-          variables: {
-            candidateCount: list.length.toString(),
-            triggererName: params.triggerUserName,
-            jobTitle: list[0].jobTitle,
-            jobId: list[0].jobId,
-            recipientName: list[0].previousInterviewerName,
-            stepName: 'Interview Unassigned',
-            completedBy: params.triggerUserName,
-            completionDate,
-            feedback: params.feedback ?? 'N/A',
-            nextStep: params.nextStep ?? 'N/A',
-            candidateName: list[0].candidateName,
-          },
-          recipients: [interviewerId],
-          candidates: interviewerCandidates,
-          triggererUserId: params.triggerUserId,
-          triggererEmail: params.triggerUserEmail,
+      // if (list.length > BULK_SINGLE_NOTIFICATION_THRESHOLD) {
+      const interviewerCandidates = list.map((u) => ({
+        candidateId: u.candidateId,
+        candidateName: u.candidateName,
+        jobId: u.jobId,
+      }));
+
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.STEP_COMPLETED,
+        templateKey: 'bulk-unassign',
+        variables: {
+          candidateCount: list.length.toString(),
           triggererName: params.triggerUserName,
+          jobTitle: list[0].jobTitle,
           jobId: list[0].jobId,
-        }).catch((err) =>
-          logger.error({ err }, 'Bulk unassign email to interviewer failed'),
-        );
-      }
+          recipientName: list[0].previousInterviewerName,
+          stepName: 'Interview Unassigned',
+          completedBy: params.triggerUserName,
+          completionDate,
+          feedback: params.feedback ?? 'N/A',
+          nextStep: params.nextStep ?? 'N/A',
+          candidateName: list[0].candidateName,
+        },
+        recipients: [interviewerId],
+        candidates: interviewerCandidates,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: list[0].jobId,
+      }).catch((err) =>
+        logger.error({ err }, 'Bulk unassign email to interviewer failed'),
+      );
+      // }
     }
     if (adminHrRecipients.length > 0) {
       const adminRecipientName = await getRecipientDisplayNameForBulkEmail(
