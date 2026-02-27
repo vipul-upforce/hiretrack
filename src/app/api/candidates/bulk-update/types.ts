@@ -228,6 +228,15 @@ export interface BulkUpdateResult {
       jobTitle: string;
     }>;
   };
+  /** For removeFollowUp: used to send bulk follow-up removal notifications */
+  removeFollowUpNotificationMeta?: {
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+    }>;
+  };
   /** For statusUpdate: used to send bulk status update notifications */
   statusUpdateNotificationMeta?: {
     newStatus: string;

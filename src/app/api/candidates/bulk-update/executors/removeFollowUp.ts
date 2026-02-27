@@ -112,12 +112,31 @@ export async function runBulkRemoveFollowUp(
 
     toBroadcast.push(...(updatedList as ICandidate[]));
 
+    const removeFollowUpNotificationMeta =
+      toBroadcast.length > 0
+        ? {
+            candidates: toBroadcast.map((c) => ({
+              candidateId:
+                (c as unknown as { _id: unknown })._id?.toString() ?? '',
+              candidateName: (c as ICandidate).name ?? 'Candidate',
+              jobId: getJobIdString(c as ICandidate) ?? '',
+              jobTitle:
+                c.jobId != null &&
+                typeof c.jobId === 'object' &&
+                'title' in (c.jobId as object)
+                  ? String((c.jobId as { title?: string }).title ?? 'Job')
+                  : 'Job',
+            })),
+          }
+        : undefined;
+
     return {
       success: true,
       updatedCount: toBroadcast.length,
       failedCount: 0,
       candidatesToBroadcast: toBroadcast,
       message: `Removed follow-up from ${toBroadcast.length} candidate(s)`,
+      removeFollowUpNotificationMeta,
     };
   } catch (err) {
     logger.error({ error: err }, 'Bulk removeFollowUp: batch failed');

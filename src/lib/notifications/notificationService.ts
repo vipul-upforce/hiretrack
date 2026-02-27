@@ -125,6 +125,12 @@ export class NotificationService {
     return bulkActionHandlers.notifyBulkFollowUpAdded(params);
   }
 
+  static async notifyBulkFollowUpRemoved(
+    params: Parameters<typeof bulkActionHandlers.notifyBulkFollowUpRemoved>[0],
+  ): Promise<void> {
+    return bulkActionHandlers.notifyBulkFollowUpRemoved(params);
+  }
+
   static async notifyBulkImportCompleted(
     params: Parameters<typeof bulkActionHandlers.notifyBulkImportCompleted>[0],
   ): Promise<void> {

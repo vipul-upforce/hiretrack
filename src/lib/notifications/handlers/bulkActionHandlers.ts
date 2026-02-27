@@ -944,6 +944,59 @@ export async function notifyBulkFollowUpAdded(params: {
 }
 
 /**
+ * Bulk remove follow-up: admin/hr get one bulk notification.
+ */
+export async function notifyBulkFollowUpRemoved(params: {
+  organizationId: string;
+  candidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+  }>;
+  triggerUserId: string;
+  triggerUserName: string;
+}): Promise<void> {
+  try {
+    const adminHrIds = await getUsersByRole(params.organizationId, [
+      'admin',
+      'hr',
+    ]);
+    const filteredIds = adminHrIds.filter((id) => id !== params.triggerUserId);
+
+    const count = params.candidates.length;
+
+    await createBulkNotificationsWithDecision({
+      organizationId: params.organizationId,
+      recipientIds: filteredIds,
+      notificationType: NotificationType.FOLLOWUP_REMOVED,
+      jobId: params.candidates[0]?.jobId,
+      triggerUserId: params.triggerUserId,
+      baseParams: {
+        organizationId: params.organizationId,
+        type: NotificationType.FOLLOWUP_REMOVED,
+        title: 'Follow-ups Removed',
+        message: `${params.triggerUserName} removed follow-up from ${count} candidate${count > 1 ? 's' : ''}`,
+        relatedEntity: 'job',
+        relatedId: params.candidates[0]?.jobId ?? '',
+        actionUrl: params.candidates[0]?.jobId
+          ? `/dashboard/jobs/${params.candidates[0].jobId}`
+          : '/dashboard/jobs',
+        triggerUserId: params.triggerUserId,
+        triggerUserName: params.triggerUserName,
+        priority: 'low',
+        metadata: {
+          candidateCount: count,
+          isBulkFollowUpRemove: true,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to send bulk follow-up removed notification:', error);
+  }
+}
+
+/**
  * Bulk import completed: admin/hr get one bulk notification.
  */
 export async function notifyBulkImportCompleted(params: {
