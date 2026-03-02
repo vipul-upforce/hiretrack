@@ -80,7 +80,11 @@ interface JobPageDialogsProps {
     candidate: Candidate,
     newStatus: string,
   ) => StatusChangeValidationResult | null;
-  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
   /** When > 0: bulk checklist mode – apply same answers to all (one API call). */
   bulkTotalCount?: number;
@@ -90,6 +94,9 @@ interface JobPageDialogsProps {
   bulkStatusQueue?: BulkStatusQueueItem[] | null;
   /** When user closes checklist in bulk context: cancel entire bulk (no re-open). */
   onBulkChecklistCancel?: () => void;
+  bulkDragTwoPhase?: { phase: 'outgoing' | 'incoming'; candidateIds: string[] } | null;
+  /** When the unified remark dialog (no checklist) closes; e.g. clear bulk selection. */
+  onUnifiedRemarkClose?: () => void;
 }
 
 export function JobPageDialogs({
@@ -145,6 +152,8 @@ export function JobPageDialogs({
   onApplyToRemaining,
   bulkStatusQueue,
   onBulkChecklistCancel,
+  bulkDragTwoPhase,
+  onUnifiedRemarkClose,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   const openRemarksForRef = useRef(openRemarksFor);
@@ -167,7 +176,9 @@ export function JobPageDialogs({
           return false;
         }
       })();
-    if (isBulkChecklistOpen && onBulkChecklistCancel) {
+    if (bulkDragTwoPhase && cancelPendingMove) {
+      cancelPendingMove(bulkDragTwoPhase.candidateIds[0]);
+    } else if (isBulkChecklistOpen && onBulkChecklistCancel) {
       onBulkChecklistCancel();
     } else {
       setOpenRemarksFor(null);
@@ -184,6 +195,7 @@ export function JobPageDialogs({
         !openRemarksForRef.current.startsWith('{')
       ) {
         setOpenRemarksFor(null);
+        onUnifiedRemarkClose?.();
       }
     });
   };
@@ -251,6 +263,9 @@ export function JobPageDialogs({
         onUpdate={handleCandidateUpdate}
         isAssigning={isAssigning}
         setIsAssigning={setIsAssigning}
+        onValidateStatusChange={onValidateStatusChange}
+        onDeferStatusToChecklist={onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={onOpenChecklistAfterSave}
       />
 
       <EditLaneDialog

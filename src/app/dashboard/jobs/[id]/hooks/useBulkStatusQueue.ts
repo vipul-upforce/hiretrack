@@ -1,28 +1,35 @@
 import React, { useCallback } from 'react';
-import { useUpdateCandidateMutation } from '@/lib/features/candidate/candidateApi';
-import { CandidateStatus } from '@/types/candidate';
+import { useBulkUpdateCandidatesMutation } from '@/lib/features/candidate/candidateApi';
 import type { BulkStatusQueueItem } from '@/components/unified-candidate-dialog/types';
 import { useToast } from '@/hooks/use-toast';
+import {
+  buildChecklistPlan,
+  parseIsMandatory,
+  type ChecklistPlanStep,
+} from '../utils/checklistGatekeeper';
 
-function parseIsMandatory(validationInfo: string | undefined): boolean {
-  if (!validationInfo) return true;
-  try {
-    const parsed = JSON.parse(validationInfo) as { isMandatory?: boolean };
-    return parsed.isMandatory === true;
-  } catch {
-    return true;
+/** Group items by newStatus and return map of status -> candidateIds */
+function groupByStatus(
+  items: BulkStatusQueueItem[],
+): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  for (const item of items) {
+    const ids = map.get(item.newStatus) ?? [];
+    ids.push(item.candidateId);
+    map.set(item.newStatus, ids);
   }
+  return map;
 }
 
 /**
- * Opens the checklist dialog once for the full set of candidates that require a checklist.
- * Optional checklist: save status update first, then open dialog (per rule: don't open before save).
- * Mandatory checklist: open dialog first; status is updated on submit.
+ * Groups mandatory candidates by same checklist (same key). Opens one dialog per group.
+ * For each group we bulk-submit-checklist once for all in that group (no one-by-one submit).
  */
 export function useBulkStatusQueue({
   setOpenRemarksFor,
   setBulkStatusQueue,
   setPendingStatusAfterChecklist,
+  setRemainingChecklistSteps,
   refetch,
 }: {
   setOpenRemarksFor: (id: string | null) => void;
@@ -33,15 +40,33 @@ export function useBulkStatusQueue({
     candidateId: string;
     newStatus: string;
   } | null) => void;
+  setRemainingChecklistSteps: React.Dispatch<
+    React.SetStateAction<ChecklistPlanStep[] | null>
+  >;
   refetch: () => Promise<unknown>;
 }) {
   const { toast } = useToast();
-  const [updateCandidate] = useUpdateCandidateMutation();
+  const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
+
+  const runBulkStatusUpdates = useCallback(
+    async (items: BulkStatusQueueItem[]) => {
+      const byStatus = groupByStatus(items);
+      for (const [status, candidateIds] of byStatus) {
+        await bulkUpdateCandidates({
+          operation: 'statusUpdate',
+          candidateIds,
+          status,
+        }).unwrap();
+      }
+    },
+    [bulkUpdateCandidates],
+  );
 
   const onBulkStatusRequiresChecklist = useCallback(
     (queue: BulkStatusQueueItem[]) => {
       if (queue.length === 0) {
         setBulkStatusQueue(null);
+        setRemainingChecklistSteps(null);
         refetch();
         toast({ title: 'Success', description: 'Bulk status update complete' });
         return;
@@ -49,21 +74,21 @@ export function useBulkStatusQueue({
 
       const needChecklist = queue.filter((item) => item.validationInfo != null);
       const noChecklist = queue.filter((item) => item.validationInfo == null);
+      const optionalNeedChecklist = needChecklist.filter(
+        (item) => !parseIsMandatory(item.validationInfo),
+      );
+      const toUpdateNow = [...noChecklist, ...optionalNeedChecklist];
 
       if (needChecklist.length === 0) {
         setBulkStatusQueue(null);
+        setRemainingChecklistSteps(null);
         (async () => {
           try {
-            for (const item of noChecklist) {
-              await updateCandidate({
-                _id: item.candidateId,
-                status: item.newStatus as CandidateStatus,
-              }).unwrap();
-            }
+            await runBulkStatusUpdates(toUpdateNow);
             await refetch();
             toast({
               title: 'Success',
-              description: `Updated ${noChecklist.length} candidate(s)`,
+              description: `Updated ${toUpdateNow.length} candidate(s)`,
             });
           } catch (err) {
             toast({
@@ -78,25 +103,10 @@ export function useBulkStatusQueue({
         return;
       }
 
-      const optionalNeedChecklist = needChecklist.filter(
-        (item) => !parseIsMandatory(item.validationInfo),
-      );
-
       (async () => {
         try {
-          for (const item of noChecklist) {
-            await updateCandidate({
-              _id: item.candidateId,
-              status: item.newStatus as CandidateStatus,
-            }).unwrap();
-          }
-          for (const item of optionalNeedChecklist) {
-            await updateCandidate({
-              _id: item.candidateId,
-              status: item.newStatus as CandidateStatus,
-            }).unwrap();
-          }
-          if (noChecklist.length > 0 || optionalNeedChecklist.length > 0) {
+          if (toUpdateNow.length > 0) {
+            await runBulkStatusUpdates(toUpdateNow);
             await refetch();
           }
         } catch (err) {
@@ -109,11 +119,49 @@ export function useBulkStatusQueue({
           return;
         }
 
-        setBulkStatusQueue(needChecklist);
-        setOpenRemarksFor(needChecklist[0].validationInfo ?? null);
+        // Group by same checklist key: one dialog per group, bulk-submit per group
+        const plan = buildChecklistPlan(needChecklist);
+        // When we have both outgoing and incoming steps, open OUTGOING first (same as drag/single defer).
+        const steps = plan.steps.slice().sort((a, b) => {
+          if (a.type !== 'showChecklist' || b.type !== 'showChecklist') return 0;
+          let aOut = false; let bOut = false;
+          try {
+            aOut = (JSON.parse(a.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          try {
+            bOut = (JSON.parse(b.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          if (aOut && !bOut) return -1;
+          if (!aOut && bOut) return 1;
+          return 0;
+        });
+        const firstStep = steps[0];
+        if (!firstStep || firstStep.type !== 'showChecklist') {
+          setBulkStatusQueue(null);
+          setRemainingChecklistSteps(null);
+          return;
+        }
+        const restSteps = plan.steps.length > 1 ? plan.steps.slice(1) : null;
+        const restStepsOrdered = restSteps ? restSteps.slice().sort((a, b) => {
+          if (a.type !== 'showChecklist' || b.type !== 'showChecklist') return 0;
+          let aOut = false; let bOut = false;
+          try {
+            aOut = (JSON.parse(a.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          try {
+            bOut = (JSON.parse(b.validationInfo) as { checklistType?: string }).checklistType === 'outgoing';
+          } catch { /* ignore */ }
+          if (aOut && !bOut) return -1;
+          if (!aOut && bOut) return 1;
+          return 0;
+        }) : null;
+
+        setBulkStatusQueue(firstStep.items);
+        setRemainingChecklistSteps(restStepsOrdered && restStepsOrdered.length > 0 ? restStepsOrdered : null);
+        setOpenRemarksFor(firstStep.validationInfo);
         setPendingStatusAfterChecklist({
-          candidateId: needChecklist[0].candidateId,
-          newStatus: needChecklist[0].newStatus,
+          candidateId: firstStep.items[0].candidateId,
+          newStatus: firstStep.newStatus,
         });
       })();
     },
@@ -121,9 +169,10 @@ export function useBulkStatusQueue({
       setOpenRemarksFor,
       setBulkStatusQueue,
       setPendingStatusAfterChecklist,
+      setRemainingChecklistSteps,
       refetch,
       toast,
-      updateCandidate,
+      runBulkStatusUpdates,
     ],
   );
 

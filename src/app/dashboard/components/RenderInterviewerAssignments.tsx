@@ -9,15 +9,29 @@ import CustomFieldBadge from '../jobs/[id]/components/Candidate/CustomFieldBadge
 
 export function RenderInterviewerAssignments({
   interviewerAssignments,
+  onCandidateClick,
 }: {
   interviewerAssignments: Candidate[];
+  onCandidateClick: (candidate: Candidate) => void;
 }) {
   const { formNameObject } = useCustomForm('Candidate');
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {interviewerAssignments?.map((assignment) => (
-        <Card key={assignment.id || Math.random().toString()}>
+        <Card
+          key={assignment.id || Math.random().toString()}
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-colors hover:bg-muted/30"
+          onClick={() => onCandidateClick(assignment)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onCandidateClick(assignment);
+            }
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg capitalize">
               <div className="flex w-full flex-row items-center justify-between pb-2">

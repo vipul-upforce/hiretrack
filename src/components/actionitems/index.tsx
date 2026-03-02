@@ -5,6 +5,8 @@ import { Candidate, CandidateStatus, Remark } from '@/types/candidate';
 import { toast } from '@/hooks/use-toast';
 import logger from '@/lib/logger';
 import { useRefetchCandidateMutation } from '@/lib/features/candidate/candidateApi';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
+import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 function ActionItems({
   assignment,
@@ -24,6 +26,13 @@ function ActionItems({
     useState<Candidate | null>(null);
 
   const [triggerRefetchCandidate] = useRefetchCandidateMutation();
+
+  const currentJobId =
+    typeof candidate?.jobId === 'object'
+      ? candidate?.jobId?._id
+      : candidate?.jobId;
+
+  const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
 
   /**
    * Update local state with updated candidate (without making GET request).
@@ -190,6 +199,9 @@ function ActionItems({
         onAddRemarkClick={() => {
           // Handle add remark
         }}
+        onValidateStatusChange={checklistValidation.onValidateStatusChange}
+        onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
       />
 
       {isDetailsOpen && candidateForDetailsDialog && (
@@ -206,6 +218,24 @@ function ActionItems({
           }}
           onUpdate={setCandidateForDetailsDialog}
           refetchAssignment={refetchCandidate}
+          onValidateStatusChange={checklistValidation.onValidateStatusChange}
+          onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
+        />
+      )}
+
+      {candidate && checklistValidation.openRemarksFor && (
+        <ChecklistRemarksDialog
+          candidate={candidateForDetailsDialog || candidate}
+          isOpen={!!checklistValidation.openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) checklistValidation.setOpenRemarksFor(null);
+          }}
+          setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
+          refetch={refetchCandidate}
+          checklistInfo={checklistValidation.openRemarksFor}
+          onChecklistSuccess={() => { }}
+          onChecklistCancel={() => { }}
         />
       )}
     </>

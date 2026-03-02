@@ -48,6 +48,10 @@ export function CandidateDetailsDialog({
   refetchCandidates,
   hideCloseButtons = false,
   isAssigning,
+  setIsAssigning,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -69,7 +73,7 @@ export function CandidateDetailsDialog({
   const [unifiedInitialAction, setUnifiedInitialAction] = useState<
     CandidateActionType | undefined
   >(undefined);
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state?.auth ?? {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
@@ -426,12 +430,13 @@ export function CandidateDetailsDialog({
   // Check if interviewer can access this candidate
   const canInterviewerAccess = () => {
     if (user?.role !== 'interviewer') return true; // Non-interviewers can access
-    if (!localCandidate?.assignment?.interviewerId) return false; // No assignment means can't access
+    const candidateToCheck = candidate || localCandidate;
+    if (!candidateToCheck?.assignment?.interviewerId) return false; // No assignment means can't access
 
     const interviewerId =
-      typeof localCandidate.assignment.interviewerId === 'object'
-        ? localCandidate.assignment.interviewerId._id
-        : localCandidate.assignment.interviewerId;
+      typeof candidateToCheck.assignment.interviewerId === 'object'
+        ? candidateToCheck.assignment.interviewerId._id
+        : candidateToCheck.assignment.interviewerId;
 
     return interviewerId === user.id;
   };
@@ -445,6 +450,7 @@ export function CandidateDetailsDialog({
     isOpen,
     user?.role,
     localCandidate?.assignment?.interviewerId,
+    candidate?.assignment?.interviewerId,
     user?.id,
     onOpenChange,
   ]);
@@ -586,7 +592,7 @@ export function CandidateDetailsDialog({
 
         {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
-      {localCandidate && (
+      {localCandidate && isUnifiedOpen && (
         <UnifiedCandidateActionsDialog
           candidate={localCandidate}
           isOpen={isUnifiedOpen}
@@ -596,6 +602,23 @@ export function CandidateDetailsDialog({
           onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (info, status, next) => {
+                  setIsUnifiedOpen(false);
+                  onDeferStatusToChecklist(info, status, next);
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (info) => {
+                  setIsUnifiedOpen(false);
+                  onOpenChecklistAfterSave(info);
+                }
+              : undefined
+          }
           onSuccess={async () => {
             await refetch();
             setUnifiedInitialAction(undefined);

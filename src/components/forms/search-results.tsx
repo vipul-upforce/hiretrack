@@ -17,6 +17,8 @@ import { TableHeaderRow } from './search-results/table-header-row';
 import { TableBodyRows } from './search-results/table-body-rows';
 import { ResultsFooter } from './search-results/results-footer';
 import { useSearchResultsLogic } from './hooks/use-search-logic';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
+import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -54,6 +56,20 @@ export function SearchResults({
     refetch,
     onCandidateUpdate,
   });
+
+  const unifiedCandidate =
+    logic.candidateToAssignInterviewer ||
+    logic.candidateToAssignJob ||
+    logic.candidateToAddRemark ||
+    logic.candidateToAddFollowUp;
+
+  const currentCandidate = logic.selectedCandidate || (Array.isArray(unifiedCandidate) ? unifiedCandidate[0] : unifiedCandidate);
+  const currentJobId =
+    typeof currentCandidate?.jobId === 'object'
+      ? currentCandidate?.jobId?._id
+      : currentCandidate?.jobId;
+
+  const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
 
   if (isLoading) {
     return <SearchResultsSkeletonLoader />;
@@ -142,6 +158,9 @@ export function SearchResults({
           refetchCandidates={refetch}
           isAssigning={false}
           setIsAssigning={() => { }}
+          onValidateStatusChange={checklistValidation.onValidateStatusChange}
+          onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
         />
       )}
 
@@ -165,11 +184,7 @@ export function SearchResults({
           logic.isAssignJobOpen ||
           logic.isAddRemarkOpen ||
           logic.isAddFollowUpOpen;
-        const unifiedCandidate =
-          logic.candidateToAssignInterviewer ||
-          logic.candidateToAssignJob ||
-          logic.candidateToAddRemark ||
-          logic.candidateToAddFollowUp;
+
         const getUnifiedInitialAction = (): CandidateActionType | undefined => {
           if (logic.isAssignInterviewerOpen) return 'assignTo';
           if (logic.isAssignJobOpen) return 'switchJob';
@@ -213,6 +228,9 @@ export function SearchResults({
               closeAll();
               refetch();
             }}
+            onValidateStatusChange={checklistValidation.onValidateStatusChange}
+            onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+            onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
           />
         );
       })()}
@@ -260,6 +278,23 @@ export function SearchResults({
           isLoading={logic.isDeleting}
           loadingText={logic.confirmDialogConfig.loadingText}
           buttonName={logic.confirmDialogConfig.buttonName}
+        />
+      )}
+
+      {currentCandidate && checklistValidation.openRemarksFor && (
+        <ChecklistRemarksDialog
+          candidate={currentCandidate as Candidate}
+          isOpen={!!checklistValidation.openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) {
+              checklistValidation.setOpenRemarksFor(null);
+            }
+          }}
+          setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
+          refetch={refetch}
+          checklistInfo={checklistValidation.openRemarksFor}
+          onChecklistSuccess={() => { }}
+          onChecklistCancel={() => { }}
         />
       )}
     </>

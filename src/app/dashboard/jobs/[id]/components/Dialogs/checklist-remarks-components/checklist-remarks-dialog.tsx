@@ -65,7 +65,8 @@ function ChecklistRemarksDialog({
   const parsedChecklistInfo: ChecklistInfo | null = useMemo(() => {
     if (!checklistInfo) return null;
     try {
-      return JSON.parse(checklistInfo);
+      const parsed = JSON.parse(checklistInfo);
+      return parsed;
     } catch (e) {
       logger.error(
         'ChecklistRemarksDialog: Failed to parse checklistInfo:',
@@ -116,11 +117,14 @@ function ChecklistRemarksDialog({
         onChecklistSuccess,
         onChecklistCancel,
         onSuccess: async (result) => {
-          onOpenChange(false);
+          const switchingToIncoming = result.transitionedToIncoming === true;
+          if (!switchingToIncoming) {
+            onOpenChange(false);
+            setOpenRemarksFor('');
+          }
           setNewRemark('');
           setRemarkRating(null);
           setRemarkRatingHistory(null);
-          setOpenRemarksFor('');
           setChecklistResponses({});
           await refetch();
           toast({
@@ -129,7 +133,7 @@ function ChecklistRemarksDialog({
           });
           if (result.payload && onApplyToRemaining) {
             onApplyToRemaining(result.payload);
-          } else if (result.hasChecklist && onChecklistSuccess) {
+          } else if (result.hasChecklist && onChecklistSuccess && !switchingToIncoming) {
             onChecklistSuccess(result.candidateId);
           }
         },

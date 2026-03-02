@@ -41,7 +41,9 @@ export const useClientSideChecklistValidation = (
         const laneId =
           movementType === 'incoming' ? targetLaneId : currentLaneId;
         const laneConfig = jobLaneConfig.laneConfigs.find(
-          (lc) => lc.laneId.toLowerCase() === laneId.toLowerCase(),
+          (lc) =>
+            lc.laneId.toLowerCase() === laneId.toLowerCase() ||
+            (lc.laneName?.toLowerCase() === laneId.toLowerCase()),
         );
 
         if (!laneConfig) {
@@ -222,8 +224,39 @@ export const useClientSideChecklistValidation = (
     [validateMovement],
   );
 
+  /** Returns validation to show mandatory outgoing for a source lane (config-only, ignores candidate completion). Use as safety net when drag would otherwise skip checklist. */
+  const getMandatoryOutgoingForLane = useMemo(
+    () =>
+      (sourceLaneId: string): ChecklistValidationResult | null => {
+        if (!jobLaneConfig) return null;
+        const laneConfig = jobLaneConfig.laneConfigs.find(
+          (lc) =>
+            lc.laneId.toLowerCase() === sourceLaneId.toLowerCase() ||
+            (lc.laneName?.toLowerCase() === sourceLaneId.toLowerCase()),
+        );
+        if (!laneConfig?.outgoingChecklist?.isMandatory) return null;
+        const role = getUserRole(userRole);
+        if (!role) return null;
+        const filteredChecklist = filterChecklistByRole(
+          laneConfig.outgoingChecklist,
+          role,
+          'form',
+        );
+        if (!filteredChecklist) return null;
+        return {
+          canMove: true,
+          requiresChecklist: true,
+          checklist: filteredChecklist,
+          isMandatory: true,
+          checklistCompleted: false,
+        };
+      },
+    [jobLaneConfig, userRole],
+  );
+
   return {
     validateMovement,
     validateCompleteMovement,
+    getMandatoryOutgoingForLane,
   };
 };

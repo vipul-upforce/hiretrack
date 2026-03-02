@@ -305,8 +305,19 @@ export async function POST(
         },
       };
 
+      // Push remark via updateOne to avoid full-document validation (e.g. legacy docs missing required fields like relevantExperience)
+      const remarkDoc = {
+        description: remark.description,
+        date: currentTime,
+        ...(remark.rating != null && { rating: remark.rating }),
+        userId: new mongoose.Types.ObjectId(userId),
+      };
+      await Candidate!.updateOne(
+        { _id: new mongoose.Types.ObjectId(id) },
+        { $push: { remarks: remarkDoc } },
+      );
+      // Update in-memory candidate for broadcast so clients receive the new remark
       candidate.remarks = [...(candidate.remarks || []), historyEntry.remark];
-      await candidate.save();
     }
 
     // Update history: use raw collection to avoid Mongoose casting checklistForm.responses.files

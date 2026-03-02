@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +49,14 @@ interface QuickSelectAndFilterProps {
   onBulkStatusRequiresChecklist?: (
     queue: import('@/components/unified-candidate-dialog/types').BulkStatusQueueItem[],
   ) => void;
+  /** Defer status update until checklist is submitted (mandatory & optional) */
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  /** Open checklist after save (optional checklists) */
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 
 export function QuickSelectAndFilter({
@@ -59,6 +67,8 @@ export function QuickSelectAndFilter({
   onShowArchivedChange,
   onValidateStatusChange,
   onBulkStatusRequiresChecklist,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: QuickSelectAndFilterProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -99,6 +109,13 @@ export function QuickSelectAndFilter({
     setBulkActionType(action);
     setIsBulkDialogOpen(true);
   };
+
+  /** Clear bulk dialog state and selection when the unified dialog submits or closes. */
+  const closeBulkDialogAndClearSelection = useCallback(() => {
+    setIsBulkDialogOpen(false);
+    setBulkActionType(undefined);
+    clearSelectedCandidates();
+  }, [clearSelectedCandidates]);
 
   const handleBulkArchive = async (action: 'archive' | 'unarchive') => {
     if (selectedCandidateIds.length === 0) return;
@@ -541,16 +558,29 @@ export function QuickSelectAndFilter({
           candidates={selectedCandidates}
           isOpen={isBulkDialogOpen}
           onOpenChange={(open) => {
-            setIsBulkDialogOpen(open);
-            if (!open) setBulkActionType(undefined);
+            if (!open) closeBulkDialogAndClearSelection();
+            else setIsBulkDialogOpen(true);
           }}
           initialAction={bulkActionType}
-          onSuccess={() => {
-            setIsBulkDialogOpen(false);
-            clearSelectedCandidates();
-          }}
+          onSuccess={closeBulkDialogAndClearSelection}
           onValidateStatusChange={onValidateStatusChange}
           onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (validationInfo, newStatus, next) => {
+                  setIsBulkDialogOpen(false);
+                  onDeferStatusToChecklist(validationInfo, newStatus, next);
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (validationInfo) => {
+                  setIsBulkDialogOpen(false);
+                  onOpenChecklistAfterSave(validationInfo);
+                }
+              : undefined
+          }
         />
       )}
       <ArchiveConfirmDialog isOpen={isArchiveConfirmOpen} setIsOpen={(open) => { setIsArchiveConfirmOpen(open); if (!open) setPendingArchiveAction(null); }} action={pendingArchiveAction} count={selectedCandidateIds.length} isLoading={isArchiving} onConfirm={handleBulkArchive} onClose={() => { setIsArchiveConfirmOpen(false); setPendingArchiveAction(null); }} />

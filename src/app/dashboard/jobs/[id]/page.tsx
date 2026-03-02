@@ -8,18 +8,14 @@ import {
 } from '@/lib/features/job/jobApi';
 import {
   useGetJobLaneConfigQuery,
-  useBulkSubmitChecklistMutation,
 } from '@/lib/features/checklist/checklistApi';
 import { Candidate, CandidateColumn } from '@/types/candidate';
-import type { BulkStatusQueueItem } from '@/components/unified-candidate-dialog/types';
-import type { ChecklistSubmissionData } from '@/types/checklist';
-import { useToast } from '@/hooks/use-toast';
 import {
   useGetLanesQuery,
   useGetJobLanesQuery,
 } from '@/lib/features/lane/laneApi';
 import { NoDataFound } from '@/app/not-found';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { clearSelectedCandidates } from '@/lib/redux/selectedCandidatesSlice';
 import logger from '@/lib/logger';
 import { initialCandidateColumns } from './data/initial-data';
@@ -27,7 +23,7 @@ import LoaderSkeleton from './components/Lanes/loader-skeleton';
 import { useKanbanBoard } from './hooks/useKanbanBoard';
 import { useDragToScroll } from './hooks/useDragToScroll';
 import { useCandidate } from './hooks/useCandidate';
-import { useBulkStatusQueue } from './hooks/useBulkStatusQueue';
+import { useBulkChecklistFlow } from './hooks/useBulkChecklistFlow';
 import { useNormalizedCandidates } from './hooks/useNormalizedCandidates';
 import { useCandidateState } from './hooks/useCandidateState';
 import { useJobPageEffects } from './hooks/useJobPageEffects';
@@ -90,8 +86,12 @@ export default function JobProgressPage() {
   const [filterConditions, setFilterConditions] = useState<FilterState | null>(
     null,
   );
-  const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth || {});
+  const dispatch = useAppDispatch();
+
+  const onUnifiedRemarkClose = useCallback(() => {
+    dispatch(clearSelectedCandidates());
+  }, [dispatch]);
 
   const {
     ref: scrollRef,
@@ -177,13 +177,17 @@ export default function JobProgressPage() {
     candidateId: string;
     newStatus: string;
   } | null>(null);
-  const [bulkStatusQueue, setBulkStatusQueue] = useState<BulkStatusQueueItem[] | null>(null);
-  const { toast } = useToast();
-  const [bulkSubmitChecklist] = useBulkSubmitChecklistMutation();
+  const [pendingIncomingChecklistAfterStatus, setPendingIncomingChecklistAfterStatus] =
+    useState<string | null>(null);
 
-  const { onBulkStatusRequiresChecklist } = useBulkStatusQueue({
+  const {
+    bulkStatusQueue,
+    onBulkStatusRequiresChecklist,
+    onApplyToRemaining,
+    onBulkQueueStepComplete,
+    onBulkChecklistCancel,
+  } = useBulkChecklistFlow({
     setOpenRemarksFor,
-    setBulkStatusQueue,
     setPendingStatusAfterChecklist,
     refetch,
   });
@@ -203,15 +207,47 @@ export default function JobProgressPage() {
         newStatus,
       );
       if (!result.validation.requiresChecklist) return null;
+      const currentLane = candidate.status;
+      const targetLane = newStatus;
       const validationInfo = {
         candidateId: candidate._id,
-        currentLane: candidate.status,
-        targetLane: newStatus,
+        currentLane,
+        targetLane,
         checklist:
           'checklist' in result.validation ? result.validation.checklist : null,
         isMandatory: result.validation.isMandatory,
         checklistType: result.type,
       };
+      if (
+        'pendingValidation' in result &&
+        result.pendingValidation?.requiresChecklist &&
+        'pendingType' in result &&
+        result.pendingType
+      ) {
+        const incomingInfo = JSON.stringify({
+          candidateId: candidate._id,
+          currentLane,
+          targetLane,
+          checklist:
+            'checklist' in result.pendingValidation!
+              ? result.pendingValidation!.checklist
+              : null,
+          isMandatory: result.pendingValidation!.isMandatory,
+          checklistType: result.pendingType,
+        });
+        return {
+          requiresChecklist: true,
+          isMandatory: result.validation.isMandatory,
+          // Step 0 = outgoing (current lane), step 1 = incoming (target lane). Unified dialog opens by checklistType.
+          validationSteps: [
+            {
+              validationInfo: JSON.stringify(validationInfo),
+              newStatusAfterStep: currentLane,
+            },
+            { validationInfo: incomingInfo, newStatusAfterStep: targetLane },
+          ],
+        };
+      }
       return {
         requiresChecklist: true,
         validationInfo: JSON.stringify(validationInfo),
@@ -229,70 +265,113 @@ export default function JobProgressPage() {
   );
 
   const onDeferStatusToChecklist = useCallback(
-    (validationInfo: string, newStatus: string) => {
-      setOpenRemarksFor(validationInfo);
+    (
+      validationInfo: string,
+      newStatus: string,
+      nextChecklistValidationInfo?: string,
+    ) => {
       try {
-        const parsed = JSON.parse(validationInfo) as { candidateId: string };
+        const parsed = JSON.parse(validationInfo) as {
+          candidateId: string;
+          checklistType?: string;
+        };
+        // When we have two checklists, always open OUTGOING first and store INCOMING for after (same as drag/clubbing).
+        const hasNext = !!nextChecklistValidationInfo?.trim();
+        let toOpenNow: string = validationInfo;
+        let toStoreForAfter: string | null = null;
+        if (hasNext && nextChecklistValidationInfo) {
+          try {
+            const nextParsed = JSON.parse(nextChecklistValidationInfo) as {
+              checklistType?: string;
+            };
+            const firstOutgoing = (parsed.checklistType ?? '') === 'outgoing';
+            const nextIncoming =
+              (nextParsed.checklistType ?? '') === 'incoming';
+            const nextOutgoing =
+              (nextParsed.checklistType ?? '') === 'outgoing';
+            if (firstOutgoing && nextIncoming) {
+              toOpenNow = validationInfo;
+              toStoreForAfter = nextChecklistValidationInfo;
+            } else if (
+              (parsed.checklistType ?? '') === 'incoming' &&
+              nextOutgoing
+            ) {
+              toOpenNow = nextChecklistValidationInfo;
+              toStoreForAfter = validationInfo;
+            } else if (nextOutgoing && !firstOutgoing) {
+              toOpenNow = nextChecklistValidationInfo;
+              toStoreForAfter = validationInfo;
+            } else {
+              // Bulletproof: pick whichever has checklistType 'outgoing' so we never open incoming first
+              const firstIsOutgoing = (parsed.checklistType ?? '') === 'outgoing';
+              const nextIsOutgoing = (nextParsed.checklistType ?? '') === 'outgoing';
+              if (nextIsOutgoing && !firstIsOutgoing) {
+                toOpenNow = nextChecklistValidationInfo;
+                toStoreForAfter = validationInfo;
+              } else {
+                toOpenNow = validationInfo;
+                toStoreForAfter = nextChecklistValidationInfo;
+              }
+            }
+          } catch {
+            toOpenNow = validationInfo;
+            toStoreForAfter = nextChecklistValidationInfo;
+          }
+        }
+        const withFlag = {
+          ...(JSON.parse(toOpenNow) as Record<string, unknown>),
+          statusDeferredFromUnified: true,
+        };
+        // Last-moment guard: never open incoming first when we have two checklists (store has the other)
+        const openingType = (withFlag as { checklistType?: string }).checklistType ?? '';
+        if (
+          openingType === 'incoming' &&
+          toStoreForAfter
+        ) {
+          try {
+            const other = JSON.parse(toStoreForAfter) as { checklistType?: string };
+            if ((other.checklistType ?? '') === 'outgoing') {
+              const swap = toOpenNow;
+              toOpenNow = toStoreForAfter;
+              toStoreForAfter = swap;
+              Object.assign(withFlag, JSON.parse(toOpenNow) as Record<string, unknown>, {
+                statusDeferredFromUnified: true,
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
+        setOpenRemarksFor(JSON.stringify(withFlag));
+        const candidateId = (parsed.candidateId ||
+          (JSON.parse(toOpenNow) as { candidateId?: string }).candidateId) as string;
         setPendingStatusAfterChecklist({
-          candidateId: parsed.candidateId,
+          candidateId,
           newStatus,
         });
+        if (toStoreForAfter) {
+          try {
+            const nextParsed = JSON.parse(toStoreForAfter) as Record<string, unknown>;
+            setPendingIncomingChecklistAfterStatus(
+              JSON.stringify({
+                ...nextParsed,
+                statusAlreadyApplied: true,
+              }),
+            );
+          } catch {
+            setPendingIncomingChecklistAfterStatus(null);
+          }
+        } else {
+          setPendingIncomingChecklistAfterStatus(null);
+        }
       } catch {
+        setOpenRemarksFor(validationInfo);
         setPendingStatusAfterChecklist(null);
+        setPendingIncomingChecklistAfterStatus(null);
       }
     },
-    [setOpenRemarksFor],
+    [setOpenRemarksFor, setPendingStatusAfterChecklist],
   );
-
-  /** Apply same checklist to all candidates in the bulk set (one API call). */
-  const onApplyToRemaining = useCallback(
-    (payload: ChecklistSubmissionData) => {
-      if (!bulkStatusQueue || bulkStatusQueue.length === 0) return;
-      const candidates = bulkStatusQueue.map((item) => ({
-        candidateId: item.candidateId,
-        newStatus: item.newStatus,
-      }));
-      setBulkStatusQueue(null);
-      setPendingStatusAfterChecklist(null);
-      setOpenRemarksFor(null);
-      dispatch(clearSelectedCandidates());
-      (async () => {
-        try {
-          await bulkSubmitChecklist({ data: payload, candidates }).unwrap();
-          await refetch();
-          toast({
-            title: 'Success',
-            description: `Checklist applied to ${candidates.length} candidate(s)`,
-          });
-        } catch (err) {
-          toast({
-            title: 'Error',
-            description:
-              (err as { data?: { error?: string } })?.data?.error ??
-              (err as Error)?.message ??
-              'Failed to apply checklist to candidates',
-            variant: 'destructive',
-          });
-        }
-      })();
-    },
-    [
-      bulkStatusQueue,
-      bulkSubmitChecklist,
-      refetch,
-      toast,
-      setOpenRemarksFor,
-      dispatch,
-    ],
-  );
-
-  /** When user closes bulk checklist dialog: cancel entire bulk (no re-open). */
-  const onBulkChecklistCancel = useCallback(() => {
-    setBulkStatusQueue(null);
-    setPendingStatusAfterChecklist(null);
-    setOpenRemarksFor(null);
-    dispatch(clearSelectedCandidates());
-  }, [setOpenRemarksFor, dispatch]);
 
   const {
     handleAddLane,
@@ -317,6 +396,8 @@ export default function JobProgressPage() {
 
   const {
     onDragEnd,
+    onBeforeDragStart,
+    bulkDragState,
     handleFileDrop,
     handleCandidateUpdate,
     handleDeleteClick,
@@ -324,6 +405,8 @@ export default function JobProgressPage() {
     pendingMoves,
     cancelPendingMove,
     handleChecklistComplete,
+    bulkDragTwoPhase,
+    onBulkDragTwoPhaseSubmit,
   } = useCandidate({
     columns,
     setColumns,
@@ -340,7 +423,10 @@ export default function JobProgressPage() {
     job,
     pendingStatusAfterChecklist,
     setPendingStatusAfterChecklist,
+    pendingIncomingChecklistAfterStatus,
+    setPendingIncomingChecklistAfterStatus,
     bulkStatusQueue,
+    onBulkQueueStepComplete,
   });
 
   // Use normalized candidates (already merged and normalized)
@@ -411,6 +497,8 @@ export default function JobProgressPage() {
         onShowArchivedChange={setShowArchived}
         onValidateStatusChange={onValidateStatusChange}
         onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
+        onDeferStatusToChecklist={onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={onOpenChecklistAfterSave}
       />
 
       <JobKanbanBoard
@@ -419,6 +507,8 @@ export default function JobProgressPage() {
         isDragging={isDragging}
         setIsDndDragging={setIsDndDragging}
         onDragEnd={onDragEnd}
+        onBeforeDragStart={onBeforeDragStart}
+        bulkDragState={bulkDragState}
         isFileOver={isFileOver}
         setIsFileOver={setIsFileOver}
         handleFileDrop={handleFileDrop}
@@ -503,10 +593,18 @@ export default function JobProgressPage() {
           onValidateStatusChange={onValidateStatusChange}
           onDeferStatusToChecklist={onDeferStatusToChecklist}
           onOpenChecklistAfterSave={onOpenChecklistAfterSave}
-          bulkTotalCount={bulkStatusQueue?.length ?? 0}
-          onApplyToRemaining={onApplyToRemaining}
+          bulkTotalCount={
+            bulkDragTwoPhase
+              ? bulkDragTwoPhase.candidateIds.length
+              : (bulkStatusQueue?.length ?? 0)
+          }
+          onApplyToRemaining={
+            bulkDragTwoPhase ? onBulkDragTwoPhaseSubmit : onApplyToRemaining
+          }
           bulkStatusQueue={bulkStatusQueue}
           onBulkChecklistCancel={onBulkChecklistCancel}
+          bulkDragTwoPhase={bulkDragTwoPhase}
+          onUnifiedRemarkClose={onUnifiedRemarkClose}
         />
       )}
     </div>

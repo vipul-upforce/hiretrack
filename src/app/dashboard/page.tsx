@@ -10,6 +10,7 @@ import {
   useLazyFetchCandidateByIdQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
 import { useDashboardState } from './hooks/useDashboardState';
@@ -19,6 +20,7 @@ import { useDashboardNotifications } from './hooks/useDashboardNotifications';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardContent } from './components/DashboardContent';
 import { isToday, isThisWeek } from './utils/dateHelpers';
+import ChecklistRemarksDialog from './jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 export default function DashboardPage() {
   const itemsPerPage = 20;
@@ -32,6 +34,13 @@ export default function DashboardPage() {
 
   // Consolidate all state
   const state = useDashboardState();
+
+  const currentJobId =
+    typeof state.selectedCandidate?.jobId === 'object'
+      ? state.selectedCandidate?.jobId?._id
+      : state.selectedCandidate?.jobId;
+
+  const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
 
   // Assignment fetching logic
   const { fetchAssignments, loadMoreData } = useDashboardAssignments({
@@ -88,6 +97,7 @@ export default function DashboardPage() {
     setCurrentPage: state.setCurrentPage,
     setHasMoreData: state.setHasMoreData,
     setAssignments: state.setAssignments,
+    assignmentsCounts: state.assignmentsCounts,
     isActivitiesSidebarOpen: state.isActivitiesSidebarOpen,
     sseCandidates,
     sseAddedCountRef: state.sseAddedCountRef,
@@ -156,6 +166,11 @@ export default function DashboardPage() {
     state.setFilterText(state.searchText);
   };
 
+  const handleCandidateCardClick = useCallback((candidate: Candidate) => {
+    state.setSelectedCandidate(candidate);
+    state.setIsCandidateDialogOpen(true);
+  }, [state.setIsCandidateDialogOpen, state.setSelectedCandidate]);
+
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden">
       <DashboardHeader
@@ -195,6 +210,7 @@ export default function DashboardPage() {
           showRecentActivities={showRecentActivities}
           isActivitiesSidebarOpen={state.isActivitiesSidebarOpen}
           setAssignments={state.setAssignments}
+          onCandidateCardClick={handleCandidateCardClick}
         />
 
         {showRecentActivities && state.isActivitiesSidebarOpen && (
@@ -223,7 +239,30 @@ export default function DashboardPage() {
         }}
         hideEditButton={user?.role === 'interviewer'}
         hideCloseButtons={false}
+        onValidateStatusChange={checklistValidation.onValidateStatusChange}
+        onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
       />
+
+      {state.selectedCandidate && checklistValidation.openRemarksFor && (
+        <ChecklistRemarksDialog
+          candidate={state.selectedCandidate}
+          isOpen={!!checklistValidation.openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) {
+              checklistValidation.setOpenRemarksFor(null);
+            }
+          }}
+          setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
+          refetch={async () => {
+            // Optional: trigger assignment refetch after checklist completes
+            triggerFetchAssignments({ page: 1, limit: itemsPerPage });
+          }}
+          checklistInfo={checklistValidation.openRemarksFor}
+          onChecklistSuccess={() => { }}
+          onChecklistCancel={() => { }}
+        />
+      )}
     </div>
   );
 }

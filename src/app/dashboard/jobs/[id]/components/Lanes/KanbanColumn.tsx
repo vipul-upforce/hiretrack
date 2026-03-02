@@ -42,11 +42,15 @@ const CandidateRow = memo(
     index,
     isPending,
     context,
+    isBulkPlaceholder = false,
+    bulkDragCount,
   }: {
     candidate: Candidate;
     index: number;
     isPending: boolean;
     context: CandidateContextType;
+    isBulkPlaceholder?: boolean;
+    bulkDragCount?: number;
   }) => {
     // Helper handlers using context
     const handleViewDetails = (candidateToView?: Candidate) => {
@@ -85,6 +89,8 @@ const CandidateRow = memo(
           onValidateStatusChange={context.onValidateStatusChange}
           onDeferStatusToChecklist={context.onDeferStatusToChecklist}
           onOpenChecklistAfterSave={context.onOpenChecklistAfterSave}
+          isBulkPlaceholder={isBulkPlaceholder}
+          bulkDragCount={bulkDragCount}
         />
       </div>
     );
@@ -103,6 +109,17 @@ function renderCandidateItem(
     (pm) =>
       pm.candidateId === candidate._id && pm.targetLaneId === context.laneId,
   );
+  const bulk = context.bulkDrag;
+  const isBulkPlaceholder =
+    !!bulk?.isBulkDrag &&
+    bulk.bulkIds.includes(candidate._id) &&
+    candidate._id !== bulk.draggedId;
+  const bulkDragCount =
+    bulk?.isBulkDrag &&
+    candidate._id === bulk.draggedId &&
+    bulk.bulkIds.length > 1
+      ? bulk.bulkIds.length
+      : undefined;
 
   return (
     <CandidateRow
@@ -110,6 +127,8 @@ function renderCandidateItem(
       index={index}
       isPending={isPending}
       context={context}
+      isBulkPlaceholder={isBulkPlaceholder}
+      bulkDragCount={bulkDragCount}
     />
   );
 }
@@ -138,6 +157,7 @@ const KanbanColumn = memo(
     onValidateStatusChange,
     onDeferStatusToChecklist,
     onOpenChecklistAfterSave,
+    bulkDragState,
   }: KanbanColumnProps) => {
     const dispatch = useAppDispatch();
     const isShiftPressed = useShiftKey();
@@ -255,16 +275,38 @@ const KanbanColumn = memo(
         if (isShiftPressed) {
           const laneId = column.id;
           const laneIdSet = new Set(processedCandidates.map((c) => c._id));
-          const selectedInLane = selectedCandidates.filter((c) => laneIdSet.has(c._id));
+          const selectedInLane = selectedCandidates.filter((c) =>
+            laneIdSet.has(c._id),
+          );
+          const clickedLaneStatus = candidate.status;
+
+          // Same-lane rule: if we have selection from another lane, replace it (forget previous lane)
+          const selectionFromOtherLane =
+            selectedCandidates.length > 0 &&
+            selectedCandidates.every((c) => c.status !== clickedLaneStatus);
+          if (selectionFromOtherLane) {
+            dispatch(setSelectedCandidates([candidate]));
+            setShiftRangeAnchor(laneId, candidateIndex);
+            return;
+          }
+
           if (selectedInLane.length === 0) {
-            const next = selectedCandidates.some((c) => c._id === candidate._id) ? selectedCandidates : [...selectedCandidates, candidate];
+            const next = selectedCandidates.some((c) => c._id === candidate._id)
+              ? selectedCandidates
+              : [...selectedCandidates, candidate];
             dispatch(setSelectedCandidates(next));
             setShiftRangeAnchor(laneId, candidateIndex);
           } else {
             const lastSelected = selectedInLane[selectedInLane.length - 1];
-            const lastIndex = processedCandidates.findIndex((c) => c._id === lastSelected._id);
+            const lastIndex = processedCandidates.findIndex(
+              (c) => c._id === lastSelected._id,
+            );
             if (lastIndex === -1) {
-              const next = selectedCandidates.some((c) => c._id === candidate._id) ? selectedCandidates : [...selectedCandidates, candidate];
+              const next = selectedCandidates.some(
+                (c) => c._id === candidate._id,
+              )
+                ? selectedCandidates
+                : [...selectedCandidates, candidate];
               dispatch(setSelectedCandidates(next));
               setShiftRangeAnchor(laneId, candidateIndex);
             } else {
@@ -272,10 +314,15 @@ const KanbanColumn = memo(
               const hi = Math.max(lastIndex, candidateIndex);
               const range = processedCandidates.slice(lo, hi + 1);
               const inLaneIds = selectedInLane.map((c) => c._id);
-              const mergedIds = new Set([...inLaneIds, ...range.map((c) => c._id)]);
-              const mergedInLane = processedCandidates.filter((c) => mergedIds.has(c._id));
-              const rest = selectedCandidates.filter((c) => !laneIdSet.has(c._id));
-              dispatch(setSelectedCandidates([...rest, ...mergedInLane]));
+              const mergedIds = new Set([
+                ...inLaneIds,
+                ...range.map((c) => c._id),
+              ]);
+              const mergedInLane = processedCandidates.filter((c) =>
+                mergedIds.has(c._id),
+              );
+              // Same-lane only: do not merge in candidates from other lanes
+              dispatch(setSelectedCandidates(mergedInLane));
               setShiftRangeAnchor(laneId, candidateIndex);
             }
           }
@@ -307,6 +354,7 @@ const KanbanColumn = memo(
         onValidateStatusChange,
         onDeferStatusToChecklist,
         onOpenChecklistAfterSave,
+        bulkDrag: bulkDragState,
       }),
       [
         column.id,
@@ -322,6 +370,7 @@ const KanbanColumn = memo(
         onValidateStatusChange,
         onDeferStatusToChecklist,
         onOpenChecklistAfterSave,
+        bulkDragState,
       ],
     );
 

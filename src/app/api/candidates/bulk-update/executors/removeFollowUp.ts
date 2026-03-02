@@ -82,7 +82,12 @@ export async function runBulkRemoveFollowUp(
   try {
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $set: { followUp: followUpPayload } },
+      {
+        $set: {
+          followUp: followUpPayload,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     const historyBulk = candidatesToUpdate

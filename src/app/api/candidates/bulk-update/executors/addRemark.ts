@@ -53,7 +53,10 @@ export async function runBulkAddRemark(
     // Batch update: push remark to all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $push: { remarks: newRemarkDoc } },
+      {
+        $push: { remarks: newRemarkDoc },
+        $set: { 'tracking.updatedAt': new Date(dateTime) },
+      },
     );
 
     // Build history bulk operations (each needs unique remarkId)
