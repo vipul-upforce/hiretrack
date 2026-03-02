@@ -426,12 +426,13 @@ export function CandidateDetailsDialog({
   // Check if interviewer can access this candidate
   const canInterviewerAccess = () => {
     if (user?.role !== 'interviewer') return true; // Non-interviewers can access
-    if (!localCandidate?.assignment?.interviewerId) return false; // No assignment means can't access
+    const candidateToCheck = candidate || localCandidate;
+    if (!candidateToCheck?.assignment?.interviewerId) return false; // No assignment means can't access
 
     const interviewerId =
-      typeof localCandidate.assignment.interviewerId === 'object'
-        ? localCandidate.assignment.interviewerId._id
-        : localCandidate.assignment.interviewerId;
+      typeof candidateToCheck.assignment.interviewerId === 'object'
+        ? candidateToCheck.assignment.interviewerId._id
+        : candidateToCheck.assignment.interviewerId;
 
     return interviewerId === user.id;
   };
@@ -445,6 +446,7 @@ export function CandidateDetailsDialog({
     isOpen,
     user?.role,
     localCandidate?.assignment?.interviewerId,
+    candidate?.assignment?.interviewerId,
     user?.id,
     onOpenChange,
   ]);

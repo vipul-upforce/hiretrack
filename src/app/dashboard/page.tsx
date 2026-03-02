@@ -157,6 +157,11 @@ export default function DashboardPage() {
     state.setFilterText(state.searchText);
   };
 
+  const handleCandidateCardClick = useCallback((candidate: Candidate) => {
+    state.setSelectedCandidate(candidate);
+    state.setIsCandidateDialogOpen(true);
+  }, [state.setIsCandidateDialogOpen, state.setSelectedCandidate]);
+
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden">
       <DashboardHeader
@@ -196,6 +201,7 @@ export default function DashboardPage() {
           showRecentActivities={showRecentActivities}
           isActivitiesSidebarOpen={state.isActivitiesSidebarOpen}
           setAssignments={state.setAssignments}
+          onCandidateCardClick={handleCandidateCardClick}
         />
 
         {showRecentActivities && state.isActivitiesSidebarOpen && (

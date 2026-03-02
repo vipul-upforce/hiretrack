@@ -8,13 +8,27 @@ import { formatDate, formatTime } from '../jobs/[id]/hooks/dateTimeFormatting';
 
 export function RenderTodaysInterviews({
   todayAssignments,
+  onCandidateClick,
 }: {
   todayAssignments: Candidate[];
+  onCandidateClick: (candidate: Candidate) => void;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {todayAssignments?.map((assignment) => (
-        <Card key={assignment.id || Math.random().toString()}>
+        <Card
+          key={assignment.id || Math.random().toString()}
+          role="button"
+          tabIndex={0}
+          className="cursor-pointer transition-colors hover:bg-muted/30"
+          onClick={() => onCandidateClick(assignment)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onCandidateClick(assignment);
+            }
+          }}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-lg capitalize">
               <div className="flex flex-row items-center justify-between pb-2">

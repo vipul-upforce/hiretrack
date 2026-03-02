@@ -31,6 +31,7 @@ interface DashboardContentProps {
   showRecentActivities: boolean;
   isActivitiesSidebarOpen: boolean;
   setAssignments: React.Dispatch<React.SetStateAction<Candidate[]>>;
+  onCandidateCardClick: (candidate: Candidate) => void;
 }
 
 function DashboardEmptyState({
@@ -89,6 +90,7 @@ export function DashboardContent({
   showRecentActivities,
   isActivitiesSidebarOpen,
   setAssignments,
+  onCandidateCardClick,
 }: DashboardContentProps) {
   return (
     <div
@@ -201,6 +203,7 @@ export function DashboardContent({
                               ).toDateString() === new Date().toDateString(),
                           )
                     }
+                    onCandidateClick={onCandidateCardClick}
                   />
                 ) : (
                   <DashboardEmptyState
@@ -243,6 +246,7 @@ export function DashboardContent({
                             ] as Candidate[])
                           : interviewerAssignments
                       }
+                      onCandidateClick={onCandidateCardClick}
                     />
                   ) : (
                     <DashboardEmptyState

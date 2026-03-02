@@ -27,6 +27,7 @@ import {
 import { Loader2, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/app/hooks/useAuth';
 
 interface AssignJobDialogProps {
   candidate: Candidate | Candidate[];
@@ -50,7 +51,11 @@ export function AssignJobDialog({
   onOpenChange,
   onJobAssignment,
 }: AssignJobDialogProps) {
-  const { data: jobs, isFetching, error } = useFetchOpenJobsQuery();
+  const { userRole } = useAuth();
+  const canManageJobs = userRole === 'admin' || userRole === 'hr';
+  const { data: jobs, isFetching, error } = useFetchOpenJobsQuery(undefined, {
+    skip: !isOpen || !canManageJobs,
+  });
   const [assignJob] = useAssignJobMutation();
   const [bulkAssignJob] = useBulkAssignJobMutation();
   const [loading, setLoading] = useState(false);

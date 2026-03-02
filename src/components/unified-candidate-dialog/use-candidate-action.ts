@@ -122,11 +122,24 @@ export function useCandidateActions({
   const [cancelTeamsMeeting, { isLoading: isCancellingTeams }] =
     useCancelTeamsMeetingMutation();
 
-  const { data: jobs } = useFetchOpenJobsQuery();
-  const { data: googleCalendarData } =
-    useGetGoogleCalendarConfigQuery(undefined);
-  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
-  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined);
+  const canManageAssignments = user?.role === 'admin' || user?.role === 'hr';
+  const shouldFetchActionDependencies = isOpen && canManageAssignments;
+
+  const { data: jobs } = useFetchOpenJobsQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
+  const { data: googleCalendarData } = useGetGoogleCalendarConfigQuery(
+    undefined,
+    {
+      skip: !shouldFetchActionDependencies,
+    },
+  );
+  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
+  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
 
   const getInitialJobId = useCallback(() => {
     if (typeof candidate.jobId === 'string') return candidate.jobId;
@@ -137,8 +150,7 @@ export function useCandidateActions({
 
   const jobId = getInitialJobId();
 
-  const shouldFetchInterviewers =
-    user && (user.role === 'admin' || user.role === 'hr');
+  const shouldFetchInterviewers = user && canManageAssignments;
 
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery(undefined, {
@@ -156,7 +168,7 @@ export function useCandidateActions({
 
   const { data: jobLanesData, isLoading: isLoadingLanes } =
     useFetchJobLanesQuery(jobId, {
-      skip: !jobId || !isOpen,
+      skip: !jobId || !shouldFetchActionDependencies,
     });
 
   // Sync checkboxes with initialAction
@@ -174,7 +186,7 @@ export function useCandidateActions({
         refetchInterviewers();
       }
     }
-  }, [isOpen, initialAction, refetchInterviewers]);
+  }, [isOpen, initialAction, refetchInterviewers, shouldFetchInterviewers]);
 
   const initialValues = useMemo<UnifiedFormValues>(() => {
     // Get interviewerId, use "-1" for "None" option in Select when there's no assignment
