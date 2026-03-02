@@ -10,6 +10,7 @@ import {
   useLazyFetchCandidateByIdQuery,
 } from '@/lib/features/candidate/candidateApi';
 import { Candidate } from '@/types/candidate';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
 import { useDashboardState } from './hooks/useDashboardState';
@@ -19,7 +20,6 @@ import { useDashboardNotifications } from './hooks/useDashboardNotifications';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardContent } from './components/DashboardContent';
 import { isToday, isThisWeek } from './utils/dateHelpers';
-import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import ChecklistRemarksDialog from './jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 export default function DashboardPage() {
