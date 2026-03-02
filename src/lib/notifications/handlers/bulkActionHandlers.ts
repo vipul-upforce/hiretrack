@@ -297,7 +297,7 @@ export async function notifyBulkCandidateAssigned(params: {
         templateKey: 'bulk-assign',
         variables: {
           ...baseVariables,
-          interviewerName: 'you',
+          interviewerName: params.interviewerName,
           recipientName: params.interviewerName,
         },
         recipients: interviewerEmailRecipients,

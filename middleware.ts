@@ -18,7 +18,6 @@
 //   (pathname) => pathname.startsWith("/auth/signup"),
 //   (pathname) => pathname.startsWith("/apply-jobs"),
 
-  
 //   (pathname) => /^\/[^/]+\/apply-jobs(\/.*)?$/.test(pathname),
 // ];
 
@@ -193,7 +192,7 @@
 //     // If neither explicitly public nor private, allow through
 //     return NextResponse.next();
 //   }
-  
+
 //   if (token && orgId) {
 //     const decryptedResponse = await verifyAndDecryptTokenMiddleware(String(token), orgId);
 //     console.log("decryptedResponse",decryptedResponse, "decryptedResponse-199");
@@ -208,18 +207,18 @@
 
 //   if (userData) {
 //     const userRole = userData.role;
-    
+
 //     // Redirect authenticated users away from login page
 //     // if (pathname.startsWith("/auth/login")) {
 //     //   console.log("pathname",pathname, "pathname-215");
 //     //   // Respect redirect query param if present
 //     //   const redirectParam = request.nextUrl.searchParams.get("redirect");
-//     //   if (redirectParam && 
-//     //       !redirectParam.startsWith("/auth/") && 
+//     //   if (redirectParam &&
+//     //       !redirectParam.startsWith("/auth/") &&
 //     //       redirectParam.startsWith("/")) {
 //     //     return  NextResponse.redirect(createLoginRedirectUrl(request, redirectParam));
 //     //   }
-      
+
 //     //   // Role-based default redirects
 //     //   if (userRole === "candidate") {
 //     //     return  NextResponse.redirect( createLoginRedirectUrl(request, "/apply-jobs"));
@@ -227,8 +226,6 @@
 //     //   // For admin, hr, interviewer
 //     //   return  NextResponse.redirect( createLoginRedirectUrl(request, "/dashboard")  );
 //     // }
-
-
 
 //     // Redirect authenticated users away from login page
 // if (pathname.startsWith("/auth/login")) {
@@ -238,10 +235,10 @@
 //     try {
 //       // Decode URL-encoded redirect parameter (%2Fdashboard -> /dashboard)
 //       const decodedRedirect = decodeURIComponent(redirectParam);
-      
+
 //       // Validate it's a safe internal path
 //       if (
-//         decodedRedirect.startsWith("/") && 
+//         decodedRedirect.startsWith("/") &&
 //         !decodedRedirect.startsWith("//") &&
 //         !decodedRedirect.startsWith("/auth/") &&
 //         !decodedRedirect.startsWith("http://") &&
@@ -254,7 +251,7 @@
 //       // Fall through to default redirect
 //     }
 //   }
-  
+
 //   // Role-based default redirects (direct URLs, not login URLs)
 //   if (userRole === "candidate") {
 //     return NextResponse.redirect(new URL("/apply-jobs", request.url));
@@ -263,7 +260,6 @@
 //   return NextResponse.redirect(new URL("/dashboard", request.url));
 // }
 //   }
-  
 
 //   // Handle API routes authentication
 //   const isFileApiWithAllowedFile =
@@ -368,7 +364,6 @@
 //     }
 //   }
 
-
 //   return NextResponse.next();
 //   // const res = NextResponse.next();
 
@@ -395,8 +390,8 @@
 //     // "/:orgName/:path*",
 //     "/backups",
 //     "/take-snapshot",
-//     // "/auth/login", 
-    
+//     // "/auth/login",
+
 //   ],
 // };
 
@@ -452,17 +447,11 @@
 //   "/api/license-validate",
 // ];
 
-
-
-
-
-
-
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import CryptoJS from "crypto-js";
-import { jwtVerify } from "jose";
-import { generateOrgJwtSecret } from "@/lib/jwtSecretGenerator";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import CryptoJS from 'crypto-js';
+import { jwtVerify } from 'jose';
+import { generateOrgJwtSecret } from '@/lib/jwtSecretGenerator';
 // import { log } from "@/lib/logger";
 
 interface JWTPayload {
@@ -472,69 +461,72 @@ interface JWTPayload {
 }
 
 const redirectPaths = [
-  "/dashboard",
-  "/jobs",
-  "/auth/signup",
-  "/:orgName/apply-jobs",
+  '/dashboard',
+  '/jobs',
+  '/auth/signup',
+  '/:orgName/apply-jobs',
 ];
 
 const unauthorizedInterviewerPages = [
-  "/jobs-board",
-  "/jobs",
-  "/auth/signup",
-  "/dashboard/settings",
-  "/dashboard/search",
-  "/dashboard/cv-upload",
-  "/dashboard/analytics",
-  "/api/organization/tags",
+  '/jobs-board',
+  '/jobs',
+  '/dashboard/jobs',
+  '/auth/signup',
+  '/dashboard/settings',
+  '/dashboard/search',
+  '/dashboard/cv-upload',
+  '/dashboard/analytics',
+  '/api/organization/tags',
 ];
 
-const unauthorizedInterviewerAPIRoutes = ["/api/candidates/filter"];
+const unauthorizedInterviewerAPIRoutes = ['/api/candidates/filter'];
 const unauthorizedCandidateAPIRoutes = [
-  "/api/candidates/assignments",
-  "/dashboard",
-  "/api/candidates/assignments",
-  "/dashboard/:path*",
-  "/api/nginx-logs",
-  "/api/download/assets",
+  '/api/candidates/assignments',
+  '/dashboard',
+  '/api/candidates/assignments',
+  '/dashboard/:path*',
+  '/api/nginx-logs',
+  '/api/download/assets',
 ];
 
 const apiExemptPaths = [
-  "/api/jobs/open-jobs",
-  "/api/auth/login",
-  "/api/auth/me",
-  "/api/auth/signup",
-  "/api/organization",
-  "/api/orgs",
-  "/api/auth/forgot-password",
-  "/api/auth/reset-password",
-  "/api/event-mail",
-  "/api/candidates/signup",
-  "/api/candidates/evaluate",
-  "/api/candidates/event-mail",
-  "/api/files",
-  "/api/file-proxy",
-  "/api/file",
-  "/api/candidates/guest-apply",
-  "/api/candidates/apply-application",
-  "/apply-jobs",
-  "/api/organization/cs/",
-  "/api/auth/2fa/send-otp",
-  "/api/auth/2fa/verify-otp",
-  "/api/settings/twofa",
-  "/api/settings/portal",
-  "/api/shared-files",
+  '/api/jobs/open-jobs',
+  '/api/auth/login',
+  '/api/auth/me',
+  '/api/auth/signup',
+  '/api/organization',
+  '/api/orgs',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/event-mail',
+  '/api/candidates/signup',
+  '/api/candidates/evaluate',
+  '/api/candidates/event-mail',
+  '/api/files',
+  '/api/file-proxy',
+  '/api/file',
+  '/api/candidates/guest-apply',
+  '/api/candidates/apply-application',
+  '/apply-jobs',
+  '/api/organization/cs/',
+  '/api/auth/2fa/send-otp',
+  '/api/auth/2fa/verify-otp',
+  '/api/settings/twofa',
+  '/api/settings/portal',
+  '/api/shared-files',
   // "/api/organization/tags",
-  "/api/auth/google/callback",
-  "/api/auth/google/authorize",
-  "/api/auth/microsoft/callback",
-  "/api/auth/microsoft/authorize",
-  "/api/settings/captcha",
-  "/api/license-validate",
+  '/api/auth/google/callback',
+  '/api/auth/google/authorize',
+  '/api/auth/microsoft/callback',
+  '/api/auth/microsoft/authorize',
+  '/api/settings/captcha',
+  '/api/license-validate',
 ];
 
-
-export async function verifyAndDecryptTokenMiddleware(token: string, orgId: string) {
+export async function verifyAndDecryptTokenMiddleware(
+  token: string,
+  orgId: string,
+) {
   if (!orgId) {
     return {
       success: false,
@@ -552,8 +544,8 @@ export async function verifyAndDecryptTokenMiddleware(token: string, orgId: stri
       secretKey,
     );
 
-    if (!payload || typeof payload !== "object" || !payload.refresh) {
-      throw new Error("Invalid token structure");
+    if (!payload || typeof payload !== 'object' || !payload.refresh) {
+      throw new Error('Invalid token structure');
     }
     const bytes = CryptoJS.AES.decrypt(payload.refresh as string, JWT_SECRET);
     const decryptedData = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
@@ -567,14 +559,20 @@ export async function verifyAndDecryptTokenMiddleware(token: string, orgId: stri
   }
 }
 
-// creates login redirect URL
+// creates login redirect URL — preserves query string (e.g. ?candidateId=) so
+// deep-link state survives the login bounce and the candidate dialog opens after auth.
 function createLoginRedirectUrl(request: NextRequest, targetPath: string) {
   const loginUrl = new URL('/auth/login', request.url);
-  if (targetPath !== '/auth/login') {
-    loginUrl.searchParams.set('redirect', targetPath);
+  const { search } = request.nextUrl;
+  const fullPath = search ? `${targetPath}${search}` : targetPath;
+  if (fullPath !== '/auth/login') {
+    loginUrl.searchParams.set('redirect', fullPath);
   }
   return loginUrl;
 }
+
+/** Path pattern for job board with a specific candidate (email deep link). */
+const JOB_CANDIDATE_DEEP_LINK = /^\/dashboard\/jobs\/[^/]+$/;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -583,18 +581,22 @@ export async function middleware(request: NextRequest) {
   ).split(',');
   const origin = request.nextUrl.hostname;
 
-  if (!allowedOrigins.includes(origin)) return NextResponse.json({ error: 'Origin Not Allowed' }, { status: 401 });
+  if (!allowedOrigins.includes(origin))
+    return NextResponse.json({ error: 'Origin Not Allowed' }, { status: 401 });
   let userData: { role: string } | undefined;
 
   // SECURITY FIX: Check both httpOnly and regular tokens for backward compatibility
-  const httpOnlyToken = request.cookies.get("refresh_token");
+  const httpOnlyToken = request.cookies.get('refresh_token');
   // const httpOnlyToken = request.cookies.get("auth_token");
   // const regularToken = request.cookies.get("token");
 
   const token = httpOnlyToken?.value;
   const orgId = request.cookies.get('org_id')?.value;
   if (token && orgId) {
-    const decryptedResponse = await verifyAndDecryptTokenMiddleware(String(token), orgId);
+    const decryptedResponse = await verifyAndDecryptTokenMiddleware(
+      String(token),
+      orgId,
+    );
     // console.log(decryptedResponse, "decryptedResponse-543");
     if (decryptedResponse.success) {
       userData = decryptedResponse.user as unknown as {
@@ -602,31 +604,31 @@ export async function middleware(request: NextRequest) {
       };
     }
   }
-   // ✅ ADD THIS: Redirect authenticated users away from /auth/login
+  // ✅ ADD THIS: Redirect authenticated users away from /auth/login
   //  console.log("in middleware ", pathname, "pathname-550")
-  if (userData && pathname.startsWith("/auth/login")) {
+  if (userData && pathname.startsWith('/auth/login')) {
     // console.log("in middleware ", pathname, "pathname-551")
     const userRole = userData.role;
-    if (userRole 
-      === "candidate") {
-      return NextResponse.redirect(new URL("/apply-jobs", request.url));
+    if (userRole === 'candidate') {
+      return NextResponse.redirect(new URL('/apply-jobs', request.url));
     }
     // For admin, hr, interviewer
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   // Handle API routes authentication
-  const isFileApiWithAllowedFile = pathname.startsWith('/api/files')
-    && (request.nextUrl.searchParams.get('pathName')?.endsWith('header.html')
-      || request.nextUrl.searchParams.get('pathName')?.endsWith('footer.html')
-      || request.nextUrl.searchParams.get('pathName')?.endsWith('favicon.png'));
+  const isFileApiWithAllowedFile =
+    pathname.startsWith('/api/files') &&
+    (request.nextUrl.searchParams.get('pathName')?.endsWith('header.html') ||
+      request.nextUrl.searchParams.get('pathName')?.endsWith('footer.html') ||
+      request.nextUrl.searchParams.get('pathName')?.endsWith('favicon.png'));
 
   if (
-    pathname.startsWith('/api')
-    && !apiExemptPaths.some(
+    pathname.startsWith('/api') &&
+    !apiExemptPaths.some(
       (path) => pathname === path || pathname?.includes(path),
-    )
-    && !isFileApiWithAllowedFile
+    ) &&
+    !isFileApiWithAllowedFile
   ) {
     if (!userData) {
       return NextResponse.json(
@@ -638,8 +640,13 @@ export async function middleware(request: NextRequest) {
 
   // Extract organization name from the path if it exists
   const pathParts = pathname.split('/').filter(Boolean);
-  const isOrgPath = pathParts.length > 1
-    && !['dashboard', 'auth', 'api', 'jobs', 'calendar'].includes(pathParts[0]);
+  const isOrgPath =
+    pathParts.length > 1 &&
+    !['dashboard', 'auth', 'api', 'jobs', 'calendar'].includes(pathParts[0]);
+
+  // Allow email links to job board (with or without candidateId): do not redirect to
+  // login so the page loads; client-side auth will redirect with full URL if needed.
+  const isJobBoardPage = JOB_CANDIDATE_DEEP_LINK.test(pathname);
 
   if (isOrgPath) {
     const subPath = `/${pathParts[1]}`;
@@ -647,11 +654,12 @@ export async function middleware(request: NextRequest) {
       //
     }
   } else if (
-    !userData
-      && redirectPaths.some((path) => {
-        if (path.includes(':orgName')) return false;
-        return pathname.startsWith(path);
-      })
+    !userData &&
+    !isJobBoardPage &&
+    redirectPaths.some((path) => {
+      if (path.includes(':orgName')) return false;
+      return pathname.startsWith(path);
+    })
   ) {
     return NextResponse.redirect(createLoginRedirectUrl(request, pathname));
   }
@@ -673,8 +681,8 @@ export async function middleware(request: NextRequest) {
 
     if (userRole === 'hr') {
       if (
-        pathname?.includes('/auth/signup')
-        || pathname?.includes('/dashboard/settings')
+        pathname?.includes('/auth/signup') ||
+        pathname?.includes('/dashboard/settings')
       ) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
@@ -700,7 +708,9 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
       if (
-        unauthorizedInterviewerAPIRoutes.some((path) => pathname?.includes(path))
+        unauthorizedInterviewerAPIRoutes.some((path) =>
+          pathname?.includes(path),
+        )
       ) {
         return new NextResponse('Permission denied', { status: 403 });
       }
@@ -722,14 +732,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/auth/signup",
-    "/api/:path*",
-    "/:orgName/:path*",
-    "/backups",
-    "/take-snapshot",
+    '/dashboard/:path*',
+    '/auth/signup',
+    '/api/:path*',
+    '/:orgName/:path*',
+    '/backups',
+    '/take-snapshot',
   ],
 };
-
-
-

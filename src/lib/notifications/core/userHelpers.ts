@@ -29,6 +29,39 @@ export async function getUsersByRole(
 }
 
 /**
+ * Returns a map of userId -> role for the given user IDs in the organization.
+ * Used for role-based action URLs in notifications (e.g. interviewer vs admin/hr).
+ */
+export async function getRolesForUserIds(
+  organizationId: string,
+  userIds: string[],
+): Promise<Map<string, string>> {
+  if (!userIds.length) return new Map();
+  try {
+    await connectToDatabase();
+    if (!User) return new Map();
+
+    const users = await User.find({
+      _id: { $in: userIds },
+      organizationId,
+      isDeleted: { $ne: true },
+    })
+      .select('_id role')
+      .lean();
+
+    const map = new Map<string, string>();
+    for (const u of users) {
+      const id = u._id?.toString();
+      if (id && u.role) map.set(id, u.role);
+    }
+    return map;
+  } catch (error) {
+    logger.error('Error getting roles for user IDs:', error);
+    return new Map();
+  }
+}
+
+/**
  * Gets display name for bulk email greeting.
  * When single recipient: returns their name. When multiple: returns 'Team'.
  */

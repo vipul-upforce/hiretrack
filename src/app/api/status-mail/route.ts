@@ -89,7 +89,12 @@ export async function POST(req: NextRequest) {
         : `Status updated to <strong>${status}</strong> for candidate: <strong>${candidateName}</strong><br>`;
 
     const emailKey = id;
-    const candidateDetails = `${req.headers.get('Origin')}/candidate/${id}`;
+    const origin = req.headers.get('Origin') || '';
+    // Status update email is sent to admin/hr only → use job page link
+    const candidateDetails =
+      jobId && origin
+        ? `${origin}/dashboard/jobs/${jobId}?candidateId=${id}`
+        : `${origin}/candidate/${id}`;
 
     // Queue data for the email
     const queueData: StatusUpdateQueueData = {
