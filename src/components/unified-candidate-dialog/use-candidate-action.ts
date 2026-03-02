@@ -1390,7 +1390,10 @@ export function useCandidateActions({
                   : undefined,
             }
           : undefined;
-
+        const previousInterviewerEmail =
+          typeof candidate.assignment?.interviewerId === 'object'
+            ? (candidate.assignment.interviewerId?.email ?? undefined)
+            : undefined;
         try {
           await sendUnassignEmail({
             name: result.name,
@@ -1400,6 +1403,7 @@ export function useCandidateActions({
             dateTime: new Date().toISOString(),
             status: result.status || candidate.status,
             feedback,
+            previousInterviewerEmail,
           }).unwrap();
         } catch (_emailError) {
           /* ignore */

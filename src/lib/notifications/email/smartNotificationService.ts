@@ -224,8 +224,6 @@ export async function sendSmartNotification(
         potentialRecipients,
       );
 
-    console.log('allRecipients >>>>>>>>', allRecipients);
-
     if (allRecipients.length === 0) {
       return {
         status: 200,
@@ -234,7 +232,6 @@ export async function sendSmartNotification(
         mentionedUsers,
       };
     }
-    console.log('eligibleUsers >>>>>>>>', eligibleUsers);
     if (eligibleUsers.length === 0) {
       return {
         status: 200,
@@ -253,7 +250,6 @@ export async function sendSmartNotification(
       })
         .select('_id email name')
         .lean();
-      console.log('users >>>>>>>>', users);
 
       const emailResult = await sendEventEmailWithHistory(
         organizationId,
@@ -273,7 +269,6 @@ export async function sendSmartNotification(
         },
         context.triggererEmail,
       );
-      console.log('emailResult >>>>>>>>', emailResult);
       if (emailResult.status === 200) {
         return {
           status: 200,
