@@ -19,6 +19,8 @@ import { useDashboardNotifications } from './hooks/useDashboardNotifications';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardContent } from './components/DashboardContent';
 import { isToday, isThisWeek } from './utils/dateHelpers';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
+import ChecklistRemarksDialog from './jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 export default function DashboardPage() {
   const itemsPerPage = 20;
@@ -32,6 +34,13 @@ export default function DashboardPage() {
 
   // Consolidate all state
   const state = useDashboardState();
+
+  const currentJobId =
+    typeof state.selectedCandidate?.jobId === 'object'
+      ? state.selectedCandidate?.jobId?._id
+      : state.selectedCandidate?.jobId;
+
+  const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
 
   // Assignment fetching logic
   const { fetchAssignments, loadMoreData } = useDashboardAssignments({
@@ -230,7 +239,30 @@ export default function DashboardPage() {
         }}
         hideEditButton={user?.role === 'interviewer'}
         hideCloseButtons={false}
+        onValidateStatusChange={checklistValidation.onValidateStatusChange}
+        onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
       />
+
+      {state.selectedCandidate && checklistValidation.openRemarksFor && (
+        <ChecklistRemarksDialog
+          candidate={state.selectedCandidate}
+          isOpen={!!checklistValidation.openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) {
+              checklistValidation.setOpenRemarksFor(null);
+            }
+          }}
+          setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
+          refetch={async () => {
+            // Optional: trigger assignment refetch after checklist completes
+            triggerFetchAssignments({ page: 1, limit: itemsPerPage });
+          }}
+          checklistInfo={checklistValidation.openRemarksFor}
+          onChecklistSuccess={() => { }}
+          onChecklistCancel={() => { }}
+        />
+      )}
     </div>
   );
 }

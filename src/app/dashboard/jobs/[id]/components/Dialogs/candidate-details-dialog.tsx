@@ -48,6 +48,10 @@ export function CandidateDetailsDialog({
   refetchCandidates,
   hideCloseButtons = false,
   isAssigning,
+  setIsAssigning,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -69,7 +73,7 @@ export function CandidateDetailsDialog({
   const [unifiedInitialAction, setUnifiedInitialAction] = useState<
     CandidateActionType | undefined
   >(undefined);
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state?.auth ?? {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
@@ -588,7 +592,7 @@ export function CandidateDetailsDialog({
 
         {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
-      {localCandidate && (
+      {localCandidate && isUnifiedOpen && (
         <UnifiedCandidateActionsDialog
           candidate={localCandidate}
           isOpen={isUnifiedOpen}
@@ -598,6 +602,23 @@ export function CandidateDetailsDialog({
           onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (info, status, next) => {
+                  setIsUnifiedOpen(false);
+                  onDeferStatusToChecklist(info, status, next);
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (info) => {
+                  setIsUnifiedOpen(false);
+                  onOpenChecklistAfterSave(info);
+                }
+              : undefined
+          }
           onSuccess={async () => {
             await refetch();
             setUnifiedInitialAction(undefined);

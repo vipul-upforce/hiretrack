@@ -18,7 +18,15 @@ const selectedCandidatesSlice = createSlice({
         (c) => c._id === action.payload._id,
       );
       if (index === -1) {
-        state.candidates.push(action.payload);
+        // Only allow selecting from one lane: if new candidate is from a different lane, replace selection
+        if (
+          state.candidates.length > 0 &&
+          action.payload.status !== state.candidates[0].status
+        ) {
+          state.candidates = [action.payload];
+        } else {
+          state.candidates.push(action.payload);
+        }
       } else {
         state.candidates.splice(index, 1);
       }

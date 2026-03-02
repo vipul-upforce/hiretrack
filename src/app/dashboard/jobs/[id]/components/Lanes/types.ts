@@ -35,8 +35,18 @@ export interface CandidateContextType {
     candidate: Candidate,
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
-  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** When dragging multiple selected candidates: hide others, show count on held card */
+  bulkDrag?: {
+    isBulkDrag: boolean;
+    draggedId: string | null;
+    bulkIds: string[];
+  } | undefined;
 }
 
 export interface KanbanColumnProps {
@@ -73,6 +83,15 @@ export interface KanbanColumnProps {
     candidate: Candidate,
     newStatus: string,
   ) => { requiresChecklist: boolean; validationInfo?: string } | null;
-  onDeferStatusToChecklist?: (validationInfo: string, newStatus: string) => void;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  bulkDragState?: {
+    isBulkDrag: boolean;
+    draggedId: string | null;
+    bulkIds: string[];
+  };
 }
