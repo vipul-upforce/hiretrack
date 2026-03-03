@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
 
     const channel = await getReleaseChannel();
     // Construct the URL for the version list endpoint
-    const versionListUrl = `${licenseValidationUrl}/api/version/list?channel=${encodeURIComponent(channel)}`;
+    // If channel is not production, add query string with the channel name as key and 'true' as value, else no query string
+    const versionListUrl = `${licenseValidationUrl}/api/version/list${channel !== 'production' ? `?${channel}=true` : ''}`;
 
     // Fetch version list from the license validation server
     const response = await fetch(versionListUrl, {
