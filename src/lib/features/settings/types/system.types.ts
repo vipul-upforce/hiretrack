@@ -152,7 +152,7 @@ export type SystemLogsResponse = {
 
 export interface AutoUpdateResponse {
   autoUpdate: boolean;
-  beta?: boolean;
+  channel?: 'beta' | 'staging' | 'production';
 }
 
 export interface TriggerUpdateResponse {

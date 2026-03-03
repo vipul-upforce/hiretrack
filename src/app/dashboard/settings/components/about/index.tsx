@@ -25,7 +25,7 @@
       currentVersion,
       latestVersion,
       updateAvailable,
-      isBeta,
+      channel,
       versionList,
       changelogVersions,
       checkingUpdatesRTK,
@@ -77,7 +77,7 @@
                     handleCheckForUpdates={handleCheckForUpdates}
                     checkingUpdatesRTK={checkingUpdatesRTK}
                     updateAvailable={updateAvailable}
-                    isBeta={isBeta}
+                    channel={channel}
                     versionList={versionList}
                   />
 

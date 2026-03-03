@@ -7,7 +7,7 @@ import os from 'os';
 import logger from '@/lib/logger/';
 import {
   PARENT_CONFIG_PATH,
-  getBetaFlag as getBetaFlagFromConfig,
+  getReleaseChannel as getReleaseChannelFromConfig,
 } from '@/lib/configUtils';
 
 // License file path (in project root parent directory)
@@ -15,8 +15,8 @@ export const LICENSE_PATH = path.join(process.cwd(), '..', 'license.json');
 /** @deprecated Use PARENT_CONFIG_PATH from @/lib/configUtils for parent config.json */
 export const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
 
-/** Reads the beta flag from parent config.json. Re-exported from configUtils for convenience. */
-export const getBetaFlag = getBetaFlagFromConfig;
+/** Reads the release channel from parent config.json. Re-exported from configUtils for convenience. */
+export const getReleaseChannel = getReleaseChannelFromConfig;
 
 /**
  * License data structure stored in license.json
@@ -231,10 +231,9 @@ async function validateLicenseWithAPI(
       'Validating license with external API',
     );
 
-    const betaFlag = await getBetaFlag();
-    logger.info('1111 betaFlag', betaFlag);
+    const channel = await getReleaseChannel();
     const response = await fetch(
-      `${licenseValidationUrl}/api/license/validate?beta=${betaFlag}`,
+      `${licenseValidationUrl}/api/license/validate?channel=${encodeURIComponent(channel)}`,
       {
         method: 'POST',
         headers: {

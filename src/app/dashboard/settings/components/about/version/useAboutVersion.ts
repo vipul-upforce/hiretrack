@@ -14,6 +14,8 @@ interface UseAboutVersionProps {
   onClose: (values?: AboutValues) => void;
 }
 
+type ReleaseChannel = 'beta' | 'staging' | 'production';
+
 const UPDATE_COOLDOWN_STORAGE_KEY = 'aboutUpdateCooldownUntil';
 const UPDATE_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes
 
@@ -33,7 +35,7 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const [initialValues, setInitialValues] = useState<AboutValues | null>(null);
   const [latestVersion, setLatestVersion] = useState<string | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [isBeta, setIsBeta] = useState(false);
+  const [channel, setChannel] = useState<ReleaseChannel>('production');
   const [updateCooldownUntil, setUpdateCooldownUntil] = useState<number | null>(
     null,
   );
@@ -51,6 +53,13 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   const [triggerUpdateRTK, { isLoading: updatingRTK }] =
     useTriggerUpdateMutation();
 
+  const normalizeChannel = (value: unknown): ReleaseChannel => {
+    if (value === 'beta' || value === 'staging' || value === 'production') {
+      return value;
+    }
+    return 'production';
+  };
+
   const currentVersion = packageJson.version;
   const updateCooldownRemainingMs = updateCooldownUntil
     ? Math.max(0, updateCooldownUntil - nowTimestamp)
@@ -61,13 +70,13 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
   useEffect(() => {
     if (autoUpdateData?.autoUpdate !== undefined) {
       setInitialValues({ enableAutoUpdate: autoUpdateData.autoUpdate });
-      setIsBeta(Boolean(autoUpdateData.beta));
+      setChannel(normalizeChannel(autoUpdateData.channel));
       return;
     }
 
     if (autoUpdateError) {
       setInitialValues({ enableAutoUpdate: false });
-      setIsBeta(false);
+      setChannel('production');
     }
   }, [autoUpdateData, autoUpdateError]);
 
@@ -234,7 +243,7 @@ export const useAboutVersion = ({ onClose }: UseAboutVersionProps) => {
     currentVersion,
     latestVersion,
     updateAvailable,
-    isBeta,
+    channel,
     versionList,
     changelogVersions,
     checkingUpdatesRTK,
