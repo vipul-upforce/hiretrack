@@ -131,6 +131,7 @@ export function JobForm() {
           placeholder="Enter job description..."
           className="min-h-[100px] p-3"
           maxLength={10000}
+          sanitizePastedTextColor
           value={values?.description || ''}
           onChange={(val) => setFieldValue('description', val)}
           onBlur={() => setFieldTouched('description', true)} // ✅ fixed
