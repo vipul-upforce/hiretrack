@@ -69,3 +69,60 @@ export function formatCTCAsLPA(lpaValue: number): string {
 
   return `${roundedValue} LPA`;
 }
+
+/** Result of parsing a salary input (single value or range) into LPA */
+export interface SalaryLPAResult {
+  min: number;
+  max: number;
+  displayText: string;
+}
+
+/**
+ * Parses salary input (single value or range) and normalizes to LPA.
+ * Handles formats like: "5 LPA", "6-15 LPA", "6 to 15 LPA", "60000", "50000-80000".
+ *
+ * @param input - Raw salary string (e.g. "6 to 15 LPA", "5 LPA", "60000")
+ * @returns Normalized min, max (same for single value), and display text in LPA
+ */
+export function parseSalaryInputToLPA(input: string | number): SalaryLPAResult {
+  if (input === null || input === undefined) {
+    return { min: 0, max: 0, displayText: '' };
+  }
+
+  const raw = String(input).trim();
+  if (raw === '') {
+    return { min: 0, max: 0, displayText: '' };
+  }
+
+  // Normalize separators: " to " and "–" (en-dash) to hyphen for consistent split
+  const normalized = raw
+    .replace(/\s+to\s+/gi, '-')
+    .replace(/\u2013/g, '-') // en-dash
+    .replace(/\u2014/g, '-'); // em-dash
+
+  // Try to split as range: "X - Y" or "X-Y"
+  const rangeParts = normalized
+    .split(/\s*-\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (rangeParts.length >= 2) {
+    const low = normalizeCTCToLPA(rangeParts[0]);
+    const high = normalizeCTCToLPA(rangeParts[1]);
+    const min = Math.min(low, high);
+    const max = Math.max(low, high);
+    const displayText =
+      min === max
+        ? formatCTCAsLPA(min)
+        : `${Math.round(min * 100) / 100} - ${Math.round(max * 100) / 100} LPA`;
+    return { min, max, displayText };
+  }
+
+  // Single value
+  const lpa = normalizeCTCToLPA(raw);
+  return {
+    min: lpa,
+    max: lpa,
+    displayText: formatCTCAsLPA(lpa),
+  };
+}

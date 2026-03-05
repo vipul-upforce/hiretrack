@@ -209,7 +209,7 @@ export function CreateJobDialog({
                 <Button
                   type="submit"
                   variant="primary"
-                  onClick={() => scrollToError(errors)}
+                  onClick={() => scrollToError(errors as Parameters<typeof scrollToError>[0])}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? 'Saving...' : 'Create Job'}
