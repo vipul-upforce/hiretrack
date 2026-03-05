@@ -52,17 +52,49 @@ export function buildEmbedUrlWithJobId(jobId: string): string {
 
   const { origin, search } = window.location;
   const params = new URLSearchParams(search);
+  params.delete('hideHeader');
+  params.delete('hideFooter');
   params.set('jobId', jobId);
   return `${origin}/apply-jobs?${params.toString()}`;
+}
+
+/**
+ * Builds the apply-jobs page URL without jobId (base list view).
+ * Also strips hideHeader/hideFooter so the list view shows full UI.
+ */
+export function getApplyJobsBaseUrl(): string {
+  if (typeof window === 'undefined') return '/apply-jobs';
+
+  const { origin, search } = window.location;
+  const params = new URLSearchParams(search);
+  params.delete('jobId');
+  params.delete('hideHeader');
+  params.delete('hideFooter');
+  const query = params.toString();
+  return query ? `${origin}/apply-jobs?${query}` : `${origin}/apply-jobs`;
+}
+
+/**
+ * Path-only version for router.replace (no origin).
+ * Removes jobId, hideHeader, hideFooter; keeps other params (e.g. `o`).
+ */
+export function getApplyJobsBasePath(): string {
+  if (typeof window === 'undefined') return '/apply-jobs';
+
+  const { search } = window.location;
+  const params = new URLSearchParams(search);
+  params.delete('jobId');
+  params.delete('hideHeader');
+  params.delete('hideFooter');
+  const query = params.toString();
+  return query ? `/apply-jobs?${query}` : '/apply-jobs';
 }
 
 /**
  * Memoized hook: returns whether we should redirect to embed URL on job click.
  * Computed once on mount (referrer/origin don't change during session).
  */
-export function useShouldRedirectToEmbedOnJobClick(
-  isIframe: boolean,
-): boolean {
+export function useShouldRedirectToEmbedOnJobClick(isIframe: boolean): boolean {
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
