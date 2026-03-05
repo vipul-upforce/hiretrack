@@ -1399,6 +1399,9 @@ export function useCandidateActions({
         title: 'Success',
         description: 'Candidate updated successfully',
       });
+      if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
+        onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
+      }
       onOpenChange(false);
 
       if (historyEntries.length > 0) {
@@ -1413,10 +1416,6 @@ export function useCandidateActions({
 
       if (pathname === '/dashboard' && !actions.markAsDone) {
         refetchAssignment?.();
-      }
-
-      if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
-        onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
       }
     } catch (error) {
       toast({

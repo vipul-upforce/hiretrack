@@ -51,8 +51,15 @@ export interface UseChecklistSubmitParams {
     ) => void | Promise<{ transitionedToIncoming?: boolean } | void>;
     onChecklistSuccess?: (candidateId: string) => void;
     onChecklistCancel?: (candidateId: string) => void;
+    /** When statusDeferredFromUnified: called with (candidateId, newStatus) and awaited before onSuccess. */
+    onApplyDeferredStatus?: (
+      candidateId: string,
+      newStatus: string,
+    ) => void | Promise<void>;
     onSuccess: (result: {
       payload: ChecklistSubmissionData | null;
+      targetLane: string;
+      currentLane: string;
       candidateId: string;
       hasChecklist: boolean;
       successMessage: string;
@@ -144,6 +151,7 @@ export function useChecklistSubmit({
     onApplyToRemaining,
     onChecklistSuccess,
     onChecklistCancel,
+    onApplyDeferredStatus,
     onSuccess,
   } = callbacks;
 
@@ -230,6 +238,8 @@ export function useChecklistSubmit({
             | undefined;
           await onSuccess({
             payload: null,
+            targetLane: parsedChecklistInfo?.targetLane ?? '',
+            currentLane: parsedChecklistInfo?.currentLane ?? '',
             candidateId: candidate._id,
             hasChecklist: true,
             successMessage: `Checklist applied to ${bulk.bulkTotalCount} candidate(s)`,
@@ -271,8 +281,16 @@ export function useChecklistSubmit({
           return;
         }
 
-        // Status was deferred from unified dialog; parent (handleChecklistComplete) will apply status
+        // Status was deferred from unified dialog; apply via parent callback then onSuccess
         if (parsedChecklistInfo.statusDeferredFromUnified) {
+          if (onApplyDeferredStatus) {
+            await Promise.resolve(
+              onApplyDeferredStatus(
+                String(candidate._id),
+                parsedChecklistInfo.targetLane ?? '',
+              ),
+            );
+          }
           await onSuccess({
             payload: null,
             candidateId: candidate._id,
@@ -442,6 +460,7 @@ export function useChecklistSubmit({
     mutations,
     onApplyToRemaining,
     onSuccess,
+    onApplyDeferredStatus,
   ]);
 
   return {

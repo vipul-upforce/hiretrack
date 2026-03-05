@@ -1,8 +1,10 @@
 'use client';
 
+import { useCallback } from 'react';
 import { Table, TableBody } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import type { Candidate } from '@/types/candidate';
+import { useBulkUpdateCandidatesMutation } from '@/lib/features/candidate/candidateApi';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { JobDetailsDialog } from '@/app/dashboard/jobs-board/components/job-details-dialog';
 import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/edit-candidate-dialog';
@@ -19,6 +21,7 @@ import { ResultsFooter } from './search-results/results-footer';
 import { useSearchResultsLogic } from './hooks/use-search-logic';
 import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
+import { toast } from '@/hooks/use-toast';
 
 interface SearchResultsProps {
   results: Candidate[];
@@ -70,6 +73,106 @@ export function SearchResults({
       : currentCandidate?.jobId;
 
   const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
+
+  const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
+
+  const handleApplyDeferredStatus = useCallback(
+    (candidateId: string, newStatus: string) =>
+      bulkUpdateCandidates({
+        operation: 'statusUpdate',
+        candidateIds: [String(candidateId)],
+        status: newStatus,
+      })
+        .unwrap()
+        .then(() => refetch())
+        .then(() => {
+          const nextChecklist =
+            checklistValidation.pendingIncomingChecklistAfterStatus;
+          if (
+            nextChecklist &&
+            checklistValidation.setOpenRemarksFor &&
+            checklistValidation.setPendingIncomingChecklistAfterStatus
+          ) {
+            checklistValidation.setOpenRemarksFor(nextChecklist);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+          }
+        })
+        .finally(() => {
+          checklistValidation.setPendingStatusAfterChecklist(null);
+        })
+        .catch((err: unknown) => {
+          const message =
+            err instanceof Error ? err.message : 'Failed to update status';
+          toast({
+            title: 'Error',
+            description: message,
+            variant: 'destructive',
+          });
+          throw err;
+        }),
+    [
+      bulkUpdateCandidates,
+      refetch,
+      checklistValidation.pendingIncomingChecklistAfterStatus,
+      checklistValidation.setOpenRemarksFor,
+      checklistValidation.setPendingIncomingChecklistAfterStatus,
+      checklistValidation.setPendingStatusAfterChecklist,
+    ],
+  );
+
+  const handleChecklistComplete = useCallback(
+    (candidateId: string) => {
+      const pending = checklistValidation.pendingStatusAfterChecklistRef.current;
+      if (
+        !pending ||
+        String(pending.candidateId) !== String(candidateId) ||
+        !checklistValidation.setPendingStatusAfterChecklist
+      ) {
+        return;
+      }
+      const { newStatus } = pending;
+      bulkUpdateCandidates({
+        operation: 'statusUpdate',
+        candidateIds: [String(candidateId)],
+        status: newStatus,
+      })
+        .unwrap()
+        .then(() => refetch())
+        .then(() => {
+          const nextChecklist =
+            checklistValidation.pendingIncomingChecklistAfterStatus;
+          if (
+            nextChecklist &&
+            checklistValidation.setOpenRemarksFor &&
+            checklistValidation.setPendingIncomingChecklistAfterStatus
+          ) {
+            checklistValidation.setOpenRemarksFor(nextChecklist);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+          }
+        })
+        .finally(() => {
+          checklistValidation.setPendingStatusAfterChecklist(null);
+        })
+        .catch((err: unknown) => {
+          const message =
+            err instanceof Error ? err.message : 'Failed to update status';
+          toast({
+            title: 'Error',
+            description: message,
+            variant: 'destructive',
+          });
+        });
+    },
+    [
+      checklistValidation.pendingStatusAfterChecklistRef,
+      checklistValidation.setPendingStatusAfterChecklist,
+      checklistValidation.pendingIncomingChecklistAfterStatus,
+      checklistValidation.setOpenRemarksFor,
+      checklistValidation.setPendingIncomingChecklistAfterStatus,
+      bulkUpdateCandidates,
+      refetch,
+    ],
+  );
 
   if (isLoading) {
     return <SearchResultsSkeletonLoader />;
@@ -293,8 +396,12 @@ export function SearchResults({
           setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
           refetch={refetch}
           checklistInfo={checklistValidation.openRemarksFor}
-          onChecklistSuccess={() => { }}
-          onChecklistCancel={() => { }}
+          onChecklistSuccess={handleChecklistComplete}
+          onApplyDeferredStatus={handleApplyDeferredStatus}
+          onChecklistCancel={() => {
+            checklistValidation.setPendingStatusAfterChecklist(null);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+          }}
         />
       )}
     </>

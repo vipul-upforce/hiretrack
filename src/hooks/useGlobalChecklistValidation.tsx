@@ -1,9 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Candidate } from '@/types/candidate';
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { useClientSideChecklistValidation } from '@/app/dashboard/jobs/[id]/hooks/useClientSideChecklistValidation';
 import { useAppSelector } from '@/lib/redux/hooks';
 import type { StatusChangeValidationResult } from '@/components/unified-candidate-dialog/types';
+
+type PendingStatus = { candidateId: string; newStatus: string } | null;
 
 export function useGlobalChecklistValidation(currentJobId?: string) {
   const { user } = useAppSelector((state) => state.auth || {});
@@ -18,10 +20,16 @@ export function useGlobalChecklistValidation(currentJobId?: string) {
   );
 
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
-  const [pendingStatusAfterChecklist, setPendingStatusAfterChecklist] = useState<{
-    candidateId: string;
-    newStatus: string;
-  } | null>(null);
+  const [pendingStatusAfterChecklistState, setPendingStatusAfterChecklistState] =
+    useState<PendingStatus>(null);
+  const pendingStatusAfterChecklistRef = useRef<PendingStatus>(null);
+
+  /** Setter that keeps state and ref in sync so callbacks (e.g. onChecklistSuccess) can read from ref and avoid stale closure after dialog unmounts. */
+  const setPendingStatusAfterChecklist = useCallback((value: PendingStatus) => {
+    setPendingStatusAfterChecklistState(value);
+    pendingStatusAfterChecklistRef.current = value;
+  }, []);
+
   const [pendingIncomingChecklistAfterStatus, setPendingIncomingChecklistAfterStatus] =
     useState<string | null>(null);
 
@@ -205,8 +213,9 @@ export function useGlobalChecklistValidation(currentJobId?: string) {
     onOpenChecklistAfterSave,
     openRemarksFor,
     setOpenRemarksFor,
-    pendingStatusAfterChecklist,
+    pendingStatusAfterChecklist: pendingStatusAfterChecklistState,
     setPendingStatusAfterChecklist,
+    pendingStatusAfterChecklistRef,
     pendingIncomingChecklistAfterStatus,
     setPendingIncomingChecklistAfterStatus,
   };

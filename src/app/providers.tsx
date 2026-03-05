@@ -9,20 +9,23 @@ import { CustomFieldsProvider } from '@/Custom_Fields/Context/CustomFieldsContex
 import { ThemeProvider } from '@/components/theme-provider';
 import { PersistGate } from 'redux-persist/integration/react';
 import React, { Suspense } from 'react';
+import { DeferredRemarkProvider } from '@/contexts/deferred-remark-context';
 import LoadingScreen from './loading-screen';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <ThemeProvider defaultTheme="light" storageKey="hiretrack-theme">
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <Provider store={store}>
-            <PersistGate loading={null} persistor={persistor}>
-              <CustomFieldsProvider>{children}</CustomFieldsProvider>
-            </PersistGate>
-          </Provider>
-        </LocalizationProvider>
-        <Toaster />
+        <DeferredRemarkProvider>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Provider store={store}>
+              <PersistGate loading={null} persistor={persistor}>
+                <CustomFieldsProvider>{children}</CustomFieldsProvider>
+              </PersistGate>
+            </Provider>
+          </LocalizationProvider>
+          <Toaster />
+        </DeferredRemarkProvider>
       </ThemeProvider>
     </Suspense>
   );

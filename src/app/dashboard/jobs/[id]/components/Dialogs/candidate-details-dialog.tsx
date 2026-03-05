@@ -612,8 +612,8 @@ export function CandidateDetailsDialog({
           onOpenChecklistAfterSave={
             onOpenChecklistAfterSave
               ? (info) => {
-                  setIsUnifiedOpen(false);
                   onOpenChecklistAfterSave(info);
+                  setIsUnifiedOpen(false);
                 }
               : undefined
           }
