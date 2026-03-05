@@ -87,6 +87,7 @@ export function useCandidateActions({
   onDeferStatusToChecklist,
   onOpenChecklistAfterSave,
   onBulkStatusRequiresChecklist,
+  onBulkStatusRequiresReason,
 }: UnifiedCandidateActionsDialogProps) {
   const isBulkMode = candidates && candidates.length > 1;
   const candidateList = isBulkMode ? candidates : [candidate];
@@ -952,6 +953,15 @@ export function useCandidateActions({
               setIsSubmitting(false);
               return;
             }
+          }
+          if (onBulkStatusRequiresReason) {
+            onBulkStatusRequiresReason({
+              candidateIds,
+              newStatus: values.newStatus as string,
+            });
+            onOpenChange(false);
+            setIsSubmitting(false);
+            return;
           }
           operations.push({
             operation: 'statusUpdate',

@@ -959,7 +959,21 @@ export const useCandidate = ({
           job?.promptForStatusChangeReason &&
           candidatesWithSource.length > 0
         ) {
-          setOpenRemarksFor(candidatesWithSource[0].candidate._id);
+          if (candidatesWithSource.length > 1) {
+            setOpenRemarksFor(
+              JSON.stringify({
+                type: 'bulkReason',
+                candidateIds: candidatesWithSource.map(
+                  ({ candidate }) => candidate._id,
+                ),
+                newStatus: destination.droppableId,
+                statusAlreadyApplied: true,
+                sourceLaneId: source.droppableId,
+              }),
+            );
+          } else {
+            setOpenRemarksFor(candidatesWithSource[0].candidate._id);
+          }
         }
       } catch {
         setColumns([...columns]);
@@ -972,6 +986,13 @@ export const useCandidate = ({
         document.body.classList.remove('dnd-updating');
       }
       await refetch();
+      // Clear bulk selection only when no dialog was opened (no optional checklist, no prompt-for-reason)
+      if (
+        optionalChecklistCandidates.length === 0 &&
+        !job?.promptForStatusChangeReason
+      ) {
+        dispatch(clearSelectedCandidates());
+      }
       return;
     }
 
@@ -1302,6 +1323,13 @@ export const useCandidate = ({
         document.body.classList.remove('dnd-updating');
       }
       await refetch();
+      // Clear bulk selection only when no dialog was opened (no optional checklist, no prompt-for-reason)
+      if (
+        !optionalChecklistValidationInfo &&
+        !job?.promptForStatusChangeReason
+      ) {
+        dispatch(clearSelectedCandidates());
+      }
     } else {
       // Same lane movement, no checklist validation needed
       setColumns(newColumns);

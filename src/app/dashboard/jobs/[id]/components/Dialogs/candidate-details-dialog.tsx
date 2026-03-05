@@ -52,6 +52,7 @@ export function CandidateDetailsDialog({
   onValidateStatusChange,
   onDeferStatusToChecklist,
   onOpenChecklistAfterSave,
+  onBulkStatusRequiresReason,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -614,6 +615,14 @@ export function CandidateDetailsDialog({
               ? (info) => {
                   onOpenChecklistAfterSave(info);
                   setIsUnifiedOpen(false);
+                }
+              : undefined
+          }
+          onBulkStatusRequiresReason={
+            onBulkStatusRequiresReason
+              ? (payload) => {
+                  setIsUnifiedOpen(false);
+                  onBulkStatusRequiresReason(payload);
                 }
               : undefined
           }

@@ -24,4 +24,9 @@ export interface CandidateDetailsDialogProps {
     nextChecklistValidationInfo?: string,
   ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** When job has promptForStatusChangeReason and bulk status update from unified dialog: open bulk reason dialog. */
+  onBulkStatusRequiresReason?: (payload: {
+    candidateIds: string[];
+    newStatus: string;
+  }) => void;
 }

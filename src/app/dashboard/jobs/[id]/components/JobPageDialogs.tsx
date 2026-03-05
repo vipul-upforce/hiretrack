@@ -18,6 +18,10 @@ import CandidateCustomFieldsDialog from './customFields/candidateCustomFieldsDia
 import ChecklistRemarksDialog from './Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import { LaneChecklistConfigDialog } from './Dialogs/lane-checklist-config-dialog';
 import { UnifiedCandidateActionsDialog } from './Dialogs/unified-candidate-actions-dialog';
+import {
+  BulkReasonDialog,
+  parseBulkReasonPayload,
+} from './Dialogs/bulk-reason-dialog';
 
 interface JobPageDialogsProps {
   // Candidate dialogs
@@ -97,6 +101,11 @@ interface JobPageDialogsProps {
   bulkDragTwoPhase?: { phase: 'outgoing' | 'incoming'; candidateIds: string[] } | null;
   /** When the unified remark dialog (no checklist) closes; e.g. clear bulk selection. */
   onUnifiedRemarkClose?: () => void;
+  /** When job has promptForStatusChangeReason and bulk status update from unified dialog: open bulk reason dialog. */
+  onBulkStatusRequiresReason?: (payload: {
+    candidateIds: string[];
+    newStatus: string;
+  }) => void;
 }
 
 export function JobPageDialogs({
@@ -154,6 +163,7 @@ export function JobPageDialogs({
   onBulkChecklistCancel,
   bulkDragTwoPhase,
   onUnifiedRemarkClose,
+  onBulkStatusRequiresReason,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   const openRemarksForRef = useRef(openRemarksFor);
@@ -248,9 +258,13 @@ export function JobPageDialogs({
     ? openRemarksFor
     : undefined;
 
-  // Find candidate for general remarks (not checklist)
+  const bulkReasonPayload = parseBulkReasonPayload(openRemarksFor);
+  const isChecklistPayload =
+    checklistInfo && !bulkReasonPayload;
+
+  // Find candidate for general remarks (single candidate, not checklist and not bulk reason)
   const generalRemarksCandidate =
-    openRemarksFor && !checklistInfo
+    openRemarksFor && !isChecklistPayload && !bulkReasonPayload
       ? mergedCandidates.find((c) => c._id === openRemarksFor)
       : null;
 
@@ -266,6 +280,7 @@ export function JobPageDialogs({
         onValidateStatusChange={onValidateStatusChange}
         onDeferStatusToChecklist={onDeferStatusToChecklist}
         onOpenChecklistAfterSave={onOpenChecklistAfterSave}
+        onBulkStatusRequiresReason={onBulkStatusRequiresReason}
       />
 
       <EditLaneDialog
@@ -363,7 +378,7 @@ export function JobPageDialogs({
         />
       )}
 
-      {checklistCandidate && checklistInfo && (
+      {checklistCandidate && isChecklistPayload && (
         <ChecklistRemarksDialog
           candidate={checklistCandidate}
           isOpen={!!openRemarksFor}
@@ -375,6 +390,19 @@ export function JobPageDialogs({
           onChecklistCancel={cancelPendingMove}
           bulkTotalCount={bulkTotalCount}
           onApplyToRemaining={onApplyToRemaining}
+        />
+      )}
+
+      {bulkReasonPayload && (
+        <BulkReasonDialog
+          payload={bulkReasonPayload}
+          isOpen={!!openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) setOpenRemarksFor(null);
+          }}
+          setOpenRemarksFor={setOpenRemarksFor}
+          refetch={refetch}
+          onSuccess={() => setOpenRemarksFor(null)}
         />
       )}
 
@@ -392,7 +420,7 @@ export function JobPageDialogs({
       {generalRemarksCandidate && (
         <UnifiedCandidateActionsDialog
           candidate={generalRemarksCandidate}
-          isOpen={!!openRemarksFor && !checklistInfo}
+          isOpen={!!openRemarksFor && !isChecklistPayload && !bulkReasonPayload}
           onOpenChange={handleUnifiedOpenChange}
           initialAction={'addRemark' as CandidateActionType}
           refetch={refetch}
