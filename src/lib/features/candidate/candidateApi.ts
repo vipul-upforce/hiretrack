@@ -87,6 +87,12 @@ interface DuplicateEntry {
   isDeleted?: boolean;
 }
 
+interface EvaluateCandidateResponse {
+  message: string;
+  candidate?: unknown;
+  error?: string;
+}
+
 export const candidateApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     fetchCandidates: builder.query<Candidate[], string>({
@@ -317,20 +323,55 @@ export const candidateApi = baseApi.injectEndpoints({
       }),
     }),
     evaluateCandidate: builder.mutation<
-      {
-        message: string;
-        candidate: Candidate;
-        error?: string;
-      },
+      EvaluateCandidateResponse,
       {
         candidateId: string;
       }
     >({
-      query: ({ candidateId }) => ({
-        url: '/candidates/evaluate',
-        method: 'PUT',
-        body: { candidateId },
-      }),
+      queryFn: async ({ candidateId }, api, _extraOptions, baseQuery) => {
+        const evaluateArgs = {
+          url: '/candidates/evaluate',
+          method: 'PUT' as const,
+          body: { candidateId },
+        };
+
+        const evaluateResult = await baseQuery(evaluateArgs);
+        if (evaluateResult.error) {
+          return { error: evaluateResult.error };
+        }
+
+        const evaluateData = (evaluateResult.data || {
+          message: 'Candidate scores updated successfully',
+        }) as EvaluateCandidateResponse;
+
+        const state = api.getState() as {
+          auth?: { user?: { role?: string } };
+        };
+        const role = state?.auth?.user?.role?.toLowerCase();
+        const isAdminOrHr = role === 'admin' || role === 'hr';
+
+        // Admin/HR expect candidate score payload. If missing (typically due
+        // to expired access token), fetch candidate once to recover scores.
+        if (isAdminOrHr && !evaluateData.candidate) {
+          const candidateResult = await baseQuery(
+            { url: `/candidates/${candidateId}`, method: 'GET' },
+          );
+
+          if (!candidateResult.error && candidateResult.data) {
+            const fetchedCandidate = candidateResult.data as {
+              scores?: unknown;
+            };
+            return {
+              data: {
+                ...evaluateData,
+                candidate: fetchedCandidate?.scores || fetchedCandidate,
+              },
+            };
+          }
+        }
+
+        return { data: evaluateData };
+      },
       invalidatesTags: ['Candidate'],
     }),
     deleteCandidate: builder.mutation<{ message: string }, string>({
