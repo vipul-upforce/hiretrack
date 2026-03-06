@@ -185,7 +185,13 @@ export function parseEvaluationResponse(response: string): EvaluationResult {
   try {
     const jsonString = cleanJsonResponse(response);
     const parsedObject = parseJsonSafely(jsonString);
-    const redFlags = normalizeRedFlags(parsedObject.redFlags);
+    const rawRedFlags =
+      parsedObject.redFlags ??
+      (parsedObject as { scores?: { redFlags?: unknown } }).scores?.redFlags ??
+      (parsedObject as { red_flags?: unknown }).red_flags;
+    const redFlags = normalizeRedFlags(
+      Array.isArray(rawRedFlags) ? rawRedFlags : undefined,
+    );
     const skillsMatrix = normalizeSkillsMatrix(parsedObject.skillsMatrix);
 
     return {
