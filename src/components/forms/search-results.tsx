@@ -9,6 +9,8 @@ import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialog
 import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
 import { UnifiedCandidateActionsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/unified-candidate-actions-dialog';
 import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
+import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { SearchResultsSkeletonLoader } from './search-results/skeleton-loader';
 import { ResultsHeader } from './search-results/results-header';
@@ -17,8 +19,6 @@ import { TableHeaderRow } from './search-results/table-header-row';
 import { TableBodyRows } from './search-results/table-body-rows';
 import { ResultsFooter } from './search-results/results-footer';
 import { useSearchResultsLogic } from './hooks/use-search-logic';
-import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
-import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 interface SearchResultsProps {
   results: Candidate[];

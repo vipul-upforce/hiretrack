@@ -940,8 +940,11 @@ export const useCandidate = ({
           const infoToOpen = JSON.stringify(optionalValidationInfo);
           setTimeout(() => setOpenRemarksFor(infoToOpen), 0);
         } else if (optionalChecklistCandidates.length === 1) {
-          const { candidate: c, sourceLaneId: srcLaneId, validationResult: valResult } =
-            optionalChecklistCandidates[0];
+          const {
+            candidate: c,
+            sourceLaneId: srcLaneId,
+            validationResult: valResult,
+          } = optionalChecklistCandidates[0];
           setOpenRemarksFor(
             JSON.stringify({
               candidateId: c._id,

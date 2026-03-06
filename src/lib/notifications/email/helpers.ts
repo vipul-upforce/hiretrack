@@ -44,14 +44,6 @@ export async function getCommonEmailVariables(organizationId: string): Promise<{
  * @param role - User role: 'admin' | 'hr' | 'interviewer'
  * @param options - jobId and/or candidateId for building the path
  */
-export function getEmailActionUrl(
-  baseUrl: string,
-  role: string,
-  options: { jobId?: string; candidateId?: string },
-): string {
-  const path = getActionPathForRole(role, options);
-  return path.startsWith('http') ? path : `${baseUrl}${path}`;
-}
 
 /**
  * Returns the path-only action URL for in-app notifications (no base URL).
@@ -74,7 +66,14 @@ export function getActionPathForRole(
   }
   return '/dashboard';
 }
-
+export function getEmailActionUrl(
+  baseUrl: string,
+  role: string,
+  options: { jobId?: string; candidateId?: string },
+): string {
+  const path = getActionPathForRole(role, options);
+  return path.startsWith('http') ? path : `${baseUrl}${path}`;
+}
 export interface EmailHistoryData {
   organizationId: string;
   sentBy: string;

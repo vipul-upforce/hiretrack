@@ -59,6 +59,22 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   }>;
   /** Additional guest emails for Zoom */
   zoomAdditionalGuests?: string[];
+  /** Schedule Microsoft Teams meeting */
+  scheduleTeamsMeet?: boolean;
+  /** Teams meeting duration in minutes */
+  teamsMeetDuration?: number;
+  /** Teams meeting notes */
+  teamsMeetingNotes?: string;
+  /** Attachments for the Teams meeting */
+  teamsMeetingAttachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>;
+  /** Additional guest emails for Teams */
+  teamsAdditionalGuests?: string[];
   /** Optional remark when assign + add remark done together (in history note only) */
   remark?: string;
 }

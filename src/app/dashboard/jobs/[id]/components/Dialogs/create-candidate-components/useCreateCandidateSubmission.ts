@@ -20,6 +20,7 @@ import { ICandidateHistory } from '@/lib/models/history';
 import { Resume } from '@/lib/redux/types';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import logger from '@/lib/logger';
+import type { ILocalUser } from '@/lib/redux/authSlice';
 
 interface CandidateFormValues {
   name: string;
@@ -46,14 +47,16 @@ interface CandidateFormValues {
 interface UseCreateCandidateSubmissionProps {
   jobId: string;
   parsedResumeData: Resume | null;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    organizationId?: string;
-  } | null;
+  user: ILocalUser | null;
   onSuccess: () => void;
+}
+
+/** Resolve organizationId to string (ILocalUser may have Organization object). */
+function getOrganizationIdString(user: ILocalUser | null): string | undefined {
+  if (!user?.organizationId) return undefined;
+  return typeof user.organizationId === 'string'
+    ? user.organizationId
+    : (user.organizationId as { _id?: string })?._id;
 }
 
 // Removed convertFileToBase64 - we send files as binary in FormData now
@@ -218,7 +221,7 @@ export function useCreateCandidateSubmission({
             values as CandidateFileUploadValues,
             uploadFiles,
             {
-              organizationId: user?.organizationId,
+              organizationId: getOrganizationIdString(user),
               onCustomFieldUploadError: (fieldKey, error) => {
                 toast({
                   title: 'File Upload Failed',

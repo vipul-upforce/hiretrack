@@ -835,6 +835,37 @@ export function useCandidateActions({
             organizationId: user?.organizationId as string,
           });
 
+          const teamsMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.teamsMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
+          const processedTeamsMeetingAttachments = await uploadAttachments({
+            attachments: teamsMeetingAttachmentsToProcess,
+            uploadFiles,
+            organizationId: user?.organizationId as string,
+          });
+
           operations.push({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
@@ -854,6 +885,11 @@ export function useCandidateActions({
             zoomMeetingNotes: values.zoomMeetingNotes || '',
             zoomMeetingAttachments: processedZoomMeetingAttachments,
             zoomAdditionalGuests: values.zoomAdditionalGuests || [],
+            scheduleTeamsMeet: values.scheduleTeamsMeet || false,
+            teamsMeetDuration: values.teamsMeetDuration || 30,
+            teamsMeetingNotes: values.teamsMeetingNotes || '',
+            teamsMeetingAttachments: processedTeamsMeetingAttachments,
+            teamsAdditionalGuests: values.teamsAdditionalGuests || [],
           });
         }
 

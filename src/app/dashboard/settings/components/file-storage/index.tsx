@@ -105,14 +105,9 @@ export default function FileStorageOptions({
       // Update Redux state and sign token
       if (user && user.organizationId) {
         const updatedUser = { ...user, fileStorage: values.storageType };
-        await signToken(updatedUser, user?.organizationId as string);
+        await signToken(updatedUser, user.organizationId as string);
 
-        dispatch(
-          updateUserInState({
-            ...values,
-            fileStorage: values.storageType,
-          }),
-        );
+        dispatch(updateUserInState(updatedUser));
       }
 
       refetch();
