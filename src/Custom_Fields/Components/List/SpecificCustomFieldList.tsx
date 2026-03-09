@@ -24,14 +24,7 @@ import {
   CreditCard,
   Settings,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { DeleteDialog } from '@/components/ui/specialized-dialogs';
 import {
   DragDropContext,
   Droppable,
@@ -281,36 +274,16 @@ export const CustomFieldItem = React.memo(
             </CardHeader>
           </Card>
         </div>
-        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent size="sm" aria-describedby="delete-field-description">
-            <DialogHeader>
-              <DialogTitle>Delete Personalized Field</DialogTitle>
-              <DialogDescription id="delete-field-description">
-                Are you sure you want to delete the field &quot;
-                {field.label.split(' |||||(')[0]}
-                &quot;? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowDeleteDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  handleDeleteCustomField();
-                  setShowDeleteDialog(false);
-                }}
-                className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <DeleteDialog
+          isOpen={showDeleteDialog}
+          onClose={() => setShowDeleteDialog(false)}
+          onConfirm={() => {
+            handleDeleteCustomField();
+            setShowDeleteDialog(false);
+          }}
+          itemName={field.label.split(' |||||(')[0]}
+          itemType="Personalized Field"
+        />
       </>
     );
   },
