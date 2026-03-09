@@ -263,9 +263,16 @@ export function JobPageDialogs({
     checklistInfo && !bulkReasonPayload;
 
   // Find candidate for general remarks (single candidate, not checklist and not bulk reason)
+  // Resolve from columns first (same as checklist) so "+ Add Remark" always finds the candidate
   const generalRemarksCandidate =
     openRemarksFor && !isChecklistPayload && !bulkReasonPayload
-      ? mergedCandidates.find((c) => c._id === openRemarksFor)
+      ? (() => {
+          const fromColumns = columns
+            .flatMap((col) => col.candidates)
+            .find((c) => c._id === openRemarksFor);
+          if (fromColumns) return fromColumns;
+          return mergedCandidates.find((c) => c._id === openRemarksFor) ?? null;
+        })()
       : null;
 
   return (

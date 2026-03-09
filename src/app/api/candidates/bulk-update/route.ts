@@ -10,6 +10,7 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
+import type { ICandidateHistory } from '@/lib/models/history';
 import type {
   BulkUpdateOperation,
   BulkUpdateParams,
@@ -475,8 +476,66 @@ export async function POST(
     }
     const uniqueCandidatesToBroadcast = Array.from(candidateMap.values());
 
-    if (uniqueCandidatesToBroadcast.length > 0) {
-      broadcastMultipleCandidateUpdate(uniqueCandidatesToBroadcast).catch(
+    // Populate history for each candidate so SSE consumers (e.g. Log tab) receive full timeline
+    let candidatesToSend = uniqueCandidatesToBroadcast;
+    if (
+      uniqueCandidatesToBroadcast.length > 0 &&
+      History
+    ) {
+      const broadcastCandidateIds = uniqueCandidatesToBroadcast
+        .map((c) => (c as { _id?: unknown })._id?.toString())
+        .filter((id): id is string => Boolean(id));
+      if (broadcastCandidateIds.length > 0) {
+        try {
+          const historyDocuments = await History.find({
+            candidateId: { $in: broadcastCandidateIds },
+          })
+            .populate([
+              { path: 'history.assignmentBy', select: '_id name email' },
+              { path: 'history.currentInterviewer', select: '_id name email' },
+              { path: 'history.previousInterviewer', select: '_id name email' },
+              { path: 'history.note.userId', select: '_id name email' },
+            ])
+            .lean()
+            .exec();
+
+          const historyByCandidateId = new Map<string, ICandidateHistory[]>();
+          if (historyDocuments && historyDocuments.length > 0) {
+            historyDocuments.forEach((doc) => {
+              const cid = doc.candidateId?.toString?.() ?? String(doc.candidateId);
+              if (!cid) return;
+              const entries = doc.history && Array.isArray(doc.history) ? doc.history : [];
+              const existing = historyByCandidateId.get(cid) ?? [];
+              historyByCandidateId.set(cid, [...existing, ...entries]);
+            });
+            historyByCandidateId.forEach((entries, cid) => {
+              entries.sort(
+                (a, b) =>
+                  new Date(b.dateTime ?? 0).getTime() -
+                  new Date(a.dateTime ?? 0).getTime(),
+              );
+              historyByCandidateId.set(cid, entries);
+            });
+          }
+
+          candidatesToSend = uniqueCandidatesToBroadcast.map((c) => {
+            const id = (c as { _id?: unknown })._id?.toString();
+            const raw = id ? historyByCandidateId.get(id) : undefined;
+            const mergedHistory: ICandidateHistory[] = Array.isArray(raw) ? raw : [];
+            const { history: _existing, ...rest } = c as typeof c & { history?: unknown };
+            return { ...rest, history: mergedHistory } as BulkUpdateResult['candidatesToBroadcast'][0];
+          });
+        } catch (historyErr) {
+          logger.warn(
+            { error: historyErr, url: req.url },
+            'Bulk update: failed to load history for broadcast, sending without history',
+          );
+        }
+      }
+    }
+
+    if (candidatesToSend.length > 0) {
+      broadcastMultipleCandidateUpdate(candidatesToSend).catch(
         (error) => {
           logger.error(
             { error, url: req.url },

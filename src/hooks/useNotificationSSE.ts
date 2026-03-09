@@ -214,8 +214,6 @@ class SSEManager {
     error?: string;
     customFields?: unknown;
   }) {
-
-
     if (
       data?.type === 'notificationCountUpdated' &&
       typeof data.count === 'number'
@@ -392,9 +390,9 @@ export function useNotificationSSE(
     (updatedCandidate: Candidate) => {
       const roleFilteredCandidate =
         filterSensitiveRedFlagsForInterviewer<Candidate>(
-        updatedCandidate,
-        userRole,
-      );
+          updatedCandidate,
+          userRole,
+        );
 
       setCandidates((prev) => {
         const index = prev.findIndex(
