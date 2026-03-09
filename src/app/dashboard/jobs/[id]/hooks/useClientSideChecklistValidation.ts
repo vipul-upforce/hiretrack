@@ -18,6 +18,7 @@ interface ChecklistValidationResult {
 export const useClientSideChecklistValidation = (
   jobLaneConfig: IJobLaneConfig | undefined,
   userRole: string | undefined,
+  options?: { skipAlreadyCompletedCheck?: boolean },
 ) => {
   const validateMovement = useMemo(
     () =>
@@ -101,23 +102,26 @@ export const useClientSideChecklistValidation = (
           };
         }
 
-        // Check if checklist is already completed (backend keys by config laneId)
-        const candidateChecklistData = candidate.checklistData?.[configLaneId];
-        const checklistData =
-          movementType === 'incoming'
-            ? candidateChecklistData?.incoming
-            : candidateChecklistData?.outgoing;
+        // When skipAlreadyCompletedCheck is true (e.g. unified dialog flow), decide from config only:
+        // do not use candidate checklistData to skip opening the checklist.
+        if (!options?.skipAlreadyCompletedCheck) {
+          const candidateChecklistData = candidate.checklistData?.[configLaneId];
+          const checklistData =
+            movementType === 'incoming'
+              ? candidateChecklistData?.incoming
+              : candidateChecklistData?.outgoing;
 
-        const isCompleted =
-          checklistData && checklistData.checklistId === checklist.id;
+          const isCompleted =
+            checklistData && checklistData.checklistId === checklist.id;
 
-        if (isCompleted) {
-          return {
-            canMove: true,
-            requiresChecklist: false,
-            isMandatory: checklist.isMandatory || false,
-            checklistCompleted: true,
-          };
+          if (isCompleted) {
+            return {
+              canMove: true,
+              requiresChecklist: false,
+              isMandatory: checklist.isMandatory || false,
+              checklistCompleted: true,
+            };
+          }
         }
 
         // Even if mandatory, allow movement but show checklist dialog
@@ -142,7 +146,7 @@ export const useClientSideChecklistValidation = (
           checklistCompleted: false,
         };
       },
-    [jobLaneConfig, userRole],
+    [jobLaneConfig, userRole, options?.skipAlreadyCompletedCheck],
   );
 
   // Validate a complete movement (both outgoing and incoming)

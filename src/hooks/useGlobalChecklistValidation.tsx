@@ -31,6 +31,12 @@ export function useGlobalChecklistValidation(currentJobId?: string) {
   const { validateCompleteMovement } = useClientSideChecklistValidation(
     jobLaneConfig,
     user?.role,
+    {
+      skipAlreadyCompletedCheck:
+        unifiedDialog != null &&
+        unifiedDialog.unifiedDialogJobId != null &&
+        unifiedDialog.unifiedDialogJobId !== '',
+    },
   );
 
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
