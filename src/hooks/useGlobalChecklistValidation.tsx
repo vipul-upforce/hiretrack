@@ -3,15 +3,29 @@ import { Candidate } from '@/types/candidate';
 import { useGetJobLaneConfigQuery } from '@/lib/features/checklist/checklistApi';
 import { useClientSideChecklistValidation } from '@/app/dashboard/jobs/[id]/hooks/useClientSideChecklistValidation';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useUnifiedDialogChecklistJob } from '@/contexts/unified-dialog-checklist-job-context';
 import type { StatusChangeValidationResult } from '@/components/unified-candidate-dialog/types';
 
 type PendingStatus = { candidateId: string; newStatus: string } | null;
 
+/**
+ * Checklist validation state and callbacks. When the unified candidate action dialog
+ * is open, the job lane config is loaded for that dialog's job (from global state);
+ * otherwise the passed currentJobId is used. All other state (openRemarksFor, pending, etc.)
+ * stays local to the caller as before.
+ */
 export function useGlobalChecklistValidation(currentJobId?: string) {
   const { user } = useAppSelector((state) => state.auth || {});
+  const unifiedDialog = useUnifiedDialogChecklistJob();
 
-  const { data: jobLaneConfig } = useGetJobLaneConfigQuery(currentJobId as string, {
-    skip: !currentJobId,
+  /** Use job from unified dialog when it is open; otherwise use the passed currentJobId. */
+  const effectiveJobId =
+    (unifiedDialog?.unifiedDialogJobId != null && unifiedDialog.unifiedDialogJobId !== '')
+      ? unifiedDialog.unifiedDialogJobId
+      : currentJobId;
+
+  const { data: jobLaneConfig } = useGetJobLaneConfigQuery(effectiveJobId as string, {
+    skip: !effectiveJobId,
   });
 
   const { validateCompleteMovement } = useClientSideChecklistValidation(

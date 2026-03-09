@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useLayoutEffect, useRef, useMemo } from 'react';
 import { Formik, Form } from 'formik';
 import {
   Dialog,
@@ -29,6 +29,10 @@ import {
   UnifiedCandidateActionsDialogProps,
 } from '@/components/unified-candidate-dialog/types';
 import { ScrollToFormError } from '@/components/ui/scroll-to-error';
+import { useSetUnifiedDialogChecklistJob } from '@/contexts/unified-dialog-checklist-job-context';
+import { getJobId } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
+import { checklistApi } from '@/lib/features/checklist/checklistApi';
+import { useAppDispatch } from '@/lib/redux/hooks';
 import logger from '@/lib/logger';
 
 export function UnifiedCandidateActionsDialog(
@@ -36,8 +40,24 @@ export function UnifiedCandidateActionsDialog(
 ) {
   const { candidate, candidates, isOpen, onOpenChange } = props;
   const isBulkMode = candidates && candidates.length > 1;
+  const setUnifiedDialogChecklistJob = useSetUnifiedDialogChecklistJob();
+  const dispatch = useAppDispatch();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Set which job's checklist config to load when this dialog opens; clear when it closes.
+  // Prefetch so config is loaded even if the parent hook hasn't re-rendered yet.
+  useLayoutEffect(() => {
+    if (isOpen && candidate) {
+      const jobId = getJobId(candidate) ?? null;
+      setUnifiedDialogChecklistJob(candidate);
+      if (jobId) {
+        dispatch(checklistApi.util.prefetch('getJobLaneConfig', jobId, { force: true }));
+      }
+    } else if (!isOpen) {
+      setUnifiedDialogChecklistJob(null);
+    }
+  }, [isOpen, candidate, setUnifiedDialogChecklistJob, dispatch]);
 
   const result = useCandidateActions(props);
 

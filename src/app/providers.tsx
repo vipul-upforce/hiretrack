@@ -10,6 +10,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { PersistGate } from 'redux-persist/integration/react';
 import React, { Suspense } from 'react';
 import { DeferredRemarkProvider } from '@/contexts/deferred-remark-context';
+import { UnifiedDialogChecklistJobProvider } from '@/contexts/unified-dialog-checklist-job-context';
 import LoadingScreen from './loading-screen';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -20,7 +21,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Provider store={store}>
               <PersistGate loading={null} persistor={persistor}>
-                <CustomFieldsProvider>{children}</CustomFieldsProvider>
+                <UnifiedDialogChecklistJobProvider>
+                  <CustomFieldsProvider>{children}</CustomFieldsProvider>
+                </UnifiedDialogChecklistJobProvider>
               </PersistGate>
             </Provider>
           </LocalizationProvider>

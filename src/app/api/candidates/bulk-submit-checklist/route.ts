@@ -142,7 +142,10 @@ export async function POST(req: NextRequest) {
       candidateItems.length === 0
     ) {
       return NextResponse.json(
-        { error: 'Missing required fields: data (checklistId, checklistType, laneId, responses), candidates[]' },
+        {
+          error:
+            'Missing required fields: data (checklistId, checklistType, laneId, responses), candidates[]',
+        },
         { status: 400 },
       );
     }
@@ -162,10 +165,7 @@ export async function POST(req: NextRequest) {
 
     const userRole = getUserRole(decoded.role);
     if (!userRole) {
-      return NextResponse.json(
-        { error: 'Invalid user role' },
-        { status: 403 },
-      );
+      return NextResponse.json({ error: 'Invalid user role' }, { status: 403 });
     }
 
     const userId = decoded.id as string;
@@ -174,27 +174,40 @@ export async function POST(req: NextRequest) {
 
     for (const item of candidateItems) {
       const { candidateId: id, newStatus } = item;
-      const candidate = await Candidate!.findById(id).populate([
-        { path: 'jobId', select: '_id description title' },
-      ]);
+      const candidate = await Candidate!
+        .findById(id)
+        .populate([{ path: 'jobId', select: '_id description title' }]);
       if (!candidate) {
-        logger.warn({ candidateId: id }, 'Bulk submit checklist: candidate not found, skipping');
+        logger.warn(
+          { candidateId: id },
+          'Bulk submit checklist: candidate not found, skipping',
+        );
         continue;
       }
 
       const jobId =
-        typeof candidate.jobId === 'object' && candidate.jobId && '_id' in candidate.jobId
+        typeof candidate.jobId === 'object' &&
+        candidate.jobId &&
+        '_id' in candidate.jobId
           ? (candidate.jobId as { _id: unknown })._id
           : candidate.jobId;
       const laneConfig = await JobLaneConfig!.findOne({ jobId });
       if (!laneConfig) {
-        logger.warn({ candidateId: id }, 'Bulk submit checklist: lane config not found, skipping');
+        logger.warn(
+          { candidateId: id },
+          'Bulk submit checklist: lane config not found, skipping',
+        );
         continue;
       }
 
-      const targetLane = laneConfig.laneConfigs.find((lc) => lc.laneId === laneId);
+      const targetLane = laneConfig.laneConfigs.find(
+        (lc) => lc.laneId === laneId,
+      );
       if (!targetLane) {
-        logger.warn({ candidateId: id, laneId }, 'Bulk submit checklist: lane not found, skipping');
+        logger.warn(
+          { candidateId: id, laneId },
+          'Bulk submit checklist: lane not found, skipping',
+        );
         continue;
       }
 
@@ -203,7 +216,10 @@ export async function POST(req: NextRequest) {
           ? targetLane.incomingChecklist
           : targetLane.outgoingChecklist;
       if (!checklist || checklist.id !== checklistId) {
-        logger.warn({ candidateId: id }, 'Bulk submit checklist: checklist not found or ID mismatch, skipping');
+        logger.warn(
+          { candidateId: id },
+          'Bulk submit checklist: checklist not found or ID mismatch, skipping',
+        );
         continue;
       }
 
@@ -214,7 +230,10 @@ export async function POST(req: NextRequest) {
         userRole,
       );
       if (!canSubmitFields) {
-        logger.warn({ candidateId: id }, 'Bulk submit checklist: permission denied, skipping');
+        logger.warn(
+          { candidateId: id },
+          'Bulk submit checklist: permission denied, skipping',
+        );
         continue;
       }
 
@@ -251,7 +270,15 @@ export async function POST(req: NextRequest) {
                 const files = Array.isArray(rawFiles)
                   ? rawFiles
                       .filter(
-                        (f): f is { id?: string; name: string; url: string; type?: string; size?: number } =>
+                        (
+                          f,
+                        ): f is {
+                          id?: string;
+                          name: string;
+                          url: string;
+                          type?: string;
+                          size?: number;
+                        } =>
                           typeof f === 'object' &&
                           f !== null &&
                           'url' in f &&
@@ -343,16 +370,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const updatedCandidates = await Candidate!.find({ _id: { $in: updatedIds } })
+    const updatedCandidates = await Candidate!
+      .find({ _id: { $in: updatedIds } })
       .populate('jobId', '_id description title')
       .lean()
       .exec();
+
+    const populateFields = [
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
+    ];
 
     const candidatesWithMergedHistory = await Promise.all(
       updatedCandidates.map(async (c) => {
         const historyDocuments = await History?.find({
           candidateId: c._id.toString(),
         })
+          .populate(populateFields)
           .lean()
           .exec();
         const allHistory: ICandidateHistory[] = [];
@@ -371,17 +407,15 @@ export async function POST(req: NextRequest) {
         return {
           ...c,
           history: allHistory,
-          duplicateCount: (c as { duplicateCount?: number }).duplicateCount ?? 0,
+          duplicateCount:
+            (c as { duplicateCount?: number }).duplicateCount ?? 0,
         };
       }),
     );
 
     broadcastMultipleCandidateUpdate(candidatesWithMergedHistory).catch(
       (error) => {
-        logger.error(
-          { error },
-          'Failed to broadcast bulk checklist update',
-        );
+        logger.error({ error }, 'Failed to broadcast bulk checklist update');
       },
     );
 
@@ -391,10 +425,7 @@ export async function POST(req: NextRequest) {
       data: { updatedCount: updatedIds.length, candidateIds: updatedIds },
     });
   } catch (error) {
-    logger.error(
-      { error, url: req.url },
-      'Error bulk submitting checklist',
-    );
+    logger.error({ error, url: req.url }, 'Error bulk submitting checklist');
     return NextResponse.json(
       {
         error: 'Failed to bulk submit checklist',
