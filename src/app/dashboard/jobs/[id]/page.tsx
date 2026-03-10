@@ -32,6 +32,7 @@ import { QuickSelectAndFilter } from './components/QuickSelectAndFilter';
 import { JobPageHeader } from './components/JobPageHeader';
 import { JobKanbanBoard } from './components/JobKanbanBoard';
 import { JobPageDialogs } from './components/JobPageDialogs';
+import { stringifyBulkReasonPayload } from './components/Dialogs/bulk-reason-dialog';
 
 interface FilterState {
   search: string;
@@ -260,6 +261,18 @@ export default function JobProgressPage() {
   const onOpenChecklistAfterSave = useCallback(
     (validationInfo: string) => {
       setOpenRemarksFor(validationInfo);
+    },
+    [setOpenRemarksFor],
+  );
+
+  const onBulkStatusRequiresReason = useCallback(
+    (payload: { candidateIds: string[]; newStatus: string }) => {
+      setOpenRemarksFor(
+        stringifyBulkReasonPayload({
+          ...payload,
+          statusAlreadyApplied: false,
+        }),
+      );
     },
     [setOpenRemarksFor],
   );
@@ -499,6 +512,9 @@ export default function JobProgressPage() {
         onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
         onDeferStatusToChecklist={onDeferStatusToChecklist}
         onOpenChecklistAfterSave={onOpenChecklistAfterSave}
+        onBulkStatusRequiresReason={
+          job?.promptForStatusChangeReason ? onBulkStatusRequiresReason : undefined
+        }
       />
 
       <JobKanbanBoard
@@ -605,6 +621,9 @@ export default function JobProgressPage() {
           onBulkChecklistCancel={onBulkChecklistCancel}
           bulkDragTwoPhase={bulkDragTwoPhase}
           onUnifiedRemarkClose={onUnifiedRemarkClose}
+          onBulkStatusRequiresReason={
+            job?.promptForStatusChangeReason ? onBulkStatusRequiresReason : undefined
+          }
         />
       )}
     </div>

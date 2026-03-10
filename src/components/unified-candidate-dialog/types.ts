@@ -136,6 +136,11 @@ export interface UnifiedCandidateActionsDialogProps {
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
   /** Bulk status update: when some candidates require checklist, called with queue to process one-by-one (checklist form for each) */
   onBulkStatusRequiresChecklist?: (queue: BulkStatusQueueItem[]) => void;
+  /** When job has promptForStatusChangeReason and bulk status update: open bulk reason dialog first; on submit from dialog, status + remark are applied. */
+  onBulkStatusRequiresReason?: (payload: {
+    candidateIds: string[];
+    newStatus: string;
+  }) => void;
 }
 
 export const getValidationSchema = (currentJobId: string | undefined) =>

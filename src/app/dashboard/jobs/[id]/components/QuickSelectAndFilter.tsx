@@ -57,6 +57,11 @@ interface QuickSelectAndFilterProps {
   ) => void;
   /** Open checklist after save (optional checklists) */
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** When job has promptForStatusChangeReason and bulk status update: open bulk reason dialog */
+  onBulkStatusRequiresReason?: (payload: {
+    candidateIds: string[];
+    newStatus: string;
+  }) => void;
 }
 
 export function QuickSelectAndFilter({
@@ -69,6 +74,7 @@ export function QuickSelectAndFilter({
   onBulkStatusRequiresChecklist,
   onDeferStatusToChecklist,
   onOpenChecklistAfterSave,
+  onBulkStatusRequiresReason,
 }: QuickSelectAndFilterProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -578,6 +584,14 @@ export function QuickSelectAndFilter({
               ? (validationInfo) => {
                   setIsBulkDialogOpen(false);
                   onOpenChecklistAfterSave(validationInfo);
+                }
+              : undefined
+          }
+          onBulkStatusRequiresReason={
+            onBulkStatusRequiresReason
+              ? (payload) => {
+                  setIsBulkDialogOpen(false);
+                  onBulkStatusRequiresReason(payload);
                 }
               : undefined
           }

@@ -75,7 +75,7 @@ export function CandidateCardHeader({
   showStar,
   showRedFlag,
   onViewDetails,
-  setOpenRemarksFor,
+  setOpenRemarksFor: _setOpenRemarksFor,
   setIsAddRemarkOpen,
   setIsEditing,
   setIsEmailDialogOpen,
@@ -200,7 +200,6 @@ export function CandidateCardHeader({
               className="h-8 w-8 !py-0 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
               onClick={(e) => {
                 e.stopPropagation();
-                setOpenRemarksFor(candidate._id);
                 setIsAddRemarkOpen(true);
               }}
             >
@@ -354,16 +353,15 @@ export function CandidateCardHeader({
 
                 {/* Add Remark */}
                 {user?.role !== 'candidate' && (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenRemarksFor(candidate._id);
-                      setIsAddRemarkOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Remark
-                  </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsAddRemarkOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Remark
+                </DropdownMenuItem>
                 )}
 
                 {/* Separator before delete */}

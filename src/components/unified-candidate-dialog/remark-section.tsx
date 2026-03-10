@@ -1,9 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Rating } from '@mui/material';
 import { Eye, EyeOff } from 'lucide-react';
 import { MentionTextarea } from '@/components/ui/mention-textarea';
+import { useDeferredRemark } from '@/contexts/deferred-remark-context';
 import { UnifiedFormValues, Mention } from './types';
 import { FormError } from './form-errors';
 
@@ -20,6 +21,14 @@ export function RemarkSection({
   organizationId,
   userRole,
 }: RemarkSectionProps) {
+  const { setRemark, setIsSubRemarkPrivate, setRemarkRating } = useDeferredRemark();
+
+  useEffect(() => {
+    setRemark(values.remarkDescription ?? '');
+    setIsSubRemarkPrivate(values.isRemarkPrivate ?? true);
+    setRemarkRating(values.remarkRating ?? null);
+  }, [values.remarkDescription, values.isRemarkPrivate, values.remarkRating, setRemark, setIsSubRemarkPrivate, setRemarkRating]);
+
   const handleMentionsChange = useCallback(
     (mentions: Mention[]) => {
       setFieldValue('selectedMentions', mentions);
@@ -30,8 +39,9 @@ export function RemarkSection({
   const handleTextChange = useCallback(
     (v: string) => {
       setFieldValue('remarkDescription', v);
+      setRemark(v);
     },
-    [setFieldValue],
+    [setFieldValue, setRemark],
   );
 
   return (
@@ -73,6 +83,8 @@ export function RemarkSection({
             onChange={(_e, v) => {
               setFieldValue('remarkRating', v);
               setFieldValue('remarkRatingHistory', v);
+              setRemarkRating(v ?? null);
+              setIsSubRemarkPrivate(values.isRemarkPrivate);
             }}
             precision={0.5}
             sx={{
@@ -98,7 +110,10 @@ export function RemarkSection({
             <Switch
               id="privacy-toggle"
               checked={values.isRemarkPrivate}
-              onCheckedChange={(c) => setFieldValue('isRemarkPrivate', c)}
+              onCheckedChange={(c) => {
+                setFieldValue('isRemarkPrivate', c);
+                setIsSubRemarkPrivate(!!c);
+              }}
             />
           </div>
         )}

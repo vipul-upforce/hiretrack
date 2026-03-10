@@ -2,14 +2,16 @@
 
 import { useCallback } from 'react';
 import { useSSE } from '@/hooks/useSSE';
+import { toast } from '@/hooks/use-toast';
 import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useNotificationsContext } from '@/contexts/NotificationsContext';
 import {
   useLazyFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
+  useBulkUpdateCandidatesMutation,
 } from '@/lib/features/candidate/candidateApi';
-import { Candidate } from '@/types/candidate';
+import { Candidate, CandidateStatus } from '@/types/candidate';
 import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
@@ -42,6 +44,8 @@ export default function DashboardPage() {
 
   const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
 
+  const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
+
   // Assignment fetching logic
   const { fetchAssignments, loadMoreData } = useDashboardAssignments({
     itemsPerPage,
@@ -63,6 +67,124 @@ export default function DashboardPage() {
     sseAddedCountRef: state.sseAddedCountRef,
     totalCountMembershipRef: state.totalCountMembershipRef,
   });
+
+  /** Called from submit hook when statusDeferredFromUnified: apply status, refetch, update local state, clear pending, optionally open next (incoming) checklist. Runs in same call stack as submit. */
+  const handleApplyDeferredStatus = (candidateId: string, newStatus: string) =>
+    bulkUpdateCandidates({
+      operation: 'statusUpdate',
+      candidateIds: [String(candidateId)],
+      status: newStatus,
+    })
+      .unwrap()
+      .then(() => fetchAssignments(1))
+      .then(() => {
+        if (
+          state.selectedCandidate &&
+          (state.selectedCandidate._id === candidateId ||
+            String(state.selectedCandidate._id) === String(candidateId))
+        ) {
+          state.setSelectedCandidate({
+            ...state.selectedCandidate,
+            status: newStatus as CandidateStatus,
+          });
+        }
+        state.setAssignments((prev) =>
+          (prev || []).map((c) =>
+            c._id === candidateId || String(c._id) === String(candidateId)
+              ? { ...c, status: newStatus as CandidateStatus }
+              : c,
+          ),
+        );
+      })
+      .then(() => {
+        const nextChecklist =
+          checklistValidation.pendingIncomingChecklistAfterStatus;
+        if (
+          nextChecklist &&
+          checklistValidation.setOpenRemarksFor &&
+          checklistValidation.setPendingIncomingChecklistAfterStatus
+        ) {
+          checklistValidation.setOpenRemarksFor(nextChecklist);
+          checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+        }
+      })
+      .finally(() => {
+        checklistValidation.setPendingStatusAfterChecklist(null);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : 'Failed to update status';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
+        throw err;
+      })
+
+  /** Fallback when onApplyDeferredStatus not used: read pending from ref and apply status after dialog closes. */
+  const handleChecklistComplete = (candidateId: string) => {
+    debugger
+    const pending = checklistValidation.pendingStatusAfterChecklistRef.current;
+    if (
+      !pending ||
+      String(pending.candidateId) !== String(candidateId) ||
+      !checklistValidation.setPendingStatusAfterChecklist
+    ) {
+      return;
+    }
+    const { newStatus } = pending;
+    bulkUpdateCandidates({
+      operation: 'statusUpdate',
+      candidateIds: [String(candidateId)],
+      status: newStatus,
+    })
+      .unwrap()
+      .then(() => fetchAssignments(1))
+      .then(() => {
+        if (
+          state.selectedCandidate &&
+          (state.selectedCandidate._id === candidateId ||
+            String(state.selectedCandidate._id) === String(candidateId))
+        ) {
+          state.setSelectedCandidate({
+            ...state.selectedCandidate,
+            status: newStatus as CandidateStatus,
+          });
+        }
+        state.setAssignments((prev) =>
+          (prev || []).map((c) =>
+            c._id === candidateId || String(c._id) === String(candidateId)
+              ? { ...c, status: newStatus as CandidateStatus }
+              : c,
+          ),
+        );
+      })
+      .then(() => {
+        const nextChecklist =
+          checklistValidation.pendingIncomingChecklistAfterStatus;
+        if (
+          nextChecklist &&
+          checklistValidation.setOpenRemarksFor &&
+          checklistValidation.setPendingIncomingChecklistAfterStatus
+        ) {
+          checklistValidation.setOpenRemarksFor(nextChecklist);
+          checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+        }
+      })
+      .finally(() => {
+        checklistValidation.setPendingStatusAfterChecklist(null);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : 'Failed to update status';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
+      });
+  }
 
   // Scroll handler
   const handleScroll = useCallback(() => {
@@ -259,8 +381,17 @@ export default function DashboardPage() {
             triggerFetchAssignments({ page: 1, limit: itemsPerPage });
           }}
           checklistInfo={checklistValidation.openRemarksFor}
-          onChecklistSuccess={() => { }}
-          onChecklistCancel={() => { }}
+          onChecklistSuccess={handleChecklistComplete}
+          onApplyDeferredStatus={handleApplyDeferredStatus}
+          onChecklistCancel={() => {
+            checklistValidation.setPendingStatusAfterChecklist(null);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+            toast({
+              title: 'Checklist cancelled',
+              description: 'The checklist has been cancelled.',
+              variant: 'destructive',
+            });
+          }}
         />
       )}
     </div>

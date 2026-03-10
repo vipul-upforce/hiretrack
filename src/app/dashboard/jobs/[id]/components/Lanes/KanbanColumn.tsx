@@ -154,10 +154,10 @@ const KanbanColumn = memo(
     onConfigureChecklist,
     pendingMoves = [],
     laneConfig,
-    onValidateStatusChange,
-    onDeferStatusToChecklist,
-    onOpenChecklistAfterSave,
-    bulkDragState,
+        onValidateStatusChange,
+        onDeferStatusToChecklist,
+        onOpenChecklistAfterSave,
+        bulkDragState,
   }: KanbanColumnProps) => {
     const dispatch = useAppDispatch();
     const isShiftPressed = useShiftKey();

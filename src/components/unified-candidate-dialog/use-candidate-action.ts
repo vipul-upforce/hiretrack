@@ -87,6 +87,7 @@ export function useCandidateActions({
   onDeferStatusToChecklist,
   onOpenChecklistAfterSave,
   onBulkStatusRequiresChecklist,
+  onBulkStatusRequiresReason,
 }: UnifiedCandidateActionsDialogProps) {
   const isBulkMode = candidates && candidates.length > 1;
   const candidateList = isBulkMode ? candidates : [candidate];
@@ -965,6 +966,15 @@ export function useCandidateActions({
               return;
             }
           }
+          if (onBulkStatusRequiresReason) {
+            onBulkStatusRequiresReason({
+              candidateIds,
+              newStatus: values.newStatus as string,
+            });
+            onOpenChange(false);
+            setIsSubmitting(false);
+            return;
+          }
           operations.push({
             operation: 'statusUpdate',
             status: values.newStatus as string,
@@ -1415,6 +1425,9 @@ export function useCandidateActions({
         title: 'Success',
         description: 'Candidate updated successfully',
       });
+      if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
+        onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
+      }
       onOpenChange(false);
 
       if (historyEntries.length > 0) {
@@ -1429,10 +1442,6 @@ export function useCandidateActions({
 
       if (pathname === '/dashboard' && !actions.markAsDone) {
         refetchAssignment?.();
-      }
-
-      if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
-        onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
       }
     } catch (error) {
       toast({

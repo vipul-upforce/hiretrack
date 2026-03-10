@@ -9,11 +9,12 @@ import {
 } from '@/lib/features/checklist/checklistApi';
 import { useSendStatusMailMutation } from '@/lib/features/org/orgApi';
 import logger from '@/lib/logger';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useDeferredRemark } from '@/contexts/deferred-remark-context';
 import { getJobId } from '../../../utils/candidateAccessors';
 import { ChecklistForm } from './ChecklistForm';
 import { ChecklistRemarksSection } from './ChecklistRemarksSection';
@@ -35,9 +36,16 @@ function ChecklistRemarksDialog({
   checklistInfo,
   onChecklistSuccess,
   onChecklistCancel,
+  onApplyDeferredStatus,
   bulkTotalCount = 0,
   onApplyToRemaining,
 }: ChecklistRemarksDialogProps) {
+  const {
+    remark: deferredRemark,
+    isSubRemarkPrivate: isSubRemarkPrivateDeferred,
+    remarkRating: remarkRatingDeferred,
+    clearDeferredRemark,
+  } = useDeferredRemark();
   const [newRemark, setNewRemark] = useState('');
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
   const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
@@ -45,6 +53,7 @@ function ChecklistRemarksDialog({
   );
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [applyToRemaining, setApplyToRemaining] = useState(false);
+  const hasSeededFromDeferredRef = useRef(false);
 
   const isBulkApplyAll = bulkTotalCount > 0 && Boolean(onApplyToRemaining);
 
@@ -76,6 +85,19 @@ function ChecklistRemarksDialog({
       return null;
     }
   }, [checklistInfo]);
+
+  // When dialog opens, seed local remark state from deferred context (unified dialog remark). User edits then use local state.
+  useEffect(() => {
+    if (!isOpen) {
+      hasSeededFromDeferredRef.current = false;
+      return;
+    }
+    if (hasSeededFromDeferredRef.current) return;
+    hasSeededFromDeferredRef.current = true;
+    setNewRemark(deferredRemark ?? '');
+    setRemarkRating(remarkRatingDeferred);
+    setIsSubRemarkPrivate(isSubRemarkPrivateDeferred);
+  }, [isOpen, deferredRemark, remarkRatingDeferred, isSubRemarkPrivateDeferred]);
 
   const hasChecklist = Boolean(parsedChecklistInfo?.checklist);
   const isChecklistMandatory = parsedChecklistInfo?.isMandatory ?? false;
@@ -116,7 +138,9 @@ function ChecklistRemarksDialog({
         onApplyToRemaining,
         onChecklistSuccess,
         onChecklistCancel,
+        onApplyDeferredStatus,
         onSuccess: async (result) => {
+          clearDeferredRemark();
           const switchingToIncoming = result.transitionedToIncoming === true;
           if (!switchingToIncoming) {
             onOpenChange(false);
@@ -125,17 +149,18 @@ function ChecklistRemarksDialog({
           setNewRemark('');
           setRemarkRating(null);
           setRemarkRatingHistory(null);
-          setChecklistResponses({});
-          await refetch();
-          toast({
-            title: 'Success',
-            description: result.successMessage,
-          });
+
           if (result.payload && onApplyToRemaining) {
             onApplyToRemaining(result.payload);
           } else if (result.hasChecklist && onChecklistSuccess && !switchingToIncoming) {
             onChecklistSuccess(result.candidateId);
           }
+          await refetch();
+          toast({
+            title: 'Success',
+            description: result.successMessage,
+          });
+
         },
       },
       user: user
@@ -155,8 +180,19 @@ function ChecklistRemarksDialog({
       } as UseChecklistSubmitParams['mutations'],
     });
 
+  const handleCancelAndClear = useCallback(() => {
+    clearDeferredRemark();
+    handleCancel();
+  }, [clearDeferredRemark, handleCancel]);
+
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) clearDeferredRemark();
+        onOpenChange(open);
+      }}
+    >
       <DialogContent size="2xl" className="flex max-h-[90vh] flex-col p-0">
         <ChecklistDialogHeader
           hasChecklist={hasChecklist}
@@ -210,7 +246,7 @@ function ChecklistRemarksDialog({
           isChecklistMandatory={isChecklistMandatory}
           isSubmitting={isSubmitting}
           submitPhase={submitPhase}
-          handleCancel={handleCancel}
+          handleCancel={handleCancelAndClear}
           handleSubmit={handleSubmit}
           bulkRemainingCount={
             isBulkApplyAll ? 0 : Math.max(0, bulkTotalCount - 1)

@@ -113,7 +113,7 @@ export function CandidateCardDialogs({
   setNewFollowUp: _setNewFollowUp,
   newFollowUpDate: _newFollowUpDate,
   setNewFollowUpDate: _setNewFollowUpDate,
-  onDashboard,
+  onDashboard: _onDashboard,
   triggerRef,
   onUpdate,
   refetchAssignment: refetchAssignmentProp,
@@ -129,7 +129,7 @@ export function CandidateCardDialogs({
     isAddingFollowUp ||
     confirmUnassignOpen ||
     isAssignJobOpen ||
-    (onDashboard ? isAddRemarkOpen : false);
+    isAddRemarkOpen;
 
  
   const getUnifiedInitialAction = (): CandidateActionType | undefined => {
@@ -226,9 +226,13 @@ export function CandidateCardDialogs({
           onValidateStatusChange={onValidateStatusChange}
           onDeferStatusToChecklist={
             onDeferStatusToChecklist
-              ? (validationInfo, newStatus) => {
+              ? (validationInfo, newStatus, nextChecklistValidationInfo) => {
                   closeUnified();
-                  onDeferStatusToChecklist(validationInfo, newStatus);
+                  onDeferStatusToChecklist(
+                    validationInfo,
+                    newStatus,
+                    nextChecklistValidationInfo,
+                  );
                 }
               : undefined
           }
