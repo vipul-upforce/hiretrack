@@ -92,6 +92,7 @@ export function generatePortalMetadata(
 
   // Build metadata object
   const metadata: Metadata = {
+    metadataBase: new URL('/', process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
     title: {
       default: defaultTitle,
       template: options.titleTemplate || `%s - ${defaultTitle}`,
@@ -135,15 +136,15 @@ export function generatePortalMetadata(
       }),
     },
     // Add theme color for mobile browsers
-    themeColor: [
-      {
-        media: '(prefers-color-scheme: light)',
-        color: portalData.primaryColor,
-      },
-      { media: '(prefers-color-scheme: dark)', color: portalData.primaryColor },
-    ],
-    // Add color scheme metadata
-    colorScheme: 'light dark',
+    // themeColor: [
+    //   {
+    //     media: '(prefers-color-scheme: light)',
+    //     color: portalData.primaryColor,
+    //   },
+    //   { media: '(prefers-color-scheme: dark)', color: portalData.primaryColor },
+    // ],
+    // // Add color scheme metadata
+    // colorScheme: 'light dark',
     // Merge any additional metadata
     ...options.additionalMetadata,
   };

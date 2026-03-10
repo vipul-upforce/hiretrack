@@ -43,10 +43,7 @@ const stepValidators: StepValidators = {
         settings.portalConfigs.secondaryColor !== '#8b5cf6')
     );
     const isConfigured = hasCustomName || hasCustomBranding;
-    logger.info(
-      { portalName, hasCustomName, hasCustomBranding, isConfigured },
-      'Portal validation completed',
-    );
+
     return isConfigured;
   },
 
@@ -67,7 +64,6 @@ const stepValidators: StepValidators = {
     const hasProvider = !!(
       mailConfig?.mailProvider && mailConfig.mailProvider !== ''
     );
-    logger.info({ hasProvider }, 'Email validation completed');
     return hasProvider;
   },
 
@@ -82,31 +78,19 @@ const stepValidators: StepValidators = {
       settings?.microsoftTeams?.refreshToken ||
       settings?.microsoftTeams?.accessToken
     );
-    logger.info(
-      { hasMeetingIntegration },
-      'Meeting integration validation completed',
-    );
+
     return hasMeetingIntegration;
   },
 
   timezone: (settings) => {
     const timezoneName = settings?.timeZone?.name;
     const hasTimezone = !!(timezoneName && timezoneName !== '');
-    logger.info({ hasTimezone, timezoneName }, 'Timezone validation completed');
     return hasTimezone;
   },
 
-  storage: () => {
-    logger.info(
-      'Storage validation - Always configured (local storage available)',
-    );
-    return true;
-  },
+  storage: () => true,
 
-  users: () => {
-    logger.info('Users validation - Always configured for testing');
-    return true;
-  },
+  users: () => true,
 
   captcha: (settings) => {
     const captchaConfig = settings?.captcha;
@@ -292,11 +276,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid step' }, { status: 400 });
     }
 
-    logger.info(
-      { userId: user.id, orgId: user.organizationId },
-      'POST validation debug',
-    );
-
     // Try to find organizationId from various possible locations
     const orgId = user.organizationId;
 
@@ -315,8 +294,6 @@ export async function POST(req: NextRequest) {
       };
 
       const isValid = fallbackStatus[stepId] ?? false;
-      logger.info({ step: stepId, isValid }, 'Step fallback validation result');
-
       return NextResponse.json({ isValid, step: stepId });
     }
 
@@ -349,13 +326,7 @@ export async function POST(req: NextRequest) {
       logger.error({ error: dbError, orgId }, 'Database query error in POST');
     }
 
-    logger.info(
-      { settingsFound: !!settings, organizationFound: !!organization },
-      'POST validation data fetch completed',
-    );
-
     if (!settings && !organization) {
-      logger.info({ step: stepId }, 'No data found, using fallback validation');
       const fallbackStatus: Record<string, boolean> = {
         captcha: true,
         portal: true,
@@ -379,16 +350,10 @@ export async function POST(req: NextRequest) {
     try {
       const validator = stepValidators[stepId as keyof StepValidators];
       isValid = validator(settings, organization, userCount);
-    } catch (validationError) {
-      logger.error(
-        { error: validationError, step: stepId },
-        'Validation error for step',
-      );
-      // Fallback: assume configured except for customFields
+    } catch {
       isValid = stepId !== 'customFields';
     }
 
-    logger.info({ step: stepId, isValid }, 'Step validation result');
     return NextResponse.json({ isValid, step: stepId });
   } catch (error) {
     logger.error({ error, url: req.url }, 'Error validating specific step');
