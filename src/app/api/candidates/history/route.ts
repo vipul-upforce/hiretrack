@@ -320,7 +320,7 @@ export async function PUT(request: NextRequest) {
         data.jobId !== null &&
         '_id' in data.jobId
       ) {
-        normalizedJobId = data.jobId._id || null;
+        normalizedJobId = String(data.jobId._id) || null;
       } else if (typeof data.jobId === 'string' && data.jobId.trim() !== '') {
         normalizedJobId = data.jobId.trim();
       }

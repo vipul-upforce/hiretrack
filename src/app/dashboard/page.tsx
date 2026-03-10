@@ -124,7 +124,6 @@ export default function DashboardPage() {
 
   /** Fallback when onApplyDeferredStatus not used: read pending from ref and apply status after dialog closes. */
   const handleChecklistComplete = (candidateId: string) => {
-    debugger
     const pending = checklistValidation.pendingStatusAfterChecklistRef.current;
     if (
       !pending ||

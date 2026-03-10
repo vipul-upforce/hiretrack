@@ -35,7 +35,14 @@ export function useHistoryFiltering(
             );
 
             if (!hasVisibleResponses) {
-              return false; // hide if no responses allow this role
+              // Keep entry if there's a remark visible to this role (so HR/interviewer see optional/public remark even when checklist is hidden)
+              const hasVisibleRemark =
+                !!interview.remark?.description &&
+                (role === 'hr' ||
+                  role === 'admin' ||
+                  !interview.remark.isPrivate);
+              if (hasVisibleRemark) return true;
+              return false;
             }
           }
 

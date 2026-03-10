@@ -869,7 +869,7 @@ export async function PUT(
         await History?.findOneAndUpdate(
           {
             candidateId: updatedCandidate._id,
-            jobId: updatedCandidate.jobId?._id,
+            jobId: String(updatedCandidate.jobId?._id),
           },
           {
             $push: {
@@ -883,6 +883,7 @@ export async function PUT(
       }
       // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
       // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+      console.log('🦊🦊🦊 updatedCandidate._id:', updatedCandidate._id);
       const historyDocuments = await History?.find({
         candidateId: updatedCandidate._id,
       })
@@ -1410,7 +1411,7 @@ export async function DELETE(
     // Execute history update and candidate update in parallel
     const [updatedHistory, deletedCandidate] = await Promise.all([
       History.findOneAndUpdate(
-        { candidateId: candidate._id, jobId: candidate.jobId },
+        { candidateId: candidate._id, jobId: String(candidate.jobId) },
         {
           $push: { history: historyEntry },
         },

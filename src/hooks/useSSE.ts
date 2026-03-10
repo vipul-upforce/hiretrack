@@ -32,6 +32,8 @@ export async function getDecodedSSE(encodedData: string) {
       }
     }
 
+    console.log('🦊🦊🦊 data decoded SSE:', data);
+
     return data;
   } catch (error) {
     logger.error('SSE decryption error:', error);
@@ -133,9 +135,8 @@ export const useSSE = <T = Candidate>(
       const transform = transformCandidateRef.current;
       if (transform) {
         const transformed = transform(updatedCandidate, currentSelected);
-        // Allow setting null to clear selection 
+        // Allow setting null to clear selection
         setSelectedCandidateRef.current(transformed);
-        
       } else {
         // Default: just pass the candidate (for job pages)
         setSelectedCandidateRef.current(updatedCandidate as T);

@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
 
     // Add history entries if any changes detected
     if (historyEntries.length > 0) {
-      const existingHistory = await History?.findOne({ candidateId, jobId });
+      const existingHistory = await History?.findOne({ candidateId });
       if (existingHistory) {
         existingHistory.history.push(...historyEntries);
         await existingHistory.save();

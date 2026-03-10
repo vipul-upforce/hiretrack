@@ -33,7 +33,6 @@ export async function runBulkStatusUpdate(
       message: 'No candidates found',
     };
   }
-
   const ids = candidates.map((c) =>
     (c._id as { toString: () => string }).toString(),
   );

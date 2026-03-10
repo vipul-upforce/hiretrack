@@ -13,7 +13,7 @@ import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandi
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
 import { logger } from '@/lib/logger/logger.server';
-import { ICandidateHistory } from '@/lib/models/history';
+import { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
 import {
   ChecklistResponse,
   ChecklistHistoryResponseItem,
@@ -330,7 +330,7 @@ export async function POST(req: NextRequest) {
             email: user?.email || '',
           },
         };
-        await Candidate!.collection.updateOne(
+        await Candidate!.updateOne(
           { _id: new mongoose.Types.ObjectId(id) },
           {
             $push: {
@@ -344,21 +344,49 @@ export async function POST(req: NextRequest) {
         jobId,
         candidateId: id,
       };
-      await History!.collection.updateOne(
+      await History!.updateOne(
         historyFilter,
         { $push: { history: historyEntry } },
         { upsert: true },
       );
 
-      await Candidate!.collection.updateOne(
-        { _id: new mongoose.Types.ObjectId(id) },
-        {
-          $set: {
-            status: newStatus,
-            'tracking.updatedAt': new Date(currentTime),
+      const oldStatus = (candidate as { status?: string }).status ?? 'Unknown';
+      if (oldStatus !== newStatus) {
+        const statusUpdateLog: IinfoUpdateLog = {
+          title: 'Updated Status',
+          previousValue: oldStatus,
+          currentValue: newStatus,
+        };
+        const statusUpdateHistoryEntry: Partial<ICandidateHistory> = {
+          dateTime: currentTime,
+          title: 'Updated Status',
+          currentInterviewer: null,
+          previousInterviewer: null,
+          assignmentBy: userId,
+          note: {
+            description: [statusUpdateLog],
+            date: currentTime,
+            rating: 0,
+            userId,
           },
-        },
-      );
+          attachments: [],
+        };
+        await History!.collection.updateOne(
+          historyFilter,
+          { $push: { history: statusUpdateHistoryEntry } } as never,
+          { upsert: true },
+        );
+
+        await Candidate!.collection.updateOne(
+          { _id: new mongoose.Types.ObjectId(id) },
+          {
+            $set: {
+              status: newStatus,
+              'tracking.updatedAt': new Date(currentTime),
+            },
+          },
+        );
+      }
 
       updatedIds.push(id);
     }
