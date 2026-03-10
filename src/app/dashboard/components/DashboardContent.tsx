@@ -127,8 +127,8 @@ export function DashboardContent({
                             (candidate) => candidate._id === assignment._id,
                           ) || assignment
                         }
-                        assignments={assignments || []}
                         setAssignments={setAssignments}
+                        onCandidateCardClick={onCandidateCardClick}
                       />
                     </div>
                   })}

@@ -13,6 +13,7 @@ export interface CandidateDetailsDialogProps {
   hideCloseButtons?: boolean;
   isAssigning?: boolean;
   setIsAssigning?: (open: boolean) => void;
+  onViewDetails?: (candidate: Candidate) => void;
   /** When provided, status update from unified dialog defers to checklist (outgoing then incoming) */
   onValidateStatusChange?: (
     candidate: Candidate,

@@ -124,7 +124,6 @@ export default function DashboardPage() {
 
   /** Fallback when onApplyDeferredStatus not used: read pending from ref and apply status after dialog closes. */
   const handleChecklistComplete = (candidateId: string) => {
-    debugger
     const pending = checklistValidation.pendingStatusAfterChecklistRef.current;
     if (
       !pending ||
@@ -352,11 +351,24 @@ export default function DashboardPage() {
         candidate={state.selectedCandidate}
         isOpen={state.isCandidateDialogOpen}
         onOpenChange={state.setIsCandidateDialogOpen}
+        onViewDetails={(candidate) => {
+          // Manual close and reopen to ensure fresh instance and avoid state mixed up
+          state.setIsCandidateDialogOpen(false);
+          state.setSelectedCandidate(null);
+
+          setTimeout(() => {
+            state.setSelectedCandidate(candidate);
+            state.setIsCandidateDialogOpen(true);
+          }, 100);
+        }}
         onUpdate={(updatedCandidate) => {
           // Update local state with the updated candidate instead of refetching
-          // The mutation already returns the updated candidate, so no need to refetch
           if (updatedCandidate && state.selectedCandidate?._id === updatedCandidate._id) {
-            state.setSelectedCandidate(updatedCandidate);
+            state.setSelectedCandidate((prev) => 
+              prev?._id === updatedCandidate._id 
+                ? { ...prev, ...updatedCandidate } 
+                : updatedCandidate
+            );
           }
         }}
         hideEditButton={user?.role === 'interviewer'}

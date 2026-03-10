@@ -95,6 +95,17 @@ export const useNotificationsPage = () => {
     }
   };
 
+  const openCandidateDetails = (candidate: Candidate) => {
+    // Manual close and reopen to ensure fresh instance
+    setIsCandidateDialogOpen(false);
+    setSelectedCandidate(null);
+
+    setTimeout(() => {
+      setSelectedCandidate(candidate);
+      setIsCandidateDialogOpen(true);
+    }, 100);
+  };
+
   const handleNotificationClick = async (notification: INotification) => {
     // Optimistic read status update
     if (!notification.isRead) {
@@ -111,8 +122,7 @@ export const useNotificationsPage = () => {
         // Force fresh fetch to avoid stale cached data
         const result = await fetchCandidateById(notification.relatedId, false);
         if (result.data) {
-          setSelectedCandidate(result.data);
-          setIsCandidateDialogOpen(true);
+          openCandidateDetails(result.data);
         }
       } catch (error) {
         logger.error('Failed to fetch candidate:', error);
@@ -124,7 +134,7 @@ export const useNotificationsPage = () => {
       }
     }
   };
-
+  
   const handleCandidateUpdate = async () => {
     if (selectedCandidate) {
       // Force fresh fetch to get latest candidate data
@@ -165,5 +175,6 @@ export const useNotificationsPage = () => {
     handleMarkAllAsRead,
     handleNotificationClick,
     handleCandidateUpdate,
+    openCandidateDetails,
   };
 };
