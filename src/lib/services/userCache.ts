@@ -1,5 +1,7 @@
 'use client';
 
+import { store } from '@/lib/store';
+import { usersApi } from '@/lib/features/users/usersApi';
 import logger from '../logger';
 
 interface CachedUser {
@@ -149,15 +151,12 @@ class UserCacheService {
     organizationId: string,
   ): Promise<CachedUser[]> {
     try {
-      const response = await fetch(
-        `/api/users?organizationId=${organizationId}`,
+      const request = store.dispatch(
+        usersApi.endpoints.getUsersByOrganization.initiate(organizationId, {
+          subscribe: false,
+        }),
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await request.unwrap();
 
       // Handle both response formats: direct array or { users: array }
       const usersArray = Array.isArray(data) ? data : data.users;

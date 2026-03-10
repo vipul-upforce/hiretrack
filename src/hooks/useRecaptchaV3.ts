@@ -36,12 +36,12 @@ export function useRecaptchaV3({
 
   // Load reCAPTCHA v3 script
   useEffect(() => {
-    if (!siteKey || scriptLoaded.current) return;
+    if (!siteKey || scriptLoaded.current) return () => {};
 
     // Check if script already exists
     if (document.getElementById(scriptId)) {
       scriptLoaded.current = true;
-      return;
+      return () => {};
     }
 
     const script = document.createElement('script');

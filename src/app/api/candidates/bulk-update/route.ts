@@ -84,6 +84,13 @@ function parseOperation(
             (op.zoomMeetingAttachments as BulkAssignParams['zoomMeetingAttachments']) ??
             [],
           zoomAdditionalGuests: (op.zoomAdditionalGuests as string[]) ?? [],
+          scheduleTeamsMeet: (op.scheduleTeamsMeet as boolean) ?? false,
+          teamsMeetDuration: (op.teamsMeetDuration as number) ?? 30,
+          teamsMeetingNotes: (op.teamsMeetingNotes as string) ?? '',
+          teamsMeetingAttachments:
+            (op.teamsMeetingAttachments as BulkAssignParams['teamsMeetingAttachments']) ??
+            [],
+          teamsAdditionalGuests: (op.teamsAdditionalGuests as string[]) ?? [],
           remark: (op.remark as string) ?? undefined,
         },
       };
@@ -299,6 +306,7 @@ export async function POST(
     let unassignNotificationMeta: BulkUpdateResult['unassignNotificationMeta'];
     let addRemarkNotificationMeta: BulkUpdateResult['addRemarkNotificationMeta'];
     let addFollowUpNotificationMeta: BulkUpdateResult['addFollowUpNotificationMeta'];
+    let removeFollowUpNotificationMeta: BulkUpdateResult['removeFollowUpNotificationMeta'];
     let statusUpdateNotificationMeta: BulkUpdateResult['statusUpdateNotificationMeta'];
 
     const chunks = chunkIds(candidateIds, CHUNK_SIZE);
@@ -363,6 +371,14 @@ export async function POST(
             }
             addFollowUpNotificationMeta.candidates.push(
               ...result.addFollowUpNotificationMeta.candidates,
+            );
+          }
+          if (result.removeFollowUpNotificationMeta) {
+            if (!removeFollowUpNotificationMeta) {
+              removeFollowUpNotificationMeta = { candidates: [] };
+            }
+            removeFollowUpNotificationMeta.candidates.push(
+              ...result.removeFollowUpNotificationMeta.candidates,
             );
           }
           if (result.statusUpdateNotificationMeta) {
@@ -442,6 +458,14 @@ export async function POST(
           }
           addFollowUpNotificationMeta.candidates.push(
             ...result.addFollowUpNotificationMeta.candidates,
+          );
+        }
+        if (result.removeFollowUpNotificationMeta) {
+          if (!removeFollowUpNotificationMeta) {
+            removeFollowUpNotificationMeta = { candidates: [] };
+          }
+          removeFollowUpNotificationMeta.candidates.push(
+            ...result.removeFollowUpNotificationMeta.candidates,
           );
         }
         if (result.statusUpdateNotificationMeta) {
@@ -655,6 +679,27 @@ export async function POST(
         logger.error(
           { notificationError, url: req.url },
           'Bulk update: failed to send bulk follow-up notification',
+        );
+      }
+    }
+
+    // Bulk remove follow-up: admin/hr get one bulk
+    if (
+      removeFollowUpNotificationMeta &&
+      removeFollowUpNotificationMeta.candidates.length > 0 &&
+      user.organizationId
+    ) {
+      try {
+        await NotificationService.notifyBulkFollowUpRemoved({
+          organizationId: user.organizationId,
+          candidates: removeFollowUpNotificationMeta.candidates,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk follow-up remove notification',
         );
       }
     }

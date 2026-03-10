@@ -48,7 +48,7 @@ export const useUnassignHandlers = (
         // Update local state with the result - no need to refetch individual candidate
         onUpdate?.(result);
         setLocalCandidate(result);
-        
+
         // Only refetch assignments list for dashboard/calendar (to update the list view)
         // Don't refetch individual candidate since we already have the updated result
         if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
@@ -58,8 +58,12 @@ export const useUnassignHandlers = (
         // debugger;
         const previousInterviewerId =
           typeof localCandidate?.assignment?.interviewerId === 'object'
-            ? Object(localCandidate.assignment.interviewerId._id)
+            ? Object(localCandidate?.assignment?.interviewerId?._id)
             : null;
+        const previousInterviewerEmail =
+          typeof localCandidate?.assignment?.interviewerId === 'object'
+            ? (localCandidate?.assignment?.interviewerId?.email ?? undefined)
+            : undefined;
         const newHistoryEntry: ICandidateHistory = {
           dateTime: new Date().toISOString(),
           currentInterviewer: null,
@@ -83,16 +87,12 @@ export const useUnassignHandlers = (
           name: result.name,
           candidateId: updatedCandidate._id || '',
           jobId: localCandidate?.jobId._id || localCandidate?.jobId || '',
-          title: localCandidate?.jobId.title || localCandidate?.jobId || '',
+          title: localCandidate?.jobId?.title || localCandidate?.jobId || '',
           dateTime: new Date().toISOString(),
           status: localCandidate?.status,
           feedback: newHistoryEntry.note,
-          // note: {
-          //   description: "",
-          //   date: "",
-          //   rating: 0,
-          //   userId: null,
-          // },
+          previousInterviewerId: previousInterviewerId ?? undefined,
+          previousInterviewerEmail,
         });
 
         if (pathname === '/dashboard/calendar') {

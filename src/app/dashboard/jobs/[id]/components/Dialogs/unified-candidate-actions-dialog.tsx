@@ -35,6 +35,14 @@ import { checklistApi } from '@/lib/features/checklist/checklistApi';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import logger from '@/lib/logger';
 
+function getCancelMeetingTypeLabel(
+  provider: string | null,
+): 'Zoom' | 'Microsoft Teams' | 'Google Meet' {
+  if (provider === 'zoom') return 'Zoom';
+  if (provider === 'teams') return 'Microsoft Teams';
+  return 'Google Meet';
+}
+
 export function UnifiedCandidateActionsDialog(
   props: UnifiedCandidateActionsDialogProps,
 ) {
@@ -61,10 +69,20 @@ export function UnifiedCandidateActionsDialog(
 
   const result = useCandidateActions(props);
 
+  const currentJobId =
+    typeof candidate?.jobId === 'object'
+      ? candidate.jobId?._id
+      : candidate?.jobId;
+
+  const validationSchema = useMemo(
+    () => getValidationSchema(currentJobId),
+    [currentJobId],
+  );
+
   if (!result) {
     logger.error('[UnifiedCandidateActionsDialog] useCandidateActions returned undefined', {
-      isOpen: props.isOpen,
-      hasCandidate: !!props.candidate,
+      isOpen,
+      hasCandidate: !!candidate,
     });
     return null;
   }
@@ -96,16 +114,6 @@ export function UnifiedCandidateActionsDialog(
       toggleAction,
     },
   } = result;
-
-  const currentJobId =
-    typeof candidate.jobId === 'object'
-      ? candidate.jobId?._id
-      : candidate.jobId;
-
-  const validationSchema = useMemo(
-    () => getValidationSchema(currentJobId),
-    [currentJobId],
-  );
 
   return (
     <>
@@ -186,7 +194,7 @@ export function UnifiedCandidateActionsDialog(
                       user?.role !== 'interviewer' && (
                         <AssignSection
                           candidate={candidate}
-                          isBulkMode={isBulkMode}
+                          isBulkMode={isBulkMode ?? false}
                           values={values}
                           setFieldValue={setFieldValue}
                           interviewers={interviewers}
@@ -297,13 +305,7 @@ export function UnifiedCandidateActionsDialog(
             setCancelNotes('');
           }
         }}
-        meetingType={
-          cancelMeetingProvider === 'zoom'
-            ? 'Zoom'
-            : cancelMeetingProvider === 'teams'
-              ? 'Microsoft Teams'
-              : 'Google Meet'
-        }
+        meetingType={getCancelMeetingTypeLabel(cancelMeetingProvider)}
         cancelNotes={cancelNotes}
         setCancelNotes={setCancelNotes}
         onConfirm={handleCancelMeeting}

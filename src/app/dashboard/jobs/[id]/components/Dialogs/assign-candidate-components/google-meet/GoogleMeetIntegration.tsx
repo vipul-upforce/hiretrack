@@ -14,22 +14,18 @@ import {
 import { MentionTextarea } from '@/components/ui/mention-textarea';
 import {
   Video,
-  Edit,
   Trash2,
-  ExternalLink,
-  Copy,
   Calendar,
   Mail,
   UserPlus,
   X,
-  Paperclip,
-  FileIcon,
   PenOffIcon,
 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { Candidate } from '@/types/candidate';
 import { IGoogleCalendar } from '@/lib/models/settings';
 import { Interviewer } from '@/lib/features/user/userApi';
+import { GoogleMeetSummaryCard } from './GoogleMeetSummaryCard';
+import { MeetingAttachmentsSection } from './MeetingAttachmentsSection';
 import { useGoogleMeetIntegration } from './useGoogleMeetIntegration';
 
 interface GoogleMeetIntegrationProps {
@@ -103,82 +99,16 @@ export function GoogleMeetIntegration({
     <div className="space-y-4 rounded-lg border bg-muted/20 p-4">
       {/* LOGIC FIX: Show summary card if Meet exists and not editing */}
       {hasExistingMeet && !isEditMode && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Video className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium">Google Meet Scheduled</span>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsEditMode(true);
-                  setFieldValue('scheduleGoogleMeet', true);
-                  setFieldValue('scheduleZoomMeet', false);
-                  setFieldValue('scheduleTeamsMeet', false);
-                }}
-                className="h-7 text-xs"
-              >
-                <Edit className="mr-1 h-3 w-3" />
-                Edit
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  onRequestCancel();
-                }}
-                className="h-7 text-xs text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                Cancel Meet
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-2 rounded-md border border-blue-200 bg-blue-50 p-3 dark:border-gray-800 dark:bg-black">
-            <div className="text-sm text-blue-900 dark:text-blue-500">
-              <p className="font-medium">
-                {candidate.assignment?.googleMeet?.summary}
-              </p>
-              <p className="mt-1 text-xs text-blue-700 dark:text-blue-600">
-                {candidate.assignment?.googleMeet?.description?.split('\n')[0]}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <a
-                href={candidate.assignment?.googleMeet?.meetingLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-blue-600 underline hover:text-blue-700 dark:text-blue-200"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Join Meeting
-              </a>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    candidate.assignment?.googleMeet?.meetingLink || '',
-                  );
-                  toast({
-                    title: 'Copied!',
-                    description: 'Meeting link copied to clipboard',
-                    duration: 2000,
-                  });
-                }}
-                className="h-6 text-xs"
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </div>
+        <GoogleMeetSummaryCard
+          candidate={candidate}
+          onEdit={() => {
+            setIsEditMode(true);
+            setFieldValue('scheduleGoogleMeet', true);
+            setFieldValue('scheduleZoomMeet', false);
+            setFieldValue('scheduleTeamsMeet', false);
+          }}
+          onCancelMeet={onRequestCancel}
+        />
       )}
 
       {/* LOGIC FIX: Show scheduling form if no meet, or editing */}
@@ -443,98 +373,13 @@ export function GoogleMeetIntegration({
               </div>
 
               {/* Meeting Attachments */}
-              <div className="space-y-1">
-                <Label className="text-sm">
-                  Meeting Attachments (Optional)
-                </Label>
-                <div className="space-y-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="flex h-8 items-center gap-2"
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.multiple = true;
-                      input.onchange = (e) => {
-                        const { files } = e.target as HTMLInputElement;
-                        if (files && files.length > 0) {
-                          const currentFormFiles = Array.isArray(
-                            values.meetingAttachments,
-                          )
-                            ? values.meetingAttachments
-                            : [];
-                          const allFiles = [...currentFormFiles];
-                          const sanitizedNewFiles = sanitizeFiles(
-                            Array.from(files),
-                          );
-                          const availableSlots = Math.max(
-                            0,
-                            10 - allFiles.length,
-                          );
-                          const updatedFiles = [
-                            ...allFiles,
-                            ...sanitizedNewFiles.slice(0, availableSlots),
-                          ];
-                          setFieldValue('meetingAttachments', updatedFiles);
-                        }
-                      };
-                      input.click();
-                    }}
-                  >
-                    <Paperclip className="h-3 w-3" />
-                    Add Files
-                  </Button>
-
-                  {values.meetingAttachments &&
-                    values.meetingAttachments.length > 0 && (
-                      <ul className="space-y-2">
-                        {values.meetingAttachments.map(
-                          (file, index: number) => (
-                            <li
-                              key={`${file.name}`}
-                              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-2 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
-                            >
-                              <div className="flex min-w-0 flex-1 items-center gap-2">
-                                <FileIcon className="h-4 w-4 flex-shrink-0 text-gray-500 dark:text-gray-400" />
-                                <span
-                                  className="max-w-[200px] truncate text-sm text-gray-900 dark:text-gray-100"
-                                  title={file.name}
-                                >
-                                  {file.name}
-                                </span>
-                                {file.size && (
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    ({(file.size / 1024).toFixed(1)} KB)
-                                  </span>
-                                )}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  const updatedFiles =
-                                    values.meetingAttachments?.filter(
-                                      (_, i: number) => i !== index,
-                                    );
-                                  setFieldValue(
-                                    'meetingAttachments',
-                                    updatedFiles,
-                                  );
-                                }}
-                                className="p-1 text-gray-400 hover:text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    )}
-                </div>
-              </div>
+              <MeetingAttachmentsSection
+                meetingAttachments={values.meetingAttachments}
+                onAttachmentsChange={(updatedFiles) =>
+                  setFieldValue('meetingAttachments', updatedFiles)
+                }
+                sanitizeFiles={sanitizeFiles}
+              />
             </div>
           )}
         </>

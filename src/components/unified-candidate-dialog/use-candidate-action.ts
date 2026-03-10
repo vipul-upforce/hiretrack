@@ -123,11 +123,24 @@ export function useCandidateActions({
   const [cancelTeamsMeeting, { isLoading: isCancellingTeams }] =
     useCancelTeamsMeetingMutation();
 
-  const { data: jobs } = useFetchOpenJobsQuery();
-  const { data: googleCalendarData } =
-    useGetGoogleCalendarConfigQuery(undefined);
-  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
-  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined);
+  const canManageAssignments = user?.role === 'admin' || user?.role === 'hr';
+  const shouldFetchActionDependencies = isOpen && canManageAssignments;
+
+  const { data: jobs } = useFetchOpenJobsQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
+  const { data: googleCalendarData } = useGetGoogleCalendarConfigQuery(
+    undefined,
+    {
+      skip: !shouldFetchActionDependencies,
+    },
+  );
+  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
+  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
 
   const getInitialJobId = useCallback(() => {
     if (typeof candidate.jobId === 'string') return candidate.jobId;
@@ -138,8 +151,7 @@ export function useCandidateActions({
 
   const jobId = getInitialJobId();
 
-  const shouldFetchInterviewers =
-    user && (user.role === 'admin' || user.role === 'hr');
+  const shouldFetchInterviewers = user && canManageAssignments;
 
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery(undefined, {
@@ -157,7 +169,7 @@ export function useCandidateActions({
 
   const { data: jobLanesData, isLoading: isLoadingLanes } =
     useFetchJobLanesQuery(jobId, {
-      skip: !jobId || !isOpen,
+      skip: !jobId || !shouldFetchActionDependencies,
     });
 
   // Sync checkboxes with initialAction
@@ -824,6 +836,37 @@ export function useCandidateActions({
             organizationId: user?.organizationId as string,
           });
 
+          const teamsMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.teamsMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
+          const processedTeamsMeetingAttachments = await uploadAttachments({
+            attachments: teamsMeetingAttachmentsToProcess,
+            uploadFiles,
+            organizationId: user?.organizationId as string,
+          });
+
           operations.push({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
@@ -843,6 +886,11 @@ export function useCandidateActions({
             zoomMeetingNotes: values.zoomMeetingNotes || '',
             zoomMeetingAttachments: processedZoomMeetingAttachments,
             zoomAdditionalGuests: values.zoomAdditionalGuests || [],
+            scheduleTeamsMeet: values.scheduleTeamsMeet || false,
+            teamsMeetDuration: values.teamsMeetDuration || 30,
+            teamsMeetingNotes: values.teamsMeetingNotes || '',
+            teamsMeetingAttachments: processedTeamsMeetingAttachments,
+            teamsAdditionalGuests: values.teamsAdditionalGuests || [],
           });
         }
 
@@ -1388,7 +1436,10 @@ export function useCandidateActions({
                   : undefined,
             }
           : undefined;
-
+        const previousInterviewerEmail =
+          typeof candidate.assignment?.interviewerId === 'object'
+            ? (candidate.assignment.interviewerId?.email ?? undefined)
+            : undefined;
         try {
           await sendUnassignEmail({
             name: result.name,
@@ -1398,6 +1449,7 @@ export function useCandidateActions({
             dateTime: new Date().toISOString(),
             status: result.status || candidate.status,
             feedback,
+            previousInterviewerEmail,
           }).unwrap();
         } catch (_emailError) {
           /* ignore */

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { encryptProviderKeys } from '@/lib/encryption';
+import type { CaptchaConfig } from '@/lib/encryption';
 import {
   MAX_LENGTHS,
   validateQueryParams,
@@ -124,13 +125,8 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const {
-      enableCaptcha,
-      captchaType,
-      captchaVariant,
-      siteKey,
-      secretKey,
-    } = body;
+    const { enableCaptcha, captchaType, captchaVariant, siteKey, secretKey } =
+      body;
 
     if (enableCaptcha && (!siteKey || !secretKey)) {
       return NextResponse.json(
@@ -168,15 +164,17 @@ export async function PUT(req: NextRequest) {
     }
 
     // Encrypt before saving
+    const captchaPayload: CaptchaConfig = {
+      enableCaptcha: enableCaptcha || false,
+      captchaType: captchaType || 'v2',
+      captchaVariant: captchaVariant || 'checkbox',
+      siteKey: siteKey || '',
+      secretKey: secretKey || '',
+    };
+
     const encryptedProviders = encryptProviderKeys(
       {
-        captcha: {
-          enableCaptcha: enableCaptcha || false,
-          captchaType: captchaType || 'v2',
-          captchaVariant: captchaVariant || 'checkbox',
-          siteKey: siteKey || '',
-          secretKey: secretKey || '',
-        },
+        captcha: captchaPayload,
       },
       orgId,
     );

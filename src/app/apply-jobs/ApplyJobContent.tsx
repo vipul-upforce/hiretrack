@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFetchOpenJobQuery } from '@/lib/features/job/jobApi';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -29,6 +29,7 @@ import { ErrorState } from './components/error-state';
 import JobModal from './JobModal';
 import {
   buildEmbedUrlWithJobId,
+  getApplyJobsBasePath,
   useShouldRedirectToEmbedOnJobClick,
 } from './utils/embed-redirect';
 
@@ -68,6 +69,8 @@ export default function ApplyJobsContent({
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isModalOpen, setIsJobModalOpen] = useState(false);
   const [appliedApplications, setAppliedApplications] = useState<string[]>([]);
+  /** Prevents auto-open effect from re-opening the modal right after user closed it (URL update is async). */
+  const skipAutoOpenAfterCloseRef = useRef(false);
 
   const { data: orgResponse, isLoading: isOrgLoading } =
     useFetchOrgQuery(undefined);
@@ -358,7 +361,12 @@ export default function ApplyJobsContent({
   /** Auto-open job modal when jobId is present in URL (deep link from cross-origin redirect) */
   const jobIdFromUrl = searchParams?.get('jobId');
   useEffect(() => {
-    if (!jobIdFromUrl || !jobs?.length || isModalOpen) return;
+    if (!jobIdFromUrl) {
+      skipAutoOpenAfterCloseRef.current = false;
+      return;
+    }
+    if (skipAutoOpenAfterCloseRef.current || !jobs?.length || isModalOpen)
+      return;
     const job = jobs.find((j) => j._id === jobIdFromUrl);
     if (job) {
       setSelectedJob(job);
@@ -392,17 +400,13 @@ export default function ApplyJobsContent({
   };
 
   const handleCloseJobModal = () => {
+    const hadJobIdInUrl = !!searchParams?.get('jobId');
+    if (hadJobIdInUrl && typeof window !== 'undefined') {
+      skipAutoOpenAfterCloseRef.current = true;
+      router.replace(getApplyJobsBasePath(), { scroll: false });
+    }
     setIsJobModalOpen(false);
     setSelectedJob(null);
-    if (searchParams?.get('jobId') && typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      params.delete('jobId');
-      const query = params.toString();
-      const path = query ? `/apply-jobs?${query}` : '/apply-jobs';
-      router.replace(path, { scroll: false });
-
-    }
-
   };
 
   const handleLogout = async () => {

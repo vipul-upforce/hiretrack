@@ -252,7 +252,7 @@ export const useAssignCandidate = ({
             : candidate.remarks,
       };
       const result = await updateCandidate(updatedCandidate).unwrap();
-      
+
       // Update local state with the result - no need to refetch individual candidate
       onUpdate(result);
       onOpenChange(false);
@@ -270,6 +270,10 @@ export const useAssignCandidate = ({
         typeof candidate.assignment?.interviewerId === 'object'
           ? Object(candidate.assignment.interviewerId?._id)
           : null;
+      const previousInterviewerEmail =
+        typeof candidate.assignment?.interviewerId === 'object'
+          ? (candidate.assignment.interviewerId?.email ?? undefined)
+          : undefined;
       const newHistoryEntry: ICandidateHistory = {
         dateTime: new Date().toISOString(),
         currentInterviewer: null,
@@ -294,6 +298,7 @@ export const useAssignCandidate = ({
         dateTime: new Date().toISOString(),
         status: candidate?.status,
         feedback: newRemarkObj,
+        previousInterviewerEmail,
       });
       toast({
         title: 'Success',

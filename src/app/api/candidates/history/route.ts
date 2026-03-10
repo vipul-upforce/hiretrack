@@ -449,7 +449,16 @@ export async function PUT(request: NextRequest) {
         const remarkFor = candidateData?.name || '';
         const remarkAdder = userData.name;
         const rating = data.newEntry?.remark?.rating || null;
-        const candidateProfileLink = `${request.headers.get('origin')}/candidate/${data.candidateId}`;
+        const origin = request.headers.get('origin') || '';
+        const jobIdForLink =
+          typeof data.jobId === 'string' && data.jobId !== ''
+            ? data.jobId
+            : data.jobId?._id?.toString?.() || null;
+        // Email is sent to admin/hr only → use job page link (not /candidate for interviewer)
+        const candidateProfileLink =
+          jobIdForLink && origin
+            ? `${origin}/dashboard/jobs/${jobIdForLink}?candidateId=${data.candidateId}`
+            : `${origin}/candidate/${data.candidateId}`;
         const organizationName = userData.organizationInfo?.name || 'HireTrack';
         const emailList = (users || []).map((user) => user.email);
         await sendRemarkNotificationWithMentions(

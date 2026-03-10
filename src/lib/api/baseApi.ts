@@ -43,7 +43,7 @@ function isPublicEndpoint(url: string, method?: string): boolean {
   if (typeof url !== 'string') return false;
 
   const normalizedMethod = method?.toUpperCase();
-  
+
   // Remove query params and normalize trailing slashes for comparison
   const normalizeUrl = (urlStr: string) => {
     const withoutQuery = urlStr.split('?')[0];
@@ -51,14 +51,14 @@ function isPublicEndpoint(url: string, method?: string): boolean {
       ? withoutQuery.slice(0, -1)
       : withoutQuery;
   };
-  
+
   const normalizedRequestUrl = normalizeUrl(url);
 
   return PUBLIC_API_PATTERNS.some((pattern) => {
     // Handle object-based patterns with method restrictions
     if (typeof pattern === 'object') {
       const normalizedPatternUrl = normalizeUrl(pattern.url);
-      
+
       // Exact match only - prevents sub-paths from matching
       if (normalizedRequestUrl !== normalizedPatternUrl) {
         return false;
@@ -144,9 +144,14 @@ export async function refreshAccessToken(
           throw new Error('License validation failed');
         }
 
-        // If refresh fails, redirect to login
-        if (typeof window !== 'undefined' || response.status === 401) {
-          window.location.href = '/auth/login';
+        // If refresh fails, redirect to login and preserve current path + query for post-login redirect
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname + window.location.search;
+          const loginUrl =
+            path && path !== '/auth/login'
+              ? `/auth/login?redirect=${encodeURIComponent(path)}`
+              : '/auth/login';
+          window.location.href = loginUrl;
         }
         throw new Error('Failed to refresh token');
       }

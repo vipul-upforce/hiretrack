@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { resolveSentByToObjectId } from '@/lib/utils/userResolution';
+import { getCandidateDetailsPageUrl } from '@/lib/notifications/email/smartNotificationService';
 import { createPendingEmailHistory } from './emailHistory';
 import {
   scheduleEmail,
@@ -69,8 +70,12 @@ export async function handleInterviewAssignment(req: NextRequest) {
     });
   }
 
-  const candidateDetailsPage = `${req.headers.get('origin')}/candidate/${id}`;
-  const dashboardLink = `${req.headers.get('origin')}/dashboard`;
+  const origin = req.headers.get('origin') || '';
+  const jobIdForLink =
+    typeof jobId === 'string' && jobId !== ''
+      ? jobId
+      : jobId?.toString?.() || null;
+  const dashboardLink = origin ? `${origin}/dashboard` : null;
 
   const userData = await getAuthenticatedUser(req);
   if (!userData) {
@@ -107,8 +112,8 @@ export async function handleInterviewAssignment(req: NextRequest) {
     throw new Error('Database not connected');
   }
 
-  // Optimize: Fetch users and settings in parallel
-  const [hrUsers, settings] = await Promise.all([
+  // Optimize: Fetch users, settings, and recipient (for role-based link) in parallel
+  const [hrUsers, settings, recipientUser] = await Promise.all([
     User.find({
       organizationId: new mongoose.Types.ObjectId(organizationId),
       role: { $in: ['hr', 'admin'] },
@@ -125,6 +130,13 @@ export async function handleInterviewAssignment(req: NextRequest) {
       )
       .lean()
       .exec(),
+    User.findOne({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      email,
+    })
+      .select('role')
+      .lean()
+      .exec(),
   ]);
 
   if (!settings || !settings.mailConfig) {
@@ -133,6 +145,16 @@ export async function handleInterviewAssignment(req: NextRequest) {
       { status: 500 },
     );
   }
+
+  // Role-based candidate URL: interviewer → /candidate/:id; admin/hr → /dashboard/jobs/:jobId?candidateId=:id
+  const linkKind: 'dashboard' | 'candidate' =
+    recipientUser?.role === 'interviewer' ? 'candidate' : 'dashboard';
+  const candidateDetailsPage = getCandidateDetailsPageUrl(
+    origin,
+    id,
+    jobIdForLink,
+    linkKind,
+  );
 
   const fromEmail = getFromEmail(settings);
   const emailList = hrUsers.map((user) => user.email);
@@ -165,7 +187,7 @@ export async function handleInterviewAssignment(req: NextRequest) {
     sentByName: userData?.name || 'HireTrack System',
     candidateId: id,
     jobId,
-    dashboardLink,
+    dashboardLink: dashboardLink || '',
   };
 
   if (immediate) {

@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { DeleteDialog } from '@/components/ui/specialized-dialogs';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
 import { AlertCircle, Edit, Plus, Settings2, Trash } from 'lucide-react';
 import { CustomField } from '@/Custom_Fields/Types/CustomField';
@@ -13,6 +14,7 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [fieldToDelete, setFieldToDelete] = useState<CustomField | null>(null);
 
   // Get job-specific candidate fields
   const jobSpecificFields = useMemo(() => {
@@ -50,9 +52,10 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
     setIsFormOpen(true);
   };
 
-  const handleDeleteField = (fieldId: string) => {
-    if (candidateFormId) {
-      handleDeleteCustomField(fieldId, candidateFormId);
+  const handleConfirmDeleteField = () => {
+    if (fieldToDelete && candidateFormId) {
+      handleDeleteCustomField(fieldToDelete.id, candidateFormId);
+      setFieldToDelete(null);
     }
   };
 
@@ -133,7 +136,7 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleDeleteField(field.id)}
+                      onClick={() => setFieldToDelete(field)}
                       className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                     >
                       <Trash className="h-4 w-4" />
@@ -157,6 +160,14 @@ export default function JobSpecificCustomFields({ jobId }: { jobId: string }) {
           isEditMode={isEditMode}
         />
       )}
+
+      <DeleteDialog
+        isOpen={!!fieldToDelete}
+        onClose={() => setFieldToDelete(null)}
+        onConfirm={handleConfirmDeleteField}
+        itemName={fieldToDelete ? fieldToDelete.label.split(' |||||(')[0] : ''}
+        itemType="Meta Field"
+      />
     </div>
   );
 }

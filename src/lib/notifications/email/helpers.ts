@@ -35,6 +35,45 @@ export async function getCommonEmailVariables(organizationId: string): Promise<{
   };
 }
 
+/**
+ * Returns the correct CTA URL for email templates based on recipient role.
+ * - Admin/HR: job page (optionally with candidateId).
+ * - Interviewer: candidate page only (no access to /dashboard/jobs).
+ *
+ * @param baseUrl - App base URL (e.g. from getCommonEmailVariables)
+ * @param role - User role: 'admin' | 'hr' | 'interviewer'
+ * @param options - jobId and/or candidateId for building the path
+ */
+
+/**
+ * Returns the path-only action URL for in-app notifications (no base URL).
+ * Use when storing actionUrl in notification records.
+ */
+export function getActionPathForRole(
+  role: string,
+  options: { jobId?: string; candidateId?: string },
+): string {
+  const { jobId, candidateId } = options;
+  const isAdminHr = role === 'admin' || role === 'hr';
+
+  if (candidateId && !isAdminHr) {
+    return `/candidate/${candidateId}`;
+  }
+  if (jobId) {
+    return candidateId
+      ? `/dashboard/jobs/${jobId}?candidateId=${candidateId}`
+      : `/dashboard/jobs/${jobId}`;
+  }
+  return '/dashboard';
+}
+export function getEmailActionUrl(
+  baseUrl: string,
+  role: string,
+  options: { jobId?: string; candidateId?: string },
+): string {
+  const path = getActionPathForRole(role, options);
+  return path.startsWith('http') ? path : `${baseUrl}${path}`;
+}
 export interface EmailHistoryData {
   organizationId: string;
   sentBy: string;

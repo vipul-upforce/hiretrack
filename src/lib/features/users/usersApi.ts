@@ -24,6 +24,11 @@ export const usersApi = baseApi.injectEndpoints({
       query: () => '/users',
       providesTags: ['Users'],
     }),
+    getUsersByOrganization: builder.query<User[] | { users: User[] }, string>({
+      query: (organizationId) =>
+        `/users?organizationId=${encodeURIComponent(organizationId)}`,
+      providesTags: ['Users'],
+    }),
     getUserById: builder.query<User, string>({
       query: (id) => `/users/${id}`,
       providesTags: ['Users'],
@@ -49,6 +54,7 @@ export const usersApi = baseApi.injectEndpoints({
 
 export const {
   useGetUsersQuery,
+  useGetUsersByOrganizationQuery,
   useGetUserByIdQuery,
   useDeleteUserMutation,
   useUpdateUserMutation,

@@ -71,6 +71,13 @@ export async function runBulkArchive(
           previousInterviewer: null,
           currentInterviewer: null,
           assignmentBy: user?.id ?? '',
+          note: {
+            description: '',
+            date: dateTime,
+            rating: 0,
+            userId: null,
+          },
+          attachments: [],
         };
 
         return {
@@ -110,7 +117,7 @@ export async function runBulkArchive(
       failedCount,
       skippedCount,
       candidatesToBroadcast:
-        candidatesToBroadcast as BulkUpdateResult['candidatesToBroadcast'],
+        candidatesToBroadcast as unknown as BulkUpdateResult['candidatesToBroadcast'],
       message: `Successfully ${action === 'archive' ? 'archived' : 'unarchived'} ${candidatesToBroadcast.length} candidate(s)`,
     };
   } catch (err) {

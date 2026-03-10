@@ -146,7 +146,11 @@ export class AIEvaluationService {
   private static getEvaluationConfig(
     settings: ISettings | Partial<ISettings>,
   ): IEvaluationConfig {
-    return settings.evaluationConfig || DEFAULT_EVALUATION_CONFIG;
+    const fromSettings = settings.evaluationConfig;
+    return {
+      ...DEFAULT_EVALUATION_CONFIG,
+      ...(fromSettings && typeof fromSettings === 'object' ? fromSettings : {}),
+    };
   }
 
   /**
