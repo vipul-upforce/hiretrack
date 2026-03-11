@@ -358,6 +358,7 @@ export async function PUT(
     };
 
     let assignmentCompletedFollowUp = null;
+    const assignmentWasCleared = 'assignment' in data && data.assignment === null;
 
     if ('assignment' in data) {
       if (data.assignment === null) {
@@ -1166,19 +1167,20 @@ export async function PUT(
         organizationId,
       );
 
-      // Fire-and-forget broadcast - errors handled internally
-      broadcastCandidateUpdate({
+      const candidateForBroadcast = {
         ...updatedCandidate,
+        ...(assignmentWasCleared ? { assignment: null } : {}),
         history: candidateHistoryPopulated?.history,
         duplicateCount,
-      }).catch((error) => {
+      };
+
+      // Fire-and-forget broadcast - errors handled internally
+      broadcastCandidateUpdate(candidateForBroadcast).catch((error) => {
         logger.error({ error }, 'Failed to broadcast candidate update');
       });
 
       return NextResponse.json({
-        ...updatedCandidate,
-        history: candidateHistoryPopulated?.history,
-        duplicateCount,
+        ...candidateForBroadcast,
       });
     }
 

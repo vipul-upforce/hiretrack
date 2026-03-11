@@ -11,6 +11,8 @@ import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialog
 import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
 import { UnifiedCandidateActionsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/unified-candidate-actions-dialog';
 import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import { toast } from '@/hooks/use-toast';
+import { DuplicateCandidatesDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/DuplicateCandidatesDialog';
 import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import { toast } from '@/hooks/use-toast';
@@ -174,6 +176,21 @@ export function SearchResults({
     ],
   );
 
+  const handleViewDuplicateDetails = useCallback((duplicate: Candidate) => {
+    // To solve this correctly: close all dialogs first, then manually open for the selected candidate
+    logic.setIsDuplicateDialogOpen(false);
+    logic.setIsDialogOpen(false);
+
+    // Clear the current selection to force a clean reload in the details dialog
+    logic.setSelectedCandidate(null);
+
+    // In next tick, open the new candidate
+    setTimeout(() => {
+      logic.setSelectedCandidate(duplicate);
+      logic.setIsDialogOpen(true);
+    }, 100);
+  }, [logic]);
+
   if (isLoading) {
     return <SearchResultsSkeletonLoader />;
   }
@@ -232,6 +249,7 @@ export function SearchResults({
                 onDelete={logic.handleDelete}
                 onAddRemark={logic.handleAddRemark}
                 onJobClick={logic.handleJobClick}
+                onOpenDuplicateDialog={logic.handleOpenDuplicates}
               />
             </TableBody>
           </Table>
@@ -264,6 +282,7 @@ export function SearchResults({
           onValidateStatusChange={checklistValidation.onValidateStatusChange}
           onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
           onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
+          onViewDetails={handleViewDuplicateDetails}
         />
       )}
 
@@ -402,6 +421,15 @@ export function SearchResults({
             checklistValidation.setPendingStatusAfterChecklist(null);
             checklistValidation.setPendingIncomingChecklistAfterStatus(null);
           }}
+        />
+      )}
+
+      {logic.isDuplicateDialogOpen && logic.candidateToViewDuplicates && (
+        <DuplicateCandidatesDialog
+          candidate={logic.candidateToViewDuplicates}
+          isOpen={logic.isDuplicateDialogOpen}
+          onOpenChange={logic.setIsDuplicateDialogOpen}
+          onViewDetails={handleViewDuplicateDetails}
         />
       )}
     </>

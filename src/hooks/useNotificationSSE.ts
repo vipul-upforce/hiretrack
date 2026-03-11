@@ -388,6 +388,7 @@ export function useNotificationSSE(
 
   const handleCandidateUpdate = useCallback(
     (updatedCandidate: Candidate) => {
+      console.log('Received candidate update via SSE:', updatedCandidate);
       const roleFilteredCandidate =
         filterSensitiveRedFlagsForInterviewer<Candidate>(
           updatedCandidate,
@@ -399,9 +400,21 @@ export function useNotificationSSE(
           (c) => c._id === roleFilteredCandidate._id,
         );
         if (index >= 0) {
+          // Merge incoming partial update with existing candidate data
+          // CRITICAL: Preserve duplicateCount if the incoming update has it as 0/undefined
+          // but the existing data has a value > 0.
+          const mergedCandidate = {
+            ...prev[index],
+            ...roleFilteredCandidate,
+            duplicateCount:
+              roleFilteredCandidate.duplicateCount ||
+              prev[index].duplicateCount ||
+              0,
+          };
+          
           return [
             ...prev.slice(0, index),
-            roleFilteredCandidate,
+            mergedCandidate,
             ...prev.slice(index + 1),
           ];
         }
@@ -420,11 +433,31 @@ export function useNotificationSSE(
         );
 
       setCandidates((prev: Candidate[]) => {
-        const updatedIds = new Set(
-          roleFilteredCandidates.map((c: Candidate) => c._id),
+        const updatedCandidatesMap = new Map(
+          roleFilteredCandidates.map((c: Candidate) => [c._id, c]),
         );
-        const filtered = prev.filter((c) => !updatedIds.has(c._id));
-        return [...filtered, ...roleFilteredCandidates];
+
+        // Map over previous candidates and merge if updated, or keep as is
+        const updated = prev.map((existing) => {
+          const update = updatedCandidatesMap.get(existing._id);
+          if (update) {
+            // Merge partial update with existing data
+            // CRITICAL: Preserve duplicateCount if the update has it as 0/undefined
+            const merged = { 
+              ...existing, 
+              ...update,
+              duplicateCount: update.duplicateCount || existing.duplicateCount || 0
+            };
+            updatedCandidatesMap.delete(existing._id); // Remove from map so we know it's handled
+            return merged;
+          }
+          return existing;
+        });
+
+        // Any remaining items in the map are new candidates
+        const newCandidates = Array.from(updatedCandidatesMap.values());
+
+        return [...updated, ...newCandidates];
       });
     },
     [userRole],

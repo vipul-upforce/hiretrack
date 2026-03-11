@@ -21,6 +21,7 @@ import { useDashboardEffects } from './hooks/useDashboardEffects';
 import { useDashboardNotifications } from './hooks/useDashboardNotifications';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardContent } from './components/DashboardContent';
+import { HrAssignmentsSection } from './components/HrAssignmentsSection';
 import { isToday, isThisWeek } from './utils/dateHelpers';
 import ChecklistRemarksDialog from './jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
@@ -240,6 +241,9 @@ export default function DashboardPage() {
   const shouldShowAssignments = user?.role === 'admin' || user?.role === 'hr';
   const isInterviewer = user?.role === 'interviewer';
   const showRecentActivities = user?.role === 'admin' || user?.role === 'hr';
+  const isHr = user?.role === 'hr';
+  const shouldShowHrSection = isHr && state.isHrSectionEnabled;
+  const shouldRenderHrSection = shouldShowHrSection && !!user?.id;
 
   const interviewerAssignments = state.assignments?.filter((assignment) =>
     isInterviewer
@@ -311,6 +315,9 @@ export default function DashboardPage() {
         userRole={user?.role}
         sortConfig={state.sortConfig}
         setSortConfig={state.setSortConfig}
+        showHrSectionToggle={isHr}
+        isHrSectionEnabled={state.isHrSectionEnabled}
+        onToggleHrSection={state.setIsHrSectionEnabled}
       />
 
       <div className="mt-4 flex min-h-0 flex-1 gap-4 overflow-hidden px-4 pb-4">
@@ -332,6 +339,20 @@ export default function DashboardPage() {
           isActivitiesSidebarOpen={state.isActivitiesSidebarOpen}
           setAssignments={state.setAssignments}
           onCandidateCardClick={handleCandidateCardClick}
+          prependContent={
+            shouldRenderHrSection ? (
+              <HrAssignmentsSection
+                itemsPerPage={itemsPerPage}
+                filterText={state.filterText}
+                sortConfig={state.sortConfig}
+                sseCandidates={sseCandidates || []}
+                user={user}
+                scrollContainerRef={state.scrollContainerRef}
+                isActivitiesSidebarOpen={state.isActivitiesSidebarOpen}
+                onCandidateCardClick={handleCandidateCardClick}
+              />
+            ) : null
+          }
         />
 
         {showRecentActivities && state.isActivitiesSidebarOpen && (
@@ -351,11 +372,24 @@ export default function DashboardPage() {
         candidate={state.selectedCandidate}
         isOpen={state.isCandidateDialogOpen}
         onOpenChange={state.setIsCandidateDialogOpen}
+        onViewDetails={(candidate) => {
+          // Manual close and reopen to ensure fresh instance and avoid state mixed up
+          state.setIsCandidateDialogOpen(false);
+          state.setSelectedCandidate(null);
+
+          setTimeout(() => {
+            state.setSelectedCandidate(candidate);
+            state.setIsCandidateDialogOpen(true);
+          }, 100);
+        }}
         onUpdate={(updatedCandidate) => {
           // Update local state with the updated candidate instead of refetching
-          // The mutation already returns the updated candidate, so no need to refetch
           if (updatedCandidate && state.selectedCandidate?._id === updatedCandidate._id) {
-            state.setSelectedCandidate(updatedCandidate);
+            state.setSelectedCandidate((prev) => 
+              prev?._id === updatedCandidate._id 
+                ? { ...prev, ...updatedCandidate } 
+                : updatedCandidate
+            );
           }
         }}
         hideEditButton={user?.role === 'interviewer'}

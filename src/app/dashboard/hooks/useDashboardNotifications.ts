@@ -47,8 +47,14 @@ export function useDashboardNotifications({
         try {
           const result = await fetchCandidateById(notification.relatedId);
           if (result.data) {
-            setSelectedCandidate(result.data);
-            setIsCandidateDialogOpen(true);
+            // Manual close and reopen to ensure fresh instance
+            setIsCandidateDialogOpen(false);
+            setSelectedCandidate(null);
+
+            setTimeout(() => {
+              setSelectedCandidate(result.data as Candidate);
+              setIsCandidateDialogOpen(true);
+            }, 100);
             return;
           }
         } catch (error) {

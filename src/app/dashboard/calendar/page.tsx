@@ -1,6 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -101,6 +102,7 @@ export default function CalendarPage() {
     selectedEvent,
     isDetailsOpen,
     setIsDetailsOpen,
+    setSelectedEvent,
     calendarRef,
     searchText,
     setSearchText,
@@ -126,6 +128,54 @@ export default function CalendarPage() {
     handleDatesSet,
     handleUpdate,
   } = useCalendar();
+
+  const candidateForDialog = useMemo(() => {
+    if (!selectedEvent) return null;
+
+    if ('extendedProps' in selectedEvent) {
+      const { candidate } = selectedEvent.extendedProps;
+      return {
+        ...candidate,
+        jobId: {
+          _id:
+            typeof candidate.jobId === 'string'
+              ? candidate.jobId
+              : candidate.jobId?._id || '',
+          title:
+            candidate.jobDetails?.title ||
+            (typeof candidate.jobId === 'object' && candidate.jobId !== null
+              ? candidate.jobId.title
+              : '') ||
+            '',
+          description:
+            candidate.jobDetails?.description ||
+            (typeof candidate.jobId === 'object' && candidate.jobId !== null
+              ? candidate.jobId.description
+              : '') ||
+            '',
+          skills:
+            typeof candidate.jobId === 'object' && candidate.jobId !== null
+              ? candidate.jobId.skills || []
+              : [],
+        },
+        status: candidate.status || 'applied',
+        assignment: {
+          ...candidate.assignment,
+          interviewerId: candidate.assignment?.interviewerId || null,
+          time:
+            selectedEvent.start?.toISOString() ||
+            candidate.assignment?.time ||
+            new Date().toISOString(),
+          assignedAt:
+            candidate.assignment?.assignedAt || new Date().toISOString(),
+          googleMeet: candidate.assignment?.googleMeet || undefined,
+          zoomMeet: candidate.assignment?.zoomMeet || undefined,
+        } as Assignment,
+      } as unknown as Candidate;
+    }
+
+    return selectedEvent as Candidate;
+  }, [selectedEvent]);
 
   // Only show skeleton on INITIAL load, never on navigation
   if (isInitialLoading) {
@@ -411,67 +461,23 @@ export default function CalendarPage() {
       </div>
 
       {/* Candidate Dialog */}
-      {selectedEvent && 'extendedProps' in selectedEvent && (
+      {candidateForDialog && (
         <CandidateDetailsDialog
           isAssigning={false}
           setIsAssigning={() => { }}
-          candidate={
-            {
-              ...selectedEvent.extendedProps.candidate,
-              jobId: {
-                _id:
-                  typeof selectedEvent.extendedProps.candidate.jobId ===
-                    'string'
-                    ? selectedEvent.extendedProps.candidate.jobId
-                    : selectedEvent.extendedProps.candidate.jobId?._id || '',
-                title:
-                  selectedEvent.extendedProps.candidate.jobDetails?.title ||
-                  (typeof selectedEvent.extendedProps.candidate.jobId ===
-                    'object' &&
-                    selectedEvent.extendedProps.candidate.jobId !== null
-                    ? selectedEvent.extendedProps.candidate.jobId.title
-                    : '') ||
-                  '',
-                description:
-                  selectedEvent.extendedProps.candidate.jobDetails
-                    ?.description ||
-                  (typeof selectedEvent.extendedProps.candidate.jobId ===
-                    'object' &&
-                    selectedEvent.extendedProps.candidate.jobId !== null
-                    ? selectedEvent.extendedProps.candidate.jobId.description
-                    : '') ||
-                  '',
-                skills:
-                  typeof selectedEvent.extendedProps.candidate.jobId ===
-                    'object' &&
-                    selectedEvent.extendedProps.candidate.jobId !== null
-                    ? selectedEvent.extendedProps.candidate.jobId.skills || []
-                    : [],
-              },
-              status: selectedEvent.extendedProps.candidate.status || 'applied',
-              assignment: {
-                ...selectedEvent.extendedProps.candidate.assignment,
-                interviewerId:
-                  selectedEvent.extendedProps.candidate.assignment
-                    ?.interviewerId || null,
-                time:
-                  selectedEvent.start?.toISOString() ||
-                  selectedEvent.extendedProps.candidate.assignment?.time ||
-                  new Date().toISOString(),
-                assignedAt:
-                  selectedEvent.extendedProps.candidate.assignment
-                    ?.assignedAt || new Date().toISOString(),
-                googleMeet:
-                  selectedEvent.extendedProps.candidate.assignment
-                    ?.googleMeet || undefined,
-                zoomMeet:
-                  selectedEvent.extendedProps.candidate.assignment
-                    ?.zoomMeet || undefined,
-              } as Assignment,
-            } as unknown as Candidate
-          }
+          candidate={candidateForDialog}
           isOpen={isDetailsOpen}
           onOpenChange={setIsDetailsOpen}
+          onViewDetails={(nextCandidate) => {
+            // Manual close and reopen to ensure fresh instance
+            setIsDetailsOpen(false);
+            setSelectedEvent(null);
+
+            setTimeout(() => {
+              setSelectedEvent(nextCandidate);
+              setIsDetailsOpen(true);
+            }, 100);
+          }}
           onUpdate={handleUpdate}
           refetchAssignment={handleUpdate}
           hideEditButton

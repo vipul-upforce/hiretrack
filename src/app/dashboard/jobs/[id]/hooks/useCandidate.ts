@@ -1335,7 +1335,14 @@ export const useCandidate = ({
 
   const handleCandidateUpdate = (updatedCandidate: Candidate) => {
     if (selectedCandidate?._id === updatedCandidate._id) {
-      setSelectedCandidate(updatedCandidate);
+      setSelectedCandidate({
+        ...selectedCandidate,
+        ...updatedCandidate,
+        duplicateCount:
+          updatedCandidate.duplicateCount ||
+          selectedCandidate.duplicateCount ||
+          0,
+      });
     }
 
     setColumns((prevColumns) => {
@@ -1352,20 +1359,47 @@ export const useCandidate = ({
         return prevColumns;
       }
 
-      return prevColumns.map((column) => ({
-        ...column,
-        candidates:
-          column.id === updatedCandidate.status
-            ? [
-                updatedCandidate,
-                ...column.candidates.filter(
-                  (candidate) => candidate._id !== updatedCandidate._id,
-                ),
-              ]
-            : column.candidates.filter(
+      return prevColumns.map((column) => {
+        const isTarget = column.id === updatedCandidate.status;
+
+        // Find existing candidate anywhere in columns to get its full data
+        let existingCandidate: Candidate | undefined;
+        for (const col of prevColumns) {
+          existingCandidate = col.candidates.find(
+            (c) => c._id === updatedCandidate._id,
+          );
+          if (existingCandidate) break;
+        }
+
+        if (isTarget) {
+          const merged = existingCandidate
+            ? {
+                ...existingCandidate,
+                ...updatedCandidate,
+                duplicateCount:
+                  updatedCandidate.duplicateCount ||
+                  existingCandidate.duplicateCount ||
+                  0,
+              }
+            : updatedCandidate;
+
+          return {
+            ...column,
+            candidates: [
+              merged,
+              ...column.candidates.filter(
                 (candidate) => candidate._id !== updatedCandidate._id,
               ),
-      }));
+            ],
+          };
+        }
+        return {
+          ...column,
+          candidates: column.candidates.filter(
+            (candidate) => candidate._id !== updatedCandidate._id,
+          ),
+        };
+      });
     });
   };
 

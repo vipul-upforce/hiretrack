@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   // Enable experimental features for better performance
   experimental: {
     middlewareClientMaxBodySize: '50mb', // For route handlers processed through middleware
-    proxyClientMaxBodySize: '50mb', // For requests processed through proxy
+    // proxyClientMaxBodySize: '50mb', // For requests processed through proxy
     serverActions: { bodySizeLimit: '50mb' },
     // Enable Turbopack for faster builds
     turbo: {

@@ -131,6 +131,7 @@ export default function JobProgressPage() {
     setIsDetailsOpen,
     openRemarksFor,
     setOpenRemarksFor,
+    openCandidateDetails,
     isAssigning,
     setIsAssigning,
   } = useCandidateState({
@@ -624,6 +625,7 @@ export default function JobProgressPage() {
           onBulkStatusRequiresReason={
             job?.promptForStatusChangeReason ? onBulkStatusRequiresReason : undefined
           }
+          onOpenCandidateDetailsDialog={openCandidateDetails}
         />
       )}
     </div>

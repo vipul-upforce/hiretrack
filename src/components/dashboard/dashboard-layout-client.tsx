@@ -197,6 +197,7 @@ export default function DashboardLayoutClient({
             isOpen={candidateDialog.isOpen}
             onOpenChange={candidateDialog.setIsOpen}
             onUpdate={candidateDialog.refetch}
+            onViewDetails={candidateDialog.onViewDetails}
             hideEditButton={userData?.role === 'interviewer'}
             hideCloseButtons={false}
           />

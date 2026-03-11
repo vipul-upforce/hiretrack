@@ -52,15 +52,22 @@ function ActionItems({
    * We only update local component state (candidate, candidateForDetailsDialog)
    * and update existing candidates in the list (but don't remove them).
    */
-  const updateCandidate = (updatedCandidate: Candidate) => {
+  const updateCandidate = useCallback((updatedCandidate: Candidate) => {
     if (!updatedCandidate?._id) return;
 
-    setCandidate(updatedCandidate);
+    setCandidate((prev) => 
+      prev?._id === updatedCandidate._id 
+        ? { ...prev, ...updatedCandidate } 
+        : updatedCandidate
+    );
 
     // Also update candidateForDetailsDialog if it's currently showing this candidate
-    if (candidateForDetailsDialog?._id === updatedCandidate._id) {
-      setCandidateForDetailsDialog(updatedCandidate);
-    }
+    setCandidateForDetailsDialog((prev) => {
+      if (prev?._id === updatedCandidate._id) {
+        return { ...prev, ...updatedCandidate };
+      }
+      return prev;
+    });
 
     // Check if assignment is null or has null interviewerId
     const hasValidAssignment =
@@ -79,23 +86,20 @@ function ActionItems({
         ),
       );
     }
-    // When assignment is cleared, we intentionally do NOT remove from assignments here.
-    // SSE will send the update and Effect 4 will handle the removal.
-    // This matches how candidate-details-dialog works (and why it doesn't have the bug).
-  };
+  }, [setAssignments]);
 
   // Update assignments list (for dashboard list view)
   // NOTE: This is intentionally a no-op now. When markAsDone is triggered:
   // 1. We don't want to spread stale closure data which could re-add the candidate
   // 2. SSE Effect 4 handles the removal as the single source of truth
   // 3. The functional update pattern ensures we work with latest state
-  const updateAssignments = () => {
+  const updateAssignments = useCallback(() => {
     // Intentionally empty - let SSE handle all assignment list updates
     // to avoid race conditions with stale closure data
-  };
+  }, []);
 
   // Candidate-specific refetch function (only used when we actually need to fetch from server)
-  const refetchCandidate = async () => {
+  const refetchCandidate = useCallback(async () => {
     if (!candidate?._id) return;
 
     try {
@@ -116,7 +120,7 @@ function ActionItems({
         variant: 'destructive',
       });
     }
-  };
+  }, [candidate?._id, triggerRefetchCandidate, updateCandidate]);
 
   const handleApplyDeferredStatus = useCallback(
     (candidateId: string, newStatus: string) =>
@@ -220,7 +224,14 @@ function ActionItems({
     if (assignment) {
       if ('jobDetails' in assignment) {
         setCandidate(assignment as Candidate);
-        setCandidateForDetailsDialog(assignment as Candidate); // Initialize this as well
+        
+        // ONLY update the details candidate if it matches the current assignment ID
+        setCandidateForDetailsDialog((prev) => {
+          if (!prev || prev._id === (assignment as Candidate)._id) {
+            return assignment as Candidate;
+          }
+          return prev;
+        });
       } else {
         const transformedCandidate: Candidate = {
           _id: assignment._id,
@@ -264,7 +275,15 @@ function ActionItems({
           duplicateCount: (assignment as Candidate).duplicateCount || 0,
         };
         setCandidate(transformedCandidate);
-        setCandidateForDetailsDialog(transformedCandidate); // Initialize this as well
+
+        // ONLY update the details candidate if it matches the current assignment ID
+        // This prevents blowing away a duplicate candidate dialog when the main card receives an SSE update
+        setCandidateForDetailsDialog((prev) => {
+          if (!prev || prev._id === transformedCandidate._id) {
+            return transformedCandidate;
+          }
+          return prev;
+        });
       }
     }
   }, [assignment]);
@@ -320,6 +339,16 @@ function ActionItems({
           }}
           onUpdate={setCandidateForDetailsDialog}
           refetchAssignment={refetchCandidate}
+          onViewDetails={(next) => {
+            // Manual close and reopen to ensure fresh instance
+            setIsDetailsOpen(false);
+            setCandidateForDetailsDialog(null);
+            
+            setTimeout(() => {
+              setCandidateForDetailsDialog(next);
+              setIsDetailsOpen(true);
+            }, 100);
+          }}
           onValidateStatusChange={checklistValidation.onValidateStatusChange}
           onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
           onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}

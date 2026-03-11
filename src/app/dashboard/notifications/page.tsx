@@ -37,6 +37,7 @@ export default function NotificationsPage() {
     handleMarkAllAsRead,
     handleNotificationClick,
     handleCandidateUpdate,
+    openCandidateDetails,
   } = useNotificationsPage();
 
   const hasActiveFilters =
@@ -90,6 +91,7 @@ export default function NotificationsPage() {
         candidate={selectedCandidate}
         isOpen={isCandidateDialogOpen}
         onOpenChange={setIsCandidateDialogOpen}
+        onViewDetails={openCandidateDetails}
         onUpdate={handleCandidateUpdate}
         hideEditButton={user?.role === 'interviewer'}
         hideCloseButtons={false}

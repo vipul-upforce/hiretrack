@@ -159,11 +159,9 @@ export function useDashboardEffects({
     bulkSilentRefetchInFlightRef.current = true;
     setCurrentPage(1);
     setHasMoreData(true);
-    fetchAssignmentsRef
-      .current(1, false, { silent: true })
-      .finally(() => {
-        bulkSilentRefetchInFlightRef.current = false;
-      });
+    fetchAssignmentsRef.current(1, false, { silent: true }).finally(() => {
+      bulkSilentRefetchInFlightRef.current = false;
+    });
   }, [
     sseCandidates,
     assignmentsCounts.totalInterviews,
@@ -387,6 +385,8 @@ export function useDashboardEffects({
               customFields: (sseCandidate as Candidate).customFields,
               createdAt: sseCandidate.createdAt,
               updatedAt: sseCandidate.updatedAt,
+              duplicateCount: (sseCandidate as Candidate).duplicateCount 
+                ?? (existingIndex !== -1 ? updatedAssignments[existingIndex].duplicateCount : 0),
             };
 
             if (existingIndex !== -1) {
@@ -466,11 +466,15 @@ export function useDashboardEffects({
             ),
             todaysInterviews: Math.max(
               0,
-              (prev.todaysInterviews || 0) + addedTodayCount - removedTodayCount,
+              (prev.todaysInterviews || 0) +
+                addedTodayCount -
+                removedTodayCount,
             ),
             thisweeksInterviews: Math.max(
               0,
-              (prev.thisweeksInterviews || 0) + addedWeekCount - removedWeekCount,
+              (prev.thisweeksInterviews || 0) +
+                addedWeekCount -
+                removedWeekCount,
             ),
           }));
         }

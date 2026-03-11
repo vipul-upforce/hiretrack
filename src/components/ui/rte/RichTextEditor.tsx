@@ -40,6 +40,43 @@ import {
 } from '../dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
 
+const COLOR_STYLE_PROPERTIES = new Set(['color', '-webkit-text-fill-color']);
+
+function stripPastedTextColors(html: string): string {
+  if (!html) return html;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+
+  doc.body.querySelectorAll<HTMLElement>('*').forEach((element) => {
+    if (element.hasAttribute('color')) {
+      element.removeAttribute('color');
+    }
+
+    const style = element.getAttribute('style');
+    if (!style) return;
+
+    const sanitizedDeclarations = style
+      .split(';')
+      .map((decl) => decl.trim())
+      .filter(Boolean)
+      .filter((decl) => {
+        const [property] = decl.split(':');
+        if (!property) return false;
+        return !COLOR_STYLE_PROPERTIES.has(property.trim().toLowerCase());
+      });
+
+    if (sanitizedDeclarations.length === 0) {
+      element.removeAttribute('style');
+      return;
+    }
+
+    element.setAttribute('style', sanitizedDeclarations.join('; '));
+  });
+
+  return doc.body.innerHTML;
+}
+
 interface RichTextEditorProps {
   value: string;
   onChange: (data: string) => void;
@@ -52,6 +89,7 @@ interface RichTextEditorProps {
   name?: string;
   error?: string;
   touched?: boolean;
+  sanitizePastedTextColor?: boolean;
 }
 
 function RichTextEditor({
@@ -65,6 +103,7 @@ function RichTextEditor({
   id,
   name,
   error,
+  sanitizePastedTextColor = false,
   ...props
 }: RichTextEditorProps) {
   const [currentFont, setCurrentFont] = useState('Default');
@@ -131,6 +170,9 @@ function RichTextEditor({
       }
     },
     editorProps: {
+      transformPastedHTML: sanitizePastedTextColor
+        ? stripPastedTextColors
+        : undefined,
       attributes: {
         class:
           'prose prose-sm sm:prose dark:prose-invert focus:outline-none min-h-[150px] max-w-none p-4',

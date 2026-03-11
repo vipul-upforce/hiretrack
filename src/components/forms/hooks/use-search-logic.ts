@@ -55,6 +55,10 @@ export function useSearchResultsLogic({
   const [candidateToAddFollowUp, setCandidateToAddFollowUp] =
     useState<Candidate | null>(null);
 
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
+  const [candidateToViewDuplicates, setCandidateToViewDuplicates] =
+    useState<Candidate | null>(null);
+
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(
@@ -271,6 +275,11 @@ export function useSearchResultsLogic({
     setIsJobDialogOpen(true);
   }, []);
 
+  const handleOpenDuplicates = useCallback((candidate: Candidate) => {
+    setCandidateToViewDuplicates(candidate);
+    setIsDuplicateDialogOpen(true);
+  }, []);
+
   const handleCandidateUpdate = useCallback(
     (updatedCandidate: Candidate) => {
       if (onCandidateUpdate) onCandidateUpdate(updatedCandidate);
@@ -436,6 +445,10 @@ export function useSearchResultsLogic({
     setIsConfirmDialogOpen,
     confirmDialogConfig,
     isDeleting,
+    isDuplicateDialogOpen,
+    setIsDuplicateDialogOpen,
+    candidateToViewDuplicates,
+    setCandidateToViewDuplicates,
 
     // Handlers
     handleToggleFilter,
@@ -448,6 +461,7 @@ export function useSearchResultsLogic({
     handleAssignInterviewer,
     handleAssignJob,
     handleAddRemark,
+    handleOpenDuplicates,
     handleAddFollowUp,
     handleJobClick,
     handleDelete,

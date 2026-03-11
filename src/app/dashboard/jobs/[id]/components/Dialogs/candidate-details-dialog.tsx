@@ -35,6 +35,7 @@ import { DetailsDialog } from './DetailsDialog';
 import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
 import { CandidateDetailsActions } from './tabs/CandidateDetailsActions';
 import { getJobId } from '../../utils/candidateAccessors';
+import { DuplicateCandidatesDialog } from './DuplicateCandidatesDialog';
 /* eslint-disable max-lines */
 
 export function CandidateDetailsDialog({
@@ -52,6 +53,7 @@ export function CandidateDetailsDialog({
   onDeferStatusToChecklist,
   onOpenChecklistAfterSave,
   onBulkStatusRequiresReason,
+  onViewDetails,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -83,7 +85,21 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate,
   );
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Reset internal states when the candidate ID changes to "forget" the previous candidate
+  useEffect(() => {
+    if (localCandidate?._id) {
+      setActiveTab('overview');
+      setHistoryLoaded(false);
+      setTimeLineItems([]);
+      setIsEditing(false);
+      setIsUnifiedOpen(false);
+      setUnifiedInitialAction(undefined);
+      setIsDuplicateDialogOpen(false);
+    }
+  }, [localCandidate?._id]);
 
   // History loading state
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -166,7 +182,8 @@ export function CandidateDetailsDialog({
 
     const localHistory = localCandidate?.history;
     const candidateHistory = candidate?.history;
-    const sseHistory = (localHistory?.length ? localHistory : candidateHistory) || [];
+    const sseHistory =
+      (localHistory?.length ? localHistory : candidateHistory) || [];
 
     if (!Array.isArray(sseHistory) || sseHistory.length === 0) return;
 
@@ -186,7 +203,12 @@ export function CandidateDetailsDialog({
         (a, b) => new Date(b.dateTime ?? 0).getTime() - new Date(a.dateTime ?? 0).getTime()
       );
     });
-  }, [localCandidate?.history, candidate?.history, localCandidate?._id, candidate?._id]);
+  }, [
+    localCandidate?.history,
+    candidate?.history,
+    localCandidate?._id,
+    candidate?._id,
+  ]);
 
   // Handle History Error
   useEffect(() => {
@@ -371,15 +393,20 @@ export function CandidateDetailsDialog({
     }
   }, [isFollowUpMode, localCandidate]);
 
+
+
   useEffect(() => {
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
 
       if (isSameCandidate && localCandidate) {
-        // Same candidate - merge candidate prop with localCandidate
+        // Same candidate - merge candidate with localCandidate
         // Use candidate.history if it has data (may have SSE updates from parent like calendar)
         // Otherwise keep localCandidate.history (dialog's own SSE updates)
-        const historyToUse = (candidate.history?.length ? candidate.history : localCandidate.history) || [];
+        const historyToUse =
+          (candidate.history?.length
+            ? candidate.history
+            : localCandidate.history) || [];
         const remarksToUse =
           candidate.remarks && candidate.remarks.length > 0
             ? candidate.remarks
@@ -387,32 +414,33 @@ export function CandidateDetailsDialog({
 
         setLocalCandidate({
           ...candidate,
-          assignment: localCandidate.assignment || candidate.assignment,
+          assignment:
+            localCandidate.assignment || candidate.assignment,
           remarks: remarksToUse,
           remarksCount:
             candidate.remarksCount ??
             (Array.isArray(remarksToUse) ? remarksToUse.length : 0),
           resume: candidate.resume ?? localCandidate.resume,
           attachments:
-            candidate.attachments && candidate.attachments.length > 0
+            candidate.attachments &&
+            candidate.attachments.length > 0
               ? candidate.attachments
               : localCandidate.attachments,
           history: historyToUse,
+          duplicateCount:
+            candidate.duplicateCount ?? localCandidate.duplicateCount ?? 0,
         });
       } else {
-        // Different candidate or no localCandidate - use candidate prop as-is
+        // Different candidate or no localCandidate - use incoming candidate as-is
         setLocalCandidate(candidate);
       }
 
       // Only reset history state when candidate ID actually changes
       if (!isSameCandidate) {
         // CRITICAL: Always reset historyLoaded to false so API fetch happens
-        // candidate.history from props may be partial (e.g., from SSE or single job)
-        // The API endpoint merges ALL history documents for complete data
         setHistoryLoaded(false);
 
         // Use candidate.history as initial display data while API loads
-        // But do NOT set historyLoaded = true (API fetch must still happen)
         if (
           candidate.history &&
           Array.isArray(candidate.history) &&
@@ -423,14 +451,13 @@ export function CandidateDetailsDialog({
           setTimeLineItems([]);
         }
       }
-      // For same candidate, don't reset - let SSE merge effect handle updates
     }
   }, [candidate, id, localCandidate?._id]);
 
   // Check if interviewer can access this candidate
   const canInterviewerAccess = () => {
     if (user?.role !== 'interviewer') return true; // Non-interviewers can access
-    const candidateToCheck = candidate || localCandidate;
+    const candidateToCheck = localCandidate;
     if (!candidateToCheck?.assignment?.interviewerId) return false; // No assignment means can't access
 
     const interviewerId =
@@ -473,6 +500,19 @@ export function CandidateDetailsDialog({
       }
       return item;
     });
+  const handleViewDuplicateDetails = (nextCandidate: Candidate) => {
+    // Close duplicates dialog first to avoid overlay issues
+    setIsDuplicateDialogOpen(false);
+
+    // Let parent handle close/reopen to avoid double-close race conditions
+    if (onViewDetails) {
+      onViewDetails(nextCandidate);
+      return;
+    }
+
+    // Fallback: close the dialog if no parent handler is provided
+    onOpenChange(false);
+  };
   const header = (
     <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
       {localCandidate && (
@@ -493,6 +533,7 @@ export function CandidateDetailsDialog({
             setUnifiedInitialAction('assignTo');
             setIsUnifiedOpen(true);
           }}
+          onOpenDuplicateDialog={() => setIsDuplicateDialogOpen(true)}
         />
       )}
     </DialogHeader>
@@ -584,6 +625,9 @@ export function CandidateDetailsDialog({
           setNewRemark('');
           setRemarkRating(null);
           setRemarkRatingHistory(null);
+          if (!e) {
+            setIsDuplicateDialogOpen(false);
+          }
           onOpenChange(e);
         }}
       >
@@ -592,6 +636,14 @@ export function CandidateDetailsDialog({
 
         {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
+      {localCandidate && (
+        <DuplicateCandidatesDialog
+          candidate={localCandidate}
+          isOpen={isDuplicateDialogOpen}
+          onOpenChange={setIsDuplicateDialogOpen}
+          onViewDetails={handleViewDuplicateDetails}
+        />
+      )}
       {localCandidate && isUnifiedOpen && (
         <UnifiedCandidateActionsDialog
           candidate={localCandidate}

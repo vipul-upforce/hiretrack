@@ -152,7 +152,7 @@ export function CandidateCardHeader({
                 <h3 className="max-w-[150px] truncate text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
                   {candidate.name}
                 </h3>
-                {(candidate?.duplicateCount as number) > 1 && (
+                {(user?.role === 'admin' || user?.role === 'hr') && (candidate?.duplicateCount as number) > 1 && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>

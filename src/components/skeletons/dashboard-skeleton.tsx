@@ -7,8 +7,8 @@ export function DashboardSkeleton({ role }: { role: string | null }) {
     <div className="flex h-auto w-full animate-pulse flex-col overflow-y-auto">
       {/* HEADER */}
       <div className="flex-shrink-0 border-b border-gray-200 px-4 py-4 dark:border-gray-700">
-        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
               className="h-20 animate-pulse rounded-lg border bg-muted/50"

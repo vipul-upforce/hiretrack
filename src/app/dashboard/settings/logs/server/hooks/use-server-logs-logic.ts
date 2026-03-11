@@ -87,6 +87,10 @@ export function useServerLogsLogic({
     setSelectedCandidate(null);
   }, []);
 
+  const openCandidateDetails = useCallback((candidate: Candidate) => {
+    setSelectedCandidate(candidate);
+  }, []);
+
   return {
     historyLogs,
     totalHistoryLines,
@@ -103,5 +107,6 @@ export function useServerLogsLogic({
     handleSearchChange,
     handleCandidateModalDetail,
     closeCandidateModal,
+    openCandidateDetails,
   };
 }
