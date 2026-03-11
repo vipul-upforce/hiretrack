@@ -26,6 +26,7 @@ import {
   useChecklistSubmit,
   type UseChecklistSubmitParams,
 } from './hooks/useChecklistSubmit';
+import useMultiSelect from '../../Candidate/candidate-card/hooks/useMultiSelect';
 
 function ChecklistRemarksDialog({
   candidate,
@@ -54,6 +55,7 @@ function ChecklistRemarksDialog({
   const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
   const [applyToRemaining, setApplyToRemaining] = useState(false);
   const hasSeededFromDeferredRef = useRef(false);
+  const { selectedCandidateIds } = useMultiSelect();
 
   const isBulkApplyAll = bulkTotalCount > 0 && Boolean(onApplyToRemaining);
 
@@ -150,9 +152,10 @@ function ChecklistRemarksDialog({
           setRemarkRating(null);
           setRemarkRatingHistory(null);
 
+          // debugger
           if (result.payload && onApplyToRemaining) {
             onApplyToRemaining(result.payload);
-          } else if (result.hasChecklist && onChecklistSuccess && !switchingToIncoming) {
+          } else if (result.hasChecklist && onChecklistSuccess && !switchingToIncoming && selectedCandidateIds.length === 1) {
             onChecklistSuccess(result.candidateId);
           }
           await refetch();

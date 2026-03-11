@@ -34,10 +34,15 @@ function normalizeJobId(value: unknown): string | null {
     if (OBJECT_ID_HEX_REGEX.test(value)) return value;
     if (value.startsWith('{')) {
       try {
-        const parsed = JSON.parse(value) as { _id?: string | { toString?: () => string } };
+        const parsed = JSON.parse(value) as {
+          _id?: string | { toString?: () => string };
+        };
         const id = parsed._id;
         if (typeof id === 'string' && OBJECT_ID_HEX_REGEX.test(id)) return id;
-        if (id != null && typeof (id as { toString?: () => string }).toString === 'function')
+        if (
+          id != null &&
+          typeof (id as { toString?: () => string }).toString === 'function'
+        )
           return (id as { toString: () => string }).toString();
       } catch {
         // ignore parse error
@@ -53,7 +58,11 @@ function normalizeJobId(value: unknown): string | null {
     if (obj._id != null) {
       const id = obj._id;
       if (typeof id === 'string' && OBJECT_ID_HEX_REGEX.test(id)) return id;
-      if (typeof id === 'object' && id !== null && typeof (id as { toString?: () => string }).toString === 'function')
+      if (
+        typeof id === 'object' &&
+        id !== null &&
+        typeof (id as { toString?: () => string }).toString === 'function'
+      )
         return (id as { toString: () => string }).toString();
     }
     if (typeof obj.toString === 'function') {
@@ -129,8 +138,8 @@ export async function GET(
     // Collect all unique jobIds (normalized to 24-char hex) to fetch lane configs
     const jobIds = new Set<string>();
     historyDocuments.forEach((doc) => {
-      const id = normalizeJobId(doc.jobId);
-      if (id) jobIds.add(id);
+      const normalizedJobId = normalizeJobId(doc.jobId);
+      if (normalizedJobId) jobIds.add(normalizedJobId);
     });
 
     // Fetch all relevant lane configs in parallel
@@ -144,7 +153,9 @@ export async function GET(
         .lean()
         .exec();
       laneConfigs.forEach((config) => {
-        const configJobId = normalizeJobId(config.jobId) ?? (typeof config.jobId === 'string' ? config.jobId : null);
+        const configJobId =
+          normalizeJobId(config.jobId) ??
+          (typeof config.jobId === 'string' ? config.jobId : null);
         if (configJobId) laneConfigsMap.set(configJobId, config);
       });
     }

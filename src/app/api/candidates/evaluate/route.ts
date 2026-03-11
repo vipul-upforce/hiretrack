@@ -3,6 +3,7 @@ import connectToDatabase, { Candidate, History, Settings } from '@/lib/mongodb';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
+import { DEFAULT_EVALUATION_CONFIG } from '@/lib/ai-providers/evaluation-constants';
 import { ISettings, IEvaluationConfig } from '@/lib/models/settings';
 import { IHistory, ICandidateHistory } from '@/lib/models/history';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
@@ -137,17 +138,14 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       base64Resume = await fetchResumeAsBase64(normalizedUrl);
     }
 
-    // Validate PDF page count if needed
-    const evaluationConfig: IEvaluationConfig =
-      settingsData.evaluationConfig || {
-        autoEvaluateAllCandidates: false,
-        maxPdfPages: 4,
-        temperature: 0.1,
-        customPrompt: null,
-        useCustomFieldsPrompt: false,
-        customFieldsPrompt: null,
-        selectedCustomFields: [],
-      };
+    // Merge with defaults so enableRedFlagsDetection and other flags are set when DB has partial config
+    const evaluationConfig: IEvaluationConfig = {
+      ...DEFAULT_EVALUATION_CONFIG,
+      ...(settingsData.evaluationConfig &&
+      typeof settingsData.evaluationConfig === 'object'
+        ? settingsData.evaluationConfig
+        : {}),
+    };
 
     await validatePdfPageCount(base64Resume, evaluationConfig);
 
@@ -163,10 +161,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       | undefined;
     const jobData = extractJobDataForEvaluation(candidateJobIdForData);
 
-    // Create settings object with decrypted aiProviders
+    // Create settings object with decrypted aiProviders and merged evaluationConfig
     const settingsForEvaluation: Partial<ISettings> = {
       ...(settingsData || {}),
-      aiProviders, // Override with decrypted version
+      aiProviders,
+      evaluationConfig,
     };
 
     // Convert candidate to ICandidate format for AIEvaluationService

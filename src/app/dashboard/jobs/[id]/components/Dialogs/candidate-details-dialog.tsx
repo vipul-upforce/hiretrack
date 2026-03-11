@@ -49,7 +49,6 @@ export function CandidateDetailsDialog({
   refetchCandidates,
   hideCloseButtons = false,
   isAssigning,
-  setIsAssigning,
   onValidateStatusChange,
   onDeferStatusToChecklist,
   onOpenChecklistAfterSave,
@@ -659,25 +658,25 @@ export function CandidateDetailsDialog({
           onDeferStatusToChecklist={
             onDeferStatusToChecklist
               ? (info, status, next) => {
-                  setIsUnifiedOpen(false);
-                  onDeferStatusToChecklist(info, status, next);
-                }
+                setIsUnifiedOpen(false);
+                onDeferStatusToChecklist(info, status, next);
+              }
               : undefined
           }
           onOpenChecklistAfterSave={
             onOpenChecklistAfterSave
               ? (info) => {
-                  onOpenChecklistAfterSave(info);
-                  setIsUnifiedOpen(false);
-                }
+                onOpenChecklistAfterSave(info);
+                setIsUnifiedOpen(false);
+              }
               : undefined
           }
           onBulkStatusRequiresReason={
             onBulkStatusRequiresReason
               ? (payload) => {
-                  setIsUnifiedOpen(false);
-                  onBulkStatusRequiresReason(payload);
-                }
+                setIsUnifiedOpen(false);
+                onBulkStatusRequiresReason(payload);
+              }
               : undefined
           }
           onSuccess={async () => {

@@ -19,7 +19,13 @@ import {
   ChecklistHistoryResponseItem,
 } from '@/types/checklist';
 
-type FileItem = { id?: string; name: string; url: string; type?: string; size?: number };
+type FileItem = {
+  id?: string;
+  name: string;
+  url: string;
+  type?: string;
+  size?: number;
+};
 
 function parseFiles(files: unknown): FileItem[] {
   if (Array.isArray(files)) {
@@ -27,14 +33,26 @@ function parseFiles(files: unknown): FileItem[] {
       if (typeof item === 'string') {
         try {
           const parsed = JSON.parse(item) as FileItem;
-          return { id: parsed.id ?? '', name: parsed.name, url: parsed.url, type: parsed.type ?? '', size: Number(parsed.size) || 0 };
+          return {
+            id: parsed.id ?? '',
+            name: parsed.name,
+            url: parsed.url,
+            type: parsed.type ?? '',
+            size: Number(parsed.size) || 0,
+          };
         } catch {
           return { id: '', name: item, url: '', type: '', size: 0 };
         }
       }
       if (typeof item === 'object' && item !== null && 'url' in item) {
         const o = item as FileItem;
-        return { id: o.id ?? '', name: o.name, url: o.url, type: o.type ?? '', size: Number(o.size) || 0 };
+        return {
+          id: o.id ?? '',
+          name: o.name,
+          url: o.url,
+          type: o.type ?? '',
+          size: Number(o.size) || 0,
+        };
       }
       return { id: '', name: '', url: '', type: '', size: 0 };
     });
@@ -42,7 +60,15 @@ function parseFiles(files: unknown): FileItem[] {
   if (typeof files === 'string') {
     try {
       const parsed = JSON.parse(files) as FileItem[] | FileItem;
-      return Array.isArray(parsed) ? parsed.map((f) => ({ id: f.id ?? '', name: f.name, url: f.url, type: f.type ?? '', size: Number(f.size) || 0 })) : [parsed];
+      return Array.isArray(parsed)
+        ? parsed.map((f) => ({
+            id: f.id ?? '',
+            name: f.name,
+            url: f.url,
+            type: f.type ?? '',
+            size: Number(f.size) || 0,
+          }))
+        : [parsed];
     } catch {
       return [];
     }
@@ -60,9 +86,12 @@ function normalizeChecklistResponses(
     const files = parseFiles(resp.files);
     out[fieldId] = {
       value: resp.value,
-      fieldLabel: typeof resp.fieldLabel === 'string' ? resp.fieldLabel : fieldId,
+      fieldLabel:
+        typeof resp.fieldLabel === 'string' ? resp.fieldLabel : fieldId,
       fieldType: typeof resp.fieldType === 'string' ? resp.fieldType : 'text',
-      visibleInHistory: Array.isArray(resp.visibleInHistory) ? resp.visibleInHistory : [],
+      visibleInHistory: Array.isArray(resp.visibleInHistory)
+        ? resp.visibleInHistory
+        : [],
       ...(files.length > 0 && { files }),
     } as ChecklistResponse;
   }
@@ -215,9 +244,11 @@ export async function POST(
 
     // Update based on checklist type
     if (checklistType === 'incoming') {
-      laneChecklistData.incoming = checklistData;
+      laneChecklistData.incoming =
+        checklistData as unknown as typeof laneChecklistData.incoming;
     } else {
-      laneChecklistData.outgoing = checklistData;
+      laneChecklistData.outgoing =
+        checklistData as unknown as typeof laneChecklistData.outgoing;
     }
     // Update candidate checklistData via native driver to avoid Mongoose casting (files array)
     const candidateUpdate =
@@ -251,7 +282,15 @@ export async function POST(
               const files = Array.isArray(rawFiles)
                 ? rawFiles
                     .filter(
-                      (f): f is { id?: string; name: string; url: string; type?: string; size?: number } =>
+                      (
+                        f,
+                      ): f is {
+                        id?: string;
+                        name: string;
+                        url: string;
+                        type?: string;
+                        size?: number;
+                      } =>
                         typeof f === 'object' &&
                         f !== null &&
                         'url' in f &&
@@ -317,18 +356,22 @@ export async function POST(
         { $push: { remarks: remarkDoc } },
       );
       // Update in-memory candidate for broadcast so clients receive the new remark
-      candidate.remarks = [...(candidate.remarks || []), historyEntry.remark];
+      candidate.remarks = [
+        ...(candidate.remarks || []),
+        historyEntry.remark,
+      ] as typeof candidate.remarks;
     }
 
     // Update history: use raw collection to avoid Mongoose casting checklistForm.responses.files
     const historyFilter = {
-      jobId:
+      jobId: String(
         typeof candidate?.jobId === 'object' && '_id' in candidate.jobId
           ? candidate?.jobId?._id
           : candidate.jobId,
+      ),
       candidateId: candidate?._id.toString(),
     };
-    await History!.collection.updateOne(
+    await History!.updateOne(
       historyFilter,
       { $push: { history: historyEntry } },
       { upsert: true },

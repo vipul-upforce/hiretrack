@@ -148,11 +148,14 @@ export const uploadAttachments = async ({
   organizationId,
   jobId,
 }: UploadAttachmentsParams): Promise<Attachment[]> => {
-  const uploadArg = organizationId
-    ? { organizationId }
-    : jobId
-      ? { jobId }
-      : null;
+  let uploadArg: { organizationId: string } | { jobId: string } | null;
+  if (organizationId) {
+    uploadArg = { organizationId };
+  } else if (jobId) {
+    uploadArg = { jobId };
+  } else {
+    uploadArg = null;
+  }
 
   if (!uploadArg) {
     throw new Error('Either organizationId or jobId is required for file upload');

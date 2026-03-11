@@ -33,7 +33,7 @@ export function ConnectionStatusCard({
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Connection Status</CardTitle>
-          <Badge variant={isConnected ? 'success' : 'secondary'}>
+          <Badge variant={isConnected ? 'default' : 'secondary'}>
             {isConnected ? 'Connected' : 'Not Connected'}
           </Badge>
         </div>

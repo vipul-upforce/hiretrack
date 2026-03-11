@@ -15,20 +15,20 @@ export const transformAssignmentToEvent = (
   calendarView: CalendarViewType,
 ): CustomCalendarEvent | undefined => {
   const rawTime = candidate?.assignment?.time;
-  
+
   // If no time is set, create an event without start/end dates for "Not Scheduled" section
   // Only skip if there's no assignment at all or no interviewer assigned
   if (!candidate?.assignment) return undefined;
-  
-  const hasInterviewer = candidate.assignment.interviewerId && (
-    typeof candidate.assignment.interviewerId === 'object' 
-      ? candidate.assignment.interviewerId?._id 
-      : candidate.assignment.interviewerId
-  );
-  
+
+  const hasInterviewer =
+    candidate.assignment.interviewerId &&
+    (typeof candidate.assignment.interviewerId === 'object'
+      ? candidate.assignment.interviewerId?._id
+      : candidate.assignment.interviewerId);
+
   // Skip if no interviewer is assigned
   if (!hasInterviewer) return undefined;
-  
+
   // If time is null/undefined, create event without start/end for "Not Scheduled"
   const startTime = rawTime ? new Date(rawTime) : undefined;
   const endTime = startTime ? new Date(startTime.getTime() + 1000) : undefined;
@@ -42,11 +42,14 @@ export const transformAssignmentToEvent = (
   const title = hasGoogleMeet || hasZoomMeet ? `📹 ${baseTitle}` : baseTitle;
 
   const colorIndex = index % eventColors.length;
-  const color = hasGoogleMeet
-    ? { bg: '#3b82f6', border: '#1d4ed8' }
-    : hasZoomMeet
-      ? { bg: '#0ea5e9', border: '#0284c7' }
-      : eventColors[colorIndex];
+  let color: { bg: string; border: string };
+  if (hasGoogleMeet) {
+    color = { bg: '#3b82f6', border: '#1d4ed8' };
+  } else if (hasZoomMeet) {
+    color = { bg: '#0ea5e9', border: '#0284c7' };
+  } else {
+    color = eventColors[colorIndex];
+  }
 
   // Avoid nested ternaries for end and endStr
   let end: Date | undefined;
@@ -127,13 +130,13 @@ export const createSSETransformer =
     // Check if the updated candidate still has a valid assignment
     // If not, return null to close the dialog (handled by useSSE)
     if (!updatedCandidate?.assignment) return null;
-    
-    const hasInterviewer = updatedCandidate.assignment.interviewerId && (
-      typeof updatedCandidate.assignment.interviewerId === 'object' 
-        ? updatedCandidate.assignment.interviewerId?._id 
-        : updatedCandidate.assignment.interviewerId
-    );
-    
+
+    const hasInterviewer =
+      updatedCandidate.assignment.interviewerId &&
+      (typeof updatedCandidate.assignment.interviewerId === 'object'
+        ? updatedCandidate.assignment.interviewerId?._id
+        : updatedCandidate.assignment.interviewerId);
+
     if (!hasInterviewer) return null;
 
     const startTime = updatedCandidate?.assignment?.time

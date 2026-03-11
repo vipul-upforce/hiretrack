@@ -67,12 +67,25 @@ interface RenderFieldProps {
   label: string;
   setFieldValue: (
     field: string,
-    value: string | string[] | boolean | FileData[] | Dayjs,
+    value:
+      | string
+      | string[]
+      | boolean
+      | FileData[]
+      | (File | FileData)[]
+      | Dayjs,
   ) => void;
   type: string;
   values: {
     customFields: {
-      [key: string]: string | number | boolean | FileData[] | Dayjs | string[];
+      [key: string]:
+        | string
+        | number
+        | boolean
+        | FileData[]
+        | (File | FileData)[]
+        | Dayjs
+        | string[];
     };
   };
   setFieldTouched: (field: string, value: boolean) => void;
@@ -83,14 +96,6 @@ interface RenderFieldProps {
     fieldMeta: FieldMeta;
   };
 }
-
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sanitizeFiles = (files: any[]): any[] =>

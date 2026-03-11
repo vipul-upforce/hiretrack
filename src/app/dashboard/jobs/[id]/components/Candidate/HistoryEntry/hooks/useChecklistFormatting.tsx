@@ -60,39 +60,41 @@ export function useChecklistFormatting() {
       }
       case 'file': {
         type FileItem = { name: string; size: number; href: string };
-        const filesList: FileItem[] =
-          options?.files && options.files.length > 0
-            ? options.files.map((f) => ({
-                name: (f as { name?: string }).name ?? 'file',
-                size: Number((f as { size?: number }).size) || 0,
-                href:
-                  (f as { url?: string }).url ?? (f as { base64?: string }).base64 ?? '',
-              }))
-            : Array.isArray(value)
-              ? value.map((item) => {
-                  if (typeof item === 'object' && item !== null && 'name' in item) {
-                    const o = item as { name?: string; size?: number; url?: string; base64?: string };
-                    return {
-                      name: o.name ?? 'file',
-                      size: Number(o.size) || 0,
-                      href: o.url ?? o.base64 ?? '',
-                    };
-                  }
-                  return {
-                    name: typeof item === 'string' ? item : 'file',
-                    size: 0,
-                    href: '',
-                  };
-                })
-              : [];
+        let filesList: FileItem[];
+        if (options?.files && options.files.length > 0) {
+          filesList = options.files.map((f) => ({
+            name: (f as { name?: string }).name ?? 'file',
+            size: Number((f as { size?: number }).size) || 0,
+            href:
+              (f as { url?: string }).url ?? (f as { base64?: string }).base64 ?? '',
+          }));
+        } else if (Array.isArray(value)) {
+          filesList = value.map((item) => {
+            if (typeof item === 'object' && item !== null && 'name' in item) {
+              const o = item as { name?: string; size?: number; url?: string; base64?: string };
+              return {
+                name: o.name ?? 'file',
+                size: Number(o.size) || 0,
+                href: o.url ?? o.base64 ?? '',
+              };
+            }
+            return {
+              name: typeof item === 'string' ? item : 'file',
+              size: 0,
+              href: '',
+            };
+          });
+        } else {
+          filesList = [];
+        }
 
         if (filesList.length === 0) return 'No files uploaded';
 
         return (
           <div className="space-y-2">
-            {filesList.map((file, index) => (
+            {filesList.map((file) => (
               <div
-                key={`${file.name}-${index}`}
+                key={`${file.name}-${file.size}-${file.href}`}
                 className="flex items-center justify-between rounded bg-gray-100 p-2 dark:bg-gray-700"
               >
                 <div className="flex items-center space-x-2">

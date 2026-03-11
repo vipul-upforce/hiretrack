@@ -20,7 +20,14 @@ export function useEntryVisibility(
     !!interview.checklistForm &&
     Object.keys(interview.checklistForm.responses).length === 0;
 
-  const shouldRender = !isLogTableEntry && !hasEmptyChecklist;
+  const hasRemarkOrNote =
+    !!interview.remark?.description ||
+    (!!interview.note &&
+      typeof interview.note.description === 'string' &&
+      !!interview.note.description);
+
+  const shouldRender =
+    !isLogTableEntry && (!hasEmptyChecklist || hasRemarkOrNote);
 
   return {
     shouldRender,

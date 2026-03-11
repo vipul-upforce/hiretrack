@@ -52,6 +52,28 @@ function sendToClient(client: WSClient, data: object): boolean {
 }
 
 /**
+ * Normalize history for SSE/WS broadcast. Converts Mongoose Map values in
+ * checklistForm.responses to plain objects so they don't serialize as {}.
+ * Call before signAccessToken so clients receive full checklist responses.
+ */
+function normalizeHistoryForBroadcast(
+  history: ICandidateHistory[] | undefined | null,
+): ICandidateHistory[] {
+  if (!history || !Array.isArray(history)) return [];
+  return history.map((entry) => {
+    const cf = entry.checklistForm;
+    if (!cf?.responses) return entry;
+    const r = cf.responses;
+    const responses =
+      r instanceof Map ? Object.fromEntries(r.entries()) : r;
+    return {
+      ...entry,
+      checklistForm: { ...cf, responses },
+    };
+  });
+}
+
+/**
  * Broadcast candidate update to all WebSocket clients in the organization.
  * CRITICAL FIX: Signs token ONCE before broadcasting to all clients (not N times).
  * 
@@ -75,8 +97,12 @@ export async function broadcastCandidateUpdate(
   }
 
   try {
+    const hasHistory = Array.isArray(candidate.history) && candidate.history.length > 0;
+    const candidateToSend = hasHistory
+      ? { ...candidate, history: normalizeHistoryForBroadcast(candidate.history) }
+      : candidate;
     // CRITICAL FIX: Sign token ONCE, not N times (where N = number of clients)
-    const encodedData = await signAccessToken(candidate, orgId);
+    const encodedData = await signAccessToken(candidateToSend, orgId);
 
     // Use HTTP bridge in development (separate WS server)
     if (isUsingHttpBridge()) {
@@ -139,8 +165,13 @@ export async function broadcastMultipleCandidateUpdate(
   }
 
   try {
+    const candidatesToSend = candidates.map((c) =>
+      c.history?.length
+        ? { ...c, history: normalizeHistoryForBroadcast(c.history) }
+        : c,
+    );
     // CRITICAL FIX: Sign token ONCE, not N times
-    const encodedData = await signAccessToken(candidates, orgId);
+    const encodedData = await signAccessToken(candidatesToSend, orgId);
 
     // Use HTTP bridge in development (separate WS server)
     if (isUsingHttpBridge()) {

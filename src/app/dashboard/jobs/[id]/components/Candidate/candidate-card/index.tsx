@@ -44,7 +44,7 @@ export const CandidateCard = memo(
     onMarkAsDoneClick: _onMarkAsDoneClick,
     onFollowUpClick: _onFollowUpClick,
     onAddRemarkClick: _onAddRemarkClick,
-    isPending = false,
+    // isPending = false,
     onUpdate,
     refetchAssignment,
     onSelectCandidate,
@@ -311,7 +311,7 @@ export const CandidateCard = memo(
                 {...provided.dragHandleProps}
                 className={cn(
                   'group relative cursor-grab overflow-visible rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md active:cursor-grabbing dark:border-gray-800 dark:bg-black',
-                  isPending && 'opacity-50',
+                  // isPending && 'opacity-50',
                   isBulkPlaceholder && 'pointer-events-none opacity-0',
                   className,
                   isSelected

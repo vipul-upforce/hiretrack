@@ -1,12 +1,15 @@
 import { useState, useCallback } from 'react';
 import type { BulkStatusQueueItem } from '@/components/unified-candidate-dialog/types';
 import type { ChecklistSubmissionData } from '@/types/checklist';
-import { type ChecklistPlanStep, parseIsMandatory } from '../utils/checklistGatekeeper';
 import { useBulkSubmitChecklistMutation } from '@/lib/features/checklist/checklistApi';
 import { useBulkUpdateCandidatesMutation } from '@/lib/features/candidate/candidateApi';
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { clearSelectedCandidates } from '@/lib/redux/selectedCandidatesSlice';
+import {
+  type ChecklistPlanStep,
+  parseIsMandatory,
+} from '../utils/checklistGatekeeper';
 import { useBulkStatusQueue } from './useBulkStatusQueue';
 
 export function useBulkChecklistFlow({
@@ -15,10 +18,12 @@ export function useBulkChecklistFlow({
   refetch,
 }: {
   setOpenRemarksFor: (id: string | null) => void;
-  setPendingStatusAfterChecklist: (v: {
-    candidateId: string;
-    newStatus: string;
-  } | null) => void;
+  setPendingStatusAfterChecklist: (
+    v: {
+      candidateId: string;
+      newStatus: string;
+    } | null,
+  ) => void;
   refetch: () => Promise<unknown>;
 }) {
   const dispatch = useAppDispatch();
@@ -26,8 +31,12 @@ export function useBulkChecklistFlow({
   const [bulkSubmitChecklist] = useBulkSubmitChecklistMutation();
   const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
 
-  const [bulkStatusQueue, setBulkStatusQueue] = useState<BulkStatusQueueItem[] | null>(null);
-  const [remainingChecklistSteps, setRemainingChecklistSteps] = useState<ChecklistPlanStep[] | null>(null);
+  const [bulkStatusQueue, setBulkStatusQueue] = useState<
+    BulkStatusQueueItem[] | null
+  >(null);
+  const [remainingChecklistSteps, setRemainingChecklistSteps] = useState<
+    ChecklistPlanStep[] | null
+  >(null);
 
   const { onBulkStatusRequiresChecklist } = useBulkStatusQueue({
     setOpenRemarksFor,
@@ -48,8 +57,6 @@ export function useBulkChecklistFlow({
         candidateId: item.candidateId,
         newStatus: item.newStatus,
       }));
-      const newStatus = bulkStatusQueue[0].newStatus;
-      const candidateIds = bulkStatusQueue.map((item) => item.candidateId);
       const nextSteps = remainingChecklistSteps ?? [];
 
       const isMandatory = parseIsMandatory(bulkStatusQueue[0]?.validationInfo);
@@ -57,13 +64,6 @@ export function useBulkChecklistFlow({
       (async () => {
         try {
           await bulkSubmitChecklist({ data: payload, candidates }).unwrap();
-          if (isMandatory) {
-            await bulkUpdateCandidates({
-              operation: 'statusUpdate',
-              candidateIds,
-              status: newStatus,
-            }).unwrap();
-          }
           await refetch();
           toast({
             title: 'Success',

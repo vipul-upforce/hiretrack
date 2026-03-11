@@ -11,10 +11,10 @@ import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialog
 import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
 import { UnifiedCandidateActionsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/unified-candidate-actions-dialog';
 import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
-import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
-import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import { toast } from '@/hooks/use-toast';
 import { DuplicateCandidatesDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/DuplicateCandidatesDialog';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
+import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { SearchResultsSkeletonLoader } from './search-results/skeleton-loader';
 import { ResultsHeader } from './search-results/results-header';

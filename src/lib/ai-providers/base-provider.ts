@@ -70,6 +70,7 @@ export abstract class BaseAIProvider implements AIProvider {
         "affordability": // Salary alignment score (1-10) with calculation shown (include normalization logic),
         "strengths": // A list of strengths,
         "areas_for_improvement": // A list of areas for improvement,
+        "redFlags": [ // Array of potential concerns (if any),
         "recommendation": // A recommendation,
         "notes": // Additional notes
       }

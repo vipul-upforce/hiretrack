@@ -84,6 +84,13 @@ function parseOperation(
             (op.zoomMeetingAttachments as BulkAssignParams['zoomMeetingAttachments']) ??
             [],
           zoomAdditionalGuests: (op.zoomAdditionalGuests as string[]) ?? [],
+          scheduleTeamsMeet: (op.scheduleTeamsMeet as boolean) ?? false,
+          teamsMeetDuration: (op.teamsMeetDuration as number) ?? 30,
+          teamsMeetingNotes: (op.teamsMeetingNotes as string) ?? '',
+          teamsMeetingAttachments:
+            (op.teamsMeetingAttachments as BulkAssignParams['teamsMeetingAttachments']) ??
+            [],
+          teamsAdditionalGuests: (op.teamsAdditionalGuests as string[]) ?? [],
           remark: (op.remark as string) ?? undefined,
         },
       };

@@ -262,7 +262,7 @@ export const useRemarkHandlers = (
         attachments: [],
       };
 
-      const updateData: any = {
+      const updateData: Partial<Candidate> = {
         _id: localCandidate?._id,
         name: localCandidate?.name,
         jobId: localCandidate?.jobId,

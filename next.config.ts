@@ -41,11 +41,7 @@ const nextConfig: NextConfig = {
   // Optimize webpack configuration
   webpack: (
     config: WebpackConfiguration,
-    {
-      dev,
-      isServer,
-      webpack,
-    }: { dev: boolean; isServer: boolean; webpack: any },
+    { dev, isServer }: { dev: boolean; isServer: boolean; webpack: any },
   ): WebpackConfiguration => {
     // Optimize for development
     if (dev) {

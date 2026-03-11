@@ -1,4 +1,5 @@
 import { Candidate } from '@/types/candidate';
+import type { StatusChangeValidationResult } from '@/components/unified-candidate-dialog/types';
 
 export interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -18,7 +19,7 @@ export interface CandidateDetailsDialogProps {
   onValidateStatusChange?: (
     candidate: Candidate,
     newStatus: string,
-  ) => { requiresChecklist?: boolean; isMandatory?: boolean; validationInfo?: string; validationSteps?: { validationInfo: string; newStatusAfterStep: string }[] } | null;
+  ) => StatusChangeValidationResult | null;
   onDeferStatusToChecklist?: (
     validationInfo: string,
     newStatus: string,
