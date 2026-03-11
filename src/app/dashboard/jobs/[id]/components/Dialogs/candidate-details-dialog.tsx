@@ -502,14 +502,17 @@ export function CandidateDetailsDialog({
       return item;
     });
   const handleViewDuplicateDetails = (nextCandidate: Candidate) => {
-    // 1. Close the current dialog entirely to ensure fresh state
-    onOpenChange(false);
+    // Close duplicates dialog first to avoid overlay issues
     setIsDuplicateDialogOpen(false);
 
-    // 2. Notify parent to manually reopen with the new candidate
+    // Let parent handle close/reopen to avoid double-close race conditions
     if (onViewDetails) {
       onViewDetails(nextCandidate);
+      return;
     }
+
+    // Fallback: close the dialog if no parent handler is provided
+    onOpenChange(false);
   };
   const header = (
     <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">

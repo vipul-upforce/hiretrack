@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { SortConfig, SortField } from '../hooks/useDashboardState';
 
 /** Label mappings for sort field display */
@@ -36,6 +37,9 @@ interface DashboardHeaderProps {
   userRole?: string;
   sortConfig: SortConfig;
   setSortConfig: React.Dispatch<React.SetStateAction<SortConfig>>;
+  showHrSectionToggle?: boolean;
+  isHrSectionEnabled?: boolean;
+  onToggleHrSection?: (enabled: boolean) => void;
 }
 
 export function DashboardHeader({
@@ -53,6 +57,9 @@ export function DashboardHeader({
   userRole,
   sortConfig,
   setSortConfig,
+  showHrSectionToggle = false,
+  isHrSectionEnabled = true,
+  onToggleHrSection,
 }: DashboardHeaderProps) {
   const handleSortFieldChange = (field: string) => {
     setSortConfig((prev) => ({ ...prev, field: field as SortField }));
@@ -136,6 +143,17 @@ export function DashboardHeader({
                   )}
                 </Button>
               </div>
+              {showHrSectionToggle && (
+                <div className="flex items-center gap-2 rounded-md border border-border/60 bg-background/80 px-2 py-1">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    My Assignments
+                  </span>
+                  <Switch
+                    checked={isHrSectionEnabled}
+                    onCheckedChange={(checked) => onToggleHrSection?.(checked)}
+                  />
+                </div>
+              )}
               {showRecentActivities && (
                 <Button
                   variant="outline"
