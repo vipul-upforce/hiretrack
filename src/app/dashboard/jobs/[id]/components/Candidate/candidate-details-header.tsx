@@ -21,12 +21,19 @@ import {
   IndianRupee,
   AlertCircle,
   FileDown,
+  TriangleAlert,
 } from 'lucide-react';
 import { Candidate } from '@/types/candidate';
 import TagsList from '@/components/ui/tagsList';
 import React, { useRef, useState } from 'react';
 import { useAuth } from '@/app/hooks/useAuth';
 import { useAppSelector } from '@/lib/redux/hooks';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
@@ -37,6 +44,7 @@ interface DetailsDialogHeaderProps {
   handleCandidateInfoCopy: (info: string) => void;
   refetch: () => void;
   onAssignClick?: () => void;
+  onOpenDuplicateDialog?: () => void;
 }
 
 export default function DetailsDialogHeader({
@@ -44,6 +52,7 @@ export default function DetailsDialogHeader({
   handleCandidateInfoCopy,
   refetch,
   onAssignClick,
+  onOpenDuplicateDialog,
 }: DetailsDialogHeaderProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
@@ -58,6 +67,11 @@ export default function DetailsDialogHeader({
   const { user } = useAppSelector((state) => state.auth);
 
   const isAdminOrHr = user?.role === 'admin' || user?.role === 'hr';
+  const duplicateCount =
+    typeof candidate?.duplicateCount === 'number'
+      ? candidate.duplicateCount
+      : 0;
+  const duplicateMatches = Math.max(0, duplicateCount - 1);
 
   const handleDownloadCV = () => {
     if (candidate.resume?.url) {
@@ -109,6 +123,31 @@ export default function DetailsDialogHeader({
                 <Copy size={12} />
                 <span className="sr-only">Copy Name</span>
               </Button>
+              {isAdminOrHr && duplicateCount > 1 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 gap-1 px-1.5 text-yellow-500 hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-800 dark:hover:text-yellow-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenDuplicateDialog?.();
+                        }}
+                      >
+                        <TriangleAlert className="h-4 w-4" />
+                        <span className="sr-only">Duplicate Candidates</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        Duplicate Candidates Detected
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {candidate.isDeleted ? (
                 <Badge className="bg-red-500">Archived</Badge>
               ) : null}
@@ -215,18 +254,18 @@ export default function DetailsDialogHeader({
               )}
               {(candidate.relevantExperience !== undefined ||
                 candidate.experience !== undefined) && (
-                <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
-                  <Briefcase size={12} />
-                  Exp:{' '}
-                  {candidate.relevantExperience !== undefined &&
-                    `${candidate.relevantExperience}y Rel`}
-                  {candidate.relevantExperience !== undefined &&
-                    candidate.experience !== undefined &&
-                    ', '}
-                  {candidate.experience !== undefined &&
-                    `${candidate.experience}y Total`}
-                </span>
-              )}
+                  <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    <Briefcase size={12} />
+                    Exp:{' '}
+                    {candidate.relevantExperience !== undefined &&
+                      `${candidate.relevantExperience}y Rel`}
+                    {candidate.relevantExperience !== undefined &&
+                      candidate.experience !== undefined &&
+                      ', '}
+                    {candidate.experience !== undefined &&
+                      `${candidate.experience}y Total`}
+                  </span>
+                )}
               {candidate.noticePeriod !== undefined && (
                 <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                   <AlertCircle size={12} />
@@ -289,11 +328,10 @@ export default function DetailsDialogHeader({
                       type="button"
                       role={isAdminOrHr ? 'button' : undefined}
                       tabIndex={isAdminOrHr ? 0 : undefined}
-                      className={`min-w-[250px] rounded border border-blue-200 bg-blue-50 px-2 py-1 dark:border-blue-800 dark:bg-blue-900/20 ${
-                        isAdminOrHr
-                          ? 'cursor-pointer transition-colors duration-200 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                          : 'cursor-default'
-                      }`}
+                      className={`min-w-[250px] rounded border border-blue-200 bg-blue-50 px-2 py-1 dark:border-blue-800 dark:bg-blue-900/20 ${isAdminOrHr
+                        ? 'cursor-pointer transition-colors duration-200 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                        : 'cursor-default'
+                        }`}
                       onClick={isAdminOrHr ? handleInterviewerClick : undefined}
                       title={
                         isAdminOrHr ? 'Click to edit assignment' : undefined

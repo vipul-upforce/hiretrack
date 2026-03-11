@@ -184,7 +184,7 @@ export function QuickSelectAndFilter({
   };
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700">
+    <div className={`flex items-center gap-3 px-4 py-3 bg-white dark:bg-black border-t border-b border-gray-200 dark:border-gray-700 ${bulkActionsAnimationStyles.scope}`}>
       <QuickSelectJobSelector
         currentJobId={currentJobId}
         groupedJobs={groupedJobs}

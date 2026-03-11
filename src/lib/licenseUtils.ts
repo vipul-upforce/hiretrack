@@ -222,14 +222,6 @@ async function validateLicenseWithAPI(
       };
     }
 
-    logger.info(
-      {
-        url: licenseValidationUrl,
-        hasLicenseKey: !!licenseKey,
-        hasMachineCode: !!machineCode,
-      },
-      'Validating license with external API',
-    );
 
     const channel = await getReleaseChannel();
     const response = await fetch(
@@ -247,10 +239,6 @@ async function validateLicenseWithAPI(
     );
 
     if (!response.ok) {
-      logger.warn(
-        { status: response.status, statusText: response.statusText },
-        'License validation API returned non-OK status',
-      );
       return {
         valid: false,
         error: `API request failed with status: ${response.status}`,
@@ -258,10 +246,6 @@ async function validateLicenseWithAPI(
     }
 
     const data = await response.json();
-    logger.info(
-      { valid: data.valid, hasAsset: !!data.asset },
-      'License validation API response received',
-    );
 
     return {
       valid: data.valid || false,

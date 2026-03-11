@@ -63,8 +63,14 @@ export function useCandidateState({
 
   // Open candidate details dialog
   const openCandidateDetails = useCallback((candidate: Candidate) => {
-    setSelectedCandidate(candidate);
-    setIsDetailsOpen(true);
+    // Manual close and reopen to ensure fresh instance
+    setIsDetailsOpen(false);
+    setSelectedCandidate(null);
+
+    setTimeout(() => {
+      setSelectedCandidate(candidate);
+      setIsDetailsOpen(true);
+    }, 100);
   }, []);
 
   // Close candidate details dialog

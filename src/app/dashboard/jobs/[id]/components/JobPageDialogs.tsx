@@ -34,6 +34,7 @@ interface JobPageDialogsProps {
   handleDeleteConfirm: () => void;
   isAssigning: boolean;
   setIsAssigning: (open: boolean) => void;
+  onOpenCandidateDetailsDialog?: (candidate: Candidate) => void;
 
   // Lane dialogs
   isLaneEditOpen: boolean;
@@ -164,6 +165,7 @@ export function JobPageDialogs({
   bulkDragTwoPhase,
   onUnifiedRemarkClose,
   onBulkStatusRequiresReason,
+  onOpenCandidateDetailsDialog,
 }: JobPageDialogsProps) {
   const { user } = useAppSelector((state) => state.auth);
   const openRemarksForRef = useRef(openRemarksFor);
@@ -284,6 +286,7 @@ export function JobPageDialogs({
         onUpdate={handleCandidateUpdate}
         isAssigning={isAssigning}
         setIsAssigning={setIsAssigning}
+        onViewDetails={onOpenCandidateDetailsDialog}
         onValidateStatusChange={onValidateStatusChange}
         onDeferStatusToChecklist={onDeferStatusToChecklist}
         onOpenChecklistAfterSave={onOpenChecklistAfterSave}
