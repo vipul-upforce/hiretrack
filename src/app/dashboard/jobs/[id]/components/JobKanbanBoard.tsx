@@ -94,7 +94,7 @@ export function JobKanbanBoard({
   onOpenChecklistAfterSave,
 }: JobKanbanBoardProps) {
   return (
-    <div className="flex-1 overflow-hidden px-4 pb-2 pt-2">
+    <div className="flex-1 overflow-hidden px-4 pl-2 pb-2 pt-2">
       <DragDropContext
         onBeforeDragStart={(start: DragStart) => {
           document.body.classList.add('dnd-dragging');
