@@ -1,8 +1,23 @@
 import { useState } from 'react';
 import { ClipboardCheck, ChevronDown, ChevronRight } from 'lucide-react';
 import useRoles from '@/hooks/useRoles';
+import type { CustomFieldFile } from '@/lib/fileUtils';
 import { ChecklistResponseViewerProps } from '../types';
 import { useChecklistFormatting } from '../hooks/useChecklistFormatting.tsx';
+
+/** Normalize checklist file items to CustomFieldFile for formatValue */
+function toCustomFieldFiles(
+  files: Array<{ name: string; size: number; base64: string; url?: string }> | undefined,
+): CustomFieldFile[] | undefined {
+  if (!files?.length) return undefined;
+  return files.map((f, i) => ({
+    id: (f as { id?: string }).id ?? `file-${i}`,
+    name: f.name,
+    size: f.size,
+    base64: (f as { url?: string }).url ?? f.base64 ?? '',
+    type: (f as { type?: string }).type ?? 'file',
+  }));
+}
 
 /**
  * Component to display checklist responses in an expandable view
@@ -27,6 +42,24 @@ export function ChecklistResponseViewer({
         ? resp.visibleInHistory.includes(role)
         : true,
   );
+
+  const hasValue = ([, response]: [string, unknown]) => {
+    const responseData =
+      (response as { value?: string })?.value !== undefined
+        ? response
+        : response;
+    const value = (responseData as { value?: string })?.value;
+    if (
+      (typeof value === 'string' && value.trim() === '') ||
+      (Array.isArray(value) && value.length === 0) ||
+      !value
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const visibleResponsesWithValue = visibleResponses.filter(hasValue);
 
   return (
     <div className="mt-4 rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-black/50">
@@ -63,60 +96,52 @@ export function ChecklistResponseViewer({
 
       {isExpanded && (
         <div className="space-y-3 p-3">
-          {visibleResponses
-            .filter(([, response]) => {
-              const responseData =
-                (response as { value: string })?.value !== undefined
-                  ? response
-                  : response;
-              const value = (responseData as { value: string })?.value;
-              if (
-                (typeof value === 'string' && value.trim() === '') ||
-                (Array.isArray(value) && value.length === 0) ||
-                !value
-              ) {
-                return false;
-              }
-              return true;
-            })
-            .map(([fieldId, response]) => {
-              const responseData =
-                (response as { value: string })?.value !== undefined
-                  ? response
-                  : response;
-              const fieldLabel =
-                (responseData as { fieldLabel: string })?.fieldLabel || fieldId;
-              const fieldType =
-                (responseData as { fieldType: string })?.fieldType || 'text';
-              const value = (responseData as { value: string })?.value;
-              const files =
-                fieldType === 'file'
-                  ? (responseData as { files?: Array<{ name: string; size: number; base64: string }> })
-                      ?.files
-                  : undefined;
+          {visibleResponsesWithValue.map(([fieldId, response]) => {
+            const responseData =
+              (response as { value: string })?.value !== undefined
+                ? response
+                : response;
+            const fieldLabel =
+              (responseData as { fieldLabel: string })?.fieldLabel || fieldId;
+            const fieldType =
+              (responseData as { fieldType: string })?.fieldType || 'text';
+            const value = (responseData as { value: string })?.value;
+            const files =
+              fieldType === 'file'
+                ? toCustomFieldFiles(
+                    (responseData as {
+                      files?: Array<{ name: string; size: number; base64: string; url?: string }>;
+                    })?.files,
+                  )
+                : undefined;
 
-              return (
-                <div
-                  key={fieldId}
-                  className="border-l-2 border-blue-200 pl-3 dark:border-blue-800"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <label className="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">
-                        {fieldLabel}
-                      </label>
-                      <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
-                        {formatValue(value, fieldType, files ? { files } : undefined)}
-                      </div>
+            return (
+              <div
+                key={fieldId}
+                className="border-l-2 border-blue-200 pl-3 dark:border-blue-800"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <label className="text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400">
+                      {fieldLabel}
+                    </label>
+                    <div className="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                      {formatValue(value, fieldType, files ? { files } : undefined)}
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
 
           {responsesArray.length === 0 && (
             <div className="py-2 text-center text-sm text-gray-500 dark:text-gray-400">
               No responses recorded
+            </div>
+          )}
+          {responsesArray.length > 0 && visibleResponsesWithValue.length === 0 && (
+            <div className="py-2 text-center text-sm text-gray-500 dark:text-gray-400">
+              No responses visible for your role
             </div>
           )}
         </div>

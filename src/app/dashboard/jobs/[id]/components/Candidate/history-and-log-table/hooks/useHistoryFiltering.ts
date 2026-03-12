@@ -26,12 +26,18 @@ export function useHistoryFiltering(
 
           // If this is a checklist form entry, enforce visibleInHistory
           if (interview?.checklistForm?.responses) {
-            const hasVisibleResponses = Object.values(
-              interview.checklistForm.responses,
-            ).some(
-              (resp) =>
-                Array.isArray(resp?.visibleInHistory) &&
-                resp.visibleInHistory.includes(role as string),
+            const r = interview.checklistForm.responses;
+            // Support both Map (e.g. from some API paths) and plain object so checklist entries are not hidden after updates
+            const responseValues =
+              r instanceof Map ? Array.from(r.values()) : Object.values(r);
+            const hasVisibleResponses = responseValues.some(
+              (resp: unknown) =>
+                Array.isArray(
+                  (resp as { visibleInHistory?: string[] })?.visibleInHistory,
+                ) &&
+                (
+                  resp as { visibleInHistory: string[] }
+                ).visibleInHistory.includes(role as string),
             );
 
             if (!hasVisibleResponses) {
@@ -43,7 +49,6 @@ export function useHistoryFiltering(
                   !interview.remark.isPrivate);
               if (hasVisibleRemark) return true;
               // Keep checklist entries even when responses are empty (e.g. "Completed incoming checklist for X lane")
-              const r = interview.checklistForm?.responses;
               const isEmptyResponses =
                 !r ||
                 (r instanceof Map ? r.size === 0 : Object.keys(r).length === 0);

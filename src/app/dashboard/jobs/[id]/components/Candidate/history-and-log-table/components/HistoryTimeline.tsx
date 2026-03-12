@@ -31,22 +31,22 @@ export function HistoryTimeline({
     <ol className="relative border-s border-gray-200 dark:border-gray-700">
       {timeLineItems.length > 0
         ? timeLineItems?.map((interview, i) => {
-            const timeDate = formatDate(interview.dateTime);
-            const timeTime = formatTime(interview.dateTime);
-            return (
-              <RenderHistoryEntry
-                interview={interview}
-                indexKey={i}
-                localCandidate={candidate}
-                timeDate={timeDate}
-                timeTime={timeTime}
-                handleRemarkUpdate={handleRemarkUpdate}
-                setEditingRemark={setEditingRemark}
-                setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
-                key={interview.dateTime + interview._id + interview.title}
-              />
-            );
-          })
+          const timeDate = formatDate(interview.dateTime);
+          const timeTime = formatTime(interview.dateTime);
+          return (
+            <RenderHistoryEntry
+              interview={interview}
+              indexKey={i}
+              localCandidate={candidate}
+              timeDate={timeDate}
+              timeTime={timeTime}
+              handleRemarkUpdate={handleRemarkUpdate}
+              setEditingRemark={setEditingRemark}
+              setIsEditRemarkDialogOpen={setIsEditRemarkDialogOpen}
+              key={interview.dateTime + interview._id + interview.title}
+            />
+          );
+        })
         : 'No History'}
     </ol>
   );
