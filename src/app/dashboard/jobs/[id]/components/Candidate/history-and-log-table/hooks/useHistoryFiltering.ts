@@ -42,6 +42,12 @@ export function useHistoryFiltering(
                   role === 'admin' ||
                   !interview.remark.isPrivate);
               if (hasVisibleRemark) return true;
+              // Keep checklist entries even when responses are empty (e.g. "Completed incoming checklist for X lane")
+              const r = interview.checklistForm?.responses;
+              const isEmptyResponses =
+                !r ||
+                (r instanceof Map ? r.size === 0 : Object.keys(r).length === 0);
+              if (isEmptyResponses) return true;
               return false;
             }
           }

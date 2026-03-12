@@ -304,6 +304,17 @@ export const useDashboardLogic = () => {
     }
   };
 
+  const handleViewCandidateDetails = useCallback((candidate: Candidate) => {
+    // Close and reopen to avoid stale dialog state when switching candidates
+    setIsCandidateDialogOpen(false);
+    setSelectedCandidate(null);
+
+    setTimeout(() => {
+      setSelectedCandidate(candidate);
+      setIsCandidateDialogOpen(true);
+    }, 100);
+  }, []);
+
   const generateShareOrg = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsedUser = user;
@@ -390,6 +401,8 @@ export const useDashboardLogic = () => {
       isOpen: isCandidateDialogOpen,
       setIsOpen: setIsCandidateDialogOpen,
       selectedCandidate,
+      setSelectedCandidate,
+      onViewDetails: handleViewCandidateDetails,
       refetch: () =>
         selectedCandidate && fetchCandidateById(selectedCandidate._id),
     },

@@ -38,6 +38,17 @@ import { getJobId } from '../../utils/candidateAccessors';
 import { DuplicateCandidatesDialog } from './DuplicateCandidatesDialog';
 /* eslint-disable max-lines */
 
+/**
+ * True if entry has checklistForm with no response entries (SSE often sends empty).
+ * Used when merging SSE history to avoid overwriting API-enriched responses.
+ */
+function hasEmptyChecklistResponses(entry: ICandidateHistory): boolean {
+  if (!entry?.checklistForm?.responses) return true;
+  const r = entry.checklistForm.responses;
+  if (r instanceof Map) return r.size === 0;
+  return Object.keys(r).length === 0;
+}
+
 export function CandidateDetailsDialog({
   candidate,
   isOpen,
@@ -177,6 +188,7 @@ export function CandidateDetailsDialog({
 
   // Merge SSE history updates into timeLineItems
   // SSE updates come via: localCandidate.history (job page) or candidate.history (calendar page)
+  // Preserve API-enriched checklistForm.responses when SSE sends empty (so checklist entries don't disappear)
   useEffect(() => {
     if (localCandidate?._id !== candidate?._id) return;
 
@@ -187,7 +199,6 @@ export function CandidateDetailsDialog({
 
     if (!Array.isArray(sseHistory) || sseHistory.length === 0) return;
 
-    // Helper: get stable key (prefer remark.id as it uniquely identifies remarks)
     const getKey = (item: ICandidateHistory): string =>
       item.remark?.id || item._id?.toString() || `${item.dateTime}-${item.title || ''}`;
 
@@ -195,8 +206,25 @@ export function CandidateDetailsDialog({
       const sseMap = new Map(sseHistory.map((item) => [getKey(item), item]));
       const existingKeys = new Set(prev.map(getKey));
 
-      // Update existing items with SSE data + add new items
-      const updated = prev.map((item) => sseMap.get(getKey(item)) || item);
+      const updated = prev.map((item) => {
+        const sseItem = sseMap.get(getKey(item));
+        if (!sseItem) return item;
+        if (
+          sseItem.checklistForm &&
+          item.checklistForm &&
+          hasEmptyChecklistResponses(sseItem) &&
+          !hasEmptyChecklistResponses(item)
+        ) {
+          return {
+            ...sseItem,
+            checklistForm: {
+              ...sseItem.checklistForm,
+              responses: item.checklistForm.responses,
+            },
+          };
+        }
+        return sseItem;
+      });
       const newItems = sseHistory.filter((item) => !existingKeys.has(getKey(item)));
 
       return [...updated, ...newItems].sort(
@@ -501,14 +529,17 @@ export function CandidateDetailsDialog({
       return item;
     });
   const handleViewDuplicateDetails = (nextCandidate: Candidate) => {
-    // 1. Close the current dialog entirely to ensure fresh state
-    onOpenChange(false);
+    // Close duplicates dialog first to avoid overlay issues
     setIsDuplicateDialogOpen(false);
 
-    // 2. Notify parent to manually reopen with the new candidate
+    // Let parent handle close/reopen to avoid double-close race conditions
     if (onViewDetails) {
       onViewDetails(nextCandidate);
+      return;
     }
+
+    // Fallback: close the dialog if no parent handler is provided
+    onOpenChange(false);
   };
   const header = (
     <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">

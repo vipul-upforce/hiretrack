@@ -18,7 +18,9 @@ export function useEntryVisibility(
 
   const hasEmptyChecklist =
     !!interview.checklistForm &&
-    Object.keys(interview.checklistForm.responses).length === 0;
+    (interview.checklistForm.responses instanceof Map
+      ? interview.checklistForm.responses.size === 0
+      : Object.keys(interview.checklistForm.responses || {}).length === 0);
 
   const hasRemarkOrNote =
     !!interview.remark?.description ||
@@ -26,8 +28,13 @@ export function useEntryVisibility(
       typeof interview.note.description === 'string' &&
       !!interview.note.description);
 
+  // Show checklist entries with a title even when responses are empty (e.g. "Completed incoming checklist for X lane")
+  const isChecklistEntryWithTitle =
+    !!interview.checklistForm && !!interview.title;
+
   const shouldRender =
-    !isLogTableEntry && (!hasEmptyChecklist || hasRemarkOrNote);
+    !isLogTableEntry &&
+    (!hasEmptyChecklist || hasRemarkOrNote || isChecklistEntryWithTitle);
 
   return {
     shouldRender,

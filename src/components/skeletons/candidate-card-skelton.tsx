@@ -5,7 +5,7 @@ import { Separator } from '../ui/separator';
 
 export function CandidateCardSkeleton() {
   return (
-    <Card className="w-[380px] border rounded-xl animate-pulse">
+    <Card className="w-[420px] border rounded-xl animate-pulse">
       <CardHeader className="space-y-2">
         <div className="flex flex-row justify-between">
           <Skeleton className="h-5 w-32 rounded" />
@@ -37,10 +37,10 @@ export function CandidateCardSkeleton() {
 
         {/* Skills */}
         <div className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
           <div className="flex flex-wrap gap-2">
             {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-6 w-16 " />
+              <Skeleton key={i} className="h-6 w-24 " />
             ))}
           </div>
         </div>

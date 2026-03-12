@@ -989,13 +989,7 @@ export const useCandidate = ({
         document.body.classList.remove('dnd-updating');
       }
       await refetch();
-      // Clear bulk selection only when no dialog was opened (no optional checklist, no prompt-for-reason)
-      if (
-        optionalChecklistCandidates.length === 0 &&
-        !job?.promptForStatusChangeReason
-      ) {
-        dispatch(clearSelectedCandidates());
-      }
+      dispatch(clearSelectedCandidates());
       return;
     }
 

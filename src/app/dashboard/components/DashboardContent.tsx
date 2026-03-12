@@ -32,6 +32,7 @@ interface DashboardContentProps {
   isActivitiesSidebarOpen: boolean;
   setAssignments: React.Dispatch<React.SetStateAction<Candidate[]>>;
   onCandidateCardClick: (candidate: Candidate) => void;
+  prependContent?: React.ReactNode;
 }
 
 function DashboardEmptyState({
@@ -91,6 +92,7 @@ export function DashboardContent({
   isActivitiesSidebarOpen,
   setAssignments,
   onCandidateCardClick,
+  prependContent,
 }: DashboardContentProps) {
   return (
     <div
@@ -99,6 +101,7 @@ export function DashboardContent({
         showRecentActivities && isActivitiesSidebarOpen ? 'flex-1' : 'w-full'
       }`}
     >
+      {prependContent}
       {isLoading || !assignments ? (
         <DashboardSkeleton role={user?.role || null} />
       ) : (
@@ -127,8 +130,8 @@ export function DashboardContent({
                             (candidate) => candidate._id === assignment._id,
                           ) || assignment
                         }
+                        assignments={assignmentsFiltered}
                         setAssignments={setAssignments}
-                        onCandidateCardClick={onCandidateCardClick}
                       />
                     </div>
                   })}
