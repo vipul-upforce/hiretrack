@@ -118,20 +118,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Update history if exists
-      if (previousJobId) {
-        const existingHistory = await History.findOne({
-          candidateId,
-          jobId: previousJobId,
-        });
-
-        if (existingHistory) {
-          await History.findOneAndUpdate(
-            { candidateId, jobId: previousJobId },
-            { $set: { jobId } },
-          );
-        }
-      }
+      // Update history if exists - no longer needed; history is keyed by candidateId only
 
       // Create history entry
       const historyEntry: ICandidateHistory = {
@@ -150,7 +137,7 @@ export async function POST(req: NextRequest) {
       };
 
       await History.findOneAndUpdate(
-        { jobId, candidateId },
+        { candidateId },
         { $push: { history: historyEntry } },
         { upsert: true },
       );

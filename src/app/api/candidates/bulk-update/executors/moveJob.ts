@@ -100,24 +100,7 @@ export async function runBulkMoveJob(
       }
     }
 
-    // Update old history documents (move jobId reference)
-    const oldHistoryUpdates = validCandidates
-      .filter((c) => c.jobId?.toString())
-      .map((c) => ({
-        updateOne: {
-          filter: {
-            candidateId: c._id.toString(),
-            jobId: c.jobId!.toString(),
-          },
-          update: { $set: { jobId } },
-        },
-      }));
-
-    if (oldHistoryUpdates.length > 0) {
-      await History.bulkWrite(oldHistoryUpdates).catch((err) => {
-        logger.error({ error: err }, 'Bulk moveJob: old history update failed');
-      });
-    }
+    // Update old history documents (move jobId reference) - no longer needed; history is keyed by candidateId only
 
     // Build new history entries
     const historyBulk = validCandidates.map((c) => {
@@ -144,7 +127,7 @@ export async function runBulkMoveJob(
 
       return {
         updateOne: {
-          filter: { jobId, candidateId },
+          filter: { candidateId },
           update: { $push: { history: historyEntry } },
           upsert: true as const,
         },

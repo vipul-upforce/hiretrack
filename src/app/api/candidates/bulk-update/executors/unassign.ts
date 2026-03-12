@@ -59,44 +59,39 @@ export async function runBulkUnassign(
     );
 
     // Build history bulk operations
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => {
-        const candidateId = (c._id as { toString: () => string }).toString();
-        const prev = c.assignment?.interviewerId;
-        const previousInterviewerId =
-          prev != null && typeof prev === 'object' && '_id' in prev
-            ? (prev as { _id: unknown })._id
-            : prev;
+    const historyBulk = candidates.map((c) => {
+      const candidateId = (c._id as { toString: () => string }).toString();
+      const prev = c.assignment?.interviewerId;
+      const previousInterviewerId =
+        prev != null && typeof prev === 'object' && '_id' in prev
+          ? (prev as { _id: unknown })._id
+          : prev;
 
-        const historyEntry: ICandidateHistory = {
-          dateTime,
-          title: 'Unassigned',
-          currentInterviewer: null,
-          previousInterviewer:
-            previousInterviewerId as Schema.Types.ObjectId | null,
-          assignmentBy: user.id ?? null,
-          note: {
-            description: remark ?? '',
-            date: '',
-            rating: 0,
-            userId: null,
-            isPrivate: !!remark, // Hide remark from interviewer when combined
-          },
-          attachments: [],
-        };
+      const historyEntry: ICandidateHistory = {
+        dateTime,
+        title: 'Unassigned',
+        currentInterviewer: null,
+        previousInterviewer:
+          previousInterviewerId as Schema.Types.ObjectId | null,
+        assignmentBy: user.id ?? null,
+        note: {
+          description: remark ?? '',
+          date: '',
+          rating: 0,
+          userId: null,
+          isPrivate: !!remark, // Hide remark from interviewer when combined
+        },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId,
-              jobId: getJobIdString(c),
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        };
-      });
+      return {
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);

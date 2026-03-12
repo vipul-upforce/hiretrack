@@ -1298,7 +1298,6 @@ export async function DELETE(req: NextRequest) {
             await History.findOneAndUpdate(
               {
                 candidateId: candidate._id,
-                jobId,
               },
               {
                 $push: { history: historyEntry },
