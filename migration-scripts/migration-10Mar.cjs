@@ -1,6 +1,11 @@
 const { MongoClient, ObjectId } = require('mongodb');
+const { dirname, join } = require('path');
+const { config } = require('dotenv');
+const projectRoot = join(__dirname, '..');
+console.log('projectRoot: ', projectRoot);
 
-const DATABASE_URI = 'mongodb://localhost:27017/hiretrack-prod-9Mar1';
+config({ path: join(projectRoot, '.env') });
+const DATABASE_URI = process.env.MONGODB_URI;
 
 async function populateDuplicateCandidates() {
   console.log('Starting migration: Populating unique candidates...');
@@ -12,6 +17,7 @@ async function populateDuplicateCandidates() {
     const db = client.db();
 
     const candidatesCollection = db.collection('candidates');
+    ``;
     const duplicateCandidatesCollection = db.collection('duplicatecandidates');
 
     const candidates = await candidatesCollection.find({}).toArray();
