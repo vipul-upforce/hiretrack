@@ -7,3 +7,9 @@
 20 Feb 2026: 17:11
 ___________________
 - fixed logic page redirection state issue.
+
+-------------------
+13 Mar 2026: 17:18
+___________________
+- fixed job description color formatting issue.
+
