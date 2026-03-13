@@ -133,6 +133,8 @@ export function JobForm() {
           className="min-h-[100px] p-3"
           maxLength={10000}
           sanitizePastedTextColor
+          allowColors={false}
+          showClearFormatting
           value={values?.description || ''}
           onChange={(val) => setFieldValue('description', val)}
           onBlur={() => setFieldTouched('description', true)} // ✅ fixed

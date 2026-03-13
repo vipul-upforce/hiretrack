@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import '../../components/ui/rte/rteStyles.css';
 import { Briefcase, X, ArrowRight, CheckCircle } from 'lucide-react';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
+import { stripColorFormatting } from '@/lib/htmlFormatting';
 import ApplyOptions from './ApplyOptions';
 import { CreateCandidateDialog } from '../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog';
 import { hasAppliedAsGuest } from './utils/guestApplicationUtils';
@@ -152,7 +153,9 @@ export default function JobModal({
                       }}
                       // eslint-disable-next-line react/no-danger
                       dangerouslySetInnerHTML={{
-                        __html: job?.description || 'No description available',
+                        __html: stripColorFormatting(
+                          job?.description || 'No description available',
+                        ),
                       }}
                     />
                   </div>
