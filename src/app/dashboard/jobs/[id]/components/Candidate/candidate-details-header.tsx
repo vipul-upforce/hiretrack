@@ -277,20 +277,20 @@ export default function DetailsDialogHeader({
                 (candidate.expectedCTC !== undefined &&
                   candidate.expectedCTC !== null)) &&
                 role !== 'interviewer' && (
-                  <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
-                    <IndianRupee size={12} />
-                    Salary:{' '}
-                    {candidate.currentCTC !== undefined &&
-                      candidate.currentCTC !== null &&
-                      `${candidate.currentCTC}L Cur`}
-                    {candidate.currentCTC !== undefined &&
-                      candidate.currentCTC !== null &&
-                      candidate.expectedCTC !== undefined &&
-                      candidate.expectedCTC !== null &&
-                      ', '}
-                    {candidate.expectedCTC !== undefined &&
-                      candidate.expectedCTC !== null &&
-                      `${candidate.expectedCTC}L Exp`}
+                  <span className="flex items-center gap-1.5 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    <IndianRupee size={14} className="text-gray-500" />
+                    <span>Salary:</span>
+                    <span className="flex items-center gap-2 rounded-md bg-gray-100 px-2 py-0.5 font-medium text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+                      {candidate.currentCTC != null && (
+                        <span>Current {candidate.currentCTC}L</span>
+                      )}
+                      {candidate.currentCTC != null && candidate.expectedCTC != null && (
+                        <span className="text-gray-300 dark:text-gray-600 font-light">|</span>
+                      )}
+                      {candidate.expectedCTC != null && (
+                        <span>Expected {candidate.expectedCTC}L</span>
+                      )}
+                    </span>
                   </span>
                 )}
             </div>
