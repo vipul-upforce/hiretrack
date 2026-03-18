@@ -73,6 +73,8 @@ export function useSearchResultsLogic({
     {
       select: true,
       name: true,
+      email: false,
+      contact: false,
       skills: false,
       location: true,
       jobAssignment: true,

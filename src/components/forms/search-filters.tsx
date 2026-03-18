@@ -120,7 +120,7 @@ export function SearchFilters({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Basic Search Section */}
       <BasicSearchSection
         values={values}

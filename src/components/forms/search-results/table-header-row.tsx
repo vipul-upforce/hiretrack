@@ -10,6 +10,8 @@ import {
   ArrowDown,
   MoreHorizontal,
   User,
+  Mail,
+  Phone,
   Target,
   MapPin,
   Briefcase,
@@ -31,6 +33,8 @@ interface TableHeaderRowProps {
 
 const ICON_MAP: Record<string, React.ReactNode> = {
   name: <User className="h-4 w-4 text-muted-foreground" />,
+  email: <Mail className="h-4 w-4 text-muted-foreground" />,
+  contact: <Phone className="h-4 w-4 text-muted-foreground" />,
   skills: <Target className="h-4 w-4 text-muted-foreground" />,
   location: <MapPin className="h-4 w-4 text-muted-foreground" />,
   jobAssignment: <Briefcase className="h-4 w-4 text-muted-foreground" />,
@@ -42,6 +46,8 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 const COLUMN_LABELS: Record<string, string> = {
   name: 'Name',
+  email: 'Email',
+  contact: 'Contact',
   skills: 'Skills',
   location: 'Location',
   jobAssignment: 'Job Assignment',
@@ -55,6 +61,8 @@ const COLUMN_LABELS: Record<string, string> = {
 
 const SORTABLE_COLUMNS = new Set([
   'name',
+  'email',
+  'contact',
   'location',
   'jobAssignment',
   'overallScore',
@@ -110,8 +118,8 @@ export const TableHeaderRow = memo(({
           return (
             <TableHead key={column} className="font-semibold text-foreground">
               <div className="flex items-center gap-2">
-                {ICON_MAP.column}
-                <span>{COLUMN_LABELS.column || column}</span>
+                {ICON_MAP[column]}
+                <span>{COLUMN_LABELS[column] || column}</span>
               </div>
             </TableHead>
           );
@@ -124,8 +132,8 @@ export const TableHeaderRow = memo(({
             onClick={() => onSort(column === 'archived' ? 'isDeleted' : column)}
           >
             <div className="flex items-center gap-2">
-              {ICON_MAP.column}
-              <span>{COLUMN_LABELS.column || column}</span>
+              {ICON_MAP[column]}
+              <span>{COLUMN_LABELS[column] || column}</span>
               {getSortIcon(
                 column === 'archived' ? 'isDeleted' : column,
                 sortField,

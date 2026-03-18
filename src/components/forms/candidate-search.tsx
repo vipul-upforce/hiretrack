@@ -20,6 +20,8 @@ export interface CandidateField {
 
 export interface SearchFilter {
   name?: string;
+  email?: string;
+  contact?: string;
   skills?: string[];
   location?: string;
   minExpectedCTC?: number;
@@ -53,6 +55,8 @@ function CandidateSearch() {
 
   const initialValues: SearchFilter = {
     name: '',
+    email: '',
+    contact: '',
     skills: [],
     location: '',
     minExpectedCTC: undefined,
@@ -133,6 +137,8 @@ function CandidateSearch() {
         organizationId: OrgID || values.organizationId,
         createdAfter: values.createdAfter?.trim() || undefined,
         createdBefore: values.createdBefore?.trim() || undefined,
+        email: values.email?.trim() || '',
+        contact: values.contact?.trim() || '',
       };
 
       setCurrentFilters(updatedFilters);
@@ -198,41 +204,41 @@ function CandidateSearch() {
 
   const sortedResults = sortField
     ? [...searchResults].sort((a, b) => {
-        let aValue: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-        let bValue: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      let aValue: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      let bValue: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-        // Handle custom sorting fields
-        if (sortField === 'overallScore') {
-          aValue = a.scores?.overall ?? 0;
-          bValue = b.scores?.overall ?? 0;
-        } else if (sortField === 'jobAssignment') {
-          aValue = a.jobId?.title ?? '';
-          bValue = b.jobId?.title ?? '';
-        } else {
-          aValue = a[sortField as keyof Candidate];
-          bValue = b[sortField as keyof Candidate];
-        }
+      // Handle custom sorting fields
+      if (sortField === 'overallScore') {
+        aValue = a.scores?.overall ?? 0;
+        bValue = b.scores?.overall ?? 0;
+      } else if (sortField === 'jobAssignment') {
+        aValue = a.jobId?.title ?? '';
+        bValue = b.jobId?.title ?? '';
+      } else {
+        aValue = a[sortField as keyof Candidate];
+        bValue = b[sortField as keyof Candidate];
+      }
 
-        // Ensure both values are strings for localeCompare
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc'
-            ? aValue.localeCompare(bValue)
-            : bValue.localeCompare(aValue);
-        }
+      // Ensure both values are strings for localeCompare
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
 
-        // Handle numeric comparison
-        if (typeof aValue === 'number' && typeof bValue === 'number') {
-          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-        }
+      // Handle numeric comparison
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
 
-        // Handle cases where one value is a string and the other is a number
-        return typeof aValue === 'string' ? 1 : -1;
-      })
+      // Handle cases where one value is a string and the other is a number
+      return typeof aValue === 'string' ? 1 : -1;
+    })
     : searchResults;
 
   return (
     <div className="space-y-6">
-      <Card className="border-0 shadow-none">
+      <Card className="border-none shadow-none">
         <Formik
           initialValues={initialValues}
           validationSchema={SearchSchema}
@@ -240,6 +246,8 @@ function CandidateSearch() {
             const trimmedValues = {
               ...values,
               name: values.name?.trim() || '',
+              email: values.email?.trim() || '',
+              contact: values.contact?.trim() || '',
               location: values.location?.trim() || '',
               customFields: values.customFields,
               createdAfter: values.createdAfter || '',

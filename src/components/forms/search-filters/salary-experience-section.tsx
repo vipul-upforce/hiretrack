@@ -4,7 +4,13 @@ import { Label } from '@/components/ui/label';
 import type React from 'react';
 
 import { Input } from '@/components/ui/input';
-import { CardContent, CardHeader, CardTitle, Card } from '@/components/ui/card';
+import {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Card,
+} from '@/components/ui/card';
 import { ChevronDown, ChevronRight, Filter } from 'lucide-react';
 import type { SearchFilter } from '../candidate-search';
 
@@ -32,8 +38,8 @@ export function SalaryExperienceSection({
   getErrorMessage,
 }: SalaryExperienceSectionProps) {
   return (
-    <Card>
-      <CardHeader className="pb-6">
+    <Card className="border-border/60 shadow-sm">
+      <CardHeader className="pb-4">
         <CardTitle
           className="mx-0 flex cursor-pointer items-center justify-between gap-2 px-0 text-base transition-colors hover:text-primary"
           onClick={() => setIsSalaryExpanded(!isSalaryExpanded)}
@@ -48,13 +54,16 @@ export function SalaryExperienceSection({
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
         </CardTitle>
+        <CardDescription className="text-xs">
+          Optional ranges for compensation and experience.
+        </CardDescription>
       </CardHeader>
       {isSalaryExpanded && (
         <CardContent className="pb-6 pt-0">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Expected CTC Range */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Expected CTC Range</Label>
+            <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+              <Label className="text-sm font-medium">Expected CTC</Label>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Min</Label>
@@ -67,7 +76,9 @@ export function SalaryExperienceSection({
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError('minExpectedCTC') ? 'border-destructive' : ''
+                      hasError('minExpectedCTC')
+                        ? 'h-9 border-destructive'
+                        : 'h-9'
                     }
                   />
                   {hasError('minExpectedCTC') && (
@@ -87,7 +98,9 @@ export function SalaryExperienceSection({
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError('maxExpectedCTC') ? 'border-destructive' : ''
+                      hasError('maxExpectedCTC')
+                        ? 'h-9 border-destructive'
+                        : 'h-9'
                     }
                   />
                   {hasError('maxExpectedCTC') && (
@@ -100,8 +113,8 @@ export function SalaryExperienceSection({
             </div>
 
             {/* Current CTC Range */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Current CTC Range</Label>
+            <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+              <Label className="text-sm font-medium">Current CTC</Label>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Min</Label>
@@ -114,7 +127,9 @@ export function SalaryExperienceSection({
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError('minCurrentCTC') ? 'border-destructive' : ''
+                      hasError('minCurrentCTC')
+                        ? 'h-9 border-destructive'
+                        : 'h-9'
                     }
                   />
                   {hasError('minCurrentCTC') && (
@@ -134,7 +149,9 @@ export function SalaryExperienceSection({
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError('maxCurrentCTC') ? 'border-destructive' : ''
+                      hasError('maxCurrentCTC')
+                        ? 'h-9 border-destructive'
+                        : 'h-9'
                     }
                   />
                   {hasError('maxCurrentCTC') && (
@@ -147,9 +164,9 @@ export function SalaryExperienceSection({
             </div>
 
             {/* Experience Range */}
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
               <Label className="text-sm font-medium">
-                Experience Range (Years)
+                Experience (Years)
               </Label>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
@@ -163,7 +180,9 @@ export function SalaryExperienceSection({
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError('minExperience') ? 'border-destructive' : ''
+                      hasError('minExperience')
+                        ? 'h-9 border-destructive'
+                        : 'h-9'
                     }
                   />
                   {hasError('minExperience') && (
@@ -183,7 +202,9 @@ export function SalaryExperienceSection({
                     onChange={handleChange}
                     onBlur={handleBlur}
                     className={
-                      hasError('maxExperience') ? 'border-destructive' : ''
+                      hasError('maxExperience')
+                        ? 'h-9 border-destructive'
+                        : 'h-9'
                     }
                   />
                   {hasError('maxExperience') && (

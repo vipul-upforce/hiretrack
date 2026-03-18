@@ -313,6 +313,20 @@ export const TableBodyRows = memo(
                   </div>
                 </TableCell>
               )}
+              {visibleColumns.email && (
+                <TableCell>
+                  <div className="max-w-[220px] truncate text-sm text-muted-foreground">
+                    {candidate.email || '-'}
+                  </div>
+                </TableCell>
+              )}
+              {visibleColumns.contact && (
+                <TableCell>
+                  <div className="text-sm text-muted-foreground">
+                    {candidate.contact || '-'}
+                  </div>
+                </TableCell>
+              )}
               {visibleColumns.skills && (
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
