@@ -93,7 +93,7 @@ export function CredentialsCard({
           </div>
         </div>
 
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <Label htmlFor="connectedEmail">Connected Email (Optional)</Label>
           <Input
             id="connectedEmail"
@@ -107,7 +107,7 @@ export function CredentialsCard({
           <p className="text-xs text-muted-foreground">
             Optional: Email address to use for creating Teams meetings. If not provided, the app will use application context.
           </p>
-        </div>
+        </div> */}
 
         {!isConnected && (
           <Button

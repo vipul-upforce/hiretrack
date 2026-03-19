@@ -16,6 +16,173 @@ import { sendUnifiedMail } from '@/lib/notifications/email/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import { generateCalendarLinks } from '@/app/api/event-mail/calendarUtils';
 
+/** Normalize email for comparison (lowercase, trimmed). */
+function normalizeEmail(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+/**
+ * Resolve the meeting initiator (organizer/sender). Invite is sent as this Azure user,
+ * not necessarily the calendar connectedEmail or the logged-in dashboard user.
+ */
+function resolveInitiator(params: {
+  bodyInitiatorEmail?: string;
+  bodyInitiatorName?: string;
+  authenticatedEmail: string;
+  interviewerEmail?: string;
+  interviewerName?: string;
+}): { initiatorEmail: string; initiatorName: string } {
+  const email =
+    normalizeEmail(params.bodyInitiatorEmail) ||
+    normalizeEmail(params.authenticatedEmail) ||
+    normalizeEmail(params.interviewerEmail) ||
+    '';
+  const name =
+    (typeof params.bodyInitiatorName === 'string' &&
+      params.bodyInitiatorName.trim()) ||
+    (typeof params.interviewerName === 'string' &&
+      params.interviewerName.trim()) ||
+    email;
+  return { initiatorEmail: email, initiatorName: name };
+}
+
+type GraphUserLookupResult = {
+  id: string;
+  userPrincipalName?: string;
+  mail?: string;
+};
+
+async function tryResolveGraphUser(
+  accessToken: string,
+  initiatorEmail: string,
+): Promise<{
+  graphUserPath: string;
+  resolvedBy: 'upn' | 'mailFilter';
+} | null> {
+  const encoded = encodeURIComponent(initiatorEmail);
+
+  // Try direct UPN/email addressing first.
+  const directResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encoded}?$select=id,userPrincipalName,mail`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (directResponse.ok) {
+    const user = (await directResponse.json()) as GraphUserLookupResult;
+    logger.info(
+      { initiatorEmail, userId: user.id, resolvedBy: 'upn' },
+      'Resolved initiator via direct UPN lookup',
+    );
+    return { graphUserPath: `users/${user.id}`, resolvedBy: 'upn' };
+  }
+
+  const directError = await directResponse.text();
+  logger.warn(
+    { initiatorEmail, status: directResponse.status, error: directError },
+    'Direct UPN lookup failed, trying mail filter',
+  );
+
+  // Return null on auth errors so the caller can retry with a fresh token.
+  if (directResponse.status === 401 || directResponse.status === 403) {
+    return null;
+  }
+
+  // If UPN lookup returned 404, try searching by mail (UPN may differ from email).
+  const filterResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/users?$filter=mail eq '${initiatorEmail.replace(/'/g, "''")}'&$select=id,userPrincipalName,mail&$top=1`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (filterResponse.ok) {
+    const data = (await filterResponse.json()) as {
+      value?: GraphUserLookupResult[];
+    };
+    const user = data.value?.[0];
+    if (user?.id) {
+      logger.info(
+        { initiatorEmail, userId: user.id, resolvedBy: 'mailFilter' },
+        'Resolved initiator via mail filter',
+      );
+      return { graphUserPath: `users/${user.id}`, resolvedBy: 'mailFilter' };
+    }
+    logger.warn(
+      { initiatorEmail, resultCount: data.value?.length ?? 0 },
+      'Mail filter returned OK but no matching user found',
+    );
+  } else {
+    const filterError = await filterResponse.text();
+    logger.warn(
+      { initiatorEmail, status: filterResponse.status, error: filterError },
+      'Mail filter lookup also failed',
+    );
+    if (filterResponse.status === 401 || filterResponse.status === 403) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve the Graph user path for initiatorEmail, retrying once with a
+ * force-refreshed app token when the cached token gets 401/403
+ * (e.g. token was minted before User.Read.All was granted).
+ */
+async function resolveGraphUserPathForEmail(params: {
+  accessToken: string;
+  initiatorEmail: string;
+  organizationId: string;
+  teamsConfig: {
+    tenantId?: string;
+    clientId?: string;
+    clientSecret?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiryDate?: number | null;
+  };
+}): Promise<{
+  graphUserPath: string;
+  resolvedBy: 'upn' | 'mailFilter';
+  accessToken: string;
+}> {
+  const { initiatorEmail, organizationId, teamsConfig } = params;
+
+  // First attempt with the current token.
+  const first = await tryResolveGraphUser(params.accessToken, initiatorEmail);
+  if (first) {
+    return { ...first, accessToken: params.accessToken };
+  }
+
+  // If first attempt returned null (auth error or not found), force-refresh
+  // the app token and try once more — covers the case where the cached token
+  // was minted before permissions were granted.
+  logger.info(
+    { initiatorEmail },
+    'User lookup failed; force-refreshing app token and retrying',
+  );
+  const freshToken = await getTeamsAccessToken({
+    organizationId,
+    teamsConfig,
+    forceRefresh: true,
+  });
+
+  const second = await tryResolveGraphUser(
+    freshToken.accessToken,
+    initiatorEmail,
+  );
+  if (second) {
+    return { ...second, accessToken: freshToken.accessToken };
+  }
+
+  throw new Error(
+    `User not found in Microsoft Graph for initiatorEmail=${initiatorEmail}. ` +
+      'Verified with a fresh token. Check: (1) the email matches a UPN or primary mail in Entra ID → Users, ' +
+      '(2) User.Read.All (Application) is granted with admin consent, ' +
+      '(3) wait a few minutes after granting for propagation.',
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
     const [userData, body] = await Promise.all([
@@ -49,7 +216,17 @@ export async function POST(req: NextRequest) {
       organizationName = 'Company',
       meetingNotes = '',
       meetingAttachments = [],
+      initiatorEmail: bodyInitiatorEmail,
+      initiatorName: bodyInitiatorName,
     } = body;
+
+    const { initiatorEmail, initiatorName } = resolveInitiator({
+      bodyInitiatorEmail,
+      bodyInitiatorName,
+      authenticatedEmail: userData.email || '',
+      interviewerEmail,
+      interviewerName,
+    });
 
     const settings = await Settings.findOne({ organizationId })
       .select('microsoftTeams googleCalendar timeZone fileStorage')
@@ -67,18 +244,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine which token to use based on available credentials
-    // Prefer delegated permissions if available (simpler, works with /me endpoint)
-    // Fall back to application permissions if no refresh token
+    if (!initiatorEmail) {
+      return NextResponse.json(
+        {
+          error:
+            'Initiator email is required for Teams meetings. Provide initiatorEmail or ensure the authenticated user or interviewer has an email.',
+        },
+        { status: 400 },
+      );
+    }
+
+    // Use initiator as organizer (not necessarily calendar connectedEmail).
+    // Delegated token is user-specific: only use /me when initiator === connected account.
+    const connectedEmail = normalizeEmail(
+      settings.microsoftTeams.connectedEmail,
+    );
+    const hasDelegated =
+      !!settings.microsoftTeams.refreshToken &&
+      settings.microsoftTeams.isConnected;
+    const initiatorIsConnected =
+      hasDelegated && connectedEmail && connectedEmail === initiatorEmail;
+
     let accessToken: string;
     let useDelegatedPermissions = false;
 
-    if (
-      settings.microsoftTeams.refreshToken &&
-      settings.microsoftTeams.isConnected
-    ) {
-      // Try delegated permissions first - works with /me/onlineMeetings
-      // This requires OnlineMeetings.ReadWrite delegated permission
+    if (initiatorIsConnected) {
       try {
         const calendarToken = await getMicrosoftCalendarAccessToken({
           organizationId,
@@ -86,13 +276,15 @@ export async function POST(req: NextRequest) {
         });
         accessToken = calendarToken.accessToken;
         useDelegatedPermissions = true;
-        logger.info('Using delegated permissions for Teams meeting');
+        logger.info(
+          { initiatorEmail },
+          'Using delegated permissions for Teams meeting (initiator = connected account)',
+        );
       } catch (error) {
         logger.error(
           { error },
           'Failed to get delegated token, falling back to application token',
         );
-        // Fallback to application permissions
         const appToken = await getTeamsAccessToken({
           organizationId,
           teamsConfig: settings.microsoftTeams,
@@ -101,8 +293,14 @@ export async function POST(req: NextRequest) {
         useDelegatedPermissions = false;
       }
     } else {
-      // Use application permissions - requires user email
-      logger.info('Using application permissions for Teams meeting');
+      logger.info(
+        {
+          initiatorEmail,
+          hasDelegated,
+          connectedEmail: connectedEmail || null,
+        },
+        'Using application permissions for Teams meeting (initiator may be different from connected account)',
+      );
       const appToken = await getTeamsAccessToken({
         organizationId,
         teamsConfig: settings.microsoftTeams,
@@ -199,28 +397,25 @@ export async function POST(req: NextRequest) {
       },
     };
 
-    // Determine the correct API endpoint based on permission type
-    let teamsApiUrl: string;
-    if (useDelegatedPermissions) {
-      // Delegated permissions: use /me/onlineMeetings
-      teamsApiUrl = 'https://graph.microsoft.com/v1.0/me/onlineMeetings';
-    } else {
-      // Application permissions: require userPrincipalName (email) or user ID
-      const userPrincipalName =
-        settings.microsoftTeams.connectedEmail || interviewerEmail || null;
-
-      if (!userPrincipalName) {
-        return NextResponse.json(
-          {
-            error:
-              'User email is required for Teams meetings. Please connect Microsoft Calendar or provide interviewer email.',
-          },
-          { status: 400 },
-        );
-      }
-
-      // Use userPrincipalName (email) for application permissions
-      teamsApiUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(userPrincipalName)}/onlineMeetings`;
+    // Organizer = initiator (may be any Azure user), not calendar connectedEmail.
+    // When using app permissions, resolve initiator's user path once for both
+    // onlineMeetings and calendar events (/users/{id}/events).
+    let graphUserPath: string | null = null;
+    let teamsApiUrl = 'https://graph.microsoft.com/v1.0/me/onlineMeetings';
+    if (!useDelegatedPermissions) {
+      const resolved = await resolveGraphUserPathForEmail({
+        accessToken,
+        initiatorEmail,
+        organizationId,
+        teamsConfig: settings.microsoftTeams,
+      });
+      graphUserPath = resolved.graphUserPath;
+      accessToken = resolved.accessToken;
+      teamsApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/onlineMeetings`;
+      logger.info(
+        { initiatorEmail, resolvedBy: resolved.resolvedBy, graphUserPath },
+        'Resolved initiator user for application-permissions Teams meeting',
+      );
     }
 
     const teamsResponse = await fetch(teamsApiUrl, {
@@ -245,14 +440,28 @@ export async function POST(req: NextRequest) {
 
           // Provide helpful error messages for common issues
           if (teamsResponse.status === 403) {
-            errorMessage =
-              'Permission denied. Please ensure OnlineMeetings.ReadWrite permission is granted and admin consent is provided.';
+            const rawMessage: string =
+              typeof errorData.error.message === 'string'
+                ? errorData.error.message
+                : '';
+
+            if (
+              rawMessage.includes(
+                'No application access policy found for this app',
+              )
+            ) {
+              errorMessage =
+                'Permission denied by Exchange Online application access policy.';
+            } else {
+              errorMessage =
+                'Permission denied. Please ensure OnlineMeetings.ReadWrite permission is granted and admin consent is provided.';
+            }
           } else if (teamsResponse.status === 404) {
             if (useDelegatedPermissions) {
               errorMessage =
                 'User not found. Please reconnect Microsoft Calendar to refresh permissions.';
             } else {
-              errorMessage = `User not found: ${settings.microsoftTeams.connectedEmail || interviewerEmail || 'unknown'}. Please verify the user email is correct.`;
+              errorMessage = `User not found: ${initiatorEmail}. Ensure the user exists in your Azure AD tenant and admin consent is granted for OnlineMeetings.ReadWrite.All.`;
             }
           } else if (teamsResponse.status === 401) {
             errorMessage =
@@ -270,6 +479,7 @@ export async function POST(req: NextRequest) {
           errorText,
           teamsApiUrl,
           useDelegatedPermissions,
+          initiatorEmail,
           hasRefreshToken: !!settings.microsoftTeams.refreshToken,
           connectedEmail: settings.microsoftTeams.connectedEmail,
         },
@@ -294,7 +504,7 @@ export async function POST(req: NextRequest) {
       startDateTime?: string;
       endDateTime?: string;
     };
-
+    console.log(teamsData, 'teamsData');
     const meetingId = teamsData.id || '';
     const meetingLink = teamsData.joinWebUrl || teamsData.joinUrl || '';
 
@@ -404,19 +614,22 @@ Candidate: ${candidateName}`;
     let summary = meetingSubject;
     let calendarDescription = description;
 
-    // Create Outlook Calendar event if Microsoft Calendar is connected via OAuth2
-    if (
-      settings?.microsoftTeams?.isConnected &&
-      settings?.microsoftTeams?.refreshToken
-    ) {
-      try {
-        const calendarAccessToken = await getMicrosoftCalendarAccessToken({
-          organizationId,
-          teamsConfig: settings.microsoftTeams,
-        });
+    // Create Outlook Calendar event in initiator's mailbox:
+    // - Delegated: when initiator is the connected account → /me/events with delegated token.
+    // - Application: when initiator is not connected (e.g. rakesh) → /users/{id}/events with app token.
+    // Google Calendar is not required; we always create the MS event in the initiator's mailbox when possible.
+    const shouldCreateOutlookEvent =
+      useDelegatedPermissions ||
+      (graphUserPath !== null && accessToken.length > 0);
 
-        // Create Outlook Calendar event using Microsoft Graph API
-        // Include the Teams meeting link in the event
+    console.log(shouldCreateOutlookEvent, 'shouldCreateOutlookEvent');
+    console.log(graphUserPath, 'graphUserPath');
+    console.log(accessToken, 'accessToken');
+    console.log(useDelegatedPermissions, 'useDelegatedPermissions');
+
+    if (shouldCreateOutlookEvent) {
+      try {
+        console.log('with useDelegatedPermissions true');
         const calendarEventBody = `${calendarDescription.replace(/\n/g, '<br>')}${meetingLink ? `<br><br><strong>Teams Meeting Link:</strong> <a href="${meetingLink}">${meetingLink}</a>` : ''}`;
 
         const calendarEvent: {
@@ -462,17 +675,60 @@ Candidate: ${candidateName}`;
           };
         }
 
-        const calendarResponse = await fetch(
-          'https://graph.microsoft.com/v1.0/me/events',
-          {
+        let calendarApiUrl: string;
+        let calendarToken: string;
+        console.log(useDelegatedPermissions, 'useDelegatedPermissions');
+        if (useDelegatedPermissions) {
+          const calendarAccessToken = await getMicrosoftCalendarAccessToken({
+            organizationId,
+            teamsConfig: settings.microsoftTeams,
+          });
+          calendarToken = calendarAccessToken.accessToken;
+          calendarApiUrl = 'https://graph.microsoft.com/v1.0/me/events';
+        } else {
+          calendarToken = accessToken;
+          calendarApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/events`;
+        }
+
+        let calendarResponse = await fetch(calendarApiUrl, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${calendarToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(calendarEvent),
+        });
+
+        // If app token was cached before Calendars.ReadWrite consent, refresh and retry once
+        if (
+          !useDelegatedPermissions &&
+          calendarResponse.status === 403 &&
+          graphUserPath
+        ) {
+          const retryErrorText = await calendarResponse.text();
+          logger.warn(
+            {
+              status: calendarResponse.status,
+              errorText: retryErrorText,
+              initiatorEmail,
+            },
+            'Outlook event create returned 403; refreshing app token and retrying once',
+          );
+          const refreshedToken = await getTeamsAccessToken({
+            organizationId,
+            teamsConfig: settings.microsoftTeams,
+            forceRefresh: true,
+          });
+          calendarToken = refreshedToken.accessToken;
+          calendarResponse = await fetch(calendarApiUrl, {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${calendarAccessToken.accessToken}`,
+              Authorization: `Bearer ${calendarToken}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify(calendarEvent),
-          },
-        );
+          });
+        }
 
         if (calendarResponse.ok) {
           const eventData = await calendarResponse.json();
@@ -483,23 +739,49 @@ Candidate: ${candidateName}`;
             meetingLink;
           summary = eventData.subject || summary;
           calendarDescription = eventData.body?.content || calendarDescription;
+          logger.info(
+            {
+              initiatorEmail,
+              useDelegatedPermissions,
+              eventId: calendarEventId,
+            },
+            'Outlook Calendar event created in initiator mailbox',
+          );
+          console.log(calendarEventId, 'calendarEventId');
         } else {
           const errorText = await calendarResponse.text();
           logger.error(
-            { status: calendarResponse.status, errorText },
+            {
+              status: calendarResponse.status,
+              errorText,
+              initiatorEmail,
+              useDelegatedPermissions,
+              graphUserPath,
+            },
             'Failed to create Outlook Calendar event',
           );
+          if (
+            calendarResponse.status === 403 &&
+            errorText.includes('ErrorAccessDenied')
+          ) {
+            logger.error(
+              { initiatorEmail, graphUserPath },
+              '403 on /users/{id}/events: ensure Exchange Application Access Policy allows this app, or use RestrictAccess policy scoped to the right mailboxes. See PERMISSIONS.md.',
+            );
+          }
         }
       } catch (calendarError) {
         logger.error(
-          { error: calendarError },
+          { error: calendarError, initiatorEmail },
           'Error creating Outlook Calendar event',
         );
         // Continue without calendar event - Teams meeting is still created
       }
     }
 
-    // Optionally create Google Calendar event if Google Calendar is connected (but not if Outlook Calendar was created)
+    // Optional: create Google Calendar event only as fallback when no Outlook event was created.
+    // We do not require Google Calendar for Teams meetings; the Outlook event in the initiator's
+    // mailbox (delegated or app permissions) is the primary calendar invite.
     if (settings?.googleCalendar?.isConnected && !calendarEventId) {
       const clientSecret = decryptText(
         settings.googleCalendar.clientSecret,
@@ -528,9 +810,14 @@ Candidate: ${candidateName}`;
 
       const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
+      // Include Microsoft Teams meeting link in Google invite so attendees have it
+      const googleEventDescription = meetingLink
+        ? `${calendarDescription}\n\nMicrosoft Teams Meeting:\n${meetingLink}`
+        : calendarDescription;
+
       const event = {
         summary,
-        description: calendarDescription,
+        description: googleEventDescription,
         start: {
           dateTime: startDateTime.toISOString(),
           timeZone: organizationTimezone,
@@ -615,8 +902,8 @@ Candidate: ${candidateName}`;
             subject: emailSubject,
             html: emailContent,
             sentBy: userData.id || 'system',
-            sentByEmail: userData.email || '',
-            sentByName: userData.name || 'System',
+            sentByEmail: initiatorEmail,
+            sentByName: initiatorName,
             recipientType: 'external',
             metadata: {
               jobId: body.jobId,
