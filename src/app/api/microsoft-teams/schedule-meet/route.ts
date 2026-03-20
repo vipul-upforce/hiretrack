@@ -504,7 +504,6 @@ export async function POST(req: NextRequest) {
       startDateTime?: string;
       endDateTime?: string;
     };
-    console.log(teamsData, 'teamsData');
     const meetingId = teamsData.id || '';
     const meetingLink = teamsData.joinWebUrl || teamsData.joinUrl || '';
 
@@ -622,14 +621,18 @@ Candidate: ${candidateName}`;
       useDelegatedPermissions ||
       (graphUserPath !== null && accessToken.length > 0);
 
-    console.log(shouldCreateOutlookEvent, 'shouldCreateOutlookEvent');
-    console.log(graphUserPath, 'graphUserPath');
-    console.log(accessToken, 'accessToken');
-    console.log(useDelegatedPermissions, 'useDelegatedPermissions');
+    logger.info(
+      {
+        shouldCreateOutlookEvent,
+        useDelegatedPermissions,
+        hasGraphUserPath: !!graphUserPath,
+        initiatorEmail,
+      },
+      'Outlook event creation decision',
+    );
 
     if (shouldCreateOutlookEvent) {
       try {
-        console.log('with useDelegatedPermissions true');
         const calendarEventBody = `${calendarDescription.replace(/\n/g, '<br>')}${meetingLink ? `<br><br><strong>Teams Meeting Link:</strong> <a href="${meetingLink}">${meetingLink}</a>` : ''}`;
 
         const calendarEvent: {
@@ -677,7 +680,6 @@ Candidate: ${candidateName}`;
 
         let calendarApiUrl: string;
         let calendarToken: string;
-        console.log(useDelegatedPermissions, 'useDelegatedPermissions');
         if (useDelegatedPermissions) {
           const calendarAccessToken = await getMicrosoftCalendarAccessToken({
             organizationId,
@@ -747,7 +749,6 @@ Candidate: ${candidateName}`;
             },
             'Outlook Calendar event created in initiator mailbox',
           );
-          console.log(calendarEventId, 'calendarEventId');
         } else {
           const errorText = await calendarResponse.text();
           logger.error(
