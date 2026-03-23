@@ -1,7 +1,7 @@
 'use client';
 
 import { useBulkUpdateCandidatesMutation } from '@/lib/features/candidate/candidateApi';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -19,6 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { clearSelectedCandidates } from '@/lib/redux/selectedCandidatesSlice';
+import type { BulkUpdateOperationParams } from '@/app/api/candidates/bulk-update/types';
 import type { BulkReasonPayload } from './types';
 
 export interface BulkReasonDialogProps {
@@ -38,7 +39,13 @@ export function BulkReasonDialog({
   refetch,
   onSuccess,
 }: BulkReasonDialogProps) {
-  const { candidateIds, newStatus, statusAlreadyApplied } = payload;
+  const {
+    candidateIds,
+    newStatus,
+    statusAlreadyApplied,
+    pendingOperations,
+    applyWithoutReason,
+  } = payload;
   const [newRemark, setNewRemark] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [remarkRating, setRemarkRating] = useState<number | null>(null);
@@ -51,73 +58,139 @@ export function BulkReasonDialog({
   const { user } = useAppSelector((state) => state.auth || {});
   const dispatch = useAppDispatch();
 
-  const handleSubmit = async () => {
-    if (isSubmitting || !user?.id) return;
-    const description = newRemark.trim();
-    if (!description) {
+  const didUserSubmitRef = useRef(false);
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      didUserSubmitRef.current = false;
+    }
+  }, [isOpen]);
+
+  const getBaseOperations = (): BulkUpdateOperationParams[] => {
+    const base = Array.isArray(pendingOperations)
+      ? pendingOperations.filter(
+        (op): op is BulkUpdateOperationParams =>
+          !!op && typeof op === 'object' && 'operation' in op,
+      )
+      : [];
+    if (statusAlreadyApplied) return base;
+    return base.filter((op) => op.operation !== 'statusUpdate');
+  };
+
+  const buildOperations = (description?: string) => {
+    const trimmed = description?.trim();
+    const operations = [...getBaseOperations()];
+    if (!statusAlreadyApplied) {
+      operations.push({
+        operation: 'statusUpdate',
+        status: newStatus,
+        ...(trimmed ? { remark: trimmed } : {}),
+      });
+    }
+    if (trimmed) {
+      operations.push({
+        operation: 'addRemark',
+        description: trimmed,
+        isPrivate: isSubRemarkPrivate,
+        rating: remarkRating ?? 0,
+        selectedMentionUserIds: selectedMentions.map((m) => m._id),
+      });
+    }
+    return operations;
+  };
+
+  const submitBulkUpdate = async (
+    description: string,
+    {
+      requireReason,
+      closeOnSuccess,
+    }: { requireReason: boolean; closeOnSuccess: boolean },
+  ): Promise<boolean> => {
+    if (isSubmitting || !user?.id) return false;
+    const trimmed = description.trim();
+    if (requireReason && !trimmed) {
       toast({
         title: 'Error',
         description: 'Please add a reason',
         variant: 'destructive',
       });
-      return;
+      return false;
     }
 
-    setIsSubmitting(true);
     try {
-      if (statusAlreadyApplied) {
-        await bulkUpdateCandidates({
-          candidateIds,
-          operation: 'addRemark',
-          description,
-          isPrivate: isSubRemarkPrivate,
-          rating: remarkRating ?? 0,
-          selectedMentionUserIds: selectedMentions.map((m) => m._id),
-        }).unwrap();
-      } else {
-        await bulkUpdateCandidates({
-          candidateIds,
-          operations: [
-            {
-              operation: 'statusUpdate',
-              status: newStatus,
-              remark: description,
-            },
-            {
-              operation: 'addRemark',
-              description,
-              isPrivate: isSubRemarkPrivate,
-              rating: remarkRating ?? 0,
-              selectedMentionUserIds: selectedMentions.map((m) => m._id),
-            },
-          ],
-        }).unwrap();
+      const operations = buildOperations(trimmed || undefined);
+      if (operations.length === 0) {
+        toast({
+          title: 'Info',
+          description: 'No updates to apply',
+        });
+        return false;
       }
+
+      if (isMountedRef.current) {
+        setIsSubmitting(true);
+      }
+      await bulkUpdateCandidates({
+        candidateIds,
+        operations,
+      }).unwrap();
 
       toast({
         title: 'Success',
-        description: `Reason added for ${candidateIds.length} candidate(s)`,
+        description: trimmed
+          ? `Reason added for ${candidateIds.length} candidate(s)`
+          : `Updated ${candidateIds.length} candidate(s)`,
       });
-      setOpenRemarksFor(null);
-      onOpenChange(false);
-      setNewRemark('');
-      setRemarkRating(null);
+      if (closeOnSuccess) {
+        setOpenRemarksFor(null);
+        onOpenChange(false);
+      }
       onSuccess?.();
       await refetch();
       dispatch(clearSelectedCandidates());
+      return true;
     } catch (err) {
       toast({
         title: 'Error',
-        description: (err as Error)?.message ?? 'Failed to add reason',
+        description: (err as Error)?.message ?? 'Failed to update candidates',
         variant: 'destructive',
       });
+      return false;
     } finally {
-      setIsSubmitting(false);
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
+    didUserSubmitRef.current = true;
+    const success = await submitBulkUpdate(newRemark, {
+      requireReason: true,
+      closeOnSuccess: true,
+    });
+    if (success && isMountedRef.current) {
+      setNewRemark('');
+      setRemarkRating(null);
     }
   };
 
   const handleOpenChange = (open: boolean) => {
-    if (!open) setOpenRemarksFor(null);
+    if (!open) {
+      if (!didUserSubmitRef.current && !isSubmitting && applyWithoutReason) {
+        didUserSubmitRef.current = true;
+        void submitBulkUpdate('', { requireReason: false, closeOnSuccess: false });
+      }
+      setOpenRemarksFor(null);
+    }
     onOpenChange(open);
   };
 

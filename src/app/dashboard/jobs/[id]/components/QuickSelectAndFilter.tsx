@@ -4,7 +4,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, X } from 'lucide-react';
-import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import {
+  BulkReasonRequestPayload,
+  CandidateActionType,
+} from '@/components/unified-candidate-dialog/types';
 import { Job } from '@/types/job';
 import { Candidate } from '@/types/candidate';
 import { useRouter } from 'next/navigation';
@@ -45,10 +48,7 @@ interface QuickSelectAndFilterProps {
   ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
   /** When job has promptForStatusChangeReason and bulk status update: open bulk reason dialog */
-  onBulkStatusRequiresReason?: (payload: {
-    candidateIds: string[];
-    newStatus: string;
-  }) => void;
+  onBulkStatusRequiresReason?: (payload: BulkReasonRequestPayload) => void;
 }
 
 export function QuickSelectAndFilter({

@@ -2,6 +2,7 @@ import * as Yup from 'yup';
 import { Dayjs } from 'dayjs';
 import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
 import { Candidate } from '@/types/candidate';
+import type { BulkUpdateOperationParams } from '@/app/api/candidates/bulk-update/types';
 
 export type CandidateActionType =
   | 'assignTo'
@@ -109,6 +110,14 @@ export interface BulkStatusQueueItem {
   validationInfo?: string;
 }
 
+export type BulkReasonRequestPayload = {
+  candidateIds: string[];
+  newStatus: string;
+  pendingOperations?: BulkUpdateOperationParams[];
+  /** When true, apply selected bulk operations even if user closes the reason dialog without submitting. */
+  applyWithoutReason?: boolean;
+};
+
 export interface UnifiedCandidateActionsDialogProps {
   candidate: Candidate;
   /** Optional array of candidates for bulk operations */
@@ -137,10 +146,7 @@ export interface UnifiedCandidateActionsDialogProps {
   /** Bulk status update: when some candidates require checklist, called with queue to process one-by-one (checklist form for each) */
   onBulkStatusRequiresChecklist?: (queue: BulkStatusQueueItem[]) => void;
   /** When job has promptForStatusChangeReason and bulk status update: open bulk reason dialog first; on submit from dialog, status + remark are applied. */
-  onBulkStatusRequiresReason?: (payload: {
-    candidateIds: string[];
-    newStatus: string;
-  }) => void;
+  onBulkStatusRequiresReason?: (payload: BulkReasonRequestPayload) => void;
 }
 
 export const getValidationSchema = (currentJobId: string | undefined) =>

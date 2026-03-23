@@ -18,6 +18,7 @@ import { NoDataFound } from '@/app/not-found';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { clearSelectedCandidates } from '@/lib/redux/selectedCandidatesSlice';
 import logger from '@/lib/logger';
+import type { BulkReasonRequestPayload } from '@/components/unified-candidate-dialog/types';
 import { initialCandidateColumns } from './data/initial-data';
 import LoaderSkeleton from './components/Lanes/loader-skeleton';
 import { useKanbanBoard } from './hooks/useKanbanBoard';
@@ -267,7 +268,7 @@ export default function JobProgressPage() {
   );
 
   const onBulkStatusRequiresReason = useCallback(
-    (payload: { candidateIds: string[]; newStatus: string }) => {
+    (payload: BulkReasonRequestPayload) => {
       setOpenRemarksFor(
         stringifyBulkReasonPayload({
           ...payload,
