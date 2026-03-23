@@ -18,6 +18,8 @@ interface ColumnToggleProps {
 const COLUMN_LABELS: Record<string, string> = {
   select: 'SELECT',
   name: 'NAME',
+  email: 'EMAIL',
+  contact: 'CONTACT',
   skills: 'SKILLS',
   location: 'LOCATION',
   jobAssignment: 'JOB ASSIGNMENT',
@@ -56,7 +58,7 @@ export const ColumnToggle = memo(({
             checked={value}
             onCheckedChange={(checked) => handleCheckedChange(key, checked)}
           >
-            {COLUMN_LABELS.key || key.toUpperCase()}
+            {COLUMN_LABELS[key] || key.toUpperCase()}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

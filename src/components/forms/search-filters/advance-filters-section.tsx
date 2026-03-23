@@ -1,6 +1,12 @@
 'use client';
 
-import { CardContent, CardHeader, CardTitle, Card } from '@/components/ui/card';
+import {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Card,
+} from '@/components/ui/card';
 import { ChevronDown, ChevronRight, Settings } from 'lucide-react';
 import type { CustomField } from '@/Custom_Fields/Types/CustomField';
 import { DateRangeFilter } from './date-range-filter';
@@ -52,8 +58,8 @@ export function AdvancedFiltersSection({
   removeMetaField,
 }: AdvancedFiltersSectionProps) {
   return (
-    <Card>
-      <CardHeader className="pb-6">
+    <Card className="border-border/60 shadow-sm">
+      <CardHeader className="pb-4">
         <CardTitle
           className="flex cursor-pointer items-center justify-between gap-2 text-base transition-colors hover:text-primary"
           onClick={() => setIsAdvancedExpanded(!isAdvancedExpanded)}
@@ -68,18 +74,23 @@ export function AdvancedFiltersSection({
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           )}
         </CardTitle>
+        <CardDescription className="text-xs">
+          Use date range or custom fields for targeted searches.
+        </CardDescription>
       </CardHeader>
       {isAdvancedExpanded && (
         <CardContent className="pb-6 pt-0">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {/* Date Range */}
-            <DateRangeFilter
-              createdAfter={createdAfter}
-              createdBefore={createdBefore}
-              setFieldValue={setFieldValue}
-              hasError={hasError}
-              getErrorMessage={getErrorMessage}
-            />
+            <div className="rounded-lg border bg-muted/20 p-3">
+              <DateRangeFilter
+                createdAfter={createdAfter}
+                createdBefore={createdBefore}
+                setFieldValue={setFieldValue}
+                hasError={hasError}
+                getErrorMessage={getErrorMessage}
+              />
+            </div>
           </div>
 
           {/* Custom Fields Button */}

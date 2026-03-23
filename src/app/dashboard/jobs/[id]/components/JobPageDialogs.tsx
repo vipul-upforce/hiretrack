@@ -7,6 +7,7 @@ import { Job } from '@/types/job';
 import { useAppSelector } from '@/lib/redux/hooks';
 import type {
   BulkStatusQueueItem,
+  BulkReasonRequestPayload,
   CandidateActionType,
   StatusChangeValidationResult,
 } from '@/components/unified-candidate-dialog/types';
@@ -103,10 +104,7 @@ interface JobPageDialogsProps {
   /** When the unified remark dialog (no checklist) closes; e.g. clear bulk selection. */
   onUnifiedRemarkClose?: () => void;
   /** When job has promptForStatusChangeReason and bulk status update from unified dialog: open bulk reason dialog. */
-  onBulkStatusRequiresReason?: (payload: {
-    candidateIds: string[];
-    newStatus: string;
-  }) => void;
+  onBulkStatusRequiresReason?: (payload: BulkReasonRequestPayload) => void;
 }
 
 export function JobPageDialogs({
@@ -215,45 +213,45 @@ export function JobPageDialogs({
   // Find candidate for checklist remarks dialog (columns first, then mergedCandidates)
   const checklistCandidate = openRemarksFor
     ? (() => {
-        const fromColumns = columns
-          .flatMap((col) => col.candidates)
-          .find((c) => {
-            if (c._id === openRemarksFor) return true;
-            if (openRemarksFor.startsWith('{')) {
-              try {
-                const parsed = JSON.parse(openRemarksFor) as {
-                  candidateId?: string;
-                };
-                return parsed.candidateId === c._id;
-              } catch (e) {
-                logger.error(
-                  'Failed to parse openRemarksFor JSON:',
-                  openRemarksFor,
-                  e,
-                );
-                return false;
-              }
-            }
-            return false;
-          });
-        if (fromColumns) return fromColumns;
-        if (openRemarksFor.startsWith('{')) {
-          try {
-            const parsed = JSON.parse(openRemarksFor) as {
-              candidateId?: string;
-            };
-            if (parsed.candidateId) {
-              return (
-                mergedCandidates.find((c) => c._id === parsed.candidateId) ??
-                null
+      const fromColumns = columns
+        .flatMap((col) => col.candidates)
+        .find((c) => {
+          if (c._id === openRemarksFor) return true;
+          if (openRemarksFor.startsWith('{')) {
+            try {
+              const parsed = JSON.parse(openRemarksFor) as {
+                candidateId?: string;
+              };
+              return parsed.candidateId === c._id;
+            } catch (e) {
+              logger.error(
+                'Failed to parse openRemarksFor JSON:',
+                openRemarksFor,
+                e,
               );
+              return false;
             }
-          } catch {
-            // ignore
           }
+          return false;
+        });
+      if (fromColumns) return fromColumns;
+      if (openRemarksFor.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(openRemarksFor) as {
+            candidateId?: string;
+          };
+          if (parsed.candidateId) {
+            return (
+              mergedCandidates.find((c) => c._id === parsed.candidateId) ??
+              null
+            );
+          }
+        } catch {
+          // ignore
         }
-        return null;
-      })()
+      }
+      return null;
+    })()
     : null;
 
   const checklistInfo = openRemarksFor?.startsWith('{')
@@ -269,12 +267,12 @@ export function JobPageDialogs({
   const generalRemarksCandidate =
     openRemarksFor && !isChecklistPayload && !bulkReasonPayload
       ? (() => {
-          const fromColumns = columns
-            .flatMap((col) => col.candidates)
-            .find((c) => c._id === openRemarksFor);
-          if (fromColumns) return fromColumns;
-          return mergedCandidates.find((c) => c._id === openRemarksFor) ?? null;
-        })()
+        const fromColumns = columns
+          .flatMap((col) => col.candidates)
+          .find((c) => c._id === openRemarksFor);
+        if (fromColumns) return fromColumns;
+        return mergedCandidates.find((c) => c._id === openRemarksFor) ?? null;
+      })()
       : null;
 
   return (
@@ -435,7 +433,7 @@ export function JobPageDialogs({
           initialAction={'addRemark' as CandidateActionType}
           refetch={refetch}
           onUpdate={handleCandidateUpdate}
-          setLocalCandidate={() => {}}
+          setLocalCandidate={() => { }}
           refetchAssignment={refetch}
           onSuccess={() => setOpenRemarksFor(null)}
           onValidateStatusChange={onValidateStatusChange}

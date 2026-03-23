@@ -1,5 +1,8 @@
 import { Candidate } from '@/types/candidate';
-import type { StatusChangeValidationResult } from '@/components/unified-candidate-dialog/types';
+import type {
+  BulkReasonRequestPayload,
+  StatusChangeValidationResult,
+} from '@/components/unified-candidate-dialog/types';
 
 export interface CandidateDetailsDialogProps {
   candidate: Candidate | null;
@@ -27,8 +30,5 @@ export interface CandidateDetailsDialogProps {
   ) => void;
   onOpenChecklistAfterSave?: (validationInfo: string) => void;
   /** When job has promptForStatusChangeReason and bulk status update from unified dialog: open bulk reason dialog. */
-  onBulkStatusRequiresReason?: (payload: {
-    candidateIds: string[];
-    newStatus: string;
-  }) => void;
+  onBulkStatusRequiresReason?: (payload: BulkReasonRequestPayload) => void;
 }

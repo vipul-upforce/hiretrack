@@ -90,6 +90,48 @@ export function NotificationItem({
   className,
   disableReadStyling = false,
 }: NotificationItemProps) {
+  const escapeRegExp = (value: string) =>
+    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const highlightValues = [
+    notification.metadata?.candidateName,
+    notification.metadata?.jobTitle,
+    notification.metadata?.interviewerName,
+  ]
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter((value) => value.length > 0);
+
+  const uniqueHighlights = Array.from(new Set(highlightValues));
+
+  const renderMessage = (message: string) => {
+    if (uniqueHighlights.length === 0) return message;
+
+    const pattern = uniqueHighlights
+      .map((value) => escapeRegExp(value))
+      .sort((a, b) => b.length - a.length)
+      .join('|');
+
+    const regex = new RegExp(`(${pattern})`, 'gi');
+    const parts = message.split(regex);
+
+    return parts.map((part, index) => {
+      const isMatch = uniqueHighlights.some(
+        (value) => value.toLowerCase() === part.toLowerCase(),
+      );
+
+      if (!isMatch) {
+        // eslint-disable-next-line react/no-array-index-key
+        return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>;
+      }
+
+      return (
+        // eslint-disable-next-line react/no-array-index-key
+        <strong key={`${part}-${index}`} className="font-bold">
+          {part}
+        </strong>
+      );
+    });
+  };
   const handleClick = () => {
     // Only perform the action, don't mark as read automatically
     if (onClick) {
@@ -127,7 +169,7 @@ export function NotificationItem({
       className={cn(
         'flex items-start gap-3 border-l-2 p-3 transition-colors',
         onClick &&
-          'cursor-pointer hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+        'cursor-pointer hover:bg-accent/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
         notification.isRead
           ? 'border-l-transparent opacity-75'
           : 'border-l-primary bg-accent/20',
@@ -191,7 +233,7 @@ export function NotificationItem({
               : 'text-foreground',
           )}
         >
-          {notification.message}
+          {renderMessage(notification.message)}
         </p>
 
         {/* Metadata */}

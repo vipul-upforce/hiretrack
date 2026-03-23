@@ -14,6 +14,8 @@ interface FilterRequestBody {
   page?: string;
   limit?: string;
   name?: string;
+  email?: string;
+  contact?: string;
   skills?: string[];
   location?: string;
   minExpectedCTC?: string;
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
+      email,
+      contact,
       skills,
       location,
       minExpectedCTC,
@@ -94,6 +98,24 @@ export async function POST(request: NextRequest) {
       addLogicCondition({
         name: {
           $regex: name.trim(),
+          $options: 'i',
+        },
+      });
+    }
+
+    if (email) {
+      addLogicCondition({
+        email: {
+          $regex: email.trim(),
+          $options: 'i',
+        },
+      });
+    }
+
+    if (contact) {
+      addLogicCondition({
+        contact: {
+          $regex: contact.trim(),
           $options: 'i',
         },
       });

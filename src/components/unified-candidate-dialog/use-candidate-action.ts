@@ -15,7 +15,6 @@ import {
 } from '@/lib/features/candidate/candidateApi';
 import {
   useAssignJobMutation,
-  useBulkAssignJobMutation,
   useFetchOpenJobsQuery,
   useFetchJobLanesQuery,
 } from '@/lib/features/job/jobApi';
@@ -51,6 +50,7 @@ import {
 } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
 import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
 import { uploadAttachments } from '@/app/dashboard/jobs/[id]/hooks/fileUploadUtils';
+import type { BulkUpdateOperationParams } from '@/app/api/candidates/bulk-update/types';
 import {
   UnifiedFormValues,
   CandidateActionType,
@@ -103,7 +103,6 @@ export function useCandidateActions({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [assignJob] = useAssignJobMutation();
-  const [bulkAssignJob] = useBulkAssignJobMutation();
   const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
   const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
   const [uploadFiles] = useUploadFilesMutation();
@@ -730,33 +729,11 @@ export function useCandidateActions({
         }> = [];
 
         // Build operations array from enabled actions
-        // Note: switchJob uses separate API (bulkAssignJob) for now, but could be added to bulk-update later
         if (actions.switchJob && values.jobId) {
-          try {
-            const result = await bulkAssignJob({
-              jobId: values.jobId,
-              candidateIds,
-            }).unwrap();
-            const count =
-              result?.updatedCandidates?.length ?? candidateIds.length;
-            toast({
-              title: 'Success',
-              description: `${count} candidate(s) moved to job`,
-            });
-            onSuccess?.();
-            onOpenChange(false);
-          } catch (error) {
-            toast({
-              title: 'Error',
-              description:
-                (error as { data?: { error?: string } })?.data?.error ||
-                (error as Error)?.message ||
-                'Failed to move candidates',
-              variant: 'destructive',
-            });
-          }
-          setIsSubmitting(false);
-          return;
+          operations.push({
+            operation: 'moveJob',
+            jobId: values.jobId,
+          });
         }
 
         // Bulk Assign To
@@ -1006,6 +983,8 @@ export function useCandidateActions({
             onBulkStatusRequiresReason({
               candidateIds,
               newStatus: values.newStatus as string,
+              pendingOperations: operations as BulkUpdateOperationParams[],
+              applyWithoutReason: true,
             });
             onOpenChange(false);
             setIsSubmitting(false);
