@@ -1,3 +1,4 @@
+import { randomBytes, randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RateLimitConfig {
@@ -39,6 +40,19 @@ function defaultKeyGenerator(req: NextRequest): string {
   const { pathname } = req.nextUrl;
   // console.log('‼️ defaultKeyGenerator', `${ip}:${pathname}`);
   return `${ip}:${pathname}`;
+}
+
+function getClientIp(req: NextRequest): string {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  return (forwardedFor?.split(',')[0] || realIp || 'unknown').trim();
+}
+
+function generateClientId(): string {
+  if (typeof randomUUID === 'function') {
+    return randomUUID();
+  }
+  return randomBytes(16).toString('hex');
 }
 
 /**
@@ -416,8 +430,141 @@ export const licenseValidateRateLimiter = createRateLimiter({
   message: 'License validation rate limit exceeded',
 });
 
-// Email-based rate limiting for login attempts
-export const loginRateLimiter = emailLoginRateLimiter;
+export function createLoginRateLimiter() {
+  const windowMs = 10 * 60 * 1000; // 10 minutes
+  const maxRequestsPerClient = 10; // per browser/client id
+  const maxRequestsPerIp = 20; // shared IP limit (covers scripts/postman)
+  const cookieName = 'lt_cid';
+  const cookieMaxAgeSec = 60 * 60 * 24 * 30; // 30 days
+  const clientMessage =
+    'Too many login attempts for this client, please try again in 10 minutes';
+  const ipMessage =
+    'Too many login attempts, please try again later';
+  const isProd = process.env.NODE_ENV === 'production';
+
+  return async function loginRateLimitMiddleware(
+    request: NextRequest,
+    handler: (req: NextRequest) => Promise<NextResponse>,
+  ): Promise<NextResponse> {
+    const now = Date.now();
+    const ip = getClientIp(request);
+    const ipKey = `login:ip:${ip}`;
+
+    let ipRateLimit = rateLimitStore.get(ipKey);
+    if (!ipRateLimit || ipRateLimit.resetTime < now) {
+      ipRateLimit = { requests: 0, resetTime: now + windowMs };
+      rateLimitStore.set(ipKey, ipRateLimit);
+    }
+
+    const existingClientId = request.cookies.get(cookieName)?.value;
+    const clientId = existingClientId || generateClientId();
+    const clientKey = `login:client:${clientId}`;
+
+    let clientRateLimit = rateLimitStore.get(clientKey);
+    if (!clientRateLimit || clientRateLimit.resetTime < now) {
+      clientRateLimit = { requests: 0, resetTime: now + windowMs };
+      rateLimitStore.set(clientKey, clientRateLimit);
+    }
+
+    const attachClientCookie = (response: NextResponse) => {
+      if (!existingClientId) {
+        response.cookies.set(cookieName, clientId, {
+          httpOnly: true,
+          secure: isProd,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: cookieMaxAgeSec,
+        });
+      }
+    };
+
+    if (ipRateLimit.requests >= maxRequestsPerIp) {
+      const retryAfter = Math.ceil((ipRateLimit.resetTime - now) / 1000);
+      const response = NextResponse.json(
+        { error: ipMessage },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit-IP': maxRequestsPerIp.toString(),
+            'X-RateLimit-Remaining-IP': '0',
+            'X-RateLimit-Reset-IP': new Date(
+              ipRateLimit.resetTime,
+            ).toISOString(),
+          },
+        },
+      );
+      attachClientCookie(response);
+      return response;
+    }
+
+    if (clientRateLimit.requests >= maxRequestsPerClient) {
+      const retryAfter = Math.ceil((clientRateLimit.resetTime - now) / 1000);
+      const response = NextResponse.json(
+        { error: clientMessage },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': maxRequestsPerClient.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': new Date(
+              clientRateLimit.resetTime,
+            ).toISOString(),
+            'X-RateLimit-Limit-IP': maxRequestsPerIp.toString(),
+            'X-RateLimit-Remaining-IP': Math.max(
+              0,
+              maxRequestsPerIp - ipRateLimit.requests,
+            ).toString(),
+            'X-RateLimit-Reset-IP': new Date(
+              ipRateLimit.resetTime,
+            ).toISOString(),
+          },
+        },
+      );
+      attachClientCookie(response);
+      return response;
+    }
+
+    const response = await handler(request);
+
+    if (response.status >= 400) {
+      ipRateLimit.requests += 1;
+      clientRateLimit.requests += 1;
+    }
+
+    response.headers.set(
+      'X-RateLimit-Limit',
+      maxRequestsPerClient.toString(),
+    );
+    response.headers.set(
+      'X-RateLimit-Remaining',
+      Math.max(0, maxRequestsPerClient - clientRateLimit.requests).toString(),
+    );
+    response.headers.set(
+      'X-RateLimit-Reset',
+      new Date(clientRateLimit.resetTime).toISOString(),
+    );
+    response.headers.set(
+      'X-RateLimit-Limit-IP',
+      maxRequestsPerIp.toString(),
+    );
+    response.headers.set(
+      'X-RateLimit-Remaining-IP',
+      Math.max(0, maxRequestsPerIp - ipRateLimit.requests).toString(),
+    );
+    response.headers.set(
+      'X-RateLimit-Reset-IP',
+      new Date(ipRateLimit.resetTime).toISOString(),
+    );
+
+    attachClientCookie(response);
+    return response;
+  };
+}
+
+// Cookie + IP based rate limiting for login attempts
+export const loginRateLimiter = createLoginRateLimiter();
 
 export const logsRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute

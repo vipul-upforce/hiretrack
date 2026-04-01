@@ -9,7 +9,7 @@ import connectToDatabase, {
 import { OneOfMulOrganization } from '@/components/auth/OrganizationDialog';
 import { IUser } from '@/lib/models/user';
 import { IUCandidateAccount } from '@/lib/models/candidateAccount';
-import { emailLoginRateLimiter } from '@/lib/rateLimiter';
+import { loginRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 import { returnTokenBasedResponse } from '@/lib/refreshToken';
 
@@ -558,7 +558,6 @@ async function handleLogin(req: NextRequest) {
 }
 // Export with email-based rate limiting
 export async function POST(req: NextRequest) {
-  // SECURITY FIX: Apply email-based rate limiting to prevent brute force attacks
-  // return await emailLoginRateLimiter(req, handleLogin);
-  return emailLoginRateLimiter(req, handleLogin);
+  // SECURITY FIX: Apply cookie + IP rate limiting to prevent brute force attacks
+  return loginRateLimiter(req, handleLogin);
 }
