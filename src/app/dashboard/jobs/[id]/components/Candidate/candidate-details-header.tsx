@@ -137,12 +137,12 @@ export default function DetailsDialogHeader({
                         }}
                       >
                         <TriangleAlert className="h-4 w-4" />
-                        <span className="sr-only">Duplicate Candidates</span>
+                        <span className="sr-only">Multiple Applications</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-xs">
-                        Duplicate Candidates Detected
+                        Multiple Applications
                       </p>
                     </TooltipContent>
                   </Tooltip>

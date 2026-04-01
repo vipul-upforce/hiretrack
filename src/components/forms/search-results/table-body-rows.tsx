@@ -279,7 +279,7 @@ export const TableBodyRows = memo(
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="text-xs">
-                              Duplicate Profiles Identified
+                              Multiple Applications Identified
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -304,7 +304,7 @@ export const TableBodyRows = memo(
                           </TooltipTrigger>
                           <TooltipContent>
                             <p className="text-xs">
-                              Duplicate Profile Identified
+                              Multiple Applications Identified
                             </p>
                           </TooltipContent>
                         </Tooltip>

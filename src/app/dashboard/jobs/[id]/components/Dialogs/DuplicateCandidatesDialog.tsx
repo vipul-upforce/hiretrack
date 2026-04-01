@@ -376,7 +376,7 @@ export function DuplicateCandidatesDialog({
       <DialogContent className="gap-0 p-0 sm:max-w-[550px]">
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="text-base font-semibold">
-            Duplicate Profiles
+            Multiple Candidates
           </DialogTitle>
 
           <DialogDescription className="text-xs">
