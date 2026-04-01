@@ -559,6 +559,7 @@ export default function JobProgressPage() {
           isDeleteDialogOpen={isDeleteDialogOpen}
           setIsDeleteDialogOpen={setIsDeleteDialogOpen}
           handleDeleteConfirm={handleDeleteConfirm}
+          handleDeleteClick={handleDeleteClick}
           isLaneEditOpen={isLaneEditOpen}
           setIsLaneEditOpen={setIsLaneEditOpen}
           laneToEdit={laneToEdit}

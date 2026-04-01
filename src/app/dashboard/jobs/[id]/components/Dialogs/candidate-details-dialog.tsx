@@ -65,6 +65,7 @@ export function CandidateDetailsDialog({
   onOpenChecklistAfterSave,
   onBulkStatusRequiresReason,
   onViewDetails,
+  onArchiveClick,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -324,6 +325,11 @@ export function CandidateDetailsDialog({
     setIsEditing(true);
   };
 
+  const handleOpenUnifiedAction = (action: CandidateActionType) => {
+    setUnifiedInitialAction(action);
+    setIsUnifiedOpen(true);
+  };
+
   const handleReEvaluation = async () => {
     setConfirmReEvaluateOpen(false);
     try {
@@ -542,7 +548,7 @@ export function CandidateDetailsDialog({
     onOpenChange(false);
   };
   const header = (
-    <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
+    <DialogHeader className="relative px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}
@@ -562,6 +568,9 @@ export function CandidateDetailsDialog({
             setIsUnifiedOpen(true);
           }}
           onOpenDuplicateDialog={() => setIsDuplicateDialogOpen(true)}
+          onOpenUnifiedAction={handleOpenUnifiedAction}
+          onEditClick={handleEditClick}
+          onArchiveClick={onArchiveClick}
         />
       )}
     </DialogHeader>

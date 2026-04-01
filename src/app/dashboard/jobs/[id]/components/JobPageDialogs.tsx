@@ -33,6 +33,7 @@ interface JobPageDialogsProps {
   isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: (open: boolean) => void;
   handleDeleteConfirm: () => void;
+  handleDeleteClick: (candidateId: string) => void;
   isAssigning: boolean;
   setIsAssigning: (open: boolean) => void;
   onOpenCandidateDetailsDialog?: (candidate: Candidate) => void;
@@ -115,6 +116,7 @@ export function JobPageDialogs({
   isDeleteDialogOpen,
   setIsDeleteDialogOpen,
   handleDeleteConfirm,
+  handleDeleteClick,
   isAssigning,
   setIsAssigning,
   isLaneEditOpen,
@@ -285,6 +287,7 @@ export function JobPageDialogs({
         isAssigning={isAssigning}
         setIsAssigning={setIsAssigning}
         onViewDetails={onOpenCandidateDetailsDialog}
+        onArchiveClick={handleDeleteClick}
         onValidateStatusChange={onValidateStatusChange}
         onDeferStatusToChecklist={onDeferStatusToChecklist}
         onOpenChecklistAfterSave={onOpenChecklistAfterSave}

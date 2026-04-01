@@ -11,7 +11,6 @@ import {
 import {
   Copy,
   Tag,
-  Download,
   MapPin,
   Calendar,
   User,
@@ -20,7 +19,6 @@ import {
   Briefcase,
   IndianRupee,
   AlertCircle,
-  FileDown,
   TriangleAlert,
 } from 'lucide-react';
 import { Candidate } from '@/types/candidate';
@@ -38,6 +36,8 @@ import TagsDialog from '../Dialogs/tags-dialog';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
 import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import { CandidateDetailsActionsMenu } from './CandidateDetailsActionsMenu';
 
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
@@ -45,6 +45,9 @@ interface DetailsDialogHeaderProps {
   refetch: () => void;
   onAssignClick?: () => void;
   onOpenDuplicateDialog?: () => void;
+  onOpenUnifiedAction?: (action: CandidateActionType) => void;
+  onEditClick?: () => void;
+  onArchiveClick?: (candidateId: string) => void;
 }
 
 export default function DetailsDialogHeader({
@@ -53,6 +56,9 @@ export default function DetailsDialogHeader({
   refetch,
   onAssignClick,
   onOpenDuplicateDialog,
+  onOpenUnifiedAction,
+  onEditClick,
+  onArchiveClick,
 }: DetailsDialogHeaderProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
@@ -71,7 +77,6 @@ export default function DetailsDialogHeader({
     typeof candidate?.duplicateCount === 'number'
       ? candidate.duplicateCount
       : 0;
-  const duplicateMatches = Math.max(0, duplicateCount - 1);
 
   const handleDownloadCV = () => {
     if (candidate.resume?.url) {
@@ -109,6 +114,17 @@ export default function DetailsDialogHeader({
     <div>
       {candidate.tags ? <TagsList candidate={candidate} /> : null}
       <div className="text-2xl font-semibold">
+        <div className="absolute right-16 top-1.5 z-[90]">
+          <CandidateDetailsActionsMenu
+            candidate={candidate}
+            isAdminOrHr={isAdminOrHr}
+            onOpenUnifiedAction={onOpenUnifiedAction}
+            onEditClick={onEditClick}
+            onArchiveClick={onArchiveClick}
+            onDownloadCV={handleDownloadCV}
+            onDownloadProfile={() => setIsDownloadDialogOpen(true)}
+          />
+        </div>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -217,30 +233,6 @@ export default function DetailsDialogHeader({
                       </PopoverContent>
                     </Popover>
                   )}
-                  {candidate.resume?.url && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={handleDownloadCV}
-                      title="Download CV"
-                    >
-                      <Download size={12} />
-                      <span className="sr-only">Download CV</span>
-                    </Button>
-                  )}
-                  {isAdminOrHr && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={() => setIsDownloadDialogOpen(true)}
-                      title="Download Profile"
-                    >
-                      <FileDown size={12} />
-                      <span className="sr-only">Download Profile</span>
-                    </Button>
-                  )}
                 </div>
               </div>
             )}
@@ -296,7 +288,7 @@ export default function DetailsDialogHeader({
             </div>
           </div>
 
-          <div className="flex items-start gap-4 pl-12">
+          <div className="flex items-start gap-2 pl-12">
             {/* Status and Job */}
             <div className="flex flex-col items-end">
               <div className="mr-0 mt-4">
