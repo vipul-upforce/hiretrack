@@ -10,6 +10,7 @@ import {
   useLazyFetchCandidatesQuery,
   useLazyFetchCandidateHistoryQuery,
   useLazyFetchCandidateDetailsQuery,
+  useDeleteCandidateMutation,
 } from '@/lib/features/candidate/candidateApi';
 import { useParams, usePathname } from 'next/navigation';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -89,6 +90,8 @@ export function CandidateDetailsDialog({
   >(undefined);
   const { user } = useAppSelector((state) => state?.auth ?? {});
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] =
+    useDeleteCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
   const [editingRemark, setEditingRemark] = useState<IEditRemark | null>(null);
@@ -99,6 +102,10 @@ export function CandidateDetailsDialog({
   );
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
+  const [archiveCandidateId, setArchiveCandidateId] = useState<string | null>(
+    null,
+  );
 
   // Reset internal states when the candidate ID changes to "forget" the previous candidate
   useEffect(() => {
@@ -328,6 +335,46 @@ export function CandidateDetailsDialog({
   const handleOpenUnifiedAction = (action: CandidateActionType) => {
     setUnifiedInitialAction(action);
     setIsUnifiedOpen(true);
+  };
+
+  const handleArchiveClick = (candidateId: string) => {
+    if (onArchiveClick) {
+      onArchiveClick(candidateId);
+      return;
+    }
+    setArchiveCandidateId(candidateId);
+    setIsArchiveConfirmOpen(true);
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!archiveCandidateId) return;
+    try {
+      await deleteCandidate(archiveCandidateId).unwrap();
+      const isCurrentlyDeleted = !!localCandidate?.isDeleted;
+      const updatedCandidate = localCandidate
+        ? { ...localCandidate, isDeleted: !isCurrentlyDeleted }
+        : null;
+      if (updatedCandidate) {
+        setLocalCandidate(updatedCandidate);
+        onUpdate?.(updatedCandidate);
+      }
+      toast({
+        title: 'Success',
+        description: `Candidate ${isCurrentlyDeleted ? 'unarchived' : 'archived'} successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          (error as { data?: { error?: string } })?.data?.error ||
+          (error as { message?: string })?.message ||
+          'Failed to update candidate',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsArchiveConfirmOpen(false);
+      setArchiveCandidateId(null);
+    }
   };
 
   const handleReEvaluation = async () => {
@@ -570,7 +617,7 @@ export function CandidateDetailsDialog({
           onOpenDuplicateDialog={() => setIsDuplicateDialogOpen(true)}
           onOpenUnifiedAction={handleOpenUnifiedAction}
           onEditClick={handleEditClick}
-          onArchiveClick={onArchiveClick}
+          onArchiveClick={handleArchiveClick}
         />
       )}
     </DialogHeader>
@@ -751,6 +798,23 @@ export function CandidateDetailsDialog({
         isLoading={isLoading}
         loadingText="Re-Evaluating with AI..."
         className="sm:max-w-[500px]"
+      />
+      <ConfirmationDialog
+        title="Are you sure?"
+        message={
+          localCandidate?.isDeleted
+            ? 'This will unarchive this candidate. They will be visible in the regular view.'
+            : 'This will archive this candidate. They will be hidden from the regular view.'
+        }
+        isOpen={isArchiveConfirmOpen}
+        setIsOpen={setIsArchiveConfirmOpen}
+        onConfirm={handleArchiveConfirm}
+        onCancel={() => setIsArchiveConfirmOpen(false)}
+        isLoading={isDeletingCandidate}
+        loadingText={
+          localCandidate?.isDeleted ? 'Unarchiving...' : 'Archiving...'
+        }
+        buttonName={localCandidate?.isDeleted ? 'Unarchive' : 'Archive'}
       />
       <EditRemarkDialog
         isEditRemarkDialogOpen={isEditRemarkDialogOpen}
