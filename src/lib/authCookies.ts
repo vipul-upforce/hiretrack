@@ -29,8 +29,9 @@ export function getCookieDomain(): string | undefined {
   // Need at least example.com
   if (parts.length < 2) return undefined;
 
-  // demo2.hiretrack.in → .hiretrack.in
-  return `.${parts.slice(-2).join('.')}`;
+  // Keep full host so cookies stay scoped to the current subdomain
+  // e.g. demo.hiretrack.in -> demo.hiretrack.in (not .hiretrack.in)
+  return host;
 }
 
 /**
@@ -63,13 +64,10 @@ export function setAuthCookies({
   orgId,
 }: SetAuthCookiesParams): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
-  const domain = getCookieDomain();
-  console.log('domain', domain);
   const baseCookieOptions = {
     secure: isProduction,
     sameSite: 'lax' as const,
     path: '/',
-    ...(domain ? { domain } : {}),
   };
   // Short-lived access token (30 minutes)
   response.cookies.set('auth_token', accessToken, {
@@ -115,12 +113,10 @@ export function updateAccessToken(
   newAccessToken: string,
 ): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
-  const domain = getCookieDomain();
   const baseCookieOptions = {
     secure: isProduction,
     sameSite: 'lax' as const,
     path: '/',
-    ...(domain ? { domain } : {}),
   };
 
   // Read existing cookies
@@ -158,7 +154,6 @@ export function updateAccessToken(
  */
 export function clearAuthTokens(response: NextResponse): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
-  const domain = getCookieDomain();
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
@@ -166,7 +161,6 @@ export function clearAuthTokens(response: NextResponse): NextResponse {
     maxAge: 0,
     expires: new Date(0),
     path: '/',
-    ...(domain ? { domain } : {}),
   };
 
   const authStateCookieOptions = {
@@ -176,7 +170,6 @@ export function clearAuthTokens(response: NextResponse): NextResponse {
     maxAge: 0,
     expires: new Date(0),
     path: '/',
-    ...(domain ? { domain } : {}),
   };
 
   // Clear all auth-related cookies by setting to empty with maxAge: 0
