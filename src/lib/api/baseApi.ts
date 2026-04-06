@@ -117,6 +117,17 @@ export async function refreshAccessToken(
   // Create the refresh promise
   refreshPromise = (async () => {
     try {
+      const clearClientAuthState = async () => {
+        if (!dispatch) return;
+        try {
+          const { logout } = await import('@/lib/redux/authSlice');
+          dispatch(logout());
+        } catch (dispatchError) {
+          logger.error('Failed to clear client auth state:', dispatchError);
+        }
+      };
+
+      logger.info('Refresh token: request started');
       const response = await fetch(`/api/auth/refresh`, {
         method: 'POST',
         headers: {
@@ -136,6 +147,7 @@ export async function refreshAccessToken(
         if (response.status === 403 && errorData.code === 'LICENSE_INVALID') {
           const errorMessage =
             errorData.licenseError || 'License validation failed';
+          await clearClientAuthState();
           if (typeof window !== 'undefined') {
             window.location.href = `/auth/login?error=license_invalid&message=${encodeURIComponent(
               errorMessage,
@@ -145,6 +157,7 @@ export async function refreshAccessToken(
         }
 
         // If refresh fails, redirect to login and preserve current path + query for post-login redirect
+        await clearClientAuthState();
         if (typeof window !== 'undefined') {
           const path = window.location.pathname + window.location.search;
           const loginUrl =

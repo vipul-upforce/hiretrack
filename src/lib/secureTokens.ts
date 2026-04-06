@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getCookieDomain } from './authCookies';
 
 export interface SecureOrgIdOptions {
   maxAge?: number;
@@ -34,7 +35,7 @@ export function setSecureOrgId(
 
   // Common security flags - Fixed: use ENVIRONMENT consistently
   const isProduction = process.env.ENVIRONMENT === 'production';
-
+  const domain = getCookieDomain();
   // Set organization ID cookie
   response.cookies.set('org_id', orgId, {
     httpOnly: false,
@@ -42,6 +43,7 @@ export function setSecureOrgId(
     sameSite: 'strict',
     maxAge,
     path,
+    ...(domain ? { domain } : {}),
   });
 
   // Set additional security headers

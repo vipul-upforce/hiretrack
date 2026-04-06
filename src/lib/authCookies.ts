@@ -10,6 +10,29 @@ export const COOKIE_LIFETIMES = {
   ORG_ID: 7 * 24 * 60 * 60, // 7 days
 } as const;
 
+export function getCookieDomain(): string | undefined {
+  const baseUrl = process.env.BASE_URL;
+  const isProd = process.env.ENVIRONMENT === 'production';
+
+  if (!isProd || !baseUrl) return undefined;
+
+  // remove protocol if present
+  const host = baseUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, ''); // remove path
+
+  // localhost or IP → do not set domain
+  if (host === 'localhost' || /^\d{1,3}(\.\d{1,3}){3}$/.test(host)) {
+    return undefined;
+  }
+
+  const parts = host.split('.');
+
+  // Need at least example.com
+  if (parts.length < 2) return undefined;
+
+  // demo2.hiretrack.in → .hiretrack.in
+  return `.${parts.slice(-2).join('.')}`;
+}
+
 /**
  * Sets security headers on a response
  */
@@ -40,31 +63,33 @@ export function setAuthCookies({
   orgId,
 }: SetAuthCookiesParams): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
-
-  // Short-lived access token (15 minutes)
+  const domain = getCookieDomain();
+  console.log('domain', domain);
+  const baseCookieOptions = {
+    secure: isProduction,
+    sameSite: 'lax' as const,
+    path: '/',
+    ...(domain ? { domain } : {}),
+  };
+  // Short-lived access token (30 minutes)
   response.cookies.set('auth_token', accessToken, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    ...baseCookieOptions,
     maxAge: COOKIE_LIFETIMES.ACCESS_TOKEN,
-    path: '/',
   });
 
   // Auth state flag for client-side checks
   response.cookies.set('auth_state', 'true', {
-    secure: isProduction,
-    sameSite: 'strict',
+    ...baseCookieOptions,
     maxAge: COOKIE_LIFETIMES.ACCESS_TOKEN,
-    path: '/',
+    httpOnly: false,
   });
 
   // Refresh token (7 days)
   response.cookies.set('refresh_token', refreshToken, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    ...baseCookieOptions,
     maxAge: COOKIE_LIFETIMES.REFRESH_TOKEN,
-    path: '/',
   });
 
   // Organization id (7 days) - defer to existing helper for headers/options
@@ -90,11 +115,17 @@ export function updateAccessToken(
   newAccessToken: string,
 ): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
+  const domain = getCookieDomain();
+  const baseCookieOptions = {
+    secure: isProduction,
+    sameSite: 'lax' as const,
+    path: '/',
+    ...(domain ? { domain } : {}),
+  };
 
   // Read existing cookies
   const refreshToken = request.cookies.get('refresh_token')?.value || '';
   const orgId = request.cookies.get('org_id')?.value || '';
-
   // If we have all required cookies, use full setAuthCookies
   if (refreshToken && orgId) {
     return setAuthCookies({
@@ -108,17 +139,14 @@ export function updateAccessToken(
   // Fallback: only update access token and auth_state if other cookies missing
   response.cookies.set('auth_token', newAccessToken, {
     httpOnly: true,
-    secure: isProduction,
-    sameSite: 'strict',
+    ...baseCookieOptions,
     maxAge: COOKIE_LIFETIMES.ACCESS_TOKEN,
-    path: '/',
   });
 
   response.cookies.set('auth_state', 'true', {
-    secure: isProduction,
-    sameSite: 'strict',
+    ...baseCookieOptions,
+    httpOnly: false,
     maxAge: COOKIE_LIFETIMES.ACCESS_TOKEN,
-    path: '/',
   });
 
   return response;
@@ -130,7 +158,7 @@ export function updateAccessToken(
  */
 export function clearAuthTokens(response: NextResponse): NextResponse {
   const isProduction = process.env.ENVIRONMENT === 'production';
-
+  const domain = getCookieDomain();
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
@@ -138,6 +166,7 @@ export function clearAuthTokens(response: NextResponse): NextResponse {
     maxAge: 0,
     expires: new Date(0),
     path: '/',
+    ...(domain ? { domain } : {}),
   };
 
   const authStateCookieOptions = {
@@ -147,6 +176,7 @@ export function clearAuthTokens(response: NextResponse): NextResponse {
     maxAge: 0,
     expires: new Date(0),
     path: '/',
+    ...(domain ? { domain } : {}),
   };
 
   // Clear all auth-related cookies by setting to empty with maxAge: 0
