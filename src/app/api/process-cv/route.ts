@@ -6,6 +6,8 @@ import connectToDatabase, {
   cvBatch as CVBatch,
   History,
   DuplicateCandidate,
+  Job,
+  Organization,
 } from '@/lib/mongodb';
 import { handleSingleFile } from '@/lib/fileUtils';
 import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
@@ -16,6 +18,17 @@ import { Types } from 'mongoose';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ISettings, IAIProviders } from '@/lib/models/settings';
 import logger from '@/lib/logger';
+import type { ICandidateHistory } from '@/lib/models/history';
+import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import type { ICandidate } from '@/lib/models/candidate';
+import {
+  buildRemarkHistoryEntry,
+  buildStatusHistoryEntry,
+  getEffectiveSelectedIds,
+  normalizeCvBatchOperations,
+  parseCvBatchOperations,
+  resolveCandidateStatus,
+} from '@/lib/cv-upload/operations';
 
 // Maximum file size limit (10MB) to prevent body size limit errors
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -54,6 +67,11 @@ interface FileObject {
   type: string;
   size: number;
   url: string;
+}
+
+interface FileToProcess {
+  file: File;
+  selected: boolean;
 }
 
 async function processResume(
@@ -254,6 +272,14 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  const { operations, selectedFileIds } = parseCvBatchOperations(formData);
+  const normalizedOperations = normalizeCvBatchOperations(operations);
+  const effectiveSelectedIds = getEffectiveSelectedIds(
+    normalizedOperations,
+    selectedFileIds,
+  );
+
   const cvBatchInfo = new CVBatch({
     organizationId,
     totalFiles: 0,
@@ -335,15 +361,60 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const files: File[] = [];
+    let targetJob: { _id: unknown; title?: string; lanes?: string[]; useCustomLanes?: boolean } | null =
+      null;
+    let resolvedStatus = 'applied';
+
+    if (normalizedOperations.assignJob) {
+      if (!Job || !Organization) {
+        return NextResponse.json(
+          { error: 'Job or Organization model not available' },
+          { status: 500 },
+        );
+      }
+
+      targetJob = await Job.findById(normalizedOperations.jobId)
+        .select('_id title lanes useCustomLanes')
+        .lean();
+
+      if (!targetJob) {
+        return NextResponse.json(
+          { error: 'Selected job not found' },
+          { status: 404 },
+        );
+      }
+
+      const organization = await Organization.findById(organizationId)
+        .select('defaultLanes')
+        .lean();
+
+      resolvedStatus = resolveCandidateStatus({
+        job: targetJob,
+        organization,
+        requestedStatus: normalizedOperations.updateStatus
+          ? normalizedOperations.status
+          : undefined,
+      });
+    }
+
+    const files: FileToProcess[] = [];
     const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
     const uploadedFiles = formData.getAll('file');
+    const uploadedFileIds = formData.getAll('fileId');
 
     if (uploadedFiles.length === 0) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
     }
 
-    for (const uploadedFile of uploadedFiles) {
+    for (let index = 0; index < uploadedFiles.length; index += 1) {
+      const uploadedFile = uploadedFiles[index];
+      const fileIdValue = uploadedFileIds[index];
+      const fileId =
+        typeof fileIdValue === 'string' && fileIdValue.trim().length > 0
+          ? fileIdValue.trim()
+          : new Types.ObjectId().toHexString();
+      const isSelected = effectiveSelectedIds.has(fileId);
+
       if (uploadedFile instanceof File) {
         if (uploadedFile.name.endsWith('.zip')) {
           // Check ZIP file size
@@ -365,7 +436,9 @@ export async function POST(request: NextRequest) {
             // Process ZIP entries with size filtering
             const { files: zipFiles, skippedFiles: zipSkippedFiles } =
               processZipEntries(zip);
-            files.push(...zipFiles);
+            zipFiles.forEach((zipFile) => {
+              files.push({ file: zipFile, selected: isSelected });
+            });
             skippedFiles.push(...zipSkippedFiles);
           } catch (error) {
             skippedFiles.push({
@@ -385,7 +458,7 @@ export async function POST(request: NextRequest) {
             // eslint-disable-next-line no-continue
             continue;
           }
-          files.push(uploadedFile);
+          files.push({ file: uploadedFile, selected: isSelected });
         } else {
           return NextResponse.json(
             {
@@ -417,8 +490,10 @@ export async function POST(request: NextRequest) {
 
     const results: ProcessResult[] = [];
     const errors: ProcessError[] = [];
+    const createdCandidateIds: string[] = [];
 
-    for (const file of files) {
+    for (const fileEntry of files) {
+      const { file, selected } = fileEntry;
       try {
         const arrayBuffer = await file.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString('base64');
@@ -429,7 +504,15 @@ export async function POST(request: NextRequest) {
           decryptedAiProviders, // Pass the already decrypted aiProviders
           organizationId as string,
         );
-        
+
+        const shouldApplyOperations = selected && normalizedOperations.assignJob;
+        const shouldAddRemark = selected && normalizedOperations.addRemark;
+        const shouldUpdateStatus =
+          selected &&
+          normalizedOperations.assignJob &&
+          normalizedOperations.updateStatus;
+        const previousStatus = candidateData.status || 'applied';
+
         // Check if the CV was invalid
         if (candidateData.error) {
           // Add error item to batch
@@ -469,9 +552,31 @@ export async function POST(request: NextRequest) {
           throw new Error('Failed to save resume file');
         }
 
+        const nowIso = new Date().toISOString();
+        const remarks = shouldAddRemark
+          ? [
+              {
+                description: normalizedOperations.remark || '',
+                date: nowIso,
+                rating:
+                  typeof normalizedOperations.remarkRating === 'number'
+                    ? normalizedOperations.remarkRating
+                    : undefined,
+                userId: user.id,
+              },
+            ]
+          : [];
+
+        const statusToApply = shouldApplyOperations
+          ? resolvedStatus
+          : candidateData.status;
+
         // Create candidate record
         const candidate = new Candidate({
           ...candidateData,
+          jobId: shouldApplyOperations ? normalizedOperations.jobId : undefined,
+          status: statusToApply,
+          remarks,
           resume: resumeFile,
         });
 
@@ -490,6 +595,7 @@ export async function POST(request: NextRequest) {
         }
 
         await candidate.save();
+        createdCandidateIds.push(candidate._id.toString());
 
         if (candidate.email && candidate.organizationId) {
           try {
@@ -528,6 +634,48 @@ export async function POST(request: NextRequest) {
           ],
         });
 
+        if (
+          shouldApplyOperations &&
+          normalizedOperations.jobId &&
+          History &&
+          targetJob
+        ) {
+          const historyEntries: ICandidateHistory[] = [];
+
+          if (shouldUpdateStatus) {
+            historyEntries.push(
+              buildStatusHistoryEntry(
+                user,
+                nowIso,
+                previousStatus,
+                resolvedStatus,
+              ),
+            );
+          }
+
+          if (shouldAddRemark && normalizedOperations.remark) {
+            historyEntries.push(
+              buildRemarkHistoryEntry(
+                user,
+                nowIso,
+                normalizedOperations.remark,
+                normalizedOperations.isRemarkPrivate ?? true,
+                typeof normalizedOperations.remarkRating === 'number'
+                  ? normalizedOperations.remarkRating
+                  : null,
+              ),
+            );
+          }
+
+          if (historyEntries.length > 0) {
+            await History.create({
+              candidateId: candidate._id.toString(),
+              jobId: normalizedOperations.jobId,
+              history: historyEntries,
+            });
+          }
+        }
+
         cvBatchInfo.items.push({
           filename: file.name,
           candidateId: candidate._id,
@@ -564,6 +712,31 @@ export async function POST(request: NextRequest) {
     cvBatchInfo.status = 'completed';
     cvBatchInfo.completedAt = new Date();
     await cvBatchInfo.save();
+
+    if (createdCandidateIds.length > 0) {
+      try {
+        const createdCandidates = await Candidate.find({
+          _id: { $in: createdCandidateIds },
+        })
+          .populate([
+            { path: 'assignment.interviewerId', select: '_id name email' },
+            { path: 'remarks.userId', select: 'name email' },
+            { path: 'followUp.userId', select: '_id name email' },
+            { path: 'jobId', select: 'title description' },
+          ])
+          .lean();
+        await broadcastMultipleCandidateUpdate(
+          createdCandidates as unknown as Array<
+            ICandidate & { history?: ICandidateHistory[] }
+          >,
+        );
+      } catch (broadcastError) {
+        logger.error(
+          { error: broadcastError },
+          'Failed to broadcast batch-created candidates',
+        );
+      }
+    }
 
     // Send notification after batch processing is completed
     await NotificationService.notifyBulkImportCompleted({
