@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { execSync } from 'child_process';
-import os from 'os';
 import logger from '@/lib/logger/';
 import {
   PARENT_CONFIG_PATH,
@@ -18,12 +17,36 @@ export const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
 /** Reads the release channel from parent config.json. Re-exported from configUtils for convenience. */
 export const getReleaseChannel = getReleaseChannelFromConfig;
 
+// Do not use .env for this. Hardcoding it bakes it into the compiled .next build.
+const RAW_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA+q/liEMVrIqLLWKId1JD
+ScvO5Bd7546sjpAvVHmqYL+BEJBRas6RcIxnF+ksdEGv3nnde7JhitMB5HMCHoIg
+Dg7Vhd91ke/YKX9S98Md2IskqDWsaYXEe/Voaq/gyPmFU4OUP5vzUgotVd4zMw8n
+G7ZrY86k5XGrtC4mFPuFUANbuU9fFBMa0amcVwPlYDVMJt7RGdkMcEF+ASLvNHjJ
+C/i/cg+2HIn1EAdbKiNmFjt3PBD2gvGOBqwGnamN8QuC9bWnnc4QcWQy/UaIPjkM
+NZjxqzFey+KJpP6NSaGEAFQZIii12O+iPUrUq0XEkX8anN9mxFAM9OH2OwK5MPyA
+iwIDAQAB
+-----END PUBLIC KEY-----`;
+
+// Bulletproof formatter just in case a code formatter squashes the string
+function formatPublicKey(keyString: string) {
+    if (!keyString) return '';
+    let cleanKey = keyString.replace(/\\n/g, '').replace(/\s+/g, '');
+    cleanKey = cleanKey.replace(/-----BEGINPUBLICKEY-----/i, '');
+    cleanKey = cleanKey.replace(/-----ENDPUBLICKEY-----/i, '');
+    const chunked = cleanKey.match(/.{1,64}/g)?.join('\n') || cleanKey;
+    return `-----BEGIN PUBLIC KEY-----\n${chunked}\n-----END PUBLIC KEY-----`;
+}
+
+const LICENSE_PUBLIC_KEY = formatPublicKey(RAW_PUBLIC_KEY);
+
 /**
- * License data structure stored in license.json
+ * Updated License data structure stored in license.json
  */
 export interface LicenseData {
-  licenseKey: string;
+  signature: string;
 }
+
 export interface ConfigData {
   email: string;
   installedVersion: string;
@@ -39,85 +62,8 @@ export interface LicenseValidationResult {
 }
 
 /**
- * Helper: Get first non-internal, non-empty MAC address on Linux
- */
-function getLinuxMacAddress(): string | null {
-  try {
-    // Try to get the MAC of default route interface
-    const interfaceName = execSync(
-      "ip route show default | awk '/default/ {print $5}' | head -n 1",
-    )
-      .toString()
-      .trim();
-
-    if (interfaceName) {
-      // Try /sys/class/net/INTERFACE/address
-      try {
-        const mac = execSync(`cat /sys/class/net/${interfaceName}/address`)
-          .toString()
-          .trim();
-        if (mac && mac !== '00:00:00:00:00:00') return mac;
-      } catch {
-        // Fallback: ip link show
-      }
-      try {
-        const mac = execSync(
-          `ip link show "${interfaceName}" | awk '/ether/ {print $2}'`,
-        )
-          .toString()
-          .trim();
-        if (mac && mac !== '00:00:00:00:00:00') return mac;
-      } catch {
-        // Continue to fallback
-      }
-    }
-  } catch {
-    // Continue to network interfaces fallback
-  }
-
-  // Try to get first non-internal MAC from all network interfaces as fallback
-  try {
-    const interfaces = os.networkInterfaces();
-    // Safe: iterating over OS network interfaces, not user input
-    // eslint-disable-next-line security/detect-object-injection
-    for (const name of Object.keys(interfaces)) {
-      // eslint-disable-next-line security/detect-object-injection
-      const addrs = interfaces[name];
-      if (addrs) {
-        for (const addr of addrs) {
-          if (addr.mac && addr.mac !== '00:00:00:00:00:00' && !addr.internal) {
-            return addr.mac;
-          }
-        }
-      }
-    }
-  } catch {
-    // Return null if all methods fail
-  }
-  return null;
-}
-
-/**
- * Helper: Fetch public IP using curl
- */
-function getLinuxPublicIp(): string | null {
-  const services = ['curl -s ifconfig.me', 'curl -s icanhazip.com'];
-  for (const cmd of services) {
-    try {
-      const ip = execSync(cmd).toString().trim();
-      // Rudimentary IPv4 check - matches 4 groups of 1-3 digits separated by dots
-      // eslint-disable-next-line security/detect-unsafe-regex
-      if (/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) return ip;
-    } catch {
-      // Try next service
-    }
-  }
-  return null;
-}
-
-/**
- * Generate machine code based on system characteristics.
- * - Linux: MAC address + Public IP (hashed)
+ * Generate machine code based on system characteristics (100% OFFLINE).
+ * - Linux: OS Machine ID + Filesystem UUID
  * - macOS: Hardware UUID
  * - Windows: System UUID
  *
@@ -129,25 +75,28 @@ export function generateMachineCode(): string {
     let id: string;
 
     if (osType === 'linux') {
-      // Compose machine ID from MAC + Public IP, then hash
-      const mac = getLinuxMacAddress() ?? '';
-      const ip = getLinuxPublicIp() ?? '';
-      const combined = `${mac.trim()}_${ip.trim()}`;
+      let sysMachineId = 'UNKNOWN_OS';
+      let sysFsUuid = 'UNKNOWN_FS';
+
+      try {
+        sysMachineId = execSync('cat /etc/machine-id', { encoding: 'utf8', stdio: 'pipe' }).toString().trim();
+      } catch (e) { /* ignore */ }
+
+      try {
+        sysFsUuid = execSync('findmnt / -n -o UUID', { encoding: 'utf8', stdio: 'pipe' }).toString().trim();
+      } catch (e) { /* ignore */ }
+
+      const combined = `${sysMachineId}-${sysFsUuid}`;
       id = crypto.createHash('sha256').update(combined).digest('hex');
+
     } else if (osType === 'darwin') {
-      // On macOS, use hardware UUID
-      id = execSync(
-        "system_profiler SPHardwareDataType | awk '/Hardware UUID/ { print $3; }'",
-      )
-        .toString()
-        .trim();
+      const macIdCmd = "ioreg -rd1 -c IOPlatformExpertDevice | awk '/IOPlatformUUID/ { split($0, line, \"\\\"\"); printf(\"%s\\n\", line[4]); }'";
+      const macId = execSync(macIdCmd, { encoding: 'utf8', stdio: 'pipe' }).toString().trim();
+      const combined = `${macId}-MAC_FS`;
+      id = crypto.createHash('sha256').update(combined).digest('hex');
+
     } else if (osType === 'win32') {
-      // On Windows, retrieves the system UUID using PowerShell
-      id = execSync(
-        'powershell -Command "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"',
-      )
-        .toString()
-        .trim();
+      id = execSync('powershell -Command "(Get-CimInstance -ClassName Win32_ComputerSystemProduct).UUID"', { encoding: 'utf8', stdio: 'pipe' }).toString().trim();
       if (!id || id === 'Not Available') {
         throw new Error('Machine UUID not available');
       }
@@ -163,9 +112,7 @@ export function generateMachineCode(): string {
 }
 
 /**
- * Read license data from license.json file
- *
- * @returns LicenseData or null if file doesn't exist or is invalid
+ * Read and parse the cryptographically signed license data
  */
 export function readLicenseData(): LicenseData | null {
   try {
@@ -176,12 +123,19 @@ export function readLicenseData(): LicenseData | null {
     const licenseContent = fs.readFileSync(LICENSE_PATH, 'utf8');
     const licenseData = JSON.parse(licenseContent) as LicenseData;
 
+    // 👈 2. We only check for the signature now
+    if (!licenseData.signature) {
+      logger.error('License file format invalid. Missing signature.');
+      return null;
+    }
+
     return licenseData;
   } catch (error) {
     logger.error('Error reading license data:', error);
     return null;
   }
 }
+
 /**
  * Read config data from config.json file
  */
@@ -192,9 +146,7 @@ export function readConfigData(): ConfigData | null {
     }
 
     const configContent = fs.readFileSync(PARENT_CONFIG_PATH, 'utf8');
-    const configData = JSON.parse(configContent) as ConfigData;
-
-    return configData;
+    return JSON.parse(configContent) as ConfigData;
   } catch (error) {
     logger.error('Error reading config data:', error);
     return null;
@@ -202,64 +154,8 @@ export function readConfigData(): ConfigData | null {
 }
 
 /**
- * Validate license with external API
- *
- * @param licenseKey - License key to validate
- * @param machineCode - Machine code to validate
- * @returns LicenseValidationResponse
+ * OFFLINE License Validation
  */
-async function validateLicenseWithAPI(
-  licenseKey: string,
-  machineCode: string,
-): Promise<LicenseValidationResult> {
-  try {
-    const licenseValidationUrl = process.env.LICENSE_VALIDATION_URL;
-
-    if (!licenseValidationUrl) {
-      return {
-        valid: false,
-        error: 'License validation URL not configured',
-      };
-    }
-
-
-    const channel = await getReleaseChannel();
-    const response = await fetch(
-      `${licenseValidationUrl}/api/license/validate?channel=${encodeURIComponent(channel)}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          licenseKey: licenseKey.trim(),
-          machineCode: machineCode.trim(),
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      return {
-        valid: false,
-        error: `API request failed with status: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-
-    return {
-      valid: data.valid || false,
-      error: data.error,
-    };
-  } catch (error) {
-    logger.error('License validation API error:', error);
-    return {
-      valid: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
 export async function validateLicenseComprehensive(): Promise<LicenseValidationResult> {
   try {
     const licenseData = readLicenseData();
@@ -267,35 +163,52 @@ export async function validateLicenseComprehensive(): Promise<LicenseValidationR
     if (!licenseData) {
       return {
         valid: false,
-        error:
-          'No license found. Please ensure license.json exists in the project root.',
+        error: 'No valid license found. Please run the installer script.',
+        hasLicenseFile: false,
       };
     }
 
+    // Generate hardware ID at runtime
     const currentMachineCode = generateMachineCode();
-    const validationResult = await validateLicenseWithAPI(
-      licenseData.licenseKey,
-      currentMachineCode,
-    );
 
-    if (validationResult.valid) {
-      return { valid: true, hasLicenseFile: true, apiError: false };
+    // 👈 3. Verify Cryptographic Signature AND Hardware Lock Simultaneously
+    try {
+      const verify = crypto.createVerify('SHA256');
+      
+      // We feed the RUNTIME machine code directly into the verifier
+      verify.update(currentMachineCode);
+      verify.end();
+
+      // If this matches the signature from the file, it means the server's 
+      // physical metal is exactly what the Admin API authorized!
+      const isAuthentic = verify.verify(LICENSE_PUBLIC_KEY, licenseData.signature, 'base64');
+      
+      if (!isAuthentic) {
+        logger.error('License verification failed: Hardware mismatch or signature tampered.');
+        return {
+          valid: false,
+          error: 'Hardware mismatch. This instance is not authorized for this server.',
+          hasLicenseFile: true,
+        };
+      }
+    } catch (cryptoError) {
+      logger.error('Crypto verification failed:', cryptoError);
+      return {
+        valid: false,
+        error: 'Internal error verifying license signature.',
+        hasLicenseFile: true,
+      };
     }
 
-    // Return invalid result without modifying license file
+    // All checks passed! 100% Offline.
+    return { valid: true, hasLicenseFile: true, apiError: false };
 
-    return {
-      valid: false,
-      error: validationResult.error || 'License validation failed',
-      hasLicenseFile: true,
-      apiError: true,
-    };
   } catch (error) {
     logger.error('License validation error:', error);
     return {
       valid: false,
       error: 'Internal server error during license validation',
-      hasLicenseFile: false,
+      hasLicenseFile: true,
     };
   }
 }
