@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
@@ -10,11 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { FileUp } from 'lucide-react';
 import { CompletedBatches } from './completed-batches';
-import { FileList } from './file-list';
 import { FileUploader } from './file-uploader';
 import CvBatchLoader from './CvBatchLoader';
+import { type BatchOperations } from './batch-operations';
+import {
+  BatchActionsDialog,
+  ConfirmProcessingDialog,
+  ConfirmRemoveSelectedDialog,
+} from './batch-processing-dialogs';
+import { CurrentBatchPanel } from './current-batch-panel';
 
 export type FileWithPreview = {
   id: string;
@@ -24,6 +28,7 @@ export type FileWithPreview = {
   isZip?: boolean;
   skipped?: boolean;
   skipReason?: string;
+  selected?: boolean;
 };
 
 // File size limits (same as backend)
@@ -59,30 +64,27 @@ interface ErrorResponse {
   error?: string;
 }
 
-function EmptyBatchesState() {
-  return (
-    <div className="flex min-h-full w-full items-center justify-center">
-      <div className="w-full justify-center items-center flex h-[65vh] rounded-2xl border border-border/70 bg-background/80 px-6 py-12">
-        <div className="flex h-full flex-col items-center justify-center text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <FileUp className="h-7 w-7 text-primary" />
-          </div>
-          <h2 className="text-2xl font-semibold text-foreground">
-            No batches processed yet
-          </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            Upload your CV files above and click Process Batch to create your
-            first processing history.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
+  const [operations, setOperations] = useState<BatchOperations>({
+    assignJob: false,
+    jobId: '',
+    updateStatus: false,
+    status: '',
+    addRemark: false,
+    remark: '',
+    isRemarkPrivate: true,
+    remarkRating: null,
+  });
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isRemoveSelectedConfirmOpen, setIsRemoveSelectedConfirmOpen] = useState(false);
+  const [confirmPayload, setConfirmPayload] = useState<{
+    total: number;
+    selected: number;
+    message: string;
+  } | null>(null);
   const processingRef = useRef(false);
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
@@ -110,8 +112,49 @@ export function CVBatchProcessor() {
     }
   }, [batches]);
 
-  const showNoBatchesState =
-    !isLoading && !error && completedBatches.length === 0 && files.length === 0;
+  const selectableFiles = files.filter((file) => !file.skipped);
+  const selectedCount = selectableFiles.filter((file) => file.selected).length;
+  const hasSelectableFiles = selectableFiles.length > 0;
+  const allSelected =
+    hasSelectableFiles && selectedCount === selectableFiles.length;
+
+  const toggleFileSelection = useCallback((id: string) => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.id === id ? { ...file, selected: !file.selected } : file,
+      ),
+    );
+  }, []);
+
+  const selectAllFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: true },
+      ),
+    );
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: false },
+      ),
+    );
+  }, []);
+
+  const invertSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: !file.selected },
+      ),
+    );
+  }, []);
+
+  const removeSelectedFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.filter((file) => file.skipped || !file.selected),
+    );
+  }, []);
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
     const processedFiles: FileWithPreview[] = [];
@@ -135,6 +178,7 @@ export function CVBatchProcessor() {
           id: crypto.randomUUID(),
           file,
           isZip,
+          selected: false,
         });
       }
     });
@@ -154,7 +198,7 @@ export function CVBatchProcessor() {
     setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
   }, []);
 
-  const handleProcessBatch = async () => {
+  const handleProcessBatchInternal = async () => {
     if (files.length === 0 || processingRef.current) return;
 
     // Filter out skipped files
@@ -168,6 +212,30 @@ export function CVBatchProcessor() {
       return;
     }
 
+    const trimmedRemark = operations.remark.trim();
+    const normalizedOperations: BatchOperations = {
+      assignJob: operations.assignJob && operations.jobId.trim().length > 0,
+      jobId: operations.jobId.trim(),
+      updateStatus:
+        operations.assignJob &&
+        operations.updateStatus &&
+        operations.status.trim().length > 0,
+      status: operations.status.trim(),
+      addRemark: operations.addRemark && trimmedRemark.length > 0,
+      remark: trimmedRemark,
+      isRemarkPrivate: operations.isRemarkPrivate,
+      remarkRating: operations.remarkRating,
+    };
+
+    if (operations.assignJob && !normalizedOperations.jobId) {
+      toast({
+        variant: 'destructive',
+        title: 'Job Required',
+        description: 'Please select a job to assign before processing.',
+      });
+      return;
+    }
+
     setIsPosting(true);
     processingRef.current = true;
 
@@ -175,9 +243,9 @@ export function CVBatchProcessor() {
       const organizationId = (user?.organizationId as string) || '';
 
       // Split files into chunks for batch processing
-      const chunks: File[][] = [];
+      const chunks: FileWithPreview[][] = [];
       for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
-        chunks.push(filesToProcess.slice(i, i + BATCH_SIZE).map((f) => f.file));
+        chunks.push(filesToProcess.slice(i, i + BATCH_SIZE));
       }
 
       const totalBatches = chunks.length;
@@ -204,8 +272,16 @@ export function CVBatchProcessor() {
 
         const formData = new FormData();
         chunk.forEach((file) => {
-          formData.append('file', file);
+          formData.append('file', file.file);
+          formData.append('fileId', file.id);
         });
+
+        const selectedFileIds =
+          normalizedOperations.assignJob || normalizedOperations.addRemark
+            ? chunk.filter((file) => file.selected).map((file) => file.id)
+            : [];
+        formData.append('operations', JSON.stringify(normalizedOperations));
+        formData.append('selectedFileIds', JSON.stringify(selectedFileIds));
 
         // eslint-disable-next-line no-await-in-loop
         const { data: batchResult, error: batchError } = await postBatch({
@@ -234,7 +310,7 @@ export function CVBatchProcessor() {
       }
 
       if (allResults.length > 0) {
-        setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
+        // setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
         toast({
           title: 'Processing Completed',
           description: `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
@@ -257,64 +333,107 @@ export function CVBatchProcessor() {
     }
   };
 
+  const buildConfirmationMessage = () => {
+    const hasAssign = operations.assignJob;
+    const hasStatus = operations.assignJob && operations.updateStatus;
+    const hasRemark = operations.addRemark;
+    const enabledActions = [
+      hasAssign ? 'Assign Job' : null,
+      hasStatus ? 'Update Status' : null,
+      hasRemark ? 'Add Remark' : null,
+    ].filter(Boolean) as string[];
+
+    const totalSelectable = selectableFiles.length;
+    const selectedSelectable = selectedCount;
+
+    if (enabledActions.length === 0) {
+      return totalSelectable === 0
+        ? 'This will process the batch and create candidates for all uploaded CVs.'
+        : 'This will process the batch and create candidates for all uploaded CVs. No extra actions are selected.';
+    }
+
+    if (selectedSelectable === 0) {
+      return `No CVs are selected, so these actions won’t be applied: ${enabledActions.join(
+        ', ',
+      )}. The batch will only create candidates.`;
+    }
+
+    if (selectedSelectable === totalSelectable) {
+      return `Actions (${enabledActions.join(
+        ', ',
+      )}) will be applied to all ${totalSelectable} selected CVs.`;
+    }
+
+    return `Actions (${enabledActions.join(
+      ', ',
+    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only create candidates.`;
+  };
+
+  const handleProcessBatch = () => {
+    if (files.length === 0 || processingRef.current) return;
+    const message = buildConfirmationMessage();
+    setConfirmPayload({
+      total: selectableFiles.length,
+      selected: selectedCount,
+      message,
+    });
+    setIsConfirmOpen(true);
+  };
+
   return (
     <div className="flex min-h-full flex-col gap-8">
       <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
 
-      {files.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Current Batch</h2>
-              {uploadProgress && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Processing batch {uploadProgress.currentBatch} of {uploadProgress.totalBatches}
-                  ({uploadProgress.current} of {uploadProgress.total} files)
-                </p>
-              )}
-            </div>
-            <Button
-              onClick={handleProcessBatch}
-              disabled={files.length === 0 || isPosting}
-              variant="primary"
-            >
-              {
-                (() => {
-                  if (isPosting) {
-                    if (uploadProgress) {
-                      return `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`;
-                    }
-                    return 'Processing...';
-                  }
-                  return 'Process Batch';
-                })()
-              }
-            </Button>
-          </div>
-          {uploadProgress && (
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{
-                  width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
-                }}
-              />
-            </div>
-          )}
-          <FileList
-            isProcessing={isPosting}
-            files={files}
-            onRemove={handleRemoveFile}
-          />
-        </div>
-      )}
+      <CurrentBatchPanel
+        files={files}
+        isPosting={isPosting}
+        hasSelectableFiles={hasSelectableFiles}
+        selectedCount={selectedCount}
+        selectableCount={selectableFiles.length}
+        allSelected={allSelected}
+        uploadProgress={uploadProgress}
+        onOpenActions={() => setIsActionsOpen(true)}
+        onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
+        onInvertSelection={invertSelection}
+        onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
+        onProcessBatch={handleProcessBatch}
+        onRemoveFile={handleRemoveFile}
+        onToggleSelect={toggleFileSelection}
+      />
 
       {isLoading && <CvBatchLoader />}
       {error && <p>Error fetching batches: </p>}
-      {showNoBatchesState && <EmptyBatchesState />}
-      {completedBatches.length > 0 && (
-        <CompletedBatches batches={completedBatches} />
-      )}
+      <CompletedBatches batches={completedBatches} isLoading={isLoading} />
+
+      <BatchActionsDialog
+        open={isActionsOpen}
+        onOpenChange={setIsActionsOpen}
+        operations={operations}
+        onOperationsChange={setOperations}
+        isPosting={isPosting}
+        organizationId={(user?.organizationId as string) || ''}
+        userRole={user?.role || ''}
+      />
+
+      <ConfirmProcessingDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        payload={confirmPayload}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          handleProcessBatchInternal();
+        }}
+      />
+
+      <ConfirmRemoveSelectedDialog
+        open={isRemoveSelectedConfirmOpen}
+        onOpenChange={setIsRemoveSelectedConfirmOpen}
+        selectedCount={selectedCount}
+        onConfirm={() => {
+          removeSelectedFiles();
+          setIsRemoveSelectedConfirmOpen(false);
+        }}
+      />
     </div>
   );
 }

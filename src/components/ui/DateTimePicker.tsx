@@ -3,6 +3,7 @@
 import * as React from 'react';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import type { DateObject } from 'react-multi-date-picker';
 import { DatePicker } from './date-picker';
 
 interface DateTimePickerProps {
@@ -26,24 +27,34 @@ export function DateTimePicker({
   );
 
   const handleDateChange = React.useCallback(
-    // 1. Update the type to accept Date[] (to satisfy the DatePicker prop definition)
-    (date: Date | Date[] | null) => {
+    (date: Date | DateObject | Date[] | DateObject[] | null) => {
       let normalizedDate: Date | null = null;
 
-      // 2. Check if it's an array (even if we only expect one date)
-      if (Array.isArray(date)) {
-        normalizedDate = date.length > 0 ? date[0] : null;
-      } else if (date instanceof Date) {
+      if (!date) {
+        normalizedDate = null;
+      }
+
+      else if (Array.isArray(date)) {
+        const first = date[0];
+
+        if (!first) normalizedDate = null;
+        else if (first instanceof Date) normalizedDate = first;
+        else if ("toDate" in first) normalizedDate = first.toDate();
+      }
+
+      else if (date instanceof Date) {
         normalizedDate = date;
       }
 
-      // Convert to Dayjs
+      else if ("toDate" in date) {
+        normalizedDate = date.toDate();
+      }
+
       const newDayjsValue =
         normalizedDate && !Number.isNaN(normalizedDate.getTime())
           ? dayjs(normalizedDate)
           : null;
 
-      // Only call onChange if the value actually changed
       const currentTimestamp = value?.valueOf() || null;
       const newTimestamp = newDayjsValue?.valueOf() || null;
 
@@ -57,7 +68,7 @@ export function DateTimePicker({
   return (
     <DatePicker
       value={dateValue}
-      onChange={(date) => handleDateChange(date as Date | null)}
+      onChange={(date) => handleDateChange(date)}
       placeholder={placeholder}
       showTimePicker
       showNowButton
