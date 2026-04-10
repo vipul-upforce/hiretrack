@@ -323,7 +323,7 @@ export function CVBatchProcessor() {
       }
 
       if (allResults.length > 0) {
-        setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
+        // setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
         toast({
           title: 'Processing Completed',
           description: `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
