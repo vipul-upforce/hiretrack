@@ -1,14 +1,6 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
@@ -17,12 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { FileUp } from 'lucide-react';
 import { CompletedBatches } from './completed-batches';
-import { FileList } from './file-list';
 import { FileUploader } from './file-uploader';
 import CvBatchLoader from './CvBatchLoader';
-import { BatchOperationsPanel, type BatchOperations } from './batch-operations';
+import { type BatchOperations } from './batch-operations';
+import {
+  BatchActionsDialog,
+  ConfirmProcessingDialog,
+  ConfirmRemoveSelectedDialog,
+} from './batch-processing-dialogs';
+import { CurrentBatchPanel } from './current-batch-panel';
 
 export type FileWithPreview = {
   id: string;
@@ -68,27 +64,6 @@ interface ErrorResponse {
   error?: string;
 }
 
-function EmptyBatchesState() {
-  return (
-    <div className="flex min-h-full w-full items-center justify-center">
-      <div className="w-full justify-center items-center flex h-[65vh] rounded-2xl border border-border/70 bg-background/80 px-6 py-12">
-        <div className="flex h-full flex-col items-center justify-center text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <FileUp className="h-7 w-7 text-primary" />
-          </div>
-          <h2 className="text-2xl font-semibold text-foreground">
-            No batches processed yet
-          </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm text-muted-foreground">
-            Upload your CV files above and click Process Batch to create your
-            first processing history.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
@@ -104,6 +79,7 @@ export function CVBatchProcessor() {
   });
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isRemoveSelectedConfirmOpen, setIsRemoveSelectedConfirmOpen] = useState(false);
   const [confirmPayload, setConfirmPayload] = useState<{
     total: number;
     selected: number;
@@ -136,9 +112,6 @@ export function CVBatchProcessor() {
     }
   }, [batches]);
 
-  const showNoBatchesState =
-    !isLoading && !error && completedBatches.length === 0 && files.length === 0;
-
   const selectableFiles = files.filter((file) => !file.skipped);
   const selectedCount = selectableFiles.filter((file) => file.selected).length;
   const hasSelectableFiles = selectableFiles.length > 0;
@@ -166,6 +139,20 @@ export function CVBatchProcessor() {
       prevFiles.map((file) =>
         file.skipped ? file : { ...file, selected: false },
       ),
+    );
+  }, []);
+
+  const invertSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: !file.selected },
+      ),
+    );
+  }, []);
+
+  const removeSelectedFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.filter((file) => file.skipped || !file.selected),
     );
   }, []);
 
@@ -397,168 +384,56 @@ export function CVBatchProcessor() {
     <div className="flex min-h-full flex-col gap-8">
       <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
 
-      {files.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Current Batch</h2>
-              {hasSelectableFiles && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  {selectedCount} of {selectableFiles.length} selected
-                </p>
-              )}
-              {uploadProgress && (
-                <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-                  Processing batch {uploadProgress.currentBatch} of {uploadProgress.totalBatches}          
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsActionsOpen(true)}
-                disabled={isPosting}
-                variant="outline"
-              >
-                Batch Actions
-              </Button>
-              {hasSelectableFiles && (
-                <Button
-                  onClick={allSelected ? clearSelection : selectAllFiles}
-                  disabled={isPosting}
-                  variant="secondary"
-                >
-                  {allSelected ? 'Clear Selection' : 'Select All CVs'}
-                </Button>
-              )}
-              <Button
-                onClick={handleProcessBatch}
-                disabled={files.length === 0 || isPosting}
-                variant="primary"
-              >
-                {
-                  (() => {
-                    if (isPosting) {
-                      if (uploadProgress) {
-                        return `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`;
-                      }
-                      return 'Processing...';
-                    }
-                    return 'Process Batch';
-                  })()
-                }
-              </Button>
-            </div>
-          </div>
-       
-          <FileList
-            isProcessing={isPosting}
-            files={files}
-            onRemove={handleRemoveFile}
-            onToggleSelect={toggleFileSelection}
-          />
-        </div>
-      )}
+      <CurrentBatchPanel
+        files={files}
+        isPosting={isPosting}
+        hasSelectableFiles={hasSelectableFiles}
+        selectedCount={selectedCount}
+        selectableCount={selectableFiles.length}
+        allSelected={allSelected}
+        uploadProgress={uploadProgress}
+        onOpenActions={() => setIsActionsOpen(true)}
+        onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
+        onInvertSelection={invertSelection}
+        onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
+        onProcessBatch={handleProcessBatch}
+        onRemoveFile={handleRemoveFile}
+        onToggleSelect={toggleFileSelection}
+      />
 
       {isLoading && <CvBatchLoader />}
       {error && <p>Error fetching batches: </p>}
-      {showNoBatchesState && <EmptyBatchesState />}
-      {completedBatches.length > 0 && (
-        <CompletedBatches batches={completedBatches} />
-      )}
+      <CompletedBatches batches={completedBatches} isLoading={isLoading} />
 
-      <Dialog open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-        <DialogContent
-          size="xl"
-          className="flex max-h-[90vh] flex-col overflow-hidden p-0"
-        >
-          <DialogHeader className="border-0 px-6 py-3 pt-5">
-            <DialogTitle className="text-xl font-semibold tracking-tight text-foreground">
-              Batch Actions
-            </DialogTitle>
-          </DialogHeader>
+      <BatchActionsDialog
+        open={isActionsOpen}
+        onOpenChange={setIsActionsOpen}
+        operations={operations}
+        onOperationsChange={setOperations}
+        isPosting={isPosting}
+        organizationId={(user?.organizationId as string) || ''}
+        userRole={user?.role || ''}
+      />
 
-          <div className="border-b px-6 py-3">
-            <BatchOperationsPanel
-              value={operations}
-              onChange={setOperations}
-              disabled={isPosting}
-              organizationId={(user?.organizationId as string) || ''}
-              userRole={user?.role || ''}
-              variant="toggles"
-            />
-          </div>
+      <ConfirmProcessingDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        payload={confirmPayload}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          handleProcessBatchInternal();
+        }}
+      />
 
-          <div className="flex-1 space-y-4 overflow-y-auto bg-muted/10 px-6 py-4">
-            <div className="rounded-xl border border-border/50 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-              Actions apply only to the CVs you select in the list.
-            </div>
-            <BatchOperationsPanel
-              value={operations}
-              onChange={setOperations}
-              disabled={isPosting}
-              organizationId={(user?.organizationId as string) || ''}
-              userRole={user?.role || ''}
-              variant="sections"
-            />
-          </div>
-
-          <DialogFooter className="border-t bg-background px-6 py-3">
-            <div className="flex w-full items-center justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsActionsOpen(false)}
-                className="min-w-[100px]"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="info"
-                onClick={() => setIsActionsOpen(false)}
-                className="min-w-[140px] font-medium shadow-sm transition-all hover:shadow-md"
-              >
-                Save Actions
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <DialogContent className="max-w-md p-0">
-          <DialogHeader>
-            <DialogTitle className=" pt-3">
-              Confirm Batch Processing
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 px-6 py-2 text-sm text-muted-foreground">
-            <p>{confirmPayload?.message}</p>
-            <p>Do you want to continue?</p>
-          </div>
-          <DialogFooter className="border-t bg-background px-6 py-4">
-            <div className="flex w-full items-center justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsConfirmOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="info"
-                onClick={() => {
-                  setIsConfirmOpen(false);
-                  handleProcessBatchInternal();
-                }}
-              >
-                Confirm & Process
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmRemoveSelectedDialog
+        open={isRemoveSelectedConfirmOpen}
+        onOpenChange={setIsRemoveSelectedConfirmOpen}
+        selectedCount={selectedCount}
+        onConfirm={() => {
+          removeSelectedFiles();
+          setIsRemoveSelectedConfirmOpen(false);
+        }}
+      />
     </div>
   );
 }

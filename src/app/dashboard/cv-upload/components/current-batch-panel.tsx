@@ -1,0 +1,134 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { FileList } from './file-list';
+import type { FileWithPreview } from './cv-batch-processor';
+
+interface UploadProgress {
+  current: number;
+  total: number;
+  currentBatch: number;
+  totalBatches: number;
+}
+
+interface CurrentBatchPanelProps {
+  files: FileWithPreview[];
+  isPosting: boolean;
+  hasSelectableFiles: boolean;
+  selectedCount: number;
+  selectableCount: number;
+  allSelected: boolean;
+  uploadProgress: UploadProgress | null;
+  onOpenActions: () => void;
+  onToggleSelectAll: () => void;
+  onInvertSelection: () => void;
+  onRemoveSelected: () => void;
+  onProcessBatch: () => void;
+  onRemoveFile: (id: string) => void;
+  onToggleSelect: (id: string) => void;
+}
+
+export function CurrentBatchPanel({
+  files,
+  isPosting,
+  hasSelectableFiles,
+  selectedCount,
+  selectableCount,
+  allSelected,
+  uploadProgress,
+  onOpenActions,
+  onToggleSelectAll,
+  onInvertSelection,
+  onRemoveSelected,
+  onProcessBatch,
+  onRemoveFile,
+  onToggleSelect,
+}: CurrentBatchPanelProps) {
+  if (files.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm md:p-5">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Current Batch</h2>
+          {hasSelectableFiles && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {selectedCount}
+              {' '}
+              of
+              {' '}
+              {selectableCount}
+              {' '}
+              selected
+            </p>
+          )}
+          {uploadProgress && (
+            <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+              Processing batch
+              {' '}
+              {uploadProgress.currentBatch}
+              {' '}
+              of
+              {' '}
+              {uploadProgress.totalBatches}
+            </p>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={onOpenActions}
+            disabled={isPosting}
+            variant="outline"
+          >
+            Batch Actions
+          </Button>
+          {hasSelectableFiles && (
+            <Button
+              onClick={onToggleSelectAll}
+              disabled={isPosting}
+              variant="secondary"
+            >
+              {allSelected ? 'Clear Selection' : 'Select All CVs'}
+            </Button>
+          )}
+          {hasSelectableFiles && (
+            <Button
+              onClick={onInvertSelection}
+              disabled={isPosting}
+              variant="outline"
+            >
+              Invert Selection
+            </Button>
+          )}
+          <Button
+            onClick={onRemoveSelected}
+            disabled={isPosting || selectedCount === 0}
+            variant="destructive"
+          >
+            Remove Selected CVs
+          </Button>
+          <Button
+            onClick={onProcessBatch}
+            disabled={files.length === 0 || isPosting}
+            variant="primary"
+          >
+            {isPosting && uploadProgress
+              ? `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`
+              : isPosting
+                ? 'Processing...'
+                : 'Process Batch'}
+          </Button>
+        </div>
+      </div>
+
+      <FileList
+        isProcessing={isPosting}
+        files={files}
+        onRemove={onRemoveFile}
+        onToggleSelect={onToggleSelect}
+      />
+    </div>
+  );
+}
