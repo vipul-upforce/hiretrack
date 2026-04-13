@@ -9,9 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CompletedBatches } from './completed-batches';
 import { FileUploader } from './file-uploader';
-import CvBatchLoader from './CvBatchLoader';
 import { type BatchOperations } from './batch-operations';
 import {
   BatchActionsDialog,
@@ -64,6 +71,8 @@ interface ErrorResponse {
   error?: string;
 }
 
+const LEAVE_PROCESSING_MESSAGE = 'Batch processing is in progress. Leaving this page will stop processing remaining CVs. Do you want to continue?';
+
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
@@ -80,6 +89,8 @@ export function CVBatchProcessor() {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRemoveSelectedConfirmOpen, setIsRemoveSelectedConfirmOpen] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
   const [confirmPayload, setConfirmPayload] = useState<{
     total: number;
     selected: number;
@@ -111,6 +122,81 @@ export function CVBatchProcessor() {
       setCompletedBatches(batches);
     }
   }, [batches]);
+
+  useEffect(() => {
+    if (!isPosting) {
+      return undefined;
+    }
+
+    const guardedUrl = window.location.href;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = LEAVE_PROCESSING_MESSAGE;
+      return LEAVE_PROCESSING_MESSAGE;
+    };
+
+    const requestNavigationConfirmation = (targetUrl: string) => {
+      setPendingNavigationUrl(targetUrl);
+      setIsLeaveDialogOpen(true);
+    };
+
+    const handleDocumentClickCapture = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
+      if (!anchor) {
+        return;
+      }
+
+      if (
+        anchor.target === '_blank'
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+      ) {
+        return;
+      }
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#')) {
+        return;
+      }
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+      if (nextUrl.origin !== window.location.origin) {
+        return;
+      }
+
+      if (nextUrl.pathname === window.location.pathname && nextUrl.search === window.location.search) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      requestNavigationConfirmation(nextUrl.href);
+    };
+
+    const handlePopState = () => {
+      const destinationUrl = window.location.href;
+      window.history.pushState(null, '', guardedUrl);
+      requestNavigationConfirmation(destinationUrl);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('click', handleDocumentClickCapture, true);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleDocumentClickCapture, true);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isPosting]);
 
   const selectableFiles = files.filter((file) => !file.skipped);
   const selectedCount = selectableFiles.filter((file) => file.selected).length;
@@ -401,7 +487,6 @@ export function CVBatchProcessor() {
         onToggleSelect={toggleFileSelection}
       />
 
-      {isLoading && <CvBatchLoader />}
       {error && <p>Error fetching batches: </p>}
       <CompletedBatches batches={completedBatches} isLoading={isLoading} />
 
@@ -434,6 +519,51 @@ export function CVBatchProcessor() {
           setIsRemoveSelectedConfirmOpen(false);
         }}
       />
+
+      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <DialogContent className="max-w-md p-0">
+          <DialogHeader>
+            <DialogTitle className="pt-3">
+              Leave CV Upload?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 px-6 py-2 text-sm text-muted-foreground">
+            <p>
+              Batch processing is in progress. If you leave this page now, the
+              remaining CVs will not be processed.
+            </p>
+            <p>Do you still want to continue?</p>
+          </div>
+          <DialogFooter className="border-t bg-background px-6 py-4">
+            <div className="flex w-full items-center justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsLeaveDialogOpen(false);
+                  setPendingNavigationUrl(null);
+                }}
+              >
+                Stay on Page
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  const url = pendingNavigationUrl;
+                  setIsLeaveDialogOpen(false);
+                  setPendingNavigationUrl(null);
+                  if (url) {
+                    window.location.assign(url);
+                  }
+                }}
+              >
+                Leave Page
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
