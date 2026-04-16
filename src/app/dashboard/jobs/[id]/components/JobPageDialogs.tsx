@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import logger from '@/lib/logger';
 import { Candidate, CandidateColumn } from '@/types/candidate';
 import { JobEmailNotificationSettingsDialog } from '@/components/dialogs/JobEmailNotificationSettingsDialog';
@@ -19,6 +19,7 @@ import CandidateCustomFieldsDialog from './customFields/candidateCustomFieldsDia
 import ChecklistRemarksDialog from './Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import { LaneChecklistConfigDialog } from './Dialogs/lane-checklist-config-dialog';
 import { UnifiedCandidateActionsDialog } from './Dialogs/unified-candidate-actions-dialog';
+import { EditCandidateDialog } from './Dialogs/edit-candidate-dialog';
 import {
   BulkReasonDialog,
   parseBulkReasonPayload,
@@ -29,6 +30,8 @@ interface JobPageDialogsProps {
   selectedCandidate: Candidate | null;
   isDetailsOpen: boolean;
   setIsDetailsOpen: (open: boolean) => void;
+  isEditOpen: boolean;
+  setIsEditOpen: (open: boolean) => void;
   handleCandidateUpdate: (candidate: Candidate) => void;
   isDeleteDialogOpen: boolean;
   setIsDeleteDialogOpen: (open: boolean) => void;
@@ -106,12 +109,15 @@ interface JobPageDialogsProps {
   onUnifiedRemarkClose?: () => void;
   /** When job has promptForStatusChangeReason and bulk status update from unified dialog: open bulk reason dialog. */
   onBulkStatusRequiresReason?: (payload: BulkReasonRequestPayload) => void;
+  onOpenCandidateEditDialog?: (candidate: Candidate) => void;
 }
 
 export function JobPageDialogs({
   selectedCandidate,
   isDetailsOpen,
   setIsDetailsOpen,
+  isEditOpen,
+  setIsEditOpen,
   handleCandidateUpdate,
   isDeleteDialogOpen,
   setIsDeleteDialogOpen,
@@ -171,6 +177,22 @@ export function JobPageDialogs({
   const openRemarksForRef = useRef(openRemarksFor);
   openRemarksForRef.current = openRemarksFor;
 
+  const isChecklistPayload = (value: unknown) => {
+    if (!value || typeof value !== 'object') return false;
+    const v = value as {
+      currentLane?: string;
+      targetLane?: string;
+      prevStatus?: string;
+      newStatus?: string;
+      checklistType?: string;
+    };
+    return (
+      (!!v.currentLane && !!v.targetLane) ||
+      (!!v.prevStatus && !!v.newStatus) ||
+      !!v.checklistType
+    );
+  };
+
   /** When checklist dialog closes in bulk context: cancel entire bulk (no re-open for next). */
   const handleChecklistOpenChange = (open: boolean) => {
     if (open) return;
@@ -197,85 +219,97 @@ export function JobPageDialogs({
     }
   };
 
-  // When unified dialog closes, only clear openRemarksFor if it's not checklist JSON
-  // (defer sets it to JSON; clearing would prevent checklist from showing)
   const handleUnifiedOpenChange = (open: boolean) => {
     if (open) return;
-    queueMicrotask(() => {
-      if (
-        typeof openRemarksForRef.current !== 'string' ||
-        !openRemarksForRef.current.startsWith('{')
-      ) {
+    const valueAtClose = openRemarksForRef.current;
+    const tryClear = () => {
+      const current = openRemarksForRef.current;
+      if (!current) {
+        setOpenRemarksFor(null);
+        return;
+      }
+
+      // If openRemarksFor changed after close (e.g. checklist payload), do nothing.
+      if (current !== valueAtClose) return;
+
+      // If it's a string ID, just clear it
+      if (!current.startsWith('{')) {
         setOpenRemarksFor(null);
         onUnifiedRemarkClose?.();
+        return;
       }
-    });
+
+      // If it's JSON, determine if it's a checklist or a unified action
+      try {
+        const parsed = JSON.parse(current);
+        const isChecklist = isChecklistPayload(parsed);
+        
+        // If it's NOT a checklist (meaning it's likely a table unified action), allow closing
+        if (!isChecklist) {
+          setOpenRemarksFor(null);
+          onUnifiedRemarkClose?.();
+        }
+      } catch (e) {
+        // Fallback: clear if parsing fails
+        setOpenRemarksFor(null);
+      }
+    };
+
+    // Give checklist payload a chance to land before clearing unified dialog state.
+    setTimeout(() => {
+      if (openRemarksForRef.current !== valueAtClose) return;
+      setTimeout(() => {
+        if (openRemarksForRef.current !== valueAtClose) return;
+        tryClear();
+      }, 50);
+    }, 0);
   };
 
-  // Find candidate for checklist remarks dialog (columns first, then mergedCandidates)
-  const checklistCandidate = openRemarksFor
-    ? (() => {
+  // Improved parsing for candidates and actions from openRemarksFor
+  const dialogContext = useMemo(() => {
+    if (!openRemarksFor) return null;
+    
+    let candidateId = openRemarksFor;
+    let initialAction: CandidateActionType = 'addRemark';
+    let isChecklist = false;
+
+    if (openRemarksFor.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(openRemarksFor);
+        candidateId = parsed.candidateId || candidateId;
+        initialAction = parsed.initialAction || initialAction;
+        // Check if it's a checklist payload
+        isChecklist = isChecklistPayload(parsed);
+      } catch (e) {
+        logger.error('Failed to parse openRemarksFor JSON:', openRemarksFor, e);
+      }
+    }
+
+    const findCandidate = (id: string) => {
       const fromColumns = columns
         .flatMap((col) => col.candidates)
-        .find((c) => {
-          if (c._id === openRemarksFor) return true;
-          if (openRemarksFor.startsWith('{')) {
-            try {
-              const parsed = JSON.parse(openRemarksFor) as {
-                candidateId?: string;
-              };
-              return parsed.candidateId === c._id;
-            } catch (e) {
-              logger.error(
-                'Failed to parse openRemarksFor JSON:',
-                openRemarksFor,
-                e,
-              );
-              return false;
-            }
-          }
-          return false;
-        });
+        .find((c) => c._id === id);
       if (fromColumns) return fromColumns;
-      if (openRemarksFor.startsWith('{')) {
-        try {
-          const parsed = JSON.parse(openRemarksFor) as {
-            candidateId?: string;
-          };
-          if (parsed.candidateId) {
-            return (
-              mergedCandidates.find((c) => c._id === parsed.candidateId) ??
-              null
-            );
-          }
-        } catch {
-          // ignore
-        }
-      }
+      const fromMerged = mergedCandidates.find((c) => c._id === id);
+      if (fromMerged) return fromMerged;
+      if (selectedCandidate && selectedCandidate._id === id) return selectedCandidate;
       return null;
-    })()
+    };
+
+    const candidate = findCandidate(candidateId);
+    return { candidate, initialAction, isChecklist };
+  }, [openRemarksFor, columns, mergedCandidates, selectedCandidate]);
+
+  const checklistCandidate = dialogContext?.isChecklist ? dialogContext.candidate : null;
+  const generalRemarksCandidate = (dialogContext && !dialogContext.isChecklist && !parseBulkReasonPayload(openRemarksFor)) 
+    ? dialogContext.candidate 
     : null;
 
-  const checklistInfo = openRemarksFor?.startsWith('{')
+  const checklistInfo = openRemarksFor?.startsWith('{') && dialogContext?.isChecklist
     ? openRemarksFor
     : undefined;
 
   const bulkReasonPayload = parseBulkReasonPayload(openRemarksFor);
-  const isChecklistPayload =
-    checklistInfo && !bulkReasonPayload;
-
-  // Find candidate for general remarks (single candidate, not checklist and not bulk reason)
-  // Resolve from columns first (same as checklist) so "+ Add Remark" always finds the candidate
-  const generalRemarksCandidate =
-    openRemarksFor && !isChecklistPayload && !bulkReasonPayload
-      ? (() => {
-        const fromColumns = columns
-          .flatMap((col) => col.candidates)
-          .find((c) => c._id === openRemarksFor);
-        if (fromColumns) return fromColumns;
-        return mergedCandidates.find((c) => c._id === openRemarksFor) ?? null;
-      })()
-      : null;
 
   return (
     <>
@@ -293,6 +327,19 @@ export function JobPageDialogs({
         onOpenChecklistAfterSave={onOpenChecklistAfterSave}
         onBulkStatusRequiresReason={onBulkStatusRequiresReason}
       />
+
+      {isEditOpen && selectedCandidate && (
+        <EditCandidateDialog
+          candidate={selectedCandidate}
+          isOpen={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          onUpdate={handleCandidateUpdate}
+          refetchAssignment={refetch}
+          onSuccess={async () => {
+             await refetch();
+          }}
+        />
+      )}
 
       <EditLaneDialog
         isEditLaneDialogOpen={isLaneEditOpen}
@@ -389,7 +436,7 @@ export function JobPageDialogs({
         />
       )}
 
-      {checklistCandidate && isChecklistPayload && (
+      {checklistCandidate && checklistInfo && (
         <ChecklistRemarksDialog
           candidate={checklistCandidate}
           isOpen={!!openRemarksFor}
@@ -398,6 +445,9 @@ export function JobPageDialogs({
           refetch={refetch}
           checklistInfo={checklistInfo}
           onChecklistSuccess={handleChecklistComplete}
+          onApplyDeferredStatus={(candidateId) => {
+            handleChecklistComplete(candidateId);
+          }}
           onChecklistCancel={cancelPendingMove}
           bulkTotalCount={bulkTotalCount}
           onApplyToRemaining={onApplyToRemaining}
@@ -431,9 +481,9 @@ export function JobPageDialogs({
       {generalRemarksCandidate && (
         <UnifiedCandidateActionsDialog
           candidate={generalRemarksCandidate}
-          isOpen={!!openRemarksFor && !isChecklistPayload && !bulkReasonPayload}
+          isOpen={!!openRemarksFor && !checklistInfo && !bulkReasonPayload}
           onOpenChange={handleUnifiedOpenChange}
-          initialAction={'addRemark' as CandidateActionType}
+          initialAction={dialogContext?.initialAction || 'addRemark'}
           refetch={refetch}
           onUpdate={handleCandidateUpdate}
           setLocalCandidate={() => { }}

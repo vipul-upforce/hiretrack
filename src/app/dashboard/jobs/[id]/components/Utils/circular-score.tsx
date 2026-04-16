@@ -6,7 +6,7 @@ import { useTheme } from '@/components/theme-provider';
 interface CircularScoreProps {
   score: number | null | undefined;
   category: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'vxs';
   showLabel?: boolean;
   treatZeroAsEmpty?: boolean;
 }
@@ -44,6 +44,14 @@ export function CircularScore({
       radius: 46,
       fontSize: 'text-sm',
       labelSize: 'text-xs',
+    },
+    vxs: {
+      container: 'w-9 h-9',
+      svg: 'w-8 h-8',
+      strokeWidth: 5,
+      radius: 46,
+      fontSize: 'text-[12px]',
+      labelSize: 'text-[10px]',
     },
     sm: {
       container: 'w-20 h-20',
@@ -240,6 +248,7 @@ export function CompactCircularScores({
 // Single line version for candidate cards with labels - always shows all 4 sections
 export function GridCircularScores({
   scores,
+  size,
 }: {
   scores: {
     overall?: number;
@@ -247,6 +256,7 @@ export function GridCircularScores({
     skills?: number;
     affordability?: number;
   };
+  size?: null | 'xs' | 'sm' | 'md' | 'lg' | 'vxs',
 }) {
   const scoreData = scores || {};
 
@@ -255,25 +265,28 @@ export function GridCircularScores({
       <CircularScore
         score={scoreData.overall}
         category="Overall"
-        size="xs"
+        size={size ? size : "xs"}
         showLabel
       />
       <CircularScore
         score={scoreData.experience}
         category="Experience"
-        size="xs"
+        size={size ? size : "xs"}
+
         showLabel
       />
       <CircularScore
         score={scoreData.skills}
         category="Skills"
-        size="xs"
+        size={size ? size : "xs"}
+
         showLabel
       />
       <CircularScore
         score={scoreData.affordability}
         category="Affordability"
-        size="xs"
+        size={size ? size : "xs"}
+
         showLabel
       />
     </div>

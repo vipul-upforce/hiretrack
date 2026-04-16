@@ -546,11 +546,52 @@ export const candidateApi = baseApi.injectEndpoints({
         };
       },
     }),
+    fetchCandidatesTable: builder.query<
+      {
+        candidates: Candidate[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+      },
+      {
+        jobId: string;
+        page?: number;
+        limit?: number;
+        search?: string;
+        logicalOperator?: 'AND' | 'OR';
+        status?: string;
+        isArchived?: boolean;
+        followUp?: boolean;
+        hasRemark?: string;
+        noticePeriod?: string;
+        minSalary?: number;
+        maxSalary?: number;
+        interviewerId?: string;
+        hasAssignment?: string;
+        dateRange?: string;
+        lastActivity?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+      }
+    >({
+      query: ({ jobId, ...params }) => {
+        const queryParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, String(value));
+          }
+        });
+        return `/jobs/${jobId}/candidates/table?${queryParams.toString()}`;
+      },
+      providesTags: ['Candidate'],
+    }),
   }),
 });
 
 export const {
   useFetchCandidatesQuery,
+  useFetchCandidatesTableQuery,
   useFetchCandidateByIdQuery,
   useFetchAssignmentsQuery,
   useLazyFetchAssignmentsQuery,
