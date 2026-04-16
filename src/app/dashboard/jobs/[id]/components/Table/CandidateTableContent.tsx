@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { GridCircularScores } from '../Utils/circular-score';
 import { useContext, useMemo } from 'react';
 import { CustomFieldsContext } from '@/Custom_Fields/Context';
+import { getCandidateCardCalculations } from '../Candidate/candidate-card/hooks/useCandidateCardCalculations';
 import {
   Tooltip,
   TooltipContent,
@@ -128,7 +129,7 @@ export function CandidateTableContent({
                                   </Tooltip>
                                 </TooltipProvider>
                               )}
-                              {candidate.scores.redFlags && candidate.scores.redFlags.length > 0 && (
+                              {getCandidateCardCalculations(candidate).showRedFlag && (
                                 <TooltipProvider>
                                   <Tooltip>
                                     <TooltipTrigger>
