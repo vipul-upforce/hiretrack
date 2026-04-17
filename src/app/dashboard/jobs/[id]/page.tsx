@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import {
   useFetchJobByIdQuery,
@@ -32,8 +32,10 @@ import { useClientSideChecklistValidation } from './hooks/useClientSideChecklist
 import { QuickSelectAndFilter } from './components/QuickSelectAndFilter';
 import { JobPageHeader } from './components/JobPageHeader';
 import { JobKanbanBoard } from './components/JobKanbanBoard';
+import { JobCandidatesTable } from './components/Table/JobCandidatesTable';
 import { JobPageDialogs } from './components/JobPageDialogs';
 import { stringifyBulkReasonPayload } from './components/Dialogs/bulk-reason-dialog';
+import { ShareCandidateDialog } from './components/Dialogs/share-candidate-dialog';
 
 interface FilterState {
   search: string;
@@ -60,6 +62,25 @@ export default function JobProgressPage() {
   const [candidateToDelete, setCandidateToDelete] = useState<string | null>(
     null,
   );
+  const [viewMode, setViewMode] = useState<'kanban' | 'table' | null>(null);
+
+  // FIX: Storing imperative handles (functions) in a ref prevents React from incorrectly treating it as a state updater
+  const tableRefetchRef = useRef<(() => Promise<unknown>) | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('jobViewMode') as
+      | 'kanban'
+      | 'table'
+      | null;
+    setViewMode(saved || 'kanban');
+  }, []);
+
+  useEffect(() => {
+    if (viewMode) {
+      localStorage.setItem('jobViewMode', viewMode);
+    }
+  }, [viewMode]);
+
   const [isConfirmLaneDeleteOpen, setIsConfirmLaneDeleteOpen] = useState(false);
   const [laneToEdit, setLaneToEdit] = useState<string | null>(null);
   const [initialLaneToEdit, setInitialLaneToEdit] = useState<string | null>(
@@ -116,13 +137,25 @@ export default function JobProgressPage() {
   const {
     candidates: normalizedCandidates,
     isLoading: isCandidatesLoading,
-    refetch,
+    refetch: refetchKanban,
     sseLanes: updatedLanes,
   } = useNormalizedCandidates({
     jobId: id,
     setSelectedCandidate: setTempSelectedCandidate,
     selectedCandidate: tempSelectedCandidate,
+    enabled: viewMode === 'kanban',
   });
+
+  const refetchCurrentView = useCallback(async () => {
+    // FIX: Using `.current` properly queries the imperative callback saved in our ref
+    if (viewMode === 'table' && tableRefetchRef.current) {
+      await tableRefetchRef.current();
+      return;
+    }
+    if (viewMode === 'kanban') {
+      await refetchKanban();
+    }
+  }, [viewMode, refetchKanban]);
 
   // Use candidate state hook (consolidates UI state)
   const {
@@ -139,13 +172,6 @@ export default function JobProgressPage() {
     jobId: id,
     candidates: normalizedCandidates,
   });
-
-  // Get SSE lanes separately (still needed for lane updates)
-  // const { lanes: updatedLanes } = useSSE(
-  //   setSelectedCandidate,
-  //   selectedCandidate,
-  //   id,
-  // );
 
   const [updateJob, { isLoading }] = useUpdateJobMutation();
   // NEW: Use job-specific lanes with fallback to user lanes
@@ -183,6 +209,17 @@ export default function JobProgressPage() {
   const [pendingIncomingChecklistAfterStatus, setPendingIncomingChecklistAfterStatus] =
     useState<string | null>(null);
 
+  // State to store candidates from the table view to make them available to dialogs
+  const [tableCandidates, setTableCandidates] = useState<Candidate[]>([]);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDownloadProfileOpen, setIsDownloadProfileOpen] = useState(false);
+  const [downloadProfileCandidate, setDownloadProfileCandidate] = useState<Candidate | null>(null);
+
+  // Consolidated candidate list for dialogs
+  const dialogCandidates = useMemo(() => {
+    return viewMode === 'table' ? tableCandidates : normalizedCandidates;
+  }, [viewMode, tableCandidates, normalizedCandidates]);
+
   const {
     bulkStatusQueue,
     onBulkStatusRequiresChecklist,
@@ -192,19 +229,19 @@ export default function JobProgressPage() {
   } = useBulkChecklistFlow({
     setOpenRemarksFor,
     setPendingStatusAfterChecklist,
-    refetch,
+    refetch: refetchCurrentView,
   });
 
-  const { validateCompleteMovement } = useClientSideChecklistValidation(
-    jobLaneConfig,
-    user?.role,
-  );
+  const { validateCompleteMovement: validateCompleteMovementForDialog } =
+    useClientSideChecklistValidation(jobLaneConfig, user?.role, {
+      skipAlreadyCompletedCheck: true,
+    });
 
   const onValidateStatusChange = useCallback(
     (candidate: Candidate, newStatus: string) => {
-      if (!validateCompleteMovement || candidate.status === newStatus)
+      if (!validateCompleteMovementForDialog || candidate.status === newStatus)
         return null;
-      const result = validateCompleteMovement(
+      const result = validateCompleteMovementForDialog(
         candidate,
         candidate.status,
         newStatus,
@@ -241,7 +278,6 @@ export default function JobProgressPage() {
         return {
           requiresChecklist: true,
           isMandatory: result.validation.isMandatory,
-          // Step 0 = outgoing (current lane), step 1 = incoming (target lane). Unified dialog opens by checklistType.
           validationSteps: [
             {
               validationInfo: JSON.stringify(validationInfo),
@@ -257,7 +293,7 @@ export default function JobProgressPage() {
         isMandatory: result.validation.isMandatory,
       };
     },
-    [validateCompleteMovement],
+    [validateCompleteMovementForDialog],
   );
 
   const onOpenChecklistAfterSave = useCallback(
@@ -290,7 +326,6 @@ export default function JobProgressPage() {
           candidateId: string;
           checklistType?: string;
         };
-        // When we have two checklists, always open OUTGOING first and store INCOMING for after (same as drag/clubbing).
         const hasNext = !!nextChecklistValidationInfo?.trim();
         let toOpenNow: string = validationInfo;
         let toStoreForAfter: string | null = null;
@@ -317,7 +352,6 @@ export default function JobProgressPage() {
               toOpenNow = nextChecklistValidationInfo;
               toStoreForAfter = validationInfo;
             } else {
-              // Bulletproof: pick whichever has checklistType 'outgoing' so we never open incoming first
               const firstIsOutgoing = (parsed.checklistType ?? '') === 'outgoing';
               const nextIsOutgoing = (nextParsed.checklistType ?? '') === 'outgoing';
               if (nextIsOutgoing && !firstIsOutgoing) {
@@ -337,7 +371,6 @@ export default function JobProgressPage() {
           ...(JSON.parse(toOpenNow) as Record<string, unknown>),
           statusDeferredFromUnified: true,
         };
-        // Last-moment guard: never open incoming first when we have two checklists (store has the other)
         const openingType = (withFlag as { checklistType?: string }).checklistType ?? '';
         if (
           openingType === 'incoming' &&
@@ -403,7 +436,7 @@ export default function JobProgressPage() {
   } = useKanbanBoard({
     columns,
     setColumns,
-    jobId: id, // NEW: Pass jobId for job-specific operations
+    jobId: id,
     setIsConfirmLaneDeleteOpen,
     setIsLaneEditOpen,
     refetch: () => Promise.resolve(),
@@ -432,7 +465,7 @@ export default function JobProgressPage() {
     setIsDeleteDialogOpen,
     setSelectedCandidate,
     selectedCandidate,
-    refetch,
+    refetch: refetchKanban,
     candidateToDelete,
     jobLaneConfig,
     job,
@@ -450,7 +483,7 @@ export default function JobProgressPage() {
   // Consolidate all side effects into a single hook
   useJobPageEffects({
     tempSelectedCandidate,
-    selectedCandidate,
+    selectedCandidate,    
     setSelectedCandidate,
     normalizedCandidates,
     mergedCandidates,
@@ -458,7 +491,7 @@ export default function JobProgressPage() {
     jobLanes,
     userLanes,
     lanes,
-    refetch,
+    refetch: refetchKanban,
     filterConditions,
     showArchived,
     setColumns,
@@ -472,8 +505,20 @@ export default function JobProgressPage() {
   });
 
   // Fallback UI
-  if (isJobLoading || isCandidatesLoading || isLanesLoading || !lanes) {
+  if (!viewMode) {
     return <LoaderSkeleton />;
+  }
+
+  if (
+    isJobLoading ||
+    (viewMode === 'kanban' && isCandidatesLoading) ||
+    isLanesLoading ||
+    !lanes
+  ) {
+    if (viewMode === 'kanban') return <LoaderSkeleton />
+
+    return null;
+
   }
 
   if (jobError) {
@@ -481,7 +526,7 @@ export default function JobProgressPage() {
   }
 
   return (
-    <div
+    <div 
       className="flex h-screen flex-col overflow-hidden"
       style={{ width: '100%' }}
     >
@@ -502,59 +547,102 @@ export default function JobProgressPage() {
         isDialogOpen={isDialogOpen}
         onDialogOpenChange={setIsDialogOpen}
         droppedFileData={droppedFileData}
+        view={viewMode}
+        onViewChange={(view) => setViewMode(view)}
       />
 
-      <QuickSelectAndFilter
-        currentJobId={id}
-        candidates={mergedCandidates}
-        onFilterChange={setFilterConditions}
-        showArchived={showArchived}
-        onShowArchivedChange={setShowArchived}
-        onValidateStatusChange={onValidateStatusChange}
-        onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
-        onDeferStatusToChecklist={onDeferStatusToChecklist}
-        onOpenChecklistAfterSave={onOpenChecklistAfterSave}
-        onBulkStatusRequiresReason={
-          job?.promptForStatusChangeReason ? onBulkStatusRequiresReason : undefined
-        }
-      />
+      {viewMode === 'kanban' && (
+        <QuickSelectAndFilter
+          currentJobId={id}
+          candidates={mergedCandidates}
+          onFilterChange={setFilterConditions}
+          showArchived={showArchived}
+          onShowArchivedChange={setShowArchived}
+          onValidateStatusChange={onValidateStatusChange}
+          onBulkStatusRequiresChecklist={onBulkStatusRequiresChecklist}
+          onDeferStatusToChecklist={onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={onOpenChecklistAfterSave}
+          onBulkStatusRequiresReason={
+            job?.promptForStatusChangeReason ? onBulkStatusRequiresReason : undefined
+          }
+        />
+      )}
 
-      <JobKanbanBoard
-        columns={columns}
-        scrollRef={scrollRef}
-        isDragging={isDragging}
-        setIsDndDragging={setIsDndDragging}
-        onDragEnd={onDragEnd}
-        onBeforeDragStart={onBeforeDragStart}
-        bulkDragState={bulkDragState}
-        isFileOver={isFileOver}
-        setIsFileOver={setIsFileOver}
-        handleFileDrop={handleFileDrop}
-        handleDeleteLane={handleDeleteLane}
-        handleEditLane={handleEditLaneClick}
-        setLaneToDelete={setLaneToDelete}
-        setLaneToEdit={setLaneToEdit}
-        refetch={refetch}
-        selectedCandidate={selectedCandidate}
-        setSelectedCandidate={setSelectedCandidate}
-        isDetailsOpen={isDetailsOpen}
-        setIsDetailsOpen={setIsDetailsOpen}
-        openRemarksFor={openRemarksFor}
-        setOpenRemarksFor={setOpenRemarksFor}
-        handleDeleteClick={handleDeleteClick}
-        onConfigureChecklist={handleConfigureChecklist}
-        pendingMoves={pendingMoves}
-        jobLaneConfig={jobLaneConfig}
-        onValidateStatusChange={onValidateStatusChange}
-        onDeferStatusToChecklist={onDeferStatusToChecklist}
-        onOpenChecklistAfterSave={onOpenChecklistAfterSave}
-      />
+      {viewMode === 'kanban' ? (
+        <JobKanbanBoard
+          columns={columns}
+          scrollRef={scrollRef}
+          isDragging={isDragging}
+          setIsDndDragging={setIsDndDragging}
+          onDragEnd={onDragEnd}
+          onBeforeDragStart={onBeforeDragStart}
+          bulkDragState={bulkDragState}
+          isFileOver={isFileOver}
+          setIsFileOver={setIsFileOver}
+          handleFileDrop={handleFileDrop}
+          handleDeleteLane={handleDeleteLane}
+          handleEditLane={handleEditLaneClick}
+          setLaneToDelete={setLaneToDelete}
+          setLaneToEdit={setLaneToEdit}
+          refetch={refetchKanban}
+          selectedCandidate={selectedCandidate}
+          setSelectedCandidate={setSelectedCandidate}
+          isDetailsOpen={isDetailsOpen}
+          setIsDetailsOpen={setIsDetailsOpen}
+          openRemarksFor={openRemarksFor}
+          setOpenRemarksFor={setOpenRemarksFor}
+          handleDeleteClick={handleDeleteClick}
+          onConfigureChecklist={handleConfigureChecklist}
+          pendingMoves={pendingMoves}
+          jobLaneConfig={jobLaneConfig}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={onOpenChecklistAfterSave}
+        />
+      ) : (
+        <div className="flex-1 overflow-hidden px-4">
+          <JobCandidatesTable
+            onCandidateClick={(c) => {
+              setSelectedCandidate(c);
+              setIsDetailsOpen(true);
+            }}
+            onActionClick={(c, action) => {
+              setSelectedCandidate(c);
+              setOpenRemarksFor(JSON.stringify({ candidateId: c._id, initialAction: action }));
+            }}
+            onEditClick={(c) => {
+              setSelectedCandidate(c);
+              setIsEditOpen(true);
+            }}
+            onArchiveClick={handleDeleteClick}
+            onDownloadCV={(c) => {
+              if (c.resume?.url) window.open(c.resume.url, '_blank');
+            }}
+            onDownloadProfile={(c) => {
+              setDownloadProfileCandidate(c);
+              setIsDownloadProfileOpen(true);
+            }}
+            onDataUpdate={(data) => {
+              // FIX: Deferring to microtask prevents child-component synchronous render update violations
+              queueMicrotask(() => {
+                setTableCandidates((prev) => prev === data ? prev : data);
+              });
+            }}
+            onRefetchReady={(refetchFn) => {
+              // FIX: Storing this imperative handle inside a ref instead of state safely escapes the rendering phase conflict
+              tableRefetchRef.current = refetchFn;
+            }}
+          />
+        </div>
+      )}
 
       {job && (
         <JobPageDialogs
           selectedCandidate={selectedCandidate}
           isDetailsOpen={isDetailsOpen}
           setIsDetailsOpen={setIsDetailsOpen}
+          isEditOpen={isEditOpen}
+          setIsEditOpen={setIsEditOpen}
           handleCandidateUpdate={handleCandidateUpdate}
           isDeleteDialogOpen={isDeleteDialogOpen}
           setIsDeleteDialogOpen={setIsDeleteDialogOpen}
@@ -578,10 +666,8 @@ export default function JobProgressPage() {
           setIsPromptConfirmOpen={setIsPromptConfirmOpen}
           pendingPromptValue={pendingPromptValue}
           updateJob={async (j) => {
-            // Ensure we await and only resolve on success, to match the expected signature (job: Job) => Promise<void>
             const result = await updateJob(j);
             if ('error' in result && result.error) {
-              // Use structured logging for better observability
               logger.error('Job update failed', {
                 error: result.error,
                 jobId: j._id,
@@ -599,14 +685,14 @@ export default function JobProgressPage() {
           setIsEmailSettingsOpen={setIsEmailSettingsOpen}
           openRemarksFor={openRemarksFor}
           setOpenRemarksFor={setOpenRemarksFor}
-          columns={columns}
-          refetch={refetch}
+          columns={viewMode === 'table' ? [] : columns}
+          refetch={refetchCurrentView}
           handleChecklistComplete={handleChecklistComplete}
           cancelPendingMove={cancelPendingMove}
           checklistConfigLane={checklistConfigLane}
           isChecklistConfigOpen={isChecklistConfigOpen}
           setIsChecklistConfigOpen={setIsChecklistConfigOpen}
-          mergedCandidates={mergedCandidates}
+          mergedCandidates={dialogCandidates}
           isAssigning={isAssigning}
           setIsAssigning={setIsAssigning}
           onValidateStatusChange={onValidateStatusChange}
@@ -628,6 +714,17 @@ export default function JobProgressPage() {
             job?.promptForStatusChangeReason ? onBulkStatusRequiresReason : undefined
           }
           onOpenCandidateDetailsDialog={openCandidateDetails}
+        />
+      )}
+
+      {downloadProfileCandidate && (
+        <ShareCandidateDialog
+          open={isDownloadProfileOpen}
+          onOpenChange={(open) => {
+            setIsDownloadProfileOpen(open);
+            if (!open) setDownloadProfileCandidate(null);
+          }}
+          candidate={downloadProfileCandidate}
         />
       )}
     </div>

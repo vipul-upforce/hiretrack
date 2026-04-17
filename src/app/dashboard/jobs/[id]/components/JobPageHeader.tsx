@@ -10,6 +10,8 @@ import { Breadcrumb } from './Utils/breadcrumb';
 import { CreateLaneDialog } from './Dialogs/create-lane-dialog';
 import { CreateCandidateDialog } from './Dialogs/create-candidate-dialog';
 
+import { ViewToggle } from './ViewToggle';
+
 interface JobPageHeaderProps {
   jobTitle?: string;
   userRole?: string;
@@ -24,6 +26,8 @@ interface JobPageHeaderProps {
   isDialogOpen: boolean;
   onDialogOpenChange: (open: boolean) => void;
   droppedFileData: File | null;
+  view: 'kanban' | 'table';
+  onViewChange: (view: 'kanban' | 'table') => void;
 }
 
 export function JobPageHeader({
@@ -40,6 +44,8 @@ export function JobPageHeader({
   isDialogOpen,
   onDialogOpenChange,
   droppedFileData,
+  view,
+  onViewChange,
 }: JobPageHeaderProps) {
   return (
     <div className="flex-shrink-0 px-4 pb-2 pt-4">
@@ -49,7 +55,8 @@ export function JobPageHeader({
           links={[{ title: 'Jobs', href: '/dashboard/jobs-board' }]}
         />
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <ViewToggle view={view} onViewChange={onViewChange} />
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">

@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { FilterState } from '../../types/filter.types.ts';
+
 import {
   Filter,
   ChevronDown,
@@ -25,7 +27,6 @@ import {
   Target,
 } from 'lucide-react';
 import React from 'react';
-import type { FilterState } from './useQuickSelectFilters';
 
 interface QuickSelectFiltersDropdownProps {
   filters: FilterState;
