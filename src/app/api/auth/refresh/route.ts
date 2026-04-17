@@ -17,6 +17,41 @@ import { validateLicense } from '@/lib/licenseUtils';
 import { IUser } from '@/lib/models/user';
 import { clearAuthTokens, setAuthCookies } from '@/lib/authCookies';
 import { apiRateLimiter } from '@/lib/rateLimiter';
+import * as Sentry from '@sentry/nextjs';
+
+type RefreshReason =
+  | 'NO_REFRESH_COOKIE'
+  | 'LICENSE_INVALID'
+  | 'TOKEN_NOT_FOUND_IN_DB'
+  | 'TOKEN_DECRYPT_INVALID'
+  | 'VERIFY_REFRESH_FAILED'
+  | 'USER_NOT_FOUND_OR_DELETED'
+  | 'REFRESH_SUCCESS'
+  | 'REFRESH_UNEXPECTED_ERROR';
+
+interface RefreshEventContext {
+  hasRefreshCookie?: boolean;
+  hasOrgCookie?: boolean;
+  isCandidate?: boolean;
+  orgId?: string;
+  userId?: string;
+  statusCode?: number;
+}
+
+function captureRefreshEvent(
+  reason: RefreshReason,
+  context: RefreshEventContext = {},
+  level: Sentry.SeverityLevel = 'warning',
+) {
+  Sentry.withScope((scope) => {
+    scope.setTag('module', 'auth');
+    scope.setTag('flow', 'refresh');
+    scope.setTag('reason', reason);
+    scope.setLevel(level);
+    scope.setContext('auth_refresh', context);
+    Sentry.captureMessage(`auth.refresh.${reason.toLowerCase()}`);
+  });
+}
 
 async function handleRefreshToken(req: NextRequest) {
   try {
@@ -24,8 +59,14 @@ async function handleRefreshToken(req: NextRequest) {
 
     // Read refresh token from httpOnly cookie only
     const refreshToken = req.cookies.get('refresh_token')?.value;
+    const orgIdFromCookie = req.cookies.get('org_id')?.value;
 
     if (!refreshToken) {
+      captureRefreshEvent('NO_REFRESH_COOKIE', {
+        hasRefreshCookie: false,
+        hasOrgCookie: Boolean(orgIdFromCookie),
+        statusCode: 400,
+      });
       return NextResponse.json(
         { error: 'Refresh token is required' },
         { status: 400 },
@@ -35,6 +76,11 @@ async function handleRefreshToken(req: NextRequest) {
     // STEP 1: Validate license BEFORE refreshing token (runs every 15 min)
     const licenseValidation = await validateLicense();
     if (!licenseValidation.valid) {
+      captureRefreshEvent('LICENSE_INVALID', {
+        hasRefreshCookie: true,
+        hasOrgCookie: Boolean(orgIdFromCookie),
+        statusCode: 403,
+      });
       const res = NextResponse.json(
         {
           error: 'License validation failed',
@@ -48,8 +94,6 @@ async function handleRefreshToken(req: NextRequest) {
     }
 
     // STEP 2: Try to get orgId from cookie first (most common case)
-    const orgIdFromCookie = req.cookies.get('org_id')?.value;
-
     let tokenVerification = orgIdFromCookie
       ? verifyAndDecryptRefreshToken(refreshToken, orgIdFromCookie)
       : verifyAndDecryptRefreshToken(refreshToken, '');
@@ -80,6 +124,11 @@ async function handleRefreshToken(req: NextRequest) {
       }
 
       if (!user) {
+        captureRefreshEvent('TOKEN_NOT_FOUND_IN_DB', {
+          hasRefreshCookie: true,
+          hasOrgCookie: Boolean(orgIdFromCookie),
+          statusCode: 401,
+        });
         const response = NextResponse.json(
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
@@ -92,6 +141,12 @@ async function handleRefreshToken(req: NextRequest) {
       orgId = user.organizationId.toString();
       tokenVerification = verifyAndDecryptRefreshToken(refreshToken, orgId);
       if (!tokenVerification.success || !tokenVerification.payload) {
+        captureRefreshEvent('TOKEN_DECRYPT_INVALID', {
+          hasRefreshCookie: true,
+          hasOrgCookie: Boolean(orgIdFromCookie),
+          orgId,
+          statusCode: 401,
+        });
         const res = NextResponse.json(
           { error: 'Invalid or expired refresh token' },
           { status: 401 },
@@ -126,6 +181,14 @@ async function handleRefreshToken(req: NextRequest) {
     );
 
     if (!verification.valid) {
+      captureRefreshEvent('VERIFY_REFRESH_FAILED', {
+        hasRefreshCookie: true,
+        hasOrgCookie: Boolean(orgIdFromCookie),
+        isCandidate,
+        orgId,
+        userId,
+        statusCode: 401,
+      });
       const res = NextResponse.json(
         { error: 'Invalid or expired refresh token' },
         { status: 401 },
@@ -144,6 +207,14 @@ async function handleRefreshToken(req: NextRequest) {
           .select('tokenVersion name _id role email organizationId isDeleted ');
 
     if (!user || user.isDeleted) {
+      captureRefreshEvent('USER_NOT_FOUND_OR_DELETED', {
+        hasRefreshCookie: true,
+        hasOrgCookie: Boolean(orgIdFromCookie),
+        isCandidate,
+        orgId,
+        userId,
+        statusCode: 404,
+      });
       const res = NextResponse.json(
         { error: 'User not found' },
         { status: 404 },
@@ -208,8 +279,27 @@ async function handleRefreshToken(req: NextRequest) {
       orgId,
     });
 
+    captureRefreshEvent(
+      'REFRESH_SUCCESS',
+      {
+        hasRefreshCookie: true,
+        hasOrgCookie: Boolean(orgIdFromCookie),
+        isCandidate,
+        orgId,
+        userId,
+        statusCode: 200,
+      },
+      'info',
+    );
+
     return response;
-  } catch {
+  } catch (error) {
+    captureRefreshEvent('REFRESH_UNEXPECTED_ERROR', {
+      hasRefreshCookie: Boolean(req.cookies.get('refresh_token')?.value),
+      hasOrgCookie: Boolean(req.cookies.get('org_id')?.value),
+      statusCode: 500,
+    });
+    Sentry.captureException(error);
     return NextResponse.json(
       { error: 'Failed to refresh token' },
       { status: 500 },
