@@ -19,11 +19,11 @@ interface GraphChatResponse {
   id?: string;
 }
 
-function getBaseMicrosoftTeamsConfig(
+function getAzureAppConfig(
   organizationId: string,
   microsoftTeams?: IMicrosoftTeamsConfig,
 ) {
-  console.log('[teams-bot] getBaseMicrosoftTeamsConfig: validating credentials');
+  console.log('[teams-bot] getAzureAppConfig: validating credentials');
   if (
     !microsoftTeams?.tenantId ||
     !microsoftTeams.clientId ||
@@ -32,21 +32,28 @@ function getBaseMicrosoftTeamsConfig(
     throw new Error('Microsoft Teams Azure credentials are not configured');
   }
 
-  if (
-    !microsoftTeams.botUsername ||
-    !microsoftTeams.botPassword ||
-    !microsoftTeams.botUserId
-  ) {
-    throw new Error('Microsoft Teams bot credentials are not configured');
-  }
-
   return {
     tenantId: microsoftTeams.tenantId,
     clientId: microsoftTeams.clientId,
     clientSecret: decryptText(microsoftTeams.clientSecret, organizationId),
+  };
+}
+
+function getBotCredentialsConfig(
+  organizationId: string,
+  microsoftTeams?: IMicrosoftTeamsConfig,
+) {
+  console.log('[teams-bot] getBotCredentialsConfig: validating credentials');
+  const azureAppConfig = getAzureAppConfig(organizationId, microsoftTeams);
+
+  if (!microsoftTeams?.botUsername || !microsoftTeams.botPassword) {
+    throw new Error('Microsoft Teams bot credentials are not configured');
+  }
+
+  return {
+    ...azureAppConfig,
     botUsername: microsoftTeams.botUsername,
     botPassword: decryptText(microsoftTeams.botPassword, organizationId),
-    botUserId: microsoftTeams.botUserId,
   };
 }
 
@@ -94,7 +101,7 @@ async function getApplicationToken(
   microsoftTeams?: IMicrosoftTeamsConfig,
 ) {
   console.log('[teams-bot] getApplicationToken: start');
-  const config = getBaseMicrosoftTeamsConfig(organizationId, microsoftTeams);
+  const config = getAzureAppConfig(organizationId, microsoftTeams);
 
   return requestGraphToken(
     new URLSearchParams({
@@ -112,7 +119,7 @@ async function getBotUserToken(
   microsoftTeams?: IMicrosoftTeamsConfig,
 ) {
   console.log('[teams-bot] getBotUserToken: start');
-  const config = getBaseMicrosoftTeamsConfig(organizationId, microsoftTeams);
+  const config = getBotCredentialsConfig(organizationId, microsoftTeams);
 
   return requestGraphToken(
     new URLSearchParams({
@@ -208,15 +215,13 @@ async function resolveGraphUserByEmail(params: {
 async function createOneOnOneChat(params: {
   organizationId: string;
   microsoftTeams?: IMicrosoftTeamsConfig;
+  botUserId: string;
   targetUserId: string;
 }) {
   console.log('[teams-bot] createOneOnOneChat: start', {
     targetUserId: params.targetUserId,
   });
-  const config = getBaseMicrosoftTeamsConfig(
-    params.organizationId,
-    params.microsoftTeams,
-  );
+  getAzureAppConfig(params.organizationId, params.microsoftTeams);
   const accessToken = await getBotUserToken(
     params.organizationId,
     params.microsoftTeams,
@@ -234,7 +239,7 @@ async function createOneOnOneChat(params: {
         {
           '@odata.type': '#microsoft.graph.aadUserConversationMember',
           roles: ['owner'],
-          'user@odata.bind': `https://graph.microsoft.com/v1.0/users('${config.botUserId}')`,
+          'user@odata.bind': `https://graph.microsoft.com/v1.0/users('${params.botUserId}')`,
         },
         {
           '@odata.type': '#microsoft.graph.aadUserConversationMember',
@@ -312,15 +317,26 @@ export async function sendFollowUpReminderToTeams(params: {
       recipientEmail: params.recipientEmail,
       candidateName: params.candidateName,
     });
+    const botUsername = params.microsoftTeams?.botUsername || '';
+    if (!botUsername) {
+      throw new Error('Microsoft Teams bot email is not configured');
+    }
+
     const graphUser = await resolveGraphUserByEmail({
       organizationId: params.organizationId,
       microsoftTeams: params.microsoftTeams,
       email: params.recipientEmail,
     });
+    const botUser = await resolveGraphUserByEmail({
+      organizationId: params.organizationId,
+      microsoftTeams: params.microsoftTeams,
+      email: botUsername,
+    });
 
     const { chatId, accessToken } = await createOneOnOneChat({
       organizationId: params.organizationId,
       microsoftTeams: params.microsoftTeams,
+      botUserId: botUser.id || '',
       targetUserId: graphUser.id || '',
     });
 
@@ -340,15 +356,12 @@ export async function sendFollowUpReminderToTeams(params: {
 
     return { chatId };
   } catch (error) {
-    logger.error(
-      {
-        error,
-        organizationId: params.organizationId,
-        recipientEmail: params.recipientEmail,
-        candidateName: params.candidateName,
-      },
-      'Failed to send follow-up reminder to Microsoft Teams',
-    );
+    logger.error('Failed to send follow-up reminder to Microsoft Teams', {
+      error,
+      organizationId: params.organizationId,
+      recipientEmail: params.recipientEmail,
+      candidateName: params.candidateName,
+    });
     throw error;
   }
 }

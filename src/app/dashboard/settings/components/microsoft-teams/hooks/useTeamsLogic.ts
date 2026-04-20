@@ -33,7 +33,6 @@ export function useTeamsLogic() {
     connectedEmail: '',
     botUsername: '',
     botPassword: '',
-    botUserId: '',
   });
 
   useEffect(() => {
@@ -52,7 +51,6 @@ export function useTeamsLogic() {
         connectedEmail: data.microsoftTeams.connectedEmail || '',
         botUsername: data.microsoftTeams.botUsername || '',
         botPassword: data.microsoftTeams.botPassword || '',
-        botUserId: data.microsoftTeams.botUserId || '',
       });
     }
   }, [data]);
@@ -95,7 +93,6 @@ export function useTeamsLogic() {
         connectedEmail: formData.connectedEmail,
         botUsername: formData.botUsername,
         botPassword: formData.botPassword,
-        botUserId: formData.botUserId,
       }).unwrap();
 
       toast({

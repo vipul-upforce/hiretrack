@@ -47,7 +47,6 @@ export async function GET(req: NextRequest) {
       connectedEmail: '',
       botUsername: '',
       botPassword: '',
-      botUserId: '',
     };
 
     if (microsoftTeams.clientSecret) {
@@ -109,7 +108,6 @@ export async function PUT(req: NextRequest) {
       connectedEmail,
       botUsername,
       botPassword,
-      botUserId,
     } = await req.json();
 
     const updateData: Record<string, string> = {
@@ -129,9 +127,6 @@ export async function PUT(req: NextRequest) {
     }
     if (typeof botUsername === 'string') {
       updateData['microsoftTeams.botUsername'] = botUsername;
-    }
-    if (typeof botUserId === 'string') {
-      updateData['microsoftTeams.botUserId'] = botUserId;
     }
     if (typeof botPassword === 'string') {
       updateData['microsoftTeams.botPassword'] = botPassword

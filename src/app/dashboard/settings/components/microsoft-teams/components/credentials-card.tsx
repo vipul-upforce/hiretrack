@@ -148,18 +148,6 @@ export function CredentialsCard({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="botUserId">Bot User Object ID</Label>
-          <Input
-            id="botUserId"
-            value={formData.botUserId || ''}
-            onChange={(e) =>
-              setFormData({ ...formData, botUserId: e.target.value })
-            }
-            placeholder="Enter Teams bot Azure AD object ID"
-          />
-        </div>
-
         <Button
           onClick={onSave}
           variant="primary"
