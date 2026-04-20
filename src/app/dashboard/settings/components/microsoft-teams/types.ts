@@ -16,6 +16,9 @@ export interface CredentialsFormData {
   clientId: string;
   clientSecret: string;
   connectedEmail?: string;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
 }
 
 export interface MicrosoftTeamsConfig {
@@ -24,4 +27,7 @@ export interface MicrosoftTeamsConfig {
   clientSecret?: string;
   isConnected: boolean;
   connectedEmail?: string;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
 }

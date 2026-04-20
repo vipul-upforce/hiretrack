@@ -45,6 +45,9 @@ export async function GET(req: NextRequest) {
       refreshToken: '',
       expiryDate: null,
       connectedEmail: '',
+      botUsername: '',
+      botPassword: '',
+      botUserId: '',
     };
 
     if (microsoftTeams.clientSecret) {
@@ -62,6 +65,12 @@ export async function GET(req: NextRequest) {
     if (microsoftTeams.refreshToken) {
       microsoftTeams.refreshToken = decryptText(
         microsoftTeams.refreshToken,
+        organizationId,
+      );
+    }
+    if (microsoftTeams.botPassword) {
+      microsoftTeams.botPassword = decryptText(
+        microsoftTeams.botPassword,
         organizationId,
       );
     }
@@ -93,7 +102,15 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { tenantId, clientId, clientSecret, connectedEmail } = await req.json();
+    const {
+      tenantId,
+      clientId,
+      clientSecret,
+      connectedEmail,
+      botUsername,
+      botPassword,
+      botUserId,
+    } = await req.json();
 
     const updateData: Record<string, string> = {
       'microsoftTeams.tenantId': tenantId,
@@ -109,6 +126,17 @@ export async function PUT(req: NextRequest) {
 
     if (connectedEmail) {
       updateData['microsoftTeams.connectedEmail'] = connectedEmail;
+    }
+    if (typeof botUsername === 'string') {
+      updateData['microsoftTeams.botUsername'] = botUsername;
+    }
+    if (typeof botUserId === 'string') {
+      updateData['microsoftTeams.botUserId'] = botUserId;
+    }
+    if (typeof botPassword === 'string') {
+      updateData['microsoftTeams.botPassword'] = botPassword
+        ? encryptText(botPassword, organizationId)
+        : '';
     }
 
     const updatedSettings = await Settings.findOneAndUpdate(

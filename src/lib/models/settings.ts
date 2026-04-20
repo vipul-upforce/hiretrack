@@ -225,6 +225,18 @@ const settingsSchema = new Schema({
       type: String,
       default: '',
     },
+    botUsername: {
+      type: String,
+      default: '',
+    },
+    botPassword: {
+      type: String,
+      default: '',
+    },
+    botUserId: {
+      type: String,
+      default: '',
+    },
   },
   onboardingStatus: {
     isCompleted: {
@@ -625,6 +637,9 @@ export interface IMicrosoftTeamsConfig {
   refreshToken: string;
   expiryDate: number | null;
   connectedEmail?: string;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
 }
 
 export interface IOnboardingStatus {

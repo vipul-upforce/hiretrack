@@ -21,6 +21,7 @@ import logger from '@/lib/logger';
 import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
 import { filterSensitiveRedFlagsForInterviewer } from '@/lib/filterSensitiveRedFlags';
 import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
+import { sendImmediateFollowUpReminder } from '@/lib/followups/immediateReminder';
 import { Attachment } from '../route';
 
 // /*  max-lines-per-function max-lines-per-file 300 */
@@ -584,6 +585,7 @@ export async function PUT(
         const dateChanged = oldDate !== newDate;
 
         if (!hadOldContent && hasNewContent) {
+          console.log('[followup-reminder] candidate PUT: added follow-up detected');
           await NotificationService.notifyFollowUpAdded({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -598,11 +600,20 @@ export async function PUT(
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
           });
+          await sendImmediateFollowUpReminder({
+            organizationId,
+            candidateName: existingCandidate.name,
+            followUpDate: newDate,
+            followUpNote: newNote,
+            followUpUserId: String(newFollowUp?.userId._id || ''),
+            source: 'candidate-put-followup-added',
+          });
         } else if (
           hadOldContent &&
           hasNewContent &&
           (noteChanged || dateChanged)
         ) {
+          console.log('[followup-reminder] candidate PUT: updated follow-up detected');
           await NotificationService.notifyFollowupUpdated({
             organizationId,
             candidateId: existingCandidate._id?.toString() || '',
@@ -614,6 +625,14 @@ export async function PUT(
             jobTitle: jobInfo?.title || 'Unknown Job',
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
+          });
+          await sendImmediateFollowUpReminder({
+            organizationId,
+            candidateName: existingCandidate.name,
+            followUpDate: newDate,
+            followUpNote: newNote,
+            followUpUserId: String(newFollowUp?.userId._id || ''),
+            source: 'candidate-put-followup-updated',
           });
         } else if (hadOldContent && !hasNewContent) {
           await NotificationService.notifyFollowupRemoved({

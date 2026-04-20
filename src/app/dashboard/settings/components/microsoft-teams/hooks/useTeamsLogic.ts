@@ -31,6 +31,9 @@ export function useTeamsLogic() {
     clientId: '',
     clientSecret: '',
     connectedEmail: '',
+    botUsername: '',
+    botPassword: '',
+    botUserId: '',
   });
 
   useEffect(() => {
@@ -47,6 +50,9 @@ export function useTeamsLogic() {
         clientId: data.microsoftTeams.clientId || '',
         clientSecret: data.microsoftTeams.clientSecret || '',
         connectedEmail: data.microsoftTeams.connectedEmail || '',
+        botUsername: data.microsoftTeams.botUsername || '',
+        botPassword: data.microsoftTeams.botPassword || '',
+        botUserId: data.microsoftTeams.botUserId || '',
       });
     }
   }, [data]);
@@ -87,6 +93,9 @@ export function useTeamsLogic() {
         clientId: formData.clientId,
         clientSecret: formData.clientSecret,
         connectedEmail: formData.connectedEmail,
+        botUsername: formData.botUsername,
+        botPassword: formData.botPassword,
+        botUserId: formData.botUserId,
       }).unwrap();
 
       toast({

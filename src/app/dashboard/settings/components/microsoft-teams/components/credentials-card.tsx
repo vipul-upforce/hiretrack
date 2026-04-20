@@ -28,6 +28,7 @@ export function CredentialsCard({
   isConnected,
 }: CredentialsCardProps) {
   const [showClientSecret, setShowClientSecret] = useState(false);
+  const [showBotPassword, setShowBotPassword] = useState(false);
 
   return (
     <Card>
@@ -109,22 +110,70 @@ export function CredentialsCard({
           </p>
         </div>
 
-        {!isConnected && (
-          <Button
-            onClick={onSave}
-            variant="primary"
-            disabled={
-              !formData.tenantId ||
-              !formData.clientId ||
-              !formData.clientSecret ||
-              isUpdating
+        <div className="space-y-2">
+          <Label htmlFor="botUsername">Bot User Email</Label>
+          <Input
+            id="botUsername"
+            value={formData.botUsername || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, botUsername: e.target.value })
             }
-            className="w-full"
-          >
-            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Credentials
-          </Button>
-        )}
+            placeholder="Enter Teams bot account email"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="botPassword">Bot User Password</Label>
+          <div className="flex items-center gap-2">
+            <Input
+              id="botPassword"
+              type={showBotPassword ? 'text' : 'password'}
+              value={formData.botPassword || ''}
+              onChange={(e) =>
+                setFormData({ ...formData, botPassword: e.target.value })
+              }
+              placeholder="Enter Teams bot account password"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowBotPassword(!showBotPassword)}
+            >
+              {showBotPassword ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="botUserId">Bot User Object ID</Label>
+          <Input
+            id="botUserId"
+            value={formData.botUserId || ''}
+            onChange={(e) =>
+              setFormData({ ...formData, botUserId: e.target.value })
+            }
+            placeholder="Enter Teams bot Azure AD object ID"
+          />
+        </div>
+
+        <Button
+          onClick={onSave}
+          variant="primary"
+          disabled={
+            !formData.tenantId ||
+            !formData.clientId ||
+            !formData.clientSecret ||
+            isUpdating
+          }
+          className="w-full"
+        >
+          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Credentials
+        </Button>
       </CardContent>
     </Card>
   );

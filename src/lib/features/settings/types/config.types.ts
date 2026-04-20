@@ -62,6 +62,9 @@ export interface MicrosoftTeamsConfig {
   clientSecret?: string;
   connectedEmail?: string;
   isConnected?: boolean;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
 }
 
 export interface MicrosoftTeamsConfigResponse {
