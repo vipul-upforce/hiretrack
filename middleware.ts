@@ -576,6 +576,12 @@ const JOB_CANDIDATE_DEEP_LINK = /^\/dashboard\/jobs\/[^/]+$/;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Always allow Sentry tunnel requests so client-side events can reach ingestion.
+  if (pathname.startsWith('/monitoring')) {
+    return NextResponse.next();
+  }
+
   const allowedOrigins = (
     process.env.ALLOWED_ORIGINS || 'https://hire.upforce.tech'
   ).split(',');

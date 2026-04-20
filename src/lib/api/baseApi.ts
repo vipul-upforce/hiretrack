@@ -7,6 +7,7 @@ import {
 } from '@reduxjs/toolkit/query/react';
 import type { AppDispatch } from '@/lib/redux/store';
 import logger from '../logger';
+import * as Sentry from '@sentry/nextjs';
 
 const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
   [
@@ -90,6 +91,29 @@ let refreshPromise: Promise<void> | null = null;
 let refreshAbortController: AbortController | null = null;
 let isRefreshing = false;
 
+type ClientRefreshReason =
+  | 'REQUEST_STARTED'
+  | 'HTTP_ERROR'
+  | 'LICENSE_INVALID'
+  | 'FORCED_LOGIN_REDIRECT'
+  | 'TIMEOUT_ABORT'
+  | 'FETCH_USER_SYNC_FAILED';
+
+function captureClientRefreshEvent(
+  reason: ClientRefreshReason,
+  details: Record<string, unknown> = {},
+  level: Sentry.SeverityLevel = 'warning',
+) {
+  Sentry.withScope((scope) => {
+    scope.setTag('module', 'auth');
+    scope.setTag('flow', 'refresh_client');
+    scope.setTag('reason', reason);
+    scope.setLevel(level);
+    scope.setContext('auth_refresh_client', details);
+    Sentry.captureMessage(`auth.refresh_client.${reason.toLowerCase()}`);
+  });
+}
+
 /**
  * Refresh access token using httpOnly cookie
  * The refresh token is stored in httpOnly cookie and sent automatically
@@ -128,6 +152,14 @@ export async function refreshAccessToken(
       };
 
       logger.info('Refresh token: request started');
+      captureClientRefreshEvent(
+        'REQUEST_STARTED',
+        {
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+          isRefreshing,
+        },
+        'info',
+      );
       const response = await fetch(`/api/auth/refresh`, {
         method: 'POST',
         headers: {
@@ -142,9 +174,16 @@ export async function refreshAccessToken(
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        captureClientRefreshEvent('HTTP_ERROR', {
+          status: response.status,
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+        });
 
         // Handle license validation failure
         if (response.status === 403 && errorData.code === 'LICENSE_INVALID') {
+          captureClientRefreshEvent('LICENSE_INVALID', {
+            status: response.status,
+          });
           const errorMessage =
             errorData.licenseError || 'License validation failed';
           await clearClientAuthState();
@@ -160,6 +199,9 @@ export async function refreshAccessToken(
         await clearClientAuthState();
         if (typeof window !== 'undefined') {
           const path = window.location.pathname + window.location.search;
+          captureClientRefreshEvent('FORCED_LOGIN_REDIRECT', {
+            fromPath: path,
+          });
           const loginUrl =
             path && path !== '/auth/login'
               ? `/auth/login?redirect=${encodeURIComponent(path)}`
@@ -181,6 +223,9 @@ export async function refreshAccessToken(
             })
             .catch((error) => {
               // Log error but don't throw - token refresh was successful
+              captureClientRefreshEvent('FETCH_USER_SYNC_FAILED', {
+                message: error instanceof Error ? error.message : 'unknown',
+              });
               logger.error(
                 'Failed to dispatch fetchUserFromToken after token refresh:',
                 error,
@@ -193,6 +238,10 @@ export async function refreshAccessToken(
 
       // Handle abort/timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
+        captureClientRefreshEvent('TIMEOUT_ABORT', {
+          timeoutMs: 20000,
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+        });
         logger.warn('Token refresh request was aborted or timed out');
         // Don't redirect on timeout - let the original request fail naturally
         throw new Error('Token refresh timeout');

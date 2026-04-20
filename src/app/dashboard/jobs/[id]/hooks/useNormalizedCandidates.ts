@@ -16,6 +16,7 @@ interface UseNormalizedCandidatesProps {
   jobId: string;
   setSelectedCandidate: (candidate: Candidate | null) => void;
   selectedCandidate: Candidate | null;
+  enabled?: boolean;
 }
 
 /**
@@ -26,22 +27,22 @@ export function useNormalizedCandidates({
   jobId,
   setSelectedCandidate,
   selectedCandidate,
+  enabled = true,
 }: UseNormalizedCandidatesProps) {
-  // Fetch candidates from API
   const {
     data: candidatesFromQuery,
     isLoading: isCandidatesLoading,
     refetch,
-  } = useFetchCandidatesQuery(jobId);
+  } = useFetchCandidatesQuery(jobId, { skip: !enabled });
 
-  // Get SSE candidates (only if setSelectedCandidate is provided)
+ // Get SSE candidates (only if setSelectedCandidate is provided)
   const { candidates: sseCandidates, lanes: sseLanes } = useSSE(
     setSelectedCandidate,
     selectedCandidate || null,
-    jobId,
+    enabled ? jobId : undefined,
   );
 
-  // Normalize and merge candidates
+    // Normalize and merge candidates
   const normalizedCandidates = useMemo(() => {
     const candidateMap = new Map<string, NormalizedCandidate>();
 
@@ -55,8 +56,8 @@ export function useNormalizedCandidates({
       });
     }
 
-    // Normalize and update/add candidates from SSE (SSE takes precedence)
-    if (sseCandidates) {
+      // Normalize and update/add candidates from SSE (SSE takes precedence)
+    if (enabled && sseCandidates) {
       sseCandidates.forEach((sseCandidate) => {
         const normalized = normalizeCandidate(sseCandidate);
         if (normalized) {
@@ -67,13 +68,13 @@ export function useNormalizedCandidates({
 
     // Convert to array and cast to Candidate[] for backward compatibility
     // The normalized candidates are compatible with Candidate type
-    return Array.from(candidateMap.values()) as unknown as Candidate[];
-  }, [candidatesFromQuery, sseCandidates]);
+     return Array.from(candidateMap.values()) as unknown as Candidate[];
+  }, [enabled, candidatesFromQuery, sseCandidates]);
 
   return {
     candidates: normalizedCandidates,
-    isLoading: isCandidatesLoading,
+    isLoading: enabled ? isCandidatesLoading : false,
     refetch,
-    sseLanes,
+    sseLanes: enabled ? sseLanes : undefined,
   };
 }

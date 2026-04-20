@@ -13,3 +13,8 @@ ___________________
 ___________________
 - fixed job description color formatting issue.
 
+-------------------
+17 Apr 2026: 17:38
+___________________
+- Adding the grid view.
+

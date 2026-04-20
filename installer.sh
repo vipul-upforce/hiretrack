@@ -45,6 +45,115 @@ stop_spinner() {
         log_error "$msg"
     fi
 }
+
+# Global variable to safely store the timezone outside of subshells
+SELECTED_TZ=""
+
+prompt_for_timezone() {
+    local TZ_LIST
+    if command -v timedatectl >/dev/null 2>&1; then
+        TZ_LIST=$(timedatectl list-timezones)
+    else
+        TZ_LIST=$(find /usr/share/zoneinfo -type f | sed 's|/usr/share/zoneinfo/||' | grep '/' | sort)
+    fi
+
+    local FZF_CMD="fzf"
+    local TEMP_DIR=""
+
+    # 1. If fzf is missing, download a temporary standalone binary
+    if ! command -v fzf >/dev/null 2>&1; then
+        echo -e "\033[34m[ INFO ]\033[0m Preparing interactive timezone selector..." >&2
+        TEMP_DIR=$(mktemp -d)
+        local OS_TYPE=$(uname -s | tr '[:upper:]' '[:lower:]')
+        local ARCH_TYPE=$(uname -m)
+        
+        # Map architecture to fzf release names
+        if [ "$ARCH_TYPE" = "x86_64" ]; then ARCH_TYPE="amd64"; fi
+        if [ "$ARCH_TYPE" = "aarch64" ]; then ARCH_TYPE="arm64"; fi
+        
+        # FIX: Point exactly to the 0.46.1 release tag, not 'latest'
+        local FZF_URL="https://github.com/junegunn/fzf/releases/download/0.46.1/fzf-0.46.1-${OS_TYPE}_${ARCH_TYPE}.tar.gz"
+        
+        # Silently download and extract just the binary
+        if curl -sfL "$FZF_URL" | tar -xz -C "$TEMP_DIR" fzf 2>/dev/null; then
+            FZF_CMD="$TEMP_DIR/fzf"
+        else
+            # Download failed, clear it to trigger the fallback
+            rm -rf "$TEMP_DIR"
+            TEMP_DIR=""
+            FZF_CMD=""
+        fi
+    fi
+
+    # 2. Trigger the real-time interactive dropdown (if fzf is available)
+    if [ -n "$FZF_CMD" ] && { command -v "$FZF_CMD" >/dev/null 2>&1 || [ -x "$FZF_CMD" ]; }; then
+        # FIX: Removed </dev/tty from the end of this command so the pipe works!
+        SELECTED_TZ=$(echo "$TZ_LIST" | "$FZF_CMD" \
+            --prompt="Search Timezone (e.g. Asia/Kolkata): " \
+            --height=40% \
+            --reverse \
+            --border)
+        
+        # Clean up the temp binary if we downloaded it
+        if [ -n "$TEMP_DIR" ]; then
+            rm -rf "$TEMP_DIR"
+        fi
+
+        # If they selected something, return success. If they hit ESC, return error.
+        if [ -n "$SELECTED_TZ" ]; then
+            return 0
+        else
+            return 1
+        fi
+    fi
+
+    # 3. Fallback manual search (Only triggers if fzf download failed)
+    while true; do
+        echo ""
+        local query
+        read -p "Search timezone (e.g. Asi, Euro, Amer): " query </dev/tty
+        
+        # Exact match check
+        if echo "$TZ_LIST" | grep -ixq "$query"; then
+            SELECTED_TZ=$(echo "$TZ_LIST" | grep -ix "$query")
+            return 0
+        fi
+
+        local matches
+        matches=$(echo "$TZ_LIST" | grep -i "^$query")
+
+        if [ -z "$matches" ]; then
+            echo "[ ERROR ] No matching timezones found. Try again."
+            continue
+        fi
+
+        # If exactly 1 match, auto-select it
+        local count=$(echo "$matches" | wc -l)
+        if [ "$count" -eq 1 ]; then
+            SELECTED_TZ="$matches"
+            return 0
+        fi
+
+        echo ""
+        echo "Select a timezone:"
+        
+        # Make IFS a newline so 'select' splits the matching list correctly
+        local OLD_IFS="$IFS"
+        IFS=$'\n'
+        PS3="Enter number: "
+        
+        select tz in $matches; do
+            if [ -n "$tz" ]; then
+                SELECTED_TZ="$tz"
+                IFS="$OLD_IFS" # Restore IFS
+                return 0
+            else
+                echo "[ ERROR ] Invalid selection. Try again."
+            fi
+        done </dev/tty
+    done
+}
+
 # ================================================
 
 # ------------------------------------------------
@@ -2684,36 +2793,74 @@ schedule_update() {
 # ------------------------------------------------
 setup_cron() {
     local OS_TYPE=$(uname | tr '[:upper:]' '[:lower:]')
+    if [[ "$OS_TYPE" != "linux" && "$OS_TYPE" != "darwin" ]]; then
+        echo "[ ERROR ] Unsupported OS: $OS_TYPE. Cannot setup cron."
+        return 1
+    fi
+
+    echo ""
+    echo "========================================"
+    echo "   HireTrack Scheduler Configuration"
+    echo "========================================"
+    echo "HireTrack runs automated updates and snapshots at 2:00 AM."
+    echo "Please select the timezone this schedule should be based on."
+    
+    # Trigger the UI prompt
+    SELECTED_TZ=""
+    prompt_for_timezone
+    local TARGET_TZ="$SELECTED_TZ"
+
+    # Failsafe if they somehow bypass the prompt
+    if [ -z "$TARGET_TZ" ] || [ ! -f "/usr/share/zoneinfo/$TARGET_TZ" ]; then
+        echo "[ WARNING ] Invalid or no timezone selected. Defaulting to UTC."
+        TARGET_TZ="UTC"
+    fi
+
+    echo "[ OK ] Selected target timezone: $TARGET_TZ"
+    echo "[ START ] Calculating offset for local server execution..."
+
+    # The "Double Bounce" Time Translation Variables
+    local SNAP_UTC UPD_UTC SNAP_CRON UPD_CRON
+
+    if [[ "$OS_TYPE" == "linux" ]]; then
+        # Bounce 1: Convert Target Timezone to UTC
+        SNAP_UTC=$(TZ="$TARGET_TZ" date -d "02:00" -u +"%H:%M")
+        UPD_UTC=$(TZ="$TARGET_TZ" date -d "02:15" -u +"%H:%M")
+        
+        # Bounce 2: Convert UTC to Server's Local Cron Format (Minute Hour)
+        SNAP_CRON=$(date -d "$SNAP_UTC UTC" +"%M %H")
+        UPD_CRON=$(date -d "$UPD_UTC UTC" +"%M %H")
+    else 
+        # macOS / BSD fallback logic
+        SNAP_UTC=$(TZ="$TARGET_TZ" date -j -f "%H:%M" "02:00" -u +"%H:%M")
+        UPD_UTC=$(TZ="$TARGET_TZ" date -j -f "%H:%M" "02:15" -u +"%H:%M")
+        
+        SNAP_CRON=$(date -j -f "%H:%M %Z" "$SNAP_UTC UTC" +"%M %H")
+        UPD_CRON=$(date -j -f "%H:%M %Z" "$UPD_UTC UTC" +"%M %H")
+    fi
+
+    echo "Target Update Time : 02:15 AM ($TARGET_TZ)"
+    echo "Local Server Cron  : $UPD_CRON * * *"
+
     local CRON_NAME="hiretrack-autoupdate"
     local SNAPSHOT_CRON_NAME="hiretrack-snapshot"
-    local CRON_ENTRY="0 2 * * * PATH=/usr/local/bin:/usr/bin:/bin $SCRIPT_PATH --update >> $CRON_LOG_FILE 2>&1"
-    local SNAPSHOT_CRON_ENTRY="0 2 * * * PATH=/usr/local/bin:/usr/bin:/bin node $SNAPSHOT_SCRIPT >> $SNAPSHOT_LOG_FILE 2>&1"
+    
+    local CRON_ENTRY="$UPD_CRON * * * PATH=/usr/local/bin:/usr/bin:/bin $SCRIPT_PATH --update >> $CRON_LOG_FILE 2>&1"
+    local SNAPSHOT_CRON_ENTRY="$SNAP_CRON * * * PATH=/usr/local/bin:/usr/bin:/bin node $SNAPSHOT_SCRIPT >> $SNAPSHOT_LOG_FILE 2>&1"
 
-    if [[ "$OS_TYPE" == "linux" || "$OS_TYPE" == "darwin" ]]; then
-        local CURRENT_CRON=$(crontab -l 2>/dev/null || echo "")
+    # Resolve PM2 binary path to ensure the reboot line works reliably
+    local PM2_BIN
+    PM2_BIN=$(command -v pm2 2>/dev/null || echo "/usr/local/bin/pm2")
+    local PM2_REBOOT_LINE="@reboot $PM2_BIN resurrect >> $HOME/pm2-startup.log 2>&1"
 
-        if ! echo "$CURRENT_CRON" | grep -Fq "$CRON_ENTRY"; then
-            (echo "$CURRENT_CRON"; echo "# CRON_NAME:$CRON_NAME"; echo "$CRON_ENTRY") | crontab -
-            echo "[ OK ] Cron job '$CRON_NAME' added. Logs: $CRON_LOG_FILE"
-            CURRENT_CRON=$(crontab -l 2>/dev/null || echo "")
-        else
-            echo "[ OK ] Cron job '$CRON_NAME' already exists. Logs: $CRON_LOG_FILE"
-        fi
+    # Safely remove old cron jobs (including old/commented pm2 resurrect lines)
+    local CURRENT_CRON=$(crontab -l 2>/dev/null || echo "")
+    CURRENT_CRON=$(echo "$CURRENT_CRON" | grep -v 'hiretrack-autoupdate' | grep -v 'hiretrack-snapshot' | grep -v 'take-snapshot.js' | grep -v 'installer.sh --update' | grep -v 'pm2 resurrect' || true)
 
-        if [ -f "$SNAPSHOT_SCRIPT" ]; then
-            if ! echo "$CURRENT_CRON" | grep -Fq "$SNAPSHOT_CRON_ENTRY"; then
-                (echo "$CURRENT_CRON"; echo "# CRON_NAME:$SNAPSHOT_CRON_NAME"; echo "$SNAPSHOT_CRON_ENTRY") | crontab -
-                echo "[ OK ] Cron job '$SNAPSHOT_CRON_NAME' added. Logs: $SNAPSHOT_LOG_FILE"
-            else
-                echo "[ OK ] Cron job '$SNAPSHOT_CRON_NAME' already exists. Logs: $SNAPSHOT_LOG_FILE"
-            fi
-        else
-            echo "[ WARNING ] Snapshot script not found at $SNAPSHOT_SCRIPT. Skipping snapshot cron setup."
-        fi
-
-    else
-        echo "[ ERROR ] Unsupported OS: $OS_TYPE. Cannot setup cron."
-    fi
+    # Inject the new translated offsets AND the pm2 reboot line
+    (echo "$CURRENT_CRON"; echo "# CRON_NAME:$SNAPSHOT_CRON_NAME"; echo "$SNAPSHOT_CRON_ENTRY"; echo "# CRON_NAME:$CRON_NAME"; echo "$CRON_ENTRY"; echo "$PM2_REBOOT_LINE") | crontab -
+    
+    echo "[ OK ] Cron jobs successfully installed and dynamically mapped to $TARGET_TZ!"
 }
 
 # ------------------------------------------------
