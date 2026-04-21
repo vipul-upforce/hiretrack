@@ -104,6 +104,7 @@ export function CVBatchProcessor() {
     total: number;
     currentBatch: number;
     totalBatches: number;
+    completedBatches: number;
   } | null>(null);
   const { toast } = useToast();
   const { user } = useAppSelector((state) => state.auth || {});
@@ -264,7 +265,7 @@ export function CVBatchProcessor() {
           id: crypto.randomUUID(),
           file,
           isZip,
-          selected: false,
+          selected: true,
         });
       }
     });
@@ -277,7 +278,16 @@ export function CVBatchProcessor() {
       });
     }
 
-    setFiles((prevFiles) => [...prevFiles, ...processedFiles, ...skippedFiles]);
+    setFiles((prevFiles) => {
+      const existingFiles = prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: true },
+      );
+      return [...existingFiles, ...processedFiles, ...skippedFiles];
+    });
+
+    if (processedFiles.length > 0) {
+      setIsActionsOpen(true);
+    }
   }, [toast]);
 
   const handleRemoveFile = useCallback((id: string) => {
@@ -340,6 +350,7 @@ export function CVBatchProcessor() {
         total: filesToProcess.length,
         currentBatch: 0,
         totalBatches,
+        completedBatches: 0,
       });
 
       const allResults: Batch[] = [];
@@ -354,6 +365,7 @@ export function CVBatchProcessor() {
           total: filesToProcess.length,
           currentBatch: i + 1,
           totalBatches,
+          completedBatches: i,
         });
 
         const formData = new FormData();

@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { FileList } from './file-list';
 import type { FileWithPreview } from './cv-batch-processor';
 
@@ -9,6 +10,7 @@ interface UploadProgress {
   total: number;
   currentBatch: number;
   totalBatches: number;
+  completedBatches: number;
 }
 
 interface CurrentBatchPanelProps {
@@ -48,6 +50,22 @@ export function CurrentBatchPanel({
     return null;
   }
 
+  const fileProgressPercent = uploadProgress
+    ? Math.min(
+      100,
+      Math.round((uploadProgress.current / Math.max(uploadProgress.total, 1)) * 100),
+    )
+    : 0;
+
+  const batchProgressPercent = uploadProgress
+    ? Math.min(
+      100,
+      Math.round(
+        (uploadProgress.completedBatches / Math.max(uploadProgress.totalBatches, 1)) * 100,
+      ),
+    )
+    : 0;
+
   return (
     <div className="space-y-4 rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm md:p-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -65,17 +83,38 @@ export function CurrentBatchPanel({
             </p>
           )}
           {uploadProgress && (
-            <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-              Processing batch
-              {' '}
-              {uploadProgress.currentBatch}
-              {' '}
-              of
-              {' '}
-              {uploadProgress.totalBatches}
-            </p>
+            <div className="mt-2 space-y-3 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2">
+                Batches done:
+                {' '}
+                {uploadProgress.completedBatches}
+                /
+                {uploadProgress.totalBatches}
+              </p>
+              {/* <Progress
+                value={batchProgressPercent}
+                className="h-2 w-full max-w-xs"
+                aria-label="Batch processing progress"
+              /> */}
+              <p className="flex items-center gap-2">
+                Files processed:
+                {' '}
+                {uploadProgress.current}
+                /
+                {uploadProgress.total}
+                {' '}
+                ({fileProgressPercent}%)
+              </p>
+              {/* <Progress
+                value={fileProgressPercent}
+                className="h-2 w-full max-w-xs"
+                aria-label="CV processing progress"
+              /> */}
+            </div>
           )}
+
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={onOpenActions}
@@ -90,7 +129,7 @@ export function CurrentBatchPanel({
               disabled={isPosting}
               variant="secondary"
             >
-              {allSelected ? 'Clear Selection' : 'Select All CVs'}
+              {allSelected ? 'Clear Selection' : 'Select All Files'}
             </Button>
           )}
           {hasSelectableFiles && (
@@ -107,7 +146,7 @@ export function CurrentBatchPanel({
             disabled={isPosting || selectedCount === 0}
             variant="destructive"
           >
-            Remove Selected CVs
+            Remove Selected Files
           </Button>
           <Button
             onClick={onProcessBatch}
@@ -115,13 +154,20 @@ export function CurrentBatchPanel({
             variant="primary"
           >
             {isPosting && uploadProgress
-              ? `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`
+              ? `Processing ${uploadProgress.completedBatches}/${uploadProgress.totalBatches} batches...`
               : isPosting
                 ? 'Processing...'
                 : 'Process Batch'}
           </Button>
         </div>
       </div>
+
+      <Progress
+        value={fileProgressPercent}
+        className="h-2 w-full max-w-xs"
+        aria-label="CV processing progress"
+      />
+
 
       <FileList
         isProcessing={isPosting}
