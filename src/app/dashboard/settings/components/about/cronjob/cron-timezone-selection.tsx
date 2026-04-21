@@ -152,12 +152,12 @@ export function CronTimezoneSection() {
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                         <Globe className="h-4 w-4" />
                     </div>
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                         <h3 className="text-sm font-medium leading-none">
                             Maintenance Timezone
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                            Determines when scheduled cron jobs run.
+                            Updates and snapshots run daily at <strong className="text-foreground">2:00 AM</strong> {displayValue ? `(${displayValue})` : ''}.
                         </p>
                     </div>
                 </div>
@@ -175,7 +175,7 @@ export function CronTimezoneSection() {
                                 disabled={isUpdating}
                                 className="h-9 w-full justify-between bg-background font-normal sm:w-[240px]"
                             >
-                                {displayValue || "Select timezone..."}
+                                {displayValue || "Select timeone..."}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                         </PopoverTrigger>
