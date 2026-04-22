@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -29,6 +30,15 @@ export function CredentialsCard({
 }: CredentialsCardProps) {
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [showBotPassword, setShowBotPassword] = useState(false);
+  const [isBotRemindersEnabled, setIsBotRemindersEnabled] = useState(false);
+
+  useEffect(() => {
+    setIsBotRemindersEnabled(Boolean(formData.botUsername || formData.botPassword));
+  }, [formData.botUsername, formData.botPassword]);
+
+  const handleBotReminderToggle = (checked: boolean) => {
+    setIsBotRemindersEnabled(checked);
+  };
 
   return (
     <Card>
@@ -109,43 +119,81 @@ export function CredentialsCard({
             Optional: Email address to use for creating Teams meetings. If not provided, the app will use application context.
           </p>
         </div> */}
-
-        <div className="space-y-2">
-          <Label htmlFor="botUsername">Bot User Email</Label>
-          <Input
-            id="botUsername"
-            value={formData.botUsername || ''}
-            onChange={(e) =>
-              setFormData({ ...formData, botUsername: e.target.value })
-            }
-            placeholder="Enter Teams bot account email"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="botPassword">Bot User Password</Label>
-          <div className="flex items-center gap-2">
-            <Input
-              id="botPassword"
-              type={showBotPassword ? 'text' : 'password'}
-              value={formData.botPassword || ''}
-              onChange={(e) =>
-                setFormData({ ...formData, botPassword: e.target.value })
-              }
-              placeholder="Enter Teams bot account password"
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="teamsReminderToggle">
+                Enable Teams Follow-up Reminders
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Turn this on only if you want follow-up reminders in Microsoft
+                Teams.
+              </p>
+            </div>
+            <Switch
+              id="teamsReminderToggle"
+              checked={isBotRemindersEnabled}
+              onCheckedChange={handleBotReminderToggle}
+              disabled={isConnected}
             />
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowBotPassword(!showBotPassword)}
-            >
-              {showBotPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </Button>
           </div>
+
+          {isBotRemindersEnabled && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="botUsername">
+                  Bot User Email
+                </Label>
+                <Input
+                  id="botUsername"
+                  value={formData.botUsername || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, botUsername: e.target.value })
+                  }
+                  placeholder="Enter Teams account email"
+                  disabled={isConnected}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="botPassword">
+                  Bot User Password
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="botPassword"
+                    type={showBotPassword ? 'text' : 'password'}
+                    value={formData.botPassword || ''}
+                    disabled={isConnected}
+                    onChange={(e) =>
+                      setFormData({ ...formData, botPassword: e.target.value })
+                    }
+                    placeholder="Enter Teams account password"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isConnected}
+                    onClick={() => setShowBotPassword(!showBotPassword)}
+                    aria-label={
+                      showBotPassword ? 'Hide bot password' : 'Show bot password'
+                    }
+                  >
+                    {showBotPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Use the credentials of the Teams account that should receive
+                reminders.
+              </p>
+            </>
+          )}
         </div>
 
         <Button

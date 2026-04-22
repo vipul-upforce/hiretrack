@@ -89,30 +89,38 @@ function CopyBlock({ children }: { children: string }) {
   );
 }
 
-/** Styled permission pill */
-function PermissionBadge({
-  name,
-  type,
-}: {
-  name: string;
-  type: 'delegated' | 'application';
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${type === 'application'
-        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-        }`}
-    >
-      <span className="font-semibold">{name}</span>
-      <span className="opacity-60">({type})</span>
-    </span>
-  );
-}
-
 export function SetupInstructions({
   isConnected = false,
 }: SetupInstructionsProps) {
+  const delegatedPermissions = [
+    'Calendars.Read',
+    'Calendars.ReadWrite',
+    'Chat.Create',
+    'Chat.ReadWrite',
+    'ChatMessage.Send',
+    'OnlineMeetings.Read',
+    'OnlineMeetings.ReadWrite',
+    'User.Read',
+    'User.Read.All',
+    'User.ReadWrite',
+    'offline_access',
+    'openid',
+    'profile',
+  ];
+
+  const applicationPermissions = [
+    'Calendars.Read',
+    'Calendars.ReadBasic.All',
+    'Calendars.ReadWrite',
+    'Chat.Create',
+    'Chat.ReadWrite.All',
+    'OnlineMeetings.Read.All',
+    'OnlineMeetings.ReadWrite.All',
+    'TeamsAppInstallation.ReadWriteForUser.All',
+    'Teamwork.Migrate.All',
+    'User.Read.All',
+  ];
+
   const [accordionValue, setAccordionValue] = useState(
     isConnected ? '' : 'setup',
   );
@@ -223,59 +231,65 @@ export function SetupInstructions({
                   as the initiator (organizer)
                 </strong>
                 . When the initiator is the connected account, delegated
-                permissionsare used.
-                When the initiator is a{' '}
+                permissions are used. When the initiator is a{' '}
                 <em>different user in your tenant</em>, application permissions
                 are required.
               </p>
 
-              {/* Delegated permissions */}
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-4 space-y-3 dark:border-emerald-800/50 dark:bg-emerald-950/20">
-                <div className="flex items-center justify-between">
-                  <h5 className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                    Delegated Permissions (connected user&apos;s own calendar)
-                  </h5>
+              <div className="overflow-hidden rounded-lg border">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-sm">
+                    <thead className="bg-muted/50">
+                      <tr className="border-b">
+                        <th className="px-3 py-2.5 text-left font-semibold text-foreground">
+                          Permission Type
+                        </th>
 
+                        <th className="px-3 py-2.5 text-left font-semibold text-foreground">
+                          Required Microsoft Graph Permissions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b align-top">
+                        <td className="px-3 py-3 font-medium text-foreground dark:text-foreground">
+                          Delegated
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            {delegatedPermissions.map(permission => (
+                              <span
+                                key={permission}
+                                className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
+                              >
+                                {permission}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                      <tr className="align-top">
+                        <td className="px-3 py-3 font-medium text-foreground dark:text-foreground">
+                          Application
+                        </td>
+
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            {applicationPermissions.map(permission => (
+                              <span
+                                key={permission}
+                                className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-foreground"
+                              >
+                                {permission}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Used when connect calander.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  <PermissionBadge name="Calendars.Read" type="delegated" />
-                  <PermissionBadge name="Calendars.ReadWrite" type="delegated" />
-                  <PermissionBadge name="OnlineMeetings.Read" type="delegated" />
-                  <PermissionBadge name="OnlineMeetings.ReadWrite" type="delegated" />
-                  <PermissionBadge name="User.Read" type="delegated" />
-                  <PermissionBadge name="User.ReadWrite" type="delegated" />
-                  <PermissionBadge name="offline_access" type="delegated" />
-                  <PermissionBadge name="openid" type="delegated" />
-                  <PermissionBadge name="profile" type="delegated" />
-                </div>
-
-              </div>
-
-              {/* Application permissions */}
-              <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 space-y-3 dark:border-blue-800/50 dark:bg-blue-950/20">
-                <div className="flex items-center justify-between">
-                  <h5 className="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">
-                    Application Permissions (schedule as any user /
-                    initiatorEmail)
-                  </h5>
-
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Required when the meeting organizer (initiatorEmail){' '}
-                  <strong>differs</strong> from the connected account.
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  <PermissionBadge name="User.Read.All" type="application" />
-                  <PermissionBadge name="Calendars.Read" type="application" />
-                  <PermissionBadge name="Calendars.ReadBasic.All" type="application" />
-                  <PermissionBadge name="Calendars.ReadWrite" type="application" />
-                  <PermissionBadge name="OnlineMeetings.Read.All" type="application" />
-                  <PermissionBadge name="OnlineMeetings.ReadWrite.All" type="application" />
-                </div>
-
               </div>
 
               {/* Admin consent */}
