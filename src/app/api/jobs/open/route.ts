@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find the candidate and their current history
+    // Find the candidate and their current history (history is keyed by candidateId only)
     const candidate = await Candidate!.findById(candidateId);
 
     if (!candidate) {
@@ -102,26 +102,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingHistory = await History!
-      .findOne({
-        candidateId,
-        jobId: candidate.jobId,
-      })
-      .lean()
-      .exec();
-
-    // If there's existing history, update it with the new jobId
-    if (existingHistory) {
-      await History!.findOneAndUpdate(
-        {
-          candidateId,
-          jobId: candidate.jobId,
-        },
-        {
-          $set: { jobId },
-        },
-      );
-    }
+    // No need to update jobId on history doc - history is keyed by candidateId only
 
     // Fetch the job details using jobId
     const job = await Job!.findById(jobId);
@@ -183,9 +164,9 @@ export async function POST(req: NextRequest) {
       assignmentBy: user.id || null,
     };
 
-    // Add this entry to history collection
+    // Add this entry to history collection (one doc per candidate, keyed by candidateId only)
     await History!.findOneAndUpdate(
-      { jobId, candidateId },
+      { candidateId },
       { $push: { history: historyEntry } },
       { upsert: true },
     );
@@ -215,7 +196,6 @@ export async function POST(req: NextRequest) {
 
     const updatedHistory = await History!
       .findOne({
-        jobId,
         candidateId,
       })
       .populate('history.currentInterviewer', '_id name email')

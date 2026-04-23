@@ -44,45 +44,40 @@ export async function runBulkStatusUpdate(
     );
 
     // Create history entries with logs format (IinfoUpdateLog[]) for each candidate
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => {
-        const candidateId = (c._id as { toString: () => string }).toString();
-        const oldStatus = (c as ICandidate).status ?? 'Unknown';
+    const historyBulk = candidates.map((c) => {
+      const candidateId = (c._id as { toString: () => string }).toString();
+      const oldStatus = (c as ICandidate).status ?? 'Unknown';
 
-        // Create IinfoUpdateLog entry matching normal status update format
-        const statusUpdateLog: IinfoUpdateLog = {
-          title: 'Updated Status',
-          previousValue: oldStatus,
-          currentValue: status,
-        };
+      // Create IinfoUpdateLog entry matching normal status update format
+      const statusUpdateLog: IinfoUpdateLog = {
+        title: 'Updated Status',
+        previousValue: oldStatus,
+        currentValue: status,
+      };
 
-        const historyEntry: ICandidateHistory = {
-          dateTime,
-          title: 'Updated Status',
-          currentInterviewer: null,
-          previousInterviewer: null,
-          assignmentBy: user.id ?? null,
-          note: {
-            description: [statusUpdateLog], // Array of IinfoUpdateLog for logs section
-            date: dateTime,
-            rating: 0,
-            userId: user.id ?? null,
-          },
-          attachments: [],
-        };
+      const historyEntry: ICandidateHistory = {
+        dateTime,
+        title: 'Updated Status',
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user.id ?? null,
+        note: {
+          description: [statusUpdateLog], // Array of IinfoUpdateLog for logs section
+          date: dateTime,
+          rating: 0,
+          userId: user.id ?? null,
+        },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId,
-              jobId: getJobIdString(c),
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        };
-      });
+      return {
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -92,7 +87,7 @@ export async function runBulkStatusUpdate(
       .populate([
         { path: 'assignment.interviewerId', select: '_id name email' },
         { path: 'followUp.userId', select: '_id name email' },
-        { path: 'jobId', select: 'title description' },
+        // { path: 'jobId', select: 'title description' },
       ])
       .lean();
 

@@ -133,7 +133,7 @@ export async function runBulkAssign(
   }> = [];
   const historyBulk: Array<{
     updateOne: {
-      filter: { candidateId: string; jobId: string };
+      filter: { candidateId: string };
       update: { $push: { history: ICandidateHistory } };
       upsert: true;
     };
@@ -150,7 +150,6 @@ export async function runBulkAssign(
       const candidateId = (
         candidate._id as { toString: () => string }
       ).toString();
-      const jobId = getJobIdString(candidate);
       const candidateObj = candidate as ICandidate;
       let previousInterviewerId: unknown = null;
       if (candidate.assignment?.interviewerId != null) {
@@ -317,15 +316,13 @@ export async function runBulkAssign(
         },
       });
 
-      if (jobId) {
-        historyBulk.push({
-          updateOne: {
-            filter: { candidateId, jobId },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        });
-      }
+      historyBulk.push({
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      });
 
       ids.push(candidateId);
     } catch (err) {

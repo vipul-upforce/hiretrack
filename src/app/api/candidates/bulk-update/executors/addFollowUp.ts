@@ -76,18 +76,15 @@ export async function runBulkAddFollowUp(
     );
 
     // Build history bulk operations
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => ({
-        updateOne: {
-          filter: {
-            candidateId: (c._id as { toString: () => string }).toString(),
-            jobId: getJobIdString(c),
-          },
-          update: { $push: { history: historyEntry } },
-          upsert: true as const,
+    const historyBulk = candidates.map((c) => ({
+      updateOne: {
+        filter: {
+          candidateId: (c._id as { toString: () => string }).toString(),
         },
-      }));
+        update: { $push: { history: historyEntry } },
+        upsert: true as const,
+      },
+    }));
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);

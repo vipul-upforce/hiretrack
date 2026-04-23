@@ -42,7 +42,7 @@ export function ConnectionStatusCard({
         <CardDescription>
           {isConnected
             ? 'Microsoft Teams is connected and ready to schedule meetings'
-            : 'Save your credentials and test the connection'}
+            : 'Save your credentials, then connect Microsoft Calendar'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -70,21 +70,23 @@ export function ConnectionStatusCard({
                 <strong>Note:</strong> If you see &quot;Need admin approval&quot; error,
                 ensure your admin has granted tenant-wide consent in Azure Portal
                 (<strong>API permissions → Grant admin consent</strong>). After admin consent is granted,
-                regular users can connect without admin approval prompts.
+                regular users can connect without admin approval.
               </p>
             </div>
           )}
-          <Button
-            variant={isConnected ? 'primary' : 'outline'}
-            onClick={onTestConnection}
-            disabled={!isConfigured || isTestingConnection}
-            className="w-full"
-          >
-            {isTestingConnection && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            Test Connection
-          </Button>
+          {isConnected && (
+            <Button
+              variant="primary"
+              onClick={onTestConnection}
+              disabled={!isConfigured || isTestingConnection}
+              className="w-full"
+            >
+              {isTestingConnection && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Test Connection
+            </Button>
+          )}
           {isConnected && (
             <Button
               variant="outline"
