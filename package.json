@@ -1,6 +1,6 @@
 {
   "name": "hiretrack",
-  "version": "2.2.145",
+  "version": "2.2.155",
   "private": true,
   "type": "module",
   "scripts": {
@@ -90,6 +90,7 @@
     "framer-motion": "^12.23.6",
     "google-auth-library": "^10.2.0",
     "googleapis": "^154.1.0",
+    "groq-sdk": "^1.1.2",
     "html2canvas": "^1.4.1",
     "javascript-obfuscator": "^4.1.1",
     "jose": "^6.0.10",

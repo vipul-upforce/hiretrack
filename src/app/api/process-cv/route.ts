@@ -15,6 +15,7 @@ import { AIProviders } from '@/lib/ai-providers/types';
 import { decryptProviderKeys, ProvidersConfig } from '@/lib/encryption';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { Types } from 'mongoose';
+import { PDFDocument } from 'pdf-lib';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ISettings, IAIProviders } from '@/lib/models/settings';
 import logger from '@/lib/logger';
@@ -32,7 +33,6 @@ import {
 
 // Maximum file size limit (10MB) to prevent body size limit errors
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-const MAX_ZIP_SIZE = MAX_FILE_SIZE * 10; // Allow ZIP files up to 100MB
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -72,6 +72,19 @@ interface FileObject {
 interface FileToProcess {
   file: File;
   selected: boolean;
+}
+
+function getPdfPageLimitSkipReason(
+  filename: string,
+  pageCount: number,
+  maxPdfPages: number,
+): string {
+  return `File "${filename}" has ${pageCount} pages, which exceeds the maximum allowed limit of ${maxPdfPages} pages.`;
+}
+
+async function getPdfPageCountFromBytes(pdfBytes: Uint8Array): Promise<number> {
+  const pdf = await PDFDocument.load(pdfBytes);
+  return pdf.getPageCount();
 }
 
 async function processResume(
@@ -150,11 +163,14 @@ async function processResume(
   }
 }
 
-// Helper function to process ZIP entries recursively with size filtering
-function processZipEntries(zip: AdmZip): {
+// Helper function to process ZIP entries recursively with size + page filtering
+async function processZipEntries(
+  zip: AdmZip,
+  maxPdfPages: number,
+): Promise<{
   files: File[];
   skippedFiles: Array<{ filename: string; size: number; reason: string }>;
-} {
+}> {
   const files: File[] = [];
   const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
   const entries = zip.getEntries();
@@ -207,7 +223,33 @@ function processZipEntries(zip: AdmZip): {
           continue; // eslint-disable-line no-continue
         }
 
-        const file = new File([new Uint8Array(content)], filename, {
+        const pdfBytes = new Uint8Array(content);
+        if (maxPdfPages > 0) {
+          try {
+            const pageCount = await getPdfPageCountFromBytes(pdfBytes);
+            if (pageCount > maxPdfPages) {
+              skippedFiles.push({
+                filename,
+                size: actualSize,
+                reason: getPdfPageLimitSkipReason(
+                  filename,
+                  pageCount,
+                  maxPdfPages,
+                ),
+              });
+              continue; // eslint-disable-line no-continue
+            }
+          } catch (error) {
+            skippedFiles.push({
+              filename,
+              size: actualSize,
+              reason: `Failed to read PDF page count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            });
+            continue; // eslint-disable-line no-continue
+          }
+        }
+
+        const file = new File([pdfBytes], filename, {
           type: 'application/pdf',
         });
         files.push(file);
@@ -290,11 +332,11 @@ export async function POST(request: NextRequest) {
 
   try {
     const settings = (await Settings.findOne({ organizationId })
-      .select('aiProviders gemini fileStorage')
+      .select('aiProviders gemini fileStorage evaluationConfig')
       .lean()
       .exec()) as Pick<
       ISettings,
-      'aiProviders' | 'gemini' | 'fileStorage'
+      'aiProviders' | 'gemini' | 'fileStorage' | 'evaluationConfig'
     > | null;
 
     if (!settings) {
@@ -349,6 +391,7 @@ export async function POST(request: NextRequest) {
 
     const { activeProvider } = decryptedAiProviders;
     const apiKey = decryptedAiProviders[activeProvider]?.api_key;
+    const maxPdfPages = Math.max(0, settings.evaluationConfig?.maxPdfPages ?? 0);
 
     // Add debug logging similar to evaluate API
 
@@ -401,6 +444,14 @@ export async function POST(request: NextRequest) {
     const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
     const uploadedFiles = formData.getAll('file');
     const uploadedFileIds = formData.getAll('fileId');
+    const intakeStats = {
+      acceptedFiles: 0,
+      skippedBySize: 0,
+      skippedByPages: 0,
+      skippedByType: 0,
+      skippedByZip: 0,
+      skippedByOther: 0,
+    };
 
     if (uploadedFiles.length === 0) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
@@ -417,17 +468,6 @@ export async function POST(request: NextRequest) {
 
       if (uploadedFile instanceof File) {
         if (uploadedFile.name.endsWith('.zip')) {
-          // Check ZIP file size
-          if (uploadedFile.size > MAX_ZIP_SIZE) {
-            skippedFiles.push({
-              filename: uploadedFile.name,
-              size: uploadedFile.size,
-              reason: `ZIP file size (${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (100MB)`,
-            });
-            // eslint-disable-next-line no-continue
-            continue;
-          }
-
           try {
             const arrayBuffer = await uploadedFile.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
@@ -435,19 +475,25 @@ export async function POST(request: NextRequest) {
 
             // Process ZIP entries with size filtering
             const { files: zipFiles, skippedFiles: zipSkippedFiles } =
-              processZipEntries(zip);
+              await processZipEntries(zip, maxPdfPages);
             zipFiles.forEach((zipFile) => {
               files.push({ file: zipFile, selected: isSelected });
             });
             skippedFiles.push(...zipSkippedFiles);
+            intakeStats.acceptedFiles += zipFiles.length;
+            intakeStats.skippedByZip += zipSkippedFiles.length;
           } catch (error) {
             skippedFiles.push({
               filename: uploadedFile.name,
               size: uploadedFile.size,
               reason: `Failed to process ZIP file: ${error instanceof Error ? error.message : 'Unknown error'}`,
             });
+            intakeStats.skippedByZip += 1;
           }
-        } else if (uploadedFile.type === 'application/pdf') {
+        } else if (
+          uploadedFile.type === 'application/pdf'
+          || uploadedFile.type === 'application/x-pdf'
+        ) {
           // Filter individual PDF files by size
           if (uploadedFile.size > MAX_FILE_SIZE) {
             skippedFiles.push({
@@ -455,11 +501,43 @@ export async function POST(request: NextRequest) {
               size: uploadedFile.size,
               reason: `File size (${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (10MB)`,
             });
+            intakeStats.skippedBySize += 1;
             // eslint-disable-next-line no-continue
             continue;
           }
+          if (maxPdfPages > 0) {
+            try {
+              const pdfBytes = new Uint8Array(await uploadedFile.arrayBuffer());
+              const pageCount = await getPdfPageCountFromBytes(pdfBytes);
+              if (pageCount > maxPdfPages) {
+                skippedFiles.push({
+                  filename: uploadedFile.name,
+                  size: uploadedFile.size,
+                  reason: getPdfPageLimitSkipReason(
+                    uploadedFile.name,
+                    pageCount,
+                    maxPdfPages,
+                  ),
+                });
+                intakeStats.skippedByPages += 1;
+                // eslint-disable-next-line no-continue
+                continue;
+              }
+            } catch (error) {
+              skippedFiles.push({
+                filename: uploadedFile.name,
+                size: uploadedFile.size,
+                reason: `Failed to read PDF page count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              });
+              intakeStats.skippedByOther += 1;
+              // eslint-disable-next-line no-continue
+              continue;
+            }
+          }
           files.push({ file: uploadedFile, selected: isSelected });
+          intakeStats.acceptedFiles += 1;
         } else {
+          intakeStats.skippedByType += 1;
           return NextResponse.json(
             {
               error: 'Invalid file type. Only PDF and ZIP files are supported',
@@ -469,6 +547,15 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+
+    logger.info(
+      {
+        organizationId,
+        uploadedCount: uploadedFiles.length,
+        intakeStats,
+      },
+      'CV upload batch intake summary',
+    );
 
     // Update batch info with total files (including skipped files)
     // Note: totalFiles should include all files (processed + skipped) for accurate reporting
@@ -747,6 +834,22 @@ export async function POST(request: NextRequest) {
       triggerUserId: user?.id as string,
       triggerUserName: user?.name || 'Unknown User',
     });
+
+    logger.info(
+      {
+        organizationId,
+        batchId: cvBatchInfo._id.toString(),
+        summary: {
+          total: files.length + skippedFiles.length,
+          processed: results.length,
+          failed: errors.length,
+          skipped: skippedFiles.length,
+          successCount: cvBatchInfo.successCount,
+          failureCount: cvBatchInfo.failureCount,
+        },
+      },
+      'CV upload batch processing summary',
+    );
 
     return NextResponse.json({
       message: 'Processing completed',

@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import type { FileRejection } from 'react-dropzone';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
 } from '@/lib/features/org/orgApi';
 import { useToast } from '@/hooks/use-toast';
+import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useGetEvaluationConfigsQuery } from '@/lib/features/settings/aiApi';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,7 +43,6 @@ export type FileWithPreview = {
 
 // File size limits (same as backend)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_ZIP_SIZE = 100 * 1024 * 1024; // 100MB
 const BATCH_SIZE = 20; // Process 20 files at a time
 
 export type ProcessedItem = {
@@ -108,6 +110,8 @@ export function CVBatchProcessor() {
   } | null>(null);
   const { toast } = useToast();
   const { user } = useAppSelector((state) => state.auth || {});
+  const { sanitizeFiles } = useSanitizeFiles();
+  const { data: evaluationConfigData } = useGetEvaluationConfigsQuery();
 
   // Fetch all batches using RTK Query
   const {
@@ -244,15 +248,16 @@ export function CVBatchProcessor() {
   }, []);
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
+    const sanitizedFiles = sanitizeFiles(newFiles);
     const processedFiles: FileWithPreview[] = [];
     const skippedFiles: FileWithPreview[] = [];
 
-    newFiles.forEach((file) => {
+    sanitizedFiles.forEach((file) => {
       const isZip = file.type === 'application/zip' || file.name.endsWith('.zip');
-      const maxSize = isZip ? MAX_ZIP_SIZE : MAX_FILE_SIZE;
-      const sizeLabel = isZip ? '100MB' : '10MB';
+      const maxSize = MAX_FILE_SIZE;
+      const sizeLabel = '10MB';
 
-      if (file.size > maxSize) {
+      if (!isZip && file.size > maxSize) {
         skippedFiles.push({
           id: crypto.randomUUID(),
           file,
@@ -274,7 +279,7 @@ export function CVBatchProcessor() {
       toast({
         variant: 'destructive',
         title: 'Some Files Skipped',
-        description: `${skippedFiles.length} file(s) were skipped due to size limits. Maximum size: 10MB for PDFs, 100MB for ZIP files.`,
+        description: `${skippedFiles.length} file(s) were skipped because PDF size exceeded 10MB.`,
       });
     }
 
@@ -288,6 +293,27 @@ export function CVBatchProcessor() {
     if (processedFiles.length > 0) {
       setIsActionsOpen(true);
     }
+  }, [sanitizeFiles, toast]);
+
+  const handleFilesRejected = useCallback((rejections: FileRejection[]) => {
+    if (rejections.length === 0) {
+      return;
+    }
+
+    const skippedFromRejections: FileWithPreview[] = rejections.map((rejection) => ({
+      id: crypto.randomUUID(),
+      file: rejection.file,
+      isZip: rejection.file.type === 'application/zip' || rejection.file.name.endsWith('.zip'),
+      skipped: true,
+      skipReason: rejection.errors.map((error) => error.message).join(' '),
+    }));
+
+    setFiles((prevFiles) => [...prevFiles, ...skippedFromRejections]);
+    toast({
+      variant: 'destructive',
+      title: 'Some Files Rejected',
+      description: `${rejections.length} file(s) were rejected because they did not match the supported format or constraints.`,
+    });
   }, [toast]);
 
   const handleRemoveFile = useCallback((id: string) => {
@@ -480,7 +506,12 @@ export function CVBatchProcessor() {
 
   return (
     <div className="flex min-h-full flex-col gap-8">
-      <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
+      <FileUploader
+        isProcessing={isPosting}
+        onFilesAdded={handleFilesAdded}
+        onFilesRejected={handleFilesRejected}
+        maxPdfPages={evaluationConfigData?.evaluationConfig?.maxPdfPages ?? 0}
+      />
 
       <CurrentBatchPanel
         files={files}

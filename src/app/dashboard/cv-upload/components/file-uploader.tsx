@@ -1,17 +1,21 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
+import { type FileRejection, useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 
 interface FileUploaderProps {
   onFilesAdded: (files: File[]) => void;
+  onFilesRejected?: (rejections: FileRejection[]) => void;
   isProcessing: boolean;
+  maxPdfPages?: number;
 }
 
 export function FileUploader({
   onFilesAdded,
+  onFilesRejected,
   isProcessing,
+  maxPdfPages = 0,
 }: FileUploaderProps) {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
@@ -20,8 +24,16 @@ export function FileUploader({
     [onFilesAdded],
   );
 
+  const onDropRejected = useCallback(
+    (rejectedFiles: FileRejection[]) => {
+      onFilesRejected?.(rejectedFiles);
+    },
+    [onFilesRejected],
+  );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
+    onDropRejected,
     accept: {
       'application/pdf': ['.pdf'],
       'application/zip': ['.zip'],
@@ -48,7 +60,9 @@ export function FileUploader({
         </div>
       )}
       <p className="text-sm text-muted-foreground">
-        Drop PDF files or a ZIP containing PDFs here, or click to select
+        {maxPdfPages > 0
+          ? `Drop PDF files or a ZIP containing PDFs here, or click to select. Limits: 10MB per PDF, max ${maxPdfPages} pages per PDF.`
+          : 'Drop PDF files or a ZIP containing PDFs here, or click to select. Limit: 10MB per PDF.'}
       </p>
     </div>
   );
