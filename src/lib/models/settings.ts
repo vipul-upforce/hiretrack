@@ -225,6 +225,10 @@ const settingsSchema = new Schema({
       type: String,
       default: '',
     },
+    isFollowUpReminderEnabled: {
+      type: Boolean,
+      default: false,
+    },
     botUsername: {
       type: String,
       default: '',
@@ -637,6 +641,7 @@ export interface IMicrosoftTeamsConfig {
   refreshToken: string;
   expiryDate: number | null;
   connectedEmail?: string;
+  isFollowUpReminderEnabled?: boolean;
   botUsername?: string;
   botPassword?: string;
   botUserId?: string;

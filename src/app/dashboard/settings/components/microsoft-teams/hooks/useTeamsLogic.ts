@@ -31,6 +31,7 @@ export function useTeamsLogic() {
     clientId: '',
     clientSecret: '',
     connectedEmail: '',
+    isFollowUpReminderEnabled: false,
     botUsername: '',
     botPassword: '',
   });
@@ -49,6 +50,8 @@ export function useTeamsLogic() {
         clientId: data.microsoftTeams.clientId || '',
         clientSecret: data.microsoftTeams.clientSecret || '',
         connectedEmail: data.microsoftTeams.connectedEmail || '',
+        isFollowUpReminderEnabled:
+          data.microsoftTeams.isFollowUpReminderEnabled || false,
         botUsername: data.microsoftTeams.botUsername || '',
         botPassword: data.microsoftTeams.botPassword || '',
       });
@@ -91,6 +94,7 @@ export function useTeamsLogic() {
         clientId: formData.clientId,
         clientSecret: formData.clientSecret,
         connectedEmail: formData.connectedEmail,
+        isFollowUpReminderEnabled: formData.isFollowUpReminderEnabled || false,
         botUsername: formData.botUsername,
         botPassword: formData.botPassword,
       }).unwrap();

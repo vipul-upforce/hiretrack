@@ -62,6 +62,7 @@ export interface MicrosoftTeamsConfig {
   clientSecret?: string;
   connectedEmail?: string;
   isConnected?: boolean;
+  isFollowUpReminderEnabled?: boolean;
   botUsername?: string;
   botPassword?: string;
 }

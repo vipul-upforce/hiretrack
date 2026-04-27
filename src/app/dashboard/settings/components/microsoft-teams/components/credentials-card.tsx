@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,14 +30,9 @@ export function CredentialsCard({
 }: CredentialsCardProps) {
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [showBotPassword, setShowBotPassword] = useState(false);
-  const [isBotRemindersEnabled, setIsBotRemindersEnabled] = useState(false);
-
-  useEffect(() => {
-    setIsBotRemindersEnabled(Boolean(formData.botUsername || formData.botPassword));
-  }, [formData.botUsername, formData.botPassword]);
 
   const handleBotReminderToggle = (checked: boolean) => {
-    setIsBotRemindersEnabled(checked);
+    setFormData({ ...formData, isFollowUpReminderEnabled: checked });
   };
 
   return (
@@ -132,13 +127,12 @@ export function CredentialsCard({
             </div>
             <Switch
               id="teamsReminderToggle"
-              checked={isBotRemindersEnabled}
+              checked={Boolean(formData.isFollowUpReminderEnabled)}
               onCheckedChange={handleBotReminderToggle}
-              disabled={isConnected}
             />
           </div>
 
-          {isBotRemindersEnabled && (
+          {formData.isFollowUpReminderEnabled && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="botUsername">

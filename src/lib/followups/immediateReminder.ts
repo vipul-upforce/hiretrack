@@ -6,6 +6,8 @@ import type { IMicrosoftTeamsConfig } from '@/lib/models/settings';
 interface ImmediateFollowUpReminderParams {
   organizationId: string;
   candidateName: string;
+  candidateId?: string | null;
+  jobId?: string | null;
   followUpDate?: Date | string | null;
   followUpNote?: string | null;
   followUpUserId?: string | null;
@@ -68,16 +70,24 @@ export async function sendImmediateFollowUpReminder(
       hasTenantId: !!microsoftTeams?.tenantId,
       hasClientId: !!microsoftTeams?.clientId,
       hasClientSecret: !!microsoftTeams?.clientSecret,
+      isFollowUpReminderEnabled: !!microsoftTeams?.isFollowUpReminderEnabled,
       hasBotUsername: !!microsoftTeams?.botUsername,
       hasBotPassword: !!microsoftTeams?.botPassword,
       hasBotUserId: !!microsoftTeams?.botUserId,
     });
+
+    if (!microsoftTeams?.isFollowUpReminderEnabled) {
+      console.log('[followup-reminder] skipped: teams follow-up reminder disabled');
+      return { skipped: true as const, reason: 'teams_reminder_disabled' };
+    }
 
     const sendResult = await sendFollowUpReminderToTeams({
       organizationId: params.organizationId,
       microsoftTeams,
       recipientEmail,
       candidateName: params.candidateName,
+      candidateId: params.candidateId || undefined,
+      jobId: params.jobId || undefined,
       followUpDate: params.followUpDate ? new Date(params.followUpDate) : new Date(),
       note: params.followUpNote,
     });
@@ -95,7 +105,7 @@ export async function sendImmediateFollowUpReminder(
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     logger.error(
-      { error, params },
+      error instanceof Error ? error : new Error(String(error)),
       'Failed to send immediate follow-up reminder',
     );
     return { skipped: true as const, reason: 'send_failed' };
