@@ -19,6 +19,42 @@ interface GraphChatResponse {
   id?: string;
 }
 
+function formatGraphErrorPayload(payload: unknown): string {
+  if (!payload) {
+    return '';
+  }
+
+  if (typeof payload === 'string') {
+    return payload;
+  }
+
+  if (typeof payload === 'object') {
+    const parsed = payload as {
+      error?: unknown;
+      error_description?: unknown;
+      message?: unknown;
+    };
+
+    const candidates = [
+      parsed.error_description,
+      parsed.message,
+      typeof parsed.error === 'object' && parsed.error !== null
+        ? (parsed.error as { message?: unknown }).message
+        : parsed.error,
+    ];
+
+    const match = candidates.find(
+      (value) => typeof value === 'string' && value.trim().length > 0,
+    );
+
+    if (typeof match === 'string') {
+      return match;
+    }
+  }
+
+  return '';
+}
+
 function getAzureAppConfig(
   organizationId: string,
   microsoftTeams?: IMicrosoftTeamsConfig,
@@ -80,16 +116,25 @@ async function requestGraphToken(params: URLSearchParams) {
     },
   );
 
-  const data = (await response.json()) as GraphTokenResponse;
+  const rawBody = await response.text();
+  let data: GraphTokenResponse = {};
+  try {
+    data = rawBody ? (JSON.parse(rawBody) as GraphTokenResponse) : {};
+  } catch {
+    data = {};
+  }
   console.log('[teams-bot] requestGraphToken: response', {
     status: response.status,
     ok: response.ok,
     hasAccessToken: !!data.access_token,
+    error: data.error || null,
   });
 
   if (!response.ok || !data.access_token) {
+    const errorDetails =
+      formatGraphErrorPayload(data) || rawBody || 'Microsoft Graph auth failed';
     throw new Error(
-      data.error_description || data.error || 'Microsoft Graph auth failed',
+      `Microsoft Graph auth failed (status=${response.status}, grantType=${params.get('grant_type') || 'unknown'}, details=${errorDetails})`,
     );
   }
 
@@ -147,6 +192,10 @@ function formatFollowUpReminderMessage(params: {
   candidateName: string;
   followUpDate: Date;
   note?: string | null;
+  deliveryMetadata?: {
+    isLate?: boolean;
+    lateByMs?: number;
+  };
 }) {
   const followUpTime = new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
@@ -161,11 +210,19 @@ function formatFollowUpReminderMessage(params: {
   const openAppMarkup = baseUrl
     ? `<br /><br /><a href="${escapeHtml(baseUrl)}">Open HireTrack</a>`
     : '';
+  const isLateDelivery = !!params.deliveryMetadata?.isLate;
+  const lateByMinutes = params.deliveryMetadata?.lateByMs
+    ? Math.max(1, Math.round(params.deliveryMetadata.lateByMs / 60000))
+    : 0;
+  const lateNoticeMarkup = isLateDelivery
+    ? `<br /><b>Delayed delivery:</b> This reminder was due earlier and is being delivered now (${escapeHtml(String(lateByMinutes))} minute(s) late).`
+    : '';
 
   return [
     '<b>HireTrack Follow-up Reminder</b>',
     `<br /><b>Candidate:</b> ${escapeHtml(params.candidateName)}`,
     `<br /><b>Scheduled for:</b> ${escapeHtml(followUpTime)}`,
+    lateNoticeMarkup,
     noteMarkup,
     openAppMarkup,
   ].join('');
@@ -198,9 +255,9 @@ async function resolveGraphUserByEmail(params: {
   };
 
   if (!response.ok || !data.id) {
+    const errorDetails = data.error?.message || 'Unknown Graph users lookup error';
     throw new Error(
-      data.error?.message ||
-        `Failed to resolve Microsoft Teams user for ${params.email}`,
+      `Failed to resolve Microsoft Teams user for ${params.email} (status=${response.status}, details=${errorDetails})`,
     );
   }
 
@@ -255,7 +312,10 @@ async function createOneOnOneChat(params: {
   };
 
   if (!response.ok || !data.id) {
-    throw new Error(data.error?.message || 'Failed to create Teams chat');
+    const errorDetails = data.error?.message || 'Unknown Graph chats error';
+    throw new Error(
+      `Failed to create Teams chat (status=${response.status}, details=${errorDetails})`,
+    );
   }
 
   console.log('[teams-bot] createOneOnOneChat: success', {
@@ -295,7 +355,9 @@ async function sendChatMessage(params: {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || 'Failed to send Teams chat message');
+    throw new Error(
+      `Failed to send Teams chat message (status=${response.status}, details=${errorText || 'Unknown Graph message send error'})`,
+    );
   }
   console.log('[teams-bot] sendChatMessage: success', {
     chatId: params.chatId,
@@ -310,6 +372,10 @@ export async function sendFollowUpReminderToTeams(params: {
   candidateName: string;
   followUpDate: Date;
   note?: string | null;
+  deliveryMetadata?: {
+    isLate?: boolean;
+    lateByMs?: number;
+  };
 }) {
   try {
     console.log('[teams-bot] sendFollowUpReminderToTeams: start', {
@@ -347,6 +413,7 @@ export async function sendFollowUpReminderToTeams(params: {
         candidateName: params.candidateName,
         followUpDate: params.followUpDate,
         note: params.note,
+        deliveryMetadata: params.deliveryMetadata,
       }),
     });
 
@@ -363,5 +430,148 @@ export async function sendFollowUpReminderToTeams(params: {
       candidateName: params.candidateName,
     });
     throw error;
+  }
+}
+
+export interface TeamsReminderDeliveryTestResult {
+  success: boolean;
+  steps: {
+    resolveRecipient: { ok: boolean; userId?: string; error?: string };
+    resolveBot: { ok: boolean; userId?: string; error?: string };
+    getBotUserToken: { ok: boolean; error?: string };
+    createChat: { ok: boolean; chatId?: string; error?: string };
+    sendMessage: { ok: boolean; error?: string };
+  };
+}
+
+export async function testFollowUpReminderDelivery(params: {
+  organizationId: string;
+  microsoftTeams?: IMicrosoftTeamsConfig;
+  recipientEmail: string;
+  candidateName: string;
+  followUpDate?: Date;
+  note?: string;
+  shouldSendMessage?: boolean;
+}): Promise<TeamsReminderDeliveryTestResult> {
+  const result: TeamsReminderDeliveryTestResult = {
+    success: false,
+    steps: {
+      resolveRecipient: { ok: false },
+      resolveBot: { ok: false },
+      getBotUserToken: { ok: false },
+      createChat: { ok: false },
+      sendMessage: { ok: false },
+    },
+  };
+
+  const botUsername = params.microsoftTeams?.botUsername || '';
+  if (!botUsername) {
+    result.steps.resolveBot = {
+      ok: false,
+      error: 'Microsoft Teams bot email is not configured',
+    };
+    return result;
+  }
+
+  let recipientUserId = '';
+  try {
+    const recipient = await resolveGraphUserByEmail({
+      organizationId: params.organizationId,
+      microsoftTeams: params.microsoftTeams,
+      email: params.recipientEmail,
+    });
+    recipientUserId = recipient.id || '';
+    result.steps.resolveRecipient = {
+      ok: !!recipientUserId,
+      userId: recipientUserId || undefined,
+      ...(recipientUserId ? {} : { error: 'Recipient user id missing' }),
+    };
+  } catch (error) {
+    result.steps.resolveRecipient = {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown recipient lookup error',
+    };
+    return result;
+  }
+
+  let botUserId = '';
+  try {
+    const botUser = await resolveGraphUserByEmail({
+      organizationId: params.organizationId,
+      microsoftTeams: params.microsoftTeams,
+      email: botUsername,
+    });
+    botUserId = botUser.id || '';
+    result.steps.resolveBot = {
+      ok: !!botUserId,
+      userId: botUserId || undefined,
+      ...(botUserId ? {} : { error: 'Bot user id missing' }),
+    };
+  } catch (error) {
+    result.steps.resolveBot = {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown bot lookup error',
+    };
+    return result;
+  }
+
+  let botAccessToken = '';
+  try {
+    botAccessToken = await getBotUserToken(
+      params.organizationId,
+      params.microsoftTeams,
+    );
+    result.steps.getBotUserToken = { ok: true };
+  } catch (error) {
+    result.steps.getBotUserToken = {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown bot token error',
+    };
+    return result;
+  }
+
+  let chatId = '';
+  try {
+    const chat = await createOneOnOneChat({
+      organizationId: params.organizationId,
+      microsoftTeams: params.microsoftTeams,
+      botUserId,
+      targetUserId: recipientUserId,
+    });
+    chatId = chat.chatId;
+    result.steps.createChat = { ok: !!chatId, chatId: chatId || undefined };
+  } catch (error) {
+    result.steps.createChat = {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown chat creation error',
+    };
+    return result;
+  }
+
+  if (!params.shouldSendMessage) {
+    result.steps.sendMessage = { ok: true };
+    result.success = true;
+    return result;
+  }
+
+  try {
+    await sendChatMessage({
+      accessToken: botAccessToken,
+      chatId,
+      message: formatFollowUpReminderMessage({
+        candidateName: params.candidateName,
+        followUpDate: params.followUpDate || new Date(),
+        note: params.note || 'Diagnostic reminder delivery test message.',
+      }),
+    });
+    result.steps.sendMessage = { ok: true };
+    result.success = true;
+    return result;
+  } catch (error) {
+    result.steps.sendMessage = {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown message send error',
+    };
+    return result;
   }
 }

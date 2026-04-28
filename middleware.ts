@@ -523,6 +523,21 @@ const apiExemptPaths = [
   '/api/license-validate',
 ];
 
+function hasValidCronSecret(request: NextRequest): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return false;
+  }
+
+  const headerSecret = request.headers.get('x-cron-secret');
+  const authHeader = request.headers.get('authorization');
+  const bearerToken = authHeader?.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length)
+    : '';
+
+  return headerSecret === cronSecret || bearerToken === cronSecret;
+}
+
 export async function verifyAndDecryptTokenMiddleware(
   token: string,
   orgId: string,
@@ -576,6 +591,12 @@ const JOB_CANDIDATE_DEEP_LINK = /^\/dashboard\/jobs\/[^/]+$/;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isCronReminderRoute =
+    pathname === '/api/cron/reminders' ||
+    pathname.startsWith('/api/cron/reminders/') ||
+    pathname === '/api/cron/followup-reminders';
+  const isAuthorizedCronRequest =
+    isCronReminderRoute && hasValidCronSecret(request);
 
   // Always allow Sentry tunnel requests so client-side events can reach ingestion.
   if (pathname.startsWith('/monitoring')) {
@@ -631,6 +652,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname.startsWith('/api') &&
+    !isAuthorizedCronRequest &&
     !apiExemptPaths.some(
       (path) => pathname === path || pathname?.includes(path),
     ) &&
