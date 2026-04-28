@@ -196,6 +196,8 @@ function formatFollowUpReminderMessage(params: {
     isLate?: boolean;
     lateByMs?: number;
   };
+  candidateId?: string;
+  jobId?: string;
 }) {
   const followUpTime = new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
@@ -206,9 +208,20 @@ function formatFollowUpReminderMessage(params: {
     ? `<br /><b>Note:</b> ${escapeHtml(params.note.trim())}`
     : '';
 
-  const baseUrl = process.env.BASE_URL || process.env.NEXTAUTH_URL || '';
-  const openAppMarkup = baseUrl
-    ? `<br /><br /><a href="${escapeHtml(baseUrl)}">Open HireTrack</a>`
+  const baseUrl =
+    process.env.BASE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXTAUTH_URL ||
+    '';
+  const candidateDetailsPath =
+    params.candidateId && params.jobId
+      ? `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`
+      : params.candidateId
+        ? `/candidate/${params.candidateId}`
+        : '/dashboard';
+  const openAppUrl = baseUrl ? `${baseUrl}${candidateDetailsPath}` : '';
+  const openAppMarkup = openAppUrl
+    ? `<br /><br /><a href="${escapeHtml(openAppUrl)}">Open Candidate Details</a>`
     : '';
   const isLateDelivery = !!params.deliveryMetadata?.isLate;
   const lateByMinutes = params.deliveryMetadata?.lateByMs
@@ -370,6 +383,8 @@ export async function sendFollowUpReminderToTeams(params: {
   microsoftTeams?: IMicrosoftTeamsConfig;
   recipientEmail: string;
   candidateName: string;
+  candidateId?: string;
+  jobId?: string;
   followUpDate: Date;
   note?: string | null;
   deliveryMetadata?: {
@@ -383,6 +398,10 @@ export async function sendFollowUpReminderToTeams(params: {
       recipientEmail: params.recipientEmail,
       candidateName: params.candidateName,
     });
+    if (!params.microsoftTeams?.isFollowUpReminderEnabled) {
+      throw new Error('Microsoft Teams follow-up reminders are disabled');
+    }
+
     const botUsername = params.microsoftTeams?.botUsername || '';
     if (!botUsername) {
       throw new Error('Microsoft Teams bot email is not configured');
@@ -411,6 +430,8 @@ export async function sendFollowUpReminderToTeams(params: {
       chatId,
       message: formatFollowUpReminderMessage({
         candidateName: params.candidateName,
+        candidateId: params.candidateId,
+        jobId: params.jobId,
         followUpDate: params.followUpDate,
         note: params.note,
         deliveryMetadata: params.deliveryMetadata,

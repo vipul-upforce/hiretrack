@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
       refreshToken: '',
       expiryDate: null,
       connectedEmail: '',
+      isFollowUpReminderEnabled: false,
       botUsername: '',
       botPassword: '',
     };
@@ -106,11 +107,12 @@ export async function PUT(req: NextRequest) {
       clientId,
       clientSecret,
       connectedEmail,
+      isFollowUpReminderEnabled,
       botUsername,
       botPassword,
     } = await req.json();
 
-    const updateData: Record<string, string> = {
+    const updateData: Record<string, string | boolean> = {
       'microsoftTeams.tenantId': tenantId,
       'microsoftTeams.clientId': clientId,
     };
@@ -124,6 +126,10 @@ export async function PUT(req: NextRequest) {
 
     if (connectedEmail) {
       updateData['microsoftTeams.connectedEmail'] = connectedEmail;
+    }
+    if (typeof isFollowUpReminderEnabled === 'boolean') {
+      updateData['microsoftTeams.isFollowUpReminderEnabled'] =
+        isFollowUpReminderEnabled;
     }
     if (typeof botUsername === 'string') {
       updateData['microsoftTeams.botUsername'] = botUsername;

@@ -7,6 +7,8 @@ import { queueReminder } from '@/lib/followups/reminderQueue';
 interface ImmediateFollowUpReminderParams {
   organizationId: string;
   candidateName: string;
+  candidateId?: string | null;
+  jobId?: string | null;
   followUpDate?: Date | string | null;
   followUpNote?: string | null;
   followUpUserId?: string | null;
@@ -85,29 +87,37 @@ export async function deliverFollowUpReminderNow(
     throw new Error('Follow-up owner email is missing');
   }
 
-  const settingsDoc = await Settings.findOne({
-    organizationId: params.organizationId,
-  })
-    .select('microsoftTeams')
-    .lean();
-  const microsoftTeams = settingsDoc?.microsoftTeams as
-    | IMicrosoftTeamsConfig
-    | undefined;
-  console.log('[followup-reminder] loaded teams settings', {
-    hasSettings: !!microsoftTeams,
-    hasTenantId: !!microsoftTeams?.tenantId,
-    hasClientId: !!microsoftTeams?.clientId,
-    hasClientSecret: !!microsoftTeams?.clientSecret,
-    hasBotUsername: !!microsoftTeams?.botUsername,
-    hasBotPassword: !!microsoftTeams?.botPassword,
-    hasBotUserId: !!microsoftTeams?.botUserId,
-  });
+    const settingsDoc = await Settings.findOne({
+      organizationId: params.organizationId,
+    })
+      .select('microsoftTeams')
+      .lean();
+    const microsoftTeams = settingsDoc?.microsoftTeams as
+      | IMicrosoftTeamsConfig
+      | undefined;
+    console.log('[followup-reminder] loaded teams settings', {
+      hasSettings: !!microsoftTeams,
+      hasTenantId: !!microsoftTeams?.tenantId,
+      hasClientId: !!microsoftTeams?.clientId,
+      hasClientSecret: !!microsoftTeams?.clientSecret,
+      isFollowUpReminderEnabled: !!microsoftTeams?.isFollowUpReminderEnabled,
+      hasBotUsername: !!microsoftTeams?.botUsername,
+      hasBotPassword: !!microsoftTeams?.botPassword,
+      hasBotUserId: !!microsoftTeams?.botUserId,
+    });
+
+    if (!microsoftTeams?.isFollowUpReminderEnabled) {
+      console.log('[followup-reminder] skipped: teams follow-up reminder disabled');
+      return { skipped: true as const, reason: 'teams_reminder_disabled' };
+    }
 
   const sendResult = await sendFollowUpReminderToTeams({
     organizationId: params.organizationId,
     microsoftTeams,
     recipientEmail,
     candidateName: params.candidateName,
+      candidateId: params.candidateId || undefined,
+      jobId: params.jobId || undefined,
     followUpDate: params.followUpDate ? new Date(params.followUpDate) : new Date(),
     note: params.followUpNote,
     deliveryMetadata: params.deliveryMetadata,

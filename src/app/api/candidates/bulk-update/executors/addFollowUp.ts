@@ -116,6 +116,8 @@ export async function runBulkAddFollowUp(
         await sendImmediateFollowUpReminder({
           organizationId: candidate.organizationId,
           candidateName: candidate.name,
+          candidateId: (candidate._id as { toString: () => string }).toString(),
+          jobId: getJobIdString(candidate),
           followUpDate: candidate.followUp?.date || date || new Date(),
           followUpNote: candidate.followUp?.note || note || '',
           followUpUserId: followUpOwner,

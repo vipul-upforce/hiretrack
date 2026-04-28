@@ -172,11 +172,11 @@ SNAPSHOT_LOG_FILE="$LOG_DIR/snapshot.log"
 MANUAL_LOG_FILE="$LOG_DIR/manual_update.log"
 ROLLBACK_LOG_FILE="$LOG_DIR/rollback.log"
 
-API_URL="https://hiretrack-super-admin.vercel.app/api/license/register"
-API_URL_UPDATE_LIC="https://hiretrack-super-admin.vercel.app/api/license/update"
-LATEST_VERSION_API="https://hiretrack-super-admin.vercel.app/api/version/list"
-ASSET_DOWNLOAD_API="https://hiretrack-super-admin.vercel.app/api/asset/download"
-ASSET_MIGRATION_API="https://hiretrack-super-admin.vercel.app/api/migration/download"
+API_URL="https://admin.hiretrack.in/api/license/register"
+API_URL_UPDATE_LIC="https://admin.hiretrack.in/api/license/update"
+LATEST_VERSION_API="https://admin.hiretrack.in/api/version/list"
+ASSET_DOWNLOAD_API="https://admin.hiretrack.in/api/asset/download"
+ASSET_MIGRATION_API="https://admin.hiretrack.in/api/migration/download"
 MONGODB_VERSION="${MONGODB_VERSION:-7.0}"
 # NODE_VERSION_DEFAULT=20
 

@@ -586,14 +586,14 @@ export async function PUT(
 
         if (!hadOldContent && hasNewContent) {
           console.log('[followup-reminder] candidate PUT: added follow-up detected');
+          const candidateId = existingCandidate._id?.toString() || '';
+          const followUpJobId =
+            jobInfo?._id?.toString() || existingCandidate.jobId?.toString() || '';
           await NotificationService.notifyFollowUpAdded({
             organizationId,
-            candidateId: existingCandidate._id?.toString() || '',
+            candidateId,
             candidateName: existingCandidate.name,
-            jobId:
-              jobInfo?._id?.toString() ||
-              existingCandidate.jobId?.toString() ||
-              '',
+            jobId: followUpJobId,
             jobTitle: jobInfo?.title || 'Unknown Job',
             followupNote: newNote || '',
             followupDate: newDate ? new Date(newDate) : undefined,
@@ -603,6 +603,8 @@ export async function PUT(
           await sendImmediateFollowUpReminder({
             organizationId,
             candidateName: existingCandidate.name,
+            candidateId,
+            jobId: followUpJobId,
             followUpDate: newDate,
             followUpNote: newNote,
             followUpUserId: String(newFollowUp?.userId._id || ''),
@@ -614,14 +616,14 @@ export async function PUT(
           (noteChanged || dateChanged)
         ) {
           console.log('[followup-reminder] candidate PUT: updated follow-up detected');
+          const candidateId = existingCandidate._id?.toString() || '';
+          const followUpJobId =
+            jobInfo?._id?.toString() || existingCandidate.jobId?.toString() || '';
           await NotificationService.notifyFollowupUpdated({
             organizationId,
-            candidateId: existingCandidate._id?.toString() || '',
+            candidateId,
             candidateName: existingCandidate.name,
-            jobId:
-              jobInfo?._id?.toString() ||
-              existingCandidate.jobId?.toString() ||
-              '',
+            jobId: followUpJobId,
             jobTitle: jobInfo?.title || 'Unknown Job',
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
@@ -629,6 +631,8 @@ export async function PUT(
           await sendImmediateFollowUpReminder({
             organizationId,
             candidateName: existingCandidate.name,
+            candidateId,
+            jobId: followUpJobId,
             followUpDate: newDate,
             followUpNote: newNote,
             followUpUserId: String(newFollowUp?.userId._id || ''),
