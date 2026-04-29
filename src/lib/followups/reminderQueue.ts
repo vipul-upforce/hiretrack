@@ -1,9 +1,10 @@
 import crypto from 'crypto';
-import connectToDatabase, { ScheduledReminder } from '@/lib/mongodb';
+import connectToDatabase, { ScheduledReminder, Settings } from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
 
 export interface QueueReminderInput {
   organizationId: string;
+  candidateId: string;
   candidateName: string;
   followUpDate?: Date | string | null;
   followUpNote?: string | null;
@@ -15,12 +16,13 @@ export interface QueuedReminder {
   queued: true;
   reminderId: string;
   scheduledAt: Date;
+  offsetMinutesUsed: number;
 }
 
 const DEFAULT_OFFSET_MINUTES = Number(
   process.env.REMINDER_OFFSET_MINUTES ||
     process.env.FOLLOWUP_REMINDER_OFFSET_MINUTES ||
-    '0',
+    '5',
 );
 const LOCK_TTL_MS = Number(
   process.env.REMINDER_LOCK_TTL_MS ||
@@ -45,6 +47,7 @@ const COMPLETED_TTL_DAYS = Number(
 const REMINDER_LAG_ALERT_MS = Number(
   process.env.REMINDER_LAG_ALERT_MS || '600000',
 );
+const MAX_OFFSET_MINUTES = 1440;
 
 function normalizeErrorCode(errorMessage: string) {
   const normalized = errorMessage.toLowerCase();
@@ -91,29 +94,56 @@ function asDate(value?: Date | string | null) {
   return date;
 }
 
-function calculateScheduledAt(followUpDate: Date) {
+function normalizeOffsetMinutes(value: unknown) {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : Number.parseInt(String(value ?? '').trim(), 10);
+
+  if (!Number.isFinite(numericValue) || Number.isNaN(numericValue)) {
+    return DEFAULT_OFFSET_MINUTES;
+  }
+
+  const integerValue = Math.trunc(numericValue);
+  if (integerValue < 0) {
+    return 0;
+  }
+  if (integerValue > MAX_OFFSET_MINUTES) {
+    return MAX_OFFSET_MINUTES;
+  }
+  return integerValue;
+}
+
+async function getReminderOffsetMinutes(organizationId: string) {
+  if (!Settings) {
+    return normalizeOffsetMinutes(DEFAULT_OFFSET_MINUTES);
+  }
+
+  const settingsDoc = await Settings.findOne({ organizationId })
+    .select('microsoftTeams.followUpReminderOffsetMinutes')
+    .lean();
+
+  return normalizeOffsetMinutes(
+    settingsDoc?.microsoftTeams?.followUpReminderOffsetMinutes,
+  );
+}
+
+function calculateScheduledAt(followUpDate: Date, offsetMinutes: number) {
   const now = new Date();
   const scheduled = new Date(
-    followUpDate.getTime() + DEFAULT_OFFSET_MINUTES * 60 * 1000,
+    followUpDate.getTime() - offsetMinutes * 60 * 1000,
   );
   return scheduled.getTime() < now.getTime() ? now : scheduled;
 }
 
 function buildIdempotencyKey(input: {
   organizationId: string;
-  followUpUserId: string;
-  candidateName: string;
-  followUpDate: Date;
-  note?: string | null;
-  source: string;
+  candidateId: string;
 }) {
   const raw = [
     input.organizationId,
-    input.followUpUserId,
-    input.candidateName.trim().toLowerCase(),
-    input.followUpDate.toISOString(),
-    (input.note || '').trim(),
-    input.source.trim(),
+    'followup',
+    input.candidateId,
   ].join('|');
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
@@ -130,14 +160,11 @@ export async function queueReminder(
   }
 
   const normalizedDate = asDate(input.followUpDate);
-  const scheduledAt = calculateScheduledAt(normalizedDate);
+  const offsetMinutesUsed = await getReminderOffsetMinutes(input.organizationId);
+  const scheduledAt = calculateScheduledAt(normalizedDate, offsetMinutesUsed);
   const idempotencyKey = buildIdempotencyKey({
     organizationId: input.organizationId,
-    followUpUserId: input.followUpUserId,
-    candidateName: input.candidateName,
-    followUpDate: normalizedDate,
-    note: input.followUpNote,
-    source: input.source,
+    candidateId: input.candidateId,
   });
 
   const queuedReminder = await ScheduledReminder.findOneAndUpdate(
@@ -149,7 +176,9 @@ export async function queueReminder(
         recipientUserId: input.followUpUserId,
         title: input.candidateName,
         reminderAt: normalizedDate,
+        offsetMinutesUsed,
         payload: {
+          candidateId: input.candidateId,
           followUpNote: input.followUpNote || '',
         },
         source: input.source,
@@ -173,10 +202,84 @@ export async function queueReminder(
     throw new Error('Failed to queue follow-up reminder');
   }
 
+  await ScheduledReminder.updateMany(
+    {
+      organizationId: input.organizationId,
+      reminderType: 'followup',
+      status: { $in: ['pending', 'processing'] },
+      'payload.candidateId': input.candidateId,
+      _id: { $ne: queuedReminder._id },
+    },
+    {
+      $set: {
+        status: 'cancelled',
+        lockToken: null,
+        lockedAt: null,
+        lockExpiresAt: null,
+        deliveryKey: null,
+        deliveryAttemptedAt: null,
+        expireAt: getExpirationDate(COMPLETED_TTL_DAYS),
+      },
+    },
+  );
+
   return {
     queued: true,
     reminderId: String(queuedReminder._id),
     scheduledAt: new Date(queuedReminder.scheduledAt),
+    offsetMinutesUsed,
+  };
+}
+
+export async function cancelPendingFollowUpRemindersForCandidate(params: {
+  organizationId: string;
+  candidateId: string;
+}) {
+  return cancelPendingFollowUpRemindersForCandidates({
+    organizationId: params.organizationId,
+    candidateIds: [params.candidateId],
+  });
+}
+
+export async function cancelPendingFollowUpRemindersForCandidates(params: {
+  organizationId: string;
+  candidateIds: string[];
+}) {
+  await connectToDatabase();
+  if (!ScheduledReminder) {
+    throw new Error('ScheduledReminder model is not available');
+  }
+
+  const candidateIds = params.candidateIds.filter(Boolean);
+  if (candidateIds.length === 0) {
+    return { matchedCount: 0, cancelledCount: 0 };
+  }
+
+  const result = await ScheduledReminder.updateMany(
+    {
+      organizationId: params.organizationId,
+      reminderType: 'followup',
+      status: { $in: ['pending', 'processing'] },
+      'payload.candidateId': { $in: candidateIds },
+    },
+    {
+      $set: {
+        status: 'cancelled',
+        lockToken: null,
+        lockedAt: null,
+        lockExpiresAt: null,
+        deliveryKey: null,
+        deliveryAttemptedAt: null,
+        lastError: null,
+        lastErrorCode: null,
+        expireAt: getExpirationDate(COMPLETED_TTL_DAYS),
+      },
+    },
+  );
+
+  return {
+    matchedCount: result.matchedCount || 0,
+    cancelledCount: result.modifiedCount || 0,
   };
 }
 

@@ -1,3 +1,4 @@
+import { formatDateForOrganization } from '@/components/timezoneFormat/getFormattedTZ';
 import { decryptText } from '@/lib/encryption';
 import { logger } from '@/lib/logger/logger.server';
 import type { IMicrosoftTeamsConfig } from '@/lib/models/settings';
@@ -190,7 +191,7 @@ function escapeHtml(value: string) {
 
 function formatFollowUpReminderMessage(params: {
   candidateName: string;
-  followUpDate: Date;
+  followUpTimeLabel: string;
   note?: string | null;
   deliveryMetadata?: {
     isLate?: boolean;
@@ -199,11 +200,6 @@ function formatFollowUpReminderMessage(params: {
   candidateId?: string;
   jobId?: string;
 }) {
-  const followUpTime = new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(params.followUpDate);
-
   const noteMarkup = params.note?.trim()
     ? `<br /><b>Note:</b> ${escapeHtml(params.note.trim())}`
     : '';
@@ -234,7 +230,7 @@ function formatFollowUpReminderMessage(params: {
   return [
     '<b>HireTrack Follow-up Reminder</b>',
     `<br /><b>Candidate:</b> ${escapeHtml(params.candidateName)}`,
-    `<br /><b>Scheduled for:</b> ${escapeHtml(followUpTime)}`,
+    `<br /><b>Scheduled for:</b> ${escapeHtml(params.followUpTimeLabel)}`,
     lateNoticeMarkup,
     noteMarkup,
     openAppMarkup,
@@ -424,6 +420,14 @@ export async function sendFollowUpReminderToTeams(params: {
       botUserId: botUser.id || '',
       targetUserId: graphUser.id || '',
     });
+    const followUpTimeRaw = await formatDateForOrganization(
+      params.followUpDate,
+      params.organizationId,
+    );
+    const followUpTimeLabel =
+      typeof followUpTimeRaw === 'string'
+        ? followUpTimeRaw
+        : params.followUpDate.toISOString();
 
     await sendChatMessage({
       accessToken,
@@ -432,7 +436,7 @@ export async function sendFollowUpReminderToTeams(params: {
         candidateName: params.candidateName,
         candidateId: params.candidateId,
         jobId: params.jobId,
-        followUpDate: params.followUpDate,
+        followUpTimeLabel,
         note: params.note,
         deliveryMetadata: params.deliveryMetadata,
       }),
@@ -576,12 +580,22 @@ export async function testFollowUpReminderDelivery(params: {
   }
 
   try {
+    const reminderDate = params.followUpDate || new Date();
+    const followUpTimeRaw = await formatDateForOrganization(
+      reminderDate,
+      params.organizationId,
+    );
+    const followUpTimeLabel =
+      typeof followUpTimeRaw === 'string'
+        ? followUpTimeRaw
+        : reminderDate.toISOString();
+
     await sendChatMessage({
       accessToken: botAccessToken,
       chatId,
       message: formatFollowUpReminderMessage({
         candidateName: params.candidateName,
-        followUpDate: params.followUpDate || new Date(),
+        followUpTimeLabel,
         note: params.note || 'Diagnostic reminder delivery test message.',
       }),
     });

@@ -17,6 +17,7 @@ export interface CredentialsFormData {
   clientSecret: string;
   connectedEmail?: string;
   isFollowUpReminderEnabled?: boolean;
+  followUpReminderOffsetMinutes?: number;
   botUsername?: string;
   botPassword?: string;
 }
@@ -28,6 +29,7 @@ export interface MicrosoftTeamsConfig {
   isConnected: boolean;
   connectedEmail?: string;
   isFollowUpReminderEnabled?: boolean;
+  followUpReminderOffsetMinutes?: number;
   botUsername?: string;
   botPassword?: string;
 }

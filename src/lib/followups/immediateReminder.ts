@@ -33,12 +33,20 @@ export async function sendImmediateFollowUpReminder(
     console.log('[followup-reminder] skipped: missing followUpUserId');
     return { skipped: true as const, reason: 'missing_followup_user' };
   }
+  if (!params.candidateId) {
+    console.log('[followup-reminder] skipped: missing candidateId');
+    return { skipped: true as const, reason: 'missing_candidate_id' };
+  }
 
   try {
-    const queueResult = await queueReminder(params);
+    const queueResult = await queueReminder({
+      ...params,
+      candidateId: params.candidateId,
+    });
     console.log('[followup-reminder] queued successfully', {
       reminderId: queueResult.reminderId,
       scheduledAt: queueResult.scheduledAt.toISOString(),
+      offsetMinutesUsed: queueResult.offsetMinutesUsed,
       source: params.source,
     });
 
@@ -47,6 +55,7 @@ export async function sendImmediateFollowUpReminder(
       queued: true as const,
       reminderId: queueResult.reminderId,
       scheduledAt: queueResult.scheduledAt,
+      offsetMinutesUsed: queueResult.offsetMinutesUsed,
     };
   } catch (error) {
     console.log('[followup-reminder] failed', {

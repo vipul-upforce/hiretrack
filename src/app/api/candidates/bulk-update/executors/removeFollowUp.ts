@@ -7,6 +7,7 @@ import type {
   BulkUpdateResult,
 } from '../types';
 import { getJobIdString } from '../utils';
+import { cancelPendingFollowUpRemindersForCandidates } from '@/lib/followups/reminderQueue';
 
 function hasFollowUp(candidate: ICandidate): boolean {
   const note = candidate.followUp?.note;
@@ -114,6 +115,20 @@ export async function runBulkRemoveFollowUp(
 
     toBroadcast.push(...(updatedList as ICandidate[]));
 
+    if (user.organizationId && ids.length > 0) {
+      try {
+        await cancelPendingFollowUpRemindersForCandidates({
+          organizationId: user.organizationId,
+          candidateIds: ids,
+        });
+      } catch (cancelError) {
+        logger.error(
+          { message: String(cancelError), name: 'CancelError' },
+          'Bulk removeFollowUp: failed to cancel pending follow-up reminders',
+        );
+      }
+    }
+
     const removeFollowUpNotificationMeta =
       toBroadcast.length > 0
         ? {
@@ -141,7 +156,7 @@ export async function runBulkRemoveFollowUp(
       removeFollowUpNotificationMeta,
     };
   } catch (err) {
-    logger.error({ error: err }, 'Bulk removeFollowUp: batch failed');
+    logger.error({ message: String(err), name: 'RemoveFollowUpError' }, 'Bulk removeFollowUp: batch failed');
     return {
       success: false,
       updatedCount: 0,

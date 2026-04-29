@@ -16,6 +16,7 @@ export interface IScheduledReminder {
   recipientUserId: string;
   title: string;
   reminderAt: Date;
+  offsetMinutesUsed: number;
   payload?: Record<string, unknown>;
   source: string;
   scheduledAt: Date;
@@ -64,6 +65,12 @@ export const scheduledReminderSchema = new mongoose.Schema<IScheduledReminder>(
     reminderAt: {
       type: Date,
       required: true,
+    },
+    offsetMinutesUsed: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
     },
     payload: {
       type: mongoose.Schema.Types.Mixed,
