@@ -189,6 +189,34 @@ export function CredentialsCard({
                 </p>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="followUpReminderOffsetMinutes">
+                  Reminder Offset (minutes)
+                </Label>
+                <Input
+                  id="followUpReminderOffsetMinutes"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={formData.followUpReminderOffsetMinutes ?? 5}
+                  disabled={isConnected}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      followUpReminderOffsetMinutes: Math.max(
+                        0,
+                        Number(e.target.value) || 0,
+                      ),
+                    })
+                  }
+                  placeholder="5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Reminder is scheduled this many minutes before the follow-up
+                  time.
+                </p>
+              </div>
+
               <p className="text-xs text-muted-foreground">
                 This bot account should stay active and have access to the Teams
                 chats where reminders need to be posted.

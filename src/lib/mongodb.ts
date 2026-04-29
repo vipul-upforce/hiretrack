@@ -33,6 +33,10 @@ import {
   duplicateCandidateSchema,
   IDuplicateCandidate,
 } from './models/duplicateCandidates';
+import {
+  scheduledReminderSchema,
+  IScheduledReminder,
+} from './models/scheduledReminder';
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;
@@ -66,6 +70,7 @@ export let DuplicateCandidate: mongoose.Model<IDuplicateCandidate> | null =
 export let WebhookSubscription: mongoose.Model<IWebhookSubscription> | null =
   null;
 export let FileUrlMapping: mongoose.Model<IFileUrlMapping> | null = null;
+export let ScheduledReminder: mongoose.Model<IScheduledReminder> | null = null;
 
 const MONGODB_URI = process.env.MONGODB_URI!;
 
@@ -154,6 +159,12 @@ function registerModels(mongooseInstance: typeof mongoose) {
       mongooseInstance.model<IFileUrlMapping>(
         'FileUrlMapping',
         FileUrlMappingSchema,
+      );
+    ScheduledReminder =
+      mongooseInstance.models.ScheduledReminder ||
+      mongooseInstance.model<IScheduledReminder>(
+        'ScheduledReminder',
+        scheduledReminderSchema,
       );
   } catch (error) {
     logger.error('Error during model registration:', error);

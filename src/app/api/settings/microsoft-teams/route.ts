@@ -3,6 +3,34 @@ import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { encryptText, decryptText } from '@/lib/encryption';
 
+const DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES = 5;
+const MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES = 1440;
+
+function parseFollowUpReminderOffsetMinutes(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES;
+  }
+
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : Number.parseInt(String(value).trim(), 10);
+
+  if (
+    Number.isNaN(numericValue) ||
+    !Number.isFinite(numericValue) ||
+    !Number.isInteger(numericValue) ||
+    numericValue < 0 ||
+    numericValue > MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES
+  ) {
+    throw new Error(
+      `followUpReminderOffsetMinutes must be an integer between 0 and ${MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES}`,
+    );
+  }
+
+  return numericValue;
+}
+
 export async function GET(req: NextRequest) {
   try {
     await connectToDatabase();
@@ -46,6 +74,7 @@ export async function GET(req: NextRequest) {
       expiryDate: null,
       connectedEmail: '',
       isFollowUpReminderEnabled: false,
+      followUpReminderOffsetMinutes: DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES,
       botUsername: '',
       botPassword: '',
     };
@@ -73,6 +102,13 @@ export async function GET(req: NextRequest) {
         microsoftTeams.botPassword,
         organizationId,
       );
+    }
+    if (
+      typeof microsoftTeams.followUpReminderOffsetMinutes !== 'number' ||
+      Number.isNaN(microsoftTeams.followUpReminderOffsetMinutes)
+    ) {
+      microsoftTeams.followUpReminderOffsetMinutes =
+        DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES;
     }
 
     return NextResponse.json({ microsoftTeams });
@@ -108,6 +144,7 @@ export async function PUT(req: NextRequest) {
       clientSecret,
       connectedEmail,
       isFollowUpReminderEnabled,
+      followUpReminderOffsetMinutes,
       botUsername,
       botPassword,
     } = await req.json();
@@ -130,6 +167,20 @@ export async function PUT(req: NextRequest) {
     if (typeof isFollowUpReminderEnabled === 'boolean') {
       updateData['microsoftTeams.isFollowUpReminderEnabled'] =
         isFollowUpReminderEnabled;
+    }
+    try {
+      updateData['microsoftTeams.followUpReminderOffsetMinutes'] =
+        String(parseFollowUpReminderOffsetMinutes(followUpReminderOffsetMinutes));
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error:
+            validationError instanceof Error
+              ? validationError.message
+              : 'Invalid follow-up reminder offset',
+        },
+        { status: 400 },
+      );
     }
     if (typeof botUsername === 'string') {
       updateData['microsoftTeams.botUsername'] = botUsername;

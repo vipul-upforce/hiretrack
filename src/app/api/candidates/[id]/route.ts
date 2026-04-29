@@ -22,6 +22,9 @@ import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
 import { filterSensitiveRedFlagsForInterviewer } from '@/lib/filterSensitiveRedFlags';
 import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
 import { sendImmediateFollowUpReminder } from '@/lib/followups/immediateReminder';
+import {
+  cancelPendingFollowUpRemindersForCandidate,
+} from '@/lib/followups/reminderQueue';
 import { Attachment } from '../route';
 
 // /*  max-lines-per-function max-lines-per-file 300 */
@@ -651,6 +654,15 @@ export async function PUT(
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
           });
+
+          const removedCandidateId =
+            existingCandidate._id?.toString() || '';
+          if (removedCandidateId) {
+            await cancelPendingFollowUpRemindersForCandidate({
+              organizationId,
+              candidateId: removedCandidateId,
+            });
+          }
         }
       } catch (notificationError) {
         logger.error(
@@ -1191,7 +1203,7 @@ export async function PUT(
 
       const candidateForBroadcast = {
         ...updatedCandidate,
-        ...(assignmentWasCleared ? { assignment: null } : {}),
+        // ...(assignmentWasCleared ? { assignment: null } : {}),
         history: candidateHistoryPopulated?.history,
         duplicateCount,
       };

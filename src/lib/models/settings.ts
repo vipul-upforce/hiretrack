@@ -229,6 +229,11 @@ const settingsSchema = new Schema({
       type: Boolean,
       default: false,
     },
+    followUpReminderOffsetMinutes: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
     botUsername: {
       type: String,
       default: '',
@@ -642,6 +647,7 @@ export interface IMicrosoftTeamsConfig {
   expiryDate: number | null;
   connectedEmail?: string;
   isFollowUpReminderEnabled?: boolean;
+  followUpReminderOffsetMinutes?: number;
   botUsername?: string;
   botPassword?: string;
   botUserId?: string;
