@@ -147,6 +147,10 @@ export function CredentialsCard({
                   placeholder="Enter Teams account email"
                   disabled={isConnected}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Use a dedicated Microsoft user account email that will act as
+                  your Teams reminder bot.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -180,6 +184,9 @@ export function CredentialsCard({
                     )}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter the password for the same Microsoft bot account.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -211,8 +218,8 @@ export function CredentialsCard({
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Use the credentials of the Teams account that should receive
-                reminders.
+                This bot account should stay active and have access to the Teams
+                chats where reminders need to be posted.
               </p>
             </>
           )}
