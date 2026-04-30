@@ -39,6 +39,25 @@ export async function sendImmediateFollowUpReminder(
   }
 
   try {
+    await connectToDatabase();
+    if (!Settings) {
+      throw new Error('Settings model is not available');
+    }
+    const settingsDoc = await Settings.findOne({
+      organizationId: params.organizationId,
+    })
+      .select('microsoftTeams.isFollowUpReminderEnabled')
+      .lean();
+    const isFollowUpReminderEnabled = Boolean(
+      settingsDoc?.microsoftTeams?.isFollowUpReminderEnabled,
+    );
+    if (!isFollowUpReminderEnabled) {
+      console.log(
+        '[followup-reminder] skipped: teams follow-up reminder disabled at queue stage',
+      );
+      return { skipped: true as const, reason: 'teams_reminder_disabled' };
+    }
+
     const queueResult = await queueReminder({
       ...params,
       candidateId: params.candidateId,
