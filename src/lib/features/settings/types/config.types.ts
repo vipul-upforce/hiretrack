@@ -66,6 +66,16 @@ export interface MicrosoftTeamsConfig {
   followUpReminderOffsetMinutes?: number;
   botUsername?: string;
   botPassword?: string;
+  messageTemplates?: {
+    [key: string]: {
+      templateId: string;
+      templateName: string;
+      eventType: 'followup.reminder' | 'assignment.reminder';
+      content: string;
+      variables: string[];
+      isActive?: boolean;
+    };
+  };
 }
 
 export interface MicrosoftTeamsConfigResponse {

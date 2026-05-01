@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { encryptText, decryptText } from '@/lib/encryption';
+import {
+  normalizeTeamsReminderTemplates,
+  toTeamsReminderTemplateStorageMap,
+} from '@/lib/microsoft-teams/reminderTemplates';
 
 const DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES = 5;
 const MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES = 1440;
@@ -110,6 +114,9 @@ export async function GET(req: NextRequest) {
       microsoftTeams.followUpReminderOffsetMinutes =
         DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES;
     }
+    microsoftTeams.messageTemplates = normalizeTeamsReminderTemplates(
+      microsoftTeams.messageTemplates,
+    );
 
     return NextResponse.json({ microsoftTeams });
   } catch (error) {
@@ -147,9 +154,10 @@ export async function PUT(req: NextRequest) {
       followUpReminderOffsetMinutes,
       botUsername,
       botPassword,
+      messageTemplates,
     } = await req.json();
 
-    const updateData: Record<string, string | boolean> = {
+    const updateData: Record<string, unknown> = {
       'microsoftTeams.tenantId': tenantId,
       'microsoftTeams.clientId': clientId,
     };
@@ -170,7 +178,7 @@ export async function PUT(req: NextRequest) {
     }
     try {
       updateData['microsoftTeams.followUpReminderOffsetMinutes'] =
-        String(parseFollowUpReminderOffsetMinutes(followUpReminderOffsetMinutes));
+        parseFollowUpReminderOffsetMinutes(followUpReminderOffsetMinutes);
     } catch (validationError) {
       return NextResponse.json(
         {
@@ -189,6 +197,10 @@ export async function PUT(req: NextRequest) {
       updateData['microsoftTeams.botPassword'] = botPassword
         ? encryptText(botPassword, organizationId)
         : '';
+    }
+    if (messageTemplates !== undefined) {
+      updateData['microsoftTeams.messageTemplates'] =
+        toTeamsReminderTemplateStorageMap(messageTemplates);
     }
 
     const updatedSettings = await Settings.findOneAndUpdate(

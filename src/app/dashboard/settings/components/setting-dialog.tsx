@@ -15,6 +15,7 @@ import AssetsDialog from './assets';
 import GoogleCalendarSettings from './google-calendar';
 import ZoomSettings from './zoom';
 import MicrosoftTeamsSettings from './microsoft-teams';
+import TeamsReminderTemplatesDialog from './microsoft-teams/reminder-templates-dialog';
 import BackupsDialog from './backups';
 import { EvaluationSettings } from './ai-evaluation-settings';
 import AIProvidersConfigs from './ai-providers';
@@ -46,6 +47,7 @@ const settingComponents: Record<
   'google-calendar': GoogleCalendarSettings,
   zoom: ZoomSettings,
   'microsoft-teams': MicrosoftTeamsSettings,
+  'teams-templates': TeamsReminderTemplatesDialog,
   'communication-email': EmailCommunicationSettings,
   'communication-ai': AICommunicationSettings,
   'communication-meetings': MeetingCommunicationSettings,
@@ -94,6 +96,7 @@ function SettingDialog({
       case 'google-calendar':
       case 'zoom':
       case 'microsoft-teams':
+      case 'teams-templates':
       case 'communication-email':
       case 'communication-ai':
       case 'communication-meetings':
@@ -124,6 +127,7 @@ function SettingDialog({
       case 'google-calendar':
       case 'zoom':
       case 'microsoft-teams':
+      case 'teams-templates':
         return 'flex max-h-[90vh] flex-col overflow-hidden p-0';
       case 'timezone':
         return 'w-[90vw] max-w-2xl overflow-visible';
@@ -178,7 +182,8 @@ function SettingDialog({
       setting.key === 'ai-providers' ||
       setting.key === 'google-calendar' ||
       setting.key === 'zoom' ||
-      setting.key === 'microsoft-teams'
+      setting.key === 'microsoft-teams' ||
+      setting.key === 'teams-templates'
     ) {
       return (
         <div className="flex-1 overflow-hidden overflow-y-auto px-6 py-0">

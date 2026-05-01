@@ -1,6 +1,7 @@
 import connectToDatabase, { Settings, User } from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
 import { sendFollowUpReminderToTeams } from '@/lib/microsoft-teams/botMessaging';
+import type { TeamsReminderTemplateEventType } from '@/lib/microsoft-teams/reminderTemplates';
 import type { IMicrosoftTeamsConfig } from '@/lib/models/settings';
 import {
   queueReminder,
@@ -22,6 +23,7 @@ interface ImmediateFollowUpReminderParams {
     isLate?: boolean;
     lateByMs?: number;
   };
+  reminderTemplateEventType?: TeamsReminderTemplateEventType;
 }
 
 interface ImmediateAssignmentReminderParams {
@@ -182,6 +184,7 @@ export async function deliverAssignmentReminderNow(
     followUpUserId: params.assignmentUserId,
     source: params.source,
     deliveryMetadata: params.deliveryMetadata,
+    reminderTemplateEventType: 'assignment.reminder',
   });
 }
 
@@ -259,6 +262,8 @@ export async function deliverFollowUpReminderNow(
       jobId: params.jobId || undefined,
     followUpDate: normalizedFollowUpDate,
     note: params.followUpNote,
+    templateEventType:
+      params.reminderTemplateEventType || 'followup.reminder',
     deliveryMetadata: params.deliveryMetadata,
   });
 
