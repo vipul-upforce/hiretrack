@@ -7,7 +7,7 @@ export type ScheduledReminderStatus =
   | 'failed'
   | 'cancelled';
 
-export type ScheduledReminderType = 'followup';
+export type ScheduledReminderType = 'followup' | 'assignment';
 
 export interface IScheduledReminder {
   _id: string;
@@ -48,7 +48,7 @@ export const scheduledReminderSchema = new mongoose.Schema<IScheduledReminder>(
     },
     reminderType: {
       type: String,
-      enum: ['followup'],
+      enum: ['followup', 'assignment'],
       required: true,
       index: true,
     },

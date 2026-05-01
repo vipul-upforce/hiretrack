@@ -228,7 +228,7 @@ function formatFollowUpReminderMessage(params: {
     : '';
 
   return [
-    '<b>HireTrack Follow-up Reminder</b>',
+    '<b>HireTrack Reminder</b>',
     `<br /><b>Candidate:</b> ${escapeHtml(params.candidateName)}`,
     `<br /><b>Scheduled for:</b> ${escapeHtml(params.followUpTimeLabel)}`,
     lateNoticeMarkup,

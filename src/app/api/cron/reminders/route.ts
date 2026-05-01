@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processQueuedReminders } from '@/lib/followups/reminderQueue';
-import { deliverFollowUpReminderNow } from '@/lib/followups/immediateReminder';
+import {
+  deliverAssignmentReminderNow,
+  deliverFollowUpReminderNow,
+} from '@/lib/followups/immediateReminder';
 import { logger } from '@/lib/logger/logger.server';
 
 const REMINDER_LATE_THRESHOLD_MS = Number(
@@ -31,20 +34,45 @@ export async function POST(request: NextRequest) {
     const result = await processQueuedReminders(async (reminder) => {
       const lateByMs = Date.now() - reminder.scheduledAt.getTime();
       const isLate = lateByMs > REMINDER_LATE_THRESHOLD_MS;
-
-      // followup is the first reminder type using this shared pipeline.
-      await deliverFollowUpReminderNow({
+      logger.info('Cron delivering queued reminder', {
+        reminderType: reminder.reminderType,
+        source: reminder.source,
         organizationId: reminder.organizationId,
-        candidateName: reminder.candidateName,
-        followUpDate: reminder.followUpDate,
-        followUpNote: reminder.followUpNote,
-        followUpUserId: reminder.followUpUserId,
-        source: `${reminder.source}-worker`,
-        deliveryMetadata: {
-          isLate,
-          lateByMs: isLate ? lateByMs : 0,
-        },
+        candidateId: reminder.candidateId || '',
+        recipientUserId: reminder.followUpUserId,
       });
+
+      if (reminder.reminderType === 'assignment') {
+        await deliverAssignmentReminderNow({
+          organizationId: reminder.organizationId,
+          candidateName: reminder.candidateName,
+          candidateId: reminder.candidateId || null,
+          assignmentTime: reminder.reminderAt,
+          assignmentNote: reminder.followUpNote || null,
+          assignmentUserId: reminder.followUpUserId,
+          source: `${reminder.source}-worker`,
+          deliveryMetadata: {
+            isLate,
+            lateByMs: isLate ? lateByMs : 0,
+          },
+        });
+      } else {
+        await deliverFollowUpReminderNow({
+          organizationId: reminder.organizationId,
+          candidateName: reminder.candidateName,
+          candidateId: reminder.candidateId || null,
+          followUpDate: reminder.followUpDate,
+          scheduledAt: reminder.scheduledAt,
+          offsetMinutesUsed: reminder.offsetMinutesUsed,
+          followUpNote: reminder.followUpNote,
+          followUpUserId: reminder.followUpUserId,
+          source: `${reminder.source}-worker`,
+          deliveryMetadata: {
+            isLate,
+            lateByMs: isLate ? lateByMs : 0,
+          },
+        });
+      }
     });
 
     return NextResponse.json({ success: true, ...result });

@@ -21,8 +21,12 @@ import logger from '@/lib/logger';
 import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
 import { filterSensitiveRedFlagsForInterviewer } from '@/lib/filterSensitiveRedFlags';
 import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
-import { sendImmediateFollowUpReminder } from '@/lib/followups/immediateReminder';
 import {
+  sendImmediateAssignmentReminder,
+  sendImmediateFollowUpReminder,
+} from '@/lib/followups/immediateReminder';
+import {
+  cancelPendingAssignmentRemindersForCandidate,
   cancelPendingFollowUpRemindersForCandidate,
 } from '@/lib/followups/reminderQueue';
 import { Attachment } from '../route';
@@ -362,7 +366,7 @@ export async function PUT(
     };
 
     let assignmentCompletedFollowUp = null;
-    const assignmentWasCleared = 'assignment' in data && data.assignment === null;
+    // const assignmentWasCleared = 'assignment' in data && data.assignment === null;
 
     if ('assignment' in data) {
       if (data.assignment === null) {
@@ -1008,6 +1012,12 @@ export async function PUT(
                     | { _id: string }
                     | null,
                 );
+                const persistedAssignmentInterviewerId = extractId(
+                  updatedCandidate.assignment?.interviewerId as
+                    | string
+                    | { _id: string }
+                    | null,
+                );
 
                 const interviewerChanged =
                   oldInterviewerId &&
@@ -1121,6 +1131,27 @@ export async function PUT(
                     });
                   }
                 }
+
+                if (newAssignment?.time && persistedAssignmentInterviewerId) {
+                  await sendImmediateAssignmentReminder({
+                    organizationId,
+                    candidateName: updatedCandidate.name,
+                    candidateId: updatedCandidate._id?.toString() || '',
+                    jobId:
+                      jobInfo?._id?.toString() ||
+                      updatedCandidate.jobId?.toString() ||
+                      '',
+                    assignmentTime: newAssignment.time,
+                    assignmentNote: 'Interview assignment reminder',
+                    assignmentUserId: String(persistedAssignmentInterviewerId),
+                    source: 'candidate-put-assignment-upsert',
+                  });
+                } else {
+                  await cancelPendingAssignmentRemindersForCandidate({
+                    organizationId,
+                    candidateId: updatedCandidate._id?.toString() || '',
+                  });
+                }
               }
             }
           } else {
@@ -1146,6 +1177,10 @@ export async function PUT(
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
               });
+              await cancelPendingAssignmentRemindersForCandidate({
+                organizationId,
+                candidateId: updatedCandidate._id?.toString() || '',
+              });
             } else if (newAssignment === null && interviewer) {
               await NotificationService.notifyInterviewCompleted({
                 organizationId,
@@ -1160,6 +1195,10 @@ export async function PUT(
                 interviewerId: interviewer?._id?.toString() || '',
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
+              });
+              await cancelPendingAssignmentRemindersForCandidate({
+                organizationId,
+                candidateId: updatedCandidate._id?.toString() || '',
               });
             }
           }

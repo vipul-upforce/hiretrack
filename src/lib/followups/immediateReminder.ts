@@ -2,7 +2,10 @@ import connectToDatabase, { Settings, User } from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
 import { sendFollowUpReminderToTeams } from '@/lib/microsoft-teams/botMessaging';
 import type { IMicrosoftTeamsConfig } from '@/lib/models/settings';
-import { queueReminder } from '@/lib/followups/reminderQueue';
+import {
+  queueReminder,
+  queueAssignmentReminder,
+} from '@/lib/followups/reminderQueue';
 
 interface ImmediateFollowUpReminderParams {
   organizationId: string;
@@ -10,8 +13,25 @@ interface ImmediateFollowUpReminderParams {
   candidateId?: string | null;
   jobId?: string | null;
   followUpDate?: Date | string | null;
+  scheduledAt?: Date | string | null;
+  offsetMinutesUsed?: number | null;
   followUpNote?: string | null;
   followUpUserId?: string | null;
+  source: string;
+  deliveryMetadata?: {
+    isLate?: boolean;
+    lateByMs?: number;
+  };
+}
+
+interface ImmediateAssignmentReminderParams {
+  organizationId: string;
+  candidateName: string;
+  candidateId?: string | null;
+  jobId?: string | null;
+  assignmentTime?: Date | string | null;
+  assignmentNote?: string | null;
+  assignmentUserId?: string | null;
   source: string;
   deliveryMetadata?: {
     isLate?: boolean;
@@ -89,6 +109,82 @@ export async function sendImmediateFollowUpReminder(
   }
 }
 
+export async function sendImmediateAssignmentReminder(
+  params: ImmediateAssignmentReminderParams,
+) {
+  console.log('[assignment-reminder] start', {
+    source: params.source,
+    organizationId: params.organizationId,
+    candidateName: params.candidateName,
+    assignmentUserId: params.assignmentUserId,
+  });
+  if (!params.assignmentUserId || !params.candidateId) {
+    console.log('[assignment-reminder] skipped: missing assignment context');
+    return { skipped: true as const, reason: 'missing_assignment_context' };
+  }
+  try {
+    await connectToDatabase();
+    if (!Settings) {
+      throw new Error('Settings model is not available');
+    }
+    const settingsDoc = await Settings.findOne({
+      organizationId: params.organizationId,
+    })
+      .select('microsoftTeams.isFollowUpReminderEnabled')
+      .lean();
+    const enabled = Boolean(settingsDoc?.microsoftTeams?.isFollowUpReminderEnabled);
+    if (!enabled) {
+      console.log(
+        '[assignment-reminder] skipped: teams follow-up reminder disabled at queue stage',
+      );
+      return { skipped: true as const, reason: 'teams_reminder_disabled' };
+    }
+    const queueResult = await queueAssignmentReminder({
+      organizationId: params.organizationId,
+      candidateId: params.candidateId,
+      candidateName: params.candidateName,
+      assignmentTime: params.assignmentTime,
+      assignmentNote: params.assignmentNote,
+      recipientUserId: params.assignmentUserId,
+      jobId: params.jobId,
+      source: params.source,
+    });
+    return {
+      skipped: false as const,
+      queued: true as const,
+      reminderId: queueResult.reminderId,
+      scheduledAt: queueResult.scheduledAt,
+      offsetMinutesUsed: queueResult.offsetMinutesUsed,
+    };
+  } catch (error) {
+    logger.error('Failed to queue assignment reminder', { error, params });
+    return { skipped: true as const, reason: 'send_failed' };
+  }
+}
+
+export async function deliverAssignmentReminderNow(
+  params: ImmediateAssignmentReminderParams,
+) {
+  console.log('[assignment-reminder] deliver now', {
+    source: params.source,
+    organizationId: params.organizationId,
+    assignmentUserId: params.assignmentUserId,
+  });
+  return deliverFollowUpReminderNow({
+    organizationId: params.organizationId,
+    candidateName: params.candidateName,
+    candidateId: params.candidateId,
+    jobId: params.jobId,
+    followUpDate: params.assignmentTime,
+    followUpNote: params.assignmentNote
+      ? `Assignment reminder: ${params.assignmentNote}`
+      : 'Assignment reminder',
+    followUpUserId: params.assignmentUserId,
+    source: params.source,
+    deliveryMetadata: params.deliveryMetadata,
+  });
+}
+
 export async function deliverFollowUpReminderNow(
   params: ImmediateFollowUpReminderParams,
 ) {
@@ -139,6 +235,21 @@ export async function deliverFollowUpReminderNow(
       return { skipped: true as const, reason: 'teams_reminder_disabled' };
     }
 
+  const followUpDate = params.followUpDate ? new Date(params.followUpDate) : new Date();
+  const scheduledAt = params.scheduledAt ? new Date(params.scheduledAt) : null;
+  const offsetMinutesUsed = Math.max(
+    0,
+    Math.trunc(Number(params.offsetMinutesUsed ?? 0)),
+  );
+  const normalizedFollowUpDate =
+    scheduledAt &&
+    Number.isFinite(scheduledAt.getTime()) &&
+    Number.isFinite(followUpDate.getTime()) &&
+    offsetMinutesUsed > 0 &&
+    followUpDate.getTime() <= scheduledAt.getTime()
+      ? new Date(scheduledAt.getTime() + offsetMinutesUsed * 60 * 1000)
+      : followUpDate;
+
   const sendResult = await sendFollowUpReminderToTeams({
     organizationId: params.organizationId,
     microsoftTeams,
@@ -146,7 +257,7 @@ export async function deliverFollowUpReminderNow(
     candidateName: params.candidateName,
       candidateId: params.candidateId || undefined,
       jobId: params.jobId || undefined,
-    followUpDate: params.followUpDate ? new Date(params.followUpDate) : new Date(),
+    followUpDate: normalizedFollowUpDate,
     note: params.followUpNote,
     deliveryMetadata: params.deliveryMetadata,
   });

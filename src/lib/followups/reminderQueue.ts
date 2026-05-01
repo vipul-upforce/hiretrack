@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import connectToDatabase, { ScheduledReminder, Settings } from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
+import type { ScheduledReminderType } from '@/lib/models/scheduledReminder';
 
 export interface QueueReminderInput {
   organizationId: string;
@@ -9,6 +10,17 @@ export interface QueueReminderInput {
   followUpDate?: Date | string | null;
   followUpNote?: string | null;
   followUpUserId?: string | null;
+  source: string;
+}
+
+export interface QueueAssignmentReminderInput {
+  organizationId: string;
+  candidateId: string;
+  candidateName: string;
+  assignmentTime?: Date | string | null;
+  assignmentNote?: string | null;
+  recipientUserId?: string | null;
+  jobId?: string | null;
   source: string;
 }
 
@@ -139,49 +151,53 @@ function calculateScheduledAt(followUpDate: Date, offsetMinutes: number) {
 function buildIdempotencyKey(input: {
   organizationId: string;
   candidateId: string;
+  reminderType: ScheduledReminderType;
 }) {
   const raw = [
     input.organizationId,
-    'followup',
+    input.reminderType,
     input.candidateId,
   ].join('|');
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
-export async function queueReminder(
-  input: QueueReminderInput,
-): Promise<QueuedReminder> {
-  await connectToDatabase();
+async function upsertReminder(params: {
+  reminderType: ScheduledReminderType;
+  organizationId: string;
+  candidateId: string;
+  candidateName: string;
+  recipientUserId: string;
+  reminderAt: Date;
+  offsetMinutesUsed: number;
+  source: string;
+  payload: Record<string, unknown>;
+}) {
   if (!ScheduledReminder) {
     throw new Error('ScheduledReminder model is not available');
   }
-  if (!input.followUpUserId) {
-    throw new Error('followUpUserId is required to queue reminder');
-  }
 
-  const normalizedDate = asDate(input.followUpDate);
-  const offsetMinutesUsed = await getReminderOffsetMinutes(input.organizationId);
-  const scheduledAt = calculateScheduledAt(normalizedDate, offsetMinutesUsed);
+  const scheduledAt = calculateScheduledAt(
+    params.reminderAt,
+    params.offsetMinutesUsed,
+  );
   const idempotencyKey = buildIdempotencyKey({
-    organizationId: input.organizationId,
-    candidateId: input.candidateId,
+    organizationId: params.organizationId,
+    candidateId: params.candidateId,
+    reminderType: params.reminderType,
   });
 
   const queuedReminder = await ScheduledReminder.findOneAndUpdate(
     { idempotencyKey },
     {
       $set: {
-        organizationId: input.organizationId,
-        reminderType: 'followup',
-        recipientUserId: input.followUpUserId,
-        title: input.candidateName,
-        reminderAt: normalizedDate,
-        offsetMinutesUsed,
-        payload: {
-          candidateId: input.candidateId,
-          followUpNote: input.followUpNote || '',
-        },
-        source: input.source,
+        organizationId: params.organizationId,
+        reminderType: params.reminderType,
+        recipientUserId: params.recipientUserId,
+        title: params.candidateName,
+        reminderAt: params.reminderAt,
+        offsetMinutesUsed: params.offsetMinutesUsed,
+        payload: params.payload,
+        source: params.source,
         scheduledAt,
         nextAttemptAt: scheduledAt,
         status: 'pending',
@@ -199,15 +215,15 @@ export async function queueReminder(
     .lean();
 
   if (!queuedReminder?._id || !queuedReminder.scheduledAt) {
-    throw new Error('Failed to queue follow-up reminder');
+    throw new Error('Failed to queue reminder');
   }
 
   await ScheduledReminder.updateMany(
     {
-      organizationId: input.organizationId,
-      reminderType: 'followup',
+      organizationId: params.organizationId,
+      reminderType: params.reminderType,
       status: { $in: ['pending', 'processing'] },
-      'payload.candidateId': input.candidateId,
+      'payload.candidateId': params.candidateId,
       _id: { $ne: queuedReminder._id },
     },
     {
@@ -224,11 +240,63 @@ export async function queueReminder(
   );
 
   return {
-    queued: true,
+    queued: true as const,
     reminderId: String(queuedReminder._id),
     scheduledAt: new Date(queuedReminder.scheduledAt),
-    offsetMinutesUsed,
+    offsetMinutesUsed: params.offsetMinutesUsed,
   };
+}
+
+export async function queueReminder(
+  input: QueueReminderInput,
+): Promise<QueuedReminder> {
+  await connectToDatabase();
+  if (!input.followUpUserId) {
+    throw new Error('followUpUserId is required to queue reminder');
+  }
+
+  const normalizedDate = asDate(input.followUpDate);
+  const offsetMinutesUsed = await getReminderOffsetMinutes(input.organizationId);
+  return upsertReminder({
+    reminderType: 'followup',
+    organizationId: input.organizationId,
+    candidateId: input.candidateId,
+    candidateName: input.candidateName,
+    recipientUserId: input.followUpUserId,
+    reminderAt: normalizedDate,
+    offsetMinutesUsed,
+    source: input.source,
+    payload: {
+      candidateId: input.candidateId,
+      followUpNote: input.followUpNote || '',
+    },
+  });
+}
+
+export async function queueAssignmentReminder(
+  input: QueueAssignmentReminderInput,
+): Promise<QueuedReminder> {
+  await connectToDatabase();
+  if (!input.recipientUserId) {
+    throw new Error('recipientUserId is required to queue assignment reminder');
+  }
+  const normalizedDate = asDate(input.assignmentTime);
+  const offsetMinutesUsed = await getReminderOffsetMinutes(input.organizationId);
+  return upsertReminder({
+    reminderType: 'assignment',
+    organizationId: input.organizationId,
+    candidateId: input.candidateId,
+    candidateName: input.candidateName,
+    recipientUserId: input.recipientUserId,
+    reminderAt: normalizedDate,
+    offsetMinutesUsed,
+    source: input.source,
+    payload: {
+      candidateId: input.candidateId,
+      jobId: input.jobId || '',
+      assignmentNote: input.assignmentNote || '',
+    },
+  });
 }
 
 export async function cancelPendingFollowUpRemindersForCandidate(params: {
@@ -277,6 +345,55 @@ export async function cancelPendingFollowUpRemindersForCandidates(params: {
     },
   );
 
+  return {
+    matchedCount: result.matchedCount || 0,
+    cancelledCount: result.modifiedCount || 0,
+  };
+}
+
+export async function cancelPendingAssignmentRemindersForCandidate(params: {
+  organizationId: string;
+  candidateId: string;
+}) {
+  return cancelPendingAssignmentRemindersForCandidates({
+    organizationId: params.organizationId,
+    candidateIds: [params.candidateId],
+  });
+}
+
+export async function cancelPendingAssignmentRemindersForCandidates(params: {
+  organizationId: string;
+  candidateIds: string[];
+}) {
+  await connectToDatabase();
+  if (!ScheduledReminder) {
+    throw new Error('ScheduledReminder model is not available');
+  }
+  const candidateIds = params.candidateIds.filter(Boolean);
+  if (candidateIds.length === 0) {
+    return { matchedCount: 0, cancelledCount: 0 };
+  }
+  const result = await ScheduledReminder.updateMany(
+    {
+      organizationId: params.organizationId,
+      reminderType: 'assignment',
+      status: { $in: ['pending', 'processing'] },
+      'payload.candidateId': { $in: candidateIds },
+    },
+    {
+      $set: {
+        status: 'cancelled',
+        lockToken: null,
+        lockedAt: null,
+        lockExpiresAt: null,
+        deliveryKey: null,
+        deliveryAttemptedAt: null,
+        lastError: null,
+        lastErrorCode: null,
+        expireAt: getExpirationDate(COMPLETED_TTL_DAYS),
+      },
+    },
+  );
   return {
     matchedCount: result.matchedCount || 0,
     cancelledCount: result.modifiedCount || 0,
@@ -570,10 +687,14 @@ export async function replayFailedReminders(params: {
 }
 
 export async function processQueuedReminders(handler: (params: {
+  reminderType: ScheduledReminderType;
   organizationId: string;
+  candidateId?: string;
+  reminderAt: Date;
   candidateName: string;
   followUpDate: Date;
   scheduledAt: Date;
+  offsetMinutesUsed: number;
   followUpNote?: string | null;
   followUpUserId: string;
   source: string;
@@ -623,6 +744,12 @@ export async function processQueuedReminders(handler: (params: {
     processed += 1;
 
     try {
+      logger.info('Processing queued reminder', {
+        reminderId: String(reminder._id),
+        reminderType: reminder.reminderType,
+        source: reminder.source,
+        recipientUserId: reminder.recipientUserId,
+      });
       const deliveryGuard = await markReminderDelivering(String(reminder._id));
       if (!deliveryGuard.shouldSend) {
         await markReminderSent(String(reminder._id));
@@ -631,10 +758,19 @@ export async function processQueuedReminders(handler: (params: {
       }
 
       await handler({
+        reminderType: reminder.reminderType,
         organizationId: reminder.organizationId,
+        candidateId:
+          typeof reminder.payload === 'object' &&
+          reminder.payload !== null &&
+          'candidateId' in reminder.payload
+            ? String((reminder.payload as { candidateId?: string }).candidateId || '')
+            : '',
+        reminderAt: new Date(reminder.reminderAt),
         candidateName: reminder.title,
         followUpDate: new Date(reminder.reminderAt),
         scheduledAt: new Date(reminder.scheduledAt),
+        offsetMinutesUsed: Number(reminder.offsetMinutesUsed || 0),
         followUpNote:
           typeof reminder.payload === 'object' &&
           reminder.payload !== null &&
@@ -656,8 +792,9 @@ export async function processQueuedReminders(handler: (params: {
         maxAttempts: reminder.maxAttempts || 5,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
-      logger.error('Failed processing queued follow-up reminder', {
+      logger.error('Failed processing queued reminder', {
         reminderId: String(reminder._id),
+        reminderType: reminder.reminderType,
         error,
       });
     }
