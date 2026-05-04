@@ -341,7 +341,6 @@ export async function POST(req: NextRequest) {
       }
 
       const historyFilter = {
-        jobId,
         candidateId: id,
       };
       await History!.updateOne(

@@ -16,7 +16,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { MentionTextarea } from '@/components/ui/mention-textarea';
 import {
   useFetchJobLanesQuery,
-  useFetchOpenJobsQuery,
+  useFetchJobsQuery,
 } from '@/lib/features/job/jobApi';
 
 export type BatchOperations = {
@@ -91,7 +91,7 @@ export function BatchOperationsPanel({
   const showToggles = variant !== 'sections';
   const showSections = variant !== 'toggles';
   const { data: jobs = [], isFetching: isJobsLoading } =
-    useFetchOpenJobsQuery(undefined, {
+    useFetchJobsQuery(undefined, {
       skip: !value.assignJob,
     });
 
@@ -213,7 +213,7 @@ export function BatchOperationsPanel({
                   ))
                 ) : (
                   <div className="px-3 py-2 text-sm text-muted-foreground">
-                    No open jobs available
+                    No jobs available
                   </div>
                 )}
               </SelectContent>

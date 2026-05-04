@@ -21,6 +21,14 @@ import logger from '@/lib/logger';
 import { getFilterPrivateCFSingle } from '@/lib/filterPrivateCF';
 import { filterSensitiveRedFlagsForInterviewer } from '@/lib/filterSensitiveRedFlags';
 import { getDuplicateCountForCandidate } from '@/lib/utils/candidateUtils';
+import {
+  sendImmediateAssignmentReminder,
+  sendImmediateFollowUpReminder,
+} from '@/lib/followups/immediateReminder';
+import {
+  cancelPendingAssignmentRemindersForCandidate,
+  cancelPendingFollowUpRemindersForCandidate,
+} from '@/lib/followups/reminderQueue';
 import { Attachment } from '../route';
 
 // /*  max-lines-per-function max-lines-per-file 300 */
@@ -358,7 +366,7 @@ export async function PUT(
     };
 
     let assignmentCompletedFollowUp = null;
-    const assignmentWasCleared = 'assignment' in data && data.assignment === null;
+    // const assignmentWasCleared = 'assignment' in data && data.assignment === null;
 
     if ('assignment' in data) {
       if (data.assignment === null) {
@@ -584,36 +592,58 @@ export async function PUT(
         const dateChanged = oldDate !== newDate;
 
         if (!hadOldContent && hasNewContent) {
+          console.log('[followup-reminder] candidate PUT: added follow-up detected');
+          const candidateId = existingCandidate._id?.toString() || '';
+          const followUpJobId =
+            jobInfo?._id?.toString() || existingCandidate.jobId?.toString() || '';
           await NotificationService.notifyFollowUpAdded({
             organizationId,
-            candidateId: existingCandidate._id?.toString() || '',
+            candidateId,
             candidateName: existingCandidate.name,
-            jobId:
-              jobInfo?._id?.toString() ||
-              existingCandidate.jobId?.toString() ||
-              '',
+            jobId: followUpJobId,
             jobTitle: jobInfo?.title || 'Unknown Job',
             followupNote: newNote || '',
             followupDate: newDate ? new Date(newDate) : undefined,
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
           });
+          await sendImmediateFollowUpReminder({
+            organizationId,
+            candidateName: existingCandidate.name,
+            candidateId,
+            jobId: followUpJobId,
+            followUpDate: newDate,
+            followUpNote: newNote,
+            followUpUserId: String(newFollowUp?.userId._id || ''),
+            source: 'candidate-put-followup-added',
+          });
         } else if (
           hadOldContent &&
           hasNewContent &&
           (noteChanged || dateChanged)
         ) {
+          console.log('[followup-reminder] candidate PUT: updated follow-up detected');
+          const candidateId = existingCandidate._id?.toString() || '';
+          const followUpJobId =
+            jobInfo?._id?.toString() || existingCandidate.jobId?.toString() || '';
           await NotificationService.notifyFollowupUpdated({
             organizationId,
-            candidateId: existingCandidate._id?.toString() || '',
+            candidateId,
             candidateName: existingCandidate.name,
-            jobId:
-              jobInfo?._id?.toString() ||
-              existingCandidate.jobId?.toString() ||
-              '',
+            jobId: followUpJobId,
             jobTitle: jobInfo?.title || 'Unknown Job',
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
+          });
+          await sendImmediateFollowUpReminder({
+            organizationId,
+            candidateName: existingCandidate.name,
+            candidateId,
+            jobId: followUpJobId,
+            followUpDate: newDate,
+            followUpNote: newNote,
+            followUpUserId: String(newFollowUp?.userId._id || ''),
+            source: 'candidate-put-followup-updated',
           });
         } else if (hadOldContent && !hasNewContent) {
           await NotificationService.notifyFollowupRemoved({
@@ -628,6 +658,15 @@ export async function PUT(
             triggerUserId: userData?.id || '',
             triggerUserName: userData?.name || '',
           });
+
+          const removedCandidateId =
+            existingCandidate._id?.toString() || '';
+          if (removedCandidateId) {
+            await cancelPendingFollowUpRemindersForCandidate({
+              organizationId,
+              candidateId: removedCandidateId,
+            });
+          }
         }
       } catch (notificationError) {
         logger.error(
@@ -870,7 +909,6 @@ export async function PUT(
         await History?.findOneAndUpdate(
           {
             candidateId: updatedCandidate._id,
-            jobId: String(updatedCandidate.jobId?._id),
           },
           {
             $push: {
@@ -970,6 +1008,12 @@ export async function PUT(
                 );
                 const newInterviewerId = extractId(
                   newAssignment?.interviewerId as
+                    | string
+                    | { _id: string }
+                    | null,
+                );
+                const persistedAssignmentInterviewerId = extractId(
+                  updatedCandidate.assignment?.interviewerId as
                     | string
                     | { _id: string }
                     | null,
@@ -1087,6 +1131,27 @@ export async function PUT(
                     });
                   }
                 }
+
+                if (newAssignment?.time && persistedAssignmentInterviewerId) {
+                  await sendImmediateAssignmentReminder({
+                    organizationId,
+                    candidateName: updatedCandidate.name,
+                    candidateId: updatedCandidate._id?.toString() || '',
+                    jobId:
+                      jobInfo?._id?.toString() ||
+                      updatedCandidate.jobId?.toString() ||
+                      '',
+                    assignmentTime: newAssignment.time,
+                    assignmentNote: 'Interview assignment reminder',
+                    assignmentUserId: String(persistedAssignmentInterviewerId),
+                    source: 'candidate-put-assignment-upsert',
+                  });
+                } else {
+                  await cancelPendingAssignmentRemindersForCandidate({
+                    organizationId,
+                    candidateId: updatedCandidate._id?.toString() || '',
+                  });
+                }
               }
             }
           } else {
@@ -1112,6 +1177,10 @@ export async function PUT(
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
               });
+              await cancelPendingAssignmentRemindersForCandidate({
+                organizationId,
+                candidateId: updatedCandidate._id?.toString() || '',
+              });
             } else if (newAssignment === null && interviewer) {
               await NotificationService.notifyInterviewCompleted({
                 organizationId,
@@ -1126,6 +1195,10 @@ export async function PUT(
                 interviewerId: interviewer?._id?.toString() || '',
                 triggerUserId: userData?.id?.toString() || '',
                 triggerUserName: userData?.name || '',
+              });
+              await cancelPendingAssignmentRemindersForCandidate({
+                organizationId,
+                candidateId: updatedCandidate._id?.toString() || '',
               });
             }
           }
@@ -1169,7 +1242,7 @@ export async function PUT(
 
       const candidateForBroadcast = {
         ...updatedCandidate,
-        ...(assignmentWasCleared ? { assignment: null } : {}),
+        // ...(assignmentWasCleared ? { assignment: null } : {}),
         history: candidateHistoryPopulated?.history,
         duplicateCount,
       };
@@ -1304,8 +1377,7 @@ export async function GET(
       }
     }
 
-    // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
-    // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+    // History: one document per candidate (keyed by candidateId only)
     const populateFields = [
       { path: 'history.currentInterviewer', select: '_id name email' },
       { path: 'history.previousInterviewer', select: '_id name email' },
@@ -1413,7 +1485,7 @@ export async function DELETE(
     // Execute history update and candidate update in parallel
     const [updatedHistory, deletedCandidate] = await Promise.all([
       History.findOneAndUpdate(
-        { candidateId: candidate._id, jobId: String(candidate.jobId) },
+        { candidateId: candidate._id.toString() },
         {
           $push: { history: historyEntry },
         },

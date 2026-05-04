@@ -109,10 +109,10 @@ export function ChecklistResponseViewer({
             const files =
               fieldType === 'file'
                 ? toCustomFieldFiles(
-                    (responseData as {
-                      files?: Array<{ name: string; size: number; base64: string; url?: string }>;
-                    })?.files,
-                  )
+                  (responseData as {
+                    files?: Array<{ name: string; size: number; base64: string; url?: string }>;
+                  })?.files,
+                )
                 : undefined;
 
             return (
@@ -141,7 +141,7 @@ export function ChecklistResponseViewer({
           )}
           {responsesArray.length > 0 && visibleResponsesWithValue.length === 0 && (
             <div className="py-2 text-center text-sm text-gray-500 dark:text-gray-400">
-              No responses visible for your role
+              No responses esponses recorded
             </div>
           )}
         </div>

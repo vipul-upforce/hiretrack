@@ -7,7 +7,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
 import {
   BookOpen,
   ExternalLink,
@@ -56,11 +55,6 @@ export function SetupInstructions({ isConnected = false }: SetupInstructionsProp
                 Zoom scheduling with Server-to-Server OAuth
               </p>
             </div>
-            {isConnected && (
-              <Badge variant="secondary" className="ml-2 shrink-0">
-                Connected
-              </Badge>
-            )}
           </div>
         </AccordionTrigger>
         <AccordionContent className="pb-5 pt-0">

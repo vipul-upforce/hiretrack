@@ -17,60 +17,46 @@ import { ICandidateHistory } from '@/lib/models/history';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-interface HistoryEntryWithJobId extends ICandidateHistory {
-  _jobIdForConfig?: string | null;
-}
-
-/** Valid MongoDB ObjectId is 24 hex characters */
-const OBJECT_ID_HEX_REGEX = /^[a-fA-F0-9]{24}$/;
-
 /**
- * Normalize jobId to a 24-char hex string for JobLaneConfig queries.
- * Handles: ObjectId, populated job object, plain string, or malformed data.
+ * Get lane config by laneId from history entries.
+ * Fetches JobLaneConfig docs that contain any of the given laneIds and builds
+ * a map laneId -> { config, laneConfig } for checklist visibility filtering.
  */
-function normalizeJobId(value: unknown): string | null {
-  if (value == null) return null;
-  if (typeof value === 'string') {
-    if (OBJECT_ID_HEX_REGEX.test(value)) return value;
-    if (value.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(value) as {
-          _id?: string | { toString?: () => string };
-        };
-        const id = parsed._id;
-        if (typeof id === 'string' && OBJECT_ID_HEX_REGEX.test(id)) return id;
-        if (
-          id != null &&
-          typeof (id as { toString?: () => string }).toString === 'function'
-        )
-          return (id as { toString: () => string }).toString();
-      } catch {
-        // ignore parse error
+async function getLaneConfigMapByLaneIds(
+  laneIds: string[],
+  JobLaneConfigModel: {
+    find: (q: object) => {
+      lean: () => { exec: () => Promise<{ laneConfigs?: ILaneConfig[] }[]> };
+    };
+  } | null,
+): Promise<
+  Map<
+    string,
+    { config: { laneConfigs: ILaneConfig[] }; laneConfig: ILaneConfig }
+  >
+> {
+  const laneConfigsMap = new Map<
+    string,
+    { config: { laneConfigs: ILaneConfig[] }; laneConfig: ILaneConfig }
+  >();
+  if (laneIds.length === 0 || !JobLaneConfigModel) return laneConfigsMap;
+  const configs = await JobLaneConfigModel.find({
+    'laneConfigs.laneId': { $in: laneIds },
+  })
+    .lean()
+    .exec();
+  configs.forEach((config) => {
+    const laneConfigs = config.laneConfigs ?? [];
+    laneConfigs.forEach((lc: ILaneConfig) => {
+      if (lc.laneId) {
+        laneConfigsMap.set(lc.laneId, {
+          config: config as { laneConfigs: ILaneConfig[] },
+          laneConfig: lc,
+        });
       }
-    }
-    // Fallback: extract first 24-char hex from malformed string (e.g. stringified object with ObjectId('...'))
-    const hexMatch = value.match(/[a-fA-F0-9]{24}/);
-    if (hexMatch) return hexMatch[0];
-    return null;
-  }
-  if (typeof value === 'object' && value !== null) {
-    const obj = value as { _id?: unknown; toString?: () => string };
-    if (obj._id != null) {
-      const id = obj._id;
-      if (typeof id === 'string' && OBJECT_ID_HEX_REGEX.test(id)) return id;
-      if (
-        typeof id === 'object' &&
-        id !== null &&
-        typeof (id as { toString?: () => string }).toString === 'function'
-      )
-        return (id as { toString: () => string }).toString();
-    }
-    if (typeof obj.toString === 'function') {
-      const s = obj.toString();
-      if (OBJECT_ID_HEX_REGEX.test(s)) return s;
-    }
-  }
-  return null;
+    });
+  });
+  return laneConfigsMap;
 }
 
 export async function GET(
@@ -122,8 +108,7 @@ export async function GET(
       { path: 'history.note.userId', select: '_id name email' },
     ];
 
-    // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
-    // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+    // History: one document per candidate (keyed by candidateId only)
     const historyDocuments = await History.find({
       candidateId,
     })
@@ -132,47 +117,29 @@ export async function GET(
       .exec();
 
     if (!historyDocuments || historyDocuments.length === 0) {
-      return NextResponse.json({ history: [] });
+      return NextResponse.json({ history: [], candidateId, jobIds: [] });
     }
 
-    // Collect all unique jobIds (normalized to 24-char hex) to fetch lane configs
-    const jobIds = new Set<string>();
-    historyDocuments.forEach((doc) => {
-      const normalizedJobId = normalizeJobId(doc.jobId);
-      if (normalizedJobId) jobIds.add(normalizedJobId);
-    });
-
-    // Fetch all relevant lane configs in parallel
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const laneConfigsMap = new Map<string, any>();
-    if (jobIds.size > 0 && JobLaneConfig) {
-      const jobIdsArray = Array.from(jobIds);
-      const laneConfigs = await JobLaneConfig.find({
-        jobId: { $in: jobIdsArray },
-      })
-        .lean()
-        .exec();
-      laneConfigs.forEach((config) => {
-        const configJobId =
-          normalizeJobId(config.jobId) ??
-          (typeof config.jobId === 'string' ? config.jobId : null);
-        if (configJobId) laneConfigsMap.set(configJobId, config);
-      });
-    }
-
-    // Merge all history entries from all documents
-    const allHistoryEntries: HistoryEntryWithJobId[] = [];
+    // Flatten history from single doc (or multiple if migration leftover)
+    const allHistoryEntries: ICandidateHistory[] = [];
     historyDocuments.forEach((historyDoc) => {
-      const normalizedJobId = normalizeJobId(historyDoc.jobId);
       if (historyDoc.history && Array.isArray(historyDoc.history)) {
-        historyDoc.history.forEach((entry) => {
-          allHistoryEntries.push({
-            ...entry,
-            _jobIdForConfig: normalizedJobId ?? null,
-          });
-        });
+        allHistoryEntries.push(...historyDoc.history);
       }
     });
+
+    // Collect unique laneIds from entries that have checklistForm for lane config lookup
+    const laneIds = [
+      ...new Set(
+        allHistoryEntries
+          .map((e) => e.checklistForm?.laneId)
+          .filter((laneId): laneId is string => Boolean(laneId)),
+      ),
+    ];
+    const laneConfigsByLaneId = await getLaneConfigMapByLaneIds(
+      laneIds,
+      JobLaneConfig ?? null,
+    );
 
     // Sort all entries by dateTime (newest first)
     allHistoryEntries.sort(
@@ -195,8 +162,7 @@ export async function GET(
         return true;
       })
       .map((entry): ICandidateHistory => {
-        const { _jobIdForConfig, ...entryWithoutJobId } = entry;
-        const modifiedEntry: ICandidateHistory = entryWithoutJobId;
+        const modifiedEntry = { ...entry };
 
         if (role !== 'admin' && role !== 'hr') {
           if (modifiedEntry.note && modifiedEntry.note.isPrivate) {
@@ -207,34 +173,25 @@ export async function GET(
           }
         }
 
-        // If this entry has checklist data, filter the responses based on user role
-        if (modifiedEntry.checklistForm && userData?.role && _jobIdForConfig) {
-          const laneConfig = laneConfigsMap.get(_jobIdForConfig);
-          if (laneConfig) {
-            // Find the checklist configuration to get field visibility settings
+        // If this entry has checklist data, filter the responses based on user role using laneId
+        const laneId = modifiedEntry.checklistForm?.laneId;
+        if (modifiedEntry.checklistForm && userData?.role && laneId) {
+          const laneConfigEntry = laneConfigsByLaneId.get(laneId);
+          if (laneConfigEntry) {
+            const { laneConfig } = laneConfigEntry;
             let checklistFields: IChecklistField[] = [];
-            const targetLane = laneConfig.laneConfigs.find(
-              (lc: ILaneConfig) =>
-                lc.laneId === modifiedEntry.checklistForm?.laneId,
-            );
-            if (targetLane) {
-              const checklist =
-                modifiedEntry.checklistForm.checklistType === 'incoming'
-                  ? targetLane.incomingChecklist
-                  : targetLane.outgoingChecklist;
-
-              if (checklist && checklist.fields) {
-                checklistFields = checklist.fields;
-              }
+            const checklist =
+              modifiedEntry.checklistForm.checklistType === 'incoming'
+                ? laneConfig.incomingChecklist
+                : laneConfig.outgoingChecklist;
+            if (checklist?.fields) {
+              checklistFields = checklist.fields;
             }
-
-            // Filter the responses based on user role and field visibility
             const filteredResponses = filterChecklistResponses(
               modifiedEntry.checklistForm.responses,
               checklistFields,
               userData?.role as UserRole,
             );
-
             return {
               ...modifiedEntry,
               checklistForm: {
@@ -248,13 +205,10 @@ export async function GET(
         return modifiedEntry;
       });
 
-    // Return all unique jobIds (for debugging/info)
-    const allJobIds = Array.from(jobIds);
-
     return NextResponse.json({
       history: filteredHistory,
       candidateId,
-      jobIds: allJobIds, // Return all jobIds instead of just one
+      jobIds: [],
     });
   } catch (error) {
     logger.error({ error }, 'Error fetching candidate history');

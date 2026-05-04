@@ -21,6 +21,160 @@ import {
 } from '@/lib/microsoft-teams/teamsAuth';
 import { createOAuth2Client } from '@/lib/google-calendar/config';
 
+/** Normalize email for comparison (lowercase, trimmed). */
+function normalizeEmail(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+/**
+ * Resolve the meeting initiator (organizer/sender). Invite update/cancel is sent as this Azure user,
+ * not necessarily the calendar connectedEmail or the logged-in dashboard user.
+ */
+function resolveInitiator(params: {
+  bodyInitiatorEmail?: string;
+  bodyInitiatorName?: string;
+  authenticatedEmail: string;
+  interviewerEmail?: string;
+  interviewerName?: string;
+}): { initiatorEmail: string; initiatorName: string } {
+  const email =
+    normalizeEmail(params.bodyInitiatorEmail) ||
+    normalizeEmail(params.authenticatedEmail) ||
+    normalizeEmail(params.interviewerEmail) ||
+    '';
+  const name =
+    (typeof params.bodyInitiatorName === 'string' &&
+      params.bodyInitiatorName.trim()) ||
+    (typeof params.interviewerName === 'string' &&
+      params.interviewerName.trim()) ||
+    email;
+  return { initiatorEmail: email, initiatorName: name };
+}
+
+type GraphUserLookupResult = {
+  id: string;
+  userPrincipalName?: string;
+  mail?: string;
+};
+
+async function tryResolveGraphUser(
+  accessToken: string,
+  initiatorEmail: string,
+): Promise<{
+  graphUserPath: string;
+  resolvedBy: 'upn' | 'mailFilter';
+} | null> {
+  const encoded = encodeURIComponent(initiatorEmail);
+
+  const directResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/users/${encoded}?$select=id,userPrincipalName,mail`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (directResponse.ok) {
+    const user = (await directResponse.json()) as GraphUserLookupResult;
+    logger.info(
+      { initiatorEmail, userId: user.id, resolvedBy: 'upn' },
+      'Resolved initiator via direct UPN lookup',
+    );
+    return { graphUserPath: `users/${user.id}`, resolvedBy: 'upn' };
+  }
+
+  const directError = await directResponse.text();
+  logger.warn(
+    { initiatorEmail, status: directResponse.status, error: directError },
+    'Direct UPN lookup failed, trying mail filter',
+  );
+
+  if (directResponse.status === 401 || directResponse.status === 403) {
+    return null;
+  }
+
+  const filterResponse = await fetch(
+    `https://graph.microsoft.com/v1.0/users?$filter=mail eq '${initiatorEmail.replace(/'/g, "''")}'&$select=id,userPrincipalName,mail&$top=1`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (filterResponse.ok) {
+    const data = (await filterResponse.json()) as { value?: GraphUserLookupResult[] };
+    const user = data.value?.[0];
+    if (user?.id) {
+      logger.info(
+        { initiatorEmail, userId: user.id, resolvedBy: 'mailFilter' },
+        'Resolved initiator via mail filter',
+      );
+      return { graphUserPath: `users/${user.id}`, resolvedBy: 'mailFilter' };
+    }
+    logger.warn(
+      { initiatorEmail, resultCount: data.value?.length ?? 0 },
+      'Mail filter returned OK but no matching user found',
+    );
+  } else {
+    const filterError = await filterResponse.text();
+    logger.warn(
+      { initiatorEmail, status: filterResponse.status, error: filterError },
+      'Mail filter lookup also failed',
+    );
+    if (filterResponse.status === 401 || filterResponse.status === 403) {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Resolve the Graph user path for initiatorEmail, retrying once with a
+ * force-refreshed app token when the cached token gets 401/403.
+ */
+async function resolveGraphUserPathForEmail(params: {
+  accessToken: string;
+  initiatorEmail: string;
+  organizationId: string;
+  teamsConfig: {
+    tenantId?: string;
+    clientId?: string;
+    clientSecret?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    expiryDate?: number | null;
+  };
+}): Promise<{
+  graphUserPath: string;
+  resolvedBy: 'upn' | 'mailFilter';
+  accessToken: string;
+}> {
+  const { initiatorEmail, organizationId, teamsConfig } = params;
+
+  const first = await tryResolveGraphUser(params.accessToken, initiatorEmail);
+  if (first) {
+    return { ...first, accessToken: params.accessToken };
+  }
+
+  logger.info(
+    { initiatorEmail },
+    'User lookup failed; force-refreshing app token and retrying',
+  );
+  const freshToken = await getTeamsAccessToken({
+    organizationId,
+    teamsConfig,
+    forceRefresh: true,
+  });
+
+  const second = await tryResolveGraphUser(freshToken.accessToken, initiatorEmail);
+  if (second) {
+    return { ...second, accessToken: freshToken.accessToken };
+  }
+
+  throw new Error(
+    `User not found in Microsoft Graph for initiatorEmail=${initiatorEmail}. ` +
+      'Verified with a fresh token. Check: (1) the email matches a UPN or primary mail in Entra ID → Users, ' +
+      '(2) User.Read.All (Application) is granted with admin consent, ' +
+      '(3) wait a few minutes after granting for propagation.',
+  );
+}
+
 interface UpdateMeetRequest {
   candidateId?: string;
   meetingId: string;
@@ -30,6 +184,10 @@ interface UpdateMeetRequest {
   guests?: string[];
   meetingNotes?: string;
   meetingAttachments?: MeetingAttachment[];
+  initiatorEmail?: string;
+  initiatorName?: string;
+  interviewerEmail?: string;
+  interviewerName?: string;
 }
 
 export async function PUT(req: NextRequest) {
@@ -54,11 +212,33 @@ export async function PUT(req: NextRequest) {
       guests,
       meetingNotes = '',
       meetingAttachments = [],
+      initiatorEmail: bodyInitiatorEmail,
+      initiatorName: bodyInitiatorName,
+      interviewerEmail,
+      interviewerName: bodyInterviewerName,
     } = body as UpdateMeetRequest;
+
+    const { initiatorEmail } = resolveInitiator({
+      bodyInitiatorEmail,
+      bodyInitiatorName,
+      authenticatedEmail: userData.email || '',
+      interviewerEmail,
+      interviewerName: bodyInterviewerName,
+    });
 
     if (!meetingId) {
       return NextResponse.json(
         { error: 'Meeting ID is required' },
+        { status: 400 },
+      );
+    }
+
+    if (!initiatorEmail) {
+      return NextResponse.json(
+        {
+          error:
+            'Initiator email is required for Teams meeting updates. Provide initiatorEmail or ensure the authenticated user/interviewer has an email.',
+        },
         { status: 400 },
       );
     }
@@ -132,15 +312,21 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Determine which token to use based on available credentials
+    // Determine which token to use based on initiator + connected account (same as schedule flow)
+    const connectedEmail = normalizeEmail(
+      settings.microsoftTeams.connectedEmail,
+    );
+    const hasDelegated =
+      !!settings.microsoftTeams.refreshToken &&
+      settings.microsoftTeams.isConnected;
+    const initiatorIsConnected =
+      hasDelegated && connectedEmail && connectedEmail === initiatorEmail;
+
     let accessToken: string;
     let useDelegatedPermissions = false;
+    let graphUserPath: string | null = null;
 
-    if (
-      settings.microsoftTeams.refreshToken &&
-      settings.microsoftTeams.isConnected
-    ) {
-      // Use delegated permissions - works with /me/onlineMeetings
+    if (initiatorIsConnected) {
       try {
         const calendarToken = await getMicrosoftCalendarAccessToken({
           organizationId,
@@ -159,14 +345,29 @@ export async function PUT(req: NextRequest) {
           teamsConfig: settings.microsoftTeams,
         });
         accessToken = appToken.accessToken;
+        const resolved = await resolveGraphUserPathForEmail({
+          accessToken,
+          initiatorEmail,
+          organizationId,
+          teamsConfig: settings.microsoftTeams,
+        });
+        graphUserPath = resolved.graphUserPath;
+        accessToken = resolved.accessToken;
       }
     } else {
-      // Use application permissions
       const appToken = await getTeamsAccessToken({
         organizationId,
         teamsConfig: settings.microsoftTeams,
       });
       accessToken = appToken.accessToken;
+      const resolved = await resolveGraphUserPathForEmail({
+        accessToken,
+        initiatorEmail,
+        organizationId,
+        teamsConfig: settings.microsoftTeams,
+      });
+      graphUserPath = resolved.graphUserPath;
+      accessToken = resolved.accessToken;
     }
 
     // Timezone mapping
@@ -282,26 +483,9 @@ export async function PUT(req: NextRequest) {
       // Determine the correct API endpoint based on permission type
       let teamsApiUrl: string | null = null;
       if (useDelegatedPermissions) {
-        // Delegated permissions: use /me/onlineMeetings
         teamsApiUrl = `https://graph.microsoft.com/v1.0/me/onlineMeetings/${meetingId}`;
-      } else {
-        // Application permissions: require userPrincipalName (email)
-        const userPrincipalName =
-          settings.microsoftTeams.connectedEmail || null;
-
-        if (!userPrincipalName) {
-          logger.error(
-            {
-              meetingId,
-              useDelegatedPermissions,
-              hasConnectedEmail: !!settings.microsoftTeams.connectedEmail,
-            },
-            'User email is required for updating Teams meetings with application permissions',
-          );
-          // Continue without updating Teams meeting
-        } else {
-          teamsApiUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(userPrincipalName)}/onlineMeetings/${meetingId}`;
-        }
+      } else if (graphUserPath) {
+        teamsApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/onlineMeetings/${meetingId}`;
       }
 
       if (teamsApiUrl) {
@@ -481,16 +665,9 @@ export async function PUT(req: NextRequest) {
       // Determine the correct API endpoint based on permission type (same logic as update)
       let teamsApiUrl: string | null = null;
       if (useDelegatedPermissions) {
-        // Delegated permissions: use /me/onlineMeetings
         teamsApiUrl = `https://graph.microsoft.com/v1.0/me/onlineMeetings/${meetingId}`;
-      } else {
-        // Application permissions: require userPrincipalName (email)
-        const userPrincipalName =
-          settings.microsoftTeams.connectedEmail || null;
-
-        if (userPrincipalName) {
-          teamsApiUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(userPrincipalName)}/onlineMeetings/${meetingId}`;
-        }
+      } else if (graphUserPath) {
+        teamsApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/onlineMeetings/${meetingId}`;
       }
 
       if (teamsApiUrl) {
@@ -528,17 +705,8 @@ export async function PUT(req: NextRequest) {
     }
 
     // Update Outlook Calendar event if applicable
-    if (
-      eventId &&
-      settings?.microsoftTeams?.isConnected &&
-      settings?.microsoftTeams?.refreshToken
-    ) {
+    if (eventId && (useDelegatedPermissions || graphUserPath)) {
       try {
-        const calendarAccessToken = await getMicrosoftCalendarAccessToken({
-          organizationId,
-          teamsConfig: settings.microsoftTeams,
-        });
-
         const updatePayload: {
           subject?: string;
           body?: { contentType: string; content: string };
@@ -627,17 +795,27 @@ export async function PUT(req: NextRequest) {
           }));
         }
 
-        const updateResponse = await fetch(
-          `https://graph.microsoft.com/v1.0/me/events/${eventId}`,
-          {
-            method: 'PATCH',
-            headers: {
-              Authorization: `Bearer ${calendarAccessToken.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatePayload),
+        let calendarToken = accessToken;
+        let calendarApiUrl: string;
+        if (useDelegatedPermissions) {
+          const calendarAccessToken = await getMicrosoftCalendarAccessToken({
+            organizationId,
+            teamsConfig: settings.microsoftTeams,
+          });
+          calendarToken = calendarAccessToken.accessToken;
+          calendarApiUrl = `https://graph.microsoft.com/v1.0/me/events/${eventId}`;
+        } else {
+          calendarApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/events/${eventId}`;
+        }
+
+        const updateResponse = await fetch(calendarApiUrl, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${calendarToken}`,
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify(updatePayload),
+        });
 
         if (updateResponse.ok) {
           const eventData = await updateResponse.json();
@@ -802,10 +980,10 @@ export async function PUT(req: NextRequest) {
             | undefined;
           if (assignmentInterviewer?._id) {
             interviewerId = String(assignmentInterviewer._id);
-          } else if (settings.microsoftTeams?.connectedEmail) {
+          } else if (initiatorEmail) {
             const userByEmail = await User.findOne({
               organizationId,
-              email: settings.microsoftTeams.connectedEmail,
+              email: initiatorEmail,
             })
               .select('_id')
               .lean()
@@ -818,11 +996,15 @@ export async function PUT(req: NextRequest) {
           const interviewerNameResolved =
             assignmentInterviewer?.name || 'Interviewer';
           const jobId =
-            candidate.jobId && typeof candidate.jobId !== 'string' && '_id' in candidate.jobId
+            candidate.jobId &&
+            typeof candidate.jobId !== 'string' &&
+            '_id' in candidate.jobId
               ? candidate.jobId._id.toString()
               : candidate.jobId?.toString() || '';
           const jobTitleResolved =
-            candidate.jobId && typeof candidate.jobId !== 'string' && 'title' in candidate.jobId
+            candidate.jobId &&
+            typeof candidate.jobId !== 'string' &&
+            'title' in candidate.jobId
               ? candidate.jobId.title
               : 'Unknown Job';
 
@@ -898,10 +1080,31 @@ export async function DELETE(req: NextRequest) {
     const candidateId = searchParams.get('candidateId');
     const eventId = searchParams.get('eventId');
     const cancelNotes = searchParams.get('cancelNotes') || '';
+    const bodyInitiatorEmail = searchParams.get('initiatorEmail') || '';
+    const bodyInitiatorName = searchParams.get('initiatorName') || '';
+    const interviewerEmail = searchParams.get('interviewerEmail') || '';
+    const interviewerName = searchParams.get('interviewerName') || '';
+
+    const { initiatorEmail } = resolveInitiator({
+      bodyInitiatorEmail,
+      bodyInitiatorName,
+      authenticatedEmail: userData.email || '',
+      interviewerEmail,
+      interviewerName,
+    });
 
     if (!meetingId) {
       return NextResponse.json(
         { error: 'Meeting ID is required' },
+        { status: 400 },
+      );
+    }
+    if (!initiatorEmail) {
+      return NextResponse.json(
+        {
+          error:
+            'Initiator email is required for Teams meeting cancellation. Provide initiatorEmail or ensure the authenticated user/interviewer has an email.',
+        },
         { status: 400 },
       );
     }
@@ -928,15 +1131,21 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Determine which token to use based on available credentials
+    // Determine which token to use based on initiator + connected account (same as schedule flow)
+    const connectedEmail = normalizeEmail(
+      settings.microsoftTeams.connectedEmail,
+    );
+    const hasDelegated =
+      !!settings.microsoftTeams.refreshToken &&
+      settings.microsoftTeams.isConnected;
+    const initiatorIsConnected =
+      hasDelegated && connectedEmail && connectedEmail === initiatorEmail;
+
     let accessToken: string;
     let useDelegatedPermissions = false;
+    let graphUserPath: string | null = null;
 
-    if (
-      settings.microsoftTeams.refreshToken &&
-      settings.microsoftTeams.isConnected
-    ) {
-      // Use delegated permissions - works with /me/onlineMeetings
+    if (initiatorIsConnected) {
       try {
         const calendarToken = await getMicrosoftCalendarAccessToken({
           organizationId,
@@ -955,14 +1164,29 @@ export async function DELETE(req: NextRequest) {
           teamsConfig: settings.microsoftTeams,
         });
         accessToken = appToken.accessToken;
+        const resolved = await resolveGraphUserPathForEmail({
+          accessToken,
+          initiatorEmail,
+          organizationId,
+          teamsConfig: settings.microsoftTeams,
+        });
+        graphUserPath = resolved.graphUserPath;
+        accessToken = resolved.accessToken;
       }
     } else {
-      // Use application permissions
       const appToken = await getTeamsAccessToken({
         organizationId,
         teamsConfig: settings.microsoftTeams,
       });
       accessToken = appToken.accessToken;
+      const resolved = await resolveGraphUserPathForEmail({
+        accessToken,
+        initiatorEmail,
+        organizationId,
+        teamsConfig: settings.microsoftTeams,
+      });
+      graphUserPath = resolved.graphUserPath;
+      accessToken = resolved.accessToken;
     }
 
     // Helper function to detect if eventId is an Outlook Calendar eventId
@@ -998,36 +1222,39 @@ export async function DELETE(req: NextRequest) {
     if (
       eventId &&
       isOutlookEventId(eventId) &&
-      settings?.microsoftTeams?.isConnected &&
-      settings?.microsoftTeams?.refreshToken
+      (useDelegatedPermissions || graphUserPath)
     ) {
       try {
-        const calendarAccessToken = await getMicrosoftCalendarAccessToken({
-          organizationId,
-          teamsConfig: settings.microsoftTeams,
-        });
+        let calendarToken = accessToken;
+        let calendarApiUrl: string;
+        if (useDelegatedPermissions) {
+          const calendarAccessToken = await getMicrosoftCalendarAccessToken({
+            organizationId,
+            teamsConfig: settings.microsoftTeams,
+          });
+          calendarToken = calendarAccessToken.accessToken;
+          calendarApiUrl = `https://graph.microsoft.com/v1.0/me/events/${eventId}`;
+        } else {
+          calendarApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/events/${eventId}`;
+        }
 
         // Try to cancel the event by updating its status or deleting it
-        const cancelResponse = await fetch(
-          `https://graph.microsoft.com/v1.0/me/events/${eventId}`,
-          {
-            method: cancelNotes.trim() ? 'PATCH' : 'DELETE',
-            headers: {
-              Authorization: `Bearer ${calendarAccessToken.accessToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: cancelNotes.trim()
-              ? JSON.stringify({
-                  subject: cancelSubject,
-                  isCancelled: true,
-                  body: {
-                    contentType: 'HTML',
-                    content: `<p>--- MEETING CANCELLED ---</p><p>Reason: ${cancelNotes}</p><p>Cancelled on: ${new Date().toISOString()}</p>`,
-                  },
-                })
-              : undefined,
+        const cancelResponse = await fetch(calendarApiUrl, {
+          method: cancelNotes.trim() ? 'PATCH' : 'DELETE',
+          headers: {
+            Authorization: `Bearer ${calendarToken}`,
+            'Content-Type': 'application/json',
           },
-        );
+          body: cancelNotes.trim()
+            ? JSON.stringify({
+                subject: cancelSubject,
+                body: {
+                  contentType: 'HTML',
+                  content: `<p>--- MEETING CANCELLED ---</p><p>Reason: ${cancelNotes}</p><p>Cancelled on: ${new Date().toISOString()}</p>`,
+                },
+              })
+            : undefined,
+        });
 
         if (!cancelResponse.ok && cancelResponse.status !== 404) {
           const errorText = await cancelResponse.text();
@@ -1169,21 +1396,11 @@ export async function DELETE(req: NextRequest) {
     // However, we'll attempt to delete it if possible
     let teamsApiUrl: string;
     if (useDelegatedPermissions) {
-      // Delegated permissions: use /me/onlineMeetings
       teamsApiUrl = `https://graph.microsoft.com/v1.0/me/onlineMeetings/${meetingId}`;
+    } else if (graphUserPath) {
+      teamsApiUrl = `https://graph.microsoft.com/v1.0/${graphUserPath}/onlineMeetings/${meetingId}`;
     } else {
-      // Application permissions: require userPrincipalName (email)
-      const userPrincipalName = settings.microsoftTeams.connectedEmail || null;
-
-      if (!userPrincipalName) {
-        logger.error(
-          'User email is required for canceling Teams meetings with application permissions',
-        );
-        // Continue without canceling Teams meeting
-        teamsApiUrl = '';
-      } else {
-        teamsApiUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(userPrincipalName)}/onlineMeetings/${meetingId}`;
-      }
+      teamsApiUrl = '';
     }
 
     if (teamsApiUrl) {
@@ -1298,7 +1515,6 @@ export async function DELETE(req: NextRequest) {
             await History.findOneAndUpdate(
               {
                 candidateId: candidate._id,
-                jobId,
               },
               {
                 $push: { history: historyEntry },
@@ -1320,7 +1536,7 @@ export async function DELETE(req: NextRequest) {
             ? candidate.assignment.interviewerId._id.toString()
             : '';
 
-        const interviewerName =
+        const finalInterviewerName =
           candidate.assignment?.interviewerId &&
           typeof candidate.assignment.interviewerId !== 'string' &&
           candidate.assignment.interviewerId.name
@@ -1334,7 +1550,7 @@ export async function DELETE(req: NextRequest) {
           jobId,
           jobTitle,
           interviewerId,
-          interviewerName,
+          interviewerName: finalInterviewerName,
           triggerUserId: userData?.id || '',
           triggerUserName: userData?.name || 'System',
         });

@@ -7,6 +7,7 @@ import type {
   BulkUpdateResult,
 } from '../types';
 import { getJobIdString } from '../utils';
+import { cancelPendingFollowUpRemindersForCandidates } from '@/lib/followups/reminderQueue';
 
 function hasFollowUp(candidate: ICandidate): boolean {
   const note = candidate.followUp?.note;
@@ -90,18 +91,15 @@ export async function runBulkRemoveFollowUp(
       },
     );
 
-    const historyBulk = candidatesToUpdate
-      .filter((c) => getJobIdString(c))
-      .map((c) => ({
-        updateOne: {
-          filter: {
-            candidateId: (c._id as { toString: () => string }).toString(),
-            jobId: getJobIdString(c),
-          },
-          update: { $push: { history: historyEntry } },
-          upsert: true as const,
+    const historyBulk = candidatesToUpdate.map((c) => ({
+      updateOne: {
+        filter: {
+          candidateId: (c._id as { toString: () => string }).toString(),
         },
-      }));
+        update: { $push: { history: historyEntry } },
+        upsert: true as const,
+      },
+    }));
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -116,6 +114,20 @@ export async function runBulkRemoveFollowUp(
       .lean();
 
     toBroadcast.push(...(updatedList as ICandidate[]));
+
+    if (user.organizationId && ids.length > 0) {
+      try {
+        await cancelPendingFollowUpRemindersForCandidates({
+          organizationId: user.organizationId,
+          candidateIds: ids,
+        });
+      } catch (cancelError) {
+        logger.error(
+          { message: String(cancelError), name: 'CancelError' },
+          'Bulk removeFollowUp: failed to cancel pending follow-up reminders',
+        );
+      }
+    }
 
     const removeFollowUpNotificationMeta =
       toBroadcast.length > 0
@@ -144,7 +156,7 @@ export async function runBulkRemoveFollowUp(
       removeFollowUpNotificationMeta,
     };
   } catch (err) {
-    logger.error({ error: err }, 'Bulk removeFollowUp: batch failed');
+    logger.error({ message: String(err), name: 'RemoveFollowUpError' }, 'Bulk removeFollowUp: batch failed');
     return {
       success: false,
       updatedCount: 0,

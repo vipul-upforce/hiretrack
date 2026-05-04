@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { encryptText, decryptText } from '@/lib/encryption';
+import {
+  normalizeTeamsReminderTemplates,
+  toTeamsReminderTemplateStorageMap,
+} from '@/lib/microsoft-teams/reminderTemplates';
+import { syncRemindersPingCrontab } from '@/lib/cron/remindersPingCrontab';
+
+const DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES = 5;
+const MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES = 1440;
+
+function parseFollowUpReminderOffsetMinutes(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES;
+  }
+
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : Number.parseInt(String(value).trim(), 10);
+
+  if (
+    Number.isNaN(numericValue) ||
+    !Number.isFinite(numericValue) ||
+    !Number.isInteger(numericValue) ||
+    numericValue < 0 ||
+    numericValue > MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES
+  ) {
+    throw new Error(
+      `followUpReminderOffsetMinutes must be an integer between 0 and ${MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES}`,
+    );
+  }
+
+  return numericValue;
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,6 +78,10 @@ export async function GET(req: NextRequest) {
       refreshToken: '',
       expiryDate: null,
       connectedEmail: '',
+      isFollowUpReminderEnabled: false,
+      followUpReminderOffsetMinutes: DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES,
+      botUsername: '',
+      botPassword: '',
     };
 
     if (microsoftTeams.clientSecret) {
@@ -65,6 +102,22 @@ export async function GET(req: NextRequest) {
         organizationId,
       );
     }
+    if (microsoftTeams.botPassword) {
+      microsoftTeams.botPassword = decryptText(
+        microsoftTeams.botPassword,
+        organizationId,
+      );
+    }
+    if (
+      typeof microsoftTeams.followUpReminderOffsetMinutes !== 'number' ||
+      Number.isNaN(microsoftTeams.followUpReminderOffsetMinutes)
+    ) {
+      microsoftTeams.followUpReminderOffsetMinutes =
+        DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES;
+    }
+    microsoftTeams.messageTemplates = normalizeTeamsReminderTemplates(
+      microsoftTeams.messageTemplates,
+    );
 
     return NextResponse.json({ microsoftTeams });
   } catch (error) {
@@ -93,9 +146,19 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { tenantId, clientId, clientSecret, connectedEmail } = await req.json();
+    const {
+      tenantId,
+      clientId,
+      clientSecret,
+      connectedEmail,
+      isFollowUpReminderEnabled,
+      followUpReminderOffsetMinutes,
+      botUsername,
+      botPassword,
+      messageTemplates,
+    } = await req.json();
 
-    const updateData: Record<string, string> = {
+    const updateData: Record<string, unknown> = {
       'microsoftTeams.tenantId': tenantId,
       'microsoftTeams.clientId': clientId,
     };
@@ -109,6 +172,36 @@ export async function PUT(req: NextRequest) {
 
     if (connectedEmail) {
       updateData['microsoftTeams.connectedEmail'] = connectedEmail;
+    }
+    if (typeof isFollowUpReminderEnabled === 'boolean') {
+      updateData['microsoftTeams.isFollowUpReminderEnabled'] =
+        isFollowUpReminderEnabled;
+    }
+    try {
+      updateData['microsoftTeams.followUpReminderOffsetMinutes'] =
+        parseFollowUpReminderOffsetMinutes(followUpReminderOffsetMinutes);
+    } catch (validationError) {
+      return NextResponse.json(
+        {
+          error:
+            validationError instanceof Error
+              ? validationError.message
+              : 'Invalid follow-up reminder offset',
+        },
+        { status: 400 },
+      );
+    }
+    if (typeof botUsername === 'string') {
+      updateData['microsoftTeams.botUsername'] = botUsername;
+    }
+    if (typeof botPassword === 'string') {
+      updateData['microsoftTeams.botPassword'] = botPassword
+        ? encryptText(botPassword, organizationId)
+        : '';
+    }
+    if (messageTemplates !== undefined) {
+      updateData['microsoftTeams.messageTemplates'] =
+        toTeamsReminderTemplateStorageMap(messageTemplates);
     }
 
     const updatedSettings = await Settings.findOneAndUpdate(
@@ -131,9 +224,42 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const responseBody: {
+      message: string;
+      crontabRemindersPing?: {
+        synced: boolean;
+        enabled: boolean;
+        warning?: string;
+      };
+    } = {
       message: 'Microsoft Teams credentials updated successfully',
-    });
+    };
+
+    if (typeof isFollowUpReminderEnabled === 'boolean') {
+      const cronResult = await syncRemindersPingCrontab(
+        isFollowUpReminderEnabled,
+      );
+      if (cronResult.ok && cronResult.found) {
+        responseBody.crontabRemindersPing = {
+          synced: true,
+          enabled: isFollowUpReminderEnabled,
+        };
+      } else {
+        const defaultWarning =
+          process.platform === 'win32'
+            ? 'Crontab is not used on Windows.'
+            : cronResult.found
+              ? 'Could not write crontab for reminders ping.'
+              : 'No reminders ping line in crontab (run installer after BASE_URL is set).';
+        responseBody.crontabRemindersPing = {
+          synced: false,
+          enabled: isFollowUpReminderEnabled,
+          warning: cronResult.error ?? defaultWarning,
+        };
+      }
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     return NextResponse.json(
       {

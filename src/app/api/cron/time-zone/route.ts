@@ -4,11 +4,20 @@ import util from 'util';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
+import moment from 'moment-timezone';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logsRateLimiter } from '@/lib/rateLimiter';
 import { logger } from '@/lib/logger/logger.server';
 
 const execFileAsync = util.promisify(execFile);
+
+const HIRETRACK_DIR = path.join(os.homedir(), '.hiretrack');
+const HIRETRACK_CONFIG_PATH = path.join(HIRETRACK_DIR, 'config.json');
+const SCRIPT_PATH = path.join(HIRETRACK_DIR, 'installer.sh');
+const SNAPSHOT_SCRIPT = path.join(HIRETRACK_DIR, 'take-snapshot.js');
+const LOG_DIR = path.join(HIRETRACK_DIR, 'logs');
+const CRON_LOG_FILE = path.join(LOG_DIR, 'cron_update.log');
+const SNAPSHOT_LOG_FILE = path.join(LOG_DIR, 'snapshot.log');
 
 /**
  * Validates a timezone string dynamically using the runtime's Intl API.
@@ -24,42 +33,102 @@ function isValidTimezone(tz: string): boolean {
 }
 
 /**
- * Native Node.js "Double Bounce" Timezone Calculator.
- * Converts a target hour/minute in a specific timezone to the server's local cron time.
+ * Mirrors installer `setup_cron`: wall clock in maintenance TZ → same instant in
+ * server-local timezone → cron minute and hour (GNU `%M %H` style).
  */
-function calculateLocalCronTime(targetTimezone: string, hour: number, minute: number) {
-  const now = new Date();
+function maintenanceZonedTimeToServerCronMinuteHour(
+  maintenanceTz: string,
+  hour: number,
+  minute: number,
+): string {
+  const wall = moment().tz(maintenanceTz).set({
+    hour,
+    minute,
+    second: 0,
+    millisecond: 0,
+  });
+  const d = wall.toDate();
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  return `${mm} ${hh}`;
+}
 
-  // 1. Get difference between target timezone and UTC in minutes
-  const tzString = now.toLocaleString('en-US', { timeZone: targetTimezone });
-  const tzDate = new Date(tzString);
+/**
+ * Same line-removal filter as installer `setup_cron` (grep -v ...).
+ */
+function stripHiretrackManagedCronLines(crontext: string): string {
+  return crontext
+    .split('\n')
+    .filter(
+      (line) =>
+        !line.includes('hiretrack-autoupdate') &&
+        !line.includes('hiretrack-snapshot') &&
+        !line.includes('take-snapshot.js') &&
+        !line.includes('installer.sh --update') &&
+        !line.includes('pm2 resurrect'),
+    )
+    .join('\n');
+}
 
-  const utcString = now.toLocaleString('en-US', { timeZone: 'UTC' });
-  const utcDate = new Date(utcString);
+async function resolvePm2Bin(): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync('/bin/sh', [
+      '-c',
+      'command -v pm2 2>/dev/null || echo /usr/local/bin/pm2',
+    ]);
+    const line = (stdout ?? '').trim().split('\n')[0]?.trim();
+    return line || '/usr/local/bin/pm2';
+  } catch {
+    return '/usr/local/bin/pm2';
+  }
+}
 
-  const targetOffsetMinutes = Math.round((tzDate.getTime() - utcDate.getTime()) / 60000);
+async function readMaintenanceTimezoneFromConfig(): Promise<string | null> {
+  try {
+    const raw = await fs.readFile(HIRETRACK_CONFIG_PATH, 'utf8');
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'maintenanceTimezone' in parsed
+    ) {
+      const v = (parsed as { maintenanceTimezone: unknown })
+        .maintenanceTimezone;
+      if (typeof v === 'string') {
+        const trimmed = v.trim();
+        if (trimmed && isValidTimezone(trimmed)) {
+          return trimmed;
+        }
+      }
+    }
+  } catch {
+    // missing or unreadable config
+  }
+  return null;
+}
 
-  // 2. Convert the target time into strict UTC minutes
-  const targetTotalMinutes = hour * 60 + minute;
-  const utcTotalMinutes = targetTotalMinutes - targetOffsetMinutes;
-
-  // 3. Convert UTC minutes into the Server's Local time
-  // getTimezoneOffset() returns (UTC - Local) in minutes
-  const localOffsetMinutes = now.getTimezoneOffset();
-  let localTotalMinutes = utcTotalMinutes - localOffsetMinutes;
-
-  // 4. Normalize minutes to wrap around the 24-hour boundary properly
-  localTotalMinutes = ((localTotalMinutes % 1440) + 1440) % 1440;
-
-  const localHour = Math.floor(localTotalMinutes / 60);
-  const localMinute = localTotalMinutes % 60;
-
-  return { localHour, localMinute };
+async function persistMaintenanceTimezone(tz: string): Promise<void> {
+  try {
+    const raw = await fs.readFile(HIRETRACK_CONFIG_PATH, 'utf8');
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return;
+    }
+    const next = { ...parsed, maintenanceTimezone: tz };
+    await fs.writeFile(
+      HIRETRACK_CONFIG_PATH,
+      `${JSON.stringify(next, null, 2)}\n`,
+      'utf8',
+    );
+  } catch {
+    // no config or parse error — skip
+  }
 }
 
 /**
  * GET: Returns current schedule maintenance timezone.
- * Defaults to 'UTC' if not found or invalid.
+ * Prefers `maintenanceTimezone` in ~/.hiretrack/config.json (set on POST);
+ * falls back to legacy crontab `TZ=` line.
  */
 async function getCronTimezone(request: NextRequest) {
   const user = await getAuthenticatedUser(request, 'admin');
@@ -68,6 +137,11 @@ async function getCronTimezone(request: NextRequest) {
   }
 
   try {
+    const fromConfig = await readMaintenanceTimezoneFromConfig();
+    if (fromConfig) {
+      return NextResponse.json({ timezone: fromConfig });
+    }
+
     let currentCron = '';
     try {
       const { stdout } = await execFileAsync('crontab', ['-l']);
@@ -76,7 +150,10 @@ async function getCronTimezone(request: NextRequest) {
       currentCron = '';
     }
 
-    const tzLine = currentCron.split('\n').find((line) => line.startsWith('TZ='));
+    const tzLine = currentCron
+      .split('\n')
+      .find((line) => line.startsWith('TZ='));
+
     let timezone = tzLine ? tzLine.replace(/^TZ=/, '').trim() : '';
 
     if (!isValidTimezone(timezone)) {
@@ -85,7 +162,7 @@ async function getCronTimezone(request: NextRequest) {
 
     return NextResponse.json({ timezone });
   } catch (error) {
-    logger.error({ err: error }, 'getCronTimezone failed');
+    logger.error('getCronTimezone failed', { error });
     return NextResponse.json(
       { error: 'Failed to read schedule maintenance timezone' },
       { status: 500 }
@@ -94,7 +171,9 @@ async function getCronTimezone(request: NextRequest) {
 }
 
 /**
- * POST: Updates schedule maintenance timezone in crontab (Translates times dynamically).
+ * POST: Same outcome as installer `setup_cron` — recomputes snapshot (02:00)
+ * and auto-update (02:15) in the chosen IANA zone, maps to server-local cron
+ * fields, and rewrites hiretrack + pm2 lines in crontab.
  */
 async function updateCronTimezone(request: NextRequest) {
   const user = await getAuthenticatedUser(request, 'admin');
@@ -109,15 +188,30 @@ async function updateCronTimezone(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const timezone =
+  const tzRaw =
     body && typeof body === 'object' && 'timezone' in body
       ? (body as { timezone: string }).timezone
       : undefined;
 
-  if (!isValidTimezone(timezone as string)) {
+  if (typeof tzRaw !== 'string' || !isValidTimezone(tzRaw)) {
     return NextResponse.json(
-      { error: 'Invalid timezone. Must be a valid IANA string (e.g., UTC, Asia/Kolkata).' },
-      { status: 400 }
+      {
+        error:
+          'Invalid timezone. Must be a valid IANA string (e.g., UTC, Asia/Kolkata).',
+      },
+      { status: 400 },
+    );
+  }
+
+  const timezone = tzRaw;
+
+  if (process.platform === 'win32') {
+    return NextResponse.json(
+      {
+        error:
+          'Schedule maintenance timezone is only supported on Linux and macOS hosts.',
+      },
+      { status: 501 },
     );
   }
 
@@ -130,53 +224,51 @@ async function updateCronTimezone(request: NextRequest) {
       currentCron = '';
     }
 
-    // Strip out all the old stuff we are about to replace so we don't get duplicates
-    const filteredCron = currentCron
-      .split('\n')
-      .filter((line) => {
-        const tLine = line.trim();
-        if (tLine === '') return false;
-        if (tLine.startsWith('TZ=')) return false;
-        if (tLine.includes('CRON_NAME:hiretrack-snapshot')) return false;
-        if (tLine.includes('CRON_NAME:hiretrack-autoupdate')) return false;
-        if (tLine.includes('take-snapshot.js')) return false;
-        if (tLine.includes('installer.sh --update')) return false;
-        return true;
-      })
-      .join('\n');
-
-    // Calculate the localized hour/minute based on the UI selection
-    const snapTime = calculateLocalCronTime(timezone as string, 2, 0);  // 02:00
-    const updTime = calculateLocalCronTime(timezone as string, 2, 15);  // 02:15
-
-    const homeDir = os.homedir();
-
-    // Reconstruct the crontab exactly how the bash installer does it
-    const newCronEntries = `
-TZ=${timezone}
-# CRON_NAME:hiretrack-snapshot
-${snapTime.localMinute} ${snapTime.localHour} * * * PATH=/usr/local/bin:/usr/bin:/bin node ${homeDir}/.hiretrack/take-snapshot.js >> ${homeDir}/.hiretrack/logs/snapshot.log 2>&1
-# CRON_NAME:hiretrack-autoupdate
-${updTime.localMinute} ${updTime.localHour} * * * PATH=/usr/local/bin:/usr/bin:/bin ${homeDir}/.hiretrack/installer.sh --update >> ${homeDir}/.hiretrack/logs/cron_update.log 2>&1
-`.trim();
-
-    const finalCron = `${filteredCron}\n${newCronEntries}\n`;
-
-    // Use a unique temp file to avoid collisions
-    const tempFile = path.join(
-      os.tmpdir(),
-      `cron_temp_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const snapCron = maintenanceZonedTimeToServerCronMinuteHour(
+      timezone,
+      2,
+      0,
+    );
+    const updCron = maintenanceZonedTimeToServerCronMinuteHour(
+      timezone,
+      2,
+      15,
     );
 
+    const pm2Bin = await resolvePm2Bin();
+    const pm2RebootLine = `@reboot ${pm2Bin} resurrect >> ${path.join(os.homedir(), 'pm2-startup.log')} 2>&1`;
+
+    const snapshotCronEntry = `${snapCron} * * * PATH=/usr/local/bin:/usr/bin:/bin node ${SNAPSHOT_SCRIPT} >> ${SNAPSHOT_LOG_FILE} 2>&1`;
+    const updateCronEntry = `${updCron} * * * PATH=/usr/local/bin:/usr/bin:/bin ${SCRIPT_PATH} --update >> ${CRON_LOG_FILE} 2>&1`;
+
+    const base = stripHiretrackManagedCronLines(currentCron).replace(/\s*$/, '');
+    const finalCron = `${[
+      base,
+      '# CRON_NAME:hiretrack-snapshot',
+      snapshotCronEntry,
+      '# CRON_NAME:hiretrack-autoupdate',
+      updateCronEntry,
+      pm2RebootLine,
+    ].join('\n')}\n`;
+
+    const tempFile = path.join(
+      os.tmpdir(),
+      `cron_ht_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+    );
     await fs.writeFile(tempFile, finalCron, { mode: 0o600 });
     await execFileAsync('crontab', [tempFile]);
     await fs.unlink(tempFile);
 
-    logger.info({ timezone, userId: user.id }, 'Schedule maintenance timezone updated via UI');
+    await persistMaintenanceTimezone(timezone);
+
+    logger.info('Schedule maintenance timezone updated (cron recomputed)', {
+      timezone,
+      userId: user.id,
+    });
 
     return NextResponse.json({ success: true, timezone });
   } catch (error) {
-    logger.error({ err: error, timezone }, 'updateCronTimezone failed');
+    logger.error('updateCronTimezone failed', { error, timezone });
     return NextResponse.json(
       { error: 'Failed to update schedule maintenance timezone' },
       { status: 500 }

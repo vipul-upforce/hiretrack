@@ -25,6 +25,28 @@ const templateSchema = new Schema(
   { _id: false },
 );
 
+const teamsReminderTemplateSchema = new Schema(
+  {
+    templateId: { type: String, required: true },
+    templateName: { type: String, required: true },
+    eventType: {
+      type: String,
+      required: true,
+      enum: ['followup.reminder', 'assignment.reminder'],
+    },
+    content: { type: String, required: true },
+    variables: {
+      type: [String],
+      default: [],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { _id: false },
+);
+
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
   multipleOrg: { type: Boolean, default: false, required: true }, // Fixed typo: "requred" -> "required"
@@ -224,6 +246,32 @@ const settingsSchema = new Schema({
     connectedEmail: {
       type: String,
       default: '',
+    },
+    isFollowUpReminderEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    followUpReminderOffsetMinutes: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
+    botUsername: {
+      type: String,
+      default: '',
+    },
+    botPassword: {
+      type: String,
+      default: '',
+    },
+    botUserId: {
+      type: String,
+      default: '',
+    },
+    messageTemplates: {
+      type: Map,
+      of: teamsReminderTemplateSchema,
+      default: new Map(),
     },
   },
   onboardingStatus: {
@@ -625,6 +673,21 @@ export interface IMicrosoftTeamsConfig {
   refreshToken: string;
   expiryDate: number | null;
   connectedEmail?: string;
+  isFollowUpReminderEnabled?: boolean;
+  followUpReminderOffsetMinutes?: number;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
+  messageTemplates?: {
+    [key: string]: {
+      templateId: string;
+      templateName: string;
+      eventType: 'followup.reminder' | 'assignment.reminder';
+      content: string;
+      variables: string[];
+      isActive?: boolean;
+    };
+  };
 }
 
 export interface IOnboardingStatus {

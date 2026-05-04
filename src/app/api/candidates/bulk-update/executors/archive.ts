@@ -62,35 +62,32 @@ export async function runBulkArchive(
     );
 
     // Build history bulk operations
-    const historyBulk = toUpdate
-      .filter((c) => c.jobId)
-      .map((c) => {
-        const historyEntry = {
-          dateTime,
-          title: targetIsDeleted ? 'Archived' : 'Unarchived',
-          previousInterviewer: null,
-          currentInterviewer: null,
-          assignmentBy: user?.id ?? '',
-          note: {
-            description: '',
-            date: dateTime,
-            rating: 0,
-            userId: null,
-          },
-          attachments: [],
-        };
+    const historyBulk = toUpdate.map((c) => {
+      const historyEntry = {
+        dateTime,
+        title: targetIsDeleted ? 'Archived' : 'Unarchived',
+        previousInterviewer: null,
+        currentInterviewer: null,
+        assignmentBy: user?.id ?? '',
+        note: {
+          description: '',
+          date: dateTime,
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId: c._id.toString(),
-              jobId: c.jobId?.toString() ?? null,
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
+      return {
+        updateOne: {
+          filter: {
+            candidateId: c._id.toString(),
           },
-        };
-      });
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);

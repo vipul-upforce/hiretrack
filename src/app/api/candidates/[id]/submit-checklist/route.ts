@@ -364,11 +364,11 @@ export async function POST(
 
     // Update history: use raw collection to avoid Mongoose casting checklistForm.responses.files
     const historyFilter = {
-      jobId: String(
-        typeof candidate?.jobId === 'object' && '_id' in candidate.jobId
-          ? candidate?.jobId?._id
-          : candidate.jobId,
-      ),
+      // jobId: String(
+      //   typeof candidate?.jobId === 'object' && '_id' in candidate.jobId
+      //     ? candidate?.jobId?._id
+      //     : candidate.jobId,
+      // ),
       candidateId: candidate?._id.toString(),
     };
     await History!.updateOne(

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       .exec();
     return NextResponse.json(jobs);
   } catch (error: unknown) {
-    logger.error({ error, url: request.url });
+    logger.error({ message: String(error), name: 'GetJobsError' }, 'Failed to get jobs');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find the candidate and their current history
+    // Find the candidate and their current history (history is keyed by candidateId only)
     const candidate = await Candidate!.findById(candidateId);
 
     if (!candidate) {
@@ -102,26 +102,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingHistory = await History!
-      .findOne({
-        candidateId,
-        jobId: candidate.jobId,
-      })
-      .lean()
-      .exec();
-
-    // If there's existing history, update it with the new jobId
-    if (existingHistory) {
-      await History!.findOneAndUpdate(
-        {
-          candidateId,
-          jobId: candidate.jobId,
-        },
-        {
-          $set: { jobId },
-        },
-      );
-    }
+    // No need to update jobId on history doc - history is keyed by candidateId only
 
     // Fetch the job details using jobId
     const job = await Job!.findById(jobId);
@@ -160,7 +141,7 @@ export async function POST(req: NextRequest) {
         );
       } catch (error) {
         logger.error(
-          { error },
+          { message: String(error), name: 'UpdateDuplicateError' },
           'Failed to update duplicate candidates during job switch',
         );
         // We don't want to block candidate update if this fails
@@ -183,9 +164,9 @@ export async function POST(req: NextRequest) {
       assignmentBy: user.id || null,
     };
 
-    // Add this entry to history collection
+    // Add this entry to history collection (one doc per candidate, keyed by candidateId only)
     await History!.findOneAndUpdate(
-      { jobId, candidateId },
+      { candidateId },
       { $push: { history: historyEntry } },
       { upsert: true },
     );
@@ -206,7 +187,7 @@ export async function POST(req: NextRequest) {
         });
       } catch (notificationError) {
         logger.error(
-          { notificationError, url: req.url },
+          { message: String(notificationError), name: 'NotificationError' },
           'Failed to send candidate moved notification',
         );
         // Don't fail the API call if notification fails
@@ -215,7 +196,6 @@ export async function POST(req: NextRequest) {
 
     const updatedHistory = await History!
       .findOne({
-        jobId,
         candidateId,
       })
       .populate('history.currentInterviewer', '_id name email')
@@ -259,7 +239,7 @@ export async function POST(req: NextRequest) {
       history: updatedHistory?.history,
       duplicateCount,
     }).catch((error) => {
-      logger.error({ error }, 'Failed to broadcast candidate job open update');
+      logger.error({ message: String(error), name: 'BroadcastCandidateJobOpenError' }, 'Failed to broadcast candidate job open update');
     });
 
     return NextResponse.json({
@@ -276,7 +256,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    logger.error({ error, url: req.url });
+    logger.error({ message: String(error), name: 'PostJobsOpenError' }, 'Failed to post jobs open');
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

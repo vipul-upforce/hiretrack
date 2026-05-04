@@ -89,6 +89,7 @@ export function CandidateDetailsDialog({
     CandidateActionType | undefined
   >(undefined);
   const { user } = useAppSelector((state) => state?.auth ?? {});
+  const isCandidateUser = user?.role === 'candidate';
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
   const [deleteCandidate, { isLoading: isDeletingCandidate }] =
     useDeleteCandidateMutation();
@@ -178,6 +179,7 @@ export function CandidateDetailsDialog({
 
   // Load history when history tab is activated
   useEffect(() => {
+    if (isCandidateUser) return;
     if (
       (activeTab === 'history' || activeTab === 'logs') &&
       !historyLoaded &&
@@ -185,7 +187,13 @@ export function CandidateDetailsDialog({
     ) {
       fetchHistory(localCandidate._id);
     }
-  }, [activeTab, historyLoaded, localCandidate?._id, fetchHistory]);
+  }, [
+    activeTab,
+    historyLoaded,
+    localCandidate?._id,
+    fetchHistory,
+    isCandidateUser,
+  ]);
 
   useEffect(() => {
     if (historyData?.history) {
@@ -248,14 +256,14 @@ export function CandidateDetailsDialog({
 
   // Handle History Error
   useEffect(() => {
-    if (isHistoryError && !isRefetching) {
+    if (isHistoryError && !isRefetching && !isCandidateUser) {
       toast({
         title: 'Error',
         description: 'Failed to load candidate history',
         variant: 'destructive',
       });
     }
-  }, [isHistoryError, isRefetching]);
+  }, [isHistoryError, isRefetching, isCandidateUser]);
 
   // Note: History and details reset is now handled in the candidate prop useEffect below
 

@@ -9,6 +9,7 @@ import {
   useTestMicrosoftTeamsConnectionMutation,
 } from '@/lib/features/settings';
 import { CredentialsFormData, TestResult } from '../types';
+import { normalizeTeamsReminderTemplates } from '@/lib/microsoft-teams/reminderTemplates';
 
 export function useTeamsLogic() {
   const { toast } = useToast();
@@ -31,6 +32,10 @@ export function useTeamsLogic() {
     clientId: '',
     clientSecret: '',
     connectedEmail: '',
+    isFollowUpReminderEnabled: false,
+    followUpReminderOffsetMinutes: 5,
+    botUsername: '',
+    botPassword: '',
   });
 
   useEffect(() => {
@@ -47,6 +52,15 @@ export function useTeamsLogic() {
         clientId: data.microsoftTeams.clientId || '',
         clientSecret: data.microsoftTeams.clientSecret || '',
         connectedEmail: data.microsoftTeams.connectedEmail || '',
+        isFollowUpReminderEnabled:
+          data.microsoftTeams.isFollowUpReminderEnabled || false,
+        followUpReminderOffsetMinutes:
+          data.microsoftTeams.followUpReminderOffsetMinutes ?? 5,
+        botUsername: data.microsoftTeams.botUsername || '',
+        botPassword: data.microsoftTeams.botPassword || '',
+        messageTemplates: normalizeTeamsReminderTemplates(
+          data.microsoftTeams.messageTemplates,
+        ),
       });
     }
   }, [data]);
@@ -87,6 +101,12 @@ export function useTeamsLogic() {
         clientId: formData.clientId,
         clientSecret: formData.clientSecret,
         connectedEmail: formData.connectedEmail,
+        isFollowUpReminderEnabled: formData.isFollowUpReminderEnabled || false,
+        followUpReminderOffsetMinutes:
+          formData.followUpReminderOffsetMinutes ?? 5,
+        botUsername: formData.botUsername,
+        botPassword: formData.botPassword,
+        messageTemplates: formData.messageTemplates,
       }).unwrap();
 
       toast({
