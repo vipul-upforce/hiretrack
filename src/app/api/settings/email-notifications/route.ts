@@ -3,24 +3,24 @@ import connectToDatabase, { User, Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { logger } from '@/lib/logger/logger.server';
 import type { OrganizationEmailNotifications } from '@/lib/models/settings';
-import type { AdminOverrideSettings } from '@/lib/utils/emailNotificationHelpers';
+import type { AdminOverrideSettings } from '@/lib/notifications/settings/helpers';
 import {
   mapToObject,
   objectToMap,
   mergeAdminOverrides,
-} from '@/lib/utils/emailNotificationHelpers';
+} from '@/lib/notifications/settings/helpers';
 import {
   validateDefaultSettings,
   validateAdminOverrides,
   verifyUsersExist,
-} from '@/lib/utils/emailNotificationValidators';
+} from '@/lib/notifications/settings/validators';
 import {
   getOrganizationEmailNotifications,
   getAdminUsers,
   updateOrganizationEmailNotifications,
   getExistingSettings,
   type UserInfo,
-} from '@/lib/services/emailNotificationService';
+} from '@/lib/notifications/settings/notificationService';
 
 /**
  * Type for default notification settings

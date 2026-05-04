@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
@@ -10,10 +9,23 @@ import { useToast } from '@/hooks/use-toast';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { CompletedBatches } from './completed-batches';
-import { FileList } from './file-list';
 import { FileUploader } from './file-uploader';
-import CvBatchLoader from './CvBatchLoader';
+import { type BatchOperations } from './batch-operations';
+import {
+  BatchActionsDialog,
+  ConfirmProcessingDialog,
+  ConfirmRemoveSelectedDialog,
+} from './batch-processing-dialogs';
+import { CurrentBatchPanel } from './current-batch-panel';
 
 export type FileWithPreview = {
   id: string;
@@ -23,6 +35,7 @@ export type FileWithPreview = {
   isZip?: boolean;
   skipped?: boolean;
   skipReason?: string;
+  selected?: boolean;
 };
 
 // File size limits (same as backend)
@@ -58,9 +71,31 @@ interface ErrorResponse {
   error?: string;
 }
 
+const LEAVE_PROCESSING_MESSAGE = 'Batch processing is in progress. Leaving this page will stop processing remaining CVs. Do you want to continue?';
+
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
+  const [operations, setOperations] = useState<BatchOperations>({
+    assignJob: false,
+    jobId: '',
+    updateStatus: false,
+    status: '',
+    addRemark: false,
+    remark: '',
+    isRemarkPrivate: true,
+    remarkRating: null,
+  });
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isRemoveSelectedConfirmOpen, setIsRemoveSelectedConfirmOpen] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
+  const [confirmPayload, setConfirmPayload] = useState<{
+    total: number;
+    selected: number;
+    message: string;
+  } | null>(null);
   const processingRef = useRef(false);
   const [postBatch] = usePostBatchMutation();
   const [isPosting, setIsPosting] = useState(false);
@@ -88,6 +123,125 @@ export function CVBatchProcessor() {
     }
   }, [batches]);
 
+  useEffect(() => {
+    if (!isPosting) {
+      return undefined;
+    }
+
+    const guardedUrl = window.location.href;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = LEAVE_PROCESSING_MESSAGE;
+      return LEAVE_PROCESSING_MESSAGE;
+    };
+
+    const requestNavigationConfirmation = (targetUrl: string) => {
+      setPendingNavigationUrl(targetUrl);
+      setIsLeaveDialogOpen(true);
+    };
+
+    const handleDocumentClickCapture = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
+      if (!anchor) {
+        return;
+      }
+
+      if (
+        anchor.target === '_blank'
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+      ) {
+        return;
+      }
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#')) {
+        return;
+      }
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+      if (nextUrl.origin !== window.location.origin) {
+        return;
+      }
+
+      if (nextUrl.pathname === window.location.pathname && nextUrl.search === window.location.search) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      requestNavigationConfirmation(nextUrl.href);
+    };
+
+    const handlePopState = () => {
+      const destinationUrl = window.location.href;
+      window.history.pushState(null, '', guardedUrl);
+      requestNavigationConfirmation(destinationUrl);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('click', handleDocumentClickCapture, true);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleDocumentClickCapture, true);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isPosting]);
+
+  const selectableFiles = files.filter((file) => !file.skipped);
+  const selectedCount = selectableFiles.filter((file) => file.selected).length;
+  const hasSelectableFiles = selectableFiles.length > 0;
+  const allSelected =
+    hasSelectableFiles && selectedCount === selectableFiles.length;
+
+  const toggleFileSelection = useCallback((id: string) => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.id === id ? { ...file, selected: !file.selected } : file,
+      ),
+    );
+  }, []);
+
+  const selectAllFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: true },
+      ),
+    );
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: false },
+      ),
+    );
+  }, []);
+
+  const invertSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: !file.selected },
+      ),
+    );
+  }, []);
+
+  const removeSelectedFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.filter((file) => file.skipped || !file.selected),
+    );
+  }, []);
+
   const handleFilesAdded = useCallback((newFiles: File[]) => {
     const processedFiles: FileWithPreview[] = [];
     const skippedFiles: FileWithPreview[] = [];
@@ -110,6 +264,7 @@ export function CVBatchProcessor() {
           id: crypto.randomUUID(),
           file,
           isZip,
+          selected: false,
         });
       }
     });
@@ -129,7 +284,7 @@ export function CVBatchProcessor() {
     setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
   }, []);
 
-  const handleProcessBatch = async () => {
+  const handleProcessBatchInternal = async () => {
     if (files.length === 0 || processingRef.current) return;
 
     // Filter out skipped files
@@ -143,6 +298,30 @@ export function CVBatchProcessor() {
       return;
     }
 
+    const trimmedRemark = operations.remark.trim();
+    const normalizedOperations: BatchOperations = {
+      assignJob: operations.assignJob && operations.jobId.trim().length > 0,
+      jobId: operations.jobId.trim(),
+      updateStatus:
+        operations.assignJob &&
+        operations.updateStatus &&
+        operations.status.trim().length > 0,
+      status: operations.status.trim(),
+      addRemark: operations.addRemark && trimmedRemark.length > 0,
+      remark: trimmedRemark,
+      isRemarkPrivate: operations.isRemarkPrivate,
+      remarkRating: operations.remarkRating,
+    };
+
+    if (operations.assignJob && !normalizedOperations.jobId) {
+      toast({
+        variant: 'destructive',
+        title: 'Job Required',
+        description: 'Please select a job to assign before processing.',
+      });
+      return;
+    }
+
     setIsPosting(true);
     processingRef.current = true;
 
@@ -150,9 +329,9 @@ export function CVBatchProcessor() {
       const organizationId = (user?.organizationId as string) || '';
 
       // Split files into chunks for batch processing
-      const chunks: File[][] = [];
+      const chunks: FileWithPreview[][] = [];
       for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
-        chunks.push(filesToProcess.slice(i, i + BATCH_SIZE).map((f) => f.file));
+        chunks.push(filesToProcess.slice(i, i + BATCH_SIZE));
       }
 
       const totalBatches = chunks.length;
@@ -179,8 +358,16 @@ export function CVBatchProcessor() {
 
         const formData = new FormData();
         chunk.forEach((file) => {
-          formData.append('file', file);
+          formData.append('file', file.file);
+          formData.append('fileId', file.id);
         });
+
+        const selectedFileIds =
+          normalizedOperations.assignJob || normalizedOperations.addRemark
+            ? chunk.filter((file) => file.selected).map((file) => file.id)
+            : [];
+        formData.append('operations', JSON.stringify(normalizedOperations));
+        formData.append('selectedFileIds', JSON.stringify(selectedFileIds));
 
         // eslint-disable-next-line no-await-in-loop
         const { data: batchResult, error: batchError } = await postBatch({
@@ -209,7 +396,7 @@ export function CVBatchProcessor() {
       }
 
       if (allResults.length > 0) {
-        setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
+        // setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
         toast({
           title: 'Processing Completed',
           description: `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
@@ -232,63 +419,151 @@ export function CVBatchProcessor() {
     }
   };
 
+  const buildConfirmationMessage = () => {
+    const hasAssign = operations.assignJob;
+    const hasStatus = operations.assignJob && operations.updateStatus;
+    const hasRemark = operations.addRemark;
+    const enabledActions = [
+      hasAssign ? 'Assign Job' : null,
+      hasStatus ? 'Update Status' : null,
+      hasRemark ? 'Add Remark' : null,
+    ].filter(Boolean) as string[];
+
+    const totalSelectable = selectableFiles.length;
+    const selectedSelectable = selectedCount;
+
+    if (enabledActions.length === 0) {
+      return totalSelectable === 0
+        ? 'This will process the batch and create candidates for all uploaded CVs.'
+        : 'This will process the batch and create candidates for all uploaded CVs. No extra actions are selected.';
+    }
+
+    if (selectedSelectable === 0) {
+      return `No CVs are selected, so these actions won’t be applied: ${enabledActions.join(
+        ', ',
+      )}. The batch will only create candidates.`;
+    }
+
+    if (selectedSelectable === totalSelectable) {
+      return `Actions (${enabledActions.join(
+        ', ',
+      )}) will be applied to all ${totalSelectable} selected CVs.`;
+    }
+
+    return `Actions (${enabledActions.join(
+      ', ',
+    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only create candidates.`;
+  };
+
+  const handleProcessBatch = () => {
+    if (files.length === 0 || processingRef.current) return;
+    const message = buildConfirmationMessage();
+    setConfirmPayload({
+      total: selectableFiles.length,
+      selected: selectedCount,
+      message,
+    });
+    setIsConfirmOpen(true);
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="flex min-h-full flex-col gap-8">
       <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
 
-      {files.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold">Current Batch</h2>
-              {uploadProgress && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  Processing batch {uploadProgress.currentBatch} of {uploadProgress.totalBatches}
-                  ({uploadProgress.current} of {uploadProgress.total} files)
-                </p>
-              )}
-            </div>
-            <Button
-              onClick={handleProcessBatch}
-              disabled={files.length === 0 || isPosting}
-              variant="primary"
-            >
-              {
-                (() => {
-                  if (isPosting) {
-                    if (uploadProgress) {
-                      return `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`;
-                    }
-                    return 'Processing...';
-                  }
-                  return 'Process Batch';
-                })()
-              }
-            </Button>
-          </div>
-          {uploadProgress && (
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{
-                  width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
-                }}
-              />
-            </div>
-          )}
-          <FileList
-            isProcessing={isPosting}
-            files={files}
-            onRemove={handleRemoveFile}
-          />
-        </div>
-      )}
+      <CurrentBatchPanel
+        files={files}
+        isPosting={isPosting}
+        hasSelectableFiles={hasSelectableFiles}
+        selectedCount={selectedCount}
+        selectableCount={selectableFiles.length}
+        allSelected={allSelected}
+        uploadProgress={uploadProgress}
+        onOpenActions={() => setIsActionsOpen(true)}
+        onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
+        onInvertSelection={invertSelection}
+        onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
+        onProcessBatch={handleProcessBatch}
+        onRemoveFile={handleRemoveFile}
+        onToggleSelect={toggleFileSelection}
+      />
 
-      {isLoading && <CvBatchLoader />}
       {error && <p>Error fetching batches: </p>}
-      {completedBatches.length > 0 && (
-        <CompletedBatches batches={completedBatches} />
-      )}
+      <CompletedBatches batches={completedBatches} isLoading={isLoading} />
+
+      <BatchActionsDialog
+        open={isActionsOpen}
+        onOpenChange={setIsActionsOpen}
+        operations={operations}
+        onOperationsChange={setOperations}
+        isPosting={isPosting}
+        organizationId={(user?.organizationId as string) || ''}
+        userRole={user?.role || ''}
+      />
+
+      <ConfirmProcessingDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        payload={confirmPayload}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          handleProcessBatchInternal();
+        }}
+      />
+
+      <ConfirmRemoveSelectedDialog
+        open={isRemoveSelectedConfirmOpen}
+        onOpenChange={setIsRemoveSelectedConfirmOpen}
+        selectedCount={selectedCount}
+        onConfirm={() => {
+          removeSelectedFiles();
+          setIsRemoveSelectedConfirmOpen(false);
+        }}
+      />
+
+      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <DialogContent className="max-w-md p-0">
+          <DialogHeader>
+            <DialogTitle className="pt-3">
+              Leave CV Upload?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 px-6 py-2 text-sm text-muted-foreground">
+            <p>
+              Batch processing is in progress. If you leave this page now, the
+              remaining CVs will not be processed.
+            </p>
+            <p>Do you still want to continue?</p>
+          </div>
+          <DialogFooter className="border-t bg-background px-6 py-4">
+            <div className="flex w-full items-center justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsLeaveDialogOpen(false);
+                  setPendingNavigationUrl(null);
+                }}
+              >
+                Stay on Page
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  const url = pendingNavigationUrl;
+                  setIsLeaveDialogOpen(false);
+                  setPendingNavigationUrl(null);
+                  if (url) {
+                    window.location.assign(url);
+                  }
+                }}
+              >
+                Leave Page
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

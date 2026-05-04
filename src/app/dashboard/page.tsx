@@ -2,14 +2,17 @@
 
 import { useCallback } from 'react';
 import { useSSE } from '@/hooks/useSSE';
+import { toast } from '@/hooks/use-toast';
 import { useMarkNotificationAsReadMutation } from '@/lib/features/notifications/notificationsApi';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useNotificationsContext } from '@/contexts/NotificationsContext';
 import {
   useLazyFetchAssignmentsQuery,
   useLazyFetchCandidateByIdQuery,
+  useBulkUpdateCandidatesMutation,
 } from '@/lib/features/candidate/candidateApi';
-import { Candidate } from '@/types/candidate';
+import { Candidate, CandidateStatus } from '@/types/candidate';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
 import { CandidateDetailsDialog } from './jobs/[id]/components/Dialogs/candidate-details-dialog';
 import RecentActivities from './components/RecentActivities';
 import { useDashboardState } from './hooks/useDashboardState';
@@ -18,7 +21,9 @@ import { useDashboardEffects } from './hooks/useDashboardEffects';
 import { useDashboardNotifications } from './hooks/useDashboardNotifications';
 import { DashboardHeader } from './components/DashboardHeader';
 import { DashboardContent } from './components/DashboardContent';
+import { HrAssignmentsSection } from './components/HrAssignmentsSection';
 import { isToday, isThisWeek } from './utils/dateHelpers';
+import ChecklistRemarksDialog from './jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 
 export default function DashboardPage() {
   const itemsPerPage = 20;
@@ -32,6 +37,15 @@ export default function DashboardPage() {
 
   // Consolidate all state
   const state = useDashboardState();
+
+  const currentJobId =
+    typeof state.selectedCandidate?.jobId === 'object'
+      ? state.selectedCandidate?.jobId?._id
+      : state.selectedCandidate?.jobId;
+
+  const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
+
+  const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
 
   // Assignment fetching logic
   const { fetchAssignments, loadMoreData } = useDashboardAssignments({
@@ -54,6 +68,123 @@ export default function DashboardPage() {
     sseAddedCountRef: state.sseAddedCountRef,
     totalCountMembershipRef: state.totalCountMembershipRef,
   });
+
+  /** Called from submit hook when statusDeferredFromUnified: apply status, refetch, update local state, clear pending, optionally open next (incoming) checklist. Runs in same call stack as submit. */
+  const handleApplyDeferredStatus = (candidateId: string, newStatus: string) =>
+    bulkUpdateCandidates({
+      operation: 'statusUpdate',
+      candidateIds: [String(candidateId)],
+      status: newStatus,
+    })
+      .unwrap()
+      .then(() => fetchAssignments(1))
+      .then(() => {
+        if (
+          state.selectedCandidate &&
+          (state.selectedCandidate._id === candidateId ||
+            String(state.selectedCandidate._id) === String(candidateId))
+        ) {
+          state.setSelectedCandidate({
+            ...state.selectedCandidate,
+            status: newStatus as CandidateStatus,
+          });
+        }
+        state.setAssignments((prev) =>
+          (prev || []).map((c) =>
+            c._id === candidateId || String(c._id) === String(candidateId)
+              ? { ...c, status: newStatus as CandidateStatus }
+              : c,
+          ),
+        );
+      })
+      .then(() => {
+        const nextChecklist =
+          checklistValidation.pendingIncomingChecklistAfterStatus;
+        if (
+          nextChecklist &&
+          checklistValidation.setOpenRemarksFor &&
+          checklistValidation.setPendingIncomingChecklistAfterStatus
+        ) {
+          checklistValidation.setOpenRemarksFor(nextChecklist);
+          checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+        }
+      })
+      .finally(() => {
+        checklistValidation.setPendingStatusAfterChecklist(null);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : 'Failed to update status';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
+        throw err;
+      })
+
+  /** Fallback when onApplyDeferredStatus not used: read pending from ref and apply status after dialog closes. */
+  const handleChecklistComplete = (candidateId: string) => {
+    const pending = checklistValidation.pendingStatusAfterChecklistRef.current;
+    if (
+      !pending ||
+      String(pending.candidateId) !== String(candidateId) ||
+      !checklistValidation.setPendingStatusAfterChecklist
+    ) {
+      return;
+    }
+    const { newStatus } = pending;
+    bulkUpdateCandidates({
+      operation: 'statusUpdate',
+      candidateIds: [String(candidateId)],
+      status: newStatus,
+    })
+      .unwrap()
+      .then(() => fetchAssignments(1))
+      .then(() => {
+        if (
+          state.selectedCandidate &&
+          (state.selectedCandidate._id === candidateId ||
+            String(state.selectedCandidate._id) === String(candidateId))
+        ) {
+          state.setSelectedCandidate({
+            ...state.selectedCandidate,
+            status: newStatus as CandidateStatus,
+          });
+        }
+        state.setAssignments((prev) =>
+          (prev || []).map((c) =>
+            c._id === candidateId || String(c._id) === String(candidateId)
+              ? { ...c, status: newStatus as CandidateStatus }
+              : c,
+          ),
+        );
+      })
+      .then(() => {
+        const nextChecklist =
+          checklistValidation.pendingIncomingChecklistAfterStatus;
+        if (
+          nextChecklist &&
+          checklistValidation.setOpenRemarksFor &&
+          checklistValidation.setPendingIncomingChecklistAfterStatus
+        ) {
+          checklistValidation.setOpenRemarksFor(nextChecklist);
+          checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+        }
+      })
+      .finally(() => {
+        checklistValidation.setPendingStatusAfterChecklist(null);
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error ? err.message : 'Failed to update status';
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
+      });
+  }
 
   // Scroll handler
   const handleScroll = useCallback(() => {
@@ -88,6 +219,7 @@ export default function DashboardPage() {
     setCurrentPage: state.setCurrentPage,
     setHasMoreData: state.setHasMoreData,
     setAssignments: state.setAssignments,
+    assignmentsCounts: state.assignmentsCounts,
     isActivitiesSidebarOpen: state.isActivitiesSidebarOpen,
     sseCandidates,
     sseAddedCountRef: state.sseAddedCountRef,
@@ -109,6 +241,9 @@ export default function DashboardPage() {
   const shouldShowAssignments = user?.role === 'admin' || user?.role === 'hr';
   const isInterviewer = user?.role === 'interviewer';
   const showRecentActivities = user?.role === 'admin' || user?.role === 'hr';
+  const isHr = user?.role === 'hr';
+  const shouldShowHrSection = isHr && state.isHrSectionEnabled;
+  const shouldRenderHrSection = shouldShowHrSection && !!user?.id;
 
   const interviewerAssignments = state.assignments?.filter((assignment) =>
     isInterviewer
@@ -156,6 +291,11 @@ export default function DashboardPage() {
     state.setFilterText(state.searchText);
   };
 
+  const handleCandidateCardClick = useCallback((candidate: Candidate) => {
+    state.setSelectedCandidate(candidate);
+    state.setIsCandidateDialogOpen(true);
+  }, [state.setIsCandidateDialogOpen, state.setSelectedCandidate]);
+
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden">
       <DashboardHeader
@@ -175,6 +315,9 @@ export default function DashboardPage() {
         userRole={user?.role}
         sortConfig={state.sortConfig}
         setSortConfig={state.setSortConfig}
+        showHrSectionToggle={isHr}
+        isHrSectionEnabled={state.isHrSectionEnabled}
+        onToggleHrSection={state.setIsHrSectionEnabled}
       />
 
       <div className="mt-4 flex min-h-0 flex-1 gap-4 overflow-hidden px-4 pb-4">
@@ -195,6 +338,21 @@ export default function DashboardPage() {
           showRecentActivities={showRecentActivities}
           isActivitiesSidebarOpen={state.isActivitiesSidebarOpen}
           setAssignments={state.setAssignments}
+          onCandidateCardClick={handleCandidateCardClick}
+          prependContent={
+            shouldRenderHrSection ? (
+              <HrAssignmentsSection
+                itemsPerPage={itemsPerPage}
+                filterText={state.filterText}
+                sortConfig={state.sortConfig}
+                sseCandidates={sseCandidates || []}
+                user={user}
+                scrollContainerRef={state.scrollContainerRef}
+                isActivitiesSidebarOpen={state.isActivitiesSidebarOpen}
+                onCandidateCardClick={handleCandidateCardClick}
+              />
+            ) : null
+          }
         />
 
         {showRecentActivities && state.isActivitiesSidebarOpen && (
@@ -214,16 +372,61 @@ export default function DashboardPage() {
         candidate={state.selectedCandidate}
         isOpen={state.isCandidateDialogOpen}
         onOpenChange={state.setIsCandidateDialogOpen}
+        onViewDetails={(candidate) => {
+          // Manual close and reopen to ensure fresh instance and avoid state mixed up
+          state.setIsCandidateDialogOpen(false);
+          state.setSelectedCandidate(null);
+
+          setTimeout(() => {
+            state.setSelectedCandidate(candidate);
+            state.setIsCandidateDialogOpen(true);
+          }, 100);
+        }}
         onUpdate={(updatedCandidate) => {
           // Update local state with the updated candidate instead of refetching
-          // The mutation already returns the updated candidate, so no need to refetch
           if (updatedCandidate && state.selectedCandidate?._id === updatedCandidate._id) {
-            state.setSelectedCandidate(updatedCandidate);
+            state.setSelectedCandidate((prev) => 
+              prev?._id === updatedCandidate._id 
+                ? { ...prev, ...updatedCandidate } 
+                : updatedCandidate
+            );
           }
         }}
         hideEditButton={user?.role === 'interviewer'}
         hideCloseButtons={false}
+        onValidateStatusChange={checklistValidation.onValidateStatusChange}
+        onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+        onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
       />
+
+      {state.selectedCandidate && checklistValidation.openRemarksFor && (
+        <ChecklistRemarksDialog
+          candidate={state.selectedCandidate}
+          isOpen={!!checklistValidation.openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) {
+              checklistValidation.setOpenRemarksFor(null);
+            }
+          }}
+          setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
+          refetch={async () => {
+            // Optional: trigger assignment refetch after checklist completes
+            triggerFetchAssignments({ page: 1, limit: itemsPerPage });
+          }}
+          checklistInfo={checklistValidation.openRemarksFor}
+          onChecklistSuccess={handleChecklistComplete}
+          onApplyDeferredStatus={handleApplyDeferredStatus}
+          onChecklistCancel={() => {
+            checklistValidation.setPendingStatusAfterChecklist(null);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+            toast({
+              title: 'Checklist cancelled',
+              description: 'The checklist has been cancelled.',
+              variant: 'destructive',
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

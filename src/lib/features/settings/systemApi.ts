@@ -1,6 +1,8 @@
 import { baseApi } from '@/lib/api/baseApi';
 import {
   AutoUpdateResponse,
+  CronTimezoneResponse,
+  CronTimezoneUpdateResponse,
   DeleteBackupResponse,
   DiskFolderDetailResponse,
   DiskSpaceResponse,
@@ -61,6 +63,21 @@ export const systemApi = baseApi.injectEndpoints({
         { type: 'DiskSpace', id: `${arg.root}-${arg.path}` },
       ],
     }),
+    getCronTimezone: builder.query<CronTimezoneResponse, void>({
+      query: () => '/cron/time-zone',
+      providesTags: ['CronTimezone'],
+    }),
+    updateCronTimezone: builder.mutation<
+      CronTimezoneUpdateResponse,
+      { timezone: string }
+    >({
+      query: (body) => ({
+        url: '/cron/time-zone',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['CronTimezone'],
+    }),
   }),
 });
 
@@ -75,4 +92,6 @@ export const {
   useTriggerUpdateMutation,
   useGetDiskSpaceQuery,
   useGetDiskFolderDetailsQuery,
+  useGetCronTimezoneQuery,
+  useUpdateCronTimezoneMutation,
 } = systemApi;

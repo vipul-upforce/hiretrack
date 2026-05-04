@@ -1,4 +1,5 @@
 import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
+import { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
 import { Schema, Document } from 'mongoose';
 
 /* eslint-disable max-lines */
@@ -224,6 +225,27 @@ const settingsSchema = new Schema({
       type: String,
       default: '',
     },
+    isFollowUpReminderEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    followUpReminderOffsetMinutes: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
+    botUsername: {
+      type: String,
+      default: '',
+    },
+    botPassword: {
+      type: String,
+      default: '',
+    },
+    botUserId: {
+      type: String,
+      default: '',
+    },
   },
   onboardingStatus: {
     isCompleted: {
@@ -255,6 +277,16 @@ const settingsSchema = new Schema({
     enableCaptcha: {
       type: Boolean,
       default: false,
+    },
+    captchaType: {
+      type: String,
+      enum: ['v2', 'v3'],
+      default: 'v2',
+    },
+    captchaVariant: {
+      type: String,
+      enum: ['checkbox', 'invisible'],
+      default: 'checkbox',
     },
     siteKey: {
       type: String,
@@ -426,6 +458,47 @@ const settingsSchema = new Schema({
       type: Boolean,
       default: true,
     },
+    useCustomFieldsPrompt: {
+      type: Boolean,
+      default: false,
+    },
+    customFieldsPrompt: {
+      type: String,
+      default: null,
+    },
+    selectedCustomFields: {
+      type: [
+        {
+          fieldId: {
+            type: String,
+            required: true,
+          },
+          formId: {
+            type: String,
+            required: true,
+          },
+          formName: {
+            type: String,
+            required: true,
+          },
+          label: {
+            type: String,
+            required: true,
+          },
+          target: {
+            type: String,
+            enum: ['job', 'candidate'],
+            required: true,
+          },
+          scope: {
+            type: String,
+            enum: ['global', 'job-specific', 'candidate-specific'],
+            required: true,
+          },
+        },
+      ],
+      default: [],
+    },
   },
 });
 
@@ -573,6 +646,11 @@ export interface IMicrosoftTeamsConfig {
   refreshToken: string;
   expiryDate: number | null;
   connectedEmail?: string;
+  isFollowUpReminderEnabled?: boolean;
+  followUpReminderOffsetMinutes?: number;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
 }
 
 export interface IOnboardingStatus {
@@ -585,9 +663,11 @@ export interface IOnboardingStatus {
 }
 export interface ICaptcha {
   enableCaptcha: boolean;
+  captchaType?: 'v2' | 'v3';
+  captchaVariant?: 'checkbox' | 'invisible';
   siteKey: string;
   secretKey: string;
-  captchaProvider: string;
+  captchaProvider?: string;
 }
 
 export interface IFileMeta {
@@ -611,6 +691,9 @@ export interface IEvaluationConfig {
   enableConfidenceScores?: boolean;
   enableRedFlagsDetection?: boolean;
   enableSkillsMatrix?: boolean;
+  useCustomFieldsPrompt?: boolean;
+  customFieldsPrompt?: string | null;
+  selectedCustomFields?: EvaluationCustomFieldSelection[];
 }
 
 export interface ISettings {

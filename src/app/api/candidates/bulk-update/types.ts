@@ -59,10 +59,29 @@ export interface BulkAssignParams extends BulkUpdateBaseParams {
   }>;
   /** Additional guest emails for Zoom */
   zoomAdditionalGuests?: string[];
+  /** Schedule Microsoft Teams meeting */
+  scheduleTeamsMeet?: boolean;
+  /** Teams meeting duration in minutes */
+  teamsMeetDuration?: number;
+  /** Teams meeting notes */
+  teamsMeetingNotes?: string;
+  /** Attachments for the Teams meeting */
+  teamsMeetingAttachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>;
+  /** Additional guest emails for Teams */
+  teamsAdditionalGuests?: string[];
+  /** Optional remark when assign + add remark done together (in history note only) */
+  remark?: string;
 }
 
 export interface BulkUnassignParams extends BulkUpdateBaseParams {
-  unassignerId: string;
+  /** Optional remark/feedback for unassign notification email */
+  remark?: string;
 }
 
 export interface BulkArchiveParams extends BulkUpdateBaseParams {
@@ -86,12 +105,12 @@ export interface BulkAddFollowUpParams extends BulkUpdateBaseParams {
   date?: string | null;
 }
 
-export interface BulkRemoveFollowUpParams extends BulkUpdateBaseParams {
-  followUpId: string;
-}
+export type BulkRemoveFollowUpParams = BulkUpdateBaseParams;
 
 export interface BulkStatusUpdateParams extends BulkUpdateBaseParams {
   status: string;
+  /** Optional remark when status update is done with add-remark (statusMessage in email) */
+  remark?: string;
 }
 
 export type BulkUpdateParams =
@@ -156,7 +175,17 @@ export interface BulkAssignNotificationMeta {
   interviewerName: string;
   jobId: string;
   jobTitle: string;
-  candidates: Array<{ candidateId: string; candidateName: string }>;
+  candidates: Array<{ candidateId: string; candidateName: string; jobId?: string }>;
+  /** When meeting is scheduled: ISO string */
+  scheduledTime?: string | null;
+  /** Meeting duration in minutes */
+  duration?: number;
+  /** First candidate's meeting link (Google Meet or Zoom) when scheduled */
+  meetingLink?: string | null;
+  /** Outlook calendar add link when scheduled */
+  outlookCalendarLink?: string | null;
+  /** Interview type when meeting scheduled */
+  interviewType?: string;
 }
 
 /** Meta for bulk-unassign notification: each previous interviewer gets one per candidate, admin/hr get one bulk */
@@ -169,6 +198,10 @@ export interface BulkUnassignNotificationMeta {
     previousInterviewerId: string;
     previousInterviewerName: string;
   }>;
+  /** Feedback message for bulk-unassign email template */
+  feedback?: string;
+  /** Next step message for bulk-unassign email template */
+  nextStep?: string;
 }
 
 export interface BulkUpdateResult {
@@ -187,9 +220,51 @@ export interface BulkUpdateResult {
   /** For unassign: used to send bulk unassign notifications */
   unassignNotificationMeta?: BulkUnassignNotificationMeta;
   /** For addRemark: used to send bulk remark notifications (mentioned users = separate per candidate; admin/hr = one bulk) */
-  addRemarkNotificationMeta?: unknown;
+  addRemarkNotificationMeta?: {
+    remarkText: string;
+    roles: string[];
+    validMentionUserIds?: string[];
+    /** Rating (0-5) for bulk remark email template */
+    rating?: number;
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+    }>;
+  };
   /** For addFollowUp: used to send bulk follow-up notifications */
-  addFollowUpNotificationMeta?: unknown;
+  addFollowUpNotificationMeta?: {
+    followupNote: string;
+    followupDate?: string | null;
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+    }>;
+  };
+  /** For removeFollowUp: used to send bulk follow-up removal notifications */
+  removeFollowUpNotificationMeta?: {
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+    }>;
+  };
   /** For statusUpdate: used to send bulk status update notifications */
-  statusUpdateNotificationMeta?: unknown;
+  statusUpdateNotificationMeta?: {
+    newStatus: string;
+    nextStep?: string;
+    /** Remark text when status update + remark done together (statusMessage in email) */
+    statusMessage?: string;
+    candidates: Array<{
+      candidateId: string;
+      candidateName: string;
+      jobId: string;
+      jobTitle: string;
+      oldStatus: string;
+    }>;
+  };
 }

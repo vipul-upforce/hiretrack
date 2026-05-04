@@ -108,12 +108,12 @@ export const useRemarkHandlers = (
       };
 
       const result = await updateCandidate(updateData).unwrap();
-      
+
       // Update local state with the result - no need to refetch since we have the updated data
       if (onUpdate && result) {
         onUpdate(result);
       }
-      
+
       if (localCandidate) {
         await updateCandidateHistory({
           candidateId: localCandidate?._id,
@@ -121,7 +121,7 @@ export const useRemarkHandlers = (
           newEntry: newHistoryEntry,
         }).unwrap();
       }
-      
+
       // Only refetch assignments list for dashboard (to update the list view)
       // Don't refetch individual candidate since we already have the updated result
       if (pathname === '/dashboard') {
@@ -262,7 +262,7 @@ export const useRemarkHandlers = (
         attachments: [],
       };
 
-      const updateData: any = {
+      const updateData: Partial<Candidate> = {
         _id: localCandidate?._id,
         name: localCandidate?.name,
         jobId: localCandidate?.jobId,
@@ -406,12 +406,12 @@ export const useRemarkHandlers = (
       };
 
       const result = await updateCandidate(updateData).unwrap();
-      
+
       // Update local state with the result - no need to refetch since we have the updated data
       if (onUpdate && result) {
         onUpdate(result);
       }
-      
+
       if (localCandidate) {
         await updateCandidateHistory({
           candidateId: localCandidate?._id,
@@ -419,7 +419,7 @@ export const useRemarkHandlers = (
           newEntry: newHistoryEntry,
         }).unwrap();
       }
-      
+
       // Only refetch assignments list for dashboard (to update the list view)
       // Don't refetch individual candidate since we already have the updated result
       if (pathname === '/dashboard') {

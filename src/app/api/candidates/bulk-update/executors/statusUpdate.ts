@@ -1,6 +1,7 @@
 import { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
 import { logger } from '@/lib/logger/logger.server';
+import { getNextStep } from '@/lib/utils/organization';
 import type {
   BulkStatusUpdateParams,
   BulkUpdateContext,
@@ -32,7 +33,6 @@ export async function runBulkStatusUpdate(
       message: 'No candidates found',
     };
   }
-
   const ids = candidates.map((c) =>
     (c._id as { toString: () => string }).toString(),
   );
@@ -44,45 +44,40 @@ export async function runBulkStatusUpdate(
     );
 
     // Create history entries with logs format (IinfoUpdateLog[]) for each candidate
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => {
-        const candidateId = (c._id as { toString: () => string }).toString();
-        const oldStatus = (c as ICandidate).status ?? 'Unknown';
+    const historyBulk = candidates.map((c) => {
+      const candidateId = (c._id as { toString: () => string }).toString();
+      const oldStatus = (c as ICandidate).status ?? 'Unknown';
 
-        // Create IinfoUpdateLog entry matching normal status update format
-        const statusUpdateLog: IinfoUpdateLog = {
-          title: 'Updated Status',
-          previousValue: oldStatus,
-          currentValue: status,
-        };
+      // Create IinfoUpdateLog entry matching normal status update format
+      const statusUpdateLog: IinfoUpdateLog = {
+        title: 'Updated Status',
+        previousValue: oldStatus,
+        currentValue: status,
+      };
 
-        const historyEntry: ICandidateHistory = {
-          dateTime,
-          title: 'Updated Status',
-          currentInterviewer: null,
-          previousInterviewer: null,
-          assignmentBy: user.id ?? null,
-          note: {
-            description: [statusUpdateLog], // Array of IinfoUpdateLog for logs section
-            date: dateTime,
-            rating: 0,
-            userId: user.id ?? null,
-          },
-          attachments: [],
-        };
+      const historyEntry: ICandidateHistory = {
+        dateTime,
+        title: 'Updated Status',
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user.id ?? null,
+        note: {
+          description: [statusUpdateLog], // Array of IinfoUpdateLog for logs section
+          date: dateTime,
+          rating: 0,
+          userId: user.id ?? null,
+        },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId,
-              jobId: getJobIdString(c),
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        };
-      });
+      return {
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -92,7 +87,7 @@ export async function runBulkStatusUpdate(
       .populate([
         { path: 'assignment.interviewerId', select: '_id name email' },
         { path: 'followUp.userId', select: '_id name email' },
-        { path: 'jobId', select: 'title description' },
+        // { path: 'jobId', select: 'title description' },
       ])
       .lean();
 
@@ -114,9 +109,31 @@ export async function runBulkStatusUpdate(
       };
     });
 
+    let nextStep = 'N/A';
+    if (statusUpdateCandidates.length > 0 && user.organizationId) {
+      try {
+        const firstJobId = statusUpdateCandidates[0]?.jobId ?? null;
+        nextStep = await getNextStep(
+          firstJobId,
+          status,
+          user.organizationId as string,
+        );
+      } catch (err) {
+        logger.warn(
+          { err },
+          'Bulk statusUpdate: failed to get next step from job',
+        );
+      }
+    }
+
     const statusUpdateNotificationMeta =
       statusUpdateCandidates.length > 0
-        ? { newStatus: status, candidates: statusUpdateCandidates }
+        ? {
+            newStatus: status,
+            nextStep,
+            statusMessage: params.remark?.trim() || undefined,
+            candidates: statusUpdateCandidates,
+          }
         : undefined;
 
     return {

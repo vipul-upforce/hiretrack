@@ -1,0 +1,73 @@
+/* reCAPTCHA v2 invisible: widget takes zero space; only disclosure is visible */
+
+/* Container: no min-height, no extra space; only the disclosure line is visible */
+.recaptcha-container--invisible {
+  padding: 0;
+  margin: 0;
+  background: transparent !important;
+  border: none !important;
+  min-height: 0;
+  width: 100%;
+  display: block;
+  text-align: left;
+  position: relative;
+}
+
+/* Move the reCAPTCHA widget off-screen so it uses zero layout space.
+   position: absolute removes it from flow; left: -9999px hides it. Widget keeps natural size so execute() works. */
+.recaptcha-container--invisible .g-recaptcha {
+  position: absolute !important;
+  left: -9999px !important;
+  top: 0 !important;
+}
+
+.recaptcha-container--invisible:hover,
+.recaptcha-container--invisible:focus-within {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* reCAPTCHA v3 badge: bottom left instead of default bottom right */
+.grecaptcha-badge {
+  right: auto !important;
+  left: 0cap !important;
+}
+
+/* Hide the default Google badge (we show disclosure text instead; Google allows this) */
+/* .grecaptcha-badge {
+  visibility: hidden !important;
+} */
+
+/* Disclosure: aligned with form content, same visual weight as other form hints */
+.recaptcha-disclosure {
+  margin: 0.375rem 0 0;
+  padding: 0;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: hsl(var(--muted-foreground));
+  max-width: 100%;
+  width: 100%;
+  text-align: left;
+}
+
+.recaptcha-disclosure__link {
+  color: hsl(var(--muted-foreground));
+  text-decoration: underline;
+}
+
+.recaptcha-disclosure__link:hover {
+  color: hsl(var(--foreground) / 0.9);
+}
+
+.dark .recaptcha-disclosure {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .recaptcha-disclosure__link {
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .recaptcha-disclosure__link:hover {
+  color: hsl(var(--foreground) / 0.85);
+}

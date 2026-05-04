@@ -5,6 +5,7 @@ import { Briefcase, ChevronRight } from 'lucide-react';
 import { CustomFieldValues } from '@/Custom_Fields/hooks/useCustomForm';
 import { CustomField, FormObject } from '@/Custom_Fields/Types/CustomField';
 import CustomFieldBadge from '../../dashboard/jobs/[id]/components/Candidate/CustomFieldBadge';
+import { stripColorFormatting } from '@/lib/htmlFormatting';
 
 interface JobCardProps {
   job: {
@@ -78,7 +79,9 @@ export function JobCard({
             className="mb-4 line-clamp-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300"
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{
-              __html: job?.description || 'No description found',
+              __html: stripColorFormatting(
+                job?.description || 'No description found',
+              ),
             }}
           />
 

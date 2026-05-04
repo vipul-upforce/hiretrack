@@ -65,6 +65,17 @@ interface CandidateCardDialogsProps {
   onOpenCandidateDetailsDialog: (candidate: Candidate) => void; // New prop for opening main candidate details dialog
   isDuplicateDialogOpen: boolean;
   setIsDuplicateDialogOpen: (open: boolean) => void;
+  /** Single-candidate status change: validate checklist; when required, defer to page checklist dialog */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist: boolean; validationInfo?: string } | null;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
 }
 
 export function CandidateCardDialogs({
@@ -102,20 +113,23 @@ export function CandidateCardDialogs({
   setNewFollowUp: _setNewFollowUp,
   newFollowUpDate: _newFollowUpDate,
   setNewFollowUpDate: _setNewFollowUpDate,
-  onDashboard,
+  onDashboard: _onDashboard,
   triggerRef,
   onUpdate,
   refetchAssignment: refetchAssignmentProp,
   onOpenCandidateDetailsDialog,
   isDuplicateDialogOpen,
   setIsDuplicateDialogOpen,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
 }: CandidateCardDialogsProps) {
   const unifiedOpen =
     isAssigning ||
     isAddingFollowUp ||
     confirmUnassignOpen ||
     isAssignJobOpen ||
-    (onDashboard ? isAddRemarkOpen : false);
+    isAddRemarkOpen;
 
  
   const getUnifiedInitialAction = (): CandidateActionType | undefined => {
@@ -209,6 +223,27 @@ export function CandidateCardDialogs({
             // Just close the dialog - state is already updated via onUpdate/refetchAssignment
             closeUnified();
           }}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (validationInfo, newStatus, nextChecklistValidationInfo) => {
+                  closeUnified();
+                  onDeferStatusToChecklist(
+                    validationInfo,
+                    newStatus,
+                    nextChecklistValidationInfo,
+                  );
+                }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (validationInfo) => {
+                  closeUnified();
+                  onOpenChecklistAfterSave(validationInfo);
+                }
+              : undefined
+          }
         />
       )}
 

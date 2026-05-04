@@ -89,8 +89,16 @@ export async function GET(
       return NextResponse.json({ error: fileResult.error }, { status: 500 });
     }
 
-    // Create response with file
-    const response = new NextResponse(fileResult.buffer);
+    const { buffer } = fileResult;
+    if (!buffer) {
+      return NextResponse.json(
+        { error: 'File content unavailable' },
+        { status: 500 },
+      );
+    }
+
+    // Create response with file (Uint8Array is valid BodyInit; Node Buffer is not in DOM typings)
+    const response = new NextResponse(new Uint8Array(buffer));
 
     // Set headers
     response.headers.set('Content-Type', fileShare.mimeType);

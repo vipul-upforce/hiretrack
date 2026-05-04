@@ -1,4 +1,4 @@
-import { defaultTemplates } from '@/app/dashboard/settings/templates/constants';
+import { defaultTemplates } from '@/lib/email-templates/constants';
 import type { IEmailTemplate } from '@/app/dashboard/settings/components/types';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { loadTemplate, MapTemplate } from '@/lib/templateLoader';
@@ -30,7 +30,7 @@ export async function getMappedEmailTemplate(
     );
 
     return {
-      emailContent: loadTemplate(templateKey, variables),
+      emailContent: await loadTemplate(templateKey, variables),
       emailSubject: defaultTemplate?.subject ?? '',
     };
   }
@@ -48,7 +48,7 @@ export async function getMappedEmailTemplate(
   const useDefaultSubject = !customTemplate || !customTemplate.subject?.trim();
 
   const emailContent = useDefaultHtml
-    ? loadTemplate(templateKey, variables)
+    ? await loadTemplate(templateKey, variables)
     : MapTemplate(customTemplate.html, variables);
 
   const defaultTemplate = defaultTemplates.find(

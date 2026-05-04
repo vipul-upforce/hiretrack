@@ -1,0 +1,101 @@
+<div
+  style="
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  "
+>
+  <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px">
+    <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 15px">
+      Candidates Unassigned
+    </h2>
+
+    <p style="margin: 0 0 15px 0">Hello {{recipientName}},</p>
+
+    <p style="margin: 0 0 15px 0">
+      {{triggererName}} has unassigned {{candidateCount}} candidate(s) from the
+      <strong>{{jobTitle}}</strong> position.
+    </p>
+
+    <div
+      style="
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+        border: 1px solid #dee2e6;
+      "
+    >
+      <h3 style="margin-top: 0; color: #495057">Unassignment Details</h3>
+      <div
+        style="
+          background-color: #fff3cd;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+          border-left: 4px solid #ffc107;
+        "
+      >
+        <p style="margin: 0; font-weight: bold; color: #856404">{{stepName}}</p>
+        <p style="margin: 5px 0 0 0">Unassigned by: {{completedBy}}</p>
+        <p style="margin: 5px 0 0 0">Date: {{completionDate}}</p>
+      </div>
+      <div
+        style="
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+        "
+      >
+        <p style="margin: 0 0 10px 0"><strong>Feedback:</strong></p>
+        <p style="margin: 0">{{feedback}}</p>
+      </div>
+      <div
+        style="
+          background-color: #e7f3ff;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+          border-left: 4px solid #007bff;
+        "
+      >
+        <p style="margin: 0"><strong>Next Step:</strong> {{nextStep}}</p>
+      </div>
+      <div
+        style="
+          background-color: #fff3cd;
+          padding: 15px;
+          border-radius: 5px;
+          margin: 15px 0;
+          border-left: 4px solid #ffc107;
+        "
+      >
+        <p style="margin: 0 0 10px 0"><strong>Unassigned Candidates:</strong></p>
+        <div style="margin: 0">{{candidateListHtml}}</div>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin: 20px 0">
+      <a
+        href="{{actionUrl}}"
+        style="
+          background-color: #007bff;
+          color: white;
+          padding: 10px 20px;
+          text-decoration: none;
+          border-radius: 5px;
+          display: inline-block;
+        "
+        >View All Candidates</a
+      >
+    </div>
+
+    <p style="margin: 15px 0 0 0">
+      Best regards,<br />{{organizationName}} Team
+    </p>
+  </div>
+</div>

@@ -13,12 +13,13 @@ import { toast } from 'sonner';
 import { useTheme } from '@/components/theme-provider';
 import { useGetEmailTemplatesQuery } from '@/lib/features/settings/configApi';
 import { useSendEmailToCandidateMutation } from '@/lib/features/candidate/candidateApi';
-import { useUploadFilesMutation } from '@/lib/features/files/fileSharesApi';
+import { useUploladFileSharesMutation } from '@/lib/features/files/fileSharesApi';
 import {
   DEFAULT_TEMPLATE_IDS,
   DEFAULT_VARIABLES,
 } from '@/app/dashboard/settings/templates/constants';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { substituteTemplateVariables } from '@/app/dashboard/settings/templates/components/email-template-editor/utils';
 import { EmailTemplateSelector } from './email-candidate-components/EmailTemplateSelector';
 import { EmailEditor } from './email-candidate-components/EmailEditor';
 import { EmailRecipients } from './email-candidate-components/EmailRecipients';
@@ -68,7 +69,7 @@ export function EmailCandidateDialog({
   } = useGetEmailTemplatesQuery(undefined, { skip: !isOpen });
 
   const [sendEmail] = useSendEmailToCandidateMutation();
-  const [uploadFiles] = useUploadFilesMutation();
+  const [uploadFiles] = useUploladFileSharesMutation();
 
   const userEmail = user?.email || '';
   const userName = user?.name || userEmail;
@@ -101,7 +102,7 @@ export function EmailCandidateDialog({
     // Filter to show only custom templates (suitable for manual emails to candidates)
     return loadedTemplates.filter((template) => template.isCustom);
   }, [templatesData]);
-  
+
   // Initialize user-related state
   useEffect(() => {
     if (user?.email) {
@@ -110,11 +111,12 @@ export function EmailCandidateDialog({
   }, [user]);
 
   const replaceVariables = (content: string): string =>
-    content
-      .replace(/{{SenderName}}/g, userName || userEmail)
-      .replace(/{{ReceiverName}}/g, candidate.name)
-      .replace(/{{PortalName}}/g, organizationName)
-      .replace(/{{jobTitle}}/g, candidate.jobTitle || '');
+    substituteTemplateVariables(content, {
+      SenderName: userName || userEmail,
+      ReceiverName: candidate.name,
+      PortalName: organizationName,
+      jobTitle: candidate.jobTitle || '',
+    });
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplate(templateId);

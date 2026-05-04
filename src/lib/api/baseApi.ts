@@ -7,6 +7,7 @@ import {
 } from '@reduxjs/toolkit/query/react';
 import type { AppDispatch } from '@/lib/redux/store';
 import logger from '../logger';
+import * as Sentry from '@sentry/nextjs';
 
 const PUBLIC_API_PATTERNS: Array<string | { url: string; methods?: string[] }> =
   [
@@ -43,7 +44,7 @@ function isPublicEndpoint(url: string, method?: string): boolean {
   if (typeof url !== 'string') return false;
 
   const normalizedMethod = method?.toUpperCase();
-  
+
   // Remove query params and normalize trailing slashes for comparison
   const normalizeUrl = (urlStr: string) => {
     const withoutQuery = urlStr.split('?')[0];
@@ -51,14 +52,14 @@ function isPublicEndpoint(url: string, method?: string): boolean {
       ? withoutQuery.slice(0, -1)
       : withoutQuery;
   };
-  
+
   const normalizedRequestUrl = normalizeUrl(url);
 
   return PUBLIC_API_PATTERNS.some((pattern) => {
     // Handle object-based patterns with method restrictions
     if (typeof pattern === 'object') {
       const normalizedPatternUrl = normalizeUrl(pattern.url);
-      
+
       // Exact match only - prevents sub-paths from matching
       if (normalizedRequestUrl !== normalizedPatternUrl) {
         return false;
@@ -90,6 +91,29 @@ let refreshPromise: Promise<void> | null = null;
 let refreshAbortController: AbortController | null = null;
 let isRefreshing = false;
 
+type ClientRefreshReason =
+  | 'REQUEST_STARTED'
+  | 'HTTP_ERROR'
+  | 'LICENSE_INVALID'
+  | 'FORCED_LOGIN_REDIRECT'
+  | 'TIMEOUT_ABORT'
+  | 'FETCH_USER_SYNC_FAILED';
+
+function captureClientRefreshEvent(
+  reason: ClientRefreshReason,
+  details: Record<string, unknown> = {},
+  level: Sentry.SeverityLevel = 'warning',
+) {
+  Sentry.withScope((scope) => {
+    scope.setTag('module', 'auth');
+    scope.setTag('flow', 'refresh_client');
+    scope.setTag('reason', reason);
+    scope.setLevel(level);
+    scope.setContext('auth_refresh_client', details);
+    Sentry.captureMessage(`auth.refresh_client.${reason.toLowerCase()}`);
+  });
+}
+
 /**
  * Refresh access token using httpOnly cookie
  * The refresh token is stored in httpOnly cookie and sent automatically
@@ -117,6 +141,25 @@ export async function refreshAccessToken(
   // Create the refresh promise
   refreshPromise = (async () => {
     try {
+      const clearClientAuthState = async () => {
+        if (!dispatch) return;
+        try {
+          const { logout } = await import('@/lib/redux/authSlice');
+          dispatch(logout());
+        } catch (dispatchError) {
+          logger.error('Failed to clear client auth state:', dispatchError);
+        }
+      };
+
+      logger.info('Refresh token: request started');
+      captureClientRefreshEvent(
+        'REQUEST_STARTED',
+        {
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+          isRefreshing,
+        },
+        'info',
+      );
       const response = await fetch(`/api/auth/refresh`, {
         method: 'POST',
         headers: {
@@ -131,11 +174,19 @@ export async function refreshAccessToken(
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        captureClientRefreshEvent('HTTP_ERROR', {
+          status: response.status,
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+        });
 
         // Handle license validation failure
         if (response.status === 403 && errorData.code === 'LICENSE_INVALID') {
+          captureClientRefreshEvent('LICENSE_INVALID', {
+            status: response.status,
+          });
           const errorMessage =
             errorData.licenseError || 'License validation failed';
+          await clearClientAuthState();
           if (typeof window !== 'undefined') {
             window.location.href = `/auth/login?error=license_invalid&message=${encodeURIComponent(
               errorMessage,
@@ -144,9 +195,18 @@ export async function refreshAccessToken(
           throw new Error('License validation failed');
         }
 
-        // If refresh fails, redirect to login
-        if (typeof window !== 'undefined' || response.status === 401) {
-          window.location.href = '/auth/login';
+        // If refresh fails, redirect to login and preserve current path + query for post-login redirect
+        await clearClientAuthState();
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname + window.location.search;
+          captureClientRefreshEvent('FORCED_LOGIN_REDIRECT', {
+            fromPath: path,
+          });
+          const loginUrl =
+            path && path !== '/auth/login'
+              ? `/auth/login?redirect=${encodeURIComponent(path)}`
+              : '/auth/login';
+          window.location.href = loginUrl;
         }
         throw new Error('Failed to refresh token');
       }
@@ -163,6 +223,9 @@ export async function refreshAccessToken(
             })
             .catch((error) => {
               // Log error but don't throw - token refresh was successful
+              captureClientRefreshEvent('FETCH_USER_SYNC_FAILED', {
+                message: error instanceof Error ? error.message : 'unknown',
+              });
               logger.error(
                 'Failed to dispatch fetchUserFromToken after token refresh:',
                 error,
@@ -175,6 +238,10 @@ export async function refreshAccessToken(
 
       // Handle abort/timeout errors
       if (error instanceof Error && error.name === 'AbortError') {
+        captureClientRefreshEvent('TIMEOUT_ABORT', {
+          timeoutMs: 20000,
+          pathname: typeof window !== 'undefined' ? window.location.pathname : '',
+        });
         logger.warn('Token refresh request was aborted or timed out');
         // Don't redirect on timeout - let the original request fail naturally
         throw new Error('Token refresh timeout');
@@ -341,6 +408,7 @@ export const baseApi = createApi({
     'EmailNotificationJob',
     'EmailNotificationUser',
     'Profile',
+    'CronTimezone',
   ],
   endpoints: () => ({}),
 });

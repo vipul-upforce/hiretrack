@@ -1,12 +1,18 @@
 /* eslint-disable max-lines -- single module for all bulk notification handlers */
+import { formatDateForOrganization } from '@/components/timezoneFormat/getFormattedTZ';
 import { NotificationType } from '@/lib/models/notification';
 import logger from '@/lib/logger';
 import { findMentionedUsers } from '@/lib/services/userMentionService';
-import { getUsersByRole } from '../core/userHelpers';
+import {
+  getUsersByRole,
+  getRecipientDisplayNameForBulkEmail,
+  getHrContactInfo,
+} from '../core/userHelpers';
 import {
   createBulkNotificationsWithDecision,
   createNotificationWithDecision,
 } from '../core/notificationHelpers';
+import { sendBulkActionEmail } from '../email/unifiedEmailService';
 
 /** When bulk assign/unassign exceeds this count, interviewer gets one bulk notification instead of per-candidate. */
 const BULK_SINGLE_NOTIFICATION_THRESHOLD = 10;
@@ -70,9 +76,24 @@ export async function notifyBulkCandidateAssigned(params: {
   interviewerName: string;
   jobId: string;
   jobTitle: string;
-  candidates: Array<{ candidateId: string; candidateName: string }>;
+  candidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId?: string;
+  }>;
   triggerUserId: string;
   triggerUserName: string;
+  triggerUserEmail?: string;
+  /** When meeting scheduled: ISO string */
+  scheduledTime?: string | null;
+  /** Meeting duration in minutes */
+  duration?: number;
+  /** First candidate's meeting link when scheduled */
+  meetingLink?: string | null;
+  /** Outlook calendar add link when scheduled */
+  outlookCalendarLink?: string | null;
+  /** Interview type when meeting scheduled */
+  interviewType?: string;
 }): Promise<void> {
   try {
     const count = params.candidates.length;
@@ -225,6 +246,94 @@ export async function notifyBulkCandidateAssigned(params: {
         },
       });
     }
+
+    // Bulk assign email: interviewer (when bulk) + admin/hr
+    const candidatesWithJobId = params.candidates.map((c) => ({
+      candidateId: c.candidateId,
+      candidateName: c.candidateName,
+      jobId: c.jobId ?? params.jobId,
+    }));
+
+    const interviewDate =
+      params.scheduledTime != null && params.scheduledTime
+        ? ((await formatDateForOrganization(
+            params.scheduledTime,
+            params.organizationId,
+          )) as string)
+        : 'N/A';
+    const interviewTime =
+      params.scheduledTime != null && params.scheduledTime ? '' : 'TBD';
+    const durationStr =
+      params.duration != null ? `${params.duration} minutes` : 'TBD';
+    const interviewTypeVal =
+      params.interviewType ??
+      (params.scheduledTime ? 'Interview' : 'Interview');
+
+    const baseVariables = {
+      candidateCount: count.toString(),
+      triggererName: params.triggerUserName,
+      jobTitle: params.jobTitle,
+      jobId: params.jobId,
+      candidateName: params.candidates[0]?.candidateName ?? '',
+      interviewDate,
+      interviewTime,
+      duration: durationStr,
+      interviewType: interviewTypeVal,
+      meetingLink: params.meetingLink ?? '',
+      outlookCalendarLink: params.outlookCalendarLink ?? '',
+    };
+
+    const interviewerEmailRecipients: string[] = [];
+    if (
+      params.interviewerId !== params.triggerUserId &&
+      !isInterviewerAlsoAdminHr
+    ) {
+      interviewerEmailRecipients.push(params.interviewerId);
+    }
+    if (interviewerEmailRecipients.length > 0) {
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.INTERVIEW_ASSIGNMENTS,
+        templateKey: 'bulk-assign',
+        variables: {
+          ...baseVariables,
+          interviewerName: params.interviewerName,
+          recipientName: params.interviewerName,
+        },
+        recipients: interviewerEmailRecipients,
+        candidates: candidatesWithJobId,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: params.jobId,
+      }).catch((err) =>
+        logger.error({ err }, 'Bulk assign email to interviewer failed'),
+      );
+    }
+    if (adminHrRecipients.length > 0) {
+      const adminRecipientName = await getRecipientDisplayNameForBulkEmail(
+        params.organizationId,
+        adminHrRecipients,
+      );
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.INTERVIEW_ASSIGNMENTS,
+        templateKey: 'bulk-assign',
+        variables: {
+          ...baseVariables,
+          interviewerName: params.interviewerName,
+          recipientName: adminRecipientName,
+        },
+        recipients: adminHrRecipients,
+        candidates: candidatesWithJobId,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: params.jobId,
+      }).catch((err) =>
+        logger.error({ err }, 'Bulk assign email to admin/hr failed'),
+      );
+    }
   } catch (error) {
     logger.error('Failed to send bulk candidate assigned notification:', error);
   }
@@ -248,6 +357,11 @@ export async function notifyBulkCandidateUnassigned(params: {
   }>;
   triggerUserId: string;
   triggerUserName: string;
+  triggerUserEmail?: string;
+  /** Feedback message for bulk-unassign email template */
+  feedback?: string;
+  /** Next step message for bulk-unassign email template */
+  nextStep?: string;
 }): Promise<void> {
   try {
     const adminHrIds = await getUsersByRole(params.organizationId, [
@@ -410,6 +524,88 @@ export async function notifyBulkCandidateUnassigned(params: {
         },
       });
     }
+
+    // Bulk unassign email: each previous interviewer (when bulk) + admin/hr
+    const candidatesForEmail = params.unassignments.map((u) => ({
+      candidateId: u.candidateId,
+      candidateName: u.candidateName,
+      jobId: u.jobId,
+    }));
+    const primaryJobId = params.unassignments[0]?.jobId ?? '';
+    const primaryJobTitle = params.unassignments[0]?.jobTitle ?? '';
+
+    const completionDate = (await formatDateForOrganization(
+      new Date(),
+      params.organizationId,
+    )) as string;
+    for (const [interviewerId, list] of byInterviewer) {
+      // if (list.length > BULK_SINGLE_NOTIFICATION_THRESHOLD) {
+      const interviewerCandidates = list.map((u) => ({
+        candidateId: u.candidateId,
+        candidateName: u.candidateName,
+        jobId: u.jobId,
+      }));
+
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.STEP_COMPLETED,
+        templateKey: 'bulk-unassign',
+        variables: {
+          candidateCount: list.length.toString(),
+          triggererName: params.triggerUserName,
+          jobTitle: list[0].jobTitle,
+          jobId: list[0].jobId,
+          recipientName: list[0].previousInterviewerName,
+          stepName: 'Interview Unassigned',
+          completedBy: params.triggerUserName,
+          completionDate,
+          feedback: params.feedback ?? 'N/A',
+          nextStep: params.nextStep ?? 'N/A',
+          candidateName: list[0].candidateName,
+        },
+        recipients: [interviewerId],
+        candidates: interviewerCandidates,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: list[0].jobId,
+      }).catch((err) =>
+        logger.error({ err }, 'Bulk unassign email to interviewer failed'),
+      );
+      // }
+    }
+    if (adminHrRecipients.length > 0) {
+      const adminRecipientName = await getRecipientDisplayNameForBulkEmail(
+        params.organizationId,
+        adminHrRecipients,
+      );
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.STEP_COMPLETED,
+        templateKey: 'bulk-unassign',
+        variables: {
+          candidateCount: totalCount.toString(),
+          triggererName: params.triggerUserName,
+          jobTitle: primaryJobTitle,
+          jobId: primaryJobId,
+          recipientName: adminRecipientName,
+          stepName: 'Interview Unassigned',
+          completedBy: params.triggerUserName,
+          completionDate,
+          feedback: params.feedback ?? 'N/A',
+          nextStep: params.nextStep ?? 'N/A',
+          candidateName: params.unassignments[0]?.candidateName ?? '',
+        },
+        recipients: adminHrRecipients,
+        candidates: candidatesForEmail,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: primaryJobId,
+      }).catch((err) =>
+        logger.error({ err }, 'Bulk unassign email to admin/hr failed'),
+      );
+    }
   } catch (error) {
     logger.error(
       'Failed to send bulk candidate unassigned notification:',
@@ -424,6 +620,9 @@ export async function notifyBulkCandidateUnassigned(params: {
 export async function notifyBulkCandidateStatusUpdated(params: {
   organizationId: string;
   newStatus: string;
+  nextStep?: string;
+  /** Remark when status update + remark done together (statusMessage in email) */
+  statusMessage?: string;
   candidates: Array<{
     candidateId: string;
     candidateName: string;
@@ -433,6 +632,7 @@ export async function notifyBulkCandidateStatusUpdated(params: {
   }>;
   triggerUserId: string;
   triggerUserName: string;
+  triggerUserEmail?: string;
 }): Promise<void> {
   try {
     const adminHrIds = await getUsersByRole(params.organizationId, [
@@ -440,6 +640,11 @@ export async function notifyBulkCandidateStatusUpdated(params: {
       'hr',
     ]);
     const filteredIds = adminHrIds.filter((id) => id !== params.triggerUserId);
+
+    const hrContactInfo = await getHrContactInfo(
+      params.organizationId,
+      params.triggerUserId,
+    );
 
     const count = params.candidates.length;
 
@@ -469,6 +674,47 @@ export async function notifyBulkCandidateStatusUpdated(params: {
         },
       },
     });
+
+    if (filteredIds.length > 0) {
+      const candidatesForEmail = params.candidates.map((c) => ({
+        candidateId: c.candidateId,
+        candidateName: c.candidateName,
+        jobId: c.jobId,
+      }));
+      const statusUpdateRecipientName =
+        await getRecipientDisplayNameForBulkEmail(
+          params.organizationId,
+          filteredIds,
+        );
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.STATUS_UPDATES,
+        templateKey: 'bulk-status-update',
+        variables: {
+          candidateCount: count.toString(),
+          newStatus: params.newStatus,
+          triggererName: params.triggerUserName,
+          jobTitle: params.candidates[0]?.jobTitle ?? '',
+          jobId: params.candidates[0]?.jobId ?? '',
+          recipientName: statusUpdateRecipientName,
+          statusMessage: params.statusMessage?.trim() || 'N/A',
+          nextSteps:
+            params.nextStep && params.nextStep !== 'N/A'
+              ? params.nextStep
+              : 'N/A',
+          hrContactInfo: hrContactInfo ?? 'N/A',
+          candidateName: params.candidates[0]?.candidateName ?? '',
+        },
+        recipients: filteredIds,
+        candidates: candidatesForEmail,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: params.candidates[0]?.jobId,
+      }).catch((err) =>
+        logger.error({ err }, 'Bulk status update email failed'),
+      );
+    }
   } catch (error) {
     logger.error(
       'Failed to send bulk candidate status updated notification:',
@@ -486,6 +732,8 @@ export async function notifyBulkRemarkAdded(params: {
   remarkText: string;
   roles: string[];
   validMentionUserIds?: string[];
+  /** Rating (0-5) for bulk remark email template */
+  rating?: number;
   candidates: Array<{
     candidateId: string;
     candidateName: string;
@@ -494,6 +742,7 @@ export async function notifyBulkRemarkAdded(params: {
   }>;
   triggerUserId: string;
   triggerUserName: string;
+  triggerUserEmail?: string;
 }): Promise<void> {
   try {
     const userIds = await getUsersByRole(params.organizationId, params.roles);
@@ -579,6 +828,54 @@ export async function notifyBulkRemarkAdded(params: {
         },
       });
     }
+
+    const allEmailRecipients = [
+      ...new Set([...filteredIds, ...mentionedUserIds]),
+    ].filter((id) => id !== params.triggerUserId);
+    if (allEmailRecipients.length > 0) {
+      const candidatesForEmail = params.candidates.map((c) => ({
+        candidateId: c.candidateId,
+        candidateName: c.candidateName,
+        jobId: c.jobId,
+      }));
+      const remarkTextTruncated =
+        params.remarkText.substring(0, 100) +
+        (params.remarkText.length > 100 ? '...' : '');
+      const remarkRecipientName = await getRecipientDisplayNameForBulkEmail(
+        params.organizationId,
+        allEmailRecipients,
+      );
+      const remarkDate = (await formatDateForOrganization(
+        new Date(),
+        params.organizationId,
+      )) as string;
+      sendBulkActionEmail({
+        organizationId: params.organizationId,
+        notificationType: NotificationType.NEW_REMARKS,
+        templateKey: 'bulk-remark',
+        variables: {
+          candidateCount: params.candidates.length.toString(),
+          triggererName: params.triggerUserName,
+          reviewerName: params.triggerUserName,
+          remarkText: remarkTextTruncated,
+          remarkDate,
+          rating:
+            params.rating !== undefined && params.rating !== null
+              ? `${params.rating}/5`
+              : 'N/A',
+          jobTitle: params.candidates[0]?.jobTitle ?? '',
+          jobId: params.candidates[0]?.jobId ?? '',
+          recipientName: remarkRecipientName,
+          candidateName: params.candidates[0]?.candidateName ?? '',
+        },
+        recipients: allEmailRecipients,
+        candidates: candidatesForEmail,
+        triggererUserId: params.triggerUserId,
+        triggererEmail: params.triggerUserEmail,
+        triggererName: params.triggerUserName,
+        jobId: params.candidates[0]?.jobId,
+      }).catch((err) => logger.error({ err }, 'Bulk remark email failed'));
+    }
   } catch (error) {
     logger.error('Failed to send bulk remark notification:', error);
   }
@@ -643,6 +940,59 @@ export async function notifyBulkFollowUpAdded(params: {
     });
   } catch (error) {
     logger.error('Failed to send bulk follow-up added notification:', error);
+  }
+}
+
+/**
+ * Bulk remove follow-up: admin/hr get one bulk notification.
+ */
+export async function notifyBulkFollowUpRemoved(params: {
+  organizationId: string;
+  candidates: Array<{
+    candidateId: string;
+    candidateName: string;
+    jobId: string;
+    jobTitle: string;
+  }>;
+  triggerUserId: string;
+  triggerUserName: string;
+}): Promise<void> {
+  try {
+    const adminHrIds = await getUsersByRole(params.organizationId, [
+      'admin',
+      'hr',
+    ]);
+    const filteredIds = adminHrIds.filter((id) => id !== params.triggerUserId);
+
+    const count = params.candidates.length;
+
+    await createBulkNotificationsWithDecision({
+      organizationId: params.organizationId,
+      recipientIds: filteredIds,
+      notificationType: NotificationType.FOLLOWUP_REMOVED,
+      jobId: params.candidates[0]?.jobId,
+      triggerUserId: params.triggerUserId,
+      baseParams: {
+        organizationId: params.organizationId,
+        type: NotificationType.FOLLOWUP_REMOVED,
+        title: 'Follow-ups Removed',
+        message: `${params.triggerUserName} removed follow-up from ${count} candidate${count > 1 ? 's' : ''}`,
+        relatedEntity: 'job',
+        relatedId: params.candidates[0]?.jobId ?? '',
+        actionUrl: params.candidates[0]?.jobId
+          ? `/dashboard/jobs/${params.candidates[0].jobId}`
+          : '/dashboard/jobs',
+        triggerUserId: params.triggerUserId,
+        triggerUserName: params.triggerUserName,
+        priority: 'low',
+        metadata: {
+          candidateCount: count,
+          isBulkFollowUpRemove: true,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to send bulk follow-up removed notification:', error);
   }
 }
 

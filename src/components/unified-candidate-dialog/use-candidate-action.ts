@@ -15,7 +15,6 @@ import {
 } from '@/lib/features/candidate/candidateApi';
 import {
   useAssignJobMutation,
-  useBulkAssignJobMutation,
   useFetchOpenJobsQuery,
   useFetchJobLanesQuery,
 } from '@/lib/features/job/jobApi';
@@ -51,11 +50,13 @@ import {
 } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
 import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
 import { uploadAttachments } from '@/app/dashboard/jobs/[id]/hooks/fileUploadUtils';
+import type { BulkUpdateOperationParams } from '@/app/api/candidates/bulk-update/types';
 import {
   UnifiedFormValues,
   CandidateActionType,
   ActionCheckboxes,
   UnifiedCandidateActionsDialogProps,
+  BulkStatusQueueItem,
 } from './types';
 
 /**
@@ -82,10 +83,15 @@ export function useCandidateActions({
   refetchAssignment,
   onSuccess,
   onOpenChange,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
+  onBulkStatusRequiresChecklist,
+  onBulkStatusRequiresReason,
 }: UnifiedCandidateActionsDialogProps) {
   const isBulkMode = candidates && candidates.length > 1;
   const candidateList = isBulkMode ? candidates : [candidate];
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state?.auth ?? {});
   const pathname = usePathname();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [cancelMeetingProvider, setCancelMeetingProvider] = useState<
@@ -97,7 +103,6 @@ export function useCandidateActions({
   const [updateCandidate] = useUpdateCandidateMutation();
   const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
   const [assignJob] = useAssignJobMutation();
-  const [bulkAssignJob] = useBulkAssignJobMutation();
   const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
   const [fetchCandidateDetails] = useLazyFetchCandidateDetailsQuery();
   const [uploadFiles] = useUploadFilesMutation();
@@ -117,11 +122,24 @@ export function useCandidateActions({
   const [cancelTeamsMeeting, { isLoading: isCancellingTeams }] =
     useCancelTeamsMeetingMutation();
 
-  const { data: jobs } = useFetchOpenJobsQuery();
-  const { data: googleCalendarData } =
-    useGetGoogleCalendarConfigQuery(undefined);
-  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined);
-  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined);
+  const canManageAssignments = user?.role === 'admin' || user?.role === 'hr';
+  const shouldFetchActionDependencies = isOpen && canManageAssignments;
+
+  const { data: jobs } = useFetchOpenJobsQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
+  const { data: googleCalendarData } = useGetGoogleCalendarConfigQuery(
+    undefined,
+    {
+      skip: !shouldFetchActionDependencies,
+    },
+  );
+  const { data: zoomConfigData } = useGetZoomConfigQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
+  const { data: teamsConfigData } = useGetMicrosoftTeamsConfigQuery(undefined, {
+    skip: !shouldFetchActionDependencies,
+  });
 
   const getInitialJobId = useCallback(() => {
     if (typeof candidate.jobId === 'string') return candidate.jobId;
@@ -132,8 +150,7 @@ export function useCandidateActions({
 
   const jobId = getInitialJobId();
 
-  const shouldFetchInterviewers =
-    user && (user.role === 'admin' || user.role === 'hr');
+  const shouldFetchInterviewers = user && canManageAssignments;
 
   const { data: interviewers, refetch: refetchInterviewers } =
     useFetchInterviewersQuery(undefined, {
@@ -151,7 +168,7 @@ export function useCandidateActions({
 
   const { data: jobLanesData, isLoading: isLoadingLanes } =
     useFetchJobLanesQuery(jobId, {
-      skip: !jobId || !isOpen,
+      skip: !jobId || !shouldFetchActionDependencies,
     });
 
   // Sync checkboxes with initialAction
@@ -169,7 +186,7 @@ export function useCandidateActions({
         refetchInterviewers();
       }
     }
-  }, [isOpen, initialAction, refetchInterviewers]);
+  }, [isOpen, initialAction, refetchInterviewers, shouldFetchInterviewers]);
 
   const initialValues = useMemo<UnifiedFormValues>(() => {
     // Get interviewerId, use "-1" for "None" option in Select when there's no assignment
@@ -362,217 +379,220 @@ export function useCandidateActions({
     );
     if (!selectedInterviewer) throw new Error('Selected interviewer not found');
 
-    let { googleMeetData, zoomMeetData, teamsMeetData } = values;
+    let googleMeetData;
+    let zoomMeetData;
+    let teamsMeetData;
     const scheduleGoogle = values.scheduleGoogleMeet && values.time;
     const scheduleZoom = values.scheduleZoomMeet && values.time;
     const scheduleTeams = values.scheduleTeamsMeet && values.time;
 
-    if (scheduleGoogle || scheduleZoom || scheduleTeams) {
-      const processMeetingAttachments = async (files: unknown[]): Promise<Attachment[]> => {
-        const attachmentsToProcess: Attachment[] = await Promise.all(
-          (files || []).map(async (file): Promise<Attachment> => {
-            if (file instanceof File) {
-              const reader = new FileReader();
-              const dataUrl = await new Promise<string>((resolve, reject) => {
-                reader.onload = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-              });
-              return {
-                id: Math.random().toString(36).slice(2),
-                name: file.name,
-                url: dataUrl,
-                type: file.type,
-                size: file.size,
-              };
-            }
-            return file as Attachment;
-          }),
-        );
-          // Upload meeting attachments
-        return uploadAttachments({
-          attachments: attachmentsToProcess,
-          uploadFiles,
-          organizationId: user?.organizationId as string,
-        });
+    const processMeetingAttachments = async (
+      files: unknown[],
+    ): Promise<Attachment[]> => {
+      const attachmentsToProcess: Attachment[] = await Promise.all(
+        (files || []).map(async (file): Promise<Attachment> => {
+          if (file instanceof File) {
+            const reader = new FileReader();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            return {
+              id: Math.random().toString(36).slice(2),
+              name: file.name,
+              url: dataUrl,
+              type: file.type,
+              size: file.size,
+            };
+          }
+          return file as Attachment;
+        }),
+      );
+      // Upload meeting attachments
+      return uploadAttachments({
+        attachments: attachmentsToProcess,
+        uploadFiles,
+        organizationId: user?.organizationId as string,
+      });
+    };
+
+    if (scheduleGoogle) {
+      const guests = [
+        ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
+        ...(candidate.email ? [candidate.email] : []),
+        ...(user.email && user.email !== selectedInterviewer.email
+          ? [user.email]
+          : []),
+        ...(values.additionalGuests || []),
+      ];
+
+      const processedMeetingAttachments = await processMeetingAttachments(
+        values.meetingAttachments || [],
+      );
+
+      const isUpdating = candidate.assignment?.googleMeet?.eventId;
+      const result = isUpdating
+        ? await updateMeeting({
+            eventId: candidate.assignment?.googleMeet?.eventId || '',
+            candidateId: candidate._id,
+            scheduledTime: values.time?.toISOString() || '',
+            duration: values.meetDuration || 30,
+            guests,
+            meetingNotes: values.meetingNotes || '',
+            meetingAttachments:
+              processedMeetingAttachments as unknown as MeetingAttachment[],
+          }).unwrap()
+        : await scheduleMeeting({
+            candidateId: candidate._id,
+            candidateName: candidate.name,
+            candidateEmail: candidate.email,
+            interviewerId: selectedInterviewer._id,
+            interviewerName: selectedInterviewer.name,
+            interviewerEmail: selectedInterviewer.email,
+            scheduledTime: values.time?.toISOString() || '',
+            duration: values.meetDuration || 30,
+            guests,
+            jobTitle: candidate.jobId?.title || 'Position',
+            organizationName: user?.organizationInfo?.name || 'Company',
+            meetingNotes: values.meetingNotes || '',
+            meetingAttachments:
+              processedMeetingAttachments as unknown as MeetingAttachment[],
+          }).unwrap();
+
+      googleMeetData = {
+        eventId: result.eventId,
+        meetingLink: result.meetingLink,
+        htmlLink: result.htmlLink,
+        summary: result.summary,
+        description: result.description,
+        meetingNotes: values.meetingNotes,
+        meetingAttachments:
+          processedMeetingAttachments as unknown as Attachment[],
       };
+    }
 
-      if (scheduleGoogle) {
-        const guests = [
-          ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
-          ...(candidate.email ? [candidate.email] : []),
-          ...(user.email && user.email !== selectedInterviewer.email
-            ? [user.email]
-            : []),
-          ...(values.additionalGuests || []),
-        ];
+    if (scheduleZoom) {
+      const guests = [
+        ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
+        ...(candidate.email ? [candidate.email] : []),
+        ...(user.email && user.email !== selectedInterviewer.email
+          ? [user.email]
+          : []),
+        ...(values.zoomAdditionalGuests || []),
+      ];
 
-        const processedMeetingAttachments = await processMeetingAttachments(
-          values.meetingAttachments || [],
-        );
+      const processedMeetingAttachments = await processMeetingAttachments(
+        values.zoomMeetingAttachments || [],
+      );
 
-        const isUpdating = candidate.assignment?.googleMeet?.eventId;
-        const result = isUpdating
-          ? await updateMeeting({
-              eventId: candidate.assignment?.googleMeet?.eventId || '',
-              candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString() || '',
-              duration: values.meetDuration || 30,
-              guests,
-              meetingNotes: values.meetingNotes || '',
-              meetingAttachments:
-                processedMeetingAttachments as unknown as MeetingAttachment[],
-            }).unwrap()
-          : await scheduleMeeting({
-              candidateId: candidate._id,
-              candidateName: candidate.name,
-              candidateEmail: candidate.email,
-              interviewerId: selectedInterviewer._id,
-              interviewerName: selectedInterviewer.name,
-              interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time?.toISOString() || '',
-              duration: values.meetDuration || 30,
-              guests,
-              jobTitle: candidate.jobId?.title || 'Position',
-              organizationName: user?.organizationInfo?.name || 'Company',
-              meetingNotes: values.meetingNotes || '',
-              meetingAttachments:
-                processedMeetingAttachments as unknown as MeetingAttachment[],
-            }).unwrap();
+      const isUpdating = candidate.assignment?.zoomMeet?.meetingId;
+      const result = isUpdating
+        ? await updateZoomMeeting({
+            meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
+            eventId: candidate.assignment?.zoomMeet?.eventId || '',
+            candidateId: candidate._id,
+            scheduledTime: values.time?.toISOString() || '',
+            duration: values.zoomMeetDuration || 30,
+            guests,
+            meetingNotes: values.zoomMeetingNotes || '',
+            meetingAttachments:
+              processedMeetingAttachments as unknown as MeetingAttachment[],
+          }).unwrap()
+        : await scheduleZoomMeeting({
+            candidateId: candidate._id,
+            candidateName: candidate.name,
+            candidateEmail: candidate.email,
+            interviewerId: selectedInterviewer._id,
+            interviewerName: selectedInterviewer.name,
+            interviewerEmail: selectedInterviewer.email,
+            scheduledTime: values.time?.toISOString() || '',
+            duration: values.zoomMeetDuration || 30,
+            guests,
+            jobTitle: candidate.jobId?.title || 'Position',
+            organizationName: user?.organizationInfo?.name || 'Company',
+            meetingNotes: values.zoomMeetingNotes || '',
+            meetingAttachments:
+              processedMeetingAttachments as unknown as MeetingAttachment[],
+          }).unwrap();
 
-        googleMeetData = {
-          eventId: result.eventId,
-          meetingLink: result.meetingLink,
-          htmlLink: result.htmlLink,
-          summary: result.summary,
-          description: result.description,
-          meetingNotes: values.meetingNotes,
-          meetingAttachments:
-            processedMeetingAttachments as unknown as Attachment[],
-        };
-      }
+      zoomMeetData = {
+        meetingId: result.meetingId,
+        meetingLink: result.meetingLink,
+        startUrl: result.startUrl,
+        eventId: result.eventId,
+        htmlLink: result.htmlLink,
+        summary: result.summary,
+        description: result.description,
+        meetingNotes: values.zoomMeetingNotes,
+        meetingAttachments:
+          processedMeetingAttachments as unknown as Attachment[],
+      };
+    }
 
-      if (scheduleZoom) {
-        const guests = [
-          ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
-          ...(candidate.email ? [candidate.email] : []),
-          ...(user.email && user.email !== selectedInterviewer.email
-            ? [user.email]
-            : []),
-          ...(values.zoomAdditionalGuests || []),
-        ];
+    if (scheduleTeams) {
+      const guests = [
+        ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
+        ...(candidate.email ? [candidate.email] : []),
+        ...(user.email && user.email !== selectedInterviewer.email
+          ? [user.email]
+          : []),
+        ...(values.teamsAdditionalGuests || []),
+      ];
 
-        const processedMeetingAttachments = await processMeetingAttachments(
-          values.zoomMeetingAttachments || [],
-        );
+      const processedMeetingAttachments = await processMeetingAttachments(
+        values.teamsMeetingAttachments || [],
+      );
 
-        const isUpdating = candidate.assignment?.zoomMeet?.meetingId;
-        const result = isUpdating
-          ? await updateZoomMeeting({
-              meetingId: candidate.assignment?.zoomMeet?.meetingId || '',
-              eventId: candidate.assignment?.zoomMeet?.eventId || '',
-              candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString() || '',
-              duration: values.zoomMeetDuration || 30,
-              guests,
-              meetingNotes: values.zoomMeetingNotes || '',
-              meetingAttachments:
-                processedMeetingAttachments as unknown as MeetingAttachment[],
-            }).unwrap()
-          : await scheduleZoomMeeting({
-              candidateId: candidate._id,
-              candidateName: candidate.name,
-              candidateEmail: candidate.email,
-              interviewerId: selectedInterviewer._id,
-              interviewerName: selectedInterviewer.name,
-              interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time?.toISOString() || '',
-              duration: values.zoomMeetDuration || 30,
-              guests,
-              jobTitle: candidate.jobId?.title || 'Position',
-              organizationName: user?.organizationInfo?.name || 'Company',
-              meetingNotes: values.zoomMeetingNotes || '',
-              meetingAttachments:
-                processedMeetingAttachments as unknown as MeetingAttachment[],
-            }).unwrap();
+      const isUpdating = candidate.assignment?.microsoftTeams?.meetingId;
+      const result = isUpdating
+        ? await updateTeamsMeeting({
+            meetingId: candidate.assignment?.microsoftTeams?.meetingId || '',
+            eventId: candidate.assignment?.microsoftTeams?.eventId || '',
+            candidateId: candidate._id,
+            scheduledTime: values.time?.toISOString() || '',
+            duration: values.teamsMeetDuration || 30,
+            guests,
+            meetingNotes: values.teamsMeetingNotes || '',
+            meetingAttachments:
+              processedMeetingAttachments as unknown as MeetingAttachment[],
+          }).unwrap()
+        : await scheduleTeamsMeeting({
+            candidateId: candidate._id,
+            candidateName: candidate.name,
+            candidateEmail: candidate.email,
+            interviewerId: selectedInterviewer._id,
+            interviewerName: selectedInterviewer.name,
+            interviewerEmail: selectedInterviewer.email,
+            scheduledTime: values.time?.toISOString() || '',
+            duration: values.teamsMeetDuration || 30,
+            guests,
+            jobTitle: candidate.jobId?.title || 'Position',
+            organizationName: user?.organizationInfo?.name || 'Company',
+            meetingNotes: values.teamsMeetingNotes || '',
+            meetingAttachments:
+              processedMeetingAttachments as unknown as MeetingAttachment[],
+          }).unwrap();
 
-        zoomMeetData = {
-          meetingId: result.meetingId,
-          meetingLink: result.meetingLink,
-          startUrl: result.startUrl,
-          eventId: result.eventId,
-          htmlLink: result.htmlLink,
-          summary: result.summary,
-          description: result.description,
-          meetingNotes: values.zoomMeetingNotes,
-          meetingAttachments:
-            processedMeetingAttachments as unknown as Attachment[],
-        };
-      }
-
-      if (scheduleTeams) {
-        const guests = [
-          ...(selectedInterviewer.email ? [selectedInterviewer.email] : []),
-          ...(candidate.email ? [candidate.email] : []),
-          ...(user.email && user.email !== selectedInterviewer.email
-            ? [user.email]
-            : []),
-          ...(values.teamsAdditionalGuests || []),
-        ];
-
-        const processedMeetingAttachments = await processMeetingAttachments(
-          values.teamsMeetingAttachments || [],
-        );
-
-        const isUpdating = candidate.assignment?.microsoftTeams?.meetingId;
-        const result = isUpdating
-          ? await updateTeamsMeeting({
-              meetingId: candidate.assignment?.microsoftTeams?.meetingId || '',
-              eventId: candidate.assignment?.microsoftTeams?.eventId || '',
-              candidateId: candidate._id,
-              scheduledTime: values.time?.toISOString() || '',
-              duration: values.teamsMeetDuration || 30,
-              guests,
-              meetingNotes: values.teamsMeetingNotes || '',
-              meetingAttachments:
-                processedMeetingAttachments as unknown as MeetingAttachment[],
-            }).unwrap()
-          : await scheduleTeamsMeeting({
-              candidateId: candidate._id,
-              candidateName: candidate.name,
-              candidateEmail: candidate.email,
-              interviewerId: selectedInterviewer._id,
-              interviewerName: selectedInterviewer.name,
-              interviewerEmail: selectedInterviewer.email,
-              scheduledTime: values.time?.toISOString() || '',
-              duration: values.teamsMeetDuration || 30,
-              guests,
-              jobTitle: candidate.jobId?.title || 'Position',
-              organizationName: user?.organizationInfo?.name || 'Company',
-              meetingNotes: values.teamsMeetingNotes || '',
-              meetingAttachments:
-                processedMeetingAttachments as unknown as MeetingAttachment[],
-            }).unwrap();
-
-        teamsMeetData = {
-          meetingId: result.meetingId,
-          meetingLink: result.meetingLink,
-          eventId: result.eventId,
-          htmlLink: result.htmlLink,
-          summary: result.summary,
-          description: result.description,
-          meetingNotes: values.teamsMeetingNotes,
-          meetingAttachments:
-            processedMeetingAttachments as unknown as Attachment[],
-        };
-      }
+      teamsMeetData = {
+        meetingId: result.meetingId,
+        meetingLink: result.meetingLink,
+        eventId: result.eventId,
+        htmlLink: result.htmlLink,
+        summary: result.summary,
+        description: result.description,
+        meetingNotes: values.teamsMeetingNotes,
+        meetingAttachments:
+          processedMeetingAttachments as unknown as Attachment[],
+      };
     }
 
     // Use uploaded attachments (passed from handleSubmit)
     const existingNames = new Set(candidate.attachments.map((a) => a.name));
-    const attachmentsToUse = uploadedAttachments.length > 0 
-      ? uploadedAttachments 
-      : (values.attachments || []);
+    const attachmentsToUse =
+      uploadedAttachments.length > 0
+        ? uploadedAttachments
+        : values.attachments || [];
     updates.attachments = [
       ...candidate.attachments,
       ...attachmentsToUse.filter((a) => !existingNames.has(a.name)),
@@ -662,7 +682,7 @@ export function useCandidateActions({
           } as ICandidateHistory['note']),
       attachments: values.attachments,
     });
-  };
+  }; // <--- THIS WAS THE FIX: Closed the handleAssignTo scope.
 
   const handleSubmit = async (
     values: UnifiedFormValues,
@@ -709,33 +729,11 @@ export function useCandidateActions({
         }> = [];
 
         // Build operations array from enabled actions
-        // Note: switchJob uses separate API (bulkAssignJob) for now, but could be added to bulk-update later
         if (actions.switchJob && values.jobId) {
-          try {
-            const result = await bulkAssignJob({
-              jobId: values.jobId,
-              candidateIds,
-            }).unwrap();
-            const count =
-              result?.updatedCandidates?.length ?? candidateIds.length;
-            toast({
-              title: 'Success',
-              description: `${count} candidate(s) moved to job`,
-            });
-            onSuccess?.();
-            onOpenChange(false);
-          } catch (error) {
-            toast({
-              title: 'Error',
-              description:
-                (error as { data?: { error?: string } })?.data?.error ||
-                (error as Error)?.message ||
-                'Failed to move candidates',
-              variant: 'destructive',
-            });
-          }
-          setIsSubmitting(false);
-          return;
+          operations.push({
+            operation: 'moveJob',
+            jobId: values.jobId,
+          });
         }
 
         // Bulk Assign To
@@ -755,24 +753,28 @@ export function useCandidateActions({
 
           // Process meeting attachments - convert File to Attachment format, then upload
           const meetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.meetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
+            (values.meetingAttachments || []).map(
+              async (file): Promise<Attachment> => {
+                if (file instanceof File) {
+                  const reader = new FileReader();
+                  const dataUrl = await new Promise<string>(
+                    (resolve, reject) => {
+                      reader.onload = () => resolve(reader.result as string);
+                      reader.onerror = reject;
+                      reader.readAsDataURL(file);
+                    },
+                  );
+                  return {
+                    id: Math.random().toString(36).slice(2),
+                    name: file.name,
+                    url: dataUrl,
+                    type: file.type,
+                    size: file.size,
+                  };
+                }
+                return file as Attachment;
+              },
+            ),
           );
           const processedMeetingAttachments = await uploadAttachments({
             attachments: meetingAttachmentsToProcess,
@@ -780,28 +782,64 @@ export function useCandidateActions({
             organizationId: user?.organizationId as string,
           });
 
-          const zoomMeetingAttachmentsToProcess: Attachment[] = await Promise.all(
-            (values.zoomMeetingAttachments || []).map(async (file): Promise<Attachment> => {
-              if (file instanceof File) {
-                const reader = new FileReader();
-                const dataUrl = await new Promise<string>((resolve, reject) => {
-                  reader.onload = () => resolve(reader.result as string);
-                  reader.onerror = reject;
-                  reader.readAsDataURL(file);
-                });
-                return {
-                  id: Math.random().toString(36).slice(2),
-                  name: file.name,
-                  url: dataUrl,
-                  type: file.type,
-                  size: file.size,
-                };
-              }
-              return file as Attachment;
-            }),
-          );
+          const zoomMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.zoomMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
           const processedZoomMeetingAttachments = await uploadAttachments({
             attachments: zoomMeetingAttachmentsToProcess,
+            uploadFiles,
+            organizationId: user?.organizationId as string,
+          });
+
+          const teamsMeetingAttachmentsToProcess: Attachment[] =
+            await Promise.all(
+              (values.teamsMeetingAttachments || []).map(
+                async (file): Promise<Attachment> => {
+                  if (file instanceof File) {
+                    const reader = new FileReader();
+                    const dataUrl = await new Promise<string>(
+                      (resolve, reject) => {
+                        reader.onload = () => resolve(reader.result as string);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    return {
+                      id: Math.random().toString(36).slice(2),
+                      name: file.name,
+                      url: dataUrl,
+                      type: file.type,
+                      size: file.size,
+                    };
+                  }
+                  return file as Attachment;
+                },
+              ),
+            );
+          const processedTeamsMeetingAttachments = await uploadAttachments({
+            attachments: teamsMeetingAttachmentsToProcess,
             uploadFiles,
             organizationId: user?.organizationId as string,
           });
@@ -810,6 +848,10 @@ export function useCandidateActions({
             operation: 'assign',
             interviewerId: normalizedInterviewerId,
             time: values.time ? values.time.toISOString() : undefined,
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
             attachments: uploadedAttachments,
             scheduleGoogleMeet: values.scheduleGoogleMeet || false,
             meetDuration: values.meetDuration || 30,
@@ -821,18 +863,35 @@ export function useCandidateActions({
             zoomMeetingNotes: values.zoomMeetingNotes || '',
             zoomMeetingAttachments: processedZoomMeetingAttachments,
             zoomAdditionalGuests: values.zoomAdditionalGuests || [],
+            scheduleTeamsMeet: values.scheduleTeamsMeet || false,
+            teamsMeetDuration: values.teamsMeetDuration || 30,
+            teamsMeetingNotes: values.teamsMeetingNotes || '',
+            teamsMeetingAttachments: processedTeamsMeetingAttachments,
+            teamsAdditionalGuests: values.teamsAdditionalGuests || [],
           });
         }
 
-        // Bulk Mark as Done
+        // Bulk Mark as Done (pass remark when both unassign + add remark selected)
         if (actions.markAsDone) {
           operations.push({
             operation: 'unassign',
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
           });
         }
 
-        // Bulk Add Remark
-        if (actions.addRemark && values.remarkDescription?.trim()) {
+        // Bulk Add Remark - only when remark is standalone (not combined with unassign/assign/statusUpdate)
+        const isRemarkCombinedWithOther =
+          actions.addRemark &&
+          values.remarkDescription?.trim() &&
+          (actions.markAsDone || (actions.assignTo && values.interviewerId));
+        if (
+          actions.addRemark &&
+          values.remarkDescription?.trim() &&
+          !isRemarkCombinedWithOther
+        ) {
           operations.push({
             operation: 'addRemark',
             description: values.remarkDescription.trim(),
@@ -856,11 +915,88 @@ export function useCandidateActions({
           });
         }
 
-        // Bulk Status Update
+        // Bulk Status Update (pass remark when both status + remark selected)
         if (actions.updateStatus && values.newStatus) {
+          const newStatus = values.newStatus as string;
+          if (onValidateStatusChange && onBulkStatusRequiresChecklist) {
+            const queue: BulkStatusQueueItem[] = candidateList
+              .filter((c) => c.status !== newStatus)
+              .flatMap((c) => {
+                const validation = onValidateStatusChange(c, newStatus);
+                if (!validation?.requiresChecklist) return [];
+                if (validation.validationSteps?.length) {
+                  // Ensure outgoing step(s) come before incoming
+                  const steps = validation.validationSteps
+                    .slice()
+                    .sort((a, b) => {
+                      let aOut = false;
+                      let bOut = false;
+                      try {
+                        aOut =
+                          (
+                            JSON.parse(a.validationInfo) as {
+                              checklistType?: string;
+                            }
+                          ).checklistType === 'outgoing';
+                      } catch {
+                        /* ignore */
+                      }
+                      try {
+                        bOut =
+                          (
+                            JSON.parse(b.validationInfo) as {
+                              checklistType?: string;
+                            }
+                          ).checklistType === 'outgoing';
+                      } catch {
+                        /* ignore */
+                      }
+                      if (aOut && !bOut) return -1;
+                      if (!aOut && bOut) return 1;
+                      return 0;
+                    });
+                  return steps.map((s) => ({
+                    candidateId: c._id,
+                    newStatus: s.newStatusAfterStep,
+                    validationInfo: s.validationInfo,
+                  }));
+                }
+                return [
+                  {
+                    candidateId: c._id,
+                    newStatus,
+                    validationInfo: validation.validationInfo!,
+                  },
+                ];
+              });
+            const anyRequiresChecklist = queue.some(
+              (item) => item.validationInfo != null,
+            );
+            if (queue.length > 0 && anyRequiresChecklist) {
+              onBulkStatusRequiresChecklist(queue);
+              onOpenChange(false);
+              setIsSubmitting(false);
+              return;
+            }
+          }
+          if (onBulkStatusRequiresReason) {
+            onBulkStatusRequiresReason({
+              candidateIds,
+              newStatus: values.newStatus as string,
+              pendingOperations: operations as BulkUpdateOperationParams[],
+              applyWithoutReason: true,
+            });
+            onOpenChange(false);
+            setIsSubmitting(false);
+            return;
+          }
           operations.push({
             operation: 'statusUpdate',
             status: values.newStatus as string,
+            ...(actions.addRemark &&
+              values.remarkDescription?.trim() && {
+                remark: values.remarkDescription.trim(),
+              }),
           });
         }
 
@@ -915,7 +1051,12 @@ export function useCandidateActions({
       const existingRemarks = candidateWithDetailsForRemark.remarks || [];
 
       if (actions.assignTo) {
-        await handleAssignTo(values, updates, historyEntries, uploadedAttachments);
+        await handleAssignTo(
+          values,
+          updates,
+          historyEntries,
+          uploadedAttachments,
+        );
       }
 
       if (actions.switchJob && values.jobId) {
@@ -937,12 +1078,124 @@ export function useCandidateActions({
         }
       }
 
-      if (
-        actions.updateStatus &&
-        values.newStatus &&
-        values.newStatus !== candidate.status
-      ) {
-        updates.status = values.newStatus as CandidateStatus;
+      let deferredStatusChecklist: {
+        validationInfo: string;
+        newStatus: string;
+        nextChecklistValidationInfo?: string;
+      } | null = null;
+      let openChecklistAfterSaveInfo: string | null = null;
+      const hasStatusChange =
+        values.newStatus && values.newStatus !== candidate.status;
+      if (hasStatusChange) {
+        if (
+          onValidateStatusChange &&
+          (onDeferStatusToChecklist || onOpenChecklistAfterSave)
+        ) {
+          const validation = onValidateStatusChange(
+            candidate,
+            values.newStatus as string,
+          );
+          const steps = validation?.validationSteps;
+          const firstStepInfo =
+            steps && steps.length >= 2
+              ? (() => {
+                  const outgoingStep = steps.find((s) => {
+                    try {
+                      const p = JSON.parse(s.validationInfo) as {
+                        checklistType?: string;
+                      };
+                      return p.checklistType === 'outgoing';
+                    } catch {
+                      return false;
+                    }
+                  });
+                  return (
+                    outgoingStep?.validationInfo ?? steps[0].validationInfo
+                  );
+                })()
+              : (validation?.validationInfo ?? steps?.[0]?.validationInfo);
+          const secondStepInfo =
+            steps && steps.length >= 2
+              ? (() => {
+                  const incomingStep = steps.find((s) => {
+                    try {
+                      const p = JSON.parse(s.validationInfo) as {
+                        checklistType?: string;
+                      };
+                      return p.checklistType === 'incoming';
+                    } catch {
+                      return false;
+                    }
+                  });
+                  return (
+                    incomingStep?.validationInfo ?? steps[1].validationInfo
+                  );
+                })()
+              : undefined;
+
+          let validationInfoToUse = firstStepInfo;
+          let nextChecklistValidationInfoToUse = secondStepInfo;
+          if (steps && steps.length >= 2 && firstStepInfo && secondStepInfo) {
+            let firstType: string | undefined;
+            let secondType: string | undefined;
+            try {
+              firstType = (
+                JSON.parse(firstStepInfo) as { checklistType?: string }
+              ).checklistType;
+            } catch {
+              firstType = undefined;
+            }
+            try {
+              secondType = (
+                JSON.parse(secondStepInfo) as { checklistType?: string }
+              ).checklistType;
+            } catch {
+              secondType = undefined;
+            }
+            if (firstType === 'incoming' && secondType === 'outgoing') {
+              validationInfoToUse = secondStepInfo;
+              nextChecklistValidationInfoToUse = firstStepInfo;
+            }
+          }
+          const validationInfoToUseFinal = validationInfoToUse;
+          if (validation?.requiresChecklist && validationInfoToUseFinal) {
+            const isMandatory = validation.isMandatory === true;
+            if (isMandatory && onDeferStatusToChecklist) {
+              deferredStatusChecklist = {
+                validationInfo: validationInfoToUseFinal,
+                newStatus: values.newStatus as string,
+                ...(nextChecklistValidationInfoToUse
+                  ? {
+                      nextChecklistValidationInfo:
+                        nextChecklistValidationInfoToUse,
+                    }
+                  : {}),
+              };
+            } else if (!isMandatory) {
+              if (actions.updateStatus) {
+                updates.status = values.newStatus as CandidateStatus;
+              }
+              if (onOpenChecklistAfterSave) {
+                openChecklistAfterSaveInfo = validationInfoToUseFinal;
+              } else if (onDeferStatusToChecklist) {
+                deferredStatusChecklist = {
+                  validationInfo: validationInfoToUseFinal,
+                  newStatus: values.newStatus as string,
+                  ...(nextChecklistValidationInfoToUse
+                    ? {
+                        nextChecklistValidationInfo:
+                          nextChecklistValidationInfoToUse,
+                      }
+                    : {}),
+                };
+              }
+            }
+          } else if (actions.updateStatus) {
+            updates.status = values.newStatus as CandidateStatus;
+          }
+        } else if (actions.updateStatus) {
+          updates.status = values.newStatus as CandidateStatus;
+        }
       }
 
       if (values.removeFollowUp) {
@@ -1053,7 +1306,6 @@ export function useCandidateActions({
         };
         updates.remarks = [...existingRemarks, remark];
 
-        // Fix Object literal known properties error by casting
         const historyRemark = {
           isPrivate: values.isRemarkPrivate,
           description: values.remarkDescription.trim(),
@@ -1076,7 +1328,20 @@ export function useCandidateActions({
       }
 
       if (Object.keys(updates).length === 0 && historyEntries.length === 0) {
-        toast({ title: 'Info', description: 'No changes to save' });
+        if (deferredStatusChecklist) {
+          onDeferStatusToChecklist?.(
+            deferredStatusChecklist.validationInfo,
+            deferredStatusChecklist.newStatus,
+            deferredStatusChecklist.nextChecklistValidationInfo,
+          );
+          onOpenChange(false);
+        } else if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
+          onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
+          onOpenChange(false);
+        } else {
+          toast({ title: 'Info', description: 'No changes to save' });
+          onOpenChange(false);
+        }
         setIsSubmitting(false);
         helpers.setSubmitting(false);
         return;
@@ -1102,6 +1367,7 @@ export function useCandidateActions({
       if (actions.assignTo) sentAssignmentMail(result, sendEmail);
 
       if (
+        !deferredStatusChecklist &&
         actions.updateStatus &&
         values.newStatus &&
         values.newStatus !== candidate.status
@@ -1115,6 +1381,7 @@ export function useCandidateActions({
           },
         );
       }
+
       for (const entry of historyEntries) {
         await updateCandidateHistory({
           candidateId: candidate._id,
@@ -1123,7 +1390,18 @@ export function useCandidateActions({
         }).unwrap();
       }
 
-      // Send step completed email when marking as done
+      if (deferredStatusChecklist) {
+        onDeferStatusToChecklist?.(
+          deferredStatusChecklist.validationInfo,
+          deferredStatusChecklist.newStatus,
+          deferredStatusChecklist.nextChecklistValidationInfo,
+        );
+        onOpenChange(false);
+        setIsSubmitting(false);
+        helpers.setSubmitting(false);
+        return;
+      }
+
       if (actions.markAsDone) {
         const markAsDoneEntry = historyEntries.find(
           (entry) => entry.title === 'Unassigned',
@@ -1137,7 +1415,10 @@ export function useCandidateActions({
                   : undefined,
             }
           : undefined;
-
+        const previousInterviewerEmail =
+          typeof candidate.assignment?.interviewerId === 'object'
+            ? (candidate.assignment.interviewerId?.email ?? undefined)
+            : undefined;
         try {
           await sendUnassignEmail({
             name: result.name,
@@ -1147,27 +1428,23 @@ export function useCandidateActions({
             dateTime: new Date().toISOString(),
             status: result.status || candidate.status,
             feedback,
+            previousInterviewerEmail,
           }).unwrap();
         } catch (_emailError) {
-          // Silently fail email sending - candidate update was successful
-          // Error is logged on the backend if email sending fails
+          /* ignore */
         }
       }
 
-      // Call success callbacks and close dialog immediately
       onSuccess?.();
       toast({
         title: 'Success',
         description: 'Candidate updated successfully',
       });
+      if (openChecklistAfterSaveInfo && onOpenChecklistAfterSave) {
+        onOpenChecklistAfterSave(openChecklistAfterSaveInfo);
+      }
       onOpenChange(false);
 
-      // Update local state with the result - no need to refetch individual candidate
-      // since we already have the updated data from the mutation
-      // IMPORTANT: When we have history entries to add, strip the stale history from result
-      // The updateCandidateHistory call happens AFTER updateCandidate, so the history in result
-      // is stale (missing the new entries). Stripping it ensures the details dialog will
-      // fetch fresh history instead of using stale data and marking historyLoaded=true prematurely.
       if (historyEntries.length > 0) {
         const { history: _staleHistory, ...resultWithoutHistory } =
           result as Candidate & { history?: unknown };
@@ -1178,12 +1455,9 @@ export function useCandidateActions({
         setLocalCandidate?.(result);
       }
 
-      // Only refetch assignments list for dashboard (to update the list view)
-      // Don't refetch individual candidate since we already have the updated result
       if (pathname === '/dashboard' && !actions.markAsDone) {
         refetchAssignment?.();
       }
-      // Note: Removed individual candidate refetch - we already have the updated result
     } catch (error) {
       toast({
         title: 'Error',
@@ -1241,7 +1515,6 @@ export function useCandidateActions({
         toast({
           title: 'Success',
           description: 'Zoom meeting cancelled successfully',
-          variant: 'default',
         });
       } else if (cancelMeetingProvider === 'teams') {
         if (!candidate.assignment?.microsoftTeams?.meetingId) return;

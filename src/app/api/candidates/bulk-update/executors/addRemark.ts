@@ -53,49 +53,46 @@ export async function runBulkAddRemark(
     // Batch update: push remark to all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $push: { remarks: newRemarkDoc } },
+      {
+        $push: { remarks: newRemarkDoc },
+        $set: { 'tracking.updatedAt': new Date(dateTime) },
+      },
     );
 
     // Build history bulk operations (each needs unique remarkId)
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => {
-        const candidateId = (c._id as { toString: () => string }).toString();
-        const jobId = getJobIdString(c) ?? null;
-        const remarkId = uuidv4();
-        const historyEntry: ICandidateHistory = {
-          dateTime,
-          title: 'Remark Added',
-          currentInterviewer: null,
-          previousInterviewer: null,
-          assignmentBy: user.id ?? null,
-          remark: {
-            id: remarkId,
-            isPrivate,
-            description,
-            date: dateTime,
-            rating,
-            userId: {
-              _id: user.id,
-              name: user.name,
-              email: user.email ?? '',
-            },
+    const historyBulk = candidates.map((c) => {
+      const candidateId = (c._id as { toString: () => string }).toString();
+      const remarkId = uuidv4();
+      const historyEntry: ICandidateHistory = {
+        dateTime,
+        title: 'Remark Added',
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user.id ?? null,
+        remark: {
+          id: remarkId,
+          isPrivate,
+          description,
+          date: dateTime,
+          rating,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email ?? '',
           },
-          note: { description: '', date: '', rating: 0, userId: null },
-          attachments: [],
-        };
+        },
+        note: { description: '', date: '', rating: 0, userId: null },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId,
-              jobId,
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        };
-      });
+      return {
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -119,6 +116,7 @@ export async function runBulkAddRemark(
             remarkText: description,
             roles: ['admin', 'hr'],
             validMentionUserIds: params.selectedMentionUserIds,
+            rating,
             candidates: toBroadcast.map((c) => ({
               candidateId:
                 (c as unknown as { _id: unknown })._id?.toString() ?? '',

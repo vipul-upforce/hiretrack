@@ -53,32 +53,41 @@ export async function runBulkArchive(
     // Batch update: set isDeleted for all candidates that need updating
     await Candidate.updateMany(
       { _id: { $in: idsToUpdate } },
-      { $set: { isDeleted: targetIsDeleted } },
+      {
+        $set: {
+          isDeleted: targetIsDeleted,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     // Build history bulk operations
-    const historyBulk = toUpdate
-      .filter((c) => c.jobId)
-      .map((c) => {
-        const historyEntry = {
-          dateTime,
-          title: targetIsDeleted ? 'Archived' : 'Unarchived',
-          previousInterviewer: null,
-          currentInterviewer: null,
-          assignmentBy: user?.id ?? '',
-        };
+    const historyBulk = toUpdate.map((c) => {
+      const historyEntry = {
+        dateTime,
+        title: targetIsDeleted ? 'Archived' : 'Unarchived',
+        previousInterviewer: null,
+        currentInterviewer: null,
+        assignmentBy: user?.id ?? '',
+        note: {
+          description: '',
+          date: dateTime,
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId: c._id.toString(),
-              jobId: c.jobId?.toString() ?? null,
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
+      return {
+        updateOne: {
+          filter: {
+            candidateId: c._id.toString(),
           },
-        };
-      });
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -105,7 +114,7 @@ export async function runBulkArchive(
       failedCount,
       skippedCount,
       candidatesToBroadcast:
-        candidatesToBroadcast as BulkUpdateResult['candidatesToBroadcast'],
+        candidatesToBroadcast as unknown as BulkUpdateResult['candidatesToBroadcast'],
       message: `Successfully ${action === 'archive' ? 'archived' : 'unarchived'} ${candidatesToBroadcast.length} candidate(s)`,
     };
   } catch (err) {

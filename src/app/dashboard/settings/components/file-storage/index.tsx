@@ -33,7 +33,12 @@ export default function FileStorageOptions({
     useUpdateFSConfigsMutation();
 
   // Connection Testing
-  const { testConnection, isConnectionSuccessful, isTesting } =
+  const {
+    testConnection,
+    isConnectionSuccessful,
+    isTesting,
+    resetConnectionStatus,
+  } =
     useTestConnection();
 
   const signToken = async (payload: unknown, orgId: string) => {
@@ -100,14 +105,9 @@ export default function FileStorageOptions({
       // Update Redux state and sign token
       if (user && user.organizationId) {
         const updatedUser = { ...user, fileStorage: values.storageType };
-        await signToken(updatedUser, user?.organizationId as string);
+        await signToken(updatedUser, user.organizationId as string);
 
-        dispatch(
-          updateUserInState({
-            ...values,
-            fileStorage: values.storageType,
-          }),
-        );
+        dispatch(updateUserInState(updatedUser));
       }
 
       refetch();
@@ -130,6 +130,7 @@ export default function FileStorageOptions({
       initialValues={initialValues}
       onSubmit={handleSubmit}
       onTestConnection={handleTestConnection}
+      onStorageTypeChange={resetConnectionStatus}
       onClose={onClose}
       isSubmitting={false}
       isUpdating={isUpdating}

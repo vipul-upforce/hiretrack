@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser, AuthenticatedUser } from '@/app/actions/auth';
-import connectToDatabase, { Settings, Job } from '@/lib/mongodb';
+import connectToDatabase, { Settings, Job, FileUrlMapping } from '@/lib/mongodb';
 import { saveFileLocally, uploadFile, uploadFileToS3 } from '@/lib/fileUtils';
 import { logger } from '@/lib/logger/logger.server';
 import { v4 as uuidv4 } from 'uuid';
@@ -54,13 +54,16 @@ async function processFileUpload(
   // Convert to data URL for existing utilities
   const dataUrl = bufferToDataUrl(buffer, mimeType);
 
-  let url = '';
+  // Generate fileId before upload
+  const fileId = uuidv4();
+
+  let realUrl = '';
   switch (fileStorage) {
     case 'cloudinary':
-      url = await uploadFile(dataUrl, targetFolder, organizationId, fileName);
+      realUrl = await uploadFile(dataUrl, targetFolder, organizationId, fileName);
       break;
     case 's3':
-      url = await uploadFileToS3(
+      realUrl = await uploadFileToS3(
         dataUrl,
         targetFolder,
         organizationId,
@@ -68,14 +71,35 @@ async function processFileUpload(
       );
       break;
     default: // local
-      url = await saveFileLocally(dataUrl, targetFolder, fileName);
+      realUrl = await saveFileLocally(dataUrl, targetFolder, fileName);
       break;
   }
 
+  // For cloudinary/s3, create mapping entry and return proxied URL
+  if (
+    (fileStorage === 'cloudinary' || fileStorage === 's3') &&
+    realUrl &&
+    FileUrlMapping
+  ) {
+    await FileUrlMapping.findOneAndUpdate(
+      { fileId },
+      { fileId, realUrl },
+      { upsert: true, new: true },
+    );
+    return {
+      id: fileId,
+      name: fileName,
+      url: `/api/file/${fileId}`,
+      type: mimeType,
+      size: file.size,
+    };
+  }
+
+  // For local storage, return the local URL directly (no mapping needed)
   return {
-    id: uuidv4(),
+    id: fileId,
     name: fileName,
-    url,
+    url: realUrl,
     type: mimeType,
     size: file.size,
   };

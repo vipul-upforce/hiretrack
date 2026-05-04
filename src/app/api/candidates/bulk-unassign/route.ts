@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Schema } from 'mongoose';
 import connectToDatabase, { Candidate, History } from '@/lib/mongodb';
 import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { logger } from '@/lib/logger/logger.server';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ICandidateHistory } from '@/lib/models/history';
+import { ICandidate } from '@/lib/models/candidate';
 
 interface BulkUnassignRequest {
   candidateIds: string[];
@@ -25,6 +27,18 @@ function getJobIdString(candidate: { jobId?: unknown }): string | null {
     return typeof obj._id === 'string' ? obj._id : String(obj._id);
   }
   return null;
+}
+
+function getPreviousInterviewerId(interviewerId: unknown): unknown {
+  if (interviewerId == null) return null;
+  if (
+    typeof interviewerId === 'object' &&
+    interviewerId !== null &&
+    '_id' in interviewerId
+  ) {
+    return (interviewerId as { _id: unknown })._id;
+  }
+  return interviewerId;
 }
 
 export async function POST(
@@ -80,27 +94,26 @@ export async function POST(
       });
     }
 
-    const toBroadcast: Array<Record<string, unknown>> = [];
+    const toBroadcast: (ICandidate & { history?: ICandidateHistory[] })[] = [];
     let failedCount = 0;
 
     for (const candidate of candidates) {
       try {
-        const candidateId = (candidate._id as { toString: () => string }).toString();
-        const jobId = getJobIdString(candidate);
-        const previousInterviewerId =
-          candidate.assignment?.interviewerId != null
-            ? typeof candidate.assignment.interviewerId === 'object' &&
-                candidate.assignment.interviewerId !== null &&
-                '_id' in candidate.assignment.interviewerId
-              ? (candidate.assignment.interviewerId as { _id: unknown })._id
-              : candidate.assignment.interviewerId
-            : null;
+        const candidateId = (
+          candidate._id as { toString: () => string }
+        ).toString();
+        const previousInterviewerId = getPreviousInterviewerId(
+          candidate.assignment?.interviewerId ?? null,
+        );
 
         const historyEntry: ICandidateHistory = {
           dateTime,
           title: 'Unassigned',
           currentInterviewer: null,
-          previousInterviewer: previousInterviewerId as string | null,
+          previousInterviewer: previousInterviewerId as
+            | Schema.Types.ObjectId
+            | { _id: string; name: string; email: string }
+            | null,
           assignmentBy: user.id ?? null,
           note: {
             description: '',
@@ -116,13 +129,11 @@ export async function POST(
           { $set: { assignment: null } },
         );
 
-        if (jobId) {
-          await History.findOneAndUpdate(
-            { candidateId, jobId },
-            { $push: { history: historyEntry } },
-            { upsert: true },
-          );
-        }
+        await History.findOneAndUpdate(
+          { candidateId },
+          { $push: { history: historyEntry } },
+          { upsert: true },
+        );
 
         const updated = await Candidate.findById(candidateId)
           .populate([
@@ -131,7 +142,7 @@ export async function POST(
           ])
           .lean();
         if (updated) {
-          toBroadcast.push(updated as Record<string, unknown>);
+          toBroadcast.push(updated as ICandidate & { history?: ICandidateHistory[] });
         }
       } catch (err) {
         logger.error(

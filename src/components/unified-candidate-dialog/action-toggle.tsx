@@ -2,6 +2,7 @@ import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Candidate } from '@/types/candidate';
+import { usePathname } from 'next/navigation';
 import { ActionCheckboxes, CandidateActionType } from './types';
 
 interface ActionTogglesProps {
@@ -28,11 +29,10 @@ function CheckboxItem({
   return (
     <div className="group relative">
       <div
-        className={`flex items-center space-x-2 whitespace-nowrap rounded-lg border px-3 py-1.5 transition-all duration-200 ${
-          checked
-            ? 'bg-primary/5 border-primary shadow-sm'
-            : 'hover:border-primary/50 border-border bg-background hover:bg-muted/50'
-        } ${disabled ? 'cursor-not-allowed opacity-50' : ''} `}
+        className={`flex items-center space-x-2 whitespace-nowrap rounded-lg border px-3 py-1.5 transition-all duration-200 ${checked
+          ? 'bg-primary/5 border-primary shadow-sm'
+          : 'hover:border-primary/50 border-border bg-background hover:bg-muted/50'
+          } ${disabled ? 'cursor-not-allowed opacity-50' : ''} `}
       >
         <Checkbox
           id={id}
@@ -59,7 +59,7 @@ export function ActionToggles({
   isSubmitting,
 }: ActionTogglesProps) {
   const isInterviewer = userRole === 'interviewer';
-
+  const pathname = usePathname();
   return (
     <div className="space-y-2">
       <div className="mb-0.5">
@@ -117,7 +117,7 @@ export function ActionToggles({
           <CheckboxItem
             id="updateStatus"
             label="Update Status"
-            disabled={isSubmitting || actionCheckboxes.switchJob}
+            disabled={isSubmitting || actionCheckboxes.switchJob || pathname?.includes('/dashboard/search')}
             checked={actionCheckboxes.updateStatus}
             onChange={(v) => onChange('updateStatus', v)}
           />

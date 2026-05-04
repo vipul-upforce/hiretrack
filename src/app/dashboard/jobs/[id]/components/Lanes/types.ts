@@ -30,6 +30,23 @@ export interface CandidateContextType {
   /** Shift-click range selection: (candidate, index) => void */
   onSelectCandidate?: (candidate: Candidate, candidateIndex: number) => void;
   isShiftPressed?: boolean;
+  /** Single-candidate status change: validate checklist; when required, defer to checklist dialog */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist: boolean; validationInfo?: string } | null;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** When dragging multiple selected candidates: hide others, show count on held card */
+  bulkDrag?: {
+    isBulkDrag: boolean;
+    draggedId: string | null;
+    bulkIds: string[];
+  } | undefined;
 }
 
 export interface KanbanColumnProps {
@@ -62,4 +79,19 @@ export interface KanbanColumnProps {
   isDragging?: boolean;
   pendingMoves?: PendingMove[];
   laneConfig?: ILaneConfig;
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => { requiresChecklist: boolean; validationInfo?: string } | null;
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  bulkDragState?: {
+    isBulkDrag: boolean;
+    draggedId: string | null;
+    bulkIds: string[];
+  };
 }

@@ -1,8 +1,8 @@
 import { User } from '@/lib/mongodb';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/notifications/decision';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/notifications/email/unifiedEmailService';
 import { logger } from '@/lib/logger/logger.server';
 import { getFromEmail, getMailSettings } from '@/lib/utils/mailSettings';
 import { getNextStep } from '@/lib/utils/organization';
@@ -50,12 +50,11 @@ export async function sendQueuedEmail(
   })
     .populate({
       path: 'organizationId',
-      select: 'name defaultLanes',
+      select: 'name',
     })
     .lean();
 
-  const nextSteps = getNextStep(organization, status);
-
+  const nextSteps = await getNextStep(jobId ?? null, status, organizationId);
   const organizationName =
     typeof organization?.organizationId === 'object'
       ? organization.organizationId.name
@@ -68,15 +67,15 @@ export async function sendQueuedEmail(
       jobTitle: jobName || '',
       candidateName,
       newStatus: status,
-      statusMessage: remark || '' || 'N/A',
-      rating: rating?.toString() || 'N/A' || 'N/A',
-      actionBy: actionBy || '' || 'N/A',
+      statusMessage: remark || 'N/A',
+      rating: rating?.toString() || 'N/A',
+      actionBy: actionBy || 'N/A',
       nextSteps,
-      prev_status: prevStatus || '' || 'N/A',
+      prev_status: prevStatus || 'N/A',
       eventSubTitle,
       candidateDetails,
       organizationName: organizationName || '',
-      hrContactInfo: hrContactInfo || '' || 'N/A',
+      hrContactInfo: hrContactInfo || 'N/A',
     },
     organizationId,
   );

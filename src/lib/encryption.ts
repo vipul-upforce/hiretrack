@@ -14,11 +14,13 @@ interface AIProviderConfig {
 /**
  * Type definition for CAPTCHA configuration
  */
-interface CaptchaConfig {
+export interface CaptchaConfig {
   siteKey?: string;
   secretKey?: string;
   enableCaptcha?: boolean;
   captchaProvider?: string;
+  captchaType?: 'v2' | 'v3';
+  captchaVariant?: 'checkbox' | 'invisible';
 }
 
 /**

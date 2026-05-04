@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService'; // Import sendSmartNotificationEmail
+import { sendSmartNotification } from '@/lib/notifications/email/unifiedEmailService';
 import connectToDatabase, {
   Candidate,
   Organization,
@@ -12,7 +12,7 @@ import mongoose from 'mongoose';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 // import { getAuthenticatedUser } from '@/app/actions/auth';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { NotificationType } from '@/lib/notifications/decision';
 import { logger } from '@/lib/logger/logger.server';
 import { NotificationService } from '@/lib/notifications';
 import { getAuthenticatedUser } from '@/app/actions/auth';

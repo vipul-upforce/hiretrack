@@ -1,14 +1,20 @@
 'use client';
 
+import { useCallback } from 'react';
 import { Table, TableBody } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import type { Candidate } from '@/types/candidate';
+import { useBulkUpdateCandidatesMutation } from '@/lib/features/candidate/candidateApi';
 import { CandidateDetailsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/candidate-details-dialog';
 import { JobDetailsDialog } from '@/app/dashboard/jobs-board/components/job-details-dialog';
 import { EditCandidateDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/edit-candidate-dialog';
 import { AssignJobDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/assign-job-dialog';
 import { UnifiedCandidateActionsDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/unified-candidate-actions-dialog';
 import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import { toast } from '@/hooks/use-toast';
+import { DuplicateCandidatesDialog } from '@/app/dashboard/jobs/[id]/components/Dialogs/DuplicateCandidatesDialog';
+import { useGlobalChecklistValidation } from '@/hooks/useGlobalChecklistValidation';
+import ChecklistRemarksDialog from '@/app/dashboard/jobs/[id]/components/Dialogs/checklist-remarks-components/checklist-remarks-dialog';
 import ConfirmationDialog from '../../app/dashboard/jobs/[id]/components/Dialogs/ConfirmationDialog';
 import { SearchResultsSkeletonLoader } from './search-results/skeleton-loader';
 import { ResultsHeader } from './search-results/results-header';
@@ -54,6 +60,135 @@ export function SearchResults({
     refetch,
     onCandidateUpdate,
   });
+
+  const unifiedCandidate =
+    logic.candidateToAssignInterviewer ||
+    logic.candidateToAssignJob ||
+    logic.candidateToAddRemark ||
+    logic.candidateToAddFollowUp;
+
+  const currentCandidate = logic.selectedCandidate || (Array.isArray(unifiedCandidate) ? unifiedCandidate[0] : unifiedCandidate);
+  const currentJobId =
+    typeof currentCandidate?.jobId === 'object'
+      ? currentCandidate?.jobId?._id
+      : currentCandidate?.jobId;
+
+  const checklistValidation = useGlobalChecklistValidation(currentJobId as string);
+
+  const [bulkUpdateCandidates] = useBulkUpdateCandidatesMutation();
+
+  const handleApplyDeferredStatus = useCallback(
+    (candidateId: string, newStatus: string) =>
+      bulkUpdateCandidates({
+        operation: 'statusUpdate',
+        candidateIds: [String(candidateId)],
+        status: newStatus,
+      })
+        .unwrap()
+        .then(() => refetch())
+        .then(() => {
+          const nextChecklist =
+            checklistValidation.pendingIncomingChecklistAfterStatus;
+          if (
+            nextChecklist &&
+            checklistValidation.setOpenRemarksFor &&
+            checklistValidation.setPendingIncomingChecklistAfterStatus
+          ) {
+            checklistValidation.setOpenRemarksFor(nextChecklist);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+          }
+        })
+        .finally(() => {
+          checklistValidation.setPendingStatusAfterChecklist(null);
+        })
+        .catch((err: unknown) => {
+          const message =
+            err instanceof Error ? err.message : 'Failed to update status';
+          toast({
+            title: 'Error',
+            description: message,
+            variant: 'destructive',
+          });
+          throw err;
+        }),
+    [
+      bulkUpdateCandidates,
+      refetch,
+      checklistValidation.pendingIncomingChecklistAfterStatus,
+      checklistValidation.setOpenRemarksFor,
+      checklistValidation.setPendingIncomingChecklistAfterStatus,
+      checklistValidation.setPendingStatusAfterChecklist,
+    ],
+  );
+
+  const handleChecklistComplete = useCallback(
+    (candidateId: string) => {
+      const pending = checklistValidation.pendingStatusAfterChecklistRef.current;
+      if (
+        !pending ||
+        String(pending.candidateId) !== String(candidateId) ||
+        !checklistValidation.setPendingStatusAfterChecklist
+      ) {
+        return;
+      }
+      const { newStatus } = pending;
+      bulkUpdateCandidates({
+        operation: 'statusUpdate',
+        candidateIds: [String(candidateId)],
+        status: newStatus,
+      })
+        .unwrap()
+        .then(() => refetch())
+        .then(() => {
+          const nextChecklist =
+            checklistValidation.pendingIncomingChecklistAfterStatus;
+          if (
+            nextChecklist &&
+            checklistValidation.setOpenRemarksFor &&
+            checklistValidation.setPendingIncomingChecklistAfterStatus
+          ) {
+            checklistValidation.setOpenRemarksFor(nextChecklist);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+          }
+        })
+        .finally(() => {
+          checklistValidation.setPendingStatusAfterChecklist(null);
+        })
+        .catch((err: unknown) => {
+          const message =
+            err instanceof Error ? err.message : 'Failed to update status';
+          toast({
+            title: 'Error',
+            description: message,
+            variant: 'destructive',
+          });
+        });
+    },
+    [
+      checklistValidation.pendingStatusAfterChecklistRef,
+      checklistValidation.setPendingStatusAfterChecklist,
+      checklistValidation.pendingIncomingChecklistAfterStatus,
+      checklistValidation.setOpenRemarksFor,
+      checklistValidation.setPendingIncomingChecklistAfterStatus,
+      bulkUpdateCandidates,
+      refetch,
+    ],
+  );
+
+  const handleViewDuplicateDetails = useCallback((duplicate: Candidate) => {
+    // To solve this correctly: close all dialogs first, then manually open for the selected candidate
+    logic.setIsDuplicateDialogOpen(false);
+    logic.setIsDialogOpen(false);
+
+    // Clear the current selection to force a clean reload in the details dialog
+    logic.setSelectedCandidate(null);
+
+    // In next tick, open the new candidate
+    setTimeout(() => {
+      logic.setSelectedCandidate(duplicate);
+      logic.setIsDialogOpen(true);
+    }, 100);
+  }, [logic]);
 
   if (isLoading) {
     return <SearchResultsSkeletonLoader />;
@@ -113,6 +248,7 @@ export function SearchResults({
                 onDelete={logic.handleDelete}
                 onAddRemark={logic.handleAddRemark}
                 onJobClick={logic.handleJobClick}
+                onOpenDuplicateDialog={logic.handleOpenDuplicates}
               />
             </TableBody>
           </Table>
@@ -142,6 +278,10 @@ export function SearchResults({
           refetchCandidates={refetch}
           isAssigning={false}
           setIsAssigning={() => { }}
+          onValidateStatusChange={checklistValidation.onValidateStatusChange}
+          onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+          onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
+          onViewDetails={handleViewDuplicateDetails}
         />
       )}
 
@@ -165,11 +305,7 @@ export function SearchResults({
           logic.isAssignJobOpen ||
           logic.isAddRemarkOpen ||
           logic.isAddFollowUpOpen;
-        const unifiedCandidate =
-          logic.candidateToAssignInterviewer ||
-          logic.candidateToAssignJob ||
-          logic.candidateToAddRemark ||
-          logic.candidateToAddFollowUp;
+
         const getUnifiedInitialAction = (): CandidateActionType | undefined => {
           if (logic.isAssignInterviewerOpen) return 'assignTo';
           if (logic.isAssignJobOpen) return 'switchJob';
@@ -213,6 +349,9 @@ export function SearchResults({
               closeAll();
               refetch();
             }}
+            onValidateStatusChange={checklistValidation.onValidateStatusChange}
+            onDeferStatusToChecklist={checklistValidation.onDeferStatusToChecklist}
+            onOpenChecklistAfterSave={checklistValidation.onOpenChecklistAfterSave}
           />
         );
       })()}
@@ -260,6 +399,36 @@ export function SearchResults({
           isLoading={logic.isDeleting}
           loadingText={logic.confirmDialogConfig.loadingText}
           buttonName={logic.confirmDialogConfig.buttonName}
+        />
+      )}
+
+      {currentCandidate && checklistValidation.openRemarksFor && (
+        <ChecklistRemarksDialog
+          candidate={currentCandidate as Candidate}
+          isOpen={!!checklistValidation.openRemarksFor}
+          onOpenChange={(open) => {
+            if (!open) {
+              checklistValidation.setOpenRemarksFor(null);
+            }
+          }}
+          setOpenRemarksFor={checklistValidation.setOpenRemarksFor}
+          refetch={refetch}
+          checklistInfo={checklistValidation.openRemarksFor}
+          onChecklistSuccess={handleChecklistComplete}
+          onApplyDeferredStatus={handleApplyDeferredStatus}
+          onChecklistCancel={() => {
+            checklistValidation.setPendingStatusAfterChecklist(null);
+            checklistValidation.setPendingIncomingChecklistAfterStatus(null);
+          }}
+        />
+      )}
+
+      {logic.isDuplicateDialogOpen && logic.candidateToViewDuplicates && (
+        <DuplicateCandidatesDialog
+          candidate={logic.candidateToViewDuplicates}
+          isOpen={logic.isDuplicateDialogOpen}
+          onOpenChange={logic.setIsDuplicateDialogOpen}
+          onViewDetails={handleViewDuplicateDetails}
         />
       )}
     </>

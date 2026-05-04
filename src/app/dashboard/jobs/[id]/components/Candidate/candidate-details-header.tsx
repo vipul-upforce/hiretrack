@@ -11,7 +11,6 @@ import {
 import {
   Copy,
   Tag,
-  Download,
   MapPin,
   Calendar,
   User,
@@ -20,23 +19,35 @@ import {
   Briefcase,
   IndianRupee,
   AlertCircle,
-  FileDown,
+  TriangleAlert,
 } from 'lucide-react';
 import { Candidate } from '@/types/candidate';
 import TagsList from '@/components/ui/tagsList';
 import React, { useRef, useState } from 'react';
 import { useAuth } from '@/app/hooks/useAuth';
 import { useAppSelector } from '@/lib/redux/hooks';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import TagsDialog from '../Dialogs/tags-dialog';
 import { formatDate, formatTime } from '../../hooks/dateTimeFormatting';
 import { CandidateStatusBadge } from '../Utils/candidate-status-badge';
 import { ShareCandidateDialog } from '../Dialogs/share-candidate-dialog';
+import { CandidateActionType } from '@/components/unified-candidate-dialog/types';
+import { CandidateDetailsActionsMenu } from './CandidateDetailsActionsMenu';
 
 interface DetailsDialogHeaderProps {
   candidate: Candidate;
   handleCandidateInfoCopy: (info: string) => void;
   refetch: () => void;
   onAssignClick?: () => void;
+  onOpenDuplicateDialog?: () => void;
+  onOpenUnifiedAction?: (action: CandidateActionType) => void;
+  onEditClick?: () => void;
+  onArchiveClick?: (candidateId: string) => void;
 }
 
 export default function DetailsDialogHeader({
@@ -44,6 +55,10 @@ export default function DetailsDialogHeader({
   handleCandidateInfoCopy,
   refetch,
   onAssignClick,
+  onOpenDuplicateDialog,
+  onOpenUnifiedAction,
+  onEditClick,
+  onArchiveClick,
 }: DetailsDialogHeaderProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
@@ -58,6 +73,10 @@ export default function DetailsDialogHeader({
   const { user } = useAppSelector((state) => state.auth);
 
   const isAdminOrHr = user?.role === 'admin' || user?.role === 'hr';
+  const duplicateCount =
+    typeof candidate?.duplicateCount === 'number'
+      ? candidate.duplicateCount
+      : 0;
 
   const handleDownloadCV = () => {
     if (candidate.resume?.url) {
@@ -95,6 +114,17 @@ export default function DetailsDialogHeader({
     <div>
       {candidate.tags ? <TagsList candidate={candidate} /> : null}
       <div className="text-2xl font-semibold">
+        <div className="absolute right-16 top-1.5 z-[90]">
+          <CandidateDetailsActionsMenu
+            candidate={candidate}
+            isAdminOrHr={isAdminOrHr}
+            onOpenUnifiedAction={onOpenUnifiedAction}
+            onEditClick={onEditClick}
+            onArchiveClick={onArchiveClick}
+            onDownloadCV={handleDownloadCV}
+            onDownloadProfile={() => setIsDownloadDialogOpen(true)}
+          />
+        </div>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -109,6 +139,31 @@ export default function DetailsDialogHeader({
                 <Copy size={12} />
                 <span className="sr-only">Copy Name</span>
               </Button>
+              {isAdminOrHr && duplicateCount > 1 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 gap-1 px-1.5 text-yellow-500 hover:bg-gray-100 hover:text-yellow-600 dark:hover:bg-gray-800 dark:hover:text-yellow-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenDuplicateDialog?.();
+                        }}
+                      >
+                        <TriangleAlert className="h-4 w-4" />
+                        <span className="sr-only">Multiple Applications</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">
+                        Multiple Applications
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               {candidate.isDeleted ? (
                 <Badge className="bg-red-500">Archived</Badge>
               ) : null}
@@ -178,30 +233,6 @@ export default function DetailsDialogHeader({
                       </PopoverContent>
                     </Popover>
                   )}
-                  {candidate.resume?.url && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={handleDownloadCV}
-                      title="Download CV"
-                    >
-                      <Download size={12} />
-                      <span className="sr-only">Download CV</span>
-                    </Button>
-                  )}
-                  {isAdminOrHr && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      onClick={() => setIsDownloadDialogOpen(true)}
-                      title="Download Profile"
-                    >
-                      <FileDown size={12} />
-                      <span className="sr-only">Download Profile</span>
-                    </Button>
-                  )}
                 </div>
               </div>
             )}
@@ -215,18 +246,18 @@ export default function DetailsDialogHeader({
               )}
               {(candidate.relevantExperience !== undefined ||
                 candidate.experience !== undefined) && (
-                <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
-                  <Briefcase size={12} />
-                  Exp:{' '}
-                  {candidate.relevantExperience !== undefined &&
-                    `${candidate.relevantExperience}y Rel`}
-                  {candidate.relevantExperience !== undefined &&
-                    candidate.experience !== undefined &&
-                    ', '}
-                  {candidate.experience !== undefined &&
-                    `${candidate.experience}y Total`}
-                </span>
-              )}
+                  <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    <Briefcase size={12} />
+                    Exp:{' '}
+                    {candidate.relevantExperience !== undefined &&
+                      `${candidate.relevantExperience}y Rel`}
+                    {candidate.relevantExperience !== undefined &&
+                      candidate.experience !== undefined &&
+                      ', '}
+                    {candidate.experience !== undefined &&
+                      `${candidate.experience}y Total`}
+                  </span>
+                )}
               {candidate.noticePeriod !== undefined && (
                 <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
                   <AlertCircle size={12} />
@@ -238,26 +269,26 @@ export default function DetailsDialogHeader({
                 (candidate.expectedCTC !== undefined &&
                   candidate.expectedCTC !== null)) &&
                 role !== 'interviewer' && (
-                  <span className="flex items-center gap-1 text-sm font-normal text-gray-600 dark:text-gray-400">
-                    <IndianRupee size={12} />
-                    Salary:{' '}
-                    {candidate.currentCTC !== undefined &&
-                      candidate.currentCTC !== null &&
-                      `${candidate.currentCTC}L Cur`}
-                    {candidate.currentCTC !== undefined &&
-                      candidate.currentCTC !== null &&
-                      candidate.expectedCTC !== undefined &&
-                      candidate.expectedCTC !== null &&
-                      ', '}
-                    {candidate.expectedCTC !== undefined &&
-                      candidate.expectedCTC !== null &&
-                      `${candidate.expectedCTC}L Exp`}
+                  <span className="flex items-center gap-1.5 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    <IndianRupee size={14} className="text-gray-500" />
+                    <span>Salary:</span>
+                    <span className="flex items-center gap-2 rounded-md bg-gray-100 px-2 py-0.5 font-medium text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+                      {candidate.currentCTC != null && (
+                        <span>Current {candidate.currentCTC}L</span>
+                      )}
+                      {candidate.currentCTC != null && candidate.expectedCTC != null && (
+                        <span className="text-gray-300 dark:text-gray-600 font-light">|</span>
+                      )}
+                      {candidate.expectedCTC != null && (
+                        <span>Expected {candidate.expectedCTC}L</span>
+                      )}
+                    </span>
                   </span>
                 )}
             </div>
           </div>
 
-          <div className="flex items-start gap-4 pl-12">
+          <div className="flex items-start gap-2 pl-12">
             {/* Status and Job */}
             <div className="flex flex-col items-end">
               <div className="mr-0 mt-4">
@@ -289,11 +320,10 @@ export default function DetailsDialogHeader({
                       type="button"
                       role={isAdminOrHr ? 'button' : undefined}
                       tabIndex={isAdminOrHr ? 0 : undefined}
-                      className={`min-w-[250px] rounded border border-blue-200 bg-blue-50 px-2 py-1 dark:border-blue-800 dark:bg-blue-900/20 ${
-                        isAdminOrHr
-                          ? 'cursor-pointer transition-colors duration-200 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                          : 'cursor-default'
-                      }`}
+                      className={`min-w-[250px] rounded border border-blue-200 bg-blue-50 px-2 py-1 dark:border-blue-800 dark:bg-blue-900/20 ${isAdminOrHr
+                        ? 'cursor-pointer transition-colors duration-200 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                        : 'cursor-default'
+                        }`}
                       onClick={isAdminOrHr ? handleInterviewerClick : undefined}
                       title={
                         isAdminOrHr ? 'Click to edit assignment' : undefined

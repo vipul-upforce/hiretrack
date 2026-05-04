@@ -42,6 +42,7 @@ export interface UseJobsBoardReturn {
   setIsDeleteDialogOpen: (open: boolean) => void;
   jobToDelete: string | null;
   isCreatingJob: boolean;
+  creatingJobLane: Job['status'] | null;
   duplicate: boolean;
   setDuplicate: (duplicate: boolean) => void;
   isCustomFieldsOpen: boolean;
@@ -105,6 +106,9 @@ export function useJobsBoard(): UseJobsBoardReturn {
 
   // Job creation state
   const [isCreatingJob, setIsCreatingJob] = useState(false);
+  const [creatingJobLane, setCreatingJobLane] = useState<Job['status'] | null>(
+    null,
+  );
   const [duplicate, setDuplicate] = useState(false);
 
   // Dialog states
@@ -180,7 +184,9 @@ export function useJobsBoard(): UseJobsBoardReturn {
    * Handles job creation
    */
   const handleJobCreated = async (newJob: Omit<Job, 'id'>) => {
+    const targetLane = (newJob.status || 'draft') as Job['status'];
     setIsCreatingJob(true);
+    setCreatingJobLane(targetLane);
     const job: Job = {
       ...newJob,
       _id: Math.random().toString(36).substr(2, 9),
@@ -209,6 +215,7 @@ export function useJobsBoard(): UseJobsBoardReturn {
       });
     } finally {
       setIsCreatingJob(false);
+      setCreatingJobLane(null);
     }
   };
 
@@ -548,6 +555,7 @@ export function useJobsBoard(): UseJobsBoardReturn {
     setIsDeleteDialogOpen,
     jobToDelete,
     isCreatingJob,
+    creatingJobLane,
     duplicate,
     setDuplicate,
     isCustomFieldsOpen,

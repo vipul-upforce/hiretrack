@@ -92,11 +92,10 @@ export const CustomFieldItem = React.memo(
       <>
         <div className="mb-2 w-full">
           <Card
-            className={`w-full !border border-l-4 !border-gray-200 border-l-blue-500 !bg-white backdrop-blur-sm transition-all duration-200 dark:!border-gray-700/50 dark:border-l-blue-400 dark:!bg-gray-900 ${
-              isDragging
+            className={`w-full !border border-l-4 !border-gray-200 border-l-blue-500 !bg-white backdrop-blur-sm transition-all duration-200 dark:!border-gray-700/50 dark:border-l-blue-400 dark:!bg-gray-900 ${isDragging
                 ? 'scale-105 border-l-blue-600 !shadow-2xl ring-2 ring-blue-500 ring-offset-2 dark:border-l-blue-300 dark:ring-blue-400 dark:ring-offset-gray-900'
                 : 'hover:-translate-y-0.5 hover:border-l-blue-600 hover:!bg-white hover:!shadow-xl dark:hover:border-l-blue-300 dark:hover:!bg-gray-800'
-            } `}
+              } `}
           >
             <CardHeader className="pb-4 pt-5">
               <div className="flex items-start justify-between">
@@ -159,11 +158,11 @@ export const CustomFieldItem = React.memo(
                                 <span className="font-medium text-blue-600 dark:text-blue-400">
                                   {Array.isArray(field.defaultValue)
                                     ? field.defaultValue
-                                        .slice(0, 2)
-                                        .join(', ') +
-                                      (field.defaultValue.length > 2
-                                        ? '...'
-                                        : '')
+                                      .slice(0, 2)
+                                      .join(', ') +
+                                    (field.defaultValue.length > 2
+                                      ? '...'
+                                      : '')
                                     : field.defaultValue}
                                 </span>
                               </span>

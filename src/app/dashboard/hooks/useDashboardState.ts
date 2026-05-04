@@ -35,6 +35,8 @@ const VALID_SORT_ORDERS: SortOrder[] = ['asc', 'desc'];
 
 /** localStorage key for sort config */
 const SORT_CONFIG_STORAGE_KEY = 'dashboard-sort-config';
+/** localStorage key for HR section visibility */
+const HR_SECTION_STORAGE_KEY = 'dashboard-hr-section-enabled';
 
 /** Default sort configuration */
 const DEFAULT_SORT_CONFIG: SortConfig = {
@@ -102,6 +104,14 @@ export function useDashboardState() {
     }
     return true;
   });
+  const [isHrSectionEnabled, setIsHrSectionEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(HR_SECTION_STORAGE_KEY);
+      if (stored === null) return true;
+      return stored === 'enabled';
+    }
+    return true;
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -118,6 +128,16 @@ export function useDashboardState() {
       localStorage.setItem(SORT_CONFIG_STORAGE_KEY, JSON.stringify(sortConfig));
     }
   }, [sortConfig]);
+
+  // Persist HR section visibility to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(
+        HR_SECTION_STORAGE_KEY,
+        isHrSectionEnabled ? 'enabled' : 'disabled',
+      );
+    }
+  }, [isHrSectionEnabled]);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const loadingRef = useRef(false);
@@ -156,6 +176,10 @@ export function useDashboardState() {
     // Sidebar state
     isActivitiesSidebarOpen,
     setIsActivitiesSidebarOpen,
+
+    // HR section visibility
+    isHrSectionEnabled,
+    setIsHrSectionEnabled,
 
     // Loading state
     isLoading,

@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import type { NextConfig } from 'next';
 import type { Configuration as WebpackConfiguration } from 'webpack';
 
@@ -10,7 +11,7 @@ const nextConfig: NextConfig = {
   // Enable experimental features for better performance
   experimental: {
     middlewareClientMaxBodySize: '50mb', // For route handlers processed through middleware
-    proxyClientMaxBodySize: '50mb', // For requests processed through proxy
+    // proxyClientMaxBodySize: '50mb', // For requests processed through proxy
     serverActions: { bodySizeLimit: '50mb' },
     // Enable Turbopack for faster builds
     turbo: {
@@ -41,11 +42,7 @@ const nextConfig: NextConfig = {
   // Optimize webpack configuration
   webpack: (
     config: WebpackConfiguration,
-    {
-      dev,
-      isServer,
-      webpack,
-    }: { dev: boolean; isServer: boolean; webpack: any },
+    { dev, isServer }: { dev: boolean; isServer: boolean; webpack: any },
   ): WebpackConfiguration => {
     // Optimize for development
     if (dev) {
@@ -223,4 +220,26 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: "upforcetech-jv",
+  project: "javascript-nextjs",
+  
+  // Keeps your terminal clean
+  silent: true, 
+
+  widenClientFileUpload: true,
+
+  // This is the correct way to handle source maps in your version
+  
+  // These force Sentry into your APIs and App Router automatically
+  autoInstrumentServerFunctions: true,
+  autoInstrumentAppDirectory: true, // Fixed name
+  
+  sourcemaps: {
+    // This MUST be false or your dashboard gets no data
+    disable: false,
+    // This replaces 'hideSourceMaps' and keeps your code private
+    deleteSourcemapsAfterUpload: true,
+  },
+  tunnelRoute: "/monitoring",
+});

@@ -66,6 +66,7 @@ export interface StepCompletedRequest {
   jobId?: string;
   name: string;
   title?: string;
+  previousInterviewerEmail?: string;
 }
 
 /**

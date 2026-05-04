@@ -6,6 +6,10 @@ import { CustomFields } from '@/Custom_Fields/Types/CustomField';
 import logger from '@/lib/logger';
 import { refreshAccessToken } from '@/lib/api/baseApi';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  filterSensitiveRedFlagsForInterviewer,
+  filterSensitiveRedFlagsForInterviewerList,
+} from '@/lib/filterSensitiveRedFlags';
 import { getDecodedSSE } from './useSSE';
 
 // Singleton SSE connection manager
@@ -210,8 +214,6 @@ class SSEManager {
     error?: string;
     customFields?: unknown;
   }) {
-
-
     if (
       data?.type === 'notificationCountUpdated' &&
       typeof data.count === 'number'
@@ -352,6 +354,7 @@ export function useNotificationSSE(
 ) {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth || {});
+  const userRole = user?.role;
   const isCandidate = user?.role === 'candidate';
   const [unreadCount, setUnreadCount] = useState<number>(initialUnreadCount);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
@@ -364,9 +367,9 @@ export function useNotificationSSE(
   const [clients, setClients] = useState<number>();
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [customFields, setCustomFields] = useState<CustomFields | null>(null);
-   const subscriberIdRef = useRef<string>(
-     `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-   );
+  const subscriberIdRef = useRef<string>(
+    `subscriber-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+  );
 
   const handleNotificationCountUpdated = useCallback((count: number) => {
     setTotalCount((c) => c + 1);
@@ -383,31 +386,81 @@ export function useNotificationSSE(
     setNotifications((prev) => [...notificationTokens, ...prev]);
   }, []);
 
-  const handleCandidateUpdate = useCallback((updatedCandidate: Candidate) => {
-    setCandidates((prev) => {
-      const index = prev.findIndex((c) => c._id === updatedCandidate._id);
-      if (index >= 0) {
-        return [
-          ...prev.slice(0, index),
+  const handleCandidateUpdate = useCallback(
+    (updatedCandidate: Candidate) => {
+      console.log('Received candidate update via SSE:', updatedCandidate);
+      const roleFilteredCandidate =
+        filterSensitiveRedFlagsForInterviewer<Candidate>(
           updatedCandidate,
-          ...prev.slice(index + 1),
-        ];
-      }
-      return [...prev, updatedCandidate];
-    });
-  }, []);
+          userRole,
+        );
+
+      setCandidates((prev) => {
+        const index = prev.findIndex(
+          (c) => c._id === roleFilteredCandidate._id,
+        );
+        if (index >= 0) {
+          // Merge incoming partial update with existing candidate data
+          // CRITICAL: Preserve duplicateCount if the incoming update has it as 0/undefined
+          // but the existing data has a value > 0.
+          const mergedCandidate = {
+            ...prev[index],
+            ...roleFilteredCandidate,
+            duplicateCount:
+              roleFilteredCandidate.duplicateCount ||
+              prev[index].duplicateCount ||
+              0,
+          };
+          
+          return [
+            ...prev.slice(0, index),
+            mergedCandidate,
+            ...prev.slice(index + 1),
+          ];
+        }
+        return [...prev, roleFilteredCandidate];
+      });
+    },
+    [userRole],
+  );
 
   const handleMultipleCandidateUpdate = useCallback(
     (updatedCandidates: Candidate[]) => {
-      setCandidates((prev: Candidate[]) => {
-        const updatedIds = new Set(
-          updatedCandidates.map((c: Candidate) => c._id),
+      const roleFilteredCandidates =
+        filterSensitiveRedFlagsForInterviewerList<Candidate>(
+          updatedCandidates,
+          userRole,
         );
-        const filtered = prev.filter((c) => !updatedIds.has(c._id));
-        return [...filtered, ...updatedCandidates];
+
+      setCandidates((prev: Candidate[]) => {
+        const updatedCandidatesMap = new Map(
+          roleFilteredCandidates.map((c: Candidate) => [c._id, c]),
+        );
+
+        // Map over previous candidates and merge if updated, or keep as is
+        const updated = prev.map((existing) => {
+          const update = updatedCandidatesMap.get(existing._id);
+          if (update) {
+            // Merge partial update with existing data
+            // CRITICAL: Preserve duplicateCount if the update has it as 0/undefined
+            const merged = { 
+              ...existing, 
+              ...update,
+              duplicateCount: update.duplicateCount || existing.duplicateCount || 0
+            };
+            updatedCandidatesMap.delete(existing._id); // Remove from map so we know it's handled
+            return merged;
+          }
+          return existing;
+        });
+
+        // Any remaining items in the map are new candidates
+        const newCandidates = Array.from(updatedCandidatesMap.values());
+
+        return [...updated, ...newCandidates];
       });
     },
-    [],
+    [userRole],
   );
 
   const handleLanesUpdate = useCallback(

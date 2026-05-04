@@ -3,6 +3,8 @@ import * as Yup from 'yup';
 export const SearchSchema = Yup.object()
   .shape({
     name: Yup.string(),
+    email: Yup.string(),
+    contact: Yup.string(),
     skills: Yup.array().of(Yup.string()),
     location: Yup.string(),
     minExpectedCTC: Yup.number().nullable(),

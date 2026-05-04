@@ -111,24 +111,19 @@ const candidateHistory = {
 };
 
 export const historySchema = new Schema({
-  jobId: {
-    type: String,
-    default: null,
-  },
   candidateId: {
     type: String,
     required: true,
   },
   history: [candidateHistory],
 });
-// 4. History - Candidate + Job + DateTime (N+1 queries)
+// History - Candidate + DateTime (single doc per candidate)
 historySchema.index(
   {
     candidateId: 1,
-    jobId: 1,
     'history.dateTime': -1,
   },
-  { name: 'idx_history_candidate_job_datetime', background: true },
+  { name: 'idx_history_candidate_datetime', background: true },
 );
 
 export interface ICandidateHistory {
@@ -210,7 +205,6 @@ export interface ICandidateHistory {
   };
 }
 export interface IHistory {
-  jobId: string | null;
   candidateId: string;
   history: ICandidateHistory[];
 }

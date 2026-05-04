@@ -14,6 +14,7 @@ import connectToDatabase, {
 } from '@/lib/mongodb';
 import { IUser } from '@/lib/models/user';
 import { IUCandidateAccount } from '@/lib/models/candidateAccount';
+import * as Sentry from '@sentry/nextjs';
 
 export interface OrganizationTag {
   title: string;
@@ -128,6 +129,21 @@ export async function verifyAndDecryptToken(token: string, orgId: string) {
       user?.tokenVersion !== undefined &&
       Number(user?.tokenVersion) !== Number(oldTokenVersion)
     ) {
+      Sentry.withScope((scope) => {
+        scope.setTag('module', 'auth');
+        scope.setTag('flow', 'token_verification');
+        scope.setTag('reason', 'TOKEN_VERSION_MISMATCH_LOGOUT');
+        scope.setLevel('warning');
+        scope.setContext('auth_token_mismatch', {
+          userId,
+          orgId: organizationId?.toString?.() ?? '',
+          oldTokenVersion: Number(oldTokenVersion),
+          currentTokenVersion: Number(user?.tokenVersion),
+          oldRole: decryptedData?.role,
+          currentRole: user?.role,
+        });
+        Sentry.captureMessage('auth.token_version_mismatch_logout');
+      });
 
       const newRole = user?.role;
       const oldRole = decryptedData?.role;

@@ -303,7 +303,9 @@ export function EditJobForm({ job, onSave, onCancel }: EditJobFormProps) {
 
               <Button
                 type="submit"
-                onClick={() => scrollToError(errors)}
+                onClick={() =>
+                  scrollToError(errors as Parameters<typeof scrollToError>[0])
+                }
                 disabled={isSubmitting}
                 variant="primary"
               >

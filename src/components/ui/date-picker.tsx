@@ -38,9 +38,8 @@ function PickerActionsPlugin({
 
   return (
     <div
-      className={`flex items-center justify-between gap-2 border-t border-border/30 bg-muted/20 p-3 ${
-        position === 'top' ? 'border-b' : ''
-      }`}
+      className={`flex items-center justify-between gap-2 border-t border-border/30 bg-muted/20 p-3 ${position === 'top' ? 'border-b' : ''
+        }`}
     >
       <div className="flex gap-2">
         <button
@@ -125,17 +124,85 @@ export function DatePicker({
   const allowOutsideClose = useRef(false);
   const pickerContainerRef = useRef<HTMLDivElement>(null);
 
+  // Custom shield node to isolate Focus from Radix UI Modal
+  const [shieldedPortalNode, setShieldedPortalNode] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!disablePortal && typeof document !== 'undefined') {
+      const parentContainer = portalContainer || document.body;
+
+      const shield = document.createElement('div');
+      shield.className = 'wren-datepicker-portal-shield';
+
+      shield.style.pointerEvents = 'auto';
+
+      const stopPropagation = (e: Event) => {
+        e.stopPropagation();
+      };
+      shield.addEventListener('pointerdown', stopPropagation, true);
+      shield.addEventListener('mousedown', stopPropagation, true);
+      shield.addEventListener('focusin', stopPropagation);
+      shield.addEventListener('focusout', stopPropagation);
+
+      parentContainer.appendChild(shield);
+      setShieldedPortalNode(shield);
+
+      return () => {
+        shield.removeEventListener('pointerdown', stopPropagation, true);
+        shield.removeEventListener('mousedown', stopPropagation, true);
+        shield.removeEventListener('focusin', stopPropagation);
+        shield.removeEventListener('focusout', stopPropagation);
+
+        if (parentContainer.contains(shield)) {
+          parentContainer.removeChild(shield);
+        }
+      };
+    }
+  }, [disablePortal, portalContainer]);
+
+  useEffect(() => {
+    if (!internalOpen) return;
+
+    const preventMainInputFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+
+      if (!target) return;
+      const isMainInput = target.classList.contains("rmdp-input");
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      const insideTimePicker =
+        activeElement?.closest(".rmdp-time-picker");
+
+      if (isMainInput && insideTimePicker) {
+        const input = insideTimePicker.querySelector("input");
+
+        if (input instanceof HTMLInputElement) {
+          setTimeout(() => {
+            input.focus();
+            input.select();
+          }, 0);
+        }
+      }
+    };
+
+    document.addEventListener("focusin", preventMainInputFocus, true);
+
+    return () => {
+      document.removeEventListener("focusin", preventMainInputFocus, true);
+    };
+  }, [internalOpen]);
+
   // Plugins array, conditionally include TimePicker
   const plugins = [
     ...(showTimePicker
       ? [
-          <TimePicker
-            key="time"
-            position={timePickerPosition}
-            hideSeconds
-            {...timePickerProps}
-          />,
-        ]
+        <TimePicker
+          key="time"
+          position={timePickerPosition}
+          hideSeconds
+          {...timePickerProps}
+        />,
+      ]
       : []),
     <PickerActionsPlugin
       position="bottom"
@@ -149,8 +216,6 @@ export function DatePicker({
       isRange={range}
     />,
   ];
-
-  // Control open/close state
 
   // Global click listener to detect outside clicks
   useEffect(() => {
@@ -194,14 +259,12 @@ export function DatePicker({
       return;
     }
     if (Array.isArray(date)) {
-      // For range mode, convert all dates in the array
       if (range) {
         const dateArray = date
           .map((d) => d?.toDate())
           .filter((d): d is Date => d !== undefined && d !== null);
         onChange(dateArray.length > 0 ? dateArray : null);
       } else {
-        // For non-range mode with array, take the first date
         onChange(date[0]?.toDate() || null);
       }
       return;
@@ -209,17 +272,15 @@ export function DatePicker({
     onChange(date.toDate());
   };
 
-  // Convert value to format expected by MultiDatePicker
   const pickerValue = (() => {
     if (value === null) return null;
-    if (Array.isArray(value)) {
-      return value;
-    }
+    if (Array.isArray(value)) return value;
     return value;
   })();
 
   const shouldUsePortal = !disablePortal;
-  const actualPortalTarget = portalContainer || undefined;
+  // Use our custom shielded node instead of the naked body
+  const actualPortalTarget = shieldedPortalNode || portalContainer || undefined;
 
   return (
     <div ref={pickerContainerRef} className={cn('relative', className)}>
@@ -241,6 +302,15 @@ export function DatePicker({
           setInternalOpen(true);
           doneClicked.current = false;
           allowOutsideClose.current = false;
+          if (pickerContainerRef.current) {
+            const input = pickerContainerRef.current.querySelector('input');
+            if (input) {
+              setTimeout(() => {
+                input.blur();
+              }, 0);
+            }
+          }
+
           onOpen?.();
         }}
         onClose={() => {

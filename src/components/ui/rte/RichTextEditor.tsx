@@ -1,7 +1,7 @@
 'use client';
 
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useEditor, EditorContent, Extension } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -28,8 +28,10 @@ import {
   Palette,
   Type,
   Highlighter,
+  Eraser,
 } from 'lucide-react';
 import { colorOptions, fontFamilies, highlightColors } from '@/lib/rteUtils';
+import { stripColorFormatting } from '@/lib/htmlFormatting';
 import { Toggle } from '../toggle';
 import { Button } from '../button';
 import {
@@ -39,6 +41,37 @@ import {
   DropdownMenuTrigger,
 } from '../dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '../popover';
+
+const HTML_ESCAPE_MAP: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => HTML_ESCAPE_MAP[char] || char);
+}
+
+function normalizePlainText(value: string) {
+  return value
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function plainTextToHtml(value: string) {
+  const normalized = normalizePlainText(value);
+  if (!normalized) return '<p><br /></p>';
+  return normalized
+    .split('\n\n')
+    .map((paragraph) => {
+      const lines = paragraph.split('\n').map((line) => escapeHtml(line));
+      return `<p>${lines.join('<br />')}</p>`;
+    })
+    .join('');
+}
 
 interface RichTextEditorProps {
   value: string;
@@ -52,6 +85,9 @@ interface RichTextEditorProps {
   name?: string;
   error?: string;
   touched?: boolean;
+  sanitizePastedTextColor?: boolean;
+  allowColors?: boolean;
+  showClearFormatting?: boolean;
 }
 
 function RichTextEditor({
@@ -65,10 +101,22 @@ function RichTextEditor({
   id,
   name,
   error,
+  sanitizePastedTextColor = false,
+  allowColors = true,
+  showClearFormatting = false,
   ...props
 }: RichTextEditorProps) {
   const [currentFont, setCurrentFont] = useState('Default');
   const [isFocused, setIsFocused] = useState(false);
+  const colorExtensions = useMemo(() => {
+    if (!allowColors) return [];
+    return [
+      Color,
+      Highlight.configure({
+        multicolor: true,
+      }),
+    ];
+  }, [allowColors]);
 
   const editor = useEditor({
     extensions: [
@@ -94,11 +142,8 @@ function RichTextEditor({
         types: ['heading', 'paragraph'],
       }),
       TextStyle,
-      Color,
       FontFamily,
-      Highlight.configure({
-        multicolor: true,
-      }),
+      ...colorExtensions,
 
       Extension.create({
         name: 'customEnterKeymap',
@@ -131,6 +176,9 @@ function RichTextEditor({
       }
     },
     editorProps: {
+      transformPastedHTML: sanitizePastedTextColor
+        ? stripColorFormatting
+        : undefined,
       attributes: {
         class:
           'prose prose-sm sm:prose dark:prose-invert focus:outline-none min-h-[150px] max-w-none p-4',
@@ -169,6 +217,14 @@ function RichTextEditor({
     },
     [editor],
   );
+
+  const handleClearFormatting = useCallback(() => {
+    if (!editor) return;
+    const text = editor.getText({ blockSeparator: '\n\n' });
+    const html = plainTextToHtml(text);
+    editor.commands.setContent(html, false);
+    onChange(html);
+  }, [editor, onChange]);
 
   if (!editor) {
     return <div className="h-64 w-full animate-pulse rounded-md bg-muted" />;
@@ -211,7 +267,7 @@ function RichTextEditor({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-1">
+              <Button type="button" variant="ghost" size="sm" className="gap-1">
                 <Type className="h-4 w-4" />
                 <span className="hidden text-xs sm:inline">{currentFont}</span>
               </Button>
@@ -232,58 +288,77 @@ function RichTextEditor({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" aria-label="Text Color">
-                <Palette className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2">
-              <div className="grid grid-cols-4 gap-1">
-                {colorOptions.map((color) => (
+          {allowColors && (
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button
-                    key={color.value}
+                    type="button"
                     variant="ghost"
-                    className="h-8 w-8 rounded-md p-0"
-                    style={{ backgroundColor: color.value }}
-                    onClick={() => setColor(color.value)}
-                    title={color.name}
-                  />
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+                    size="sm"
+                    aria-label="Text Color"
+                  >
+                    <Palette className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2">
+                  <div className="grid grid-cols-4 gap-1">
+                    {colorOptions.map((color) => (
+                      <Button
+                        type="button"
+                        key={color.value}
+                        variant="ghost"
+                        className="h-8 w-8 rounded-md p-0"
+                        style={{ backgroundColor: color.value }}
+                        onClick={() => setColor(color.value)}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" aria-label="Highlight">
-                <Highlighter className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2">
-              <div className="grid grid-cols-4 gap-1">
-                {highlightColors.map((color) => (
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button
-                    key={color.value}
+                    type="button"
                     variant="ghost"
-                    className="h-8 w-8 rounded-md p-0"
-                    style={{ backgroundColor: color.value }}
-                    onClick={() => setHighlight(color.value)}
-                    title={color.name}
-                  />
-                ))}
-                <Button
-                  variant="ghost"
-                  className="h-8 w-8 rounded-md border border-dashed p-0"
-                  onClick={() => editor.chain().focus().unsetHighlight().run()}
-                  title="Remove highlight"
-                >
-                  ✕
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
+                    size="sm"
+                    aria-label="Highlight"
+                  >
+                    <Highlighter className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2">
+                  <div className="grid grid-cols-4 gap-1">
+                    {highlightColors.map((color) => (
+                      <Button
+                        type="button"
+                        key={color.value}
+                        variant="ghost"
+                        className="h-8 w-8 rounded-md p-0"
+                        style={{ backgroundColor: color.value }}
+                        onClick={() => setHighlight(color.value)}
+                        title={color.name}
+                      />
+                    ))}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 w-8 rounded-md border border-dashed p-0"
+                      onClick={() =>
+                        editor.chain().focus().unsetHighlight().run()
+                      }
+                      title="Remove highlight"
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </>
+          )}
+
 
           <Toggle
             size="sm"
@@ -341,7 +416,19 @@ function RichTextEditor({
           </Toggle>
 
           <div className="ml-auto flex gap-1">
+            {showClearFormatting && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFormatting}
+                aria-label="Clear formatting"
+              >
+                <Eraser className="h-4 w-4" />
+              </Button>
+            )}
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => editor.chain().focus().undo().run()}
@@ -352,6 +439,7 @@ function RichTextEditor({
             </Button>
 
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               onClick={() => editor.chain().focus().redo().run()}
@@ -391,3 +479,4 @@ function RichTextEditor({
 }
 
 export default RichTextEditor;
+

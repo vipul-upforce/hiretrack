@@ -10,6 +10,7 @@ import {
   useLazyFetchCandidatesQuery,
   useLazyFetchCandidateHistoryQuery,
   useLazyFetchCandidateDetailsQuery,
+  useDeleteCandidateMutation,
 } from '@/lib/features/candidate/candidateApi';
 import { useParams, usePathname } from 'next/navigation';
 import { ICandidateHistory } from '@/lib/models/history';
@@ -35,7 +36,19 @@ import { DetailsDialog } from './DetailsDialog';
 import { CandidateDetailsTabs } from './tabs/CandidateDetailsTabs';
 import { CandidateDetailsActions } from './tabs/CandidateDetailsActions';
 import { getJobId } from '../../utils/candidateAccessors';
+import { DuplicateCandidatesDialog } from './DuplicateCandidatesDialog';
 /* eslint-disable max-lines */
+
+/**
+ * True if entry has checklistForm with no response entries (SSE often sends empty).
+ * Used when merging SSE history to avoid overwriting API-enriched responses.
+ */
+function hasEmptyChecklistResponses(entry: ICandidateHistory): boolean {
+  if (!entry?.checklistForm?.responses) return true;
+  const r = entry.checklistForm.responses;
+  if (r instanceof Map) return r.size === 0;
+  return Object.keys(r).length === 0;
+}
 
 export function CandidateDetailsDialog({
   candidate,
@@ -48,6 +61,12 @@ export function CandidateDetailsDialog({
   refetchCandidates,
   hideCloseButtons = false,
   isAssigning,
+  onValidateStatusChange,
+  onDeferStatusToChecklist,
+  onOpenChecklistAfterSave,
+  onBulkStatusRequiresReason,
+  onViewDetails,
+  onArchiveClick,
 }: CandidateDetailsDialogProps) {
   const pathname = usePathname();
   const id = useParams()?.id as string;
@@ -69,8 +88,11 @@ export function CandidateDetailsDialog({
   const [unifiedInitialAction, setUnifiedInitialAction] = useState<
     CandidateActionType | undefined
   >(undefined);
-  const { user } = useAppSelector((state) => state.auth || {});
+  const { user } = useAppSelector((state) => state?.auth ?? {});
+  const isCandidateUser = user?.role === 'candidate';
   const [evaluateCandidateMutation] = useEvaluateCandidateMutation();
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] =
+    useDeleteCandidateMutation();
   const [confirmReEvaluateOpen, setConfirmReEvaluateOpen] = useState(false);
   const [isEditRemarkDialogOpen, setIsEditRemarkDialogOpen] = useState(false);
   const [editingRemark, setEditingRemark] = useState<IEditRemark | null>(null);
@@ -79,7 +101,25 @@ export function CandidateDetailsDialog({
   const [localCandidate, setLocalCandidate] = useState<Candidate | null>(
     candidate,
   );
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
+  const [archiveCandidateId, setArchiveCandidateId] = useState<string | null>(
+    null,
+  );
+
+  // Reset internal states when the candidate ID changes to "forget" the previous candidate
+  useEffect(() => {
+    if (localCandidate?._id) {
+      setActiveTab('overview');
+      setHistoryLoaded(false);
+      setTimeLineItems([]);
+      setIsEditing(false);
+      setIsUnifiedOpen(false);
+      setUnifiedInitialAction(undefined);
+      setIsDuplicateDialogOpen(false);
+    }
+  }, [localCandidate?._id]);
 
   // History loading state
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -139,6 +179,7 @@ export function CandidateDetailsDialog({
 
   // Load history when history tab is activated
   useEffect(() => {
+    if (isCandidateUser) return;
     if (
       (activeTab === 'history' || activeTab === 'logs') &&
       !historyLoaded &&
@@ -146,7 +187,13 @@ export function CandidateDetailsDialog({
     ) {
       fetchHistory(localCandidate._id);
     }
-  }, [activeTab, historyLoaded, localCandidate?._id, fetchHistory]);
+  }, [
+    activeTab,
+    historyLoaded,
+    localCandidate?._id,
+    fetchHistory,
+    isCandidateUser,
+  ]);
 
   useEffect(() => {
     if (historyData?.history) {
@@ -157,16 +204,17 @@ export function CandidateDetailsDialog({
 
   // Merge SSE history updates into timeLineItems
   // SSE updates come via: localCandidate.history (job page) or candidate.history (calendar page)
+  // Preserve API-enriched checklistForm.responses when SSE sends empty (so checklist entries don't disappear)
   useEffect(() => {
     if (localCandidate?._id !== candidate?._id) return;
 
     const localHistory = localCandidate?.history;
     const candidateHistory = candidate?.history;
-    const sseHistory = (localHistory?.length ? localHistory : candidateHistory) || [];
+    const sseHistory =
+      (localHistory?.length ? localHistory : candidateHistory) || [];
 
     if (!Array.isArray(sseHistory) || sseHistory.length === 0) return;
 
-    // Helper: get stable key (prefer remark.id as it uniquely identifies remarks)
     const getKey = (item: ICandidateHistory): string =>
       item.remark?.id || item._id?.toString() || `${item.dateTime}-${item.title || ''}`;
 
@@ -174,26 +222,48 @@ export function CandidateDetailsDialog({
       const sseMap = new Map(sseHistory.map((item) => [getKey(item), item]));
       const existingKeys = new Set(prev.map(getKey));
 
-      // Update existing items with SSE data + add new items
-      const updated = prev.map((item) => sseMap.get(getKey(item)) || item);
+      const updated = prev.map((item) => {
+        const sseItem = sseMap.get(getKey(item));
+        if (!sseItem) return item;
+        if (
+          sseItem.checklistForm &&
+          item.checklistForm &&
+          hasEmptyChecklistResponses(sseItem) &&
+          !hasEmptyChecklistResponses(item)
+        ) {
+          return {
+            ...sseItem,
+            checklistForm: {
+              ...sseItem.checklistForm,
+              responses: item.checklistForm.responses,
+            },
+          };
+        }
+        return sseItem;
+      });
       const newItems = sseHistory.filter((item) => !existingKeys.has(getKey(item)));
 
       return [...updated, ...newItems].sort(
         (a, b) => new Date(b.dateTime ?? 0).getTime() - new Date(a.dateTime ?? 0).getTime()
       );
     });
-  }, [localCandidate?.history, candidate?.history, localCandidate?._id, candidate?._id]);
+  }, [
+    localCandidate?.history,
+    candidate?.history,
+    localCandidate?._id,
+    candidate?._id,
+  ]);
 
   // Handle History Error
   useEffect(() => {
-    if (isHistoryError && !isRefetching) {
+    if (isHistoryError && !isRefetching && !isCandidateUser) {
       toast({
         title: 'Error',
         description: 'Failed to load candidate history',
         variant: 'destructive',
       });
     }
-  }, [isHistoryError, isRefetching]);
+  }, [isHistoryError, isRefetching, isCandidateUser]);
 
   // Note: History and details reset is now handled in the candidate prop useEffect below
 
@@ -268,6 +338,51 @@ export function CandidateDetailsDialog({
 
   const handleEditClick = () => {
     setIsEditing(true);
+  };
+
+  const handleOpenUnifiedAction = (action: CandidateActionType) => {
+    setUnifiedInitialAction(action);
+    setIsUnifiedOpen(true);
+  };
+
+  const handleArchiveClick = (candidateId: string) => {
+    if (onArchiveClick) {
+      onArchiveClick(candidateId);
+      return;
+    }
+    setArchiveCandidateId(candidateId);
+    setIsArchiveConfirmOpen(true);
+  };
+
+  const handleArchiveConfirm = async () => {
+    if (!archiveCandidateId) return;
+    try {
+      await deleteCandidate(archiveCandidateId).unwrap();
+      const isCurrentlyDeleted = !!localCandidate?.isDeleted;
+      const updatedCandidate = localCandidate
+        ? { ...localCandidate, isDeleted: !isCurrentlyDeleted }
+        : null;
+      if (updatedCandidate) {
+        setLocalCandidate(updatedCandidate);
+        onUpdate?.(updatedCandidate);
+      }
+      toast({
+        title: 'Success',
+        description: `Candidate ${isCurrentlyDeleted ? 'unarchived' : 'archived'} successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description:
+          (error as { data?: { error?: string } })?.data?.error ||
+          (error as { message?: string })?.message ||
+          'Failed to update candidate',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsArchiveConfirmOpen(false);
+      setArchiveCandidateId(null);
+    }
   };
 
   const handleReEvaluation = async () => {
@@ -367,15 +482,20 @@ export function CandidateDetailsDialog({
     }
   }, [isFollowUpMode, localCandidate]);
 
+
+
   useEffect(() => {
     if (candidate) {
       const isSameCandidate = candidate._id === localCandidate?._id;
 
       if (isSameCandidate && localCandidate) {
-        // Same candidate - merge candidate prop with localCandidate
+        // Same candidate - merge candidate with localCandidate
         // Use candidate.history if it has data (may have SSE updates from parent like calendar)
         // Otherwise keep localCandidate.history (dialog's own SSE updates)
-        const historyToUse = (candidate.history?.length ? candidate.history : localCandidate.history) || [];
+        const historyToUse =
+          (candidate.history?.length
+            ? candidate.history
+            : localCandidate.history) || [];
         const remarksToUse =
           candidate.remarks && candidate.remarks.length > 0
             ? candidate.remarks
@@ -383,32 +503,33 @@ export function CandidateDetailsDialog({
 
         setLocalCandidate({
           ...candidate,
-          assignment: localCandidate.assignment || candidate.assignment,
+          assignment:
+            localCandidate.assignment || candidate.assignment,
           remarks: remarksToUse,
           remarksCount:
             candidate.remarksCount ??
             (Array.isArray(remarksToUse) ? remarksToUse.length : 0),
           resume: candidate.resume ?? localCandidate.resume,
           attachments:
-            candidate.attachments && candidate.attachments.length > 0
+            candidate.attachments &&
+            candidate.attachments.length > 0
               ? candidate.attachments
               : localCandidate.attachments,
           history: historyToUse,
+          duplicateCount:
+            candidate.duplicateCount ?? localCandidate.duplicateCount ?? 0,
         });
       } else {
-        // Different candidate or no localCandidate - use candidate prop as-is
+        // Different candidate or no localCandidate - use incoming candidate as-is
         setLocalCandidate(candidate);
       }
 
       // Only reset history state when candidate ID actually changes
       if (!isSameCandidate) {
         // CRITICAL: Always reset historyLoaded to false so API fetch happens
-        // candidate.history from props may be partial (e.g., from SSE or single job)
-        // The API endpoint merges ALL history documents for complete data
         setHistoryLoaded(false);
 
         // Use candidate.history as initial display data while API loads
-        // But do NOT set historyLoaded = true (API fetch must still happen)
         if (
           candidate.history &&
           Array.isArray(candidate.history) &&
@@ -419,19 +540,19 @@ export function CandidateDetailsDialog({
           setTimeLineItems([]);
         }
       }
-      // For same candidate, don't reset - let SSE merge effect handle updates
     }
   }, [candidate, id, localCandidate?._id]);
 
   // Check if interviewer can access this candidate
   const canInterviewerAccess = () => {
     if (user?.role !== 'interviewer') return true; // Non-interviewers can access
-    if (!localCandidate?.assignment?.interviewerId) return false; // No assignment means can't access
+    const candidateToCheck = localCandidate;
+    if (!candidateToCheck?.assignment?.interviewerId) return false; // No assignment means can't access
 
     const interviewerId =
-      typeof localCandidate.assignment.interviewerId === 'object'
-        ? localCandidate.assignment.interviewerId._id
-        : localCandidate.assignment.interviewerId;
+      typeof candidateToCheck.assignment.interviewerId === 'object'
+        ? candidateToCheck.assignment.interviewerId._id
+        : candidateToCheck.assignment.interviewerId;
 
     return interviewerId === user.id;
   };
@@ -445,6 +566,7 @@ export function CandidateDetailsDialog({
     isOpen,
     user?.role,
     localCandidate?.assignment?.interviewerId,
+    candidate?.assignment?.interviewerId,
     user?.id,
     onOpenChange,
   ]);
@@ -467,8 +589,21 @@ export function CandidateDetailsDialog({
       }
       return item;
     });
+  const handleViewDuplicateDetails = (nextCandidate: Candidate) => {
+    // Close duplicates dialog first to avoid overlay issues
+    setIsDuplicateDialogOpen(false);
+
+    // Let parent handle close/reopen to avoid double-close race conditions
+    if (onViewDetails) {
+      onViewDetails(nextCandidate);
+      return;
+    }
+
+    // Fallback: close the dialog if no parent handler is provided
+    onOpenChange(false);
+  };
   const header = (
-    <DialogHeader className="px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
+    <DialogHeader className="relative px-3 pr-8 pt-3 lg:px-4 lg:pr-10 lg:pt-4 pb-0">
       {localCandidate && (
         <DetailsDialogHeader
           candidate={localCandidate}
@@ -487,6 +622,10 @@ export function CandidateDetailsDialog({
             setUnifiedInitialAction('assignTo');
             setIsUnifiedOpen(true);
           }}
+          onOpenDuplicateDialog={() => setIsDuplicateDialogOpen(true)}
+          onOpenUnifiedAction={handleOpenUnifiedAction}
+          onEditClick={handleEditClick}
+          onArchiveClick={handleArchiveClick}
         />
       )}
     </DialogHeader>
@@ -578,6 +717,9 @@ export function CandidateDetailsDialog({
           setNewRemark('');
           setRemarkRating(null);
           setRemarkRatingHistory(null);
+          if (!e) {
+            setIsDuplicateDialogOpen(false);
+          }
           onOpenChange(e);
         }}
       >
@@ -587,6 +729,14 @@ export function CandidateDetailsDialog({
         {(user?.role !== 'candidate' || !user?.role) && footer}
       </DetailsDialog>
       {localCandidate && (
+        <DuplicateCandidatesDialog
+          candidate={localCandidate}
+          isOpen={isDuplicateDialogOpen}
+          onOpenChange={setIsDuplicateDialogOpen}
+          onViewDetails={handleViewDuplicateDetails}
+        />
+      )}
+      {localCandidate && isUnifiedOpen && (
         <UnifiedCandidateActionsDialog
           candidate={localCandidate}
           isOpen={isUnifiedOpen}
@@ -596,6 +746,31 @@ export function CandidateDetailsDialog({
           onUpdate={onUpdate || (() => { })}
           setLocalCandidate={setLocalCandidate}
           refetchAssignment={refetchAssignment}
+          onValidateStatusChange={onValidateStatusChange}
+          onDeferStatusToChecklist={
+            onDeferStatusToChecklist
+              ? (info, status, next) => {
+                setIsUnifiedOpen(false);
+                onDeferStatusToChecklist(info, status, next);
+              }
+              : undefined
+          }
+          onOpenChecklistAfterSave={
+            onOpenChecklistAfterSave
+              ? (info) => {
+                onOpenChecklistAfterSave(info);
+                setIsUnifiedOpen(false);
+              }
+              : undefined
+          }
+          onBulkStatusRequiresReason={
+            onBulkStatusRequiresReason
+              ? (payload) => {
+                setIsUnifiedOpen(false);
+                onBulkStatusRequiresReason(payload);
+              }
+              : undefined
+          }
           onSuccess={async () => {
             await refetch();
             setUnifiedInitialAction(undefined);
@@ -631,6 +806,23 @@ export function CandidateDetailsDialog({
         isLoading={isLoading}
         loadingText="Re-Evaluating with AI..."
         className="sm:max-w-[500px]"
+      />
+      <ConfirmationDialog
+        title="Are you sure?"
+        message={
+          localCandidate?.isDeleted
+            ? 'This will unarchive this candidate. They will be visible in the regular view.'
+            : 'This will archive this candidate. They will be hidden from the regular view.'
+        }
+        isOpen={isArchiveConfirmOpen}
+        setIsOpen={setIsArchiveConfirmOpen}
+        onConfirm={handleArchiveConfirm}
+        onCancel={() => setIsArchiveConfirmOpen(false)}
+        isLoading={isDeletingCandidate}
+        loadingText={
+          localCandidate?.isDeleted ? 'Unarchiving...' : 'Archiving...'
+        }
+        buttonName={localCandidate?.isDeleted ? 'Unarchive' : 'Archive'}
       />
       <EditRemarkDialog
         isEditRemarkDialogOpen={isEditRemarkDialogOpen}

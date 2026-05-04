@@ -23,7 +23,7 @@ import {
   ILaneConfig,
   UserRole,
 } from '@/lib/models/JobLaneConfig';
-import { sendRemarkNotificationWithMentions } from '@/lib/services/unifiedEmailService';
+import { sendRemarkNotificationWithMentions } from '@/lib/notifications/email/unifiedEmailService';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { logger } from '@/lib/logger/logger.server';
 
@@ -46,9 +46,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!data || !data.jobId || !data.candidateId) {
+    if (!data || !data.candidateId) {
       return NextResponse.json(
-        { error: 'Job ID and Candidate ID are required' },
+        { error: 'Candidate ID is required' },
         { status: 400 },
       );
     }
@@ -60,12 +60,14 @@ export async function POST(request: NextRequest) {
     ];
     const [historyEntry, laneConfig] = await Promise.all([
       History.findOne({
-        // jobId: data.jobId,
+        // history keyed by candidateId only
         candidateId: data.candidateId,
       })
         .populate(populateFields)
         .lean(),
-      JobLaneConfig?.findOne({ jobId: data.jobId }).lean().exec(),
+      data.jobId
+        ? JobLaneConfig?.findOne({ jobId: data.jobId }).lean().exec()
+        : Promise.resolve(null),
     ]);
 
     if (!historyEntry) {
@@ -311,25 +313,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // CRITICAL FIX: Normalize jobId to prevent history merge issues
-    // Handle: object {_id, title, description}, string, null, or empty string
-    let normalizedJobId: string | null = null;
-    if (data.jobId) {
-      if (
-        typeof data.jobId === 'object' &&
-        data.jobId !== null &&
-        '_id' in data.jobId
-      ) {
-        normalizedJobId = data.jobId._id || null;
-      } else if (typeof data.jobId === 'string' && data.jobId.trim() !== '') {
-        normalizedJobId = data.jobId.trim();
-      }
-    }
-    // Normalize empty string to null for consistency
-    if (normalizedJobId === '') {
-      normalizedJobId = null;
-    }
-
     if (data.newEntry.attachments && Array.isArray(data.newEntry.attachments)) {
       // Filter out invalid attachments and ensure type exists
       const validAttachments = data.newEntry.attachments.filter(
@@ -387,10 +370,11 @@ export async function PUT(request: NextRequest) {
       { path: 'jobId', select: 'title description' },
       { path: 'followUp.userId', select: 'name _id email' },
     ];
+
     const [candidateData, historyEntry] = await Promise.all([
       Candidate.findById(candidateId).populate(populateCandidateFields).lean(),
       History?.findOneAndUpdate(
-        { jobId: normalizedJobId, candidateId: data.candidateId },
+        { candidateId: data.candidateId },
         { $push: { history: data.newEntry } },
         { upsert: true, new: true, runValidators: true },
       )
@@ -449,7 +433,16 @@ export async function PUT(request: NextRequest) {
         const remarkFor = candidateData?.name || '';
         const remarkAdder = userData.name;
         const rating = data.newEntry?.remark?.rating || null;
-        const candidateProfileLink = `${request.headers.get('origin')}/candidate/${data.candidateId}`;
+        const origin = request.headers.get('origin') || '';
+        const jobIdForLink =
+          typeof data.jobId === 'string' && data.jobId !== ''
+            ? data.jobId
+            : data.jobId?._id?.toString?.() || null;
+        // Email is sent to admin/hr only → use job page link (not /candidate for interviewer)
+        const candidateProfileLink =
+          jobIdForLink && origin
+            ? `${origin}/dashboard/jobs/${jobIdForLink}?candidateId=${data.candidateId}`
+            : `${origin}/candidate/${data.candidateId}`;
         const organizationName = userData.organizationInfo?.name || 'HireTrack';
         const emailList = (users || []).map((user) => user.email);
         await sendRemarkNotificationWithMentions(

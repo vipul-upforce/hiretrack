@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendSmartNotification } from '@/lib/services/unifiedEmailService';
+import { sendSmartNotification } from '@/lib/notifications/email/unifiedEmailService';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { Settings, User } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
-import { NotificationType } from '@/lib/services/emailDecisionEngine';
+import { getCandidateDetailsPageUrl } from '@/lib/notifications/email/smartNotificationService';
+import { NotificationType } from '@/lib/notifications/decision';
 import { getNextStep } from '@/lib/utils/organization';
 import { resolveSentByToObjectId } from '@/lib/utils/userResolution';
 import { StepCompletedRequest } from './types';
@@ -51,37 +52,47 @@ export async function handleStepCompleted(req: NextRequest) {
   const latestRemark = data.feedback;
   const newDate = data.dateTime;
 
-  // Optimize: Fetch all required data in parallel
-  const [completionDate, organization, settings, hrUsers] = await Promise.all([
-    getFormattedDate(req, newDate, false, organizationId).then(
-      (date) => date as string,
-    ),
-    User?.findOne({
-      organizationId,
-    })
-      .select('organizationId')
-      .populate({
-        path: 'organizationId',
-        select: 'name defaultLanes',
+  // Optimize: Fetch all required data in parallel (recipientUser for role-based link when recipientEmail provided)
+  const [completionDate, organization, settings, hrUsers, recipientUser] =
+    await Promise.all([
+      getFormattedDate(req, newDate, false, organizationId).then(
+        (date) => date as string,
+      ),
+      User?.findOne({
+        organizationId,
       })
-      .lean(),
-    Settings?.findOne({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-    })
-      .select(
-        'mailConfig.resend_from mailConfig.brevo_from mailConfig.smtp_from',
-      )
-      .lean()
-      .exec(),
-    User?.find({
-      organizationId: new mongoose.Types.ObjectId(organizationId),
-      role: { $in: ['hr', 'admin'] },
-      $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
-    })
-      .select('email')
-      .lean()
-      .exec(),
-  ]);
+        .select('organizationId')
+        .populate({
+          path: 'organizationId',
+          select: 'name',
+        })
+        .lean(),
+      Settings?.findOne({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+      })
+        .select(
+          'mailConfig.resend_from mailConfig.brevo_from mailConfig.smtp_from',
+        )
+        .lean()
+        .exec(),
+      User?.find({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        role: { $in: ['hr', 'admin'] },
+        $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }],
+      })
+        .select('email')
+        .lean()
+        .exec(),
+      data.previousInterviewerEmail
+        ? User?.findOne({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            email: data.previousInterviewerEmail,
+          })
+            .select('role')
+            .lean()
+            .exec()
+        : Promise.resolve(null),
+    ]);
 
   if (!settings || !settings.mailConfig) {
     return NextResponse.json(
@@ -91,8 +102,20 @@ export async function handleStepCompleted(req: NextRequest) {
   }
 
   const fromEmail = getFromEmail(settings);
-  const nextSteps = getNextStep(organization, data.status);
-  const candidateDetails = `${req.headers.get('Origin')}/candidate/${data.candidateId}`;
+  const nextSteps = await getNextStep(
+    data.jobId ?? null,
+    data.status,
+    organizationId,
+  );
+  const origin = req.headers.get('Origin') ?? '';
+  const linkKind: 'dashboard' | 'candidate' =
+    recipientUser?.role === 'interviewer' ? 'candidate' : 'dashboard';
+  const candidateDetails = getCandidateDetailsPageUrl(
+    origin,
+    data.candidateId,
+    data.jobId ?? null,
+    linkKind,
+  );
 
   // Resolve sentBy and fetch email template in parallel
   const [resolvedSentById, emailTemplate] = await Promise.all([
@@ -108,15 +131,15 @@ export async function handleStepCompleted(req: NextRequest) {
       {
         candidateName: data.name || '',
         completedBy: user.name || '',
-        candidateProfileLink: candidateDetails || '' || 'N/A',
+        candidateProfileLink: candidateDetails || 'N/A',
         jobTitle: data.title || '',
         organizationName:
           typeof organization?.organizationId === 'object'
             ? organization.organizationId.name || ''
-            : user?.organizationInfo?.name || '' || 'N/A',
+            : user?.organizationInfo?.name || '',
         stepName: data?.status || '',
-        feedback: latestRemark?.description || 'N/A' || 'N/A',
-        rating: latestRemark?.rating?.toString() || 'N/A' || 'N/A',
+        feedback: latestRemark?.description || 'N/A',
+        rating: latestRemark?.rating?.toString() || 'N/A',
         completionDate,
         recipientName: '',
         nextStep: nextSteps,
@@ -143,7 +166,7 @@ export async function handleStepCompleted(req: NextRequest) {
       subject: emailSubject,
       html: emailContent,
     },
-    emailList,
+    [...emailList, (data.previousInterviewerEmail ?? '') as string],
   );
 
   if (emailStatus.status === 200) {

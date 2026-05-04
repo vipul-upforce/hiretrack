@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEventEmailWithHistory } from '@/lib/services/unifiedEmailService';
+import { sendEventEmailWithHistory } from '@/lib/notifications/email/unifiedEmailService';
 import { getMappedEmailTemplate } from '@/lib/notifications/email/getMappedEmailTemplate';
 import connectToDatabase, {
   CandidateAccount,

@@ -16,7 +16,7 @@ export interface UpdateSettingsSectionProps {
   handleCheckForUpdates: () => void;
   checkingUpdatesRTK: boolean;
   updateAvailable: boolean;
-  isBeta: boolean;
+  channel: 'beta' | 'staging' | 'production';
   versionList: VersionListResponse | null;
 }
 
@@ -27,7 +27,7 @@ export function UpdateSettingsSection({
   handleCheckForUpdates,
   checkingUpdatesRTK,
   updateAvailable,
-  isBeta,
+  channel,
   versionList,
 }: UpdateSettingsSectionProps) {
   return (
@@ -53,9 +53,9 @@ export function UpdateSettingsSection({
               {isSubmitting ? 'Saving...' : 'Save Settings'}
             </Button>
 
-            {isBeta && (
+            {channel !== 'production' && (
               <Badge variant="secondary" className="flex items-center gap-1 h-[24px] text-xs">
-                BETA
+                {channel.toUpperCase()}
               </Badge>
             )}
           </div>

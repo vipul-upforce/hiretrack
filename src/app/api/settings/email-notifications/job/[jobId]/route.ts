@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { User, Job } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import mongoose from 'mongoose';
-import { getUserEffectiveNotificationSettings } from '@/lib/services/emailDecisionEngine';
+import { getUserEffectiveNotificationSettings } from '@/lib/notifications/decision';
 import { logger } from '@/lib/logger/logger.server';
 import { VALID_NOTIFICATION_KEYS } from '@/lib/constants/notificationDefaults';
 

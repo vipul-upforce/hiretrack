@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PipelineStage } from 'mongoose';
 import connectToDatabase, { History } from '@/lib/mongodb';
 import { logger } from '@/lib/logger/logger.server';
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query') || '';
 
     // Build search filter
-    const searchFilter = query
+    const searchFilter: PipelineStage.Match['$match'] = query
       ? {
           $or: [
             { 'history.title': { $regex: query, $options: 'i' } },
@@ -31,13 +32,125 @@ export async function GET(request: NextRequest) {
         }
       : {};
 
-    const historyLogs = await History?.aggregate([
+    // 1. REUSABLE LOOKUP BLOCKS (Strictly Typed)
+    const lookupCandidate: PipelineStage[] = [
       {
-        // Unwind the history array
-        $unwind: '$history',
+        $lookup: {
+          from: 'candidates',
+          let: { cid: '$candidateObjectId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $ne: ['$$cid', null] }, { $eq: ['$_id', '$$cid'] }],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                email: 1,
+                location: 1,
+                experience: 1,
+                skills: {
+                  $cond: {
+                    if: { $isArray: '$skills' },
+                    then: { $slice: ['$skills', 10] },
+                    else: '$skills',
+                  },
+                },
+                status: 1,
+                expectedCTC: 1,
+                currentCTC: 1,
+                noticePeriod: 1,
+                remarks: {
+                  $cond: {
+                    if: { $isArray: '$remarks' },
+                    then: {
+                      $slice: [
+                        {
+                          $sortArray: {
+                            input: '$remarks',
+                            sortBy: { date: -1 },
+                          },
+                        },
+                        3,
+                      ],
+                    },
+                    else: '$remarks',
+                  },
+                },
+                scores: {
+                  overall: '$scores.overall',
+                  experience: '$scores.experience',
+                  skills: '$scores.skills',
+                  recommendation: '$scores.recommendation',
+                },
+                resume: {
+                  name: '$resume.name',
+                  url: '$resume.url',
+                  type: '$resume.type',
+                },
+              },
+            },
+          ],
+          as: 'candidateData',
+        },
       },
+      { $unwind: { path: '$candidateData', preserveNullAndEmptyArrays: true } },
+    ];
+
+    const lookupJob: PipelineStage[] = [
       {
-        // Filter for valid ISO dateTime strings
+        $lookup: {
+          from: 'jobs',
+          let: { jid: '$jobObjectId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $ne: ['$$jid', null] }, { $eq: ['$_id', '$$jid'] }],
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                title: 1,
+                description: {
+                  $cond: {
+                    if: { $gt: [{ $strLenCP: '$description' }, 200] },
+                    then: {
+                      $concat: [{ $substrCP: ['$description', 0, 197] }, '...'],
+                    },
+                    else: '$description',
+                  },
+                },
+                skills: {
+                  $cond: {
+                    if: { $isArray: '$skills' },
+                    then: { $slice: ['$skills', 10] },
+                    else: '$skills',
+                  },
+                },
+                experience: 1,
+                status: 1,
+                salary: 1,
+                organizationId: 1,
+              },
+            },
+          ],
+          as: 'jobData',
+        },
+      },
+      { $unwind: { path: '$jobData', preserveNullAndEmptyArrays: true } },
+    ];
+
+    // 2. BUILD BASE PIPELINE dynamically
+    const pipeline: PipelineStage[] = [
+      { $unwind: '$history' },
+      {
         $match: {
           'history.dateTime': {
             $type: 'string',
@@ -46,14 +159,8 @@ export async function GET(request: NextRequest) {
         },
       },
       {
-        // Convert valid ISO dateTime to Date
         $addFields: {
           'history.parsedDateTime': { $toDate: '$history.dateTime' },
-        },
-      },
-      {
-        // Add fields to handle candidateId conversion safely
-        $addFields: {
           candidateObjectId: {
             $switch: {
               branches: [
@@ -103,11 +210,6 @@ export async function GET(request: NextRequest) {
               default: null,
             },
           },
-        },
-      },
-      {
-        // Add fields to handle jobId conversion safely
-        $addFields: {
           jobObjectId: {
             $switch: {
               branches: [
@@ -157,305 +259,132 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      {
-        // Lookup for candidateId - only essential fields
-        $lookup: {
-          from: 'candidates',
-          let: { cid: '$candidateObjectId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $ne: ['$$cid', null] }, { $eq: ['$_id', '$$cid'] }],
-                },
-              },
-            },
-            {
-              // Project only essential candidate fields to reduce document size
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-                location: 1,
-                experience: 1,
-                skills: {
-                  $cond: {
-                    if: { $isArray: '$skills' },
-                    then: { $slice: ['$skills', 10] },
-                    else: '$skills',
-                  },
-                },
-                status: 1,
-                expectedCTC: 1,
-                currentCTC: 1,
-                noticePeriod: 1,
-                // Limit remarks to last 3 to reduce size
-                remarks: {
-                  $cond: {
-                    if: { $isArray: '$remarks' },
-                    then: {
-                      $slice: [
-                        {
-                          $sortArray: {
-                            input: '$remarks',
-                            sortBy: { date: -1 },
-                          },
-                        },
-                        3,
-                      ],
-                    },
-                    else: '$remarks',
-                  },
-                },
-                scores: {
-                  overall: '$scores.overall',
-                  experience: '$scores.experience',
-                  skills: '$scores.skills',
-                  recommendation: '$scores.recommendation',
-                },
-                resume: {
-                  name: '$resume.name',
-                  url: '$resume.url',
-                  type: '$resume.type',
-                },
-              },
-            },
-          ],
-          as: 'candidateData',
-        },
-      },
-      {
-        // Unwind candidateData
-        $unwind: {
-          path: '$candidateData',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        // Lookup for jobId - only essential fields
-        $lookup: {
-          from: 'jobs',
-          let: { jid: '$jobObjectId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [{ $ne: ['$$jid', null] }, { $eq: ['$_id', '$$jid'] }],
-                },
-              },
-            },
-            {
-              // Project only essential job fields
-              $project: {
-                _id: 1,
-                title: 1,
-                description: {
-                  $cond: {
-                    if: { $gt: [{ $strLenCP: '$description' }, 200] },
-                    then: {
-                      $concat: [{ $substrCP: ['$description', 0, 197] }, '...'],
-                    },
-                    else: '$description',
-                  },
-                },
-                skills: {
-                  $cond: {
-                    if: { $isArray: '$skills' },
-                    then: { $slice: ['$skills', 10] },
-                    else: '$skills',
-                  },
-                },
-                experience: 1,
-                status: 1,
-                salary: 1,
-                organizationId: 1,
-              },
-            },
-          ],
-          as: 'jobData',
-        },
-      },
-      {
-        // Unwind jobData
-        $unwind: {
-          path: '$jobData',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        // Lookup for assignmentBy - only essential fields
+    ];
+
+    // If there is a text query, we MUST fetch Candidate/Job Data BEFORE sorting to filter it.
+    if (query) {
+      pipeline.push(...lookupCandidate);
+      pipeline.push(...lookupJob);
+      pipeline.push({ $match: searchFilter });
+    }
+
+    // 3. SORT DATA IN MEMORY (Footprint is now tiny)
+    pipeline.push({ $sort: { 'history.parsedDateTime': -1 } });
+
+    // 4. PREPARE THE PAGINATED LOGS (Only run expensive User lookups on 20 items!)
+    const paginatedLogsPipeline: PipelineStage.FacetPipelineStage[] = [
+      { $skip: offset },
+      { $limit: limit },
+    ];
+
+    // If there was NO query, Candidate/Job lookups were skipped above. Run them NOW only on the paginated items.
+    if (!query) {
+      paginatedLogsPipeline.push(
+        ...(lookupCandidate as PipelineStage.FacetPipelineStage[]),
+      );
+      paginatedLogsPipeline.push(
+        ...(lookupJob as PipelineStage.FacetPipelineStage[]),
+      );
+    }
+
+    // Always fetch Users AFTER pagination!
+    const userFields = [
+      'assignmentBy',
+      'currentInterviewer',
+      'previousInterviewer',
+      'note.userId',
+    ];
+
+    userFields.forEach((field) => {
+      const fieldPath =
+        field === 'note.userId' ? '$history.note.userId' : `$history.${field}`;
+      paginatedLogsPipeline.push({
         $lookup: {
           from: 'users',
-          let: { userId: '$history.assignmentBy' },
+          let: { userId: fieldPath },
           pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-                role: 1,
-              },
-            },
+            { $match: { $expr: { $eq: ['$_id', '$$userId'] } } },
+            { $project: { _id: 1, name: 1, email: 1, role: 1 } },
           ],
-          as: 'history.assignmentBy',
+          as:
+            field === 'note.userId'
+              ? 'history.note.userId'
+              : `history.${field}`,
         },
-      },
-      {
-        // Lookup for currentInterviewer - only essential fields
-        $lookup: {
-          from: 'users',
-          let: { userId: '$history.currentInterviewer' },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-                role: 1,
-              },
-            },
-          ],
-          as: 'history.currentInterviewer',
-        },
-      },
-      {
-        // Lookup for previousInterviewer - only essential fields
-        $lookup: {
-          from: 'users',
-          let: { userId: '$history.previousInterviewer' },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-                role: 1,
-              },
-            },
-          ],
-          as: 'history.previousInterviewer',
-        },
-      },
-      {
-        // Lookup for note.userId - only essential fields
-        $lookup: {
-          from: 'users',
-          let: { userId: '$history.note.userId' },
-          pipeline: [
-            {
-              $match: {
-                $expr: { $eq: ['$_id', '$$userId'] },
-              },
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                email: 1,
-                role: 1,
-              },
-            },
-          ],
-          as: 'history.note.userId',
-        },
-      },
-      {
-        // Apply search filter
-        $match: searchFilter,
-      },
-      {
-        // Sort by parsedDateTime in descending order
-        $sort: { 'history.parsedDateTime': -1 },
-      },
-      {
-        // Remove temporary fields used for conversion
-        $unset: ['candidateObjectId', 'jobObjectId', 'history.parsedDateTime'],
-      },
-      {
-        // Use facet for pagination and counting
-        $facet: {
-          logs: [
-            { $skip: offset },
-            { $limit: limit },
-            {
-              $project: {
-                _id: 0,
-                jobId: 1,
-                jobData: 1,
-                candidateData: 1,
-                candidateId: 1,
-                dateTime: '$history.dateTime',
-                currentInterviewer: '$history.currentInterviewer',
-                previousInterviewer: '$history.previousInterviewer',
-                title: '$history.title',
-                remark: {
-                  id: '$history.remark.id',
-                  isPrivate: '$history.remark.isPrivate',
-                  description: {
-                    $cond: {
-                      if: {
-                        $gt: [
-                          {
-                            $strLenCP: {
-                              $ifNull: ['$history.remark.description', ''],
-                            },
-                          },
-                          500,
-                        ],
-                      },
-                      then: {
-                        $concat: [
-                          {
-                            $substrCP: [
-                              { $ifNull: ['$history.remark.description', ''] },
-                              0,
-                              497,
-                            ],
-                          },
-                          '...',
-                        ],
-                      },
-                      else: { $ifNull: ['$history.remark.description', ''] },
-                    },
+      });
+    });
+
+    // Final output projection
+    paginatedLogsPipeline.push({
+      $project: {
+        _id: 0,
+        jobId: 1,
+        jobData: 1,
+        candidateData: 1,
+        candidateId: 1,
+        dateTime: '$history.dateTime',
+        currentInterviewer: '$history.currentInterviewer',
+        previousInterviewer: '$history.previousInterviewer',
+        title: '$history.title',
+        attachments: '$history.attachments',
+        assignmentBy: '$history.assignmentBy',
+        remark: {
+          id: '$history.remark.id',
+          isPrivate: '$history.remark.isPrivate',
+          date: '$history.remark.date',
+          rating: '$history.remark.rating',
+          userId: '$history.remark.userId',
+          description: {
+            $cond: {
+              if: {
+                $gt: [
+                  {
+                    $strLenCP: { $ifNull: ['$history.remark.description', ''] },
                   },
-                  date: '$history.remark.date',
-                  rating: '$history.remark.rating',
-                  userId: '$history.remark.userId',
-                },
-                note: {
-                  userId: '$history.note.userId',
-                  description: {
-                    $cond: {
-                      if: { $isArray: '$history.note.description' },
-                      then: { $slice: ['$history.note.description', 3] },
-                      else: '$history.note.description',
-                    },
-                  },
-                },
-                attachments: '$history.attachments',
-                assignmentBy: '$history.assignmentBy',
+                  500,
+                ],
               },
+              then: {
+                $concat: [
+                  {
+                    $substrCP: [
+                      { $ifNull: ['$history.remark.description', ''] },
+                      0,
+                      497,
+                    ],
+                  },
+                  '...',
+                ],
+              },
+              else: { $ifNull: ['$history.remark.description', ''] },
             },
-          ],
-          totalCount: [{ $count: 'count' }],
+          },
+        },
+        note: {
+          userId: '$history.note.userId',
+          description: {
+            $cond: {
+              if: { $isArray: '$history.note.description' },
+              then: { $slice: ['$history.note.description', 3] },
+              else: '$history.note.description',
+            },
+          },
         },
       },
-    ]);
+    });
+
+    // 5. INJECT PAGINATED PIPELINE INTO FACET
+    pipeline.push({
+      $facet: {
+        totalCount: [{ $count: 'count' }],
+        logs: paginatedLogsPipeline,
+      },
+    });
+
+    if (!History) throw new Error('History model is not initialized.');
+
+    // Execute typed aggregation and keep allowDiskUse for maximum safety net fallback
+    const historyLogs = await History.aggregate(pipeline).allowDiskUse(true);
 
     const logs = historyLogs?.[0]?.logs ?? [];
     const totalCount = historyLogs?.[0]?.totalCount?.[0]?.count ?? 0;

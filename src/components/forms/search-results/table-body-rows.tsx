@@ -22,6 +22,7 @@ import {
   Briefcase,
   Archive,
   Plus,
+  TriangleAlert,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { CompactCircularScores } from '@/app/dashboard/jobs/[id]/components/Utils/circular-score';
@@ -29,6 +30,8 @@ import { memo, useCallback, useRef, useState, useEffect } from 'react';
 import type { Candidate } from '@/types/candidate';
 import { cn } from '@/lib/utils';
 import { Job } from '@/types/job';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface TableBodyRowsProps {
   candidates: Candidate[];
@@ -42,6 +45,7 @@ interface TableBodyRowsProps {
   onDelete: (candidate: Candidate) => void;
   onAddRemark: (candidate: Candidate) => void;
   onJobClick: (job: Job) => void;
+  onOpenDuplicateDialog?: (candidate: Candidate) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -91,7 +95,11 @@ export const TableBodyRows = memo(
     onDelete,
     onAddRemark,
     onJobClick,
+    onOpenDuplicateDialog,
   }: TableBodyRowsProps) => {
+    const { user } = useAppSelector((state) => state.auth);
+    const isAdminOrHr = user?.role === 'admin' || user?.role === 'hr';
+
     // Track the last mouse event to capture shift key for checkbox clicks
     const lastMouseEventRef = useRef<MouseEvent | null>(null);
     // Track if Shift key is currently pressed for vixsual feedback
@@ -240,13 +248,83 @@ export const TableBodyRows = memo(
               )}
               {visibleColumns.name && (
                 <TableCell className="font-medium">
-                  <button
-                    type="button"
-                    className="hover:text-primary/80 cursor-pointer text-left font-bold text-primary transition-colors hover:underline"
-                    onClick={(e) => handleViewDetails(candidate, e)}
-                  >
-                    {candidate.name}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="hover:text-primary/80 truncate cursor-pointer text-left font-bold text-primary transition-colors hover:underline"
+                      onClick={(e) => handleViewDetails(candidate, e)}
+                    >
+                      {candidate.name}
+                    </button>
+                    {isAdminOrHr && (candidate.duplicateCount ?? 0) > 1 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 gap-1 px-1 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-900/20"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenDuplicateDialog?.(candidate);
+                              }}
+                            >
+                              <TriangleAlert className="h-4 w-4" />
+                              <span className="text-xs font-bold">
+                                {candidate.duplicateCount && candidate.duplicateCount > 1
+                                  ? candidate.duplicateCount - 1
+                                  : candidate.duplicateCount}
+                              </span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">
+                              Multiple Applications Identified
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    {/* For non-admin/hr, just show icon if it's a duplicate without count */}
+                    {!isAdminOrHr && (candidate.duplicateCount ?? 0) > 1 && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1 text-yellow-500 hover:bg-yellow-50 hover:text-yellow-600 dark:hover:bg-yellow-900/20"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenDuplicateDialog?.(candidate);
+                              }}
+                            >
+                              <TriangleAlert className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-xs">
+                              Multiple Applications Identified
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </div>
+                </TableCell>
+              )}
+              {visibleColumns.email && (
+                <TableCell>
+                  <div className="max-w-[220px] truncate text-sm text-muted-foreground">
+                    {candidate.email || '-'}
+                  </div>
+                </TableCell>
+              )}
+              {visibleColumns.contact && (
+                <TableCell>
+                  <div className="text-sm text-muted-foreground">
+                    {candidate.contact || '-'}
+                  </div>
                 </TableCell>
               )}
               {visibleColumns.skills && (

@@ -18,6 +18,7 @@ interface ChecklistValidationResult {
 export const useClientSideChecklistValidation = (
   jobLaneConfig: IJobLaneConfig | undefined,
   userRole: string | undefined,
+  options?: { skipAlreadyCompletedCheck?: boolean },
 ) => {
   const validateMovement = useMemo(
     () =>
@@ -37,11 +38,13 @@ export const useClientSideChecklistValidation = (
           };
         }
 
-        // Get the relevant lane configuration
+        // Get the relevant lane configuration (case-insensitive: status may not match laneId casing)
         const laneId =
           movementType === 'incoming' ? targetLaneId : currentLaneId;
         const laneConfig = jobLaneConfig.laneConfigs.find(
-          (lc) => lc.laneId === laneId,
+          (lc) =>
+            lc.laneId.toLowerCase() === laneId.toLowerCase() ||
+            (lc.laneName?.toLowerCase() === laneId.toLowerCase()),
         );
 
         if (!laneConfig) {
@@ -52,6 +55,8 @@ export const useClientSideChecklistValidation = (
             checklistCompleted: false,
           };
         }
+
+        const configLaneId = laneConfig.laneId;
 
         // Get the checklist
         const checklist =
@@ -97,23 +102,26 @@ export const useClientSideChecklistValidation = (
           };
         }
 
-        // Check if checklist is already completed
-        const candidateChecklistData = candidate.checklistData?.[laneId];
-        const checklistData =
-          movementType === 'incoming'
-            ? candidateChecklistData?.incoming
-            : candidateChecklistData?.outgoing;
+        // When skipAlreadyCompletedCheck is true (e.g. unified dialog flow), decide from config only:
+        // do not use candidate checklistData to skip opening the checklist.
+        if (!options?.skipAlreadyCompletedCheck) {
+          const candidateChecklistData = candidate.checklistData?.[configLaneId];
+          const checklistData =
+            movementType === 'incoming'
+              ? candidateChecklistData?.incoming
+              : candidateChecklistData?.outgoing;
 
-        const isCompleted =
-          checklistData && checklistData.checklistId === checklist.id;
+          const isCompleted =
+            checklistData && checklistData.checklistId === checklist.id;
 
-        if (isCompleted) {
-          return {
-            canMove: true,
-            requiresChecklist: false,
-            isMandatory: checklist.isMandatory || false,
-            checklistCompleted: true,
-          };
+          if (isCompleted) {
+            return {
+              canMove: true,
+              requiresChecklist: false,
+              isMandatory: checklist.isMandatory || false,
+              checklistCompleted: true,
+            };
+          }
         }
 
         // Even if mandatory, allow movement but show checklist dialog
@@ -138,7 +146,7 @@ export const useClientSideChecklistValidation = (
           checklistCompleted: false,
         };
       },
-    [jobLaneConfig, userRole],
+    [jobLaneConfig, userRole, options?.skipAlreadyCompletedCheck],
   );
 
   // Validate a complete movement (both outgoing and incoming)
@@ -220,8 +228,39 @@ export const useClientSideChecklistValidation = (
     [validateMovement],
   );
 
+  /** Returns validation to show mandatory outgoing for a source lane (config-only, ignores candidate completion). Use as safety net when drag would otherwise skip checklist. */
+  const getMandatoryOutgoingForLane = useMemo(
+    () =>
+      (sourceLaneId: string): ChecklistValidationResult | null => {
+        if (!jobLaneConfig) return null;
+        const laneConfig = jobLaneConfig.laneConfigs.find(
+          (lc) =>
+            lc.laneId.toLowerCase() === sourceLaneId.toLowerCase() ||
+            (lc.laneName?.toLowerCase() === sourceLaneId.toLowerCase()),
+        );
+        if (!laneConfig?.outgoingChecklist?.isMandatory) return null;
+        const role = getUserRole(userRole);
+        if (!role) return null;
+        const filteredChecklist = filterChecklistByRole(
+          laneConfig.outgoingChecklist,
+          role,
+          'form',
+        );
+        if (!filteredChecklist) return null;
+        return {
+          canMove: true,
+          requiresChecklist: true,
+          checklist: filteredChecklist,
+          isMandatory: true,
+          checklistCompleted: false,
+        };
+      },
+    [jobLaneConfig, userRole],
+  );
+
   return {
     validateMovement,
     validateCompleteMovement,
+    getMandatoryOutgoingForLane,
   };
 };

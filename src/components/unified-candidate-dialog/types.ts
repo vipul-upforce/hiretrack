@@ -2,6 +2,7 @@ import * as Yup from 'yup';
 import { Dayjs } from 'dayjs';
 import { Attachment } from '@/app/dashboard/jobs/[id]/schemas/AssignCandidateSchema';
 import { Candidate } from '@/types/candidate';
+import type { BulkUpdateOperationParams } from '@/app/api/candidates/bulk-update/types';
 
 export type CandidateActionType =
   | 'assignTo'
@@ -92,6 +93,31 @@ export interface UnifiedFormValues {
   enabledActions: ActionCheckboxes;
 }
 
+/** Result of validating a status change (e.g. for checklist requirement) */
+export interface StatusChangeValidationResult {
+  requiresChecklist: boolean;
+  validationInfo?: string;
+  /** When true, checklist must be completed before status is applied; when false, status is applied first then checklist opens for optional fill */
+  isMandatory?: boolean;
+  /** When moving requires both outgoing and incoming checklist, one item per step in order (outgoing first). newStatusAfterStep is used for bulk-submit. */
+  validationSteps?: { validationInfo: string; newStatusAfterStep: string }[];
+}
+
+/** One candidate in a bulk status-update queue (checklist required or direct update) */
+export interface BulkStatusQueueItem {
+  candidateId: string;
+  newStatus: string;
+  validationInfo?: string;
+}
+
+export type BulkReasonRequestPayload = {
+  candidateIds: string[];
+  newStatus: string;
+  pendingOperations?: BulkUpdateOperationParams[];
+  /** When true, apply selected bulk operations even if user closes the reason dialog without submitting. */
+  applyWithoutReason?: boolean;
+};
+
 export interface UnifiedCandidateActionsDialogProps {
   candidate: Candidate;
   /** Optional array of candidates for bulk operations */
@@ -104,6 +130,23 @@ export interface UnifiedCandidateActionsDialogProps {
   setLocalCandidate?: (candidate: Candidate) => void;
   refetchAssignment?: () => void;
   onSuccess?: () => void;
+  /** When provided, status update is validated; if checklist required, defer to checklist dialog instead of updating */
+  onValidateStatusChange?: (
+    candidate: Candidate,
+    newStatus: string,
+  ) => StatusChangeValidationResult | null;
+  /** Called when status update is deferred to checklist (open checklist, store pending status). Used for mandatory checklists. */
+  onDeferStatusToChecklist?: (
+    validationInfo: string,
+    newStatus: string,
+    nextChecklistValidationInfo?: string,
+  ) => void;
+  /** Called after status is saved when checklist is optional; opens checklist for optional fill. */
+  onOpenChecklistAfterSave?: (validationInfo: string) => void;
+  /** Bulk status update: when some candidates require checklist, called with queue to process one-by-one (checklist form for each) */
+  onBulkStatusRequiresChecklist?: (queue: BulkStatusQueueItem[]) => void;
+  /** When job has promptForStatusChangeReason and bulk status update: open bulk reason dialog first; on submit from dialog, status + remark are applied. */
+  onBulkStatusRequiresReason?: (payload: BulkReasonRequestPayload) => void;
 }
 
 export const getValidationSchema = (currentJobId: string | undefined) =>

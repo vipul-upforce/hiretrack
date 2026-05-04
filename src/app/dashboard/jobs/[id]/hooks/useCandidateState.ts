@@ -35,14 +35,14 @@ export function useCandidateState({
   const [openRemarksFor, setOpenRemarksFor] = useState<string | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  // Handle candidateId URL parameter to auto-open candidate dialog
+  // Handle candidateId URL parameter to auto-open candidate dialog (e.g. from email link).
+  // Re-runs when candidates load so the dialog opens after data is ready.
   useEffect(() => {
-    if (candidateIdParam && candidates && !selectedCandidate) {
-      const candidate = candidates.find((c) => c._id === candidateIdParam);
-      if (candidate) {
-        setSelectedCandidate(candidate);
-        setIsDetailsOpen(true);
-      }
+    if (!candidateIdParam || !candidates?.length || selectedCandidate) return;
+    const candidate = candidates.find((c) => c._id === candidateIdParam);
+    if (candidate) {
+      setSelectedCandidate(candidate);
+      setIsDetailsOpen(true);
     }
   }, [candidateIdParam, candidates, selectedCandidate]);
 
@@ -63,8 +63,14 @@ export function useCandidateState({
 
   // Open candidate details dialog
   const openCandidateDetails = useCallback((candidate: Candidate) => {
-    setSelectedCandidate(candidate);
-    setIsDetailsOpen(true);
+    // Manual close and reopen to ensure fresh instance
+    setIsDetailsOpen(false);
+    setSelectedCandidate(null);
+
+    setTimeout(() => {
+      setSelectedCandidate(candidate);
+      setIsDetailsOpen(true);
+    }, 100);
   }, []);
 
   // Close candidate details dialog

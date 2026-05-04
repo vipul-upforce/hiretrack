@@ -10,6 +10,7 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { logger } from '@/lib/logger/logger.server';
+import type { ICandidateHistory } from '@/lib/models/history';
 import type {
   BulkUpdateOperation,
   BulkUpdateParams,
@@ -83,11 +84,25 @@ function parseOperation(
             (op.zoomMeetingAttachments as BulkAssignParams['zoomMeetingAttachments']) ??
             [],
           zoomAdditionalGuests: (op.zoomAdditionalGuests as string[]) ?? [],
+          scheduleTeamsMeet: (op.scheduleTeamsMeet as boolean) ?? false,
+          teamsMeetDuration: (op.teamsMeetDuration as number) ?? 30,
+          teamsMeetingNotes: (op.teamsMeetingNotes as string) ?? '',
+          teamsMeetingAttachments:
+            (op.teamsMeetingAttachments as BulkAssignParams['teamsMeetingAttachments']) ??
+            [],
+          teamsAdditionalGuests: (op.teamsAdditionalGuests as string[]) ?? [],
+          remark: (op.remark as string) ?? undefined,
         },
       };
     }
     case 'unassign':
-      return { params: { operation: 'unassign', ...base } };
+      return {
+        params: {
+          operation: 'unassign',
+          ...base,
+          remark: (op.remark as string) ?? undefined,
+        },
+      };
     case 'archive': {
       const { action } = op;
       if (action !== 'archive' && action !== 'unarchive') {
@@ -140,7 +155,14 @@ function parseOperation(
       if (status === undefined || typeof status !== 'string') {
         return { error: 'statusUpdate requires status (string)' };
       }
-      return { params: { operation: 'statusUpdate', ...base, status } };
+      return {
+        params: {
+          operation: 'statusUpdate',
+          ...base,
+          status,
+          remark: (op.remark as string) ?? undefined,
+        },
+      };
     }
     default:
       return { error: 'Unknown operation' };
@@ -246,7 +268,9 @@ export async function POST(
           candidateCount: candidateIds.length,
           userId: user.id,
           organizationId: user.organizationId,
-          operation: parsed.request?.operations?.[0]?.operation ?? parsed.singleParams?.operation,
+          operation:
+            parsed.request?.operations?.[0]?.operation ??
+            parsed.singleParams?.operation,
         },
         'Large bulk update request received',
       );
@@ -282,6 +306,7 @@ export async function POST(
     let unassignNotificationMeta: BulkUpdateResult['unassignNotificationMeta'];
     let addRemarkNotificationMeta: BulkUpdateResult['addRemarkNotificationMeta'];
     let addFollowUpNotificationMeta: BulkUpdateResult['addFollowUpNotificationMeta'];
+    let removeFollowUpNotificationMeta: BulkUpdateResult['removeFollowUpNotificationMeta'];
     let statusUpdateNotificationMeta: BulkUpdateResult['statusUpdateNotificationMeta'];
 
     const chunks = chunkIds(candidateIds, CHUNK_SIZE);
@@ -306,33 +331,66 @@ export async function POST(
           }
           if (result.assignNotificationMeta) {
             if (!assignNotificationMeta) {
-              assignNotificationMeta = { ...result.assignNotificationMeta, candidates: [] };
+              assignNotificationMeta = {
+                ...result.assignNotificationMeta,
+                candidates: [],
+              };
             }
-            assignNotificationMeta.candidates.push(...result.assignNotificationMeta.candidates);
+            assignNotificationMeta.candidates.push(
+              ...result.assignNotificationMeta.candidates,
+            );
           }
           if (result.unassignNotificationMeta) {
             if (!unassignNotificationMeta) {
-              unassignNotificationMeta = { ...result.unassignNotificationMeta, unassignments: [] };
+              unassignNotificationMeta = {
+                ...result.unassignNotificationMeta,
+                unassignments: [],
+              };
             }
-            unassignNotificationMeta.unassignments.push(...result.unassignNotificationMeta.unassignments);
+            unassignNotificationMeta.unassignments.push(
+              ...result.unassignNotificationMeta.unassignments,
+            );
           }
           if (result.addRemarkNotificationMeta) {
             if (!addRemarkNotificationMeta) {
-              addRemarkNotificationMeta = { ...result.addRemarkNotificationMeta, candidates: [] };
+              addRemarkNotificationMeta = {
+                ...result.addRemarkNotificationMeta,
+                candidates: [],
+              };
             }
-            addRemarkNotificationMeta.candidates.push(...result.addRemarkNotificationMeta.candidates);
+            addRemarkNotificationMeta.candidates.push(
+              ...result.addRemarkNotificationMeta.candidates,
+            );
           }
           if (result.addFollowUpNotificationMeta) {
             if (!addFollowUpNotificationMeta) {
-              addFollowUpNotificationMeta = { ...result.addFollowUpNotificationMeta, candidates: [] };
+              addFollowUpNotificationMeta = {
+                ...result.addFollowUpNotificationMeta,
+                candidates: [],
+              };
             }
-            addFollowUpNotificationMeta.candidates.push(...result.addFollowUpNotificationMeta.candidates);
+            addFollowUpNotificationMeta.candidates.push(
+              ...result.addFollowUpNotificationMeta.candidates,
+            );
+          }
+          if (result.removeFollowUpNotificationMeta) {
+            if (!removeFollowUpNotificationMeta) {
+              removeFollowUpNotificationMeta = { candidates: [] };
+            }
+            removeFollowUpNotificationMeta.candidates.push(
+              ...result.removeFollowUpNotificationMeta.candidates,
+            );
           }
           if (result.statusUpdateNotificationMeta) {
             if (!statusUpdateNotificationMeta) {
-              statusUpdateNotificationMeta = { ...result.statusUpdateNotificationMeta, candidates: [] };
+              statusUpdateNotificationMeta = {
+                ...result.statusUpdateNotificationMeta,
+                candidates: [],
+              };
             }
-            statusUpdateNotificationMeta.candidates.push(...result.statusUpdateNotificationMeta.candidates);
+            statusUpdateNotificationMeta.candidates.push(
+              ...result.statusUpdateNotificationMeta.candidates,
+            );
           }
           if (chunks.length > 1) {
             await new Promise<void>((r) => {
@@ -360,33 +418,66 @@ export async function POST(
         }
         if (result.assignNotificationMeta) {
           if (!assignNotificationMeta) {
-            assignNotificationMeta = { ...result.assignNotificationMeta, candidates: [] };
+            assignNotificationMeta = {
+              ...result.assignNotificationMeta,
+              candidates: [],
+            };
           }
-          assignNotificationMeta.candidates.push(...result.assignNotificationMeta.candidates);
+          assignNotificationMeta.candidates.push(
+            ...result.assignNotificationMeta.candidates,
+          );
         }
         if (result.unassignNotificationMeta) {
           if (!unassignNotificationMeta) {
-            unassignNotificationMeta = { ...result.unassignNotificationMeta, unassignments: [] };
+            unassignNotificationMeta = {
+              ...result.unassignNotificationMeta,
+              unassignments: [],
+            };
           }
-          unassignNotificationMeta.unassignments.push(...result.unassignNotificationMeta.unassignments);
+          unassignNotificationMeta.unassignments.push(
+            ...result.unassignNotificationMeta.unassignments,
+          );
         }
         if (result.addRemarkNotificationMeta) {
           if (!addRemarkNotificationMeta) {
-            addRemarkNotificationMeta = { ...result.addRemarkNotificationMeta, candidates: [] };
+            addRemarkNotificationMeta = {
+              ...result.addRemarkNotificationMeta,
+              candidates: [],
+            };
           }
-          addRemarkNotificationMeta.candidates.push(...result.addRemarkNotificationMeta.candidates);
+          addRemarkNotificationMeta.candidates.push(
+            ...result.addRemarkNotificationMeta.candidates,
+          );
         }
         if (result.addFollowUpNotificationMeta) {
           if (!addFollowUpNotificationMeta) {
-            addFollowUpNotificationMeta = { ...result.addFollowUpNotificationMeta, candidates: [] };
+            addFollowUpNotificationMeta = {
+              ...result.addFollowUpNotificationMeta,
+              candidates: [],
+            };
           }
-          addFollowUpNotificationMeta.candidates.push(...result.addFollowUpNotificationMeta.candidates);
+          addFollowUpNotificationMeta.candidates.push(
+            ...result.addFollowUpNotificationMeta.candidates,
+          );
+        }
+        if (result.removeFollowUpNotificationMeta) {
+          if (!removeFollowUpNotificationMeta) {
+            removeFollowUpNotificationMeta = { candidates: [] };
+          }
+          removeFollowUpNotificationMeta.candidates.push(
+            ...result.removeFollowUpNotificationMeta.candidates,
+          );
         }
         if (result.statusUpdateNotificationMeta) {
           if (!statusUpdateNotificationMeta) {
-            statusUpdateNotificationMeta = { ...result.statusUpdateNotificationMeta, candidates: [] };
+            statusUpdateNotificationMeta = {
+              ...result.statusUpdateNotificationMeta,
+              candidates: [],
+            };
           }
-          statusUpdateNotificationMeta.candidates.push(...result.statusUpdateNotificationMeta.candidates);
+          statusUpdateNotificationMeta.candidates.push(
+            ...result.statusUpdateNotificationMeta.candidates,
+          );
         }
         if (chunks.length > 1) {
           await new Promise<void>((r) => {
@@ -409,8 +500,66 @@ export async function POST(
     }
     const uniqueCandidatesToBroadcast = Array.from(candidateMap.values());
 
-    if (uniqueCandidatesToBroadcast.length > 0) {
-      broadcastMultipleCandidateUpdate(uniqueCandidatesToBroadcast).catch(
+    // Populate history for each candidate so SSE consumers (e.g. Log tab) receive full timeline
+    let candidatesToSend = uniqueCandidatesToBroadcast;
+    if (
+      uniqueCandidatesToBroadcast.length > 0 &&
+      History
+    ) {
+      const broadcastCandidateIds = uniqueCandidatesToBroadcast
+        .map((c) => (c as { _id?: unknown })._id?.toString())
+        .filter((id): id is string => Boolean(id));
+      if (broadcastCandidateIds.length > 0) {
+        try {
+          const historyDocuments = await History.find({
+            candidateId: { $in: broadcastCandidateIds },
+          })
+            .populate([
+              { path: 'history.assignmentBy', select: '_id name email' },
+              { path: 'history.currentInterviewer', select: '_id name email' },
+              { path: 'history.previousInterviewer', select: '_id name email' },
+              { path: 'history.note.userId', select: '_id name email' },
+            ])
+            .lean()
+            .exec();
+
+          const historyByCandidateId = new Map<string, ICandidateHistory[]>();
+          if (historyDocuments && historyDocuments.length > 0) {
+            historyDocuments.forEach((doc) => {
+              const cid = doc.candidateId?.toString?.() ?? String(doc.candidateId);
+              if (!cid) return;
+              const entries = doc.history && Array.isArray(doc.history) ? doc.history : [];
+              const existing = historyByCandidateId.get(cid) ?? [];
+              historyByCandidateId.set(cid, [...existing, ...entries]);
+            });
+            historyByCandidateId.forEach((entries, cid) => {
+              entries.sort(
+                (a, b) =>
+                  new Date(b.dateTime ?? 0).getTime() -
+                  new Date(a.dateTime ?? 0).getTime(),
+              );
+              historyByCandidateId.set(cid, entries);
+            });
+          }
+
+          candidatesToSend = uniqueCandidatesToBroadcast.map((c) => {
+            const id = (c as { _id?: unknown })._id?.toString();
+            const raw = id ? historyByCandidateId.get(id) : undefined;
+            const mergedHistory: ICandidateHistory[] = Array.isArray(raw) ? raw : [];
+            const { history: _existing, ...rest } = c as typeof c & { history?: unknown };
+            return { ...rest, history: mergedHistory } as BulkUpdateResult['candidatesToBroadcast'][0];
+          });
+        } catch (historyErr) {
+          logger.warn(
+            { error: historyErr, url: req.url },
+            'Bulk update: failed to load history for broadcast, sending without history',
+          );
+        }
+      }
+    }
+
+    if (candidatesToSend.length > 0) {
+      broadcastMultipleCandidateUpdate(candidatesToSend).catch(
         (error) => {
           logger.error(
             { error, url: req.url },
@@ -446,13 +595,8 @@ export async function POST(
         );
       }
     }
-
     // Bulk assign: interviewer gets one per candidate; admin/hr get one bulk
     if (assignNotificationMeta && user.organizationId) {
-      console.log(
-        'notifyBulkCandidateAssigned',
-        assignNotificationMeta.candidates.length,
-      );
       try {
         await NotificationService.notifyBulkCandidateAssigned({
           organizationId: user.organizationId,
@@ -463,6 +607,12 @@ export async function POST(
           candidates: assignNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
+          scheduledTime: assignNotificationMeta.scheduledTime,
+          duration: assignNotificationMeta.duration,
+          meetingLink: assignNotificationMeta.meetingLink,
+          outlookCalendarLink: assignNotificationMeta.outlookCalendarLink,
+          interviewType: assignNotificationMeta.interviewType,
         });
       } catch (notificationError) {
         logger.error(
@@ -480,6 +630,9 @@ export async function POST(
           unassignments: unassignNotificationMeta.unassignments,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
+          feedback: unassignNotificationMeta.feedback,
+          nextStep: unassignNotificationMeta.nextStep,
         });
       } catch (notificationError) {
         logger.error(
@@ -497,9 +650,11 @@ export async function POST(
           remarkText: addRemarkNotificationMeta.remarkText,
           roles: addRemarkNotificationMeta.roles,
           validMentionUserIds: addRemarkNotificationMeta.validMentionUserIds,
+          rating: addRemarkNotificationMeta.rating,
           candidates: addRemarkNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
         });
       } catch (notificationError) {
         logger.error(
@@ -528,15 +683,39 @@ export async function POST(
       }
     }
 
+    // Bulk remove follow-up: admin/hr get one bulk
+    if (
+      removeFollowUpNotificationMeta &&
+      removeFollowUpNotificationMeta.candidates.length > 0 &&
+      user.organizationId
+    ) {
+      try {
+        await NotificationService.notifyBulkFollowUpRemoved({
+          organizationId: user.organizationId,
+          candidates: removeFollowUpNotificationMeta.candidates,
+          triggerUserId: user.id ?? '',
+          triggerUserName: user.name ?? '',
+        });
+      } catch (notificationError) {
+        logger.error(
+          { notificationError, url: req.url },
+          'Bulk update: failed to send bulk follow-up remove notification',
+        );
+      }
+    }
+
     // Bulk status update: admin/hr get one bulk
     if (statusUpdateNotificationMeta && user.organizationId) {
       try {
         await NotificationService.notifyBulkCandidateStatusUpdated({
           organizationId: user.organizationId,
           newStatus: statusUpdateNotificationMeta.newStatus,
+          nextStep: statusUpdateNotificationMeta.nextStep,
+          statusMessage: statusUpdateNotificationMeta.statusMessage,
           candidates: statusUpdateNotificationMeta.candidates,
           triggerUserId: user.id ?? '',
           triggerUserName: user.name ?? '',
+          triggerUserEmail: user.email,
         });
       } catch (notificationError) {
         logger.error(

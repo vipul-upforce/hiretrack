@@ -75,7 +75,7 @@ export function CandidateCardHeader({
   showStar,
   showRedFlag,
   onViewDetails,
-  setOpenRemarksFor,
+  setOpenRemarksFor: _setOpenRemarksFor,
   setIsAddRemarkOpen,
   setIsEditing,
   setIsEmailDialogOpen,
@@ -152,7 +152,7 @@ export function CandidateCardHeader({
                 <h3 className="max-w-[150px] truncate text-lg font-bold leading-tight text-gray-900 dark:text-gray-100">
                   {candidate.name}
                 </h3>
-                {(candidate?.duplicateCount as number) > 1 && (
+                {(user?.role === 'admin' || user?.role === 'hr') && (candidate?.duplicateCount as number) > 1 && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -166,12 +166,12 @@ export function CandidateCardHeader({
                           }}
                         >
                           <TriangleAlert className="h-4 w-4" />
-                          <span className="sr-only">Duplicate Candidates</span>
+                          <span className="sr-only">Multiple Applications</span>
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="text-xs">
-                          Duplicate Candidates
+                          Multiple Applications
                         </p>
                       </TooltipContent>
                     </Tooltip>
@@ -200,7 +200,6 @@ export function CandidateCardHeader({
               className="h-8 w-8 !py-0 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
               onClick={(e) => {
                 e.stopPropagation();
-                setOpenRemarksFor(candidate._id);
                 setIsAddRemarkOpen(true);
               }}
             >
@@ -357,7 +356,6 @@ export function CandidateCardHeader({
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenRemarksFor(candidate._id);
                       setIsAddRemarkOpen(true);
                     }}
                   >

@@ -4,14 +4,18 @@ import type { ICandidate } from '@/lib/models/candidate';
 import { logger } from '@/lib/logger/logger.server';
 import { handleFileAttachments, Attachments } from '@/lib/fileUtils';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
-import { AnyBulkWriteOperation } from 'mongodb';
-import { getJobIdString } from '../utils';
 import type {
   BulkAssignNotificationMeta,
   BulkAssignParams,
   BulkUpdateContext,
   BulkUpdateResult,
 } from '../types';
+import { getJobIdString } from '../utils';
+import {
+  scheduleGoogleMeetForCandidate,
+  scheduleZoomMeetForCandidate,
+  scheduleTeamsMeetForCandidate,
+} from './assign-helpers';
 
 export async function runBulkAssign(
   params: BulkAssignParams,
@@ -21,6 +25,7 @@ export async function runBulkAssign(
     candidateIds,
     interviewerId,
     time,
+    remark,
     attachments = [],
     scheduleGoogleMeet = false,
     meetDuration = 30,
@@ -32,6 +37,11 @@ export async function runBulkAssign(
     zoomMeetingNotes = '',
     zoomMeetingAttachments = [],
     zoomAdditionalGuests = [],
+    scheduleTeamsMeet = false,
+    teamsMeetDuration = 30,
+    teamsMeetingNotes = '',
+    teamsMeetingAttachments = [],
+    teamsAdditionalGuests = [],
   } = params;
   const { user, dateTime, Candidate, History, User } = ctx;
   const toBroadcast: ICandidate[] = [];
@@ -112,17 +122,27 @@ export async function runBulkAssign(
   const candidateUpdates: Array<{
     updateOne: {
       filter: { _id: string };
-      update: { $set: { assignment: unknown; attachments: unknown[] } };
+      update: {
+        $set: {
+          assignment: unknown;
+          attachments: unknown[];
+          'tracking.updatedAt': Date;
+        };
+      };
     };
   }> = [];
   const historyBulk: Array<{
     updateOne: {
-      filter: { candidateId: string; jobId: string };
+      filter: { candidateId: string };
       update: { $push: { history: ICandidateHistory } };
       upsert: true;
     };
   }> = [];
   const ids: string[] = [];
+
+  /** Capture first candidate's meeting data for bulk email template variables */
+  let firstMeetingLink: string | null = null;
+  let firstOutlookLink: string | null = null;
 
   // Process each candidate to build updates (Google Meet must be per-candidate)
   for (const candidate of candidates) {
@@ -130,7 +150,6 @@ export async function runBulkAssign(
       const candidateId = (
         candidate._id as { toString: () => string }
       ).toString();
-      const jobId = getJobIdString(candidate);
       const candidateObj = candidate as ICandidate;
       let previousInterviewerId: unknown = null;
       if (candidate.assignment?.interviewerId != null) {
@@ -150,241 +169,98 @@ export async function runBulkAssign(
       const mergedAttachments = [...existingAttachments, ...newAttachments];
 
       // Schedule Google Calendar meeting if requested (per-candidate external API call)
-      let googleMeetData: {
-        eventId: string;
-        meetingLink: string;
-        htmlLink: string;
-        summary: string;
-        description: string;
-        meetingNotes?: string;
-        meetingAttachments?: typeof meetingAttachments;
-      } | null = null;
-
-      let zoomMeetData: {
-        meetingId: string;
-        meetingLink: string;
-        startUrl?: string;
-        eventId?: string;
-        htmlLink?: string;
-        summary?: string;
-        description?: string;
-        meetingNotes?: string;
-        meetingAttachments?: typeof zoomMeetingAttachments;
-      } | null = null;
+      let googleMeetData: Awaited<
+        ReturnType<typeof scheduleGoogleMeetForCandidate>
+      >['data'] = null;
+      let zoomMeetData: Awaited<
+        ReturnType<typeof scheduleZoomMeetForCandidate>
+      >['data'] = null;
+      let teamsMeetData: Awaited<
+        ReturnType<typeof scheduleTeamsMeetForCandidate>
+      >['data'] = null;
 
       if (scheduleGoogleMeet && time && user.organizationId) {
-        try {
-          const guests = [
-            ...((interviewer as { email?: string }).email
-              ? [(interviewer as { email: string }).email]
-              : []),
-            ...(candidateObj.email ? [candidateObj.email] : []),
-            ...(user.email &&
-            user.email !== (interviewer as { email?: string }).email
-              ? [user.email]
-              : []),
-            ...additionalGuests,
-          ];
-
-          const processedMeetingAttachments = await Promise.all(
-            meetingAttachments.map(async (att) => {
-              if (
-                att.url &&
-                !att.url.startsWith('data:') &&
-                !att.url.startsWith('http')
-              ) {
-                return att;
-              }
-              return att;
-            }),
-          );
-
-          const baseUrl =
-            process.env.BASE_URL ||
-            process.env.NEXT_PUBLIC_BASE_URL ||
-            'http://localhost:3000';
-          const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-          };
-          if (ctx.requestHeaders) {
-            const authHeader =
-              ctx.requestHeaders.get('authorization') ||
-              ctx.requestHeaders.get('cookie');
-            if (authHeader) {
-              if (ctx.requestHeaders.get('authorization')) {
-                headers.authorization =
-                  ctx.requestHeaders.get('authorization')!;
-              }
-              if (ctx.requestHeaders.get('cookie')) {
-                headers.cookie = ctx.requestHeaders.get('cookie')!;
-              }
-            }
-          }
-
-          const scheduleResponse = await fetch(
-            `${baseUrl}/api/google-calendar/schedule-meet`,
-            {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                candidateId,
-                candidateName: candidateObj.name,
-                candidateEmail: candidateObj.email,
-                interviewerId,
-                interviewerName: (interviewer as { name: string }).name,
-                scheduledTime: time,
-                duration: meetDuration,
-                guests,
-                jobTitle:
-                  (candidateObj.jobId as { title?: string })?.title ||
-                  'Position',
-                organizationName:
-                  user.organizationInfo?.name ||
-                  user.organizationId ||
-                  'Company',
-                meetingNotes,
-                meetingAttachments: processedMeetingAttachments,
-              }),
-            },
-          );
-
-          if (scheduleResponse.ok) {
-            const scheduleResult = await scheduleResponse.json();
-            googleMeetData = {
-              eventId: scheduleResult.eventId,
-              meetingLink: scheduleResult.meetingLink,
-              htmlLink: scheduleResult.htmlLink,
-              summary: scheduleResult.summary,
-              description: scheduleResult.description,
-              meetingNotes,
-              meetingAttachments: processedMeetingAttachments,
-            };
-          } else {
-            logger.error(
-              { status: scheduleResponse.status, candidateId },
-              'Bulk assign: failed to schedule Google Meet',
-            );
-          }
-        } catch (err) {
-          logger.error(
-            { error: err, candidateId },
-            'Bulk assign: Google Meet scheduling error',
-          );
+        const result = await scheduleGoogleMeetForCandidate(ctx, {
+          candidateId,
+          candidateObj,
+          interviewerId,
+          interviewerName: (interviewer as { name: string }).name,
+          interviewerEmail: (interviewer as { email?: string }).email,
+          time,
+          meetDuration,
+          meetingNotes,
+          meetingAttachments,
+          additionalGuests,
+          user,
+        });
+        googleMeetData = result.data;
+        if (result.meetingLink && !firstMeetingLink) {
+          firstMeetingLink = result.meetingLink;
+        }
+        if (result.outlookCalendarLink && !firstOutlookLink) {
+          firstOutlookLink = result.outlookCalendarLink;
         }
       }
 
       if (scheduleZoomMeet && time && user.organizationId) {
-        try {
-          const guests = [
-            ...((interviewer as { email?: string }).email
-              ? [(interviewer as { email: string }).email]
-              : []),
-            ...(candidateObj.email ? [candidateObj.email] : []),
-            ...(user.email &&
-            user.email !== (interviewer as { email?: string }).email
-              ? [user.email]
-              : []),
-            ...zoomAdditionalGuests,
-          ];
+        const result = await scheduleZoomMeetForCandidate(ctx, {
+          candidateId,
+          candidateObj,
+          interviewerId,
+          interviewerName: (interviewer as { name: string }).name,
+          interviewerEmail: (interviewer as { email?: string }).email,
+          time,
+          zoomMeetDuration,
+          zoomMeetingNotes,
+          zoomMeetingAttachments,
+          zoomAdditionalGuests,
+          user,
+        });
+        zoomMeetData = result.data;
+        if (result.meetingLink && !firstMeetingLink) {
+          firstMeetingLink = result.meetingLink;
+        }
+      }
 
-          const processedZoomMeetingAttachments = await Promise.all(
-            zoomMeetingAttachments.map(async (att) => {
-              if (
-                att.url &&
-                !att.url.startsWith('data:') &&
-                !att.url.startsWith('http')
-              ) {
-                return att;
-              }
-              return att;
-            }),
-          );
-
-          const baseUrl =
-            process.env.BASE_URL ||
-            process.env.NEXT_PUBLIC_BASE_URL ||
-            'http://localhost:3000';
-          const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-          };
-          if (ctx.requestHeaders) {
-            const authHeader =
-              ctx.requestHeaders.get('authorization') ||
-              ctx.requestHeaders.get('cookie');
-            if (authHeader) {
-              if (ctx.requestHeaders.get('authorization')) {
-                headers.authorization =
-                  ctx.requestHeaders.get('authorization')!;
-              }
-              if (ctx.requestHeaders.get('cookie')) {
-                headers.cookie = ctx.requestHeaders.get('cookie')!;
-              }
-            }
-          }
-
-          const scheduleResponse = await fetch(
-            `${baseUrl}/api/zoom/schedule-meet`,
-            {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                candidateId,
-                candidateName: candidateObj.name,
-                candidateEmail: candidateObj.email,
-                interviewerId,
-                interviewerName: (interviewer as { name: string }).name,
-                interviewerEmail: (interviewer as { email?: string }).email,
-                scheduledTime: time,
-                duration: zoomMeetDuration,
-                guests,
-                jobTitle:
-                  (candidateObj.jobId as { title?: string })?.title ||
-                  'Position',
-                organizationName:
-                  user.organizationInfo?.name ||
-                  user.organizationId ||
-                  'Company',
-                meetingNotes: zoomMeetingNotes,
-                meetingAttachments: processedZoomMeetingAttachments,
-              }),
-            },
-          );
-
-          if (scheduleResponse.ok) {
-            const scheduleResult = await scheduleResponse.json();
-            zoomMeetData = {
-              meetingId: scheduleResult.meetingId,
-              meetingLink: scheduleResult.meetingLink,
-              startUrl: scheduleResult.startUrl,
-              eventId: scheduleResult.eventId,
-              htmlLink: scheduleResult.htmlLink,
-              summary: scheduleResult.summary,
-              description: scheduleResult.description,
-              meetingNotes: zoomMeetingNotes,
-              meetingAttachments: processedZoomMeetingAttachments,
-            };
-          } else {
-            logger.error(
-              { status: scheduleResponse.status, candidateId },
-              'Bulk assign: failed to schedule Zoom meeting',
-            );
-          }
-        } catch (err) {
-          logger.error(
-            { error: err, candidateId },
-            'Bulk assign: Zoom scheduling error',
-          );
+      if (scheduleTeamsMeet && time && user.organizationId) {
+        const result = await scheduleTeamsMeetForCandidate(ctx, {
+          candidateId,
+          candidateObj,
+          interviewerId,
+          interviewerName: (interviewer as { name: string }).name,
+          interviewerEmail: (interviewer as { email?: string }).email,
+          time,
+          teamsMeetDuration,
+          teamsMeetingNotes,
+          teamsMeetingAttachments,
+          teamsAdditionalGuests,
+          user,
+        });
+        teamsMeetData = result.data;
+        if (result.meetingLink && !firstMeetingLink) {
+          firstMeetingLink = result.meetingLink;
         }
       }
 
       const meetingLinkLines: string[] = [];
       if (scheduleGoogleMeet && googleMeetData?.meetingLink) {
-        meetingLinkLines.push(`Google Meet meeting link: ${googleMeetData.meetingLink}`);
+        meetingLinkLines.push(
+          `Google Meet meeting link: ${googleMeetData.meetingLink}`,
+        );
       }
       if (scheduleZoomMeet && zoomMeetData?.meetingLink) {
         meetingLinkLines.push(`Zoom meeting link: ${zoomMeetData.meetingLink}`);
       }
+      if (scheduleTeamsMeet && teamsMeetData?.meetingLink) {
+        meetingLinkLines.push(
+          `Microsoft Teams meeting link: ${teamsMeetData.meetingLink}`,
+        );
+      }
       const meetingLinkNote = meetingLinkLines.join('\n');
+      const noteDescription = [meetingLinkNote, remark?.trim()]
+        .filter(Boolean)
+        .join('\n\n');
+      const hasCombinedRemark = !!remark?.trim();
 
       const historyEntry: ICandidateHistory = {
         dateTime,
@@ -393,7 +269,13 @@ export async function runBulkAssign(
         previousInterviewer:
           previousInterviewerId as Schema.Types.ObjectId | null,
         assignmentBy: user.id ?? null,
-        note: { description: meetingLinkNote, date: '', rating: 0, userId: null },
+        note: {
+          description: noteDescription,
+          date: '',
+          rating: 0,
+          userId: null,
+          isPrivate: hasCombinedRemark, // Hide remark from interviewer when combined
+        },
         attachments: processedAttachments,
       };
 
@@ -403,6 +285,7 @@ export async function runBulkAssign(
         assignedAt: string;
         googleMeet?: typeof googleMeetData;
         zoomMeet?: typeof zoomMeetData;
+        microsoftTeams?: typeof teamsMeetData;
       } = {
         interviewerId,
         time: time ?? null,
@@ -415,6 +298,9 @@ export async function runBulkAssign(
       if (zoomMeetData) {
         assignmentUpdate.zoomMeet = zoomMeetData;
       }
+      if (teamsMeetData) {
+        assignmentUpdate.microsoftTeams = teamsMeetData;
+      }
 
       // Collect updates for batching
       candidateUpdates.push({
@@ -424,20 +310,19 @@ export async function runBulkAssign(
             $set: {
               assignment: assignmentUpdate,
               attachments: mergedAttachments,
+              'tracking.updatedAt': new Date(dateTime),
             },
           },
         },
       });
 
-      if (jobId) {
-        historyBulk.push({
-          updateOne: {
-            filter: { candidateId, jobId },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        });
-      }
+      historyBulk.push({
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      });
 
       ids.push(candidateId);
     } catch (err) {
@@ -452,8 +337,9 @@ export async function runBulkAssign(
   try {
     // Batch update candidates
     if (candidateUpdates.length > 0) {
+      type BulkWriteOps = Parameters<BulkUpdateContext['Candidate']['bulkWrite']>[0];
       await Candidate.bulkWrite(
-        candidateUpdates as unknown as AnyBulkWriteOperation<ICandidate>[],
+        candidateUpdates as unknown as BulkWriteOps,
       );
     }
 
@@ -472,6 +358,17 @@ export async function runBulkAssign(
       .lean();
 
     toBroadcast.push(...(updatedList as ICandidate[]));
+
+    let assignDuration: number | undefined;
+    if (scheduleGoogleMeet && meetDuration) {
+      assignDuration = meetDuration;
+    } else if (scheduleZoomMeet && zoomMeetDuration) {
+      assignDuration = zoomMeetDuration;
+    } else if (scheduleTeamsMeet && teamsMeetDuration) {
+      assignDuration = teamsMeetDuration;
+    } else {
+      assignDuration = undefined;
+    }
 
     const assignNotificationMeta =
       toBroadcast.length > 0
@@ -492,7 +389,13 @@ export async function runBulkAssign(
               candidateId:
                 (c as unknown as { _id: unknown })._id?.toString() ?? '',
               candidateName: (c as ICandidate).name ?? 'Candidate',
+              jobId: getJobIdString(c as ICandidate),
             })),
+            scheduledTime: time ?? undefined,
+            duration: assignDuration,
+            meetingLink: firstMeetingLink ?? undefined,
+            outlookCalendarLink: firstOutlookLink ?? undefined,
+            interviewType: (toBroadcast[0] as ICandidate).status ?? 'Interview',
           }
         : undefined;
 

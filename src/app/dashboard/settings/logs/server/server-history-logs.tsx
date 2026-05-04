@@ -27,6 +27,7 @@ export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
     handleSearchChange,
     handleCandidateModalDetail,
     closeCandidateModal,
+    openCandidateDetails,
   } = useServerLogsLogic(props);
 
   const renderContent = () => {
@@ -94,6 +95,7 @@ export function ServerHistoryLogs(props: ServerHistoryLogsProps) {
           onOpenChange={(open: boolean) => {
             if (!open) closeCandidateModal();
           }}
+          onViewDetails={openCandidateDetails}
           onUpdate={() => {}}
           hideCloseButtons={false}
         />

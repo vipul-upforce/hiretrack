@@ -1,0 +1,20 @@
+------------------
+20 Feb 2026: 16:18
+------------------
+- fixed dashboard assingment counts, notification timestamps, and apply-jobs page dialog not opening properly.
+
+-------------------
+20 Feb 2026: 17:11
+___________________
+- fixed logic page redirection state issue.
+
+-------------------
+13 Mar 2026: 17:18
+___________________
+- fixed job description color formatting issue.
+
+-------------------
+17 Apr 2026: 17:38
+___________________
+- Adding the grid view.
+

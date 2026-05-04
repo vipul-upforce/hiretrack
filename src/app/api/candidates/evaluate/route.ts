@@ -3,11 +3,13 @@ import connectToDatabase, { Candidate, History, Settings } from '@/lib/mongodb';
 import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
 import { ICandidate } from '@/lib/models/candidate';
 import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
+import { DEFAULT_EVALUATION_CONFIG } from '@/lib/ai-providers/evaluation-constants';
 import { ISettings, IEvaluationConfig } from '@/lib/models/settings';
 import { IHistory, ICandidateHistory } from '@/lib/models/history';
 import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
 import mongoose from 'mongoose';
 import logger from '@/lib/logger';
+import { getAuthenticatedUser } from '@/app/actions/auth';
 import { EvaluateCandidateRequest, PopulatedJob } from './types';
 import {
   isPopulatedJob,
@@ -39,6 +41,14 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   try {
     await connectToDatabase();
 
+    const user = await getAuthenticatedUser(request, [
+      'admin',
+      'hr',
+      'interviewer',
+      'guest',
+      'candidate',
+    ]);
+
     if (!Candidate || !Settings) {
       return NextResponse.json(
         { error: 'Database not connected' },
@@ -56,11 +66,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
 
     const { candidateId } = data;
     const candidate = await Candidate.findById(candidateId)
-      .select('resume jobId contact scores expectedCTC currentCTC')
+      .select('resume jobId contact scores expectedCTC currentCTC customFields')
       .populate({
         path: 'jobId',
         select:
-          'description organizationId title skills salary experience evaluationWeights',
+          'description organizationId title skills salary experience evaluationWeights customFields',
       });
 
     if (!candidate) {
@@ -128,14 +138,14 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       base64Resume = await fetchResumeAsBase64(normalizedUrl);
     }
 
-    // Validate PDF page count if needed
-    const evaluationConfig: IEvaluationConfig =
-      settingsData.evaluationConfig || {
-        autoEvaluateAllCandidates: false,
-        maxPdfPages: 4,
-        temperature: 0.1,
-        customPrompt: null,
-      };
+    // Merge with defaults so enableRedFlagsDetection and other flags are set when DB has partial config
+    const evaluationConfig: IEvaluationConfig = {
+      ...DEFAULT_EVALUATION_CONFIG,
+      ...(settingsData.evaluationConfig &&
+      typeof settingsData.evaluationConfig === 'object'
+        ? settingsData.evaluationConfig
+        : {}),
+    };
 
     await validatePdfPageCount(base64Resume, evaluationConfig);
 
@@ -151,10 +161,11 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
       | undefined;
     const jobData = extractJobDataForEvaluation(candidateJobIdForData);
 
-    // Create settings object with decrypted aiProviders
+    // Create settings object with decrypted aiProviders and merged evaluationConfig
     const settingsForEvaluation: Partial<ISettings> = {
       ...(settingsData || {}),
-      aiProviders, // Override with decrypted version
+      aiProviders,
+      evaluationConfig,
     };
 
     // Convert candidate to ICandidate format for AIEvaluationService
@@ -303,6 +314,16 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
         'Failed to broadcast candidate evaluation update',
       );
     });
+
+    if (user?.role !== 'admin' && user?.role !== 'hr') {
+      return NextResponse.json(
+        {
+          message: 'Candidate scores updated successfully',
+        },
+        { status: 200 },
+      );
+    }
+
     return NextResponse.json(
       {
         message: 'Candidate scores updated successfully',

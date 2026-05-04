@@ -34,7 +34,6 @@ export function setSecureOrgId(
 
   // Common security flags - Fixed: use ENVIRONMENT consistently
   const isProduction = process.env.ENVIRONMENT === 'production';
-
   // Set organization ID cookie
   response.cookies.set('org_id', orgId, {
     httpOnly: false,

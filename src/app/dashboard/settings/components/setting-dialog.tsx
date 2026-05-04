@@ -88,6 +88,8 @@ function SettingDialog({
   // Helper to determine dialog size
   const getDialogSize = (key: string) => {
     switch (key) {
+      case 'fs':
+        return 'lg';
       case 'ai-providers':
       case 'google-calendar':
       case 'zoom':
@@ -116,6 +118,8 @@ function SettingDialog({
       case 'communication-ai':
       case 'communication-meetings':
         return 'flex h-[90vh] max-h-[90vh] w-[95vw] max-w-6xl flex-col overflow-hidden p-0';
+      case 'fs':
+        return 'flex max-h-[90vh] w-[70vw] max-w-3xl flex-col overflow-hidden p-0';
       case 'ai-providers':
       case 'google-calendar':
       case 'zoom':
@@ -126,7 +130,9 @@ function SettingDialog({
       case 'version':
         return 'flex max-h-[90vh] w-[100vw] flex-col overflow-hidden p-0';
       case 'mail':
-        return 'hide-scrollbar flex max-h-[90vh] w-[60vw] flex-col overflow-y-auto p-0';
+        return 'hide-scrollbar flex max-h-[90vh] min-w-[50vw] flex-col overflow-hidden p-0';
+      case 'captcha':
+        return 'hide-scrollbar flex max-h-[90vh] min-w-[50vw] flex-col overflow-hidden p-0';
       default:
         return 'overflow-hidden';
     }
@@ -162,7 +168,7 @@ function SettingDialog({
       setting.key === 'communication-meetings'
     ) {
       return (
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <ComponentToRender onClose={onClose} isOpen={isOpen} />
         </div>
       );

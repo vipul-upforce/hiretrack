@@ -14,6 +14,8 @@ interface FilterRequestBody {
   page?: string;
   limit?: string;
   name?: string;
+  email?: string;
+  contact?: string;
   skills?: string[];
   location?: string;
   minExpectedCTC?: string;
@@ -57,6 +59,8 @@ export async function POST(request: NextRequest) {
 
     const {
       name,
+      email,
+      contact,
       skills,
       location,
       minExpectedCTC,
@@ -94,6 +98,24 @@ export async function POST(request: NextRequest) {
       addLogicCondition({
         name: {
           $regex: name.trim(),
+          $options: 'i',
+        },
+      });
+    }
+
+    if (email) {
+      addLogicCondition({
+        email: {
+          $regex: email.trim(),
+          $options: 'i',
+        },
+      });
+    }
+
+    if (contact) {
+      addLogicCondition({
+        contact: {
+          $regex: contact.trim(),
           $options: 'i',
         },
       });
@@ -292,6 +314,38 @@ export async function POST(request: NextRequest) {
               },
             },
             {
+              $lookup: {
+                from: 'duplicatecandidates',
+                let: {
+                  candidateEmail: {
+                    $toLower: { $trim: { input: '$email' } },
+                  },
+                  orgId: { $toObjectId: '$organizationId' },
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          { $eq: ['$email', '$$candidateEmail'] },
+                          { $eq: ['$orgId', '$$orgId'] },
+                        ],
+                      },
+                    },
+                  },
+                  { $project: { count: { $size: '$duplicates' } } },
+                ],
+                as: 'duplicateInfo',
+              },
+            },
+            {
+              $addFields: {
+                duplicateCount: {
+                  $ifNull: [{ $arrayElemAt: ['$duplicateInfo.count', 0] }, 0],
+                },
+              },
+            },
+            {
               $project: {
                 _id: 1,
                 jobId: '$job',
@@ -314,6 +368,7 @@ export async function POST(request: NextRequest) {
                 customFields: 1,
                 tracking: 1,
                 isDeleted: 1,
+                duplicateCount: 1,
                 assignment: {
                   $mergeObjects: [
                     '$assignment',

@@ -13,6 +13,7 @@ import { parseEvaluationResponse } from './evaluation-parser';
 import {
   getEvaluationPrompt,
   buildPromptWithCustomTemplate,
+  buildPromptWithCustomFieldsContext,
 } from './evaluation-prompts';
 import { getEvaluationMetadata } from './evaluation-metadata';
 import logger from '../logger';
@@ -145,7 +146,11 @@ export class AIEvaluationService {
   private static getEvaluationConfig(
     settings: ISettings | Partial<ISettings>,
   ): IEvaluationConfig {
-    return settings.evaluationConfig || DEFAULT_EVALUATION_CONFIG;
+    const fromSettings = settings.evaluationConfig;
+    return {
+      ...DEFAULT_EVALUATION_CONFIG,
+      ...(fromSettings && typeof fromSettings === 'object' ? fromSettings : {}),
+    };
   }
 
   /**
@@ -160,13 +165,20 @@ export class AIEvaluationService {
     jobData: JobForEvaluate,
     candidate: ICandidate,
   ): string {
-    return evaluationConfig.customPrompt
+    const basePrompt = evaluationConfig.customPrompt
       ? buildPromptWithCustomTemplate(
           evaluationConfig.customPrompt,
           jobData,
           candidate,
         )
       : getEvaluationPrompt(jobData, candidate);
+
+    return buildPromptWithCustomFieldsContext(
+      basePrompt,
+      evaluationConfig,
+      jobData,
+      candidate,
+    );
   }
 
   /**

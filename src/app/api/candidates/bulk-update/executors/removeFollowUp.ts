@@ -7,6 +7,7 @@ import type {
   BulkUpdateResult,
 } from '../types';
 import { getJobIdString } from '../utils';
+import { cancelPendingFollowUpRemindersForCandidates } from '@/lib/followups/reminderQueue';
 
 function hasFollowUp(candidate: ICandidate): boolean {
   const note = candidate.followUp?.note;
@@ -82,21 +83,23 @@ export async function runBulkRemoveFollowUp(
   try {
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $set: { followUp: followUpPayload } },
+      {
+        $set: {
+          followUp: followUpPayload,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
-    const historyBulk = candidatesToUpdate
-      .filter((c) => getJobIdString(c))
-      .map((c) => ({
-        updateOne: {
-          filter: {
-            candidateId: (c._id as { toString: () => string }).toString(),
-            jobId: getJobIdString(c),
-          },
-          update: { $push: { history: historyEntry } },
-          upsert: true as const,
+    const historyBulk = candidatesToUpdate.map((c) => ({
+      updateOne: {
+        filter: {
+          candidateId: (c._id as { toString: () => string }).toString(),
         },
-      }));
+        update: { $push: { history: historyEntry } },
+        upsert: true as const,
+      },
+    }));
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -112,15 +115,48 @@ export async function runBulkRemoveFollowUp(
 
     toBroadcast.push(...(updatedList as ICandidate[]));
 
+    if (user.organizationId && ids.length > 0) {
+      try {
+        await cancelPendingFollowUpRemindersForCandidates({
+          organizationId: user.organizationId,
+          candidateIds: ids,
+        });
+      } catch (cancelError) {
+        logger.error(
+          { message: String(cancelError), name: 'CancelError' },
+          'Bulk removeFollowUp: failed to cancel pending follow-up reminders',
+        );
+      }
+    }
+
+    const removeFollowUpNotificationMeta =
+      toBroadcast.length > 0
+        ? {
+            candidates: toBroadcast.map((c) => ({
+              candidateId:
+                (c as unknown as { _id: unknown })._id?.toString() ?? '',
+              candidateName: (c as ICandidate).name ?? 'Candidate',
+              jobId: getJobIdString(c as ICandidate) ?? '',
+              jobTitle:
+                c.jobId != null &&
+                typeof c.jobId === 'object' &&
+                'title' in (c.jobId as object)
+                  ? String((c.jobId as { title?: string }).title ?? 'Job')
+                  : 'Job',
+            })),
+          }
+        : undefined;
+
     return {
       success: true,
       updatedCount: toBroadcast.length,
       failedCount: 0,
       candidatesToBroadcast: toBroadcast,
       message: `Removed follow-up from ${toBroadcast.length} candidate(s)`,
+      removeFollowUpNotificationMeta,
     };
   } catch (err) {
-    logger.error({ error: err }, 'Bulk removeFollowUp: batch failed');
+    logger.error({ message: String(err), name: 'RemoveFollowUpError' }, 'Bulk removeFollowUp: batch failed');
     return {
       success: false,
       updatedCount: 0,

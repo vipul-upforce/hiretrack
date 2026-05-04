@@ -1,6 +1,7 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
 import { logger } from '@/lib/logger/logger.server';
+import { sendImmediateFollowUpReminder } from '@/lib/followups/immediateReminder';
 import type {
   BulkAddFollowUpParams,
   BulkUpdateContext,
@@ -66,22 +67,24 @@ export async function runBulkAddFollowUp(
     // Batch update: set followUp for all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $set: { followUp: followUpPayload } },
+      {
+        $set: {
+          followUp: followUpPayload,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     // Build history bulk operations
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => ({
-        updateOne: {
-          filter: {
-            candidateId: (c._id as { toString: () => string }).toString(),
-            jobId: getJobIdString(c),
-          },
-          update: { $push: { history: historyEntry } },
-          upsert: true as const,
+    const historyBulk = candidates.map((c) => ({
+      updateOne: {
+        filter: {
+          candidateId: (c._id as { toString: () => string }).toString(),
         },
-      }));
+        update: { $push: { history: historyEntry } },
+        upsert: true as const,
+      },
+    }));
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -97,6 +100,32 @@ export async function runBulkAddFollowUp(
       .lean();
 
     toBroadcast.push(...(updatedList as ICandidate[]));
+
+    console.log('[followup-reminder] bulk add: start immediate sends', {
+      candidates: toBroadcast.length,
+    });
+    await Promise.all(
+      toBroadcast.map(async (candidate) => {
+        const followUpOwner =
+          candidate.followUp?.userId &&
+          typeof candidate.followUp.userId === 'object' &&
+          '_id' in candidate.followUp.userId
+            ? String(candidate.followUp.userId._id || '')
+            : String(candidate.followUp?.userId || '');
+
+        await sendImmediateFollowUpReminder({
+          organizationId: candidate.organizationId,
+          candidateName: candidate.name,
+          candidateId: (candidate._id as { toString: () => string }).toString(),
+          jobId: getJobIdString(candidate),
+          followUpDate: candidate.followUp?.date || date || new Date(),
+          followUpNote: candidate.followUp?.note || note || '',
+          followUpUserId: followUpOwner,
+          source: 'bulk-add-followup',
+        });
+      }),
+    );
+    console.log('[followup-reminder] bulk add: immediate sends completed');
 
     const addFollowUpNotificationMeta =
       toBroadcast.length > 0

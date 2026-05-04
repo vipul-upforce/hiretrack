@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo } from 'react';
+import React, { useLayoutEffect, useRef, useMemo } from 'react';
 import { Formik, Form } from 'formik';
 import {
   Dialog,
@@ -29,14 +29,63 @@ import {
   UnifiedCandidateActionsDialogProps,
 } from '@/components/unified-candidate-dialog/types';
 import { ScrollToFormError } from '@/components/ui/scroll-to-error';
+import { useSetUnifiedDialogChecklistJob } from '@/contexts/unified-dialog-checklist-job-context';
+import { getJobId } from '@/app/dashboard/jobs/[id]/utils/candidateAccessors';
+import { checklistApi } from '@/lib/features/checklist/checklistApi';
+import { useAppDispatch } from '@/lib/redux/hooks';
+import logger from '@/lib/logger';
+
+function getCancelMeetingTypeLabel(
+  provider: string | null,
+): 'Zoom' | 'Microsoft Teams' | 'Google Meet' {
+  if (provider === 'zoom') return 'Zoom';
+  if (provider === 'teams') return 'Microsoft Teams';
+  return 'Google Meet';
+}
 
 export function UnifiedCandidateActionsDialog(
   props: UnifiedCandidateActionsDialogProps,
 ) {
   const { candidate, candidates, isOpen, onOpenChange } = props;
   const isBulkMode = candidates && candidates.length > 1;
+  const setUnifiedDialogChecklistJob = useSetUnifiedDialogChecklistJob();
+  const dispatch = useAppDispatch();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Set which job's checklist config to load when this dialog opens; clear when it closes.
+  // Prefetch so config is loaded even if the parent hook hasn't re-rendered yet.
+  useLayoutEffect(() => {
+    if (isOpen && candidate) {
+      const jobId = getJobId(candidate) ?? null;
+      setUnifiedDialogChecklistJob(candidate);
+      if (jobId) {
+        dispatch(checklistApi.util.prefetch('getJobLaneConfig', jobId, { force: true }));
+      }
+    } else if (!isOpen) {
+      setUnifiedDialogChecklistJob(null);
+    }
+  }, [isOpen, candidate, setUnifiedDialogChecklistJob, dispatch]);
+
+  const result = useCandidateActions(props);
+
+  const currentJobId =
+    typeof candidate?.jobId === 'object'
+      ? candidate.jobId?._id
+      : candidate?.jobId;
+
+  const validationSchema = useMemo(
+    () => getValidationSchema(currentJobId),
+    [currentJobId],
+  );
+
+  if (!result) {
+    logger.error('[UnifiedCandidateActionsDialog] useCandidateActions returned undefined', {
+      isOpen,
+      hasCandidate: !!candidate,
+    });
+    return null;
+  }
 
   const {
     state: {
@@ -64,17 +113,7 @@ export function UnifiedCandidateActionsDialog(
       setCancelMeetingProvider,
       toggleAction,
     },
-  } = useCandidateActions(props);
-
-  const currentJobId =
-    typeof candidate.jobId === 'object'
-      ? candidate.jobId?._id
-      : candidate.jobId;
-
-  const validationSchema = useMemo(
-    () => getValidationSchema(currentJobId),
-    [currentJobId],
-  );
+  } = result;
 
   return (
     <>
@@ -155,7 +194,7 @@ export function UnifiedCandidateActionsDialog(
                       user?.role !== 'interviewer' && (
                         <AssignSection
                           candidate={candidate}
-                          isBulkMode={isBulkMode}
+                          isBulkMode={isBulkMode ?? false}
                           values={values}
                           setFieldValue={setFieldValue}
                           interviewers={interviewers}
@@ -266,13 +305,7 @@ export function UnifiedCandidateActionsDialog(
             setCancelNotes('');
           }
         }}
-        meetingType={
-          cancelMeetingProvider === 'zoom'
-            ? 'Zoom'
-            : cancelMeetingProvider === 'teams'
-              ? 'Microsoft Teams'
-              : 'Google Meet'
-        }
+        meetingType={getCancelMeetingTypeLabel(cancelMeetingProvider)}
         cancelNotes={cancelNotes}
         setCancelNotes={setCancelNotes}
         onConfirm={handleCancelMeeting}

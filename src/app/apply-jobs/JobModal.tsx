@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import '../../components/ui/rte/rteStyles.css';
 import { Briefcase, X, ArrowRight, CheckCircle } from 'lucide-react';
 import { useGetPortalConfigsQuery } from '@/lib/features/settings';
+import { stripColorFormatting } from '@/lib/htmlFormatting';
 import ApplyOptions from './ApplyOptions';
 import { CreateCandidateDialog } from '../dashboard/jobs/[id]/components/Dialogs/create-candidate-dialog';
 import { hasAppliedAsGuest } from './utils/guestApplicationUtils';
@@ -45,8 +46,7 @@ export default function JobModal({
   readOnly,
 }: JobModalProps) {
   const [isFormDialogOpen, setIsFormDialogOpen] = useState(false);
-  const [isPendingOptionsOpen, setIsPendingOptionsOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [primaryColor, setPrimaryColor] = useState('#6366f1');
   const [secondaryColor, setSecondaryColor] = useState('#8b5cf6');
@@ -67,13 +67,13 @@ export default function JobModal({
     }
   }, [portalData]);
 
-  // Handle modal transition between ApplyOptions and JobModal
+  // Ensure nested dialogs are reset when the job details modal closes.
   useEffect(() => {
-    if (isPendingOptionsOpen && !isOpen) {
-      setIsModalOpen(true);
-      setIsPendingOptionsOpen(false);
+    if (!isOpen) {
+      setIsOptionsOpen(false);
+      setIsFormDialogOpen(false);
     }
-  }, [isOpen, isPendingOptionsOpen]);
+  }, [isOpen]);
 
   // Check if user already applied (as guest)
   useEffect(() => {
@@ -94,8 +94,7 @@ export default function JobModal({
       (typeof salary.min === 'number' && salary.min > 0));
 
   const handleContinue = () => {
-    setIsPendingOptionsOpen(true);
-    onClose();
+    setIsOptionsOpen(true);
   };
 
   return (
@@ -154,7 +153,9 @@ export default function JobModal({
                       }}
                       // eslint-disable-next-line react/no-danger
                       dangerouslySetInnerHTML={{
-                        __html: job?.description || 'No description available',
+                        __html: stripColorFormatting(
+                          job?.description || 'No description available',
+                        ),
                       }}
                     />
                   </div>
@@ -361,8 +362,8 @@ export default function JobModal({
       {/* Render the ApplyOptions dialog outside the parent dialog */}
       <ApplyOptions
         job={job}
-        isOptionsOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOptionsOpen={isOptionsOpen}
+        onClose={() => setIsOptionsOpen(false)}
         orgName={orgName}
         readOnly={alreadyApplied || readOnly}
       />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Card,
   CardContent,
@@ -28,6 +29,11 @@ export function CredentialsCard({
   isConnected,
 }: CredentialsCardProps) {
   const [showClientSecret, setShowClientSecret] = useState(false);
+  const [showBotPassword, setShowBotPassword] = useState(false);
+
+  const handleBotReminderToggle = (checked: boolean) => {
+    setFormData({ ...formData, isFollowUpReminderEnabled: checked });
+  };
 
   return (
     <Card>
@@ -93,7 +99,7 @@ export function CredentialsCard({
           </div>
         </div>
 
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <Label htmlFor="connectedEmail">Connected Email (Optional)</Label>
           <Input
             id="connectedEmail"
@@ -107,24 +113,132 @@ export function CredentialsCard({
           <p className="text-xs text-muted-foreground">
             Optional: Email address to use for creating Teams meetings. If not provided, the app will use application context.
           </p>
+        </div> */}
+        <div className="rounded-lg border p-3 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="teamsReminderToggle">
+                Enable Teams Follow-up Reminders
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Turn this on only if you want follow-up reminders in Microsoft
+                Teams.
+              </p>
+            </div>
+            <Switch
+              id="teamsReminderToggle"
+              checked={Boolean(formData.isFollowUpReminderEnabled)}
+              onCheckedChange={handleBotReminderToggle}
+            />
+          </div>
+
+          {formData.isFollowUpReminderEnabled && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="botUsername">
+                  Bot User Email
+                </Label>
+                <Input
+                  id="botUsername"
+                  value={formData.botUsername || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, botUsername: e.target.value })
+                  }
+                  placeholder="Enter Teams account email"
+                  disabled={isConnected}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Use a dedicated Microsoft user account email that will act as
+                  your Teams reminder bot.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="botPassword">
+                  Bot User Password
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="botPassword"
+                    type={showBotPassword ? 'text' : 'password'}
+                    value={formData.botPassword || ''}
+                    disabled={isConnected}
+                    onChange={(e) =>
+                      setFormData({ ...formData, botPassword: e.target.value })
+                    }
+                    placeholder="Enter Teams account password"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isConnected}
+                    onClick={() => setShowBotPassword(!showBotPassword)}
+                    aria-label={
+                      showBotPassword ? 'Hide bot password' : 'Show bot password'
+                    }
+                  >
+                    {showBotPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter the password for the same Microsoft bot account.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="followUpReminderOffsetMinutes">
+                  Reminder Offset (minutes)
+                </Label>
+                <Input
+                  id="followUpReminderOffsetMinutes"
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={formData.followUpReminderOffsetMinutes ?? 5}
+                  disabled={isConnected}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      followUpReminderOffsetMinutes: Math.max(
+                        0,
+                        Number(e.target.value) || 0,
+                      ),
+                    })
+                  }
+                  placeholder="5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Reminder is scheduled this many minutes before the follow-up
+                  time.
+                </p>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                This bot account should stay active and have access to the Teams
+                chats where reminders need to be posted.
+              </p>
+            </>
+          )}
         </div>
 
-        {!isConnected && (
-          <Button
-            onClick={onSave}
-            variant="primary"
-            disabled={
-              !formData.tenantId ||
-              !formData.clientId ||
-              !formData.clientSecret ||
-              isUpdating
-            }
-            className="w-full"
-          >
-            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Credentials
-          </Button>
-        )}
+        <Button
+          onClick={onSave}
+          variant="primary"
+          disabled={
+            !formData.tenantId ||
+            !formData.clientId ||
+            !formData.clientSecret ||
+            isUpdating
+          }
+          className="w-full"
+        >
+          {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Credentials
+        </Button>
       </CardContent>
     </Card>
   );

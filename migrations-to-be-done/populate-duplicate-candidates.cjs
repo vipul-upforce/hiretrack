@@ -1,27 +1,15 @@
 const { MongoClient, ObjectId } = require('mongodb');
-const mongoose = require('mongoose'); // Using mongoose for ObjectId only
 
-const DATABASE_URI = process.env.MONGODB_URI;
+const DATABASE_URI = 'mongodb://localhost:27017/hiretrack-prod-9Mar1';
 
 async function populateDuplicateCandidates() {
-  console.log(
-    'Starting migration: Populating duplicate candidates (self-contained Node.js script)...',
-  );
-
-  const MONGODB_URI = DATABASE_URI;
-
-  if (!MONGODB_URI) {
-    console.error('Error: MONGODB_URI environment variable is not set.');
-    process.exit(1);
-  }
+  console.log('Starting migration: Populating unique candidates...');
 
   let client;
   try {
-    client = new MongoClient(MONGODB_URI);
+    client = new MongoClient(DATABASE_URI);
     await client.connect();
-    console.log('Database connected successfully.');
-
-    const db = client.db(); // Gets the database specified in the MONGODB_URI
+    const db = client.db();
 
     const candidatesCollection = db.collection('candidates');
     const duplicateCandidatesCollection = db.collection('duplicatecandidates');
@@ -30,70 +18,56 @@ async function populateDuplicateCandidates() {
     console.log(`Found ${candidates.length} candidates to process.`);
 
     let processedCount = 0;
-    let createdCount = 0;
-    let updatedCount = 0;
 
     for (const candidate of candidates) {
-      if (!candidate.email || !candidate.organizationId) {
-        console.warn(
-          `Skipping candidate ${candidate._id} due to missing email or organizationId.`,
-        );
-        continue;
-      }
+      if (!candidate.email || !candidate.organizationId) continue;
 
-      const query = {
-        email: candidate.email.toLowerCase(),
-        orgId:
-          candidate.organizationId instanceof ObjectId
-            ? candidate.organizationId
-            : new ObjectId(candidate.organizationId),
-      };
+      const email = candidate.email.toLowerCase();
+      const orgId = new ObjectId(candidate.organizationId);
+      const candidateId = new ObjectId(candidate._id);
+      const jobId = candidate.jobId ? new ObjectId(candidate.jobId) : null;
 
-      const newDuplicateEntry = {
-        candidateId:
-          candidate._id instanceof ObjectId
-            ? candidate._id
-            : new ObjectId(candidate._id),
-        jobId: candidate.jobId
-          ? candidate.jobId instanceof ObjectId
-            ? candidate.jobId
-            : new ObjectId(candidate.jobId)
-          : null,
-      };
-
-      const updateResult = await duplicateCandidatesCollection.updateOne(
-        query,
-        { $addToSet: { duplicates: newDuplicateEntry } },
-        { upsert: true },
+      // 1. Try to add the candidate ONLY if the candidateId isn't already in the duplicates array
+      const result = await duplicateCandidatesCollection.updateOne(
+        {
+          email: email,
+          orgId: orgId,
+          'duplicates.candidateId': { $ne: candidateId }, // Key Fix: Prevent internal duplicates
+        },
+        {
+          $push: {
+            duplicates: { candidateId, jobId },
+          },
+        },
       );
 
+      // 2. If nothing was matched (either doc doesn't exist OR candidateId is already there)
+      // we check if the document exists at all. If not, we upsert it.
+      if (result.matchedCount === 0) {
+        const docExists = await duplicateCandidatesCollection.findOne({
+          email,
+          orgId,
+        });
+
+        if (!docExists) {
+          await duplicateCandidatesCollection.updateOne(
+            { email, orgId },
+            { $setOnInsert: { duplicates: [{ candidateId, jobId }] } },
+            { upsert: true },
+          );
+        }
+      }
+
       processedCount++;
-
-      if (updateResult.upsertedId) {
-        createdCount++;
-      } else if (updateResult.modifiedCount > 0) {
-        updatedCount++;
-      }
-
-      if (processedCount % 100 === 0) {
-        console.log(`Processed ${processedCount} candidates...`);
-      }
+      if (processedCount % 100 === 0)
+        console.log(`Processed ${processedCount}...`);
     }
 
     console.log('Migration completed!');
-    console.log(`Total candidates processed: ${processedCount}`);
-    console.log(`New DuplicateCandidate documents created: ${createdCount}`);
-    console.log(
-      `Existing DuplicateCandidate documents updated: ${updatedCount}`,
-    );
   } catch (error) {
     console.error('Migration failed:', error);
-    process.exit(1);
   } finally {
-    if (client) {
-      await client.close();
-      console.log('Database connection closed.');
-    }
+    if (client) await client.close();
   }
 }
 

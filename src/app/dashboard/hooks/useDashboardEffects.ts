@@ -7,7 +7,11 @@ interface UseDashboardEffectsParams {
   selectedAssignedTo: string;
   filterText: string;
   sortConfig: SortConfig;
-  fetchAssignments: (page: number, isAppend: boolean) => Promise<void>;
+  fetchAssignments: (
+    page: number,
+    isAppend: boolean,
+    options?: { silent?: boolean },
+  ) => Promise<void>;
   scrollContainerRef:
     | React.RefObject<HTMLDivElement | null>
     | React.RefObject<HTMLDivElement>;
@@ -19,6 +23,9 @@ interface UseDashboardEffectsParams {
   setCurrentPage: (page: number) => void;
   setHasMoreData: (hasMore: boolean) => void;
   setAssignments: React.Dispatch<React.SetStateAction<Candidate[]>>;
+  assignmentsCounts: {
+    [key: string]: number;
+  };
   isActivitiesSidebarOpen: boolean;
 
   // SSE
@@ -56,6 +63,7 @@ export function useDashboardEffects({
   setCurrentPage,
   setHasMoreData,
   setAssignments,
+  assignmentsCounts,
   isActivitiesSidebarOpen,
   sseCandidates,
   sseAddedCountRef,
@@ -74,6 +82,10 @@ export function useDashboardEffects({
    * trigger a refetch, potentially overwriting SSE updates (race condition).
    */
   const fetchAssignmentsRef = useRef(fetchAssignments);
+  /** Prevents duplicate silent refetches from repeated SSE updates in short bursts. */
+  const bulkSilentRefetchInFlightRef = useRef(false);
+  /** Tracks unassigned candidate IDs already seen in SSE to detect new bulk unassign waves. */
+  const seenUnassignedCandidateIdsRef = useRef<Set<string>>(new Set());
 
   // Keep the ref updated with the latest function
   useEffect(() => {
@@ -116,6 +128,46 @@ export function useDashboardEffects({
       );
     }
   }, [isActivitiesSidebarOpen]);
+
+  // Effect 3.1: If bulk mark-as-done (bulk unassign) is detected via SSE and
+  // total interviews are greater than one page (>20), silently refetch page 1.
+  useEffect(() => {
+    if (!Array.isArray(sseCandidates) || sseCandidates.length === 0) return;
+
+    const newlySeenUnassignedIds: string[] = [];
+    sseCandidates.forEach((candidate) => {
+      const id = candidate._id;
+      if (!id) return;
+      const isUnassigned =
+        !candidate.assignment || candidate.assignment.interviewerId === null;
+      if (!isUnassigned) return;
+      if (!seenUnassignedCandidateIdsRef.current.has(id)) {
+        newlySeenUnassignedIds.push(id);
+        seenUnassignedCandidateIdsRef.current.add(id);
+      }
+    });
+
+    const totalInterviews = assignmentsCounts.totalInterviews || 0;
+    const isBulkMarkAsDoneEvent = newlySeenUnassignedIds.length > 1;
+    const shouldSilentRefetch =
+      isBulkMarkAsDoneEvent &&
+      totalInterviews > 20 &&
+      !bulkSilentRefetchInFlightRef.current;
+
+    if (!shouldSilentRefetch) return;
+
+    bulkSilentRefetchInFlightRef.current = true;
+    setCurrentPage(1);
+    setHasMoreData(true);
+    fetchAssignmentsRef.current(1, false, { silent: true }).finally(() => {
+      bulkSilentRefetchInFlightRef.current = false;
+    });
+  }, [
+    sseCandidates,
+    assignmentsCounts.totalInterviews,
+    setCurrentPage,
+    setHasMoreData,
+  ]);
 
   // Helper function to check if a candidate has a valid assignment
   const hasValidAssignment = (assignment: Candidate): boolean => {
@@ -333,6 +385,8 @@ export function useDashboardEffects({
               customFields: (sseCandidate as Candidate).customFields,
               createdAt: sseCandidate.createdAt,
               updatedAt: sseCandidate.updatedAt,
+              duplicateCount: (sseCandidate as Candidate).duplicateCount 
+                ?? (existingIndex !== -1 ? updatedAssignments[existingIndex].duplicateCount : 0),
             };
 
             if (existingIndex !== -1) {
@@ -403,21 +457,27 @@ export function useDashboardEffects({
         const cleanedAssignments =
           updatedAssignments.filter(hasValidAssignment);
 
-        // Incrementally adjust counts instead of replacing them
-        setAssignmentsCounts((prev) => ({
-          totalInterviews: Math.max(
-            0,
-            (prev.totalInterviews || 0) + totalAddedCount - totalRemovedCount,
-          ),
-          todaysInterviews: Math.max(
-            0,
-            (prev.todaysInterviews || 0) + addedTodayCount - removedTodayCount,
-          ),
-          thisweeksInterviews: Math.max(
-            0,
-            (prev.thisweeksInterviews || 0) + addedWeekCount - removedWeekCount,
-          ),
-        }));
+        // Increment counts only when not performing silent bulk-refetch reconciliation.
+        if (!bulkSilentRefetchInFlightRef.current) {
+          setAssignmentsCounts((prev) => ({
+            totalInterviews: Math.max(
+              0,
+              (prev.totalInterviews || 0) + totalAddedCount - totalRemovedCount,
+            ),
+            todaysInterviews: Math.max(
+              0,
+              (prev.todaysInterviews || 0) +
+                addedTodayCount -
+                removedTodayCount,
+            ),
+            thisweeksInterviews: Math.max(
+              0,
+              (prev.thisweeksInterviews || 0) +
+                addedWeekCount -
+                removedWeekCount,
+            ),
+          }));
+        }
 
         return cleanedAssignments;
       });

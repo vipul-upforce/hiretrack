@@ -135,4 +135,9 @@ export { sendEventEmailWithHistory } from './eventEmailService';
 export {
   sendSmartNotification,
   sendRemarkNotificationWithMentions,
+  sendBulkActionEmail,
+} from './smartNotificationService';
+export type {
+  BulkActionEmailParams,
+  BulkEmailTemplateKey,
 } from './smartNotificationService';

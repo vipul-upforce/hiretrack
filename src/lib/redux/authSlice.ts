@@ -43,7 +43,7 @@ interface AuthState {
 
 const getIsAuthenticated = () => {
   const authState = Cookies.get('auth_state');
-  return !!authState;
+  return authState === 'true';
 };
 
 const initialState: AuthState = {
@@ -63,23 +63,7 @@ export const fetchUserFromToken = createAsyncThunk(
       const authState = Cookies.get('auth_state');
 
       if (!authState || authState === 'false') {
-        const user: ILocalUser = {
-          // <--- Explicitly type this to catch errors early
-          id: 'guest',
-          name: 'Guest',
-          email: '',
-          role: '',
-          organizationId: '',
-          organizationInfo: undefined,
-          // appliedApplications: [], // ⚠️ Remove this if it's not in ILocalUser interface
-          fileStorage: undefined,
-
-          // ADD THESE MISSING FIELDS:
-          password: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        return user;
+        return rejectWithValue('Not authenticated');
       }
 
       const result = await dispatch(
@@ -143,17 +127,18 @@ const authSlice = createSlice({
       .addCase(
         fetchUserFromToken.fulfilled,
         (state, action: PayloadAction<ILocalUser>) => {
-          // <--- Step 1: Use the real type
           state.loading = false;
+          state.error = null;
           state.isAuthenticated = true;
 
-          // Step 2: Cast the payload to satisfy the Mongoose/Immer conflict
           state.user = action.payload as unknown as WritableDraft<ILocalUser>;
         },
       )
       .addCase(fetchUserFromToken.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload as string;
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = (action.payload as string) || 'Authentication failed';
       });
   },
 });

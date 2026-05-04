@@ -1,6 +1,8 @@
 import { ICandidateHistory } from '@/lib/models/history';
 import type { ICandidate } from '@/lib/models/candidate';
 import { logger } from '@/lib/logger/logger.server';
+import { getNextStep } from '@/lib/utils/organization';
+import { Schema } from 'mongoose';
 import type {
   BulkUnassignParams,
   BulkUpdateContext,
@@ -12,10 +14,9 @@ export async function runBulkUnassign(
   params: BulkUnassignParams,
   ctx: BulkUpdateContext,
 ): Promise<BulkUpdateResult> {
-  const { candidateIds } = params;
+  const { candidateIds, remark } = params;
   const { user, dateTime, Candidate, History } = ctx;
   const toBroadcast: ICandidate[] = [];
-  const failedCount = 0;
 
   const candidates = await Candidate.find({
     _id: { $in: candidateIds },
@@ -49,41 +50,48 @@ export async function runBulkUnassign(
     // Batch update: set assignment to null for all candidates
     await Candidate.updateMany(
       { _id: { $in: ids } },
-      { $set: { assignment: null } },
+      {
+        $set: {
+          assignment: null,
+          'tracking.updatedAt': new Date(dateTime),
+        },
+      },
     );
 
     // Build history bulk operations
-    const historyBulk = candidates
-      .filter((c) => getJobIdString(c))
-      .map((c) => {
-        const candidateId = (c._id as { toString: () => string }).toString();
-        const prev = c.assignment?.interviewerId;
-        const previousInterviewerId =
-          prev != null && typeof prev === 'object' && '_id' in prev
-            ? (prev as { _id: unknown })._id
-            : prev;
+    const historyBulk = candidates.map((c) => {
+      const candidateId = (c._id as { toString: () => string }).toString();
+      const prev = c.assignment?.interviewerId;
+      const previousInterviewerId =
+        prev != null && typeof prev === 'object' && '_id' in prev
+          ? (prev as { _id: unknown })._id
+          : prev;
 
-        const historyEntry: ICandidateHistory = {
-          dateTime,
-          title: 'Unassigned',
-          currentInterviewer: null,
-          previousInterviewer: previousInterviewerId as string | null,
-          assignmentBy: user.id ?? null,
-          note: { description: '', date: '', rating: 0, userId: null },
-          attachments: [],
-        };
+      const historyEntry: ICandidateHistory = {
+        dateTime,
+        title: 'Unassigned',
+        currentInterviewer: null,
+        previousInterviewer:
+          previousInterviewerId as Schema.Types.ObjectId | null,
+        assignmentBy: user.id ?? null,
+        note: {
+          description: remark ?? '',
+          date: '',
+          rating: 0,
+          userId: null,
+          isPrivate: !!remark, // Hide remark from interviewer when combined
+        },
+        attachments: [],
+      };
 
-        return {
-          updateOne: {
-            filter: {
-              candidateId,
-              jobId: getJobIdString(c),
-            },
-            update: { $push: { history: historyEntry } },
-            upsert: true as const,
-          },
-        };
-      });
+      return {
+        updateOne: {
+          filter: { candidateId },
+          update: { $push: { history: historyEntry } },
+          upsert: true as const,
+        },
+      };
+    });
 
     if (historyBulk.length > 0) {
       await History.bulkWrite(historyBulk);
@@ -130,6 +138,23 @@ export async function runBulkUnassign(
       };
     });
 
+    // Get next status from job lanes (next step after current status)
+    let nextStep = 'N/A';
+    if (user.organizationId && candidates.length > 0) {
+      try {
+        const firstCandidate = candidates[0] as ICandidate;
+        const jobId = getJobIdString(firstCandidate);
+        const currentStatus = firstCandidate.status ?? '';
+        nextStep = await getNextStep(
+          jobId,
+          currentStatus,
+          user.organizationId as string,
+        );
+      } catch (err) {
+        logger.warn({ err }, 'Bulk unassign: failed to get next step from job');
+      }
+    }
+
     return {
       success: true,
       updatedCount: toBroadcast.length,
@@ -138,7 +163,13 @@ export async function runBulkUnassign(
       candidatesToBroadcast: toBroadcast,
       message: `Unassigned ${toBroadcast.length} candidate(s)`,
       unassignNotificationMeta:
-        unassignments.length > 0 ? { unassignments } : undefined,
+        unassignments.length > 0
+          ? {
+              unassignments,
+              feedback: remark ?? 'N/A',
+              nextStep,
+            }
+          : undefined,
     };
   } catch (err) {
     logger.error({ error: err }, 'Bulk unassign: batch failed');

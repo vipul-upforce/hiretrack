@@ -102,7 +102,6 @@ export async function POST(
         const candidateId = (
           candidate._id as { toString: () => string }
         ).toString();
-        const jobId = getJobIdString(candidate);
         let previousInterviewerId = null;
         if (candidate.assignment?.interviewerId != null) {
           if (
@@ -147,13 +146,11 @@ export async function POST(
           },
         );
 
-        if (jobId) {
-          await History.findOneAndUpdate(
-            { candidateId, jobId },
-            { $push: { history: historyEntry } },
-            { upsert: true },
-          );
-        }
+        await History.findOneAndUpdate(
+          { candidateId },
+          { $push: { history: historyEntry } },
+          { upsert: true },
+        );
 
         const updated = await Candidate.findById(candidateId)
           .populate([

@@ -110,7 +110,7 @@ export async function POST(
 
         // Update history
         const updatedHistory = await History?.findOneAndUpdate(
-          { candidateId: candidate._id, jobId: candidate.jobId },
+          { candidateId: candidate._id, jobId: String(candidate.jobId) },
           { $push: { history: historyEntry } },
           { new: true, upsert: true },
         )
@@ -185,12 +185,8 @@ export async function POST(
           r.value.success &&
           r.value.candidate !== undefined,
       )
-      .map((r) =>
-        r.status === 'fulfilled' ? r.value.candidate : null,
-      )
-      .filter(
-        (c): c is NonNullable<typeof c> => c !== null && c !== undefined,
-      );
+      .map((r) => (r.status === 'fulfilled' ? r.value.candidate : null))
+      .filter((c): c is NonNullable<typeof c> => c !== null && c !== undefined);
 
     if (candidatesToBroadcast.length > 0) {
       // Fire-and-forget: don't block response, but handle errors internally
