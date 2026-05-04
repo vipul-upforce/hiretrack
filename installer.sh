@@ -169,6 +169,8 @@ SNAPSHOT_SCRIPT="$HOME/.hiretrack/take-snapshot.js"
 LOG_DIR="$HOME/.hiretrack/logs"
 CRON_LOG_FILE="$LOG_DIR/cron_update.log"
 SNAPSHOT_LOG_FILE="$LOG_DIR/snapshot.log"
+REMINDERS_CRON_LOG="$LOG_DIR/reminders_cron.log"
+REMINDERS_CRON_SCRIPT="$HOME/.hiretrack/reminders-cron.sh"
 MANUAL_LOG_FILE="$LOG_DIR/manual_update.log"
 ROLLBACK_LOG_FILE="$LOG_DIR/rollback.log"
 
@@ -467,6 +469,93 @@ write_env_server_details() {
     mv "${ENV_FILE}.tmp" "$ENV_FILE"
 
     echo "[ OK ] BASE_URL and NEXT_PUBLIC_BASE_URL updated in $ENV_FILE ($BASE_URL)"
+
+    ensure_cron_secret_in_env "$ENV_FILE"
+    sync_hiretrack_reminders_cron
+}
+
+# One unique CRON_SECRET per deployment (.env); skip if already set.
+ensure_cron_secret_in_env() {
+    local ENV_FILE="${1:-$APP_INSTALL_DIR/.env}"
+    mkdir -p "$(dirname "$ENV_FILE")"
+    touch "$ENV_FILE"
+    local existing
+    existing=$(grep -m1 -E '^CRON_SECRET=' "$ENV_FILE" 2>/dev/null | sed 's/^CRON_SECRET=//' | tr -d '\r' || true)
+    if [ -n "$existing" ]; then
+        return 0
+    fi
+    local secret
+    if command -v openssl >/dev/null 2>&1; then
+        secret=$(openssl rand -hex 32)
+    else
+        secret=$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c 48 || echo "")
+    fi
+    if [ -z "$secret" ]; then
+        echo "[ ERROR ] Could not generate CRON_SECRET (install openssl or ensure /dev/urandom is readable)."
+        return 1
+    fi
+    grep -v '^CRON_SECRET=' "$ENV_FILE" > "${ENV_FILE}.tmp" 2>/dev/null || cp "$ENV_FILE" "${ENV_FILE}.tmp"
+    mv "${ENV_FILE}.tmp" "$ENV_FILE"
+    printf '%s\n' "CRON_SECRET=${secret}" >> "$ENV_FILE"
+    echo "[ OK ] Generated unique CRON_SECRET in $ENV_FILE"
+}
+
+write_reminders_ping_script() {
+    mkdir -p "$(dirname "$REMINDERS_CRON_SCRIPT")" "$LOG_DIR"
+    cat > "$REMINDERS_CRON_SCRIPT" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+ENV_FILE='$APP_INSTALL_DIR/.env'
+if [ ! -f "\$ENV_FILE" ]; then
+  exit 0
+fi
+BASE_URL=\$(grep -m1 -E '^BASE_URL=' "\$ENV_FILE" 2>/dev/null | sed 's/^BASE_URL=//' | tr -d '\r' || true)
+CRON_SECRET=\$(grep -m1 -E '^CRON_SECRET=' "\$ENV_FILE" 2>/dev/null | sed 's/^CRON_SECRET=//' | tr -d '\r' || true)
+if [ -z "\${BASE_URL:-}" ] || [ -z "\${CRON_SECRET:-}" ]; then
+  exit 0
+fi
+BASE_URL="\${BASE_URL%/}"
+curl -fsS -m 55 -X POST -H "x-cron-secret: \${CRON_SECRET}" "\${BASE_URL}/api/cron/followup-reminders" >/dev/null || true
+EOF
+    chmod +x "$REMINDERS_CRON_SCRIPT"
+}
+
+hiretrack_reminders_cron_line_active() {
+    echo "* * * * * PATH=/usr/local/bin:/usr/bin:/bin /bin/bash $REMINDERS_CRON_SCRIPT >> $REMINDERS_CRON_LOG 2>&1 # hiretrack-reminders-ping"
+}
+
+# Commented-out schedule (cron ignores); enable via Settings → Microsoft Teams in the app.
+hiretrack_reminders_cron_line() {
+    local active
+    active=$(hiretrack_reminders_cron_line_active)
+    echo "# ${active}"
+}
+
+can_install_reminders_ping_cron() {
+    local ENV_FILE="$APP_INSTALL_DIR/.env"
+    [ -f "$ENV_FILE" ] || return 1
+    local bu sec
+    bu=$(grep -m1 -E '^BASE_URL=' "$ENV_FILE" 2>/dev/null | sed 's/^BASE_URL=//' | tr -d '\r' || true)
+    sec=$(grep -m1 -E '^CRON_SECRET=' "$ENV_FILE" 2>/dev/null | sed 's/^CRON_SECRET=//' | tr -d '\r' || true)
+    [ -n "$bu" ] && [ -n "$sec" ]
+}
+
+# Idempotent: reminders ping line in crontab (commented = off until Teams reminders enabled in UI).
+sync_hiretrack_reminders_cron() {
+    ensure_cron_secret_in_env "$APP_INSTALL_DIR/.env" || return 0
+    if ! can_install_reminders_ping_cron; then
+        echo "[ INFO ] Reminders ping cron not installed yet (need BASE_URL and CRON_SECRET in $APP_INSTALL_DIR/.env)."
+        return 0
+    fi
+    write_reminders_ping_script
+    local line tmp
+    line=$(hiretrack_reminders_cron_line)
+    tmp=$(mktemp)
+    crontab -l 2>/dev/null | grep -v 'hiretrack-reminders-ping' > "$tmp" || true
+    echo "$line" >> "$tmp"
+    crontab "$tmp"
+    rm -f "$tmp"
+    echo "[ OK ] Reminders ping cron line installed (disabled by default; enable in HireTrack → Teams settings)."
 }
 
 write_config() {
@@ -2699,6 +2788,9 @@ NGINXEOF
         exit 1
     fi
     echo "[ OK ] Nginx setup completed."
+
+        echo "[ OK ] Nginx setup completed."
+    write_env_server_details
 }
 
 # ------------------------------------------------
@@ -2798,6 +2890,9 @@ setup_cron() {
         return 1
     fi
 
+    mkdir -p "$APP_INSTALL_DIR" "$LOG_DIR"
+    ensure_cron_secret_in_env "$APP_INSTALL_DIR/.env" || true
+
     echo ""
     echo "========================================"
     echo "   HireTrack Scheduler Configuration"
@@ -2855,11 +2950,21 @@ setup_cron() {
 
     # Safely remove old cron jobs (including old/commented pm2 resurrect lines)
     local CURRENT_CRON=$(crontab -l 2>/dev/null || echo "")
-    CURRENT_CRON=$(echo "$CURRENT_CRON" | grep -v 'hiretrack-autoupdate' | grep -v 'hiretrack-snapshot' | grep -v 'take-snapshot.js' | grep -v 'installer.sh --update' | grep -v 'pm2 resurrect' || true)
+    CURRENT_CRON=$(echo "$CURRENT_CRON" | grep -v 'hiretrack-autoupdate' | grep -v 'hiretrack-snapshot' | grep -v 'take-snapshot.js' | grep -v 'installer.sh --update' | grep -v 'pm2 resurrect' | grep -v 'hiretrack-reminders-ping' || true)
 
-    # Inject the new translated offsets AND the pm2 reboot line
-    (echo "$CURRENT_CRON"; echo "# CRON_NAME:$SNAPSHOT_CRON_NAME"; echo "$SNAPSHOT_CRON_ENTRY"; echo "# CRON_NAME:$CRON_NAME"; echo "$CRON_ENTRY"; echo "$PM2_REBOOT_LINE") | crontab -
-    
+    local REM_LINE=""
+    if can_install_reminders_ping_cron; then
+        write_reminders_ping_script
+        REM_LINE=$(hiretrack_reminders_cron_line)
+    fi
+
+    # Inject the new translated offsets AND the pm2 reboot line (and reminders ping when .env is ready)
+    if [ -n "$REM_LINE" ]; then
+        (echo "$CURRENT_CRON"; echo "# CRON_NAME:$SNAPSHOT_CRON_NAME"; echo "$SNAPSHOT_CRON_ENTRY"; echo "# CRON_NAME:$CRON_NAME"; echo "$CRON_ENTRY"; echo "$PM2_REBOOT_LINE"; echo "$REM_LINE") | crontab -
+    else
+        (echo "$CURRENT_CRON"; echo "# CRON_NAME:$SNAPSHOT_CRON_NAME"; echo "$SNAPSHOT_CRON_ENTRY"; echo "# CRON_NAME:$CRON_NAME"; echo "$CRON_ENTRY"; echo "$PM2_REBOOT_LINE") | crontab -
+    fi
+
     echo "[ OK ] Cron jobs successfully installed and dynamically mapped to $TARGET_TZ!"
 }
 

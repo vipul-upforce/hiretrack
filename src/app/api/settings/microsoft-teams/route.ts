@@ -6,6 +6,7 @@ import {
   normalizeTeamsReminderTemplates,
   toTeamsReminderTemplateStorageMap,
 } from '@/lib/microsoft-teams/reminderTemplates';
+import { syncRemindersPingCrontab } from '@/lib/cron/remindersPingCrontab';
 
 const DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES = 5;
 const MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES = 1440;
@@ -223,9 +224,42 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const responseBody: {
+      message: string;
+      crontabRemindersPing?: {
+        synced: boolean;
+        enabled: boolean;
+        warning?: string;
+      };
+    } = {
       message: 'Microsoft Teams credentials updated successfully',
-    });
+    };
+
+    if (typeof isFollowUpReminderEnabled === 'boolean') {
+      const cronResult = await syncRemindersPingCrontab(
+        isFollowUpReminderEnabled,
+      );
+      if (cronResult.ok && cronResult.found) {
+        responseBody.crontabRemindersPing = {
+          synced: true,
+          enabled: isFollowUpReminderEnabled,
+        };
+      } else {
+        const defaultWarning =
+          process.platform === 'win32'
+            ? 'Crontab is not used on Windows.'
+            : cronResult.found
+              ? 'Could not write crontab for reminders ping.'
+              : 'No reminders ping line in crontab (run installer after BASE_URL is set).';
+        responseBody.crontabRemindersPing = {
+          synced: false,
+          enabled: isFollowUpReminderEnabled,
+          warning: cronResult.error ?? defaultWarning,
+        };
+      }
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     return NextResponse.json(
       {
