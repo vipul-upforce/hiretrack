@@ -74,6 +74,17 @@ interface FileToProcess {
   selected: boolean;
 }
 
+interface StoredFileEntry {
+  filename: string;
+  selected: boolean;
+  base64Data: string;
+  resumeFile: FileObject;
+}
+
+function normalizeResumeFileName(fileName: string): string {
+  return fileName.trim().toLowerCase();
+}
+
 function getPdfPageLimitSkipReason(
   filename: string,
   pageCount: number,
@@ -328,6 +339,7 @@ export async function POST(request: NextRequest) {
     successCount: 0,
     failureCount: 0,
     status: 'processing',
+    processingMode: 'immediate',
   });
 
   try {
@@ -389,13 +401,17 @@ export async function POST(request: NextRequest) {
       organizationId,
     ) as AIProviders;
 
+    const processingMode =
+      normalizedOperations.processingMode === 'deferred'
+        ? 'deferred'
+        : 'immediate';
     const { activeProvider } = decryptedAiProviders;
     const apiKey = decryptedAiProviders[activeProvider]?.api_key;
     const maxPdfPages = Math.max(0, settings.evaluationConfig?.maxPdfPages ?? 0);
 
     // Add debug logging similar to evaluate API
 
-    if (!apiKey) {
+    if (processingMode === 'immediate' && !apiKey) {
       return NextResponse.json(
         {
           error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found`,
@@ -440,7 +456,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const files: FileToProcess[] = [];
+    let files: FileToProcess[] = [];
     const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
     const uploadedFiles = formData.getAll('file');
     const uploadedFileIds = formData.getAll('fileId');
@@ -450,6 +466,7 @@ export async function POST(request: NextRequest) {
       skippedByPages: 0,
       skippedByType: 0,
       skippedByZip: 0,
+      skippedByDuplicateName: 0,
       skippedByOther: 0,
     };
 
@@ -557,10 +574,84 @@ export async function POST(request: NextRequest) {
       'CV upload batch intake summary',
     );
 
+    if (files.length > 0) {
+      const candidateNameFilters = Array.from(
+        new Set(files.map(({ file }) => file.name)),
+      );
+
+      const candidateResumeDocs = (await Candidate.find({
+        organizationId,
+        isDeleted: false,
+        'resume.name': { $in: candidateNameFilters },
+      })
+        .select('resume.name')
+        .lean()
+        .exec()) as Array<{ resume?: { name?: string } }>;
+
+      const existingCandidateResumeNameSet = new Set(
+        candidateResumeDocs
+          .map((doc) => doc.resume?.name)
+          .filter((name): name is string => typeof name === 'string')
+          .map((name) => normalizeResumeFileName(name)),
+      );
+
+      const pendingBatchDocs = (await CVBatch.find({
+        organizationId,
+        status: { $in: ['pending', 'processing'] },
+        pendingItems: {
+          $elemMatch: {
+            status: 'pending',
+            filename: { $in: candidateNameFilters },
+          },
+        },
+      })
+        .select('pendingItems.filename pendingItems.status')
+        .lean()
+        .exec()) as Array<{
+        pendingItems?: Array<{ filename?: string; status?: string }>;
+      }>;
+
+      const existingPendingResumeNameSet = new Set(
+        pendingBatchDocs
+          .flatMap((batchDoc) => batchDoc.pendingItems ?? [])
+          .filter(
+            (pendingItem) =>
+              pendingItem.status === 'pending'
+              && typeof pendingItem.filename === 'string',
+          )
+          .map((pendingItem) => normalizeResumeFileName(pendingItem.filename as string)),
+      );
+
+      files = files.filter(({ file }) => {
+        const normalizedName = normalizeResumeFileName(file.name);
+        const duplicateExistsInCandidates =
+          existingCandidateResumeNameSet.has(normalizedName);
+        const duplicateExistsInPending =
+          existingPendingResumeNameSet.has(normalizedName);
+
+        if (duplicateExistsInCandidates || duplicateExistsInPending) {
+          skippedFiles.push({
+            filename: file.name,
+            size: file.size,
+            reason: duplicateExistsInCandidates
+              ? 'File already exists with the same filename in candidates'
+              : 'File already exists with the same filename in pending uploads',
+          });
+          intakeStats.skippedByDuplicateName += 1;
+          return false;
+        }
+        return true;
+      });
+    } else {
+      files = [];
+    }
+
     // Update batch info with total files (including skipped files)
     // Note: totalFiles should include all files (processed + skipped) for accurate reporting
     const totalFilesIncludingSkipped = files.length + skippedFiles.length;
     cvBatchInfo.totalFiles = totalFilesIncludingSkipped;
+    cvBatchInfo.processingMode = processingMode;
+    cvBatchInfo.operationsSnapshot = normalizedOperations;
     
     // Add skipped files to batch items as 'failed' status (schema only supports 'success' or 'failed')
     skippedFiles.forEach((skipped) => {
@@ -575,16 +666,91 @@ export async function POST(request: NextRequest) {
 
     await cvBatchInfo.save();
 
-    const results: ProcessResult[] = [];
-    const errors: ProcessError[] = [];
-    const createdCandidateIds: string[] = [];
-
+    const storedFileEntries: StoredFileEntry[] = [];
     for (const fileEntry of files) {
       const { file, selected } = fileEntry;
       try {
         const arrayBuffer = await file.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        const fileObject: FileObject = {
+          id: new Types.ObjectId().toHexString(),
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: `data:${file.type};base64,${base64Data}`,
+        };
+        const resumeFile = await handleSingleFile(
+          fileObject,
+          settings.fileStorage?.storageType || 'local',
+          organizationId as string,
+        );
+        if (!resumeFile) {
+          throw new Error('Failed to save resume file');
+        }
 
+        storedFileEntries.push({
+          filename: file.name,
+          selected,
+          base64Data,
+          resumeFile,
+        });
+        cvBatchInfo.pendingItems.push({
+          filename: file.name,
+          status: 'pending',
+          file: {
+            id: resumeFile.id,
+            name: resumeFile.name,
+            url: resumeFile.url,
+            type: resumeFile.type,
+            size: resumeFile.size,
+          },
+          selected,
+        });
+      } catch (error) {
+        cvBatchInfo.items.push({
+          filename: file.name,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          processedAt: new Date(),
+        });
+        cvBatchInfo.failureCount += 1;
+      }
+    }
+
+    await cvBatchInfo.save();
+
+    if (processingMode === 'deferred') {
+      for (const entry of storedFileEntries) {
+        cvBatchInfo.items.push({
+          filename: entry.filename,
+          status: 'pending',
+          message: 'Stored for later processing',
+          processedAt: new Date(),
+        });
+      }
+
+      cvBatchInfo.status = 'pending';
+      await cvBatchInfo.save();
+
+      return NextResponse.json({
+        message: 'Files stored for deferred processing',
+        batchId: cvBatchInfo._id,
+        summary: {
+          total: cvBatchInfo.totalFiles,
+          pending: cvBatchInfo.pendingItems.length,
+          failed: cvBatchInfo.failureCount,
+          skipped: skippedFiles.length,
+        },
+      });
+    }
+
+    const results: ProcessResult[] = [];
+    const errors: ProcessError[] = [];
+    const createdCandidateIds: string[] = [];
+
+    for (const fileEntry of storedFileEntries) {
+      const { filename, selected, resumeFile, base64Data } = fileEntry;
+      try {
         // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
           base64Data,
@@ -604,39 +770,31 @@ export async function POST(request: NextRequest) {
         if (candidateData.error) {
           // Add error item to batch
           cvBatchInfo.items.push({
-            filename: file.name,
+            filename,
             status: 'failed',
             error: candidateData.error,
             processedAt: new Date(),
           });
           cvBatchInfo.failureCount += 1;
 
+          const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+            (pendingItem) =>
+              pendingItem.filename === filename
+              && pendingItem.file?.url === resumeFile.url
+              && pendingItem.status === 'pending',
+          );
+          if (pendingIndex >= 0) {
+            cvBatchInfo.pendingItems[pendingIndex].status = 'failed';
+            cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+            cvBatchInfo.pendingItems[pendingIndex].error = candidateData.error;
+          }
+
           errors.push({
-            filename: file.name,
+            filename,
             error: candidateData.error,
           });
           // eslint-disable-next-line no-continue
           continue; // Skip to next file
-        }
-
-        // Create proper file object for handleSingleFile with the actual file data
-        const fileObject: FileObject = {
-          id: new Types.ObjectId().toHexString(),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          url: `data:${file.type};base64,${base64Data}`,
-        };
-
-        // Save the resume using handleSingleFile
-        const resumeFile = await handleSingleFile(
-          fileObject,
-          settings.fileStorage?.storageType || 'local',
-          organizationId as string,
-        );
-
-        if (!resumeFile) {
-          throw new Error('Failed to save resume file');
         }
 
         const nowIso = new Date().toISOString();
@@ -764,31 +922,54 @@ export async function POST(request: NextRequest) {
         }
 
         cvBatchInfo.items.push({
-          filename: file.name,
+          filename,
           candidateId: candidate._id,
           status: 'success',
           message: 'Successfully processed and created candidate',
           processedAt: new Date(),
         });
         cvBatchInfo.successCount += 1;
+        const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+          (pendingItem) =>
+            pendingItem.filename === filename
+            && pendingItem.file?.url === resumeFile.url
+            && pendingItem.status === 'pending',
+        );
+        if (pendingIndex >= 0) {
+          cvBatchInfo.pendingItems[pendingIndex].status = 'processed';
+          cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+          cvBatchInfo.pendingItems[pendingIndex].error = undefined;
+        }
 
         results.push({
-          filename: file.name,
+          filename,
           candidateId: candidate._id,
           status: 'success',
         });
       } catch (error) {
         // Add error item to batch
         cvBatchInfo.items.push({
-          filename: file.name,
+          filename,
           status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error',
           processedAt: new Date(),
         });
         cvBatchInfo.failureCount += 1;
+        const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+          (pendingItem) =>
+            pendingItem.filename === filename
+            && pendingItem.file?.url === resumeFile.url
+            && pendingItem.status === 'pending',
+        );
+        if (pendingIndex >= 0) {
+          cvBatchInfo.pendingItems[pendingIndex].status = 'failed';
+          cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+          cvBatchInfo.pendingItems[pendingIndex].error =
+            error instanceof Error ? error.message : 'Unknown error';
+        }
 
         errors.push({
-          filename: file.name,
+          filename,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }

@@ -81,11 +81,26 @@ export interface CreateOrgResponse {
 // Define the Batch and ProcessedItem types
 export interface ProcessedItem {
   filename: string;
-  candidateId: string;
-  status: 'success' | 'failure';
-  message: string;
+  candidateId?: string;
+  status: 'success' | 'failure' | 'failed' | 'pending';
+  message?: string;
+  error?: string;
   processedAt: string;
   _id: string;
+}
+
+export interface PendingBatchItem {
+  filename: string;
+  status: 'pending' | 'processed' | 'failed';
+  selected: boolean;
+  error?: string;
+  file: {
+    id?: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  };
 }
 
 export interface Batch {
@@ -95,7 +110,9 @@ export interface Batch {
   successCount: number;
   failureCount: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  processingMode?: 'immediate' | 'deferred';
   items: ProcessedItem[];
+  pendingItems?: PendingBatchItem[];
   startedAt: string;
   completedAt?: string;
   createdAt: string;
@@ -213,6 +230,26 @@ export const orgApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Batches'], // Invalidate Batches tag to refetch
     }),
+    processPendingCvBatches: builder.mutation<
+      { message: string; processedBatches: number },
+      { organizationId: string; batchId?: string }
+    >({
+      query: ({ organizationId, batchId }) => ({
+        url: `/process-cv/process-pending?organizationId=${organizationId}${batchId ? `&batchId=${batchId}` : ''}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Batches'],
+    }),
+    retryFailedCvFiles: builder.mutation<
+      { message: string; retried: number; processed: number; failed: number },
+      { organizationId: string; batchId: string; filename?: string }
+    >({
+      query: ({ organizationId, batchId, filename }) => ({
+        url: `/process-cv/retry-failed?organizationId=${organizationId}&batchId=${batchId}${filename ? `&filename=${encodeURIComponent(filename)}` : ''}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Batches'],
+    }),
     fetchOrgTags: builder.query<{ tags: ITag[] }, { organizationId: string }>({
       query: ({ organizationId }) => ({
         url: `/organization/tags?organizationId=${organizationId}`,
@@ -249,6 +286,8 @@ export const {
   useLazyGetCustomFieldsByOrgNameQuery,
   useFetchBatchesQuery,
   usePostBatchMutation,
+  useProcessPendingCvBatchesMutation,
+  useRetryFailedCvFilesMutation,
   useFetchOrgTagsQuery,
   useUpdateOrgTagsMutation,
   useGetOrganizationAllowanceQuery,

@@ -1133,6 +1133,25 @@ export async function PUT(
                 }
 
                 if (newAssignment?.time && persistedAssignmentInterviewerId) {
+                  const latestAssignmentRemark =
+                    Array.isArray(data.remarks) && data.remarks.length > 0
+                      ? String(
+                          (
+                            data.remarks[data.remarks.length - 1] as {
+                              description?: string;
+                            }
+                          )?.description || '',
+                        ).trim()
+                      : '';
+                  const assignmentNoteFromMeeting =
+                    latestAssignmentRemark ||
+                    newAssignment.microsoftTeams?.meetingNotes?.trim() ||
+                    newAssignment.zoomMeet?.meetingNotes?.trim() ||
+                    newAssignment.googleMeet?.meetingNotes?.trim() ||
+                    newAssignment.microsoftTeams?.description?.trim() ||
+                    newAssignment.zoomMeet?.description?.trim() ||
+                    newAssignment.googleMeet?.description?.trim() ||
+                    'Interview assignment reminder';
                   await sendImmediateAssignmentReminder({
                     organizationId,
                     candidateName: updatedCandidate.name,
@@ -1142,7 +1161,7 @@ export async function PUT(
                       updatedCandidate.jobId?.toString() ||
                       '',
                     assignmentTime: newAssignment.time,
-                    assignmentNote: 'Interview assignment reminder',
+                    assignmentNote: assignmentNoteFromMeeting,
                     assignmentUserId: String(persistedAssignmentInterviewerId),
                     source: 'candidate-put-assignment-upsert',
                   });

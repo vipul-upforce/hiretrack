@@ -3,6 +3,7 @@ import type { ICandidateHistory, IinfoUpdateLog } from '@/lib/models/history';
 import type { AuthenticatedUser } from '@/app/actions/auth';
 
 export type CvBatchOperations = {
+  processingMode?: 'immediate' | 'deferred';
   assignJob?: boolean;
   jobId?: string;
   updateStatus?: boolean;
@@ -63,6 +64,8 @@ export function normalizeCvBatchOperations(
   operations: CvBatchOperations,
 ): CvBatchOperations {
   const assignJob = operations.assignJob === true;
+  const processingMode =
+    operations.processingMode === 'deferred' ? 'deferred' : 'immediate';
   const jobId =
     assignJob && typeof operations.jobId === 'string'
       ? operations.jobId.trim()
@@ -88,6 +91,7 @@ export function normalizeCvBatchOperations(
     typeof operations.remarkRating === 'number' ? operations.remarkRating : null;
 
   return {
+    processingMode,
     assignJob: assignJob && jobId.length > 0,
     jobId,
     updateStatus: updateStatus && status.length > 0,

@@ -613,6 +613,12 @@ candidateSchema.index(
   },
   { name: 'idx_orgId_jobId_status_deleted', background: true },
 );
+
+// Index for organization resume filename existence checks during CV uploads
+candidateSchema.index(
+  { organizationId: 1, 'resume.name': 1, isDeleted: 1 },
+  { name: 'idx_orgId_resumeName_deleted', background: true },
+);
 // CRITICAL MISSING INDEXES:
 
 // 1. Candidates - Assignment time queries (used in assignments route)

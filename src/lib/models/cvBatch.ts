@@ -3,10 +3,25 @@ import mongoose from 'mongoose';
 export interface ICVBatchItem {
   filename: string;
   candidateId?: mongoose.Types.ObjectId;
-  status: 'success' | 'failed';
+  status: 'success' | 'failed' | 'pending';
   message?: string;
   error?: string;
   processedAt: Date;
+}
+
+export interface ICVBatchPendingItem {
+  filename: string;
+  status: 'pending' | 'processed' | 'failed';
+  file: {
+    id?: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  };
+  selected: boolean;
+  error?: string;
+  processedAt?: Date;
 }
 
 export interface ICVBatch {
@@ -15,7 +30,19 @@ export interface ICVBatch {
   successCount: number;
   failureCount: number;
   items: ICVBatchItem[];
-  status: 'processing' | 'completed' | 'failed';
+  pendingItems: ICVBatchPendingItem[];
+  processingMode: 'immediate' | 'deferred';
+  operationsSnapshot?: {
+    assignJob?: boolean;
+    jobId?: string;
+    updateStatus?: boolean;
+    status?: string;
+    addRemark?: boolean;
+    remark?: string;
+    isRemarkPrivate?: boolean;
+    remarkRating?: number | null;
+  };
+  status: 'pending' | 'processing' | 'completed' | 'failed';
   startedAt: Date;
   completedAt?: Date;
   createdBy?: mongoose.Types.ObjectId;
@@ -24,10 +51,30 @@ export interface ICVBatch {
 const cvBatchItemSchema = new mongoose.Schema<ICVBatchItem>({
   filename: { type: String, required: true },
   candidateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Candidate' },
-  status: { type: String, required: true, enum: ['success', 'failed'] },
+  status: { type: String, required: true, enum: ['success', 'failed', 'pending'] },
   message: { type: String },
   error: { type: String },
   processedAt: { type: Date, default: Date.now },
+});
+
+const cvBatchPendingItemSchema = new mongoose.Schema<ICVBatchPendingItem>({
+  filename: { type: String, required: true },
+  status: {
+    type: String,
+    required: true,
+    enum: ['pending', 'processed', 'failed'],
+    default: 'pending',
+  },
+  file: {
+    id: { type: String },
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, required: true },
+    size: { type: Number, required: true },
+  },
+  selected: { type: Boolean, required: true, default: false },
+  error: { type: String },
+  processedAt: { type: Date },
 });
 
 const cvBatchSchema = new mongoose.Schema<ICVBatch>(
@@ -41,10 +88,27 @@ const cvBatchSchema = new mongoose.Schema<ICVBatch>(
     successCount: { type: Number, required: true, default: 0 },
     failureCount: { type: Number, required: true, default: 0 },
     items: [cvBatchItemSchema],
+    pendingItems: [cvBatchPendingItemSchema],
+    processingMode: {
+      type: String,
+      required: true,
+      enum: ['immediate', 'deferred'],
+      default: 'immediate',
+    },
+    operationsSnapshot: {
+      assignJob: { type: Boolean },
+      jobId: { type: String },
+      updateStatus: { type: Boolean },
+      status: { type: String },
+      addRemark: { type: Boolean },
+      remark: { type: String },
+      isRemarkPrivate: { type: Boolean },
+      remarkRating: { type: Number },
+    },
     status: {
       type: String,
       required: true,
-      enum: ['processing', 'completed', 'failed'],
+      enum: ['pending', 'processing', 'completed', 'failed'],
       default: 'processing',
     },
     startedAt: { type: Date, default: Date.now },
@@ -54,6 +118,17 @@ const cvBatchSchema = new mongoose.Schema<ICVBatch>(
   {
     timestamps: true,
   },
+);
+
+// Index for checking duplicate pending filenames during CV uploads
+cvBatchSchema.index(
+  {
+    organizationId: 1,
+    status: 1,
+    'pendingItems.filename': 1,
+    'pendingItems.status': 1,
+  },
+  { name: 'idx_org_status_pendingItems_filename_pendingStatus', background: true },
 );
 
 export default cvBatchSchema;

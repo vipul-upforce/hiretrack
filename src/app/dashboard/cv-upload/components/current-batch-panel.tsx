@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { FileList } from './file-list';
 import type { FileWithPreview } from './cv-batch-processor';
 
@@ -22,6 +24,8 @@ interface CurrentBatchPanelProps {
   allSelected: boolean;
   uploadProgress: UploadProgress | null;
   onOpenActions: () => void;
+  processingMode: 'immediate' | 'deferred';
+  onProcessingModeChange: (mode: 'immediate' | 'deferred') => void;
   onToggleSelectAll: () => void;
   onInvertSelection: () => void;
   onRemoveSelected: () => void;
@@ -39,6 +43,8 @@ export function CurrentBatchPanel({
   allSelected,
   uploadProgress,
   onOpenActions,
+  processingMode,
+  onProcessingModeChange,
   onToggleSelectAll,
   onInvertSelection,
   onRemoveSelected,
@@ -54,15 +60,6 @@ export function CurrentBatchPanel({
     ? Math.min(
       100,
       Math.round((uploadProgress.current / Math.max(uploadProgress.total, 1)) * 100),
-    )
-    : 0;
-
-  const batchProgressPercent = uploadProgress
-    ? Math.min(
-      100,
-      Math.round(
-        (uploadProgress.completedBatches / Math.max(uploadProgress.totalBatches, 1)) * 100,
-      ),
     )
     : 0;
 
@@ -116,6 +113,19 @@ export function CurrentBatchPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <div className="mr-2 flex items-center gap-2 rounded-md border px-3 py-2">
+            <Switch
+              id="deferred-processing"
+              checked={processingMode === 'deferred'}
+              disabled={isPosting}
+              onCheckedChange={(checked) =>
+                onProcessingModeChange(checked ? 'deferred' : 'immediate')
+              }
+            />
+            <Label htmlFor="deferred-processing" className="text-xs text-muted-foreground">
+              Store only (process later)
+            </Label>
+          </div>
           <Button
             onClick={onOpenActions}
             disabled={isPosting}
