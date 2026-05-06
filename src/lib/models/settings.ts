@@ -25,6 +25,28 @@ const templateSchema = new Schema(
   { _id: false },
 );
 
+const teamsReminderTemplateSchema = new Schema(
+  {
+    templateId: { type: String, required: true },
+    templateName: { type: String, required: true },
+    eventType: {
+      type: String,
+      required: true,
+      enum: ['followup.reminder', 'assignment.reminder'],
+    },
+    content: { type: String, required: true },
+    variables: {
+      type: [String],
+      default: [],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { _id: false },
+);
+
 const settingsSchema = new Schema({
   organizationId: { type: String, required: true },
   multipleOrg: { type: Boolean, default: false, required: true }, // Fixed typo: "requred" -> "required"
@@ -245,6 +267,11 @@ const settingsSchema = new Schema({
     botUserId: {
       type: String,
       default: '',
+    },
+    messageTemplates: {
+      type: Map,
+      of: teamsReminderTemplateSchema,
+      default: new Map(),
     },
   },
   onboardingStatus: {
@@ -651,6 +678,16 @@ export interface IMicrosoftTeamsConfig {
   botUsername?: string;
   botPassword?: string;
   botUserId?: string;
+  messageTemplates?: {
+    [key: string]: {
+      templateId: string;
+      templateName: string;
+      eventType: 'followup.reminder' | 'assignment.reminder';
+      content: string;
+      variables: string[];
+      isActive?: boolean;
+    };
+  };
 }
 
 export interface IOnboardingStatus {

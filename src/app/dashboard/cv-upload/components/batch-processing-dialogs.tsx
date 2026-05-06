@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -9,6 +10,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { BatchOperationsPanel, type BatchOperations } from './batch-operations';
+
+function cloneBatchOperations(value: BatchOperations): BatchOperations {
+  return { ...value };
+}
 
 interface ConfirmPayload {
   total: number;
@@ -35,6 +40,25 @@ export function BatchActionsDialog({
   organizationId,
   userRole,
 }: BatchActionsDialogProps) {
+  const [draft, setDraft] = useState<BatchOperations>(() =>
+    cloneBatchOperations(operations),
+  );
+
+  useEffect(() => {
+    if (open) {
+      setDraft(cloneBatchOperations(operations));
+    }
+  }, [open, operations]);
+
+  const handleOk = () => {
+    onOperationsChange(cloneBatchOperations(draft));
+    onOpenChange(false);
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -49,8 +73,8 @@ export function BatchActionsDialog({
 
         <div className="border-b px-6 py-3">
           <BatchOperationsPanel
-            value={operations}
-            onChange={onOperationsChange}
+            value={draft}
+            onChange={setDraft}
             disabled={isPosting}
             organizationId={organizationId}
             userRole={userRole}
@@ -60,11 +84,12 @@ export function BatchActionsDialog({
 
         <div className="flex-1 space-y-4 overflow-y-auto bg-muted/10 px-6 py-4">
           <div className="rounded-xl border border-border/50 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-            Actions apply only to the CVs you select in the list.
+            Actions apply only to the CVs you select in the list. Use Process
+            Batch when you are ready to run processing.
           </div>
           <BatchOperationsPanel
-            value={operations}
-            onChange={onOperationsChange}
+            value={draft}
+            onChange={setDraft}
             disabled={isPosting}
             organizationId={organizationId}
             userRole={userRole}
@@ -77,18 +102,19 @@ export function BatchActionsDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
               className="min-w-[100px]"
             >
-              Cancel
+              Close
             </Button>
             <Button
               type="button"
               variant="info"
-              onClick={() => onOpenChange(false)}
-              className="min-w-[140px] font-medium shadow-sm transition-all hover:shadow-md"
+              onClick={handleOk}
+              disabled={isPosting}
+              className="min-w-[100px] font-medium shadow-sm transition-all hover:shadow-md"
             >
-              Save Actions
+              OK
             </Button>
           </div>
         </DialogFooter>

@@ -1,6 +1,10 @@
 import { formatDateForOrganization } from '@/components/timezoneFormat/getFormattedTZ';
 import { decryptText } from '@/lib/encryption';
 import { logger } from '@/lib/logger/logger.server';
+import {
+  renderTeamsReminderTemplate,
+  type TeamsReminderTemplateEventType,
+} from '@/lib/microsoft-teams/reminderTemplates';
 import type { IMicrosoftTeamsConfig } from '@/lib/models/settings';
 
 interface GraphTokenResponse {
@@ -237,6 +241,76 @@ function formatFollowUpReminderMessage(params: {
   ].join('');
 }
 
+function buildReminderMessage(params: {
+  eventType: TeamsReminderTemplateEventType;
+  rawTemplates?: unknown;
+  candidateName: string;
+  followUpTimeLabel: string;
+  note?: string | null;
+  deliveryMetadata?: {
+    isLate?: boolean;
+    lateByMs?: number;
+  };
+  candidateId?: string;
+  jobId?: string;
+}) {
+  const noteText = params.note?.trim() || '';
+  const noteMarkup = noteText
+    ? `<br /><b>Note:</b> ${escapeHtml(noteText)}`
+    : '';
+
+  const baseUrl =
+    process.env.BASE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXTAUTH_URL ||
+    '';
+  const candidateDetailsPath =
+    params.candidateId && params.jobId
+      ? `/dashboard/jobs/${params.jobId}?candidateId=${params.candidateId}`
+      : params.candidateId
+        ? `/candidate/${params.candidateId}`
+        : '/dashboard';
+  const openAppUrl = baseUrl ? `${baseUrl}${candidateDetailsPath}` : '';
+  const openAppMarkup = openAppUrl
+    ? `<br /><br /><a href="${escapeHtml(openAppUrl)}">Open Candidate Details</a>`
+    : '';
+  const isLateDelivery = !!params.deliveryMetadata?.isLate;
+  const lateByMinutes = params.deliveryMetadata?.lateByMs
+    ? Math.max(1, Math.round(params.deliveryMetadata.lateByMs / 60000))
+    : 0;
+  const lateNoticeMarkup = isLateDelivery
+    ? `<br /><b>Delayed delivery:</b> This reminder was due earlier and is being delivered now (${escapeHtml(String(lateByMinutes))} minute(s) late).`
+    : '';
+
+  try {
+    return renderTeamsReminderTemplate({
+      rawTemplates: params.rawTemplates,
+      eventType: params.eventType,
+      variables: {
+        candidateName: params.candidateName,
+        followUpTimeLabel: params.followUpTimeLabel,
+        noteHtml: noteMarkup,
+        lateNoticeHtml: lateNoticeMarkup,
+        openAppHtml: openAppMarkup,
+        openAppUrl,
+      },
+    });
+  } catch (error) {
+    logger.warn('Failed to render Teams reminder template; using fallback', {
+      error: error instanceof Error ? error.message : String(error),
+      eventType: params.eventType,
+    });
+    return formatFollowUpReminderMessage({
+      candidateName: params.candidateName,
+      followUpTimeLabel: params.followUpTimeLabel,
+      note: params.note,
+      deliveryMetadata: params.deliveryMetadata,
+      candidateId: params.candidateId,
+      jobId: params.jobId,
+    });
+  }
+}
+
 async function resolveGraphUserByEmail(params: {
   organizationId: string;
   microsoftTeams?: IMicrosoftTeamsConfig;
@@ -383,6 +457,7 @@ export async function sendFollowUpReminderToTeams(params: {
   jobId?: string;
   followUpDate: Date;
   note?: string | null;
+  templateEventType?: TeamsReminderTemplateEventType;
   deliveryMetadata?: {
     isLate?: boolean;
     lateByMs?: number;
@@ -432,7 +507,9 @@ export async function sendFollowUpReminderToTeams(params: {
     await sendChatMessage({
       accessToken,
       chatId,
-      message: formatFollowUpReminderMessage({
+      message: buildReminderMessage({
+        eventType: params.templateEventType || 'followup.reminder',
+        rawTemplates: params.microsoftTeams?.messageTemplates,
         candidateName: params.candidateName,
         candidateId: params.candidateId,
         jobId: params.jobId,
@@ -593,7 +670,9 @@ export async function testFollowUpReminderDelivery(params: {
     await sendChatMessage({
       accessToken: botAccessToken,
       chatId,
-      message: formatFollowUpReminderMessage({
+      message: buildReminderMessage({
+        eventType: 'followup.reminder',
+        rawTemplates: params.microsoftTeams?.messageTemplates,
         candidateName: params.candidateName,
         followUpTimeLabel,
         note: params.note || 'Diagnostic reminder delivery test message.',

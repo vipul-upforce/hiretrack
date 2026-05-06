@@ -15,6 +15,7 @@ import { AIProviders } from '@/lib/ai-providers/types';
 import { decryptProviderKeys, ProvidersConfig } from '@/lib/encryption';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { Types } from 'mongoose';
+import { PDFDocument } from 'pdf-lib';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ISettings, IAIProviders } from '@/lib/models/settings';
 import logger from '@/lib/logger';
@@ -32,7 +33,6 @@ import {
 
 // Maximum file size limit (10MB) to prevent body size limit errors
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-const MAX_ZIP_SIZE = MAX_FILE_SIZE * 10; // Allow ZIP files up to 100MB
 
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
@@ -72,6 +72,30 @@ interface FileObject {
 interface FileToProcess {
   file: File;
   selected: boolean;
+}
+
+interface StoredFileEntry {
+  filename: string;
+  selected: boolean;
+  base64Data: string;
+  resumeFile: FileObject;
+}
+
+function normalizeResumeFileName(fileName: string): string {
+  return fileName.trim().toLowerCase();
+}
+
+function getPdfPageLimitSkipReason(
+  filename: string,
+  pageCount: number,
+  maxPdfPages: number,
+): string {
+  return `File "${filename}" has ${pageCount} pages, which exceeds the maximum allowed limit of ${maxPdfPages} pages.`;
+}
+
+async function getPdfPageCountFromBytes(pdfBytes: Uint8Array): Promise<number> {
+  const pdf = await PDFDocument.load(pdfBytes);
+  return pdf.getPageCount();
 }
 
 async function processResume(
@@ -150,11 +174,14 @@ async function processResume(
   }
 }
 
-// Helper function to process ZIP entries recursively with size filtering
-function processZipEntries(zip: AdmZip): {
+// Helper function to process ZIP entries recursively with size + page filtering
+async function processZipEntries(
+  zip: AdmZip,
+  maxPdfPages: number,
+): Promise<{
   files: File[];
   skippedFiles: Array<{ filename: string; size: number; reason: string }>;
-} {
+}> {
   const files: File[] = [];
   const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
   const entries = zip.getEntries();
@@ -207,7 +234,33 @@ function processZipEntries(zip: AdmZip): {
           continue; // eslint-disable-line no-continue
         }
 
-        const file = new File([new Uint8Array(content)], filename, {
+        const pdfBytes = new Uint8Array(content);
+        if (maxPdfPages > 0) {
+          try {
+            const pageCount = await getPdfPageCountFromBytes(pdfBytes);
+            if (pageCount > maxPdfPages) {
+              skippedFiles.push({
+                filename,
+                size: actualSize,
+                reason: getPdfPageLimitSkipReason(
+                  filename,
+                  pageCount,
+                  maxPdfPages,
+                ),
+              });
+              continue; // eslint-disable-line no-continue
+            }
+          } catch (error) {
+            skippedFiles.push({
+              filename,
+              size: actualSize,
+              reason: `Failed to read PDF page count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            });
+            continue; // eslint-disable-line no-continue
+          }
+        }
+
+        const file = new File([pdfBytes], filename, {
           type: 'application/pdf',
         });
         files.push(file);
@@ -286,15 +339,16 @@ export async function POST(request: NextRequest) {
     successCount: 0,
     failureCount: 0,
     status: 'processing',
+    processingMode: 'immediate',
   });
 
   try {
     const settings = (await Settings.findOne({ organizationId })
-      .select('aiProviders gemini fileStorage')
+      .select('aiProviders gemini fileStorage evaluationConfig')
       .lean()
       .exec()) as Pick<
       ISettings,
-      'aiProviders' | 'gemini' | 'fileStorage'
+      'aiProviders' | 'gemini' | 'fileStorage' | 'evaluationConfig'
     > | null;
 
     if (!settings) {
@@ -347,12 +401,17 @@ export async function POST(request: NextRequest) {
       organizationId,
     ) as AIProviders;
 
+    const processingMode =
+      normalizedOperations.processingMode === 'deferred'
+        ? 'deferred'
+        : 'immediate';
     const { activeProvider } = decryptedAiProviders;
     const apiKey = decryptedAiProviders[activeProvider]?.api_key;
+    const maxPdfPages = Math.max(0, settings.evaluationConfig?.maxPdfPages ?? 0);
 
     // Add debug logging similar to evaluate API
 
-    if (!apiKey) {
+    if (processingMode === 'immediate' && !apiKey) {
       return NextResponse.json(
         {
           error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found`,
@@ -397,10 +456,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const files: FileToProcess[] = [];
+    let files: FileToProcess[] = [];
     const skippedFiles: Array<{ filename: string; size: number; reason: string }> = [];
     const uploadedFiles = formData.getAll('file');
     const uploadedFileIds = formData.getAll('fileId');
+    const intakeStats = {
+      acceptedFiles: 0,
+      skippedBySize: 0,
+      skippedByPages: 0,
+      skippedByType: 0,
+      skippedByZip: 0,
+      skippedByDuplicateName: 0,
+      skippedByOther: 0,
+    };
 
     if (uploadedFiles.length === 0) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
@@ -417,17 +485,6 @@ export async function POST(request: NextRequest) {
 
       if (uploadedFile instanceof File) {
         if (uploadedFile.name.endsWith('.zip')) {
-          // Check ZIP file size
-          if (uploadedFile.size > MAX_ZIP_SIZE) {
-            skippedFiles.push({
-              filename: uploadedFile.name,
-              size: uploadedFile.size,
-              reason: `ZIP file size (${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (100MB)`,
-            });
-            // eslint-disable-next-line no-continue
-            continue;
-          }
-
           try {
             const arrayBuffer = await uploadedFile.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
@@ -435,19 +492,25 @@ export async function POST(request: NextRequest) {
 
             // Process ZIP entries with size filtering
             const { files: zipFiles, skippedFiles: zipSkippedFiles } =
-              processZipEntries(zip);
+              await processZipEntries(zip, maxPdfPages);
             zipFiles.forEach((zipFile) => {
               files.push({ file: zipFile, selected: isSelected });
             });
             skippedFiles.push(...zipSkippedFiles);
+            intakeStats.acceptedFiles += zipFiles.length;
+            intakeStats.skippedByZip += zipSkippedFiles.length;
           } catch (error) {
             skippedFiles.push({
               filename: uploadedFile.name,
               size: uploadedFile.size,
               reason: `Failed to process ZIP file: ${error instanceof Error ? error.message : 'Unknown error'}`,
             });
+            intakeStats.skippedByZip += 1;
           }
-        } else if (uploadedFile.type === 'application/pdf') {
+        } else if (
+          uploadedFile.type === 'application/pdf'
+          || uploadedFile.type === 'application/x-pdf'
+        ) {
           // Filter individual PDF files by size
           if (uploadedFile.size > MAX_FILE_SIZE) {
             skippedFiles.push({
@@ -455,11 +518,43 @@ export async function POST(request: NextRequest) {
               size: uploadedFile.size,
               reason: `File size (${(uploadedFile.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (10MB)`,
             });
+            intakeStats.skippedBySize += 1;
             // eslint-disable-next-line no-continue
             continue;
           }
+          if (maxPdfPages > 0) {
+            try {
+              const pdfBytes = new Uint8Array(await uploadedFile.arrayBuffer());
+              const pageCount = await getPdfPageCountFromBytes(pdfBytes);
+              if (pageCount > maxPdfPages) {
+                skippedFiles.push({
+                  filename: uploadedFile.name,
+                  size: uploadedFile.size,
+                  reason: getPdfPageLimitSkipReason(
+                    uploadedFile.name,
+                    pageCount,
+                    maxPdfPages,
+                  ),
+                });
+                intakeStats.skippedByPages += 1;
+                // eslint-disable-next-line no-continue
+                continue;
+              }
+            } catch (error) {
+              skippedFiles.push({
+                filename: uploadedFile.name,
+                size: uploadedFile.size,
+                reason: `Failed to read PDF page count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              });
+              intakeStats.skippedByOther += 1;
+              // eslint-disable-next-line no-continue
+              continue;
+            }
+          }
           files.push({ file: uploadedFile, selected: isSelected });
+          intakeStats.acceptedFiles += 1;
         } else {
+          intakeStats.skippedByType += 1;
           return NextResponse.json(
             {
               error: 'Invalid file type. Only PDF and ZIP files are supported',
@@ -470,10 +565,93 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    logger.info(
+      {
+        organizationId,
+        uploadedCount: uploadedFiles.length,
+        intakeStats,
+      },
+      'CV upload batch intake summary',
+    );
+
+    if (files.length > 0) {
+      const candidateNameFilters = Array.from(
+        new Set(files.map(({ file }) => file.name)),
+      );
+
+      const candidateResumeDocs = (await Candidate.find({
+        organizationId,
+        isDeleted: false,
+        'resume.name': { $in: candidateNameFilters },
+      })
+        .select('resume.name')
+        .lean()
+        .exec()) as Array<{ resume?: { name?: string } }>;
+
+      const existingCandidateResumeNameSet = new Set(
+        candidateResumeDocs
+          .map((doc) => doc.resume?.name)
+          .filter((name): name is string => typeof name === 'string')
+          .map((name) => normalizeResumeFileName(name)),
+      );
+
+      const pendingBatchDocs = (await CVBatch.find({
+        organizationId,
+        status: { $in: ['pending', 'processing'] },
+        pendingItems: {
+          $elemMatch: {
+            status: 'pending',
+            filename: { $in: candidateNameFilters },
+          },
+        },
+      })
+        .select('pendingItems.filename pendingItems.status')
+        .lean()
+        .exec()) as Array<{
+        pendingItems?: Array<{ filename?: string; status?: string }>;
+      }>;
+
+      const existingPendingResumeNameSet = new Set(
+        pendingBatchDocs
+          .flatMap((batchDoc) => batchDoc.pendingItems ?? [])
+          .filter(
+            (pendingItem) =>
+              pendingItem.status === 'pending'
+              && typeof pendingItem.filename === 'string',
+          )
+          .map((pendingItem) => normalizeResumeFileName(pendingItem.filename as string)),
+      );
+
+      files = files.filter(({ file }) => {
+        const normalizedName = normalizeResumeFileName(file.name);
+        const duplicateExistsInCandidates =
+          existingCandidateResumeNameSet.has(normalizedName);
+        const duplicateExistsInPending =
+          existingPendingResumeNameSet.has(normalizedName);
+
+        if (duplicateExistsInCandidates || duplicateExistsInPending) {
+          skippedFiles.push({
+            filename: file.name,
+            size: file.size,
+            reason: duplicateExistsInCandidates
+              ? 'File already exists with the same filename in candidates'
+              : 'File already exists with the same filename in pending uploads',
+          });
+          intakeStats.skippedByDuplicateName += 1;
+          return false;
+        }
+        return true;
+      });
+    } else {
+      files = [];
+    }
+
     // Update batch info with total files (including skipped files)
     // Note: totalFiles should include all files (processed + skipped) for accurate reporting
     const totalFilesIncludingSkipped = files.length + skippedFiles.length;
     cvBatchInfo.totalFiles = totalFilesIncludingSkipped;
+    cvBatchInfo.processingMode = processingMode;
+    cvBatchInfo.operationsSnapshot = normalizedOperations;
     
     // Add skipped files to batch items as 'failed' status (schema only supports 'success' or 'failed')
     skippedFiles.forEach((skipped) => {
@@ -488,16 +666,91 @@ export async function POST(request: NextRequest) {
 
     await cvBatchInfo.save();
 
-    const results: ProcessResult[] = [];
-    const errors: ProcessError[] = [];
-    const createdCandidateIds: string[] = [];
-
+    const storedFileEntries: StoredFileEntry[] = [];
     for (const fileEntry of files) {
       const { file, selected } = fileEntry;
       try {
         const arrayBuffer = await file.arrayBuffer();
         const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        const fileObject: FileObject = {
+          id: new Types.ObjectId().toHexString(),
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          url: `data:${file.type};base64,${base64Data}`,
+        };
+        const resumeFile = await handleSingleFile(
+          fileObject,
+          settings.fileStorage?.storageType || 'local',
+          organizationId as string,
+        );
+        if (!resumeFile) {
+          throw new Error('Failed to save resume file');
+        }
 
+        storedFileEntries.push({
+          filename: file.name,
+          selected,
+          base64Data,
+          resumeFile,
+        });
+        cvBatchInfo.pendingItems.push({
+          filename: file.name,
+          status: 'pending',
+          file: {
+            id: resumeFile.id,
+            name: resumeFile.name,
+            url: resumeFile.url,
+            type: resumeFile.type,
+            size: resumeFile.size,
+          },
+          selected,
+        });
+      } catch (error) {
+        cvBatchInfo.items.push({
+          filename: file.name,
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          processedAt: new Date(),
+        });
+        cvBatchInfo.failureCount += 1;
+      }
+    }
+
+    await cvBatchInfo.save();
+
+    if (processingMode === 'deferred') {
+      for (const entry of storedFileEntries) {
+        cvBatchInfo.items.push({
+          filename: entry.filename,
+          status: 'pending',
+          message: 'Stored for later processing',
+          processedAt: new Date(),
+        });
+      }
+
+      cvBatchInfo.status = 'pending';
+      await cvBatchInfo.save();
+
+      return NextResponse.json({
+        message: 'Files stored for deferred processing',
+        batchId: cvBatchInfo._id,
+        summary: {
+          total: cvBatchInfo.totalFiles,
+          pending: cvBatchInfo.pendingItems.length,
+          failed: cvBatchInfo.failureCount,
+          skipped: skippedFiles.length,
+        },
+      });
+    }
+
+    const results: ProcessResult[] = [];
+    const errors: ProcessError[] = [];
+    const createdCandidateIds: string[] = [];
+
+    for (const fileEntry of storedFileEntries) {
+      const { filename, selected, resumeFile, base64Data } = fileEntry;
+      try {
         // FIXED: Pass decrypted AI providers instead of raw settings
         const candidateData = await processResume(
           base64Data,
@@ -517,39 +770,31 @@ export async function POST(request: NextRequest) {
         if (candidateData.error) {
           // Add error item to batch
           cvBatchInfo.items.push({
-            filename: file.name,
+            filename,
             status: 'failed',
             error: candidateData.error,
             processedAt: new Date(),
           });
           cvBatchInfo.failureCount += 1;
 
+          const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+            (pendingItem) =>
+              pendingItem.filename === filename
+              && pendingItem.file?.url === resumeFile.url
+              && pendingItem.status === 'pending',
+          );
+          if (pendingIndex >= 0) {
+            cvBatchInfo.pendingItems[pendingIndex].status = 'failed';
+            cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+            cvBatchInfo.pendingItems[pendingIndex].error = candidateData.error;
+          }
+
           errors.push({
-            filename: file.name,
+            filename,
             error: candidateData.error,
           });
           // eslint-disable-next-line no-continue
           continue; // Skip to next file
-        }
-
-        // Create proper file object for handleSingleFile with the actual file data
-        const fileObject: FileObject = {
-          id: new Types.ObjectId().toHexString(),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          url: `data:${file.type};base64,${base64Data}`,
-        };
-
-        // Save the resume using handleSingleFile
-        const resumeFile = await handleSingleFile(
-          fileObject,
-          settings.fileStorage?.storageType || 'local',
-          organizationId as string,
-        );
-
-        if (!resumeFile) {
-          throw new Error('Failed to save resume file');
         }
 
         const nowIso = new Date().toISOString();
@@ -677,31 +922,54 @@ export async function POST(request: NextRequest) {
         }
 
         cvBatchInfo.items.push({
-          filename: file.name,
+          filename,
           candidateId: candidate._id,
           status: 'success',
           message: 'Successfully processed and created candidate',
           processedAt: new Date(),
         });
         cvBatchInfo.successCount += 1;
+        const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+          (pendingItem) =>
+            pendingItem.filename === filename
+            && pendingItem.file?.url === resumeFile.url
+            && pendingItem.status === 'pending',
+        );
+        if (pendingIndex >= 0) {
+          cvBatchInfo.pendingItems[pendingIndex].status = 'processed';
+          cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+          cvBatchInfo.pendingItems[pendingIndex].error = undefined;
+        }
 
         results.push({
-          filename: file.name,
+          filename,
           candidateId: candidate._id,
           status: 'success',
         });
       } catch (error) {
         // Add error item to batch
         cvBatchInfo.items.push({
-          filename: file.name,
+          filename,
           status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error',
           processedAt: new Date(),
         });
         cvBatchInfo.failureCount += 1;
+        const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+          (pendingItem) =>
+            pendingItem.filename === filename
+            && pendingItem.file?.url === resumeFile.url
+            && pendingItem.status === 'pending',
+        );
+        if (pendingIndex >= 0) {
+          cvBatchInfo.pendingItems[pendingIndex].status = 'failed';
+          cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+          cvBatchInfo.pendingItems[pendingIndex].error =
+            error instanceof Error ? error.message : 'Unknown error';
+        }
 
         errors.push({
-          filename: file.name,
+          filename,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
@@ -747,6 +1015,22 @@ export async function POST(request: NextRequest) {
       triggerUserId: user?.id as string,
       triggerUserName: user?.name || 'Unknown User',
     });
+
+    logger.info(
+      {
+        organizationId,
+        batchId: cvBatchInfo._id.toString(),
+        summary: {
+          total: files.length + skippedFiles.length,
+          processed: results.length,
+          failed: errors.length,
+          skipped: skippedFiles.length,
+          successCount: cvBatchInfo.successCount,
+          failureCount: cvBatchInfo.failureCount,
+        },
+      },
+      'CV upload batch processing summary',
+    );
 
     return NextResponse.json({
       message: 'Processing completed',

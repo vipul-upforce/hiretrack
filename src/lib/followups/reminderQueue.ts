@@ -54,7 +54,7 @@ const RETRY_BASE_DELAY_MS = Number(
 const COMPLETED_TTL_DAYS = Number(
   process.env.REMINDER_COMPLETED_TTL_DAYS ||
     process.env.FOLLOWUP_REMINDER_COMPLETED_TTL_DAYS ||
-    '30',
+    '7',
 );
 const REMINDER_LAG_ALERT_MS = Number(
   process.env.REMINDER_LAG_ALERT_MS || '600000',
@@ -772,12 +772,30 @@ export async function processQueuedReminders(handler: (params: {
         scheduledAt: new Date(reminder.scheduledAt),
         offsetMinutesUsed: Number(reminder.offsetMinutesUsed || 0),
         followUpNote:
-          typeof reminder.payload === 'object' &&
-          reminder.payload !== null &&
-          'followUpNote' in reminder.payload
-            ? String(
-                (reminder.payload as { followUpNote?: string }).followUpNote || '',
-              )
+          typeof reminder.payload === 'object' && reminder.payload !== null
+            ? reminder.reminderType === 'assignment'
+              ? String(
+                  (
+                    reminder.payload as {
+                      assignmentNote?: string;
+                      followUpNote?: string;
+                    }
+                  ).assignmentNote ||
+                    (
+                      reminder.payload as {
+                        assignmentNote?: string;
+                        followUpNote?: string;
+                      }
+                    ).followUpNote ||
+                    '',
+                )
+              : String(
+                  (
+                    reminder.payload as {
+                      followUpNote?: string;
+                    }
+                  ).followUpNote || '',
+                )
             : '',
         followUpUserId: reminder.recipientUserId,
         source: reminder.source,

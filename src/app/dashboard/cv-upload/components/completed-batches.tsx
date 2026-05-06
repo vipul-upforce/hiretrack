@@ -19,6 +19,11 @@ const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const;
 interface CompletedBatchesProps {
   batches: Batch[];
   isLoading: boolean;
+  isProcessingPending: boolean;
+  onProcessPendingBatch: (batchId: string) => void;
+  onProcessAllPending: () => void;
+  onRetryFailedFile: (batchId: string, filename: string) => void;
+  isRetryingFailed: boolean;
 }
 
 function getBatchDate(batch: Batch): Date {
@@ -56,7 +61,15 @@ function getStatusStyles(status: Batch['status']): string {
   return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
 }
 
-export function CompletedBatches({ batches, isLoading }: CompletedBatchesProps) {
+export function CompletedBatches({
+  batches,
+  isLoading,
+  isProcessingPending,
+  onProcessPendingBatch,
+  onProcessAllPending,
+  onRetryFailedFile,
+  isRetryingFailed,
+}: CompletedBatchesProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -75,6 +88,13 @@ export function CompletedBatches({ batches, isLoading }: CompletedBatchesProps) 
   const filteredBatches = useMemo(
     () => sortedBatches.filter((batch) => inDateRange(getBatchDate(batch), startDate, endDate)),
     [sortedBatches, startDate, endDate],
+  );
+  const hasPendingDeferredBatches = useMemo(
+    () =>
+      filteredBatches.some(
+        (batch) => batch.status === 'pending' && batch.processingMode === 'deferred',
+      ),
+    [filteredBatches],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredBatches.length / pageSize));
@@ -129,6 +149,18 @@ export function CompletedBatches({ batches, isLoading }: CompletedBatchesProps) 
           Hide Completed Batches
         </Button>
       </div>
+      {hasPendingDeferredBatches && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onProcessAllPending}
+            disabled={isProcessingPending}
+          >
+            {isProcessingPending ? 'Processing Pending...' : 'Process All Pending'}
+          </Button>
+        </div>
+      )}
       <div className="mt-6 space-y-5">
           <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -217,6 +249,7 @@ export function CompletedBatches({ batches, isLoading }: CompletedBatchesProps) 
                       <TableHead className="text-right">Failed</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Details</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -262,26 +295,62 @@ export function CompletedBatches({ batches, isLoading }: CompletedBatchesProps) 
                                 {openBatchId === batch._id && (
                                   <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
                                     {batch.items.map((item) => (
+                                      (() => {
+                                        const canRetryFailedItem = item.status === 'failed';
+                                        return (
                                       <div
                                         key={item._id}
                                         className="rounded-md border border-border/60 bg-muted/10 px-2 py-1"
                                       >
-                                        <p className="truncate text-xs font-medium">{item.filename}</p>
-                                        <p className="text-[11px] capitalize text-muted-foreground">
-                                          {item.status}
-                                        </p>
+                                        <div className="flex items-center justify-between gap-2">
+                                          <div className="min-w-0">
+                                            <p className="truncate text-xs font-medium">{item.filename}</p>
+                                            <p className="text-[11px] capitalize text-muted-foreground">
+                                              {item.status}
+                                            </p>
+                                          </div>
+                                          {canRetryFailedItem && (
+                                              <Button
+                                                type="button"
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={isRetryingFailed}
+                                                className="h-6 px-2 text-[11px]"
+                                                onClick={() => onRetryFailedFile(batch._id, item.filename)}
+                                              >
+                                                Retry
+                                              </Button>
+                                          )}
+                                        </div>
                                         {item.error && (
                                           <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">
                                             {item.error}
                                           </p>
                                         )}
                                       </div>
+                                        );
+                                      })()
                                     ))}
                                   </div>
                                 )}
                               </div>
                             ) : (
                               <span className="text-xs text-muted-foreground">No details</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {batch.status === 'pending' && batch.processingMode === 'deferred' ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={isProcessingPending}
+                                onClick={() => onProcessPendingBatch(batch._id)}
+                              >
+                                Process Pending
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
                             )}
                           </TableCell>
                         </TableRow>

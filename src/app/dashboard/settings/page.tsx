@@ -11,11 +11,13 @@ import { Tags, Palette } from 'lucide-react';
 import SettingDialog from './components/setting-dialog';
 import { settingGroups, settingsByKey } from './constants';
 import SettingsCard from './components/settings/setting-card';
+import { useGetMicrosoftTeamsConfigQuery } from '@/lib/features/settings';
 
 function Settings() {
   const [openDialog, setOpenDialog] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: microsoftTeamsData } = useGetMicrosoftTeamsConfigQuery(undefined);
 
   useEffect(() => {
     const config = searchParams?.get('config');
@@ -41,19 +43,36 @@ function Settings() {
   }, [searchParams, router]);
 
   // Helper function to check if setting opens in new page
-  const opensInNewPage = (key: string) => ['users', 'portal', 'templates', 'logs'].includes(key);
+  const opensInNewPage = (key: string) =>
+    ['users', 'portal', 'templates', 'logs'].includes(key);
+  const isTeamsReminderEnabled = Boolean(
+    microsoftTeamsData?.microsoftTeams?.isFollowUpReminderEnabled,
+  );
+  const filteredSettingGroups = useMemo(
+    () =>
+      settingGroups.map((group) => ({
+        ...group,
+        settings: group.settings.filter((setting) => {
+          if (setting.key !== 'teams-templates') {
+            return true;
+          }
+          return isTeamsReminderEnabled;
+        }),
+      })),
+    [isTeamsReminderEnabled],
+  );
   const visibleKeys = useMemo(
     () =>
       new Set(
-        settingGroups.flatMap((group) =>
+        filteredSettingGroups.flatMap((group) =>
           group.settings.map((setting) => setting.key),
         ),
       ),
-    [settingGroups],
+    [filteredSettingGroups],
   );
 
-  const primaryGroup = settingGroups[0];
-  const remainingGroups = settingGroups.slice(1);
+  const primaryGroup = filteredSettingGroups[0];
+  const remainingGroups = filteredSettingGroups.slice(1);
 
   return (
     <div className="h-screen flex flex-col overflow-hidden w-full">

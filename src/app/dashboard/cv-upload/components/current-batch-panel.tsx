@@ -1,6 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { FileList } from './file-list';
 import type { FileWithPreview } from './cv-batch-processor';
 
@@ -9,6 +12,7 @@ interface UploadProgress {
   total: number;
   currentBatch: number;
   totalBatches: number;
+  completedBatches: number;
 }
 
 interface CurrentBatchPanelProps {
@@ -20,6 +24,8 @@ interface CurrentBatchPanelProps {
   allSelected: boolean;
   uploadProgress: UploadProgress | null;
   onOpenActions: () => void;
+  processingMode: 'immediate' | 'deferred';
+  onProcessingModeChange: (mode: 'immediate' | 'deferred') => void;
   onToggleSelectAll: () => void;
   onInvertSelection: () => void;
   onRemoveSelected: () => void;
@@ -37,6 +43,8 @@ export function CurrentBatchPanel({
   allSelected,
   uploadProgress,
   onOpenActions,
+  processingMode,
+  onProcessingModeChange,
   onToggleSelectAll,
   onInvertSelection,
   onRemoveSelected,
@@ -47,6 +55,13 @@ export function CurrentBatchPanel({
   if (files.length === 0) {
     return null;
   }
+
+  const fileProgressPercent = uploadProgress
+    ? Math.min(
+      100,
+      Math.round((uploadProgress.current / Math.max(uploadProgress.total, 1)) * 100),
+    )
+    : 0;
 
   return (
     <div className="space-y-4 rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm md:p-5">
@@ -65,18 +80,52 @@ export function CurrentBatchPanel({
             </p>
           )}
           {uploadProgress && (
-            <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-              Processing batch
-              {' '}
-              {uploadProgress.currentBatch}
-              {' '}
-              of
-              {' '}
-              {uploadProgress.totalBatches}
-            </p>
+            <div className="mt-2 space-y-3 text-sm text-muted-foreground">
+              <p className="flex items-center gap-2">
+                Batches done:
+                {' '}
+                {uploadProgress.completedBatches}
+                /
+                {uploadProgress.totalBatches}
+              </p>
+              {/* <Progress
+                value={batchProgressPercent}
+                className="h-2 w-full max-w-xs"
+                aria-label="Batch processing progress"
+              /> */}
+              <p className="flex items-center gap-2">
+                Files processed:
+                {' '}
+                {uploadProgress.current}
+                /
+                {uploadProgress.total}
+                {' '}
+                ({fileProgressPercent}%)
+              </p>
+              {/* <Progress
+                value={fileProgressPercent}
+                className="h-2 w-full max-w-xs"
+                aria-label="CV processing progress"
+              /> */}
+            </div>
           )}
+
         </div>
+
         <div className="flex flex-wrap items-center gap-2">
+          <div className="mr-2 flex items-center gap-2 rounded-md border px-3 py-2">
+            <Switch
+              id="deferred-processing"
+              checked={processingMode === 'deferred'}
+              disabled={isPosting}
+              onCheckedChange={(checked) =>
+                onProcessingModeChange(checked ? 'deferred' : 'immediate')
+              }
+            />
+            <Label htmlFor="deferred-processing" className="text-xs text-muted-foreground">
+              Store only (process later)
+            </Label>
+          </div>
           <Button
             onClick={onOpenActions}
             disabled={isPosting}
@@ -90,7 +139,7 @@ export function CurrentBatchPanel({
               disabled={isPosting}
               variant="secondary"
             >
-              {allSelected ? 'Clear Selection' : 'Select All CVs'}
+              {allSelected ? 'Clear Selection' : 'Select All Files'}
             </Button>
           )}
           {hasSelectableFiles && (
@@ -107,7 +156,7 @@ export function CurrentBatchPanel({
             disabled={isPosting || selectedCount === 0}
             variant="destructive"
           >
-            Remove Selected CVs
+            Remove Selected Files
           </Button>
           <Button
             onClick={onProcessBatch}
@@ -115,13 +164,20 @@ export function CurrentBatchPanel({
             variant="primary"
           >
             {isPosting && uploadProgress
-              ? `Processing Batch ${uploadProgress.currentBatch}/${uploadProgress.totalBatches}...`
+              ? `Processing ${uploadProgress.completedBatches}/${uploadProgress.totalBatches} batches...`
               : isPosting
                 ? 'Processing...'
                 : 'Process Batch'}
           </Button>
         </div>
       </div>
+
+      <Progress
+        value={fileProgressPercent}
+        className="h-2 w-full max-w-xs"
+        aria-label="CV processing progress"
+      />
+
 
       <FileList
         isProcessing={isPosting}

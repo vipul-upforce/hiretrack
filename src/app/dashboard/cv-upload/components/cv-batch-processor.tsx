@@ -1,14 +1,19 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import type { FileRejection } from 'react-dropzone';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
+  useProcessPendingCvBatchesMutation,
+  useRetryFailedCvFilesMutation,
 } from '@/lib/features/org/orgApi';
 import { useToast } from '@/hooks/use-toast';
+import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
 import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { useGetEvaluationConfigsQuery } from '@/lib/features/settings/aiApi';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -40,14 +45,14 @@ export type FileWithPreview = {
 
 // File size limits (same as backend)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_ZIP_SIZE = 100 * 1024 * 1024; // 100MB
 const BATCH_SIZE = 20; // Process 20 files at a time
+const MAX_BATCH_PAYLOAD_BYTES = 8 * 1024 * 1024; // Keep below parser limits with multipart overhead
 
 export type ProcessedItem = {
   filename: string;
-  candidateId: string;
-  status: 'success' | 'failure';
-  message: string;
+  candidateId?: string;
+  status: 'success' | 'failure' | 'failed' | 'pending';
+  message?: string;
   error?: string;
   processedAt: string;
   _id: string;
@@ -60,7 +65,21 @@ export type Batch = {
   successCount: number;
   failureCount: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  processingMode?: 'immediate' | 'deferred';
   items: ProcessedItem[];
+  pendingItems?: Array<{
+    filename: string;
+    status: 'pending' | 'processed' | 'failed';
+    selected: boolean;
+    error?: string;
+    file: {
+      id?: string;
+      name: string;
+      url: string;
+      type: string;
+      size: number;
+    };
+  }>;
   startedAt: string;
   completedAt?: string;
   createdAt: string;
@@ -77,6 +96,7 @@ export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
   const [operations, setOperations] = useState<BatchOperations>({
+    processingMode: 'immediate',
     assignJob: false,
     jobId: '',
     updateStatus: false,
@@ -98,15 +118,22 @@ export function CVBatchProcessor() {
   } | null>(null);
   const processingRef = useRef(false);
   const [postBatch] = usePostBatchMutation();
+  const [processPendingCvBatches] = useProcessPendingCvBatchesMutation();
+  const [retryFailedCvFiles] = useRetryFailedCvFilesMutation();
   const [isPosting, setIsPosting] = useState(false);
+  const [isProcessingPending, setIsProcessingPending] = useState(false);
+  const [isRetryingFailed, setIsRetryingFailed] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{
     current: number;
     total: number;
     currentBatch: number;
     totalBatches: number;
+    completedBatches: number;
   } | null>(null);
   const { toast } = useToast();
   const { user } = useAppSelector((state) => state.auth || {});
+  const { sanitizeFiles } = useSanitizeFiles();
+  const { data: evaluationConfigData } = useGetEvaluationConfigsQuery();
 
   // Fetch all batches using RTK Query
   const {
@@ -243,15 +270,16 @@ export function CVBatchProcessor() {
   }, []);
 
   const handleFilesAdded = useCallback((newFiles: File[]) => {
+    const sanitizedFiles = sanitizeFiles(newFiles);
     const processedFiles: FileWithPreview[] = [];
     const skippedFiles: FileWithPreview[] = [];
 
-    newFiles.forEach((file) => {
+    sanitizedFiles.forEach((file) => {
       const isZip = file.type === 'application/zip' || file.name.endsWith('.zip');
-      const maxSize = isZip ? MAX_ZIP_SIZE : MAX_FILE_SIZE;
-      const sizeLabel = isZip ? '100MB' : '10MB';
+      const maxSize = MAX_FILE_SIZE;
+      const sizeLabel = '10MB';
 
-      if (file.size > maxSize) {
+      if (!isZip && file.size > maxSize) {
         skippedFiles.push({
           id: crypto.randomUUID(),
           file,
@@ -264,7 +292,7 @@ export function CVBatchProcessor() {
           id: crypto.randomUUID(),
           file,
           isZip,
-          selected: false,
+          selected: true,
         });
       }
     });
@@ -273,11 +301,41 @@ export function CVBatchProcessor() {
       toast({
         variant: 'destructive',
         title: 'Some Files Skipped',
-        description: `${skippedFiles.length} file(s) were skipped due to size limits. Maximum size: 10MB for PDFs, 100MB for ZIP files.`,
+        description: `${skippedFiles.length} file(s) were skipped because PDF size exceeded 10MB.`,
       });
     }
 
-    setFiles((prevFiles) => [...prevFiles, ...processedFiles, ...skippedFiles]);
+    setFiles((prevFiles) => {
+      const existingFiles = prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: true },
+      );
+      return [...existingFiles, ...processedFiles, ...skippedFiles];
+    });
+
+    if (processedFiles.length > 0) {
+      setIsActionsOpen(true);
+    }
+  }, [sanitizeFiles, toast]);
+
+  const handleFilesRejected = useCallback((rejections: FileRejection[]) => {
+    if (rejections.length === 0) {
+      return;
+    }
+
+    const skippedFromRejections: FileWithPreview[] = rejections.map((rejection) => ({
+      id: crypto.randomUUID(),
+      file: rejection.file,
+      isZip: rejection.file.type === 'application/zip' || rejection.file.name.endsWith('.zip'),
+      skipped: true,
+      skipReason: rejection.errors.map((error) => error.message).join(' '),
+    }));
+
+    setFiles((prevFiles) => [...prevFiles, ...skippedFromRejections]);
+    toast({
+      variant: 'destructive',
+      title: 'Some Files Rejected',
+      description: `${rejections.length} file(s) were rejected because they did not match the supported format or constraints.`,
+    });
   }, [toast]);
 
   const handleRemoveFile = useCallback((id: string) => {
@@ -300,6 +358,7 @@ export function CVBatchProcessor() {
 
     const trimmedRemark = operations.remark.trim();
     const normalizedOperations: BatchOperations = {
+      processingMode: operations.processingMode,
       assignJob: operations.assignJob && operations.jobId.trim().length > 0,
       jobId: operations.jobId.trim(),
       updateStatus:
@@ -328,10 +387,29 @@ export function CVBatchProcessor() {
     try {
       const organizationId = (user?.organizationId as string) || '';
 
-      // Split files into chunks for batch processing
+      // Split files into chunks by both count and payload size.
+      // This prevents multipart/form-data requests from crossing parser body limits.
       const chunks: FileWithPreview[][] = [];
-      for (let i = 0; i < filesToProcess.length; i += BATCH_SIZE) {
-        chunks.push(filesToProcess.slice(i, i + BATCH_SIZE));
+      let currentChunk: FileWithPreview[] = [];
+      let currentChunkBytes = 0;
+      for (const file of filesToProcess) {
+        const fileSize = file.file.size || 0;
+        const wouldExceedCount = currentChunk.length >= BATCH_SIZE;
+        const wouldExceedBytes =
+          currentChunkBytes > 0
+          && currentChunkBytes + fileSize > MAX_BATCH_PAYLOAD_BYTES;
+
+        if (wouldExceedCount || wouldExceedBytes) {
+          chunks.push(currentChunk);
+          currentChunk = [];
+          currentChunkBytes = 0;
+        }
+
+        currentChunk.push(file);
+        currentChunkBytes += fileSize;
+      }
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
       }
 
       const totalBatches = chunks.length;
@@ -340,6 +418,7 @@ export function CVBatchProcessor() {
         total: filesToProcess.length,
         currentBatch: 0,
         totalBatches,
+        completedBatches: 0,
       });
 
       const allResults: Batch[] = [];
@@ -354,6 +433,7 @@ export function CVBatchProcessor() {
           total: filesToProcess.length,
           currentBatch: i + 1,
           totalBatches,
+          completedBatches: i,
         });
 
         const formData = new FormData();
@@ -398,8 +478,14 @@ export function CVBatchProcessor() {
       if (allResults.length > 0) {
         // setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
         toast({
-          title: 'Processing Completed',
-          description: `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
+          title:
+            normalizedOperations.processingMode === 'deferred'
+              ? 'Files Stored'
+              : 'Processing Completed',
+          description:
+            normalizedOperations.processingMode === 'deferred'
+              ? `Stored ${processedCount} file(s) in ${allResults.length} deferred batch(es).`
+              : `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
         });
       }
 
@@ -435,24 +521,83 @@ export function CVBatchProcessor() {
     if (enabledActions.length === 0) {
       return totalSelectable === 0
         ? 'This will process the batch and create candidates for all uploaded CVs.'
-        : 'This will process the batch and create candidates for all uploaded CVs. No extra actions are selected.';
+        : operations.processingMode === 'deferred'
+          ? 'This will store all uploaded CVs for later processing. No extra actions are selected.'
+          : 'This will process the batch and create candidates for all uploaded CVs. No extra actions are selected.';
     }
 
     if (selectedSelectable === 0) {
       return `No CVs are selected, so these actions won’t be applied: ${enabledActions.join(
         ', ',
-      )}. The batch will only create candidates.`;
+      )}. The batch will only ${operations.processingMode === 'deferred' ? 'store CVs for later' : 'create candidates'}.`;
     }
 
     if (selectedSelectable === totalSelectable) {
-      return `Actions (${enabledActions.join(
+      return `${operations.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
         ', ',
-      )}) will be applied to all ${totalSelectable} selected CVs.`;
+      )}) will be applied to all ${totalSelectable} selected CVs ${operations.processingMode === 'deferred' ? 'when processing later' : ''}.`;
     }
 
-    return `Actions (${enabledActions.join(
+    return `${operations.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
       ', ',
-    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only create candidates.`;
+    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only ${operations.processingMode === 'deferred' ? 'store CVs for later processing' : 'create candidates'}.`;
+  };
+
+  const handleProcessPendingNow = async (batchId?: string) => {
+    if (!user?.organizationId || isPosting || isProcessingPending) {
+      return;
+    }
+    setIsProcessingPending(true);
+    try {
+      const response = await processPendingCvBatches({
+        organizationId: user.organizationId as string,
+        batchId,
+      }).unwrap();
+      toast({
+        title: 'Pending Processing Triggered',
+        description:
+          response?.processedBatches && response.processedBatches > 0
+            ? `Processed ${response.processedBatches} pending batch(es).`
+            : 'No pending deferred batches found.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to Process Pending Batches',
+        description: error instanceof Error ? error.message : 'Request failed',
+      });
+    } finally {
+      setIsProcessingPending(false);
+    }
+  };
+
+  const handleRetryFailedFile = async (batchId: string, filename: string) => {
+    if (!user?.organizationId || isPosting || isProcessingPending || isRetryingFailed) {
+      return;
+    }
+    setIsRetryingFailed(true);
+    try {
+      const response = await retryFailedCvFiles({
+        organizationId: user.organizationId as string,
+        batchId,
+        filename,
+      }).unwrap();
+      toast({
+        title: 'Retry Completed',
+        description:
+          response?.retried && response.retried > 0
+            ? `Retried ${response.retried} failed file(s): ${response.processed} processed, ${response.failed} still failed.`
+            : 'No retriable failed deferred files were found.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Retry Failed',
+        description: error instanceof Error ? error.message : 'Request failed',
+      });
+    } finally {
+      setIsRetryingFailed(false);
+    }
   };
 
   const handleProcessBatch = () => {
@@ -468,17 +613,26 @@ export function CVBatchProcessor() {
 
   return (
     <div className="flex min-h-full flex-col gap-8">
-      <FileUploader isProcessing={isPosting} onFilesAdded={handleFilesAdded} />
+      <FileUploader
+        isProcessing={isPosting}
+        onFilesAdded={handleFilesAdded}
+        onFilesRejected={handleFilesRejected}
+        maxPdfPages={evaluationConfigData?.evaluationConfig?.maxPdfPages ?? 0}
+      />
 
       <CurrentBatchPanel
         files={files}
         isPosting={isPosting}
+        processingMode={operations.processingMode}
         hasSelectableFiles={hasSelectableFiles}
         selectedCount={selectedCount}
         selectableCount={selectableFiles.length}
         allSelected={allSelected}
         uploadProgress={uploadProgress}
         onOpenActions={() => setIsActionsOpen(true)}
+        onProcessingModeChange={(mode) =>
+          setOperations((prev) => ({ ...prev, processingMode: mode }))
+        }
         onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
         onInvertSelection={invertSelection}
         onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
@@ -488,7 +642,15 @@ export function CVBatchProcessor() {
       />
 
       {error && <p>Error fetching batches: </p>}
-      <CompletedBatches batches={completedBatches} isLoading={isLoading} />
+      <CompletedBatches
+        batches={completedBatches}
+        isLoading={isLoading}
+        isProcessingPending={isProcessingPending}
+        onProcessPendingBatch={(batchId) => handleProcessPendingNow(batchId)}
+        onProcessAllPending={() => handleProcessPendingNow()}
+        onRetryFailedFile={handleRetryFailedFile}
+        isRetryingFailed={isRetryingFailed}
+      />
 
       <BatchActionsDialog
         open={isActionsOpen}

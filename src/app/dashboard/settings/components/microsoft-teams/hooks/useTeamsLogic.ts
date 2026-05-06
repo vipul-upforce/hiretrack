@@ -9,6 +9,7 @@ import {
   useTestMicrosoftTeamsConnectionMutation,
 } from '@/lib/features/settings';
 import { CredentialsFormData, TestResult } from '../types';
+import { normalizeTeamsReminderTemplates } from '@/lib/microsoft-teams/reminderTemplates';
 
 export function useTeamsLogic() {
   const { toast } = useToast();
@@ -57,6 +58,9 @@ export function useTeamsLogic() {
           data.microsoftTeams.followUpReminderOffsetMinutes ?? 5,
         botUsername: data.microsoftTeams.botUsername || '',
         botPassword: data.microsoftTeams.botPassword || '',
+        messageTemplates: normalizeTeamsReminderTemplates(
+          data.microsoftTeams.messageTemplates,
+        ),
       });
     }
   }, [data]);
@@ -102,6 +106,7 @@ export function useTeamsLogic() {
           formData.followUpReminderOffsetMinutes ?? 5,
         botUsername: formData.botUsername,
         botPassword: formData.botPassword,
+        messageTemplates: formData.messageTemplates,
       }).unwrap();
 
       toast({

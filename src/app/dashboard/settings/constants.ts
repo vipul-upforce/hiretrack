@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   ArrowUpCircle,
   Video,
+  MessageCircleCode,
 } from 'lucide-react';
 import { SettingGroup } from './types';
 
@@ -153,6 +154,12 @@ export const settingGroups: SettingGroup[] = [
         key: 'templates',
         description: 'Customize email notification templates',
         icon: FileText,
+      },
+      {
+        title: 'Teams Message Templates',
+        key: 'teams-templates',
+        description: 'Customize Microsoft Teams reminder message templates',
+        icon: MessageCircleCode,
       },
     ],
   },

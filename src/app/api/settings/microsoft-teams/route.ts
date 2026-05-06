@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase, { Settings } from '@/lib/mongodb';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { encryptText, decryptText } from '@/lib/encryption';
+import {
+  normalizeTeamsReminderTemplates,
+  toTeamsReminderTemplateStorageMap,
+} from '@/lib/microsoft-teams/reminderTemplates';
+import { syncRemindersPingCrontab } from '@/lib/cron/remindersPingCrontab';
 
 const DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES = 5;
 const MAX_FOLLOWUP_REMINDER_OFFSET_MINUTES = 1440;
@@ -110,6 +115,9 @@ export async function GET(req: NextRequest) {
       microsoftTeams.followUpReminderOffsetMinutes =
         DEFAULT_FOLLOWUP_REMINDER_OFFSET_MINUTES;
     }
+    microsoftTeams.messageTemplates = normalizeTeamsReminderTemplates(
+      microsoftTeams.messageTemplates,
+    );
 
     return NextResponse.json({ microsoftTeams });
   } catch (error) {
@@ -147,9 +155,10 @@ export async function PUT(req: NextRequest) {
       followUpReminderOffsetMinutes,
       botUsername,
       botPassword,
+      messageTemplates,
     } = await req.json();
 
-    const updateData: Record<string, string | boolean> = {
+    const updateData: Record<string, unknown> = {
       'microsoftTeams.tenantId': tenantId,
       'microsoftTeams.clientId': clientId,
     };
@@ -170,7 +179,7 @@ export async function PUT(req: NextRequest) {
     }
     try {
       updateData['microsoftTeams.followUpReminderOffsetMinutes'] =
-        String(parseFollowUpReminderOffsetMinutes(followUpReminderOffsetMinutes));
+        parseFollowUpReminderOffsetMinutes(followUpReminderOffsetMinutes);
     } catch (validationError) {
       return NextResponse.json(
         {
@@ -189,6 +198,10 @@ export async function PUT(req: NextRequest) {
       updateData['microsoftTeams.botPassword'] = botPassword
         ? encryptText(botPassword, organizationId)
         : '';
+    }
+    if (messageTemplates !== undefined) {
+      updateData['microsoftTeams.messageTemplates'] =
+        toTeamsReminderTemplateStorageMap(messageTemplates);
     }
 
     const updatedSettings = await Settings.findOneAndUpdate(
@@ -211,9 +224,42 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const responseBody: {
+      message: string;
+      crontabRemindersPing?: {
+        synced: boolean;
+        enabled: boolean;
+        warning?: string;
+      };
+    } = {
       message: 'Microsoft Teams credentials updated successfully',
-    });
+    };
+
+    if (typeof isFollowUpReminderEnabled === 'boolean') {
+      const cronResult = await syncRemindersPingCrontab(
+        isFollowUpReminderEnabled,
+      );
+      if (cronResult.ok && cronResult.found) {
+        responseBody.crontabRemindersPing = {
+          synced: true,
+          enabled: isFollowUpReminderEnabled,
+        };
+      } else {
+        const defaultWarning =
+          process.platform === 'win32'
+            ? 'Crontab is not used on Windows.'
+            : cronResult.found
+              ? 'Could not write crontab for reminders ping.'
+              : 'No reminders ping line in crontab (run installer after BASE_URL is set).';
+        responseBody.crontabRemindersPing = {
+          synced: false,
+          enabled: isFollowUpReminderEnabled,
+          warning: cronResult.error ?? defaultWarning,
+        };
+      }
+    }
+
+    return NextResponse.json(responseBody);
   } catch (error) {
     return NextResponse.json(
       {

@@ -20,6 +20,7 @@ import {
 } from '@/lib/features/job/jobApi';
 
 export type BatchOperations = {
+  processingMode: 'immediate' | 'deferred';
   assignJob: boolean;
   jobId: string;
   updateStatus: boolean;

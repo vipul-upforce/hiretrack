@@ -199,7 +199,7 @@ export function CredentialsCard({
                   min={0}
                   step={1}
                   value={formData.followUpReminderOffsetMinutes ?? 5}
-                  disabled={isConnected}
+                  // disabled={isConnected}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
