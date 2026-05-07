@@ -4,6 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Cross,
+  Loader2,
+  PlayCircle,
+  Settings2,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { FileList } from './file-list';
 import type { FileWithPreview } from './cv-batch-processor';
 
@@ -21,6 +31,7 @@ interface CurrentBatchPanelProps {
   hasSelectableFiles: boolean;
   selectedCount: number;
   selectableCount: number;
+  batchSize: number;
   allSelected: boolean;
   uploadProgress: UploadProgress | null;
   onOpenActions: () => void;
@@ -40,6 +51,7 @@ export function CurrentBatchPanel({
   hasSelectableFiles,
   selectedCount,
   selectableCount,
+  batchSize,
   allSelected,
   uploadProgress,
   onOpenActions,
@@ -62,12 +74,15 @@ export function CurrentBatchPanel({
       Math.round((uploadProgress.current / Math.max(uploadProgress.total, 1)) * 100),
     )
     : 0;
+  const estimatedBatchCount = hasSelectableFiles
+    ? Math.ceil(selectableCount / Math.max(batchSize, 1))
+    : 0;
 
   return (
     <div className="space-y-4 rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm md:p-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Current Batch</h2>
+          <h2 className="text-xl font-semibold">Current Upload Set</h2>
           {hasSelectableFiles && (
             <p className="mt-1 text-sm text-muted-foreground">
               {selectedCount}
@@ -77,6 +92,15 @@ export function CurrentBatchPanel({
               {selectableCount}
               {' '}
               selected
+              {' '}
+              -
+              {' '}
+              Split into
+              {' '}
+              {estimatedBatchCount}
+              {' '}
+              batch
+              {estimatedBatchCount === 1 ? '' : 'es'}
             </p>
           )}
           {uploadProgress && (
@@ -113,7 +137,7 @@ export function CurrentBatchPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="mr-2 flex items-center gap-2 rounded-md border px-3 py-2">
+          <div className="mr-1 flex items-center gap-2 rounded-lg border border-border/70 bg-muted/20 px-3 py-2">
             <Switch
               id="deferred-processing"
               checked={processingMode === 'deferred'}
@@ -126,49 +150,52 @@ export function CurrentBatchPanel({
               Store only (process later)
             </Label>
           </div>
-          <Button
-            onClick={onOpenActions}
-            disabled={isPosting}
-            variant="outline"
-          >
-            Batch Actions
-          </Button>
-          {hasSelectableFiles && (
-            <Button
-              onClick={onToggleSelectAll}
-              disabled={isPosting}
-              variant="secondary"
-            >
-              {allSelected ? 'Clear Selection' : 'Select All Files'}
-            </Button>
-          )}
-          {hasSelectableFiles && (
-            <Button
-              onClick={onInvertSelection}
-              disabled={isPosting}
-              variant="outline"
-            >
-              Invert Selection
-            </Button>
-          )}
-          <Button
-            onClick={onRemoveSelected}
-            disabled={isPosting || selectedCount === 0}
-            variant="destructive"
-          >
-            Remove Selected Files
-          </Button>
-          <Button
-            onClick={onProcessBatch}
-            disabled={files.length === 0 || isPosting}
-            variant="primary"
-          >
-            {isPosting && uploadProgress
-              ? `Processing ${uploadProgress.completedBatches}/${uploadProgress.totalBatches} batches...`
-              : isPosting
-                ? 'Processing...'
-                : 'Process Batch'}
-          </Button>
+          <TooltipProvider>
+            <div className="flex items-center gap-2">
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onOpenActions}
+                    disabled={isPosting}
+                    variant="outline"
+                    size="icon"
+                    aria-label="Batch actions"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Batch actions</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={onProcessBatch}
+                    disabled={files.length === 0 || isPosting}
+                    variant="primary"
+                    size="icon"
+                    aria-label="Process batch"
+                  >
+                    {isPosting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {isPosting && uploadProgress
+                      ? `Processing ${uploadProgress.completedBatches}/${uploadProgress.totalBatches} batches...`
+                      : isPosting
+                        ? 'Processing...'
+                        : 'Process batch'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -177,6 +204,54 @@ export function CurrentBatchPanel({
         className="h-2 w-full max-w-xs"
         aria-label="CV processing progress"
       />
+
+      {hasSelectableFiles && (
+        <div className="flex w-full items-center justify-between">
+          <div className='flex items-center gap-2'>
+            <Checkbox
+              checked={allSelected ? true : selectedCount > 0 ? 'indeterminate' : false}
+              disabled={isPosting}
+              onCheckedChange={() => {
+                if (allSelected || selectedCount === 0) {
+                  onToggleSelectAll();
+                  return;
+                }
+                onInvertSelection();
+              }}
+              aria-label="Selection control"
+            />
+            <span className="text-xs text-muted-foreground">
+              {allSelected
+                ? 'All selected'
+                : selectedCount > 0
+                  ? 'Partial selection'
+                  : 'None selected'}
+            </span>
+
+          </div>
+          {selectedCount > 0 && (
+            <TooltipProvider>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    className='p-0 w-5 h-5 mr-[14px]'
+                    onClick={onRemoveSelected}
+                    disabled={isPosting}
+                    variant="destructive"
+                    size="default"
+                    aria-label="Remove selected files"
+                  >
+                    <X className="h-3 w-3 w-[10px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Remove selected files</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+      )}
 
 
       <FileList

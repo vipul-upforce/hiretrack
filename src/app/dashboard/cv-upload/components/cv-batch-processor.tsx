@@ -87,7 +87,7 @@ export type Batch = {
 };
 
 interface ErrorResponse {
-  error?: string;
+  error?: string; 
 }
 
 const LEAVE_PROCESSING_MESSAGE = 'Batch processing is in progress. Leaving this page will stop processing remaining CVs. Do you want to continue?';
@@ -627,6 +627,7 @@ export function CVBatchProcessor() {
         hasSelectableFiles={hasSelectableFiles}
         selectedCount={selectedCount}
         selectableCount={selectableFiles.length}
+        batchSize={BATCH_SIZE}
         allSelected={allSelected}
         uploadProgress={uploadProgress}
         onOpenActions={() => setIsActionsOpen(true)}

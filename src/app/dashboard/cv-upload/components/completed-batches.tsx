@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, EyeOff, Loader2, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table,
   TableBody,
@@ -137,179 +138,207 @@ export function CompletedBatches({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Completed Batches</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          {/* <p className="mt-1 text-sm text-muted-foreground">
             Review processing history with date filtering and pagination.
-          </p>
+          </p> */}
         </div>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => setShowHistory(false)}
-        >
-          Hide Completed Batches
-        </Button>
-      </div>
-      {hasPendingDeferredBatches && (
-        <div className="mt-4 flex justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onProcessAllPending}
-            disabled={isProcessingPending}
-          >
-            {isProcessingPending ? 'Processing Pending...' : 'Process All Pending'}
-          </Button>
-        </div>
-      )}
-      <div className="mt-6 space-y-5">
-          <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CalendarDays className="h-4 w-4" />
-              Filter by completion date
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Start date</p>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(event) => {
-                    setStartDate(event.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full sm:w-[170px]"
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">End date</p>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(event) => {
-                    setEndDate(event.target.value);
-                    setCurrentPage(1);
-                  }}
-                  min={startDate || undefined}
-                  className="w-full sm:w-[170px]"
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">Rows per page</p>
-                <select
-                  value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="h-9 w-full rounded-md border border-input bg-secondary px-3 py-1 text-sm shadow-sm dark:bg-transparent sm:w-[120px]"
+        <div className="flex items-center gap-2 self-end md:self-auto">
+          {hasPendingDeferredBatches && (
+            <TooltipProvider>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={onProcessAllPending}
+                    disabled={isProcessingPending}
+                    aria-label="Process all pending batches"
+                  >
+                    {isProcessingPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {isProcessingPending ? 'Processing pending batches...' : 'Process all pending batches'}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <TooltipProvider>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => setShowHistory(false)}
+                  aria-label="Hide completed batches"
                 >
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={clearFilters}
-                disabled={!startDate && !endDate}
-              >
-                Clear
-              </Button>
-            </div>
+                  <EyeOff className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Hide completed batches</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+      <div className="mt-6 space-y-5">
+        <div className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CalendarDays className="h-4 w-4" />
+            Filter by completion date
           </div>
-
-          {isLoading && (
-            <div className="rounded-xl border border-border/60 p-6 text-center text-sm text-muted-foreground">
-              Loading batches...
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Start date</p>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(event) => {
+                  setStartDate(event.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full sm:w-[170px]"
+              />
             </div>
-          )}
-
-          {!isLoading && filteredBatches.length === 0 && (
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-8 text-center">
-              <Clock3 className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                No batches found for the selected date range.
-              </p>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">End date</p>
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(event) => {
+                  setEndDate(event.target.value);
+                  setCurrentPage(1);
+                }}
+                min={startDate || undefined}
+                className="w-full sm:w-[170px]"
+              />
             </div>
-          )}
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Rows per page</p>
+              <select
+                value={pageSize}
+                onChange={(event) => {
+                  setPageSize(Number(event.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-9 w-full rounded-md border border-input bg-secondary px-3 py-1 text-sm shadow-sm dark:bg-transparent sm:w-[120px]"
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={clearFilters}
+              disabled={!startDate && !endDate}
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
 
-          {!isLoading && filteredBatches.length > 0 && (
-            <>
-              <div className="overflow-hidden rounded-xl border border-border/70">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-right">Success</TableHead>
-                      <TableHead className="text-right">Failed</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Details</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedBatches.map((batch) => {
-                      const date = getBatchDate(batch);
-                      return (
-                        <TableRow key={batch._id}>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {date.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {date.toLocaleTimeString()}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">{batch.totalFiles}</TableCell>
-                          <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-300">
-                            {batch.successCount}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-red-600 dark:text-red-300">
-                            {batch.failureCount}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(batch.status)}`}>
-                              {batch.status}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {batch.items.length > 0 ? (
-                              <div className="text-sm">
-                                <Button
-                                  type="button"
-                                  variant="link"
-                                  className="h-auto p-0 text-primary"
-                                  onClick={() =>
-                                    setOpenBatchId((prev) =>
-                                      prev === batch._id ? null : batch._id,
-                                    )
-                                  }
-                                >
-                                  {openBatchId === batch._id
-                                    ? 'Hide files'
-                                    : `View files (${batch.items.length})`}
-                                </Button>
-                                {openBatchId === batch._id && (
-                                  <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
-                                    {batch.items.map((item) => (
-                                      (() => {
-                                        const canRetryFailedItem = item.status === 'failed';
-                                        return (
-                                      <div
-                                        key={item._id}
-                                        className="rounded-md border border-border/60 bg-muted/10 px-2 py-1"
-                                      >
-                                        <div className="flex items-center justify-between gap-2">
-                                          <div className="min-w-0">
-                                            <p className="truncate text-xs font-medium">{item.filename}</p>
-                                            <p className="text-[11px] capitalize text-muted-foreground">
-                                              {item.status}
-                                            </p>
-                                          </div>
-                                          {canRetryFailedItem && (
+        {isLoading && (
+          <div className="rounded-xl border border-border/60 p-6 text-center text-sm text-muted-foreground">
+            Loading batches...
+          </div>
+        )}
+
+        {!isLoading && filteredBatches.length === 0 && (
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-8 text-center">
+            <Clock3 className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              No batches found for the selected date range.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && filteredBatches.length > 0 && (
+          <>
+            <div className="overflow-hidden rounded-xl border border-border/70">
+              <Table>
+                <TableHeader className="bg-muted/30">
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">Success</TableHead>
+                    <TableHead className="text-right">Failed</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedBatches.map((batch) => {
+                    const date = getBatchDate(batch);
+                    return (
+                      <TableRow key={batch._id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {date.toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {date.toLocaleTimeString()}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{batch.totalFiles}</TableCell>
+                        <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-300">
+                          {batch.successCount}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-red-600 dark:text-red-300">
+                          {batch.failureCount}
+                        </TableCell>
+                        <TableCell>
+                          <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(batch.status)}`}>
+                            {batch.status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {batch.items.length > 0 ? (
+                            <div className="text-sm">
+                              <Button
+                                type="button"
+                                variant="link"
+                                className="h-auto p-0 text-primary"
+                                onClick={() =>
+                                  setOpenBatchId((prev) =>
+                                    prev === batch._id ? null : batch._id,
+                                  )
+                                }
+                              >
+                                {openBatchId === batch._id
+                                  ? 'Hide files'
+                                  : `View files (${batch.items.length})`}
+                              </Button>
+                              {openBatchId === batch._id && (
+                                <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
+                                  {batch.items.map((item) => (
+                                    (() => {
+                                      const canRetryFailedItem = item.status === 'failed';
+                                      return (
+                                        <div
+                                          key={item._id}
+                                          className="rounded-md border border-border/60 bg-muted/10 px-2 py-1"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                              <p className="truncate text-xs font-medium">{item.filename}</p>
+                                              <p className="text-[11px] capitalize text-muted-foreground">
+                                                {item.status}
+                                              </p>
+                                            </div>
+                                            {canRetryFailedItem && (
                                               <Button
                                                 type="button"
                                                 size="sm"
@@ -320,83 +349,83 @@ export function CompletedBatches({
                                               >
                                                 Retry
                                               </Button>
+                                            )}
+                                          </div>
+                                          {item.error && (
+                                            <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">
+                                              {item.error}
+                                            </p>
                                           )}
                                         </div>
-                                        {item.error && (
-                                          <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">
-                                            {item.error}
-                                          </p>
-                                        )}
-                                      </div>
-                                        );
-                                      })()
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No details</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {batch.status === 'pending' && batch.processingMode === 'deferred' ? (
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={isProcessingPending}
-                                onClick={() => onProcessPendingBatch(batch._id)}
-                              >
-                                Process Pending
-                              </Button>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">-</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                                      );
+                                    })()
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">No details</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {batch.status === 'pending' && batch.processingMode === 'deferred' ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isProcessingPending}
+                              onClick={() => onProcessPendingBatch(batch._id)}
+                            >
+                              Process Pending
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
 
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
-                  <p className="text-sm text-muted-foreground">
-                    Showing page
-                    {' '}
-                    {safePage}
-                    {' '}
-                    of
-                    {' '}
-                    {totalPages}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onPageChange(safePage - 1)}
-                      disabled={safePage <= 1}
-                    >
-                      <ChevronLeft className="mr-1 h-4 w-4" />
-                      Previous
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onPageChange(safePage + 1)}
-                      disabled={safePage >= totalPages}
-                    >
-                      Next
-                      <ChevronRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  Showing page
+                  {' '}
+                  {safePage}
+                  {' '}
+                  of
+                  {' '}
+                  {totalPages}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(safePage - 1)}
+                    disabled={safePage <= 1}
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(safePage + 1)}
+                    disabled={safePage >= totalPages}
+                  >
+                    Next
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
                 </div>
-              )}
-            </>
-          )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </section>
   );
