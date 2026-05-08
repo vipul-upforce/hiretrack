@@ -58,8 +58,6 @@ export function LoginForm({
 }: LoginFormProps) {
   const { theme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
 
   const recaptchaRef = useRef<RecaptchaWrapperHandle>(null);
   const pendingSubmitRef = useRef(false);
@@ -107,14 +105,6 @@ export function LoginForm({
     [isInvisibleV2, captchaToken, formik],
   );
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
   const selectedOrgName = organizations.find(
     (o) => o.orgId === selectedOrgId,
   )?.name;
@@ -133,21 +123,21 @@ export function LoginForm({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 0.2 }}
       className="relative"
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+    // onMouseMove={handleMouseMove}
+    // onMouseEnter={() => setIsHovering(true)}
+    // onMouseLeave={() => setIsHovering(false)}
     >
       {/* Background Glow Effect on Hover */}
-      {isHovering && (
+      {/* {isHovering && (
         <motion.div
           className="pointer-events-none absolute h-96 w-96 rounded-full blur-3xl"
-          style={{
-            background: `linear-gradient(135deg, ${branding.primaryColor}20, ${branding.secondaryColor}20, ${branding.primaryColor}15)`,
-            transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
-          }}
+          // style={{
+          //   background: `linear-gradient(135deg, ${branding.primaryColor}20, ${branding.secondaryColor}20, ${branding.primaryColor}15)`,
+          //   // transform: `translate(${mousePosition.x - 192}px, ${mousePosition.y - 192}px)`,
+          // }}
           transition={{ type: 'spring', damping: 30, stiffness: 200 }}
         />
-      )}
+      )} */}
 
       <div className="relative w-full justify-self-center rounded-2xl border border-border/50 bg-card/80 p-8 shadow-2xl backdrop-blur-xl max-lg:w-[60vw] max-md:w-full">
         <div className="mb-8 text-center">
@@ -317,8 +307,6 @@ export function LoginForm({
             style={{
               background: `linear-gradient(135deg, ${branding.primaryColor}, ${branding.secondaryColor})`,
             }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-1000 group-hover:translate-x-[100%]" />
             {isBusy || isSuccess ? (

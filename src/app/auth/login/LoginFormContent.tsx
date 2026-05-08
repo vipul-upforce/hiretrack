@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { cx } from '@/lib/cx';
 import packageJson from '@/../package.json';
 import LoadingScreen from '@/app/loading-screen';
 
@@ -16,10 +15,6 @@ import { usePortalBranding } from './hooks/use-portal-branding';
 import { useCaptchaHandler } from './hooks/use-captcha-handler';
 
 // Components
-import {
-  AnimatedGridPattern,
-  FlickeringGrid,
-} from './components/animated-background';
 import { BrandingSection } from './components/branding-section';
 import { LoginForm } from './components/login-form';
 
@@ -136,38 +131,62 @@ export default function LoginFormContent({
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-4">
       {/* Background Layer */}
-      <div className="absolute inset-0">
-        <AnimatedGridPattern
-          numSquares={30}
-          maxOpacity={0.1}
-          duration={3}
-          className={cx(
-            '[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]',
-            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
-          )}
-        />
-        <FlickeringGrid
-          className="absolute inset-0 size-full opacity-50"
-          squareSize={4}
-          gridGap={6}
-          color={branding.primaryColor}
-          maxOpacity={0.3}
-          flickerChance={0.1}
-        />
-      </div>
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, ${branding.primaryColor ?? '#e7e5e4'} 1px, transparent 1px),
+            linear-gradient(to bottom, ${branding.primaryColor ?? '#e7e5e4'} 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px',
+          backgroundPosition: '0 0, 0 0',
+          maskImage: `
+            repeating-linear-gradient(
+              to right,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            repeating-linear-gradient(
+              to bottom,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%)
+          `,
+          WebkitMaskImage: `
+            repeating-linear-gradient(
+              to right,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            repeating-linear-gradient(
+              to bottom,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%)
+          `,
+          maskComposite: 'intersect',
+          WebkitMaskComposite: 'source-in',
+        }}
+      />
 
       {/* Decorative Orbs */}
       <div
         className="absolute left-1/4 top-1/4 h-72 w-72 animate-pulse rounded-full blur-3xl"
-        style={{
-          background: `linear-gradient(135deg, ${branding.primaryColor}20, ${branding.secondaryColor}20)`,
-        }}
+
       />
       <div
         className="absolute bottom-1/4 right-1/4 h-96 w-96 animate-pulse rounded-full blur-3xl delay-1000"
-        style={{
-          background: `linear-gradient(225deg, ${branding.secondaryColor}15, ${branding.primaryColor}15)`,
-        }}
+
       />
 
       {/* Theme Toggle */}

@@ -1,26 +1,59 @@
 'use client';
 
 import React from 'react';
-import { cx } from '@/lib/cx';
 import { motion } from 'framer-motion';
-import { AnimatedGridPattern } from './auth/login/components/animated-background';
 
 function LoadingScreen() {
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background p-4">
-      {/* Animated Background for loading state */}
-      <div className="absolute inset-0">
-        <AnimatedGridPattern
-          numSquares={30}
-          maxOpacity={0.05}
-          duration={3}
-          // repeatDelay={1}
-          className={cx(
-            '[mask-image:radial-gradient(500px_circle_at_center,white,transparent)]',
-            'inset-x-0 inset-y-[-30%] h-[200%] skew-y-12',
-          )}
-        />
-      </div>
+      {/* Background Layer */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right,rgb(173, 172, 172) 1px, transparent 1px),
+            linear-gradient(to bottom,rgb(173, 172, 172)  1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px',
+          backgroundPosition: '0 0, 0 0',
+          maskImage: `
+            repeating-linear-gradient(
+              to right,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            repeating-linear-gradient(
+              to bottom,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%)
+          `,
+          WebkitMaskImage: `
+            repeating-linear-gradient(
+              to right,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            repeating-linear-gradient(
+              to bottom,
+              black 0px,
+              black 3px,
+              transparent 3px,
+              transparent 8px
+            ),
+            radial-gradient(ellipse 80% 80% at 0% 0%, #000 50%, transparent 90%)
+          `,
+          maskComposite: 'intersect',
+          WebkitMaskComposite: 'source-in',
+        }}
+      />
 
       <motion.div
         initial={false}
