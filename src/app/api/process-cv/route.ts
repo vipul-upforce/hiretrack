@@ -81,10 +81,6 @@ interface StoredFileEntry {
   resumeFile: FileObject;
 }
 
-function normalizeResumeFileName(fileName: string): string {
-  return fileName.trim().toLowerCase();
-}
-
 function getPdfPageLimitSkipReason(
   filename: string,
   pageCount: number,
@@ -573,78 +569,6 @@ export async function POST(request: NextRequest) {
       },
       'CV upload batch intake summary',
     );
-
-    if (files.length > 0) {
-      const candidateNameFilters = Array.from(
-        new Set(files.map(({ file }) => file.name)),
-      );
-
-      const candidateResumeDocs = (await Candidate.find({
-        organizationId,
-        isDeleted: false,
-        'resume.name': { $in: candidateNameFilters },
-      })
-        .select('resume.name')
-        .lean()
-        .exec()) as Array<{ resume?: { name?: string } }>;
-
-      const existingCandidateResumeNameSet = new Set(
-        candidateResumeDocs
-          .map((doc) => doc.resume?.name)
-          .filter((name): name is string => typeof name === 'string')
-          .map((name) => normalizeResumeFileName(name)),
-      );
-
-      const pendingBatchDocs = (await CVBatch.find({
-        organizationId,
-        status: { $in: ['pending', 'processing'] },
-        pendingItems: {
-          $elemMatch: {
-            status: 'pending',
-            filename: { $in: candidateNameFilters },
-          },
-        },
-      })
-        .select('pendingItems.filename pendingItems.status')
-        .lean()
-        .exec()) as Array<{
-        pendingItems?: Array<{ filename?: string; status?: string }>;
-      }>;
-
-      const existingPendingResumeNameSet = new Set(
-        pendingBatchDocs
-          .flatMap((batchDoc) => batchDoc.pendingItems ?? [])
-          .filter(
-            (pendingItem) =>
-              pendingItem.status === 'pending'
-              && typeof pendingItem.filename === 'string',
-          )
-          .map((pendingItem) => normalizeResumeFileName(pendingItem.filename as string)),
-      );
-
-      files = files.filter(({ file }) => {
-        const normalizedName = normalizeResumeFileName(file.name);
-        const duplicateExistsInCandidates =
-          existingCandidateResumeNameSet.has(normalizedName);
-        const duplicateExistsInPending =
-          existingPendingResumeNameSet.has(normalizedName);
-
-        if (duplicateExistsInCandidates || duplicateExistsInPending) {
-          skippedFiles.push({
-            filename: file.name,
-            size: file.size,
-            reason: duplicateExistsInCandidates
-              ? 'File already exists with the same filename in candidates'
-              : 'File already exists with the same filename in pending uploads',
-          });
-          intakeStats.skippedByDuplicateName += 1;
-          return false;
-        }
-        return true;
-      });
-    } else {
-      files = [];
-    }
 
     // Update batch info with total files (including skipped files)
     // Note: totalFiles should include all files (processed + skipped) for accurate reporting

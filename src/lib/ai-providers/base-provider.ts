@@ -1,9 +1,5 @@
-import * as pdfjs from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
-import { TextItem } from 'pdfjs-dist/types/src/display/api';
+import { extractPdfTextForCv } from '@/lib/cv-upload/pdf-text-extraction';
 import { AIProvider, ProcessedResumeData } from './types';
-
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 export abstract class BaseAIProvider implements AIProvider {
   abstract name: string;
@@ -31,20 +27,54 @@ export abstract class BaseAIProvider implements AIProvider {
   protected static async extractTextFromPdf(
     base64Pdf: string,
   ): Promise<string> {
-    const pdfData = Buffer.from(base64Pdf, 'base64');
-    const uint8Array = new Uint8Array(pdfData);
-    const pdf = await pdfjs.getDocument({ data: uint8Array }).promise;
-    let textContent = '';
+    return extractPdfTextForCv(base64Pdf);
+  }
 
-    for (let i = 1; i <= pdf.numPages; i += 1) {
-      const page = await pdf.getPage(i);
-      const pageText = await page.getTextContent();
-      textContent += pageText.items
-        .map((item) => (item as TextItem).str)
-        .join(' ');
+  /**
+   * When models prepend prose, recover the first top-level JSON object.
+   */
+  protected static extractFirstJsonObject(response: string): string | null {
+    const start = response.indexOf('{');
+    if (start === -1) {
+      return null;
     }
+    let depth = 0;
+    for (let i = start; i < response.length; i += 1) {
+      const char = response[i];
+      if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return response.slice(start, i + 1);
+        }
+      }
+    }
+    return null;
+  }
 
-    return textContent;
+  private static mapParsedToResumeData(
+    parsedData: Record<string, unknown>,
+  ): ProcessedResumeData {
+    if (parsedData.error) {
+      const errorMessage =
+        typeof parsedData.error === 'string'
+          ? parsedData.error
+          : JSON.stringify(parsedData.error);
+      return {
+        name: '',
+        location: '',
+        contact: '',
+        experience: 0,
+        relevantExperience: 0,
+        skills: [],
+        currentCTC: 0,
+        expectedCTC: 0,
+        noticePeriod: 0,
+        error: errorMessage,
+      };
+    }
+    return parsedData as unknown as ProcessedResumeData;
   }
 
   protected static getStandardPrompt(): string {
@@ -109,27 +139,22 @@ export abstract class BaseAIProvider implements AIProvider {
   }
 
   protected static parseJsonResponse(jsonString: string): ProcessedResumeData {
+    const tryParse = (raw: string): ProcessedResumeData => {
+      const parsedData = JSON.parse(raw) as Record<string, unknown>;
+      return BaseAIProvider.mapParsedToResumeData(parsedData);
+    };
+
     try {
-      const parsedData = JSON.parse(jsonString);
-
-      // Check if the response indicates an invalid CV
-      if (parsedData.error) {
-        return {
-          name: '',
-          location: '',
-          contact: '',
-          experience: 0,
-          relevantExperience: 0,
-          skills: [],
-          currentCTC: 0,
-          expectedCTC: 0,
-          noticePeriod: 0,
-          error: parsedData.error,
-        };
-      }
-
-      return parsedData;
+      return tryParse(jsonString);
     } catch (error) {
+      const recovered = BaseAIProvider.extractFirstJsonObject(jsonString);
+      if (recovered) {
+        try {
+          return tryParse(recovered);
+        } catch {
+          // fall through to original error
+        }
+      }
       throw new Error(
         `Failed to parse JSON response: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

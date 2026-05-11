@@ -23,6 +23,14 @@ file_log() {
 # Loading Spinner
 start_spinner() {
     local msg="$1"
+    # Do not animate when stdout isn't a TTY (e.g., update-now triggered from app),
+    # otherwise every spinner frame gets written to logs.
+    if [ ! -t 1 ]; then
+        SPINNER_PID=""
+        echo -e "${BLUE}[ .. ]${RESET} $msg"
+        return 0
+    fi
+
     echo -ne "${BLUE}[ .. ]${RESET} $msg"
     while :; do
         for s in / - \\ \|; do
@@ -36,6 +44,15 @@ start_spinner() {
 stop_spinner() {
     local result="$1" # "success" or "error"
     local msg="$2"
+    if [ -z "${SPINNER_PID:-}" ]; then
+        if [ "$result" = "success" ]; then
+            log_success "$msg"
+        else
+            log_error "$msg"
+        fi
+        return 0
+    fi
+
     kill $SPINNER_PID >/dev/null 2>&1 || true
     wait $SPINNER_PID 2>/dev/null || true
     echo -ne "\r\033[K" # Clear line
@@ -297,6 +314,34 @@ check_dep() {
         fi
     fi
     echo "[ OK ] $CMD is available."
+}
+
+# Tesseract: used by Hiretrack server for OCR on scanned/image-only PDFs (see src/lib/cv-upload/pdf-text-extraction.ts).
+# Idempotent; Debian/Ubuntu via apt; RHEL/Fedora via dnf/yum when available.
+ensure_tesseract_for_cv_ocr() {
+    if command -v tesseract >/dev/null 2>&1; then
+        echo "[ OK ] Tesseract OCR already available ($(command -v tesseract))."
+        return 0
+    fi
+
+    echo "[ PACKAGE ] Installing Tesseract OCR (scanned PDF / CV upload support)..."
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update -qq
+        sudo apt-get install -y tesseract-ocr tesseract-ocr-eng
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y tesseract tesseract-langpack-eng
+    elif command -v yum >/dev/null 2>&1; then
+        sudo yum install -y tesseract tesseract-langpack-eng
+    else
+        echo "[ WARNING ] No apt-get/dnf/yum found. Install Tesseract manually for CV OCR, or set CV_OCR_SERVICE_URL in .env."
+        return 0
+    fi
+
+    if command -v tesseract >/dev/null 2>&1; then
+        echo "[ OK ] Tesseract OCR installed ($(command -v tesseract))."
+    else
+        echo "[ WARNING ] Tesseract package installed but binary not on PATH. Set TESSERACT_CMD in .env if needed."
+    fi
 }
 
 
@@ -3051,6 +3096,7 @@ check_dep curl
 check_dep jq
 check_dep tar
 check_dep shasum
+ensure_tesseract_for_cv_ocr
 check_pm2
 
 # Initialize channel (production / beta / staging) from config.json (with command line override)

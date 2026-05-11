@@ -8,6 +8,8 @@ const WebpackObfuscator = require('webpack-obfuscator') as any;
 const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
+  // Native addon: must not be bundled by Turbopack/webpack (see server `canvas` alias below).
+  serverExternalPackages: ['canvas'],
   // Enable experimental features for better performance
   experimental: {
     middlewareClientMaxBodySize: '50mb', // For route handlers processed through middleware
@@ -55,11 +57,12 @@ const nextConfig: NextConfig = {
       config.devtool = 'eval-source-map';
     }
 
-    // Optimize resolve
+    // Optimize resolve — stub `canvas` in the browser only; the server needs the real
+    // native `canvas` package for CV PDF rasterization (OCR path).
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...config.resolve.alias,
-      canvas: false,
+      ...(!isServer ? { canvas: false } : {}),
     };
 
     if (!isServer) {
@@ -73,16 +76,9 @@ const nextConfig: NextConfig = {
 
     // Handle PDF.js worker - FIXED CONFIGURATION
     if (isServer) {
-      // Server-side configuration for PDF.js
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        canvas: false,
-      };
-
-      // Ensure PDF.js worker can be found on server
       config.externals = config.externals || [];
       (config.externals as any[]).push({
-        canvas: 'canvas',
+        canvas: 'commonjs canvas',
       });
     } else {
       // Client-side configuration
