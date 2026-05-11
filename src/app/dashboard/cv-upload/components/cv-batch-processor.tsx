@@ -47,6 +47,17 @@ export type FileWithPreview = {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const BATCH_SIZE = 20; // Process 20 files at a time
 const MAX_BATCH_PAYLOAD_BYTES = 8 * 1024 * 1024; // Keep below parser limits with multipart overhead
+const DEFAULT_BATCH_OPERATIONS: BatchOperations = {
+  processingMode: 'immediate',
+  assignJob: false,
+  jobId: '',
+  updateStatus: false,
+  status: '',
+  addRemark: false,
+  remark: '',
+  isRemarkPrivate: true,
+  remarkRating: null,
+};
 
 export type ProcessedItem = {
   filename: string;
@@ -96,15 +107,7 @@ export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
   const [operations, setOperations] = useState<BatchOperations>({
-    processingMode: 'immediate',
-    assignJob: false,
-    jobId: '',
-    updateStatus: false,
-    status: '',
-    addRemark: false,
-    remark: '',
-    isRemarkPrivate: true,
-    remarkRating: null,
+    ...DEFAULT_BATCH_OPERATIONS,
   });
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -313,6 +316,8 @@ export function CVBatchProcessor() {
     });
 
     if (processedFiles.length > 0) {
+      // Start each newly dropped batch with clean post-process settings.
+      setOperations({ ...DEFAULT_BATCH_OPERATIONS });
       setIsActionsOpen(true);
     }
   }, [sanitizeFiles, toast]);
@@ -342,7 +347,9 @@ export function CVBatchProcessor() {
     setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
   }, []);
 
-  const handleProcessBatchInternal = async () => {
+  const handleProcessBatchInternal = async (
+    operationsOverride?: BatchOperations,
+  ) => {
     if (files.length === 0 || processingRef.current) return;
 
     // Filter out skipped files
@@ -356,23 +363,24 @@ export function CVBatchProcessor() {
       return;
     }
 
-    const trimmedRemark = operations.remark.trim();
+    const sourceOperations = operationsOverride ?? operations;
+    const trimmedRemark = sourceOperations.remark.trim();
     const normalizedOperations: BatchOperations = {
-      processingMode: operations.processingMode,
-      assignJob: operations.assignJob && operations.jobId.trim().length > 0,
-      jobId: operations.jobId.trim(),
+      processingMode: sourceOperations.processingMode,
+      assignJob: sourceOperations.assignJob && sourceOperations.jobId.trim().length > 0,
+      jobId: sourceOperations.jobId.trim(),
       updateStatus:
-        operations.assignJob &&
-        operations.updateStatus &&
-        operations.status.trim().length > 0,
-      status: operations.status.trim(),
-      addRemark: operations.addRemark && trimmedRemark.length > 0,
+        sourceOperations.assignJob &&
+        sourceOperations.updateStatus &&
+        sourceOperations.status.trim().length > 0,
+      status: sourceOperations.status.trim(),
+      addRemark: sourceOperations.addRemark && trimmedRemark.length > 0,
       remark: trimmedRemark,
-      isRemarkPrivate: operations.isRemarkPrivate,
-      remarkRating: operations.remarkRating,
+      isRemarkPrivate: sourceOperations.isRemarkPrivate,
+      remarkRating: sourceOperations.remarkRating,
     };
 
-    if (operations.assignJob && !normalizedOperations.jobId) {
+    if (sourceOperations.assignJob && !normalizedOperations.jobId) {
       toast({
         variant: 'destructive',
         title: 'Job Required',
@@ -491,6 +499,7 @@ export function CVBatchProcessor() {
 
       // Remove processed files (keep skipped files for reference)
       setFiles((prevFiles) => prevFiles.filter((f) => f.skipped));
+      setOperations({ ...DEFAULT_BATCH_OPERATIONS });
     } catch (e) {
       logger.error(e instanceof Error ? e.message : 'Failed to process batch');
       toast({
@@ -571,7 +580,7 @@ export function CVBatchProcessor() {
     }
   };
 
-  const handleRetryFailedFile = async (batchId: string, filename: string) => {
+  const handleRetryFailedFile = async (batchId: string, filename?: string) => {
     if (!user?.organizationId || isPosting || isProcessingPending || isRetryingFailed) {
       return;
     }
@@ -586,13 +595,66 @@ export function CVBatchProcessor() {
         title: 'Retry Completed',
         description:
           response?.retried && response.retried > 0
-            ? `Retried ${response.retried} failed file(s): ${response.processed} processed, ${response.failed} still failed.`
-            : 'No retriable failed deferred files were found.',
+            ? filename
+              ? `Retried ${response.retried} failed file(s): ${response.processed} processed, ${response.failed} still failed.`
+              : `Retried all failed files in batch: ${response.processed} processed, ${response.failed} still failed.`
+            : filename
+              ? 'No retriable failed deferred files were found.'
+              : 'No retriable failed files found in this batch.',
       });
     } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Retry Failed',
+        description: error instanceof Error ? error.message : 'Request failed',
+      });
+    } finally {
+      setIsRetryingFailed(false);
+    }
+  };
+
+  const handleRetryAllFailedAcrossBatches = async (batchIds: string[]) => {
+    if (!user?.organizationId || isPosting || isProcessingPending || isRetryingFailed) {
+      return;
+    }
+
+    const uniqueBatchIds = [...new Set(batchIds)];
+    if (uniqueBatchIds.length === 0) {
+      toast({
+        title: 'No Failed Files',
+        description: 'No retriable failed files were found.',
+      });
+      return;
+    }
+
+    setIsRetryingFailed(true);
+    let retried = 0;
+    let processed = 0;
+    let failed = 0;
+
+    try {
+      for (const batchId of uniqueBatchIds) {
+        // eslint-disable-next-line no-await-in-loop
+        const response = await retryFailedCvFiles({
+          organizationId: user.organizationId as string,
+          batchId,
+        }).unwrap();
+        retried += response.retried ?? 0;
+        processed += response.processed ?? 0;
+        failed += response.failed ?? 0;
+      }
+
+      toast({
+        title: 'Retry All Completed',
+        description:
+          retried > 0
+            ? `Retried ${retried} failed file(s) across ${uniqueBatchIds.length} batch(es): ${processed} processed, ${failed} still failed.`
+            : 'No retriable failed files were found.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Retry All Failed',
         description: error instanceof Error ? error.message : 'Request failed',
       });
     } finally {
@@ -650,6 +712,8 @@ export function CVBatchProcessor() {
         onProcessPendingBatch={(batchId) => handleProcessPendingNow(batchId)}
         onProcessAllPending={() => handleProcessPendingNow()}
         onRetryFailedFile={handleRetryFailedFile}
+        onRetryAllFailedInBatch={(batchId) => handleRetryFailedFile(batchId)}
+        onRetryAllFailedAcrossBatches={handleRetryAllFailedAcrossBatches}
         isRetryingFailed={isRetryingFailed}
       />
 
@@ -658,6 +722,10 @@ export function CVBatchProcessor() {
         onOpenChange={setIsActionsOpen}
         operations={operations}
         onOperationsChange={setOperations}
+        onApplyAndProcess={(nextOperations) => {
+          setOperations(nextOperations);
+          handleProcessBatchInternal(nextOperations);
+        }}
         isPosting={isPosting}
         organizationId={(user?.organizationId as string) || ''}
         userRole={user?.role || ''}

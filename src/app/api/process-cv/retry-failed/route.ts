@@ -26,6 +26,23 @@ import {
 
 const BATCH_SIZE = 20;
 
+function findLatestFailedItemIndex(
+  items: Array<{
+    filename?: string;
+    status?: 'success' | 'failed' | 'pending';
+    processedAt?: Date;
+  }>,
+  filename: string,
+): number {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    const candidate = items[index];
+    if (candidate.filename === filename && candidate.status === 'failed') {
+      return index;
+    }
+  }
+  return -1;
+}
+
 interface ExtendedProcessedResumeData extends ProcessedResumeData {
   name: string;
   email?: string;
@@ -353,14 +370,27 @@ export async function POST(request: NextRequest) {
           batch.pendingItems[pendingIndex].error = undefined;
         }
 
-        batch.items.push({
-          filename: item.filename,
-          candidateId: candidate._id as Types.ObjectId,
-          status: 'success',
-          message: 'Successfully retried and processed failed deferred file',
-          processedAt: new Date(),
-        });
-        batch.successCount += 1;
+        const failedItemIndex = findLatestFailedItemIndex(batch.items, item.filename);
+        if (failedItemIndex >= 0) {
+          batch.items[failedItemIndex].status = 'success';
+          batch.items[failedItemIndex].candidateId = candidate._id as Types.ObjectId;
+          batch.items[failedItemIndex].message =
+            'Successfully retried and processed failed deferred file';
+          batch.items[failedItemIndex].processedAt = new Date();
+          batch.items[failedItemIndex].error = undefined;
+          batch.successCount += 1;
+          batch.failureCount = Math.max(batch.failureCount - 1, 0);
+        } else {
+          // Fallback for legacy/inconsistent batches where failed item entry is missing.
+          batch.items.push({
+            filename: item.filename,
+            candidateId: candidate._id as Types.ObjectId,
+            status: 'success',
+            message: 'Successfully retried and processed failed deferred file',
+            processedAt: new Date(),
+          });
+          batch.successCount += 1;
+        }
         processed += 1;
       } catch (error) {
         const pendingIndex = batch.pendingItems.findIndex(
@@ -375,13 +405,23 @@ export async function POST(request: NextRequest) {
             error instanceof Error ? error.message : 'Unknown error';
         }
 
-        batch.items.push({
-          filename: item.filename,
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-          processedAt: new Date(),
-        });
-        batch.failureCount += 1;
+        const failedItemIndex = findLatestFailedItemIndex(batch.items, item.filename);
+        if (failedItemIndex >= 0) {
+          batch.items[failedItemIndex].error =
+            error instanceof Error ? error.message : 'Unknown error';
+          batch.items[failedItemIndex].processedAt = new Date();
+          batch.items[failedItemIndex].message = 'Retry attempt failed';
+        } else {
+          // Fallback for legacy/inconsistent batches where failed item entry is missing.
+          batch.items.push({
+            filename: item.filename,
+            status: 'failed',
+            error: error instanceof Error ? error.message : 'Unknown error',
+            processedAt: new Date(),
+            message: 'Retry attempt failed',
+          });
+          batch.failureCount += 1;
+        }
         failed += 1;
       }
     }

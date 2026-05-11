@@ -26,6 +26,7 @@ interface BatchActionsDialogProps {
   onOpenChange: (open: boolean) => void;
   operations: BatchOperations;
   onOperationsChange: (operations: BatchOperations) => void;
+  onApplyAndProcess: (operations: BatchOperations) => void;
   isPosting: boolean;
   organizationId: string;
   userRole: string;
@@ -36,6 +37,7 @@ export function BatchActionsDialog({
   onOpenChange,
   operations,
   onOperationsChange,
+  onApplyAndProcess,
   isPosting,
   organizationId,
   userRole,
@@ -57,6 +59,13 @@ export function BatchActionsDialog({
 
   const handleClose = () => {
     onOpenChange(false);
+  };
+
+  const handleApplyAndProcess = () => {
+    const nextOperations = cloneBatchOperations(draft);
+    onOperationsChange(nextOperations);
+    onOpenChange(false);
+    onApplyAndProcess(nextOperations);
   };
 
   return (
@@ -115,6 +124,15 @@ export function BatchActionsDialog({
               className="min-w-[100px] font-medium shadow-sm transition-all hover:shadow-md"
             >
               OK
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handleApplyAndProcess}
+              disabled={isPosting}
+              className="min-w-[140px] font-medium shadow-sm transition-all hover:shadow-md"
+            >
+              Apply &amp; Process
             </Button>
           </div>
         </DialogFooter>

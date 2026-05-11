@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, EyeOff, Loader2, PlayCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, EyeOff, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -24,7 +24,41 @@ interface CompletedBatchesProps {
   onProcessPendingBatch: (batchId: string) => void;
   onProcessAllPending: () => void;
   onRetryFailedFile: (batchId: string, filename: string) => void;
+  onRetryAllFailedInBatch: (batchId: string) => void;
+  onRetryAllFailedAcrossBatches: (batchIds: string[]) => void;
   isRetryingFailed: boolean;
+}
+
+function AnimatedPendingBadge({
+  count,
+  delay = 2500,
+}: {
+  count: number;
+  delay?: number;
+}) {
+  const [showText, setShowText] = useState(true);
+
+  useEffect(() => {
+    setShowText(true);
+    const timeout = window.setTimeout(() => {
+      setShowText(false);
+    }, delay);
+
+    return () => window.clearTimeout(timeout);
+  }, [count, delay]);
+
+  return (
+    <span className="absolute -right-2 -top-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold leading-4 text-amber-700 shadow-sm dark:bg-amber-900/40 dark:text-amber-300">
+      <span>{count}</span>
+      <span
+        className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-out ${
+          showText ? 'ml-1 max-w-16 opacity-100' : 'ml-0 max-w-0 opacity-0'
+        }`}
+      >
+        pending
+      </span>
+    </span>
+  );
 }
 
 function getBatchDate(batch: Batch): Date {
@@ -69,6 +103,8 @@ export function CompletedBatches({
   onProcessPendingBatch,
   onProcessAllPending,
   onRetryFailedFile,
+  onRetryAllFailedInBatch,
+  onRetryAllFailedAcrossBatches,
   isRetryingFailed,
 }: CompletedBatchesProps) {
   const [showHistory, setShowHistory] = useState(false);
@@ -97,6 +133,22 @@ export function CompletedBatches({
       ),
     [filteredBatches],
   );
+  const pendingDeferredBatches = useMemo(
+    () =>
+      sortedBatches.filter(
+        (batch) => batch.status === 'pending' && batch.processingMode === 'deferred',
+      ),
+    [sortedBatches],
+  );
+  const pendingDeferredBatchCount = pendingDeferredBatches.length;
+  const retryableFailedBatchIds = useMemo(
+    () =>
+      sortedBatches
+        .filter((batch) => batch.items.some((item) => item.status === 'failed'))
+        .map((batch) => batch._id),
+    [sortedBatches],
+  );
+  const hasRetryableFailedBatches = retryableFailedBatchIds.length > 0;
 
   const totalPages = Math.max(1, Math.ceil(filteredBatches.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -119,16 +171,32 @@ export function CompletedBatches({
   };
 
   if (!showHistory) {
+    const viewButtonLabel = isLoading
+      ? 'View Completed Batches'
+      : pendingDeferredBatchCount > 0
+        ? `View Completed Batches`
+        : 'View Completed Batches';
+
     return (
-      <section className="flex min-h-[50vh] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/50 p-6">
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          onClick={() => setShowHistory(true)}
-        >
-          View Completed Batches
-        </Button>
+      <section className="relative flex min-h-[50vh] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/50 p-6">
+        <div className="relative inline-flex">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => setShowHistory(true)}
+          >
+            {viewButtonLabel}
+          </Button>
+          {!isLoading && pendingDeferredBatchCount > 0 && (
+            <AnimatedPendingBadge
+              count={pendingDeferredBatchCount}
+              delay={2000}
+            />
+          )}
+        </div>
+  
+
       </section>
     );
   }
@@ -143,6 +211,35 @@ export function CompletedBatches({
           </p> */}
         </div>
         <div className="flex items-center gap-2 self-end md:self-auto">
+          {hasRetryableFailedBatches && (
+            <TooltipProvider>
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => onRetryAllFailedAcrossBatches(retryableFailedBatchIds)}
+                    disabled={isRetryingFailed}
+                    aria-label="Retry all failed files across all batches"
+                  >
+                    {isRetryingFailed ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    {isRetryingFailed
+                      ? 'Retrying failed files...'
+                      : `Retry all failed files (${retryableFailedBatchIds.length} batches)`}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           {hasPendingDeferredBatches && (
             <TooltipProvider>
               <Tooltip delayDuration={0}>
@@ -307,20 +404,34 @@ export function CompletedBatches({
                         <TableCell>
                           {batch.items.length > 0 ? (
                             <div className="text-sm">
-                              <Button
-                                type="button"
-                                variant="link"
-                                className="h-auto p-0 text-primary"
-                                onClick={() =>
-                                  setOpenBatchId((prev) =>
-                                    prev === batch._id ? null : batch._id,
-                                  )
-                                }
-                              >
-                                {openBatchId === batch._id
-                                  ? 'Hide files'
-                                  : `View files (${batch.items.length})`}
-                              </Button>
+                                <div className="flex items-center gap-3">
+                                  <Button
+                                    type="button"
+                                    variant="link"
+                                    className="h-auto p-0 text-primary"
+                                    onClick={() =>
+                                      setOpenBatchId((prev) =>
+                                        prev === batch._id ? null : batch._id,
+                                      )
+                                    }
+                                  >
+                                    {openBatchId === batch._id
+                                      ? 'Hide files'
+                                      : `View files (${batch.items.length})`}
+                                  </Button>
+                                  {batch.items.some((item) => item.status === 'failed') && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      disabled={isRetryingFailed}
+                                      className="h-6 px-2 text-[11px]"
+                                      onClick={() => onRetryAllFailedInBatch(batch._id)}
+                                    >
+                                      Retry All
+                                    </Button>
+                                  )}
+                                </div>
                               {openBatchId === batch._id && (
                                 <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
                                   {batch.items.map((item) => (
