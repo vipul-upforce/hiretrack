@@ -8,6 +8,7 @@ import connectToDatabase, {
   Job,
   Organization,
   DuplicateCandidate,
+  FileUrlMapping,
 } from '@/lib/mongodb';
 import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
 import { AIProviders } from '@/lib/ai-providers/types';
@@ -23,6 +24,7 @@ import {
   buildStatusHistoryEntry,
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
+import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume-file-from-stored-url';
 
 const BATCH_SIZE = 20;
 
@@ -37,6 +39,22 @@ function findLatestFailedItemIndex(
   for (let index = items.length - 1; index >= 0; index -= 1) {
     const candidate = items[index];
     if (candidate.filename === filename && candidate.status === 'failed') {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function findLatestItemByFilenameIndex(
+  items: Array<{
+    filename?: string;
+    status?: 'success' | 'failed' | 'pending';
+    processedAt?: Date;
+  }>,
+  filename: string,
+): number {
+  for (let index = items.length - 1; index >= 0; index -= 1) {
+    if (items[index].filename === filename) {
       return index;
     }
   }
@@ -231,16 +249,11 @@ export async function POST(request: NextRequest) {
     for (const item of chunk) {
       try {
         const fileUrl = item.file?.url || '';
-        const targetUrl = fileUrl.startsWith('http')
-          ? fileUrl
-          : new URL(fileUrl, request.url).toString();
-        const fileResponse = await fetch(targetUrl);
-        if (!fileResponse.ok) {
-          throw new Error(`Failed to fetch stored file: ${fileResponse.status}`);
-        }
-
-        const arrayBuffer = await fileResponse.arrayBuffer();
-        const base64Data = Buffer.from(arrayBuffer).toString('base64');
+        const base64Data = await loadResumeFileAsBase64FromStoredUrl(
+          fileUrl,
+          request.url,
+          FileUrlMapping,
+        );
         const candidateData = await processResume(
           base64Data,
           decryptedAiProviders,
@@ -381,14 +394,28 @@ export async function POST(request: NextRequest) {
           batch.successCount += 1;
           batch.failureCount = Math.max(batch.failureCount - 1, 0);
         } else {
-          // Fallback for legacy/inconsistent batches where failed item entry is missing.
-          batch.items.push({
-            filename: item.filename,
-            candidateId: candidate._id as Types.ObjectId,
-            status: 'success',
-            message: 'Successfully retried and processed failed deferred file',
-            processedAt: new Date(),
-          });
+          // Prefer updating an existing latest row for this file to avoid duplicate log entries.
+          const existingItemIndex = findLatestItemByFilenameIndex(
+            batch.items,
+            item.filename,
+          );
+          if (existingItemIndex >= 0) {
+            batch.items[existingItemIndex].status = 'success';
+            batch.items[existingItemIndex].candidateId =
+              candidate._id as Types.ObjectId;
+            batch.items[existingItemIndex].message =
+              'Successfully retried and processed failed deferred file';
+            batch.items[existingItemIndex].processedAt = new Date();
+            batch.items[existingItemIndex].error = undefined;
+          } else {
+            batch.items.push({
+              filename: item.filename,
+              candidateId: candidate._id as Types.ObjectId,
+              status: 'success',
+              message: 'Successfully retried and processed failed deferred file',
+              processedAt: new Date(),
+            });
+          }
           batch.successCount += 1;
         }
         processed += 1;
@@ -412,15 +439,27 @@ export async function POST(request: NextRequest) {
           batch.items[failedItemIndex].processedAt = new Date();
           batch.items[failedItemIndex].message = 'Retry attempt failed';
         } else {
-          // Fallback for legacy/inconsistent batches where failed item entry is missing.
-          batch.items.push({
-            filename: item.filename,
-            status: 'failed',
-            error: error instanceof Error ? error.message : 'Unknown error',
-            processedAt: new Date(),
-            message: 'Retry attempt failed',
-          });
-          batch.failureCount += 1;
+          // Prefer updating an existing latest row for this file to avoid duplicate log entries.
+          const existingItemIndex = findLatestItemByFilenameIndex(
+            batch.items,
+            item.filename,
+          );
+          if (existingItemIndex >= 0) {
+            batch.items[existingItemIndex].status = 'failed';
+            batch.items[existingItemIndex].error =
+              error instanceof Error ? error.message : 'Unknown error';
+            batch.items[existingItemIndex].processedAt = new Date();
+            batch.items[existingItemIndex].message = 'Retry attempt failed';
+          } else {
+            batch.items.push({
+              filename: item.filename,
+              status: 'failed',
+              error: error instanceof Error ? error.message : 'Unknown error',
+              processedAt: new Date(),
+              message: 'Retry attempt failed',
+            });
+            batch.failureCount += 1;
+          }
         }
         failed += 1;
       }

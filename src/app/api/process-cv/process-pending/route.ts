@@ -8,6 +8,7 @@ import connectToDatabase, {
   Job,
   Organization,
   DuplicateCandidate,
+  FileUrlMapping,
 } from '@/lib/mongodb';
 import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
 import { AIProviders } from '@/lib/ai-providers/types';
@@ -23,6 +24,7 @@ import {
   buildStatusHistoryEntry,
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
+import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume-file-from-stored-url';
 
 const BATCH_SIZE = 20;
 
@@ -218,16 +220,11 @@ export async function POST(request: NextRequest) {
       for (const item of chunk) {
         try {
           const fileUrl = item.file?.url || '';
-          const targetUrl = fileUrl.startsWith('http')
-            ? fileUrl
-            : new URL(fileUrl, request.url).toString();
-          const fileResponse = await fetch(targetUrl);
-          if (!fileResponse.ok) {
-            throw new Error(`Failed to fetch stored file: ${fileResponse.status}`);
-          }
-
-          const arrayBuffer = await fileResponse.arrayBuffer();
-          const base64Data = Buffer.from(arrayBuffer).toString('base64');
+          const base64Data = await loadResumeFileAsBase64FromStoredUrl(
+            fileUrl,
+            request.url,
+            FileUrlMapping,
+          );
           const candidateData = await processResume(
             base64Data,
             decryptedAiProviders,
