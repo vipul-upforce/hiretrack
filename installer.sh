@@ -23,9 +23,12 @@ file_log() {
 # Loading Spinner
 start_spinner() {
     local msg="$1"
-    # Do not animate when stdout isn't a TTY (e.g., update-now triggered from app),
-    # otherwise every spinner frame gets written to logs.
-    if [ ! -t 1 ]; then
+    # Animated \r spinners become one line per frame in PM2/log files/CI. Use a single
+    # static line unless we are clearly on an interactive terminal.
+    if [ "${INSTALLER_SPINNER_MODE:-}" = "quiet" ] \
+        || [ ! -t 1 ] \
+        || [ -n "${CI:-}" ] \
+        || [ "${TERM:-}" = "dumb" ]; then
         SPINNER_PID=""
         echo -e "${BLUE}[ .. ]${RESET} $msg"
         return 0
@@ -1517,6 +1520,9 @@ check_update_and_install() {
     if [ "$FLAG1" = "manually" ]; then
         LOG_TO_FILE="true"
         echo "[$TIMESTAMP] [ INFO ] Manual update triggered." | tee -a "$MANUAL_LOG_FILE"
+        # Manual updates always tee to a log file; animated spinners still spam when stdout is a TTY
+        # (PM2, some process managers). Force a single static progress line for this path.
+        export INSTALLER_SPINNER_MODE=quiet
     fi
 
     log() {

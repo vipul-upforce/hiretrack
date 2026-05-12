@@ -101,7 +101,18 @@ interface ErrorResponse {
   error?: string; 
 }
 
-const LEAVE_PROCESSING_MESSAGE = 'Batch processing is in progress. Leaving this page will stop processing remaining CVs. Do you want to continue?';
+const LEAVE_PROCESSING_MESSAGE =
+  'Work is still running on the server (upload or deferred processing). Leaving now may leave things incomplete. Do you want to continue?';
+
+/** Tracks multipart upload chunks; optional phase when work runs in one server request (deferred / retry). */
+export type UploadProgressState = {
+  current: number;
+  total: number;
+  currentBatch: number;
+  totalBatches: number;
+  completedBatches: number;
+  phase?: 'client-upload' | 'server-deferred' | 'server-retry';
+};
 
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -126,13 +137,7 @@ export function CVBatchProcessor() {
   const [isPosting, setIsPosting] = useState(false);
   const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [isRetryingFailed, setIsRetryingFailed] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{
-    current: number;
-    total: number;
-    currentBatch: number;
-    totalBatches: number;
-    completedBatches: number;
-  } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgressState | null>(null);
   const { toast } = useToast();
   const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
@@ -143,8 +148,11 @@ export function CVBatchProcessor() {
     data: batches,
     error,
     isLoading,
+    refetch: refetchBatches,
   } = useFetchBatchesQuery(user ? (user?.organizationId as string) : '', {
     skip: !user?.organizationId,
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
   });
 
   useEffect(() => {
@@ -153,8 +161,10 @@ export function CVBatchProcessor() {
     }
   }, [batches]);
 
+  const isPipelineBusy = isPosting || isProcessingPending || isRetryingFailed;
+
   useEffect(() => {
-    if (!isPosting) {
+    if (!isPipelineBusy) {
       return undefined;
     }
 
@@ -226,7 +236,7 @@ export function CVBatchProcessor() {
       document.removeEventListener('click', handleDocumentClickCapture, true);
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [isPosting]);
+  }, [isPipelineBusy]);
 
   const selectableFiles = files.filter((file) => !file.skipped);
   const selectedCount = selectableFiles.filter((file) => file.selected).length;
@@ -350,7 +360,14 @@ export function CVBatchProcessor() {
   const handleProcessBatchInternal = async (
     operationsOverride?: BatchOperations,
   ) => {
-    if (files.length === 0 || processingRef.current) return;
+    if (
+      files.length === 0
+      || processingRef.current
+      || isProcessingPending
+      || isRetryingFailed
+    ) {
+      return;
+    }
 
     // Filter out skipped files
     const filesToProcess = files.filter((f) => !f.skipped);
@@ -427,9 +444,10 @@ export function CVBatchProcessor() {
         currentBatch: 0,
         totalBatches,
         completedBatches: 0,
+        phase: 'client-upload',
       });
 
-      const allResults: Batch[] = [];
+      const allResults: unknown[] = [];
       let processedCount = 0;
 
       // Process each chunk sequentially
@@ -442,6 +460,7 @@ export function CVBatchProcessor() {
           currentBatch: i + 1,
           totalBatches,
           completedBatches: i,
+          phase: 'client-upload',
         });
 
         const formData = new FormData();
@@ -480,6 +499,16 @@ export function CVBatchProcessor() {
         if (batchResult) {
           allResults.push(batchResult);
           processedCount += chunk.length;
+        }
+
+        // Prod: RTK invalidation + CDN-safe refetch — ensures deferred batches appear in the sidebar
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await refetchBatches();
+        } catch (refetchErr) {
+          logger.warn(
+            refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after chunk',
+          );
         }
       }
 
@@ -553,15 +582,37 @@ export function CVBatchProcessor() {
   };
 
   const handleProcessPendingNow = async (batchId?: string) => {
-    if (!user?.organizationId || isPosting || isProcessingPending) {
+    if (
+      !user?.organizationId
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+      || processingRef.current
+    ) {
       return;
     }
+    processingRef.current = true;
     setIsProcessingPending(true);
+    setUploadProgress({
+      current: 0,
+      total: 1,
+      currentBatch: 1,
+      totalBatches: 1,
+      completedBatches: 0,
+      phase: 'server-deferred',
+    });
     try {
       const response = await processPendingCvBatches({
         organizationId: user.organizationId as string,
         batchId,
       }).unwrap();
+      try {
+        await refetchBatches();
+      } catch (refetchErr) {
+        logger.warn(
+          refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after process-pending',
+        );
+      }
       toast({
         title: 'Pending Processing Triggered',
         description:
@@ -576,21 +627,45 @@ export function CVBatchProcessor() {
         description: error instanceof Error ? error.message : 'Request failed',
       });
     } finally {
+      processingRef.current = false;
       setIsProcessingPending(false);
+      setUploadProgress(null);
     }
   };
 
   const handleRetryFailedFile = async (batchId: string, filename?: string) => {
-    if (!user?.organizationId || isPosting || isProcessingPending || isRetryingFailed) {
+    if (
+      !user?.organizationId
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+      || processingRef.current
+    ) {
       return;
     }
+    processingRef.current = true;
     setIsRetryingFailed(true);
+    setUploadProgress({
+      current: 0,
+      total: 1,
+      currentBatch: 1,
+      totalBatches: 1,
+      completedBatches: 0,
+      phase: 'server-retry',
+    });
     try {
       const response = await retryFailedCvFiles({
         organizationId: user.organizationId as string,
         batchId,
         filename,
       }).unwrap();
+      try {
+        await refetchBatches();
+      } catch (refetchErr) {
+        logger.warn(
+          refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after retry',
+        );
+      }
       toast({
         title: 'Retry Completed',
         description:
@@ -609,12 +684,20 @@ export function CVBatchProcessor() {
         description: error instanceof Error ? error.message : 'Request failed',
       });
     } finally {
+      processingRef.current = false;
       setIsRetryingFailed(false);
+      setUploadProgress(null);
     }
   };
 
   const handleRetryAllFailedAcrossBatches = async (batchIds: string[]) => {
-    if (!user?.organizationId || isPosting || isProcessingPending || isRetryingFailed) {
+    if (
+      !user?.organizationId
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+      || processingRef.current
+    ) {
       return;
     }
 
@@ -627,7 +710,16 @@ export function CVBatchProcessor() {
       return;
     }
 
+    processingRef.current = true;
     setIsRetryingFailed(true);
+    setUploadProgress({
+      current: 0,
+      total: 1,
+      currentBatch: 1,
+      totalBatches: 1,
+      completedBatches: 0,
+      phase: 'server-retry',
+    });
     let retried = 0;
     let processed = 0;
     let failed = 0;
@@ -644,6 +736,13 @@ export function CVBatchProcessor() {
         failed += response.failed ?? 0;
       }
 
+      try {
+        await refetchBatches();
+      } catch (refetchErr) {
+        logger.warn(
+          refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after retry-all',
+        );
+      }
       toast({
         title: 'Retry All Completed',
         description:
@@ -658,12 +757,22 @@ export function CVBatchProcessor() {
         description: error instanceof Error ? error.message : 'Request failed',
       });
     } finally {
+      processingRef.current = false;
       setIsRetryingFailed(false);
+      setUploadProgress(null);
     }
   };
 
   const handleProcessBatch = () => {
-    if (files.length === 0 || processingRef.current) return;
+    if (
+      files.length === 0
+      || processingRef.current
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+    ) {
+      return;
+    }
     const message = buildConfirmationMessage();
     setConfirmPayload({
       total: selectableFiles.length,
@@ -675,8 +784,9 @@ export function CVBatchProcessor() {
 
   return (
     <div className="flex min-h-full flex-col gap-8">
+      {error && <p className="text-sm text-destructive">Error fetching batches.</p>}
       <FileUploader
-        isProcessing={isPosting}
+        isProcessing={isPipelineBusy}
         onFilesAdded={handleFilesAdded}
         onFilesRejected={handleFilesRejected}
         maxPdfPages={evaluationConfigData?.evaluationConfig?.maxPdfPages ?? 0}
@@ -684,7 +794,7 @@ export function CVBatchProcessor() {
 
       <CurrentBatchPanel
         files={files}
-        isPosting={isPosting}
+        isPipelineBusy={isPipelineBusy}
         processingMode={operations.processingMode}
         hasSelectableFiles={hasSelectableFiles}
         selectedCount={selectedCount}
@@ -704,10 +814,10 @@ export function CVBatchProcessor() {
         onToggleSelect={toggleFileSelection}
       />
 
-      {error && <p>Error fetching batches: </p>}
       <CompletedBatches
         batches={completedBatches}
         isLoading={isLoading}
+        isPipelineBusy={isPipelineBusy}
         isProcessingPending={isProcessingPending}
         onProcessPendingBatch={(batchId) => handleProcessPendingNow(batchId)}
         onProcessAllPending={() => handleProcessPendingNow()}
@@ -726,7 +836,7 @@ export function CVBatchProcessor() {
           setOperations(nextOperations);
           handleProcessBatchInternal(nextOperations);
         }}
-        isPosting={isPosting}
+        isPipelineBusy={isPipelineBusy}
         organizationId={(user?.organizationId as string) || ''}
         userRole={user?.role || ''}
       />
@@ -760,8 +870,9 @@ export function CVBatchProcessor() {
           </DialogHeader>
           <div className="space-y-3 px-6 py-2 text-sm text-muted-foreground">
             <p>
-              Batch processing is in progress. If you leave this page now, the
-              remaining CVs will not be processed.
+              An upload or server job (deferred processing or retry) may still be running.
+              Leaving might interrupt your browser session; the server may continue, but you
+              will not see live results here.
             </p>
             <p>Do you still want to continue?</p>
           </div>

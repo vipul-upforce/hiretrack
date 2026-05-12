@@ -31,6 +31,16 @@ import {
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
 
+/** Avoid stale batch lists behind CDNs / reverse proxies (prod UI not updating after upload). */
+const JSON_NO_STORE_HEADERS = {
+  'Cache-Control': 'private, no-store, must-revalidate',
+} as const;
+
+export const dynamic = 'force-dynamic';
+
+/** Long-running multipart uploads + storage (S3/Cloudinary). Ignored outside Vercel. */
+export const maxDuration = 300;
+
 // Maximum file size limit (10MB) to prevent body size limit errors
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
 
@@ -656,16 +666,22 @@ export async function POST(request: NextRequest) {
       cvBatchInfo.status = 'pending';
       await cvBatchInfo.save();
 
-      return NextResponse.json({
-        message: 'Files stored for deferred processing',
-        batchId: cvBatchInfo._id,
-        summary: {
-          total: cvBatchInfo.totalFiles,
-          pending: cvBatchInfo.pendingItems.length,
-          failed: cvBatchInfo.failureCount,
-          skipped: skippedFiles.length,
+      const savedBatch = await CVBatch.findById(cvBatchInfo._id).lean();
+
+      return NextResponse.json(
+        {
+          message: 'Files stored for deferred processing',
+          batchId: cvBatchInfo._id,
+          batch: savedBatch,
+          summary: {
+            total: cvBatchInfo.totalFiles,
+            pending: cvBatchInfo.pendingItems.length,
+            failed: cvBatchInfo.failureCount,
+            skipped: skippedFiles.length,
+          },
         },
-      });
+        { status: 200, headers: JSON_NO_STORE_HEADERS },
+      );
     }
 
     const results: ProcessResult[] = [];
@@ -1039,7 +1055,10 @@ export async function GET(request: NextRequest) {
   try {
     const batches = await CVBatch.find({ organizationId }).lean();
 
-    return NextResponse.json(batches, { status: 200 });
+    return NextResponse.json(batches, {
+      status: 200,
+      headers: JSON_NO_STORE_HEADERS,
+    });
   } catch (error) {
     logger.error({ error, url: request.url }, 'Error fetching CV batches');
     return NextResponse.json(

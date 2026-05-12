@@ -27,7 +27,8 @@ interface BatchActionsDialogProps {
   operations: BatchOperations;
   onOperationsChange: (operations: BatchOperations) => void;
   onApplyAndProcess: (operations: BatchOperations) => void;
-  isPosting: boolean;
+  /** Disables actions while upload, deferred processing, or retry is in flight */
+  isPipelineBusy: boolean;
   organizationId: string;
   userRole: string;
 }
@@ -38,7 +39,7 @@ export function BatchActionsDialog({
   operations,
   onOperationsChange,
   onApplyAndProcess,
-  isPosting,
+  isPipelineBusy,
   organizationId,
   userRole,
 }: BatchActionsDialogProps) {
@@ -84,7 +85,7 @@ export function BatchActionsDialog({
           <BatchOperationsPanel
             value={draft}
             onChange={setDraft}
-            disabled={isPosting}
+            disabled={isPipelineBusy}
             organizationId={organizationId}
             userRole={userRole}
             variant="toggles"
@@ -99,7 +100,7 @@ export function BatchActionsDialog({
           <BatchOperationsPanel
             value={draft}
             onChange={setDraft}
-            disabled={isPosting}
+            disabled={isPipelineBusy}
             organizationId={organizationId}
             userRole={userRole}
             variant="sections"
@@ -120,7 +121,7 @@ export function BatchActionsDialog({
               type="button"
               variant="info"
               onClick={handleOk}
-              disabled={isPosting}
+              disabled={isPipelineBusy}
               className="min-w-[100px] font-medium shadow-sm transition-all hover:shadow-md"
             >
               OK
@@ -129,7 +130,7 @@ export function BatchActionsDialog({
               type="button"
               variant="primary"
               onClick={handleApplyAndProcess}
-              disabled={isPosting}
+              disabled={isPipelineBusy}
               className="min-w-[140px] font-medium shadow-sm transition-all hover:shadow-md"
             >
               Apply &amp; Process

@@ -215,12 +215,17 @@ export const orgApi = baseApi.injectEndpoints({
     }),
     // New endpoint to fetch batches
     fetchBatches: builder.query<Batch[], string>({
-      query: (organizationId) => `/process-cv?organizationId=${organizationId}`,
-      providesTags: ['Batches'], // Tag for refetching
+      query: (organizationId) => ({
+        url: `/process-cv?organizationId=${organizationId}`,
+        method: 'GET',
+      }),
+      providesTags: (_result, _error, organizationId) => [
+        { type: 'Batches' as const, id: organizationId },
+      ],
     }),
-    // New endpoint to post a batch
+    // New endpoint to post a batch (response shape varies: immediate summary vs deferred { batch, summary })
     postBatch: builder.mutation<
-      Batch,
+      unknown,
       { formData: FormData; organizationId: string }
     >({
       query: ({ formData, organizationId }) => ({
@@ -228,7 +233,9 @@ export const orgApi = baseApi.injectEndpoints({
         method: 'POST',
         body: formData,
       }),
-      invalidatesTags: ['Batches'], // Invalidate Batches tag to refetch
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: 'Batches', id: organizationId },
+      ],
     }),
     processPendingCvBatches: builder.mutation<
       { message: string; processedBatches: number },
@@ -238,7 +245,9 @@ export const orgApi = baseApi.injectEndpoints({
         url: `/process-cv/process-pending?organizationId=${organizationId}${batchId ? `&batchId=${batchId}` : ''}`,
         method: 'POST',
       }),
-      invalidatesTags: ['Batches'],
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: 'Batches', id: organizationId },
+      ],
     }),
     retryFailedCvFiles: builder.mutation<
       { message: string; retried: number; processed: number; failed: number },
@@ -248,7 +257,9 @@ export const orgApi = baseApi.injectEndpoints({
         url: `/process-cv/retry-failed?organizationId=${organizationId}&batchId=${batchId}${filename ? `&filename=${encodeURIComponent(filename)}` : ''}`,
         method: 'POST',
       }),
-      invalidatesTags: ['Batches'],
+      invalidatesTags: (_result, _error, { organizationId }) => [
+        { type: 'Batches', id: organizationId },
+      ],
     }),
     fetchOrgTags: builder.query<{ tags: ITag[] }, { organizationId: string }>({
       query: ({ organizationId }) => ({

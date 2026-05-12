@@ -7,33 +7,24 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
-  Cross,
   Loader2,
   PlayCircle,
   Settings2,
-  Trash2,
   X,
 } from 'lucide-react';
 import { FileList } from './file-list';
-import type { FileWithPreview } from './cv-batch-processor';
-
-interface UploadProgress {
-  current: number;
-  total: number;
-  currentBatch: number;
-  totalBatches: number;
-  completedBatches: number;
-}
+import type { FileWithPreview, UploadProgressState } from './cv-batch-processor';
 
 interface CurrentBatchPanelProps {
   files: FileWithPreview[];
-  isPosting: boolean;
+  /** True while multipart upload, deferred batch processing, or failed-file retry is running */
+  isPipelineBusy: boolean;
   hasSelectableFiles: boolean;
   selectedCount: number;
   selectableCount: number;
   batchSize: number;
   allSelected: boolean;
-  uploadProgress: UploadProgress | null;
+  uploadProgress: UploadProgressState | null;
   onOpenActions: () => void;
   processingMode: 'immediate' | 'deferred';
   onProcessingModeChange: (mode: 'immediate' | 'deferred') => void;
@@ -47,7 +38,7 @@ interface CurrentBatchPanelProps {
 
 export function CurrentBatchPanel({
   files,
-  isPosting,
+  isPipelineBusy,
   hasSelectableFiles,
   selectedCount,
   selectableCount,
@@ -64,16 +55,24 @@ export function CurrentBatchPanel({
   onRemoveFile,
   onToggleSelect,
 }: CurrentBatchPanelProps) {
+  const isServerPhase =
+    uploadProgress?.phase === 'server-deferred'
+    || uploadProgress?.phase === 'server-retry';
+  const isClientUploadPhase =
+    uploadProgress?.phase === 'client-upload'
+    || (!uploadProgress?.phase && uploadProgress && !isServerPhase);
+
   if (files.length === 0) {
     return null;
   }
 
-  const fileProgressPercent = uploadProgress
-    ? Math.min(
-      100,
-      Math.round((uploadProgress.current / Math.max(uploadProgress.total, 1)) * 100),
-    )
-    : 0;
+  const fileProgressPercent =
+    uploadProgress && !isServerPhase
+      ? Math.min(
+        100,
+        Math.round((uploadProgress.current / Math.max(uploadProgress.total, 1)) * 100),
+      )
+      : 0;
   const estimatedBatchCount = hasSelectableFiles
     ? Math.ceil(selectableCount / Math.max(batchSize, 1))
     : 0;
@@ -103,7 +102,7 @@ export function CurrentBatchPanel({
               {estimatedBatchCount === 1 ? '' : 'es'}
             </p>
           )}
-          {uploadProgress && (
+          {uploadProgress && isClientUploadPhase && (
             <div className="mt-2 space-y-3 text-sm text-muted-foreground">
               <p className="flex items-center gap-2">
                 Batches done:
@@ -112,11 +111,6 @@ export function CurrentBatchPanel({
                 /
                 {uploadProgress.totalBatches}
               </p>
-              {/* <Progress
-                value={batchProgressPercent}
-                className="h-2 w-full max-w-xs"
-                aria-label="Batch processing progress"
-              /> */}
               <p className="flex items-center gap-2">
                 Files processed:
                 {' '}
@@ -124,16 +118,12 @@ export function CurrentBatchPanel({
                 /
                 {uploadProgress.total}
                 {' '}
-                ({fileProgressPercent}%)
+                (
+                {fileProgressPercent}
+                %)
               </p>
-              {/* <Progress
-                value={fileProgressPercent}
-                className="h-2 w-full max-w-xs"
-                aria-label="CV processing progress"
-              /> */}
             </div>
           )}
-
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -141,7 +131,7 @@ export function CurrentBatchPanel({
             <Switch
               id="deferred-processing"
               checked={processingMode === 'deferred'}
-              disabled={isPosting}
+              disabled={isPipelineBusy}
               onCheckedChange={(checked) =>
                 onProcessingModeChange(checked ? 'deferred' : 'immediate')
               }
@@ -156,7 +146,7 @@ export function CurrentBatchPanel({
                 <TooltipTrigger asChild>
                   <Button
                     onClick={onOpenActions}
-                    disabled={isPosting}
+                    disabled={isPipelineBusy}
                     variant="outline"
                     size="icon"
                     aria-label="Batch actions"
@@ -172,12 +162,12 @@ export function CurrentBatchPanel({
                 <TooltipTrigger asChild>
                   <Button
                     onClick={onProcessBatch}
-                    disabled={files.length === 0 || isPosting}
+                    disabled={files.length === 0 || isPipelineBusy}
                     variant="primary"
                     size="icon"
                     aria-label="Process batch"
                   >
-                    {isPosting ? (
+                    {isPipelineBusy ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <PlayCircle className="h-4 w-4" />
@@ -186,10 +176,10 @@ export function CurrentBatchPanel({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
-                    {isPosting && uploadProgress
-                      ? `Processing ${uploadProgress.completedBatches}/${uploadProgress.totalBatches} batches...`
-                      : isPosting
-                        ? 'Processing...'
+                    {isPipelineBusy && uploadProgress?.phase === 'client-upload'
+                      ? `Uploading batch ${uploadProgress.completedBatches}/${uploadProgress.totalBatches}…`
+                      : isPipelineBusy
+                        ? 'Working…'
                         : 'Process batch'}
                   </p>
                 </TooltipContent>
@@ -207,10 +197,10 @@ export function CurrentBatchPanel({
 
       {hasSelectableFiles && (
         <div className="flex w-full items-center justify-between">
-          <div className='flex items-center gap-2'>
+          <div className="flex items-center gap-2">
             <Checkbox
               checked={allSelected ? true : selectedCount > 0 ? 'indeterminate' : false}
-              disabled={isPosting}
+              disabled={isPipelineBusy}
               onCheckedChange={() => {
                 if (allSelected || selectedCount === 0) {
                   onToggleSelectAll();
@@ -234,9 +224,9 @@ export function CurrentBatchPanel({
               <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
                   <Button
-                    className='p-0 w-5 h-5 mr-[14px]'
+                    className="mr-[14px] h-5 w-5 p-0"
                     onClick={onRemoveSelected}
-                    disabled={isPosting}
+                    disabled={isPipelineBusy}
                     variant="destructive"
                     size="default"
                     aria-label="Remove selected files"
@@ -255,7 +245,7 @@ export function CurrentBatchPanel({
 
 
       <FileList
-        isProcessing={isPosting}
+        isProcessing={isPipelineBusy}
         files={files}
         onRemove={onRemoveFile}
         onToggleSelect={onToggleSelect}

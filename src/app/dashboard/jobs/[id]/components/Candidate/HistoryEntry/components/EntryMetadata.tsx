@@ -28,7 +28,7 @@ export function EntryMetadata({
               <EyeOffIcon className="h-3 w-3 text-gray-400 dark:text-gray-500" />
             </TooltipTrigger>
             <TooltipContent className="bg-gray-900/95 dark:bg-black/95">
-              <p className="text-xs">Private remark</p>
+              <p className="text-xs">Remark is hidden from Interviewer</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
