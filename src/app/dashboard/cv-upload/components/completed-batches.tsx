@@ -1,9 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, EyeOff, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, EyeOff, Loader2, PlayCircle, RotateCcw, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table,
@@ -20,6 +28,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { useFetchJobByIdQuery } from '@/lib/features/job/jobApi';
 import type { Batch } from './cv-batch-processor';
 
 function isDeferredPendingBatch(batch: Batch): boolean {
@@ -117,6 +126,136 @@ function BatchFileListEntry({
         <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">{error}</p>
       ) : null}
     </div>
+  );
+}
+
+function batchHasActionSummary(snap: Batch['operationsSnapshot'] | undefined): boolean {
+  if (!snap) {
+    return false;
+  }
+  if (snap.assignJob && !!snap.jobId?.trim()) {
+    return true;
+  }
+  if (snap.assignJob && snap.updateStatus && !!snap.status?.trim()) {
+    return true;
+  }
+  if (snap.addRemark && !!snap.remark?.trim()) {
+    return true;
+  }
+  return false;
+}
+
+/** Inner panel: job / status / remark (popover or hover surface). */
+function BatchActionsPopoverPanel({ batch }: { batch: Batch }) {
+  const snap = batch.operationsSnapshot;
+  const jobId = snap?.assignJob && snap.jobId?.trim() ? snap.jobId.trim() : '';
+  const { data: job, isFetching } = useFetchJobByIdQuery(jobId, {
+    skip: !jobId,
+  });
+
+  if (!snap || !batchHasActionSummary(snap)) {
+    return null;
+  }
+
+  const showJob = !!(snap.assignJob && snap.jobId?.trim());
+  const showStatus = !!(snap.assignJob && snap.updateStatus && snap.status?.trim());
+  const showRemark = !!(snap.addRemark && snap.remark?.trim());
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Saved batch actions
+      </p>
+      <dl className="space-y-3 text-sm">
+        {showJob ? (
+          <div className="space-y-1">
+            <dt className="text-xs text-muted-foreground">Job to assign</dt>
+            <dd className="break-words font-medium leading-snug text-foreground">
+              {isFetching ? 'Loading…' : (job?.title?.trim() || jobId)}
+            </dd>
+          </div>
+        ) : null}
+        {showStatus ? (
+          <div className="space-y-1">
+            <dt className="text-xs text-muted-foreground">Status</dt>
+            <dd className="capitalize leading-snug text-foreground">{snap.status}</dd>
+          </div>
+        ) : null}
+        {showRemark ? (
+          <div className="space-y-1">
+            <dt className="text-xs text-muted-foreground">Remark</dt>
+            <dd className="max-h-52 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-border/50 bg-muted/30 px-2.5 py-2 text-xs leading-relaxed text-foreground">
+              {snap.remark}
+            </dd>
+          </div>
+        ) : null}
+      </dl>
+    </div>
+  );
+}
+
+/**
+ * Compact trigger + popover. Opens on hover (with delay before close so the pointer can move into the panel).
+ * Tap/click toggles for touch devices.
+ */
+function BatchActionsPopover({ batch }: { batch: Batch }) {
+  const [open, setOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const openPopover = useCallback(() => {
+    clearCloseTimer();
+    setOpen(true);
+  }, [clearCloseTimer]);
+
+  const scheduleClose = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+    }, 240);
+  }, [clearCloseTimer]);
+
+  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
+
+  if (!batchHasActionSummary(batch.operationsSnapshot)) {
+    return null;
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+          aria-label="View saved batch actions: job, status, remark"
+          onPointerDown={(event) => event.stopPropagation()}
+          onMouseEnter={openPopover}
+          onMouseLeave={scheduleClose}
+        >
+          <ScrollText className="h-3.5 w-3.5" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[min(22rem,calc(100vw-2rem))] border-border/80 p-4 shadow-lg"
+        align="start"
+        side="bottom"
+        sideOffset={6}
+        onMouseEnter={openPopover}
+        onMouseLeave={scheduleClose}
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
+        <BatchActionsPopoverPanel batch={batch} />
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -364,37 +503,44 @@ export function CompletedBatches({
                         value={batch._id}
                         className="border-b border-border/50 px-2 last:border-b-0"
                       >
-                        <AccordionTrigger className="items-start gap-2 py-3 hover:no-underline [&[data-state=open]]:pb-2">
-                          <div className="min-w-0 flex-1 text-left">
-                            <p className="text-xs font-medium text-foreground">
-                              {date.toLocaleDateString()}
-                              {' '}
-                              ·
-                              {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {fileRows.length || batch.totalFiles}
-                              {' '}
-                              file
-                              {(fileRows.length || batch.totalFiles) === 1 ? '' : 's'}
-                            </p>
+                        <div className="flex w-full items-start gap-1">
+                          <div className="min-w-0 flex-1">
+                            <AccordionTrigger className="min-h-11 w-full items-start py-3 hover:no-underline [&[data-state=open]]:pb-2">
+                            <div className="min-w-0 flex-1 text-left">
+                              <p className="text-xs font-medium text-foreground">
+                                {date.toLocaleDateString()}
+                                {' '}
+                                ·
+                                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                {fileRows.length || batch.totalFiles}
+                                {' '}
+                                file
+                                {(fileRows.length || batch.totalFiles) === 1 ? '' : 's'}
+                              </p>
+                            </div>
+                            </AccordionTrigger>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            disabled={isPipelineBusy}
-                            onPointerDown={(event) => event.stopPropagation()}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              event.preventDefault();
-                              onProcessPendingBatch(batch._id);
-                            }}
-                          >
-                            Process
-                          </Button>
-                        </AccordionTrigger>
+                          <div className="flex shrink-0 items-center gap-0.5 py-2">
+                            <BatchActionsPopover batch={batch} />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="shrink-0"
+                              disabled={isPipelineBusy}
+                              onPointerDown={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                onProcessPendingBatch(batch._id);
+                              }}
+                            >
+                              Process
+                            </Button>
+                          </div>
+                        </div>
                         <AccordionContent className="pb-3 pt-0">
                           <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                             {fileRows.length === 0 ? (
@@ -524,6 +670,9 @@ export function CompletedBatches({
                       <TableHead className="text-right">Success</TableHead>
                       <TableHead className="text-right">Failed</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="w-14 text-center">
+                        <span className="sr-only">Saved batch actions</span>
+                      </TableHead>
                       <TableHead>Details</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -549,6 +698,11 @@ export function CompletedBatches({
                             <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(batch.status)}`}>
                               {batch.status}
                             </span>
+                          </TableCell>
+                          <TableCell className="text-center align-middle">
+                            <div className="inline-flex justify-center">
+                              <BatchActionsPopover batch={batch} />
+                            </div>
                           </TableCell>
                           <TableCell>
                             {batch.items.length > 0 ? (

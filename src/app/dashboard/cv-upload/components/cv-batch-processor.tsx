@@ -69,6 +69,18 @@ export type ProcessedItem = {
   _id: string;
 };
 
+/** Persisted batch actions (assign job, status, remark) — same shape as `ICVBatch` / API. */
+export type CvBatchOperationsSnapshot = {
+  assignJob?: boolean;
+  jobId?: string;
+  updateStatus?: boolean;
+  status?: string;
+  addRemark?: boolean;
+  remark?: string;
+  isRemarkPrivate?: boolean;
+  remarkRating?: number | null;
+};
+
 export type Batch = {
   _id: string;
   organizationId: string;
@@ -77,6 +89,7 @@ export type Batch = {
   failureCount: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   processingMode?: 'immediate' | 'deferred';
+  operationsSnapshot?: CvBatchOperationsSnapshot;
   items: ProcessedItem[];
   pendingItems?: Array<{
     filename: string;

@@ -103,6 +103,17 @@ export interface PendingBatchItem {
   };
 }
 
+export interface CvBatchOperationsSnapshot {
+  assignJob?: boolean;
+  jobId?: string;
+  updateStatus?: boolean;
+  status?: string;
+  addRemark?: boolean;
+  remark?: string;
+  isRemarkPrivate?: boolean;
+  remarkRating?: number | null;
+}
+
 export interface Batch {
   _id: string;
   organizationId: string;
@@ -111,6 +122,7 @@ export interface Batch {
   failureCount: number;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   processingMode?: 'immediate' | 'deferred';
+  operationsSnapshot?: CvBatchOperationsSnapshot;
   items: ProcessedItem[];
   pendingItems?: PendingBatchItem[];
   startedAt: string;
