@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { FileRejection } from 'react-dropzone';
 import {
   usePostBatchMutation,
@@ -15,6 +15,8 @@ import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useGetEvaluationConfigsQuery } from '@/lib/features/settings/aiApi';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +31,7 @@ import {
   BatchActionsDialog,
   ConfirmProcessingDialog,
   ConfirmRemoveSelectedDialog,
+  type ConfirmProcessingPayload,
 } from './batch-processing-dialogs';
 import { CurrentBatchPanel } from './current-batch-panel';
 
@@ -138,11 +141,7 @@ export function CVBatchProcessor() {
   const [isRemoveSelectedConfirmOpen, setIsRemoveSelectedConfirmOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
   const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
-  const [confirmPayload, setConfirmPayload] = useState<{
-    total: number;
-    selected: number;
-    message: string;
-  } | null>(null);
+  const [confirmPayload, setConfirmPayload] = useState<ConfirmProcessingPayload | null>(null);
   const processingRef = useRef(false);
   const [postBatch] = usePostBatchMutation();
   const [processPendingCvBatches] = useProcessPendingCvBatchesMutation();
@@ -175,6 +174,14 @@ export function CVBatchProcessor() {
   }, [batches]);
 
   const isPipelineBusy = isPosting || isProcessingPending || isRetryingFailed;
+
+  const pendingDeferredBatchCount = useMemo(
+    () =>
+      completedBatches.filter(
+        (b) => b.status === 'pending' && b.processingMode === 'deferred',
+      ).length,
+    [completedBatches],
+  );
 
   useEffect(() => {
     if (!isPipelineBusy) {
@@ -556,10 +563,10 @@ export function CVBatchProcessor() {
     }
   };
 
-  const buildConfirmationMessage = () => {
-    const hasAssign = operations.assignJob;
-    const hasStatus = operations.assignJob && operations.updateStatus;
-    const hasRemark = operations.addRemark;
+  const buildConfirmationMessage = (ops: BatchOperations) => {
+    const hasAssign = ops.assignJob;
+    const hasStatus = ops.assignJob && ops.updateStatus;
+    const hasRemark = ops.addRemark;
     const enabledActions = [
       hasAssign ? 'Assign Job' : null,
       hasStatus ? 'Update Status' : null,
@@ -572,7 +579,7 @@ export function CVBatchProcessor() {
     if (enabledActions.length === 0) {
       return totalSelectable === 0
         ? 'This will process the batch and create candidates for all uploaded CVs.'
-        : operations.processingMode === 'deferred'
+        : ops.processingMode === 'deferred'
           ? 'This will store all uploaded CVs for later processing. No extra actions are selected.'
           : 'This will process the batch and create candidates for all uploaded CVs. No extra actions are selected.';
     }
@@ -580,18 +587,18 @@ export function CVBatchProcessor() {
     if (selectedSelectable === 0) {
       return `No CVs are selected, so these actions won’t be applied: ${enabledActions.join(
         ', ',
-      )}. The batch will only ${operations.processingMode === 'deferred' ? 'store CVs for later' : 'create candidates'}.`;
+      )}. The batch will only ${ops.processingMode === 'deferred' ? 'store CVs for later' : 'create candidates'}.`;
     }
 
     if (selectedSelectable === totalSelectable) {
-      return `${operations.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
+      return `${ops.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
         ', ',
-      )}) will be applied to all ${totalSelectable} selected CVs ${operations.processingMode === 'deferred' ? 'when processing later' : ''}.`;
+      )}) will be applied to all ${totalSelectable} selected CVs ${ops.processingMode === 'deferred' ? 'when processing later' : ''}.`;
     }
 
-    return `${operations.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
+    return `${ops.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
       ', ',
-    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only ${operations.processingMode === 'deferred' ? 'store CVs for later processing' : 'create candidates'}.`;
+    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only ${ops.processingMode === 'deferred' ? 'store CVs for later processing' : 'create candidates'}.`;
   };
 
   const handleProcessPendingNow = async (batchId?: string) => {
@@ -786,59 +793,88 @@ export function CVBatchProcessor() {
     ) {
       return;
     }
-    const message = buildConfirmationMessage();
+    const message = buildConfirmationMessage(operations);
     setConfirmPayload({
       total: selectableFiles.length,
       selected: selectedCount,
       message,
+      operationsForRun: { ...operations },
     });
     setIsConfirmOpen(true);
   };
 
   return (
-    <div className="flex min-h-full flex-col gap-8">
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
       {error && <p className="text-sm text-destructive">Error fetching batches.</p>}
-      <FileUploader
-        isProcessing={isPipelineBusy}
-        onFilesAdded={handleFilesAdded}
-        onFilesRejected={handleFilesRejected}
-        maxPdfPages={evaluationConfigData?.evaluationConfig?.maxPdfPages ?? 0}
-      />
+      <Tabs defaultValue="upload" className="flex min-h-0 w-full flex-1 flex-col gap-3">
+        <div className="w-fit max-w-full shrink-0 rounded-lg border border-border/50 bg-muted/25 p-1 shadow-sm dark:bg-muted/20">
+          <TabsList className="h-8 w-fit gap-1 border-0 bg-transparent p-0 shadow-none">
+            <TabsTrigger value="upload" className="gap-2 px-4">
+              Upload
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2 px-4">
+              History
+              {pendingDeferredBatchCount > 0 ? (
+                <Badge
+                  variant="secondary"
+                  className="h-5 min-w-5 rounded-full px-1.5 text-[10px] font-semibold tabular-nums"
+                >
+                  {pendingDeferredBatchCount}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
-      <CurrentBatchPanel
-        files={files}
-        isPipelineBusy={isPipelineBusy}
-        processingMode={operations.processingMode}
-        hasSelectableFiles={hasSelectableFiles}
-        selectedCount={selectedCount}
-        selectableCount={selectableFiles.length}
-        batchSize={BATCH_SIZE}
-        allSelected={allSelected}
-        uploadProgress={uploadProgress}
-        onOpenActions={() => setIsActionsOpen(true)}
-        onProcessingModeChange={(mode) =>
-          setOperations((prev) => ({ ...prev, processingMode: mode }))
-        }
-        onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
-        onInvertSelection={invertSelection}
-        onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
-        onProcessBatch={handleProcessBatch}
-        onRemoveFile={handleRemoveFile}
-        onToggleSelect={toggleFileSelection}
-      />
+        <TabsContent value="upload" className="mt-0 flex min-h-0 flex-col gap-8 focus-visible:ring-0 focus-visible:ring-offset-0">
+          <FileUploader
+            isProcessing={isPipelineBusy}
+            onFilesAdded={handleFilesAdded}
+            onFilesRejected={handleFilesRejected}
+            maxPdfPages={evaluationConfigData?.evaluationConfig?.maxPdfPages ?? 0}
+          />
 
-      <CompletedBatches
-        batches={completedBatches}
-        isLoading={isLoading}
-        isPipelineBusy={isPipelineBusy}
-        isProcessingPending={isProcessingPending}
-        onProcessPendingBatch={(batchId) => handleProcessPendingNow(batchId)}
-        onProcessAllPending={() => handleProcessPendingNow()}
-        onRetryFailedFile={handleRetryFailedFile}
-        onRetryAllFailedInBatch={(batchId) => handleRetryFailedFile(batchId)}
-        onRetryAllFailedAcrossBatches={handleRetryAllFailedAcrossBatches}
-        isRetryingFailed={isRetryingFailed}
-      />
+          <CurrentBatchPanel
+            files={files}
+            isPipelineBusy={isPipelineBusy}
+            processingMode={operations.processingMode}
+            hasSelectableFiles={hasSelectableFiles}
+            selectedCount={selectedCount}
+            selectableCount={selectableFiles.length}
+            batchSize={BATCH_SIZE}
+            allSelected={allSelected}
+            uploadProgress={uploadProgress}
+            onOpenActions={() => setIsActionsOpen(true)}
+            onProcessingModeChange={(mode) =>
+              setOperations((prev) => ({ ...prev, processingMode: mode }))
+            }
+            onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
+            onInvertSelection={invertSelection}
+            onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
+            onProcessBatch={handleProcessBatch}
+            onRemoveFile={handleRemoveFile}
+            onToggleSelect={toggleFileSelection}
+          />
+        </TabsContent>
+
+        <TabsContent
+          value="history"
+          className="mt-0 min-h-0 flex-1 overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
+          <CompletedBatches
+            batches={completedBatches}
+            isLoading={isLoading}
+            isPipelineBusy={isPipelineBusy}
+            isProcessingPending={isProcessingPending}
+            onProcessPendingBatch={(batchId) => handleProcessPendingNow(batchId)}
+            onProcessAllPending={() => handleProcessPendingNow()}
+            onRetryFailedFile={handleRetryFailedFile}
+            onRetryAllFailedInBatch={(batchId) => handleRetryFailedFile(batchId)}
+            onRetryAllFailedAcrossBatches={handleRetryAllFailedAcrossBatches}
+            isRetryingFailed={isRetryingFailed}
+          />
+        </TabsContent>
+      </Tabs>
 
       <BatchActionsDialog
         open={isActionsOpen}
@@ -846,8 +882,13 @@ export function CVBatchProcessor() {
         operations={operations}
         onOperationsChange={setOperations}
         onApplyAndProcess={(nextOperations) => {
-          setOperations(nextOperations);
-          handleProcessBatchInternal(nextOperations);
+          setConfirmPayload({
+            total: selectableFiles.length,
+            selected: selectedCount,
+            message: buildConfirmationMessage(nextOperations),
+            operationsForRun: { ...nextOperations },
+          });
+          setIsConfirmOpen(true);
         }}
         isPipelineBusy={isPipelineBusy}
         organizationId={(user?.organizationId as string) || ''}
@@ -860,7 +901,10 @@ export function CVBatchProcessor() {
         payload={confirmPayload}
         onConfirm={() => {
           setIsConfirmOpen(false);
-          handleProcessBatchInternal();
+          const ops = confirmPayload?.operationsForRun;
+          if (ops) {
+            void handleProcessBatchInternal(ops);
+          }
         }}
       />
 

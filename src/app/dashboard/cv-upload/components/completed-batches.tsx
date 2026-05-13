@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, EyeOff, Loader2, PlayCircle, RotateCcw, ScrollText } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileStack, Loader2, PlayCircle, RotateCcw, ScrollText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -49,37 +49,6 @@ interface CompletedBatchesProps {
   onRetryAllFailedInBatch: (batchId: string) => void;
   onRetryAllFailedAcrossBatches: (batchIds: string[]) => void;
   isRetryingFailed: boolean;
-}
-
-function AnimatedPendingBadge({
-  count,
-  delay = 2500,
-}: {
-  count: number;
-  delay?: number;
-}) {
-  const [showText, setShowText] = useState(true);
-
-  useEffect(() => {
-    setShowText(true);
-    const timeout = window.setTimeout(() => {
-      setShowText(false);
-    }, delay);
-
-    return () => window.clearTimeout(timeout);
-  }, [count, delay]);
-
-  return (
-    <span className="absolute -right-2 -top-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold leading-4 text-amber-700 shadow-sm dark:bg-amber-900/40 dark:text-amber-300">
-      <span>{count}</span>
-      <span
-        className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-out ${showText ? 'ml-1 max-w-16 opacity-100' : 'ml-0 max-w-0 opacity-0'
-          }`}
-      >
-        pending
-      </span>
-    </span>
-  );
 }
 
 function getBatchDate(batch: Batch): Date {
@@ -282,6 +251,153 @@ function getDeferredBatchFileRows(batch: Batch): Array<{
   }));
 }
 
+/** Processed items when present; otherwise deferred / pending file rows. */
+function getBatchFileRowsForDisplay(batch: Batch): Array<{
+  key: string;
+  filename: string;
+  status: string;
+  error?: string;
+}> {
+  if (batch.items.length > 0) {
+    return batch.items.map((item) => ({
+      key: item._id,
+      filename: item.filename,
+      status: item.status,
+      error: item.error,
+    }));
+  }
+  return getDeferredBatchFileRows(batch);
+}
+
+/**
+ * Hover (or click) to show the full file list in a floating panel with room to scroll.
+ */
+function BatchResumeFilesHoverPopover({
+  batch,
+  isPipelineBusy,
+  onRetryFailedFile,
+  onRetryAllFailedInBatch,
+}: {
+  batch: Batch;
+  isPipelineBusy: boolean;
+  onRetryFailedFile: (batchId: string, filename: string) => void;
+  onRetryAllFailedInBatch: (batchId: string) => void;
+}) {
+  const rows = getBatchFileRowsForDisplay(batch);
+  const [open, setOpen] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current !== null) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const openPopover = useCallback(() => {
+    clearCloseTimer();
+    setOpen(true);
+  }, [clearCloseTimer]);
+
+  const scheduleClose = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+    }, 280);
+  }, [clearCloseTimer]);
+
+  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
+
+  if (rows.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
+  const hasFailed = rows.some((row) => row.status === 'failed');
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 shrink-0 gap-1.5 px-2 text-xs tabular-nums"
+          aria-label={`View ${rows.length} resume file(s) in this batch`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onMouseEnter={openPopover}
+          onMouseLeave={scheduleClose}
+        >
+          <FileStack className="h-3.5 w-3.5 shrink-0" />
+          {rows.length}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[min(36rem,calc(100vw-1.5rem))] border-border/80 p-0 shadow-lg"
+        align="start"
+        side="bottom"
+        sideOffset={8}
+        onMouseEnter={openPopover}
+        onMouseLeave={scheduleClose}
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
+        <div className="border-b border-border/60 bg-muted/25 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Resume files in this batch
+              {' '}
+              <span className="font-medium text-foreground tabular-nums">
+                (
+                {rows.length}
+                )
+              </span>
+            </p>
+            {hasFailed ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPipelineBusy}
+                className="h-7 text-[11px]"
+                onClick={() => onRetryAllFailedInBatch(batch._id)}
+              >
+                Retry all failed
+              </Button>
+            ) : null}
+          </div>
+        </div>
+        <div className="max-h-[min(70vh,28rem)] space-y-2 overflow-y-auto p-4">
+          {rows.map((row) => {
+            const canRetry = row.status === 'failed';
+            return (
+              <BatchFileListEntry
+                key={row.key}
+                filename={row.filename}
+                status={row.status}
+                error={row.error}
+                actionSlot={
+                  canRetry ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={isPipelineBusy}
+                      className="h-6 px-2 text-[11px]"
+                      onClick={() => onRetryFailedFile(batch._id, row.filename)}
+                    >
+                      Retry
+                    </Button>
+                  ) : undefined
+                }
+              />
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function getStatusStyles(status: Batch['status']): string {
   if (status === 'completed') {
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
@@ -310,12 +426,10 @@ export function CompletedBatches({
   onRetryAllFailedAcrossBatches,
   isRetryingFailed,
 }: CompletedBatchesProps) {
-  const [showHistory, setShowHistory] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(5);
-  const [openBatchId, setOpenBatchId] = useState<string | null>(null);
 
   const sortedBatches = useMemo(
     () =>
@@ -373,27 +487,6 @@ export function CompletedBatches({
     setCurrentPage(1);
   };
 
-  if (!showHistory) {
-    return (
-      <section className="relative flex min-h-[40vh] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/50 p-6">
-        <div className="relative inline-flex">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            onClick={() => setShowHistory(true)}
-          >
-            {isLoading ? 'Loading…' : 'View completed batches'}
-          </Button>
-          {!isLoading && pendingDeferredBatchCount > 0 && (
-            <AnimatedPendingBadge count={pendingDeferredBatchCount} delay={2000} />
-
-          )}
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="rounded-2xl border border-border/60 bg-background/80 p-5 shadow-sm md:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -430,24 +523,6 @@ export function CompletedBatches({
               </Tooltip>
             </TooltipProvider>
           )}
-          <TooltipProvider>
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  onClick={() => setShowHistory(false)}
-                  aria-label="Hide completed batches"
-                >
-                  <EyeOff className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Hide completed batches</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </div>
       <div className="mt-6 flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
@@ -523,6 +598,12 @@ export function CompletedBatches({
                             </AccordionTrigger>
                           </div>
                           <div className="flex shrink-0 items-center gap-0.5 py-2">
+                            <BatchResumeFilesHoverPopover
+                              batch={batch}
+                              isPipelineBusy={isPipelineBusy}
+                              onRetryFailedFile={onRetryFailedFile}
+                              onRetryAllFailedInBatch={onRetryAllFailedInBatch}
+                            />
                             <BatchActionsPopover batch={batch} />
                             <Button
                               type="button"
@@ -673,7 +754,7 @@ export function CompletedBatches({
                       <TableHead className="w-14 text-center">
                         <span className="sr-only">Saved batch actions</span>
                       </TableHead>
-                      <TableHead>Details</TableHead>
+                      <TableHead>Files</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -705,69 +786,12 @@ export function CompletedBatches({
                             </div>
                           </TableCell>
                           <TableCell>
-                            {batch.items.length > 0 ? (
-                              <div className="text-sm">
-                                <div className="flex items-center gap-3">
-                                  <Button
-                                    type="button"
-                                    variant="link"
-                                    className="h-auto p-0 text-primary"
-                                    onClick={() =>
-                                      setOpenBatchId((prev) =>
-                                        prev === batch._id ? null : batch._id,
-                                      )
-                                    }
-                                  >
-                                    {openBatchId === batch._id
-                                      ? 'Hide files'
-                                      : `View files (${batch.items.length})`}
-                                  </Button>
-                                  {batch.items.some((item) => item.status === 'failed') && (
-                                    <Button
-                                      type="button"
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={isPipelineBusy}
-                                      className="h-6 px-2 text-[11px]"
-                                      onClick={() => onRetryAllFailedInBatch(batch._id)}
-                                    >
-                                      Retry All
-                                    </Button>
-                                  )}
-                                </div>
-                                {openBatchId === batch._id && (
-                                  <div className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-1">
-                                    {batch.items.map((item) => {
-                                      const canRetryFailedItem = item.status === 'failed';
-                                      return (
-                                        <BatchFileListEntry
-                                          key={item._id}
-                                          filename={item.filename}
-                                          status={item.status}
-                                          error={item.error}
-                                          actionSlot={
-                                            canRetryFailedItem ? (
-                                              <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="outline"
-                                                disabled={isPipelineBusy}
-                                                className="h-6 px-2 text-[11px]"
-                                                onClick={() => onRetryFailedFile(batch._id, item.filename)}
-                                              >
-                                                Retry
-                                              </Button>
-                                            ) : undefined
-                                          }
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">No details</span>
-                            )}
+                            <BatchResumeFilesHoverPopover
+                              batch={batch}
+                              isPipelineBusy={isPipelineBusy}
+                              onRetryFailedFile={onRetryFailedFile}
+                              onRetryAllFailedInBatch={onRetryAllFailedInBatch}
+                            />
                           </TableCell>
                         </TableRow>
                       );

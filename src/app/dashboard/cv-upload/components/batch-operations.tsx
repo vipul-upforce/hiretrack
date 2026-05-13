@@ -144,32 +144,64 @@ export function BatchOperationsPanel({
   return (
     <div className="space-y-4">
       {showToggles && (
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Select Actions
-          </h3>
-          <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
-            <TogglePill
-              id="assign-job"
-              label="Assign Job"
-              checked={value.assignJob}
-              disabled={disabled}
-              onChange={handleAssignToggle}
-            />
-            <TogglePill
-              id="update-status"
-              label="Update Status"
-              checked={value.updateStatus}
-              disabled={disabled || !value.assignJob}
-              onChange={handleUpdateStatusToggle}
-            />
-            <TogglePill
-              id="add-remark"
-              label="Add Remark"
-              checked={value.addRemark}
-              disabled={disabled}
-              onChange={handleRemarkToggle}
-            />
+        <div className="space-y-4">
+          <div className="rounded-lg border border-border/70 bg-muted/15 px-3 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 space-y-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Upload mode
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {value.processingMode === 'deferred'
+                    ? 'CVs are stored after upload; run processing from the History tab when ready.'
+                    : 'CVs are processed in this session after you confirm.'}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2 rounded-md border border-border/60 bg-background/80 px-3 py-2">
+                <Switch
+                  id="batch-operations-store-only"
+                  checked={value.processingMode === 'deferred'}
+                  disabled={disabled}
+                  onCheckedChange={(checked) =>
+                    update({ processingMode: checked ? 'deferred' : 'immediate' })
+                  }
+                />
+                <Label
+                  htmlFor="batch-operations-store-only"
+                  className="cursor-pointer text-xs text-muted-foreground"
+                >
+                  Store only (process later)
+                </Label>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Select Actions
+            </h3>
+            <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
+              <TogglePill
+                id="assign-job"
+                label="Assign Job"
+                checked={value.assignJob}
+                disabled={disabled}
+                onChange={handleAssignToggle}
+              />
+              <TogglePill
+                id="update-status"
+                label="Update Status"
+                checked={value.updateStatus}
+                disabled={disabled || !value.assignJob}
+                onChange={handleUpdateStatusToggle}
+              />
+              <TogglePill
+                id="add-remark"
+                label="Add Remark"
+                checked={value.addRemark}
+                disabled={disabled}
+                onChange={handleRemarkToggle}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -179,7 +211,9 @@ export function BatchOperationsPanel({
         !value.updateStatus &&
         !value.addRemark && (
           <div className="flex min-h-[140px] items-center justify-center rounded-xl border border-dashed bg-muted/10 px-6 text-sm text-muted-foreground">
-            Choose an action above to configure batch settings.
+            {value.processingMode === 'deferred'
+              ? 'Optional: enable actions above to save job, status, or remarks with this batch. You can still store CVs only and process later from History.'
+              : 'Choose an action above to configure batch settings.'}
           </div>
         )}
 

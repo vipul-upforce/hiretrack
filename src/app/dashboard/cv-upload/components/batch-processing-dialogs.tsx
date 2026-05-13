@@ -9,16 +9,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { BatchOperationsPanel, type BatchOperations } from './batch-operations';
+import {
+  BatchOperationsPanel,
+  type BatchOperations,
+} from './batch-operations';
 
 function cloneBatchOperations(value: BatchOperations): BatchOperations {
   return { ...value };
 }
 
-interface ConfirmPayload {
+export interface ConfirmProcessingPayload {
   total: number;
   selected: number;
   message: string;
+  operationsForRun: BatchOperations;
 }
 
 interface BatchActionsDialogProps {
@@ -93,10 +97,14 @@ export function BatchActionsDialog({
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto bg-muted/10 px-6 py-4">
-          <div className="rounded-xl border border-border/50 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
-            Actions apply only to the CVs you select in the list. Use Process
-            Batch when you are ready to run processing.
-          </div>
+          {/* <div className="rounded-xl border border-border/50 bg-background/80 px-4 py-3 text-sm text-muted-foreground">
+            Actions apply only to the CVs you select in the list. Use
+            {' '}
+            <span className="font-medium text-foreground">Review &amp; confirm</span>
+            {' '}
+            to save these settings and open the final confirmation before upload
+            or store.
+          </div> */}
           <BatchOperationsPanel
             value={draft}
             onChange={setDraft}
@@ -131,9 +139,9 @@ export function BatchActionsDialog({
               variant="primary"
               onClick={handleApplyAndProcess}
               disabled={isPipelineBusy}
-              className="min-w-[140px] font-medium shadow-sm transition-all hover:shadow-md"
+              className="min-w-[160px] font-medium shadow-sm transition-all hover:shadow-md"
             >
-              Apply &amp; Process
+              Review &amp; confirm
             </Button>
           </div>
         </DialogFooter>
@@ -145,7 +153,7 @@ export function BatchActionsDialog({
 interface ConfirmProcessingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  payload: ConfirmPayload | null;
+  payload: ConfirmProcessingPayload | null;
   onConfirm: () => void;
 }
 
