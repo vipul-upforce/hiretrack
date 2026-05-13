@@ -1143,15 +1143,39 @@ export async function PUT(
                           )?.description || '',
                         ).trim()
                       : '';
+                  // Prefer a structured meeting link over the provider's
+                  // calendar-event body. The body can be HTML (Microsoft Graph
+                  // echoes back the rendered Outlook event body) and is unsafe
+                  // to use as a reminder note. `meetingLink` is the canonical
+                  // structured field set by every scheduler.
+                  const meetingLinkInfo: {
+                    provider: string;
+                    url: string;
+                  } | null = newAssignment.microsoftTeams?.meetingLink
+                    ? {
+                        provider: 'Microsoft Teams',
+                        url: String(newAssignment.microsoftTeams.meetingLink),
+                      }
+                    : newAssignment.zoomMeet?.meetingLink
+                      ? {
+                          provider: 'Zoom',
+                          url: String(newAssignment.zoomMeet.meetingLink),
+                        }
+                      : newAssignment.googleMeet?.meetingLink
+                        ? {
+                            provider: 'Google Meet',
+                            url: String(newAssignment.googleMeet.meetingLink),
+                          }
+                        : null;
+
                   const assignmentNoteFromMeeting =
                     latestAssignmentRemark ||
                     newAssignment.microsoftTeams?.meetingNotes?.trim() ||
                     newAssignment.zoomMeet?.meetingNotes?.trim() ||
                     newAssignment.googleMeet?.meetingNotes?.trim() ||
-                    newAssignment.microsoftTeams?.description?.trim() ||
-                    newAssignment.zoomMeet?.description?.trim() ||
-                    newAssignment.googleMeet?.description?.trim() ||
-                    'Interview assignment reminder';
+                    (meetingLinkInfo
+                      ? `${meetingLinkInfo.provider} Meeting: ${meetingLinkInfo.url}`
+                      : 'Interview assignment reminder');
                   await sendImmediateAssignmentReminder({
                     organizationId,
                     candidateName: updatedCandidate.name,

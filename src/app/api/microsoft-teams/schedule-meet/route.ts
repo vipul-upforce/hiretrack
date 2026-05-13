@@ -740,7 +740,12 @@ Candidate: ${candidateName}`;
             eventData.onlineMeeting?.joinUrl ||
             meetingLink;
           summary = eventData.subject || summary;
-          calendarDescription = eventData.body?.content || calendarDescription;
+          // Intentionally do not overwrite `calendarDescription` with
+          // `eventData.body?.content`: Microsoft Graph returns the rendered
+          // Outlook event body (HTML, wrapped in <html>/<body> tags). Persisting
+          // that into `assignment.microsoftTeams.description` causes downstream
+          // consumers (reminder notes, UI previews) to receive raw HTML rather
+          // than the plain-text description we built locally.
           logger.info(
             {
               initiatorEmail,

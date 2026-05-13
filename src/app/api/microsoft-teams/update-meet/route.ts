@@ -820,7 +820,11 @@ export async function PUT(req: NextRequest) {
         if (updateResponse.ok) {
           const eventData = await updateResponse.json();
           summary = eventData.subject || summary;
-          description = eventData.body?.content || description;
+          // Intentionally do not overwrite `description` with
+          // `eventData.body?.content`: Microsoft Graph returns the rendered
+          // Outlook event body as HTML (wrapped in <html>/<body> tags). We
+          // keep the plain-text `description` we built locally so it stays
+          // safe to use as a reminder note or UI preview.
           htmlLink = eventData.webLink || htmlLink;
         }
       } catch (calendarError) {

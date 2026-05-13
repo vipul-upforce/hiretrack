@@ -193,6 +193,47 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#39;');
 }
 
+// Renders a free-text note for the Teams bot message body. URLs are turned
+// into clickable anchor tags; all other text is HTML-escaped. The template
+// treats `noteHtml` as raw HTML, so the output is consumed verbatim.
+//
+// Legacy compatibility: a small number of older reminders persisted the
+// entire Outlook calendar HTML body as the note. We deliberately do NOT
+// try to parse that markup into prose. Instead, if the note contains HTML
+// tags, we drop the markup entirely and surface only the first http(s) URL
+// (typically the Teams join link) as a clickable anchor. Everything else
+// in the HTML blob is ignored.
+const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/g;
+const HTML_TAG_PROBE = /<[a-z!\/][\s\S]*?>/i;
+
+function escapeHtmlAndLinkify(value: string) {
+  const raw = (value ?? '').trim();
+  if (!raw) {
+    return '';
+  }
+
+  if (HTML_TAG_PROBE.test(raw)) {
+    const match = raw.match(URL_PATTERN);
+    if (!match) {
+      return '';
+    }
+    const safeHref = escapeHtml(match[0]);
+    return `<a href="${safeHref}">${safeHref}</a>`;
+  }
+
+  let cursor = 0;
+  let output = '';
+  for (const match of raw.matchAll(URL_PATTERN)) {
+    const start = match.index ?? 0;
+    output += escapeHtml(raw.slice(cursor, start));
+    const safeHref = escapeHtml(match[0]);
+    output += `<a href="${safeHref}">${safeHref}</a>`;
+    cursor = start + match[0].length;
+  }
+  output += escapeHtml(raw.slice(cursor));
+  return output;
+}
+
 function formatFollowUpReminderMessage(params: {
   candidateName: string;
   followUpTimeLabel: string;
@@ -204,9 +245,8 @@ function formatFollowUpReminderMessage(params: {
   candidateId?: string;
   jobId?: string;
 }) {
-  const noteMarkup = params.note?.trim()
-    ? `<br /><b>Note:</b> ${escapeHtml(params.note.trim())}`
-    : '';
+  const noteBody = escapeHtmlAndLinkify(params.note ?? '');
+  const noteMarkup = noteBody ? `<br /><b>Note:</b> ${noteBody}` : '';
 
   const baseUrl =
     process.env.BASE_URL ||
@@ -254,10 +294,8 @@ function buildReminderMessage(params: {
   candidateId?: string;
   jobId?: string;
 }) {
-  const noteText = params.note?.trim() || '';
-  const noteMarkup = noteText
-    ? `<br /><b>Note:</b> ${escapeHtml(noteText)}`
-    : '';
+  const noteBody = escapeHtmlAndLinkify(params.note ?? '');
+  const noteMarkup = noteBody ? `<br /><b>Note:</b> ${noteBody}` : '';
 
   const baseUrl =
     process.env.BASE_URL ||
