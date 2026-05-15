@@ -206,24 +206,67 @@ function escapeHtml(value: string) {
 const URL_PATTERN = /\bhttps?:\/\/[^\s<>"']+/g;
 const HTML_TAG_PROBE = /<[a-z!\/][\s\S]*?>/i;
 
-function escapeHtmlAndLinkify(value: string) {
+function tryParseUrlHost(url: string): string | null {
+  try {
+    return new URL(url).hostname || null;
+  } catch {
+    return null;
+  }
+}
+
+interface TeamsReminderNoteRenderLogContext {
+  organizationId?: string;
+  candidateId?: string;
+  jobId?: string;
+  templateEventType?: TeamsReminderTemplateEventType;
+  /** Where in the pipeline the render happened (for log correlation). */
+  renderStage?: string;
+}
+
+function escapeHtmlAndLinkify(
+  value: string,
+  logContext?: TeamsReminderNoteRenderLogContext,
+) {
   const raw = (value ?? '').trim();
   if (!raw) {
     return '';
   }
 
-  if (HTML_TAG_PROBE.test(raw)) {
+  const inputLength = raw.length;
+  const looksLikeHtml = HTML_TAG_PROBE.test(raw);
+
+  if (looksLikeHtml) {
     const match = raw.match(URL_PATTERN);
     if (!match) {
+      logger.warn('teams_reminder_note_render', {
+        ...logContext,
+        path: 'legacy_html_blob_no_url',
+        inputLength,
+        outputLength: 0,
+        htmlProbePositive: true,
+        notePreviewStart: raw.slice(0, 40),
+      });
       return '';
     }
     const safeHref = escapeHtml(match[0]);
-    return `<a href="${safeHref}">${safeHref}</a>`;
+    const out = `<a href="${safeHref}">${safeHref}</a>`;
+    logger.info('teams_reminder_note_render', {
+      ...logContext,
+      path: 'legacy_html_blob_first_url_only',
+      inputLength,
+      outputLength: out.length,
+      firstUrlHost: tryParseUrlHost(match[0]),
+      firstUrlLength: match[0].length,
+      htmlProbePositive: true,
+    });
+    return out;
   }
 
   let cursor = 0;
   let output = '';
+  let urlCount = 0;
   for (const match of raw.matchAll(URL_PATTERN)) {
+    urlCount += 1;
     const start = match.index ?? 0;
     output += escapeHtml(raw.slice(cursor, start));
     const safeHref = escapeHtml(match[0]);
@@ -231,6 +274,19 @@ function escapeHtmlAndLinkify(value: string) {
     cursor = start + match[0].length;
   }
   output += escapeHtml(raw.slice(cursor));
+
+  const path =
+    urlCount > 0 ? 'plain_text_linkified' : 'plain_text_no_urls';
+
+  logger.info('teams_reminder_note_render', {
+    ...logContext,
+    path,
+    inputLength,
+    outputLength: output.length,
+    urlCount,
+    htmlProbePositive: false,
+  });
+
   return output;
 }
 
@@ -244,8 +300,12 @@ function formatFollowUpReminderMessage(params: {
   };
   candidateId?: string;
   jobId?: string;
+  noteRenderLog?: TeamsReminderNoteRenderLogContext;
 }) {
-  const noteBody = escapeHtmlAndLinkify(params.note ?? '');
+  const noteBody = escapeHtmlAndLinkify(params.note ?? '', {
+    ...params.noteRenderLog,
+    renderStage: params.noteRenderLog?.renderStage ?? 'fallback_formatter',
+  });
   const noteMarkup = noteBody ? `<br /><b>Note:</b> ${noteBody}` : '';
 
   const baseUrl =
@@ -293,8 +353,13 @@ function buildReminderMessage(params: {
   };
   candidateId?: string;
   jobId?: string;
+  noteRenderLog?: TeamsReminderNoteRenderLogContext;
 }) {
-  const noteBody = escapeHtmlAndLinkify(params.note ?? '');
+  const noteBody = escapeHtmlAndLinkify(params.note ?? '', {
+    ...params.noteRenderLog,
+    templateEventType: params.eventType,
+    renderStage: params.noteRenderLog?.renderStage ?? 'template_primary',
+  });
   const noteMarkup = noteBody ? `<br /><b>Note:</b> ${noteBody}` : '';
 
   const baseUrl =
@@ -345,6 +410,10 @@ function buildReminderMessage(params: {
       deliveryMetadata: params.deliveryMetadata,
       candidateId: params.candidateId,
       jobId: params.jobId,
+      noteRenderLog: {
+        ...params.noteRenderLog,
+        renderStage: 'template_error_fallback_formatter',
+      },
     });
   }
 }
@@ -554,6 +623,11 @@ export async function sendFollowUpReminderToTeams(params: {
         followUpTimeLabel,
         note: params.note,
         deliveryMetadata: params.deliveryMetadata,
+        noteRenderLog: {
+          organizationId: params.organizationId,
+          candidateId: params.candidateId,
+          jobId: params.jobId,
+        },
       }),
     });
 
@@ -714,6 +788,10 @@ export async function testFollowUpReminderDelivery(params: {
         candidateName: params.candidateName,
         followUpTimeLabel,
         note: params.note || 'Diagnostic reminder delivery test message.',
+        noteRenderLog: {
+          organizationId: params.organizationId,
+          renderStage: 'diagnostic_delivery_test',
+        },
       }),
     });
     result.steps.sendMessage = { ok: true };

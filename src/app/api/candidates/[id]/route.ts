@@ -1176,6 +1176,43 @@ export async function PUT(
                     (meetingLinkInfo
                       ? `${meetingLinkInfo.provider} Meeting: ${meetingLinkInfo.url}`
                       : 'Interview assignment reminder');
+
+                  const assignmentNoteSource:
+                    | 'latest_remark'
+                    | 'teams_meeting_notes'
+                    | 'zoom_meeting_notes'
+                    | 'google_meeting_notes'
+                    | 'structured_meeting_link'
+                    | 'default_copy' = latestAssignmentRemark
+                    ? 'latest_remark'
+                    : newAssignment.microsoftTeams?.meetingNotes?.trim()
+                      ? 'teams_meeting_notes'
+                      : newAssignment.zoomMeet?.meetingNotes?.trim()
+                        ? 'zoom_meeting_notes'
+                        : newAssignment.googleMeet?.meetingNotes?.trim()
+                          ? 'google_meeting_notes'
+                          : meetingLinkInfo
+                            ? 'structured_meeting_link'
+                            : 'default_copy';
+
+                  const teamsDesc = newAssignment.microsoftTeams?.description;
+                  logger.info('[assignment_reminder_note]', {
+                    event: 'queue_assignment_reminder',
+                    organizationId,
+                    candidateId: updatedCandidate._id?.toString(),
+                    jobId:
+                      jobInfo?._id?.toString() ||
+                      updatedCandidate.jobId?.toString() ||
+                      '',
+                    assignmentNoteSource,
+                    meetingProvider: meetingLinkInfo?.provider ?? null,
+                    noteLength: assignmentNoteFromMeeting.length,
+                    /** True when the PUT body still carries a Graph HTML body on assignment (legacy clients); note text does not use this field anymore. */
+                    payloadHasTeamsHtmlDescription:
+                      typeof teamsDesc === 'string' &&
+                      /<html|<body|<br\s*\/?>/i.test(teamsDesc),
+                  });
+
                   await sendImmediateAssignmentReminder({
                     organizationId,
                     candidateName: updatedCandidate.name,
