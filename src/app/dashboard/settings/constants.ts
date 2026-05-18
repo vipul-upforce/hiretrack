@@ -20,6 +20,7 @@ import {
   ArrowUpCircle,
   Video,
   MessageCircleCode,
+  Layers,
 } from 'lucide-react';
 import { SettingGroup } from './types';
 
@@ -39,8 +40,16 @@ const communicationLegacySettings = [
   {
     title: 'AI Providers',
     key: 'ai-providers',
-    description: 'Configure AI providers for resume processing',
+    description:
+      'Premium AI (Gemini, OpenAI, Claude, Perplexity) for candidate evaluation and scoring',
     icon: Bot,
+  },
+  {
+    title: 'Bulk CV AI',
+    key: 'bulk-cv-ai',
+    description:
+      'Low-cost Docling + Groq/Gemini keys for bulk resume parsing only',
+    icon: Layers,
   },
   {
     title: 'AI Evaluation Settings',

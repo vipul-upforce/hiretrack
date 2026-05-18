@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Layers, Sparkles } from 'lucide-react';
 import AIProvidersConfigs from '../ai-providers';
+import BulkCvAiSettings from '../bulk-cv-ai';
 import { EvaluationSettingsPanel } from '../ai-evaluation-settings/panel';
 import type { SettingComponentProps } from '../setting-dialog';
 import { SectionSwitcher, SectionOption } from './section-switcher';
@@ -11,9 +12,16 @@ const sections: SectionOption[] = [
   {
     id: 'providers',
     title: 'AI Providers',
-    description: 'Manage API keys and model selection',
+    description: 'Premium keys for candidate evaluation',
     icon: Bot,
-    badge: 'Providers',
+    badge: 'Evaluation',
+  },
+  {
+    id: 'bulk-cv',
+    title: 'Bulk CV AI',
+    description: 'Docling + Groq/Gemini for bulk parsing',
+    icon: Layers,
+    badge: 'Bulk',
   },
   {
     id: 'evaluation',
@@ -42,6 +50,8 @@ export default function AICommunicationSettings({
       <div className="flex-1 min-h-0 overflow-hidden">
         {activeSection === 'evaluation' ? (
           <EvaluationSettingsPanel onClose={onClose} />
+        ) : activeSection === 'bulk-cv' ? (
+          <BulkCvAiSettings onClose={onClose} embedded />
         ) : (
           <AIProvidersConfigs onClose={onClose} embedded />
         )}

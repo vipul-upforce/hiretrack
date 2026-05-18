@@ -1,10 +1,14 @@
 import { baseApi } from '@/lib/api/baseApi';
 import {
+  GetBulkCvAiResponse,
   GetEvaluationConfigsResponse,
-  UpdateEvaluationConfigsRequest,
+  UpdateBulkCvAiRequest,
   UpdateEvaluationConfigsResponse,
+  UpdateEvaluationConfigsRequest,
   ValidateAiProviderRequest,
   ValidateAiProviderResponse,
+  ValidateBulkCvAiRequest,
+  ValidateBulkCvAiResponse,
 } from './types/ai.types';
 
 export const aiApi = baseApi.injectEndpoints({
@@ -56,6 +60,31 @@ export const aiApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Settings'],
     }),
+    getBulkCvAiConfigs: builder.query<GetBulkCvAiResponse, void>({
+      query: () => ({ url: '/settings/bulk-cv-ai', method: 'GET' }),
+      providesTags: ['Settings'],
+    }),
+    updateBulkCvAiConfigs: builder.mutation<
+      { message: string },
+      UpdateBulkCvAiRequest
+    >({
+      query: (body) => ({
+        url: '/settings/bulk-cv-ai',
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: ['Settings'],
+    }),
+    validateBulkCvAi: builder.mutation<
+      ValidateBulkCvAiResponse,
+      ValidateBulkCvAiRequest
+    >({
+      query: (body) => ({
+        url: '/settings/bulk-cv-ai/validate',
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
 });
 
@@ -67,4 +96,7 @@ export const {
   useValidateAiProviderMutation,
   useGetEvaluationConfigsQuery,
   useUpdateEvaluationConfigsMutation,
+  useGetBulkCvAiConfigsQuery,
+  useUpdateBulkCvAiConfigsMutation,
+  useValidateBulkCvAiMutation,
 } = aiApi;

@@ -1,5 +1,6 @@
 import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
 import { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
+import type { IBulkCvAi } from '@/lib/types/bulk-cv-ai';
 import { Schema, Document } from 'mongoose';
 
 /* eslint-disable max-lines */
@@ -132,6 +133,43 @@ const settingsSchema = new Schema({
     perplexity: {
       api_key: { type: String, default: '' },
       model: { type: String, default: 'sonar-pro' },
+      customModel: { type: String, default: '' },
+    },
+  },
+  /** Docling + low-cost models for bulk parsing only (not premium evaluation AI). */
+  bulkCvAi: {
+    doclingParseUrl: { type: String, default: '' },
+    groq: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'llama-3.1-8b-instant' },
+      customModel: { type: String, default: '' },
+    },
+    gemini: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'gemini-1.5-flash' },
+      customModel: { type: String, default: '' },
+    },
+    deepseek: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'deepseek-chat' },
+      customModel: { type: String, default: '' },
+    },
+    openrouter: {
+      api_key: { type: String, default: '' },
+      model: {
+        type: String,
+        default: 'meta-llama/llama-3.1-8b-instruct:free',
+      },
+      customModel: { type: String, default: '' },
+    },
+    cerebras: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'llama3.1-8b' },
+      customModel: { type: String, default: '' },
+    },
+    mistral: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'mistral-small-latest' },
       customModel: { type: String, default: '' },
     },
   },
@@ -739,6 +777,7 @@ export interface ISettings {
   fileStorage: Ifs;
   mailConfig: Ismtp;
   aiProviders?: IAIProviders;
+  bulkCvAi?: IBulkCvAi;
   gemini?: IGemini; // Keep for backward compatibility
   portalConfigs?: {
     portalLogo: IFileMeta | null;

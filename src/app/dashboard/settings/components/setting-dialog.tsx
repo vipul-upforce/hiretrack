@@ -19,6 +19,7 @@ import TeamsReminderTemplatesDialog from './microsoft-teams/reminder-templates-d
 import BackupsDialog from './backups';
 import { EvaluationSettings } from './ai-evaluation-settings';
 import AIProvidersConfigs from './ai-providers';
+import BulkCvAiSettings from './bulk-cv-ai';
 import SMTPConfigs from './mail-config';
 import AboutDialog from './about';
 import FileStorageOptions from './file-storage';
@@ -44,6 +45,7 @@ const settingComponents: Record<
   fs: FileStorageOptions,
   gemini: GeminiConfigs,
   'ai-providers': AIProvidersConfigs,
+  'bulk-cv-ai': BulkCvAiSettings,
   'google-calendar': GoogleCalendarSettings,
   zoom: ZoomSettings,
   'microsoft-teams': MicrosoftTeamsSettings,
@@ -93,6 +95,7 @@ function SettingDialog({
       case 'fs':
         return 'lg';
       case 'ai-providers':
+      case 'bulk-cv-ai':
       case 'google-calendar':
       case 'zoom':
       case 'microsoft-teams':
@@ -124,6 +127,7 @@ function SettingDialog({
       case 'fs':
         return 'flex max-h-[90vh] w-[70vw] max-w-3xl flex-col overflow-hidden p-0';
       case 'ai-providers':
+      case 'bulk-cv-ai':
       case 'google-calendar':
       case 'zoom':
       case 'microsoft-teams':
@@ -180,6 +184,7 @@ function SettingDialog({
 
     if (
       setting.key === 'ai-providers' ||
+      setting.key === 'bulk-cv-ai' ||
       setting.key === 'google-calendar' ||
       setting.key === 'zoom' ||
       setting.key === 'microsoft-teams' ||

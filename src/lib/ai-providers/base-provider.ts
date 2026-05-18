@@ -77,7 +77,8 @@ export abstract class BaseAIProvider implements AIProvider {
     return parsedData as unknown as ProcessedResumeData;
   }
 
-  protected static getStandardPrompt(): string {
+  /** Shared resume JSON schema instructions (PDF or Markdown extraction). */
+  static getStandardPrompt(): string {
     return `
     first of all you should check if the provided document is a CV or Resume, 
     If not then return JSON: {error:"Not a valid CV"}
@@ -93,17 +94,6 @@ export abstract class BaseAIProvider implements AIProvider {
       "currentCTC": current CTC as a number (in lakhs, 0 if not found),
       "expectedCTC": expected CTC as a number (in lakhs, 0 if not found),
       "noticePeriod": notice period in months (as a number, 0 if not found),
-      "scores": {
-        "overall": // An overall rating (out of 10),
-        "experience": // A rating (out of 10),
-        "skills": // A rating (out of 10),
-        "affordability": // Salary alignment score (1-10) with calculation shown (include normalization logic),
-        "strengths": // A list of strengths,
-        "areas_for_improvement": // A list of areas for improvement,
-        "redFlags": [ // Array of potential concerns (if any),
-        "recommendation": // A recommendation,
-        "notes": // Additional notes
-      }
     }
 
     SALARY NORMALIZATION EXAMPLES:
@@ -131,14 +121,14 @@ export abstract class BaseAIProvider implements AIProvider {
     Below is the resume content:`;
   }
 
-  protected static cleanJsonResponse(response: string): string {
+  static cleanJsonResponse(response: string): string {
     return response
       .replace(/```json\n?/g, '')
       .replace(/```/g, '')
       .trim();
   }
 
-  protected static parseJsonResponse(jsonString: string): ProcessedResumeData {
+  static parseJsonResponse(jsonString: string): ProcessedResumeData {
     const tryParse = (raw: string): ProcessedResumeData => {
       const parsedData = JSON.parse(raw) as Record<string, unknown>;
       return BaseAIProvider.mapParsedToResumeData(parsedData);

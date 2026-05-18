@@ -1,3 +1,4 @@
+import type { IBulkCvAi } from '@/lib/types/bulk-cv-ai';
 import { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
 
 export interface EvaluationConfigItem {
@@ -38,4 +39,44 @@ export interface ValidateAiProviderResponse {
   isValid: boolean;
   message?: string;
   error?: string;
+}
+
+export interface GetBulkCvAiResponse {
+  bulkCvAi: IBulkCvAi;
+}
+
+export interface UpdateBulkCvAiRequest {
+  bulkCvAi: IBulkCvAi;
+  /**
+   * When true, an empty `bulkCvAi.<slot>.api_key` in the payload must not wipe
+   * the previously stored key (the password field was not edited in the form).
+   * The PUT route only honors the retain flag when the matching field was not
+   * marked dirty by Formik.
+   */
+  retainGroqApiKey?: boolean;
+  retainGeminiApiKey?: boolean;
+  retainDeepseekApiKey?: boolean;
+  retainOpenrouterApiKey?: boolean;
+  retainCerebrasApiKey?: boolean;
+  retainMistralApiKey?: boolean;
+}
+
+export interface ValidateBulkCvAiRequest {
+  provider:
+    | 'groq'
+    | 'gemini'
+    | 'deepseek'
+    | 'openrouter'
+    | 'cerebras'
+    | 'mistral';
+  apiKey: string;
+  model: string;
+}
+
+export interface ValidateBulkCvAiResponse {
+  isValid: boolean;
+  message?: string;
+  error?: string;
+  provider?: string;
+  model?: string;
 }

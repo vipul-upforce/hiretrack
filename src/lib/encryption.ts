@@ -1,6 +1,42 @@
 import CryptoJS from 'crypto-js';
+import type {
+  BulkCvProviderId,
+  IBulkCvAi,
+  IBulkCvAiProviderSlot,
+} from '@/lib/types/bulk-cv-ai';
 import { generateOrgJwtSecret } from './jwtSecretGenerator';
 import logger from './logger';
+
+/**
+ * Slots we encrypt/decrypt inside `bulkCvAi`. Kept narrow on purpose so we
+ * never silently drop a slot when a new provider is added - extending
+ * `BulkCvProviderId` requires a deliberate edit here.
+ */
+const BULK_CV_AI_SLOTS: readonly BulkCvProviderId[] = [
+  'groq',
+  'gemini',
+  'deepseek',
+  'openrouter',
+  'cerebras',
+  'mistral',
+];
+
+function transformBulkCvAiSlots(
+  config: IBulkCvAi,
+  transformApiKey: (apiKey: string) => string,
+): IBulkCvAi {
+  const next: IBulkCvAi = { ...config };
+  for (const slotId of BULK_CV_AI_SLOTS) {
+    const slot = config[slotId] as IBulkCvAiProviderSlot | undefined;
+    next[slotId] = {
+      ...slot,
+      api_key: slot?.api_key ? transformApiKey(slot.api_key) : '',
+      model: slot?.model ?? '',
+      customModel: slot?.customModel ?? '',
+    };
+  }
+  return next;
+}
 
 /**
  * Type definition for AI provider configuration
@@ -164,4 +200,20 @@ export function decryptProviderKeys(
   }
 
   return decrypted;
+}
+
+export function encryptBulkCvAi(
+  config: IBulkCvAi | null | undefined,
+  orgId: string,
+): IBulkCvAi | null | undefined {
+  if (!config) return config;
+  return transformBulkCvAiSlots(config, (key) => encryptText(key, orgId));
+}
+
+export function decryptBulkCvAi(
+  config: IBulkCvAi | null | undefined,
+  orgId: string,
+): IBulkCvAi | null | undefined {
+  if (!config) return config;
+  return transformBulkCvAiSlots(config, (key) => decryptText(key, orgId));
 }

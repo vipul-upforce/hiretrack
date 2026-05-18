@@ -226,6 +226,119 @@ export const AI_PROVIDER_MODELS: ProviderModels = {
       isDefault: true,
     },
   ],
+  groq: [
+    {
+      id: 'llama-3.1-8b-instant',
+      name: 'Llama 3.1 8B Instant',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 8192,
+        costTier: 'low',
+        description: 'Fast Groq-hosted Llama for structured JSON extraction',
+      },
+      isDefault: true,
+    },
+    {
+      id: 'llama-3.3-70b-versatile',
+      name: 'Llama 3.3 70B Versatile',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 32768,
+        costTier: 'low',
+        description: 'Higher quality Groq model when 8B is insufficient',
+      },
+    },
+  ],
+  deepseek: [
+    {
+      id: 'deepseek-chat',
+      name: 'DeepSeek Chat (V3)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 64000,
+        costTier: 'low',
+        description:
+          'Low-cost JSON-mode model. Use “Custom model id” for `deepseek-reasoner` (paid / balance required).',
+      },
+      isDefault: true,
+    },
+  ],
+  openrouter: [
+    {
+      id: 'meta-llama/llama-3.1-8b-instruct:free',
+      name: 'Llama 3.1 8B Instruct (Free)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 8192,
+        costTier: 'low',
+        description: 'Free-tier Llama 3.1 instruct via OpenRouter',
+      },
+      isDefault: true,
+    },
+    {
+      id: 'google/gemma-2-9b-it:free',
+      name: 'Gemma 2 9B IT (Free)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 8192,
+        costTier: 'low',
+        description: 'Free-tier Gemma 2 instruct-tuned via OpenRouter',
+      },
+    },
+  ],
+  cerebras: [
+    {
+      id: 'llama3.1-8b',
+      name: 'Llama 3.1 8B (Cerebras)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 8192,
+        costTier: 'low',
+        description: 'Fast Cerebras-hosted Llama; OpenAI-compatible API',
+      },
+      isDefault: true,
+    },
+  ],
+  mistral: [
+    {
+      id: 'mistral-small-latest',
+      name: 'Mistral Small (latest)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 128000,
+        costTier: 'low',
+        description:
+          'Mistral API; generous limits on the Experiment plan (see mistral.ai pricing).',
+      },
+      isDefault: true,
+    },
+    {
+      id: 'open-mistral-nemo',
+      name: 'Mistral Nemo (open weights)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: false,
+        supportsJSON: true,
+        maxTokens: 131000,
+        costTier: 'low',
+        description: '12B-class open model via Mistral API',
+      },
+    },
+  ],
 };
 
 export const getDefaultModel = (provider: string): string => {
