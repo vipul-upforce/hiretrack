@@ -235,7 +235,7 @@ export async function deliverFollowUpReminderNow(
 
     if (!microsoftTeams?.isFollowUpReminderEnabled) {
       console.log('[followup-reminder] skipped: teams follow-up reminder disabled');
-      return { skipped: true as const, reason: 'teams_reminder_disabled' };
+      throw new Error('teams_reminder_disabled');
     }
 
   const followUpDate = params.followUpDate ? new Date(params.followUpDate) : new Date();

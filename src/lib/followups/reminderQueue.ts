@@ -202,11 +202,15 @@ async function upsertReminder(params: {
         nextAttemptAt: scheduledAt,
         status: 'pending',
         maxAttempts: 5,
+        attemptCount: 0,
         expireAt: null,
         lastError: null,
+        lastErrorCode: null,
       },
-      $setOnInsert: {
-        attemptCount: 0,
+      $unset: {
+        sentAt: 1,
+        deliveryKey: 1,
+        deliveryAttemptedAt: 1,
       },
     },
     { upsert: true, new: true },
@@ -451,6 +455,28 @@ function getRetryDelayMs(attemptCount: number) {
 
 function getExpirationDate(daysFromNow: number) {
   return new Date(Date.now() + daysFromNow * 24 * 60 * 60 * 1000);
+}
+
+/** Releases a processing lock without marking the reminder as sent (e.g. delivery guard blocked). */
+async function releaseReminderProcessingLock(reminderId: string) {
+  await connectToDatabase();
+  if (!ScheduledReminder) {
+    throw new Error('ScheduledReminder model is not available');
+  }
+
+  await ScheduledReminder.updateOne(
+    { _id: reminderId, status: 'processing' },
+    {
+      $set: {
+        status: 'pending',
+        lockToken: null,
+        lockedAt: null,
+        lockExpiresAt: null,
+        deliveryKey: null,
+        deliveryAttemptedAt: null,
+      },
+    },
+  );
 }
 
 export async function markReminderSent(reminderId: string) {
@@ -752,8 +778,14 @@ export async function processQueuedReminders(handler: (params: {
       });
       const deliveryGuard = await markReminderDelivering(String(reminder._id));
       if (!deliveryGuard.shouldSend) {
-        await markReminderSent(String(reminder._id));
-        sent += 1;
+        logger.warn('Reminder delivery skipped by guard (not marking sent)', {
+          reminderId: String(reminder._id),
+          reminderType: reminder.reminderType,
+          recipientUserId: reminder.recipientUserId,
+          source: reminder.source,
+          reason: 'delivery_guard_blocked',
+        });
+        await releaseReminderProcessingLock(String(reminder._id));
         continue;
       }
 
