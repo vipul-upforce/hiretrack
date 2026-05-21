@@ -153,7 +153,7 @@ export async function extractBulkCvResumeFromMarkdown(
 }
 
 /**
- * PDF → Docling (markdown) → selected extractor → `ProcessedResumeData`.
+ * PDF → markdown → selected extractor → `ProcessedResumeData`.
  *
  * Each extractor enforces its own contract (model id, JSON-mode handling).
  * Provider routing lives in `bulk-extract-from-request.ts`; new extractors

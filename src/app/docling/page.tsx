@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { FileText, Upload, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export default function DoclingParserPOC() {
+export default function BulkCvParserPoc() {
     const [file, setFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [resumeData, setResumeData] = useState<Record<string, unknown> | null>(
@@ -69,8 +69,8 @@ export default function DoclingParserPOC() {
                     AI Resume Extractor (End-to-End)
                 </h2>
                 <p className="text-sm text-zinc-500 mt-1">
-                    Testing the full pipeline: Next.js API ➔ Docling VM ➔ org Bulk CV AI
-                    (round-robin / fallback across configured providers) ➔ structured JSON.
+                    Testing the full pipeline: Next.js API ➔ PDF to markdown ➔ Bulk CV AI
+                    (round-robin across configured providers) ➔ structured JSON.
                 </p>
             </div>
 

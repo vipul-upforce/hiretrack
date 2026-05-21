@@ -5,6 +5,7 @@ import type { FileRejection } from 'react-dropzone';
 import {
   usePostBatchMutation,
   useFetchBatchesQuery,
+  useGetCvParseRoutingQuery,
   useProcessPendingCvBatchesMutation,
   useRetryFailedCvFilesMutation,
 } from '@/lib/features/org/orgApi';
@@ -14,6 +15,13 @@ import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useGetEvaluationConfigsQuery } from '@/lib/features/settings/aiApi';
+import {
+  BULK_CV_PROVIDER_IDS,
+  BULK_CV_PROVIDER_LABELS,
+} from '@/lib/cv-processing/config';
+import type { BulkCvProviderId } from '@/lib/types/bulk-cv-ai';
+import { summarizeBatchParseLabels } from '../batch-parse-display';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -70,6 +78,9 @@ export type ProcessedItem = {
   error?: string;
   processedAt: string;
   _id: string;
+  cvParseMode?: 'bulk' | 'premium';
+  usedProvider?: string;
+  parseProviderLabel?: string;
 };
 
 /** Persisted batch actions (assign job, status, remark) — same shape as `ICVBatch` / API. */
@@ -114,7 +125,7 @@ export type Batch = {
 };
 
 interface ErrorResponse {
-  error?: string; 
+  error?: string;
 }
 
 const LEAVE_PROCESSING_MESSAGE =
@@ -154,6 +165,21 @@ export function CVBatchProcessor() {
   const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
   const { data: evaluationConfigData } = useGetEvaluationConfigsQuery();
+  const {
+    data: cvParseRouting,
+    isLoading: isCvParseRoutingLoading,
+    isError: isCvParseRoutingError,
+  } = useGetCvParseRoutingQuery(undefined, {
+    skip: !user?.organizationId,
+  });
+
+  const readyBulkProviderLabels = useMemo(() => {
+    const readiness = cvParseRouting?.bulkCvProviderReadiness;
+    if (!readiness) return [];
+    return (BULK_CV_PROVIDER_IDS as readonly BulkCvProviderId[])
+      .filter((id) => Boolean(readiness[id]))
+      .map((id) => BULK_CV_PROVIDER_LABELS[id]);
+  }, [cvParseRouting?.bulkCvProviderReadiness]);
 
   // Fetch all batches using RTK Query
   const {
@@ -533,7 +559,24 @@ export function CVBatchProcessor() {
       }
 
       if (allResults.length > 0) {
-        // setCompletedBatches((prevBatches) => [...allResults, ...prevBatches]);
+        let parserHint: string | null = null;
+        if (normalizedOperations.processingMode !== 'deferred') {
+          try {
+            const refetchResult = await refetchBatches();
+            const list = refetchResult.data;
+            if (list && list.length > 0) {
+              const newest = [...list].sort(
+                (a, b) =>
+                  new Date(b.completedAt ?? b.createdAt).getTime() -
+                  new Date(a.completedAt ?? a.createdAt).getTime(),
+              )[0];
+              parserHint = newest ? summarizeBatchParseLabels(newest.items) : null;
+            }
+          } catch {
+            parserHint = null;
+          }
+        }
+
         toast({
           title:
             normalizedOperations.processingMode === 'deferred'
@@ -542,7 +585,12 @@ export function CVBatchProcessor() {
           description:
             normalizedOperations.processingMode === 'deferred'
               ? `Stored ${processedCount} file(s) in ${allResults.length} deferred batch(es).`
-              : `Successfully processed ${allResults.length} batch(es) with ${processedCount} file(s).`,
+              : [
+                `Processed ${processedCount} file(s) in ${allResults.length} batch(es).`,
+                parserHint
+                  ? `Parsers used: ${parserHint}. Open History → Files for per-file detail.`
+                  : 'Open History → Files to see which AI handled each CV.',
+              ].join(' '),
         });
       }
 
@@ -824,9 +872,51 @@ export function CVBatchProcessor() {
               ) : null}
             </TabsTrigger>
           </TabsList>
+
         </div>
+        {isCvParseRoutingLoading ? (
+          <Alert>
+            <AlertTitle>Checking CV parser configuration…</AlertTitle>
+          </Alert>
+        ) : null}
+        {isCvParseRoutingError ? (
+          <Alert variant="destructive">
+            <AlertTitle>CV parser not configured</AlertTitle>
+            <AlertDescription>
+              Open Settings → Bulk CV AI, choose how CV uploads are parsed, and
+              configure the matching provider keys before uploading.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
         <TabsContent value="upload" className="mt-0 flex min-h-0 flex-col gap-8 focus-visible:ring-0 focus-visible:ring-offset-0">
+
+          {/* {cvParseRouting?.cvParseMode === 'bulk' ? (
+            <Alert>
+              <AlertTitle>Multiple providers</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  CV uploads rotate across your configured provider keys
+                  {readyBulkProviderLabels.length > 0
+                    ? `: ${readyBulkProviderLabels.join(', ')}`
+                    : ''}
+                  .
+                </p>
+              </AlertDescription>
+            </Alert>
+          ) : cvParseRouting?.cvParseMode === 'premium' ? (
+            <Alert>
+              <AlertTitle>Main AI provider (single)</AlertTitle>
+              <AlertDescription>
+                CV uploads use the active provider from Settings → AI Providers
+                {cvParseRouting.premiumActiveProvider
+                  ? ` (${cvParseRouting.premiumActiveProvider})`
+                  : ''}
+                . To use multiple provider keys instead, switch parsing mode under
+                Settings → Bulk CV AI.
+              </AlertDescription>
+            </Alert>
+          ) : null} */}
           <FileUploader
             isProcessing={isPipelineBusy}
             onFilesAdded={handleFilesAdded}

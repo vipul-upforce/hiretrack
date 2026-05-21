@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { LogEntry } from '../settings/logs/server/types';
+import { isCvBatchUploadHistoryTitle } from '@/lib/cv-upload/history-titles';
 
 /**
  * Hook to render a log title string
@@ -54,6 +55,10 @@ export function useRenderLogTitle() {
       // CASE 5: Updated
       if (log.title?.includes('Updated')) {
         return log.title;
+      }
+
+      if (isCvBatchUploadHistoryTitle(log.title)) {
+        return `${log.candidateData?.name || 'Candidate'} was added from CV Batch Upload`;
       }
 
       // CASE 6: Archived / Unarchived

@@ -31,4 +31,4 @@ export function meetsMinBulkCvProvidersConfigured(
   );
 }
 
-export const MIN_BULK_CV_PROVIDERS_MESSAGE = `Configure and verify at least ${MIN_BULK_CV_PROVIDERS_CONFIGURED} bulk CV providers before saving.`;
+export const MIN_BULK_CV_PROVIDERS_MESSAGE = `Configure and verify at least ${MIN_BULK_CV_PROVIDERS_CONFIGURED} provider keys before saving.`;

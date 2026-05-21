@@ -10,14 +10,28 @@ import connectToDatabase, {
   Organization,
 } from '@/lib/mongodb';
 import { handleSingleFile } from '@/lib/fileUtils';
-import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
-import { AIProviders } from '@/lib/ai-providers/types';
-import { decryptProviderKeys, ProvidersConfig } from '@/lib/encryption';
+import { batchItemFieldsFromParseUsage } from '@/lib/cv-processing/cv-parse-usage';
+import { formatBatchItemParseLabel } from '@/lib/cv-processing/batch-item-parse-display';
+import {
+  batchItemParseFieldsFromContext,
+  failedCvBatchItemPayload,
+  resolveBatchItemParseFieldsForFailure,
+  type BatchItemParseFields,
+} from '@/lib/cv-processing/batch-item-parse-fields';
+import {
+  upsertBatchItemFailure,
+  upsertBatchItemSuccess,
+} from '@/lib/cv-upload/batch-item-upsert';
+import {
+  buildOrgCvParseContextFromSettings,
+  loadOrgCvParseContext,
+} from '@/lib/cv-processing/server/cv-parse-routing';
+import { processOrgResume } from '@/lib/cv-processing/server/process-org-resume';
 import { NotificationService } from '@/lib/notifications/notificationService';
 import { Types } from 'mongoose';
 import { PDFDocument } from 'pdf-lib';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import { ISettings, IAIProviders } from '@/lib/models/settings';
+import { ISettings } from '@/lib/models/settings';
 import logger from '@/lib/logger';
 import type { ICandidateHistory } from '@/lib/models/history';
 import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
@@ -30,6 +44,7 @@ import {
   parseCvBatchOperations,
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
+import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
 
 /** Avoid stale batch lists behind CDNs / reverse proxies (prod UI not updating after upload). */
 const JSON_NO_STORE_HEADERS = {
@@ -43,21 +58,6 @@ export const maxDuration = 300;
 
 // Maximum file size limit (10MB) to prevent body size limit errors
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-
-interface ExtendedProcessedResumeData extends ProcessedResumeData {
-  name: string;
-  email?: string;
-  location: string;
-  contact: string;
-  experience: number;
-  skills: string[];
-  currentCTC: number;
-  expectedCTC: number;
-  noticePeriod: number;
-  organizationId: string;
-  status: string;
-  isDeleted: boolean;
-}
 
 interface ProcessResult {
   filename: string;
@@ -102,82 +102,6 @@ function getPdfPageLimitSkipReason(
 async function getPdfPageCountFromBytes(pdfBytes: Uint8Array): Promise<number> {
   const pdf = await PDFDocument.load(pdfBytes);
   return pdf.getPageCount();
-}
-
-async function processResume(
-  base64Resume: string,
-  decryptedAiProviders: AIProviders,
-  organizationId: string,
-): Promise<ExtendedProcessedResumeData> {
-  try {
-    // Use the already decrypted AI providers directly
-    const aiProviders = decryptedAiProviders;
-
-    const { activeProvider } = aiProviders;
-    const apiKey = aiProviders[activeProvider]?.api_key;
-    if (!apiKey) {
-      throw new Error(
-        `API key not found for active provider: ${activeProvider}`,
-      );
-    }
-
-    // Get the appropriate AI provider
-    const provider = AIProviderFactory.getProvider(activeProvider);
-
-    // Get the selected model for this provider
-    const selectedModel =
-      aiProviders[activeProvider]?.customModel ||
-      aiProviders[activeProvider]?.model;
-
-    // Process the resume using the selected provider and model
-    const parsedData = await provider.processResume(
-      base64Resume,
-      apiKey,
-      selectedModel,
-    );
-
-    // Check if the response indicates an invalid CV
-    if (parsedData.error) {
-      return {
-        ...parsedData,
-        organizationId,
-        status: 'rejected',
-        isDeleted: false,
-      };
-    }
-
-    // Check if a candidate with the same name exists
-    const existingCandidate = await Candidate?.findOne({
-      name: parsedData.name,
-      email: parsedData.email,
-      organizationId,
-      isDeleted: false,
-    });
-
-    if (existingCandidate) {
-      return {
-        ...parsedData,
-        organizationId,
-        status: 'rejected',
-        isDeleted: false,
-        error: 'Candidate with this name and email already exists',
-      };
-    }
-
-    // Exclude scores when status is 'applied'
-    const { scores: _scores, ...parsedDataWithoutScores } = parsedData;
-
-    return {
-      ...parsedDataWithoutScores,
-      organizationId,
-      status: 'applied',
-      isDeleted: false,
-    };
-  } catch (error) {
-    throw new Error(
-      error instanceof Error ? error.message : 'Failed to process resume',
-    );
-  }
 }
 
 // Helper function to process ZIP entries recursively with size + page filtering
@@ -350,11 +274,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const settings = (await Settings.findOne({ organizationId })
-      .select('aiProviders gemini fileStorage evaluationConfig')
+      .select('bulkCvAi aiProviders gemini fileStorage evaluationConfig')
       .lean()
       .exec()) as Pick<
       ISettings,
-      'aiProviders' | 'gemini' | 'fileStorage' | 'evaluationConfig'
+      | 'bulkCvAi'
+      | 'aiProviders'
+      | 'gemini'
+      | 'fileStorage'
+      | 'evaluationConfig'
     > | null;
 
     if (!settings) {
@@ -364,67 +292,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if AI providers are configured with backward compatibility
-    let aiProvider: IAIProviders | AIProviders | undefined =
-      settings.aiProviders as IAIProviders | AIProviders | undefined;
-
-    // Handle backward compatibility for legacy Gemini-only installations
-    if (!aiProvider) {
-      // Check if there's a legacy gemini configuration
-      const legacyGeminiKey = settings.gemini?.gemini_key || '';
-
-      aiProvider = {
-        activeProvider: 'gemini',
-        gemini: {
-          api_key: legacyGeminiKey,
-          model: 'gemini-1.5-flash',
-          customModel: '',
+    let cvParseContext;
+    try {
+      cvParseContext = buildOrgCvParseContextFromSettings(
+        organizationId as string,
+        settings,
+      );
+    } catch (routingError) {
+      return NextResponse.json(
+        {
+          error:
+            routingError instanceof Error
+              ? routingError.message
+              : 'CV parsing is not configured',
         },
-        openai: {
-          api_key: '',
-          model: 'gpt-4o-mini',
-          customModel: '',
-        },
-        anthropic: {
-          api_key: '',
-          model: 'claude-3-5-sonnet-20241022',
-          customModel: '',
-        },
-        perplexity: {
-          api_key: '',
-          model: 'sonar-pro',
-          customModel: '',
-        },
-      } as IAIProviders;
-
-      logger.log('Using backward compatibility for legacy Gemini settings');
+        { status: 404 },
+      );
     }
-
-    // Decrypt API keys from database - MOVED UP
-    // Note: decryptProviderKeys returns the same structure but with decrypted keys
-    const decryptedAiProviders = decryptProviderKeys(
-      aiProvider as ProvidersConfig,
-      organizationId,
-    ) as AIProviders;
 
     const processingMode =
       normalizedOperations.processingMode === 'deferred'
         ? 'deferred'
         : 'immediate';
-    const { activeProvider } = decryptedAiProviders;
-    const apiKey = decryptedAiProviders[activeProvider]?.api_key;
     const maxPdfPages = Math.max(0, settings.evaluationConfig?.maxPdfPages ?? 0);
-
-    // Add debug logging similar to evaluate API
-
-    if (processingMode === 'immediate' && !apiKey) {
-      return NextResponse.json(
-        {
-          error: `${activeProvider.charAt(0).toUpperCase() + activeProvider.slice(1)} API key not found`,
-        },
-        { status: 404 },
-      );
-    }
 
     let targetJob: { _id: unknown; title?: string; lanes?: string[]; useCustomLanes?: boolean } | null =
       null;
@@ -587,14 +477,17 @@ export async function POST(request: NextRequest) {
     cvBatchInfo.processingMode = processingMode;
     cvBatchInfo.operationsSnapshot = normalizedOperations;
     
+    const intakeParseFields = batchItemParseFieldsFromContext(
+      cvParseContext,
+      'intake',
+      0,
+    );
+
     // Add skipped files to batch items as 'failed' status (schema only supports 'success' or 'failed')
     skippedFiles.forEach((skipped) => {
-      cvBatchInfo.items.push({
-        filename: skipped.filename,
-        status: 'failed',
-        error: skipped.reason,
-        processedAt: new Date(),
-      });
+      cvBatchInfo.items.push(
+        failedCvBatchItemPayload(skipped.filename, skipped.reason, intakeParseFields),
+      );
       cvBatchInfo.failureCount += 1;
     });
 
@@ -641,12 +534,19 @@ export async function POST(request: NextRequest) {
           selected,
         });
       } catch (error) {
-        cvBatchInfo.items.push({
-          filename: file.name,
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-          processedAt: new Date(),
-        });
+        const storeParseFields = resolveBatchItemParseFieldsForFailure(
+          error,
+          cvParseContext,
+          file.name,
+          file.size,
+        );
+        cvBatchInfo.items.push(
+          failedCvBatchItemPayload(
+            file.name,
+            error instanceof Error ? error.message : 'Unknown error',
+            storeParseFields,
+          ),
+        );
         cvBatchInfo.failureCount += 1;
       }
     }
@@ -690,13 +590,18 @@ export async function POST(request: NextRequest) {
 
     for (const fileEntry of storedFileEntries) {
       const { filename, selected, resumeFile, base64Data } = fileEntry;
+      let lastParseFields: BatchItemParseFields | undefined;
       try {
-        // FIXED: Pass decrypted AI providers instead of raw settings
-        const candidateData = await processResume(
-          base64Data,
-          decryptedAiProviders, // Pass the already decrypted aiProviders
-          organizationId as string,
+        const { data: candidateData, usage: parseUsage } = await processOrgResume(
+          cvParseContext,
+          {
+            base64Resume: base64Data,
+            organizationId: organizationId as string,
+            filename,
+          },
         );
+        const parseFields = batchItemFieldsFromParseUsage(parseUsage);
+        lastParseFields = parseFields;
 
         const shouldApplyOperations = selected && normalizedOperations.assignJob;
         const shouldAddRemark = selected && normalizedOperations.addRemark;
@@ -709,13 +614,11 @@ export async function POST(request: NextRequest) {
         // Check if the CV was invalid
         if (candidateData.error) {
           // Add error item to batch
-          cvBatchInfo.items.push({
+          upsertBatchItemFailure(cvBatchInfo, {
             filename,
-            status: 'failed',
             error: candidateData.error,
-            processedAt: new Date(),
+            parseFields,
           });
-          cvBatchInfo.failureCount += 1;
 
           const pendingIndex = cvBatchInfo.pendingItems.findIndex(
             (pendingItem) =>
@@ -765,20 +668,6 @@ export async function POST(request: NextRequest) {
           resume: resumeFile,
         });
 
-        // Validate required fields
-        const requiredFields: Array<keyof ExtendedProcessedResumeData> = [
-          'name',
-        ];
-        const missingFields = requiredFields.filter(
-          (field) => !candidateData[field],
-        );
-
-        if (missingFields.length > 0) {
-          throw new Error(
-            `Validation Error: Required fields not provided: ${missingFields.join(', ')}`,
-          );
-        }
-
         await candidate.save();
         createdCandidateIds.push(candidate._id.toString());
 
@@ -811,7 +700,7 @@ export async function POST(request: NextRequest) {
           history: [
             {
               dateTime: new Date(),
-              title: 'cv-process batch',
+              title: CV_BATCH_UPLOAD_HISTORY_TITLE,
               previousInterviewer: null,
               currentInterviewer: null,
               assignmentBy: user.id,
@@ -861,14 +750,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        cvBatchInfo.items.push({
+        upsertBatchItemSuccess(cvBatchInfo, {
           filename,
           candidateId: candidate._id,
-          status: 'success',
-          message: 'Successfully processed and created candidate',
-          processedAt: new Date(),
+          parseFields,
         });
-        cvBatchInfo.successCount += 1;
         const pendingIndex = cvBatchInfo.pendingItems.findIndex(
           (pendingItem) =>
             pendingItem.filename === filename
@@ -887,14 +773,21 @@ export async function POST(request: NextRequest) {
           status: 'success',
         });
       } catch (error) {
-        // Add error item to batch
-        cvBatchInfo.items.push({
+        const parseFields = resolveBatchItemParseFieldsForFailure(
+          error,
+          cvParseContext,
           filename,
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Unknown error',
-          processedAt: new Date(),
+          resumeFile.size,
+          lastParseFields,
+        );
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        // Add error item to batch
+        upsertBatchItemFailure(cvBatchInfo, {
+          filename,
+          error: errorMessage,
+          parseFields,
         });
-        cvBatchInfo.failureCount += 1;
         const pendingIndex = cvBatchInfo.pendingItems.findIndex(
           (pendingItem) =>
             pendingItem.filename === filename
@@ -904,13 +797,12 @@ export async function POST(request: NextRequest) {
         if (pendingIndex >= 0) {
           cvBatchInfo.pendingItems[pendingIndex].status = 'failed';
           cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
-          cvBatchInfo.pendingItems[pendingIndex].error =
-            error instanceof Error ? error.message : 'Unknown error';
+          cvBatchInfo.pendingItems[pendingIndex].error = errorMessage;
         }
 
         errors.push({
           filename,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: errorMessage,
         });
       }
     }
@@ -1055,7 +947,45 @@ export async function GET(request: NextRequest) {
   try {
     const batches = await CVBatch.find({ organizationId }).lean();
 
-    return NextResponse.json(batches, {
+    let enrichedBatches = batches;
+    try {
+      const cvParseContext = await loadOrgCvParseContext(organizationId);
+      enrichedBatches = batches.map((batch) => ({
+        ...batch,
+        items: (batch.items ?? []).map((item) => {
+          if (formatBatchItemParseLabel(item)) {
+            return item;
+          }
+          if (item.status !== 'failed') {
+            return item;
+          }
+          const fields = batchItemParseFieldsFromContext(
+            cvParseContext,
+            item.filename,
+            0,
+          );
+          return {
+            ...item,
+            cvParseMode: fields.cvParseMode,
+            usedProvider: fields.usedProvider,
+            parseProviderLabel: fields.parseProviderLabel,
+          };
+        }),
+      }));
+    } catch (routingError) {
+      logger.warn(
+        {
+          organizationId,
+          error:
+            routingError instanceof Error
+              ? routingError.message
+              : String(routingError),
+        },
+        'Could not enrich CV batch items with parse provider labels',
+      );
+    }
+
+    return NextResponse.json(enrichedBatches, {
       status: 200,
       headers: JSON_NO_STORE_HEADERS,
     });

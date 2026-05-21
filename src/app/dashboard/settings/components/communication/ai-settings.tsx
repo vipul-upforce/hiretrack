@@ -12,16 +12,16 @@ const sections: SectionOption[] = [
   {
     id: 'providers',
     title: 'AI Providers',
-    description: 'Premium keys for candidate evaluation',
+    description: 'OpenAI, Claude, Gemini, etc. for candidate evaluation',
     icon: Bot,
     badge: 'Evaluation',
   },
   {
     id: 'bulk-cv',
-    title: 'Bulk CV AI',
-    description: 'Docling + Groq/Gemini for bulk parsing',
+    title: 'AI Providers Pool',
+    description: 'How CV uploads are parsed and provider keys are used',
     icon: Layers,
-    badge: 'Bulk',
+    badge: 'Bulk Parsing',
   },
   {
     id: 'evaluation',

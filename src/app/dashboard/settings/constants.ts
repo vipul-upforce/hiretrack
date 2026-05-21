@@ -41,14 +41,14 @@ const communicationLegacySettings = [
     title: 'AI Providers',
     key: 'ai-providers',
     description:
-      'Premium AI (Gemini, OpenAI, Claude, Perplexity) for candidate evaluation and scoring',
+      'Main AI providers (Gemini, OpenAI, Claude, Perplexity) for candidate evaluation',
     icon: Bot,
   },
   {
     title: 'Bulk CV AI',
     key: 'bulk-cv-ai',
     description:
-      'Low-cost Docling + Groq/Gemini keys for bulk resume parsing only',
+      'CV upload parsing: multiple provider keys or a single main AI provider',
     icon: Layers,
   },
   {

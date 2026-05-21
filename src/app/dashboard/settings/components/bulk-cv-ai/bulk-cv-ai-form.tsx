@@ -13,7 +13,14 @@ import {
   useUpdateBulkCvAiConfigsMutation,
   useValidateBulkCvAiMutation,
 } from '@/lib/features/settings';
-import { BULK_CV_PROVIDER_LABELS } from '@/lib/cv-processing/config';
+import {
+  BULK_CV_PROVIDER_LABELS,
+  CV_UPLOAD_POOL_DESCRIPTIONS,
+  CV_UPLOAD_POOL_LABELS,
+} from '@/lib/cv-processing/config';
+import type { CvUploadPool } from '@/lib/types/bulk-cv-ai';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { createBulkCvAiSchema } from './schema';
 import {
   getConfiguredBulkCvProviderIds,
@@ -25,7 +32,7 @@ import {
   type BulkCvAiFormValues,
 } from './types';
 import BulkProviderSlotCard from './provider-slot-card';
-import { Loader2 } from 'lucide-react';
+import { Info, Loader2 } from 'lucide-react';
 
 type ProviderVerifiedMap = Record<BulkCvProviderId, boolean>;
 type RetainFlagsKey =
@@ -88,6 +95,9 @@ function isSaveBlocked(
   verified: ProviderVerifiedMap,
   initialValues: BulkCvAiFormValues,
 ): boolean {
+  if (formik.values.cvUploadPool === 'premium') {
+    return false;
+  }
   if (!meetsMinBulkCvProvidersConfigured(formik.values, initialValues)) {
     return true;
   }
@@ -191,6 +201,7 @@ export default function BulkCvAiForm({
           }
 
           const bulkCvAi: IBulkCvAi = {
+            cvUploadPool: values.cvUploadPool,
             doclingParseUrl: values.doclingParseUrl.trim(),
             groq: formatSlot(
               values.groq_api_key,
@@ -235,9 +246,9 @@ export default function BulkCvAiForm({
           const msg =
             e && typeof e === 'object' && 'data' in e
               ? String(
-                  (e as { data?: { error?: string } }).data?.error ||
-                    'Failed to save',
-                )
+                (e as { data?: { error?: string } }).data?.error ||
+                'Failed to save',
+              )
               : 'Failed to save';
           toast({
             title: 'Error',
@@ -249,7 +260,9 @@ export default function BulkCvAiForm({
     >
       {(formik) => {
         const saveBlocked = isSaveBlocked(formik, verified, initialValues);
+        const isBulkPool = formik.values.cvUploadPool === 'bulk';
         const showMinProvidersHint =
+          isBulkPool &&
           !meetsMinBulkCvProvidersConfigured(formik.values, initialValues);
 
         return (
@@ -257,17 +270,82 @@ export default function BulkCvAiForm({
             className={`flex flex-col gap-4  h-full overflow-y-scroll ${embedded ? 'px-6 pb-6' : 'px-6 pb-6'}`}
           >
             <div className="flex flex-col gap-4 mb-[80px]">
-              <p className="text-muted-foreground text-sm">
-                {MIN_BULK_CV_PROVIDERS_MESSAGE} Bulk uploads round-robin across
-                configured providers.
-              </p>
+              <div className="rounded-lg border border-border/80 bg-muted/20 p-4 space-y-3">
+                <div>
+                  <Label className="text-sm font-medium">
+                    CV upload parsing mode
+                  </Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Pick one approach for dashboard CV uploads. This is separate
+                    from candidate evaluation AI under AI Providers.
+                  </p>
+                </div>
+                <RadioGroup
+                  value={formik.values.cvUploadPool}
+                  onValueChange={(value) => {
+                    void formik.setFieldValue('cvUploadPool', value as CvUploadPool);
+                  }}
+                  className="grid gap-3 sm:grid-cols-2"
+                >
+                  {(['bulk', 'premium'] as const).map((pool) => (
+                    <label
+                      key={pool}
+                      htmlFor={`cv-upload-pool-${pool}`}
+                      className="flex cursor-pointer items-start gap-3 rounded-md border border-border/70 bg-background px-3 py-3 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary"
+                    >
+                      <RadioGroupItem
+                        id={`cv-upload-pool-${pool}`}
+                        value={pool}
+                        className="mt-0.5 shrink-0"
+                      />
+                      <span className="flex min-w-0 flex-col gap-1 w-full">
+                        <span className="flex items-center gap-1 text-sm font-medium leading-snug relative  w-full justify-between">
+                          <p>
+                            {CV_UPLOAD_POOL_LABELS[pool]}
+
+                          </p>
+                          <span className="relative flex items-center group">
+                            <Info className="w-4 h-4 text-muted-foreground cursor-pointer hover:text-primary focus:text-primary" />
+                            <div className="absolute z-20  -translate-x-[210px] top-6 min-w-[270px] max-w-xs px-3 py-2 text-xs rounded bg-muted/90 text-foreground shadow-lg border border-border pointer-events-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150"
+                              role="tooltip"
+                            >
+                              {CV_UPLOAD_POOL_DESCRIPTIONS[pool]}
+                            </div>
+                          </span>
+                        </span>
+                      </span>
+                    </label>
+
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {isBulkPool ? (
+                <p className="text-muted-foreground text-sm">
+                  {MIN_BULK_CV_PROVIDERS_MESSAGE} Uploads rotate across the keys
+                  you configure below.
+                </p>
+              ) : null}
               {showMinProvidersHint && formik.submitCount > 0 && (
                 <p className="text-destructive text-sm" role="alert">
                   {MIN_BULK_CV_PROVIDERS_MESSAGE}
                 </p>
               )}
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {isBulkPool ? (
+                <p className="text-sm font-medium text-foreground">
+                  Provider API keys
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Provider API keys (optional — not used while Main AI provider is
+                  selected)
+                </p>
+              )}
+
+              <div
+                className={`grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 ${isBulkPool ? '' : 'opacity-60'}`}
+              >
                 {BULK_CV_PROVIDER_FIELDS.map((field) => (
                   <BulkProviderSlotCard
                     key={field.id}
@@ -281,20 +359,23 @@ export default function BulkCvAiForm({
                 ))}
               </div>
             </div>
-            <div className="flex flex-row gap-2 pt-2 fixed left-0 p-6 border border-top w-full justify-between bottom-0 bg-background">
-              <div />
+            <div className="flex flex-row gap-2 pt-2 fixed left-0 p-4 border border-top w-full justify-between bottom-0 bg-background">
+              <div></div>
 
-              {!embedded && (
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
+              <div className='flex flex-row gap-2 mt-2'>
+                {(
+                  <Button type="button" variant="outline" onClick={onClose}>
+                    Cancel
+                  </Button>
+                )}
+                <Button type="submit" disabled={isSaving || saveBlocked}>
+                  {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  Save
                 </Button>
-              )}
-              <Button type="submit" disabled={isSaving || saveBlocked}>
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
-                Save
-              </Button>
+
+              </div>
             </div>
           </Form>
         );

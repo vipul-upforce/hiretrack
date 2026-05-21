@@ -1,6 +1,7 @@
-import type { BulkCvProviderId } from '@/lib/types/bulk-cv-ai';
+import type { BulkCvProviderId, CvUploadPool } from '@/lib/types/bulk-cv-ai';
 
 export type BulkCvAiFormValues = {
+  cvUploadPool: CvUploadPool;
   doclingParseUrl: string;
   groq_api_key: string;
   groq_model: string;

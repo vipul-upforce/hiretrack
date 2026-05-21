@@ -1,7 +1,7 @@
 import type { DoclingParseResponse } from '../types';
 
 /**
- * Sends a PDF to Docling and returns extracted Markdown.
+ * Sends a PDF to the configured parse service and returns extracted Markdown.
  */
 export async function parsePdfToMarkdownViaDocling(
   file: File,
@@ -18,7 +18,7 @@ export async function parsePdfToMarkdownViaDocling(
   });
 
   if (!response.ok) {
-    throw new Error(`Docling service failed with status: ${response.status}`);
+    throw new Error(`PDF parse service failed with status: ${response.status}`);
   }
 
   const data = (await response.json()) as DoclingParseResponse;
@@ -27,7 +27,7 @@ export async function parsePdfToMarkdownViaDocling(
     typeof data.markdown !== 'string' ||
     !data.markdown.trim()
   ) {
-    throw new Error('Docling did not return usable markdown');
+    throw new Error('PDF parse service did not return usable markdown');
   }
 
   return data.markdown;

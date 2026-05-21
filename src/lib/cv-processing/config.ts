@@ -1,10 +1,11 @@
 import type {
   BulkCvProviderId,
+  CvUploadPool,
   IBulkCvAi,
 } from '@/lib/types/bulk-cv-ai';
 
 /** Fallback when `DOCLING_PARSE_URL` is unset (override in production via env). */
-export const DEFAULT_DOCLING_PARSE_URL = 'http://185.185.126.132:8000/parse';
+export const DEFAULT_DOCLING_PARSE_URL = 'http://185.185.126.124:8000/parse';
 
 export const DEFAULT_GROQ_RESUME_MODEL = 'llama-3.1-8b-instant';
 export const DEFAULT_DEEPSEEK_RESUME_MODEL = 'deepseek-chat';
@@ -68,6 +69,29 @@ export const BULK_CV_PROVIDER_IDS = [
   'cerebras',
   'mistral',
 ] as const satisfies readonly BulkCvProviderId[];
+
+/** Short title for each CV upload parsing mode (settings + upload UI). */
+export const CV_UPLOAD_POOL_LABELS: Record<CvUploadPool, string> = {
+  bulk: 'Multiple providers (take turns)',
+  premium: 'Single provider (active from AI Providers)',
+};
+
+/** Extra line under each radio option in Bulk CV AI settings. */
+export const CV_UPLOAD_POOL_DESCRIPTIONS: Record<CvUploadPool, string> = {
+  bulk:
+    'Several API keys (Groq, Gemini, etc.), often on free tiers, with round-robin. Configure and verify keys below.',
+  premium:
+    'One provider from AI Providers (OpenAI, Claude, Gemini, etc.). Keys below are saved but not used for upload while this option is selected.',
+};
+
+/**
+ * Label for batch history / parse badges (not a Hiretrack product tier).
+ * `bulk` = multiple bulk keys; `premium` = single active AI Providers key.
+ */
+export const CV_PARSE_PATH_LABELS: Record<CvUploadPool, string> = {
+  bulk: 'Bulk parsing',
+  premium: 'Main AI provider',
+};
 
 export const BULK_CV_PROVIDER_LABELS: Record<BulkCvProviderId, string> = {
   groq: 'Groq',

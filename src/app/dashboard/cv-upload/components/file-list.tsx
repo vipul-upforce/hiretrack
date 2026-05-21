@@ -39,13 +39,12 @@ export function FileList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 h-full">
       {files.map((file) => (
         <div
           key={file.id}
-          className={`flex items-center justify-between p-2 border rounded-lg ${
-            file.skipped ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : ''
-          }`}
+          className={`flex items-center justify-between p-2 border rounded-lg ${file.skipped ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' : ''
+            }`}
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {!file.skipped && (

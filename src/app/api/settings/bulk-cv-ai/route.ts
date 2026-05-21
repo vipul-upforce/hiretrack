@@ -5,10 +5,11 @@ import {
   decryptBulkCvAi,
   encryptBulkCvAi,
 } from '@/lib/encryption';
-import type {
-  BulkCvProviderId,
-  IBulkCvAi,
-  IBulkCvAiProviderSlot,
+import {
+  normalizeCvUploadPool,
+  type BulkCvProviderId,
+  type IBulkCvAi,
+  type IBulkCvAiProviderSlot,
 } from '@/lib/types/bulk-cv-ai';
 import type { UpdateBulkCvAiRequest } from '@/lib/features/settings/types/ai.types';
 import { getDefaultModel } from '@/lib/ai-providers/models-config';
@@ -28,6 +29,7 @@ function emptySlot(model: string): IBulkCvAiProviderSlot {
 
 function defaultBulkCvAiResponse(): IBulkCvAi {
   return {
+    cvUploadPool: 'bulk',
     doclingParseUrl: '',
     groq: emptySlot(DEFAULT_GROQ_RESUME_MODEL),
     gemini: emptySlot(getDefaultModel('gemini')),
@@ -53,6 +55,7 @@ function mergeBulkCvAi(stored: IBulkCvAi | undefined): IBulkCvAi {
   const base = defaultBulkCvAiResponse();
   if (!stored) return base;
   return {
+    cvUploadPool: normalizeCvUploadPool(stored.cvUploadPool),
     doclingParseUrl: stored.doclingParseUrl ?? '',
     groq: mergeSlot(stored.groq, base.groq),
     gemini: mergeSlot(stored.gemini, base.gemini),
@@ -171,11 +174,16 @@ export async function PUT(req: NextRequest) {
       }
     }
 
+    merged.cvUploadPool = normalizeCvUploadPool(merged.cvUploadPool);
+
     const configuredCount = countBulkCvProvidersWithKeys(merged);
-    if (configuredCount < MIN_BULK_CV_PROVIDERS_CONFIGURED) {
+    if (
+      merged.cvUploadPool === 'bulk' &&
+      configuredCount < MIN_BULK_CV_PROVIDERS_CONFIGURED
+    ) {
       return NextResponse.json(
         {
-          error: `At least ${MIN_BULK_CV_PROVIDERS_CONFIGURED} bulk CV AI providers must have API keys configured.`,
+          error: `At least ${MIN_BULK_CV_PROVIDERS_CONFIGURED} provider keys are required when CV uploads use Multiple providers.`,
         },
         { status: 400 },
       );

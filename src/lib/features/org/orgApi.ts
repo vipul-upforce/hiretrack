@@ -87,6 +87,9 @@ export interface ProcessedItem {
   error?: string;
   processedAt: string;
   _id: string;
+  cvParseMode?: 'bulk' | 'premium';
+  usedProvider?: string;
+  parseProviderLabel?: string;
 }
 
 export interface PendingBatchItem {
@@ -112,6 +115,17 @@ export interface CvBatchOperationsSnapshot {
   remark?: string;
   isRemarkPrivate?: boolean;
   remarkRating?: number | null;
+}
+
+/** GET `/api/process-cv/bulk-ai` — which CV parser the org will use on upload. */
+export interface CvParseRoutingResponse {
+  status: 'ok';
+  cvUploadPool: 'bulk' | 'premium';
+  cvParseMode: 'bulk' | 'premium';
+  bulkCvProviderReadiness: Record<string, boolean>;
+  bulkReadyCount: number;
+  premiumReady: boolean;
+  premiumActiveProvider?: string;
 }
 
 export interface Batch {
@@ -226,6 +240,12 @@ export const orgApi = baseApi.injectEndpoints({
       }),
     }),
     // New endpoint to fetch batches
+    getCvParseRouting: builder.query<CvParseRoutingResponse, void>({
+      query: () => ({
+        url: '/process-cv/bulk-ai',
+        method: 'GET',
+      }),
+    }),
     fetchBatches: builder.query<Batch[], string>({
       query: (organizationId) => ({
         url: `/process-cv?organizationId=${organizationId}`,
@@ -307,6 +327,7 @@ export const {
   useGetCustomFieldsQuery,
   useLazyGetCustomFieldsQuery,
   useLazyGetCustomFieldsByOrgNameQuery,
+  useGetCvParseRoutingQuery,
   useFetchBatchesQuery,
   usePostBatchMutation,
   useProcessPendingCvBatchesMutation,

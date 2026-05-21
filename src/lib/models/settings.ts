@@ -136,8 +136,13 @@ const settingsSchema = new Schema({
       customModel: { type: String, default: '' },
     },
   },
-  /** Docling + low-cost models for bulk parsing only (not premium evaluation AI). */
+  /** Bulk CV parsing providers (separate from main AI Providers evaluation). */
   bulkCvAi: {
+    cvUploadPool: {
+      type: String,
+      enum: ['bulk', 'premium'],
+      default: 'bulk',
+    },
     doclingParseUrl: { type: String, default: '' },
     groq: {
       api_key: { type: String, default: '' },

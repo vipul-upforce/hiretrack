@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import type { Candidate } from '@/types/candidate';
 import { ICandidateHistory } from '@/lib/models/history';
+import { isCvBatchUploadHistoryTitle } from '@/lib/cv-upload/history-titles';
 
 export function useRenderEntryTitle(
   interview: ICandidateHistory,
@@ -95,7 +96,7 @@ export function useRenderEntryTitle(
         return <p>{localCandidate.name} was Unarchived</p>;
       }
 
-      if (interview.title === 'cv-process batch') {
+      if (isCvBatchUploadHistoryTitle(interview.title)) {
         return <p>{localCandidate.name} was added from CV Batch Upload</p>;
       }
 

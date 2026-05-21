@@ -1,6 +1,7 @@
 'use client';
 
 import { Progress } from '@/components/ui/progress';
+import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
 import { Batch } from './cv-batch-processor';
 
 export function BatchProgress({ batch }: { batch: Batch }) {
@@ -36,16 +37,23 @@ export function BatchProgress({ batch }: { batch: Batch }) {
 
       {batch.items && batch.items.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-sm font-medium mb-2">Processed Files</h4>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {batch.items.map((item) => (
+          <h4 className="mb-2 text-sm font-medium">Processed Files</h4>
+          <div className="max-h-60 space-y-2 overflow-y-auto">
+            {dedupeBatchItemsByFilename(batch.items).map((item) => (
               <div
                 key={item._id}
-                className="text-sm p-2 rounded border flex items-center justify-between"
+                className="flex flex-col gap-1 rounded border p-2 text-sm sm:flex-row sm:items-center sm:justify-between"
               >
-                <span className="truncate flex-1">{item.filename}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate">{item.filename}</span>
+                  {item.parseProviderLabel ? (
+                    <span className="block text-xs text-muted-foreground">
+                      {item.parseProviderLabel}
+                    </span>
+                  ) : null}
+                </div>
                 <span
-                  className={`ml-2 px-2 py-1 rounded-full text-xs ${
+                  className={`shrink-0 rounded-full px-2 py-1 text-xs ${
                     item.status === 'success'
                       ? 'bg-green-100 text-green-800'
                       : 'bg-red-100 text-red-800'

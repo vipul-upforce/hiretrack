@@ -89,6 +89,7 @@ export default function BulkCvAiSettings({
   );
 
   const initialValues: BulkCvAiFormValues = {
+    cvUploadPool: b.cvUploadPool === 'premium' ? 'premium' : 'bulk',
     doclingParseUrl: b.doclingParseUrl ?? '',
     groq_api_key: b.groq?.api_key ?? '',
     groq_model: groqFields.modelField,

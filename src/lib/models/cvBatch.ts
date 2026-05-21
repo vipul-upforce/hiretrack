@@ -7,6 +7,12 @@ export interface ICVBatchItem {
   message?: string;
   error?: string;
   processedAt: Date;
+  /** `bulk` = Bulk CV AI; `premium` = Settings → AI Providers. */
+  cvParseMode?: 'bulk' | 'premium';
+  /** Provider id used for this file (bulk slot or premium active provider). */
+  usedProvider?: string;
+  /** Human-readable label, e.g. "Bulk parsing · Groq". */
+  parseProviderLabel?: string;
 }
 
 export interface ICVBatchPendingItem {
@@ -55,6 +61,9 @@ const cvBatchItemSchema = new mongoose.Schema<ICVBatchItem>({
   message: { type: String },
   error: { type: String },
   processedAt: { type: Date, default: Date.now },
+  cvParseMode: { type: String, enum: ['bulk', 'premium'] },
+  usedProvider: { type: String },
+  parseProviderLabel: { type: String },
 });
 
 const cvBatchPendingItemSchema = new mongoose.Schema<ICVBatchPendingItem>({

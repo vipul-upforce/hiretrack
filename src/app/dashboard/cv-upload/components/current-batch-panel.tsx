@@ -78,7 +78,9 @@ export function CurrentBatchPanel({
     : 0;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-border/60 bg-background/80 p-4 shadow-sm md:p-5">
+    <div className="space-y-4 rounded-2xl border border-border/60 bg-background/80 p-4 pb-6 shadow-sm md:p-5 h-[calc(100vh-200px)] overflow-y-auto">
+      {/* <div className="flex flex-col gap-4 top-0 bg-background/80 z-10"> */}
+
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h2 className="text-xl font-semibold">Current Upload Set</h2>
@@ -242,14 +244,22 @@ export function CurrentBatchPanel({
           )}
         </div>
       )}
+      {/* </div> */}
 
 
-      <FileList
-        isProcessing={isPipelineBusy}
-        files={files}
-        onRemove={onRemoveFile}
-        onToggleSelect={onToggleSelect}
-      />
+      <div className="">
+        <FileList
+          isProcessing={isPipelineBusy}
+          files={files}
+          onRemove={onRemoveFile}
+          onToggleSelect={onToggleSelect}
+        />
+
+      </div>
+
+
+
+
     </div>
   );
 }

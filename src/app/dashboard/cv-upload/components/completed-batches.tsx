@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileStack, Loader2, PlayCircle, RotateCcw, ScrollText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -29,6 +30,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useFetchJobByIdQuery } from '@/lib/features/job/jobApi';
+import { resolveItemParseLabel } from '../batch-parse-display';
+import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
 import type { Batch } from './cv-batch-processor';
 
 function isDeferredPendingBatch(batch: Batch): boolean {
@@ -75,11 +78,13 @@ function BatchFileListEntry({
   filename,
   status,
   error,
+  parseProviderLabel,
   actionSlot,
 }: {
   filename: string;
   status: string;
   error?: string;
+  parseProviderLabel?: string;
   actionSlot?: ReactNode;
 }) {
   return (
@@ -88,6 +93,11 @@ function BatchFileListEntry({
         <div className="min-w-0">
           <p className="truncate text-xs font-medium">{filename}</p>
           <p className="text-[11px] capitalize text-muted-foreground">{status}</p>
+          {parseProviderLabel ? (
+            <Badge variant="secondary" className="mt-1 max-w-full truncate text-[10px] font-normal">
+              {parseProviderLabel}
+            </Badge>
+          ) : null}
         </div>
         {actionSlot ?? null}
       </div>
@@ -257,13 +267,15 @@ function getBatchFileRowsForDisplay(batch: Batch): Array<{
   filename: string;
   status: string;
   error?: string;
+  parseProviderLabel?: string;
 }> {
   if (batch.items.length > 0) {
-    return batch.items.map((item) => ({
+    return dedupeBatchItemsByFilename(batch.items).map((item) => ({
       key: item._id,
       filename: item.filename,
       status: item.status,
       error: item.error,
+      parseProviderLabel: resolveItemParseLabel(item),
     }));
   }
   return getDeferredBatchFileRows(batch);
@@ -352,6 +364,9 @@ function BatchResumeFilesHoverPopover({
                 )
               </span>
             </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Parsing provider is shown under each file when available.
+            </p>
             {hasFailed ? (
               <Button
                 type="button"
@@ -375,6 +390,7 @@ function BatchResumeFilesHoverPopover({
                 filename={row.filename}
                 status={row.status}
                 error={row.error}
+                parseProviderLabel={row.parseProviderLabel}
                 actionSlot={
                   canRetry ? (
                     <Button

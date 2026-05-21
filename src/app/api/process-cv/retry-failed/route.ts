@@ -10,11 +10,16 @@ import connectToDatabase, {
   DuplicateCandidate,
   FileUrlMapping,
 } from '@/lib/mongodb';
-import { AIProviderFactory, ProcessedResumeData } from '@/lib/ai-providers';
-import { AIProviders } from '@/lib/ai-providers/types';
-import { decryptProviderKeys, ProvidersConfig } from '@/lib/encryption';
+import { batchItemFieldsFromParseUsage } from '@/lib/cv-processing/cv-parse-usage';
+import {
+  failedCvBatchItemPayload,
+  resolveBatchItemParseFieldsForFailure,
+  type BatchItemParseFields,
+} from '@/lib/cv-processing/batch-item-parse-fields';
+import { buildOrgCvParseContextFromSettings } from '@/lib/cv-processing/server/cv-parse-routing';
+import { processOrgResume } from '@/lib/cv-processing/server/process-org-resume';
 import { getAuthenticatedUser } from '@/app/actions/auth';
-import { ISettings, IAIProviders } from '@/lib/models/settings';
+import { ISettings } from '@/lib/models/settings';
 import logger from '@/lib/logger';
 import type { ICandidateHistory } from '@/lib/models/history';
 import { broadcastMultipleCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
@@ -25,6 +30,7 @@ import {
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
 import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume-file-from-stored-url';
+import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
 
 const BATCH_SIZE = 20;
 
@@ -61,21 +67,6 @@ function findLatestItemByFilenameIndex(
   return -1;
 }
 
-interface ExtendedProcessedResumeData extends ProcessedResumeData {
-  name: string;
-  email?: string;
-  location: string;
-  contact: string;
-  experience: number;
-  skills: string[];
-  currentCTC: number;
-  expectedCTC: number;
-  noticePeriod: number;
-  organizationId: string;
-  status: string;
-  isDeleted: boolean;
-}
-
 interface DeferredPendingItem {
   filename: string;
   status: 'pending' | 'processed' | 'failed';
@@ -89,57 +80,6 @@ interface DeferredPendingItem {
   selected: boolean;
   error?: string;
   processedAt?: Date;
-}
-
-async function processResume(
-  base64Resume: string,
-  decryptedAiProviders: AIProviders,
-  organizationId: string,
-): Promise<ExtendedProcessedResumeData> {
-  const { activeProvider } = decryptedAiProviders;
-  const apiKey = decryptedAiProviders[activeProvider]?.api_key;
-  if (!apiKey) {
-    throw new Error(`API key not found for active provider: ${activeProvider}`);
-  }
-
-  const provider = AIProviderFactory.getProvider(activeProvider);
-  const selectedModel =
-    decryptedAiProviders[activeProvider]?.customModel ||
-    decryptedAiProviders[activeProvider]?.model;
-
-  const parsedData = await provider.processResume(base64Resume, apiKey, selectedModel);
-  if (parsedData.error) {
-    return {
-      ...parsedData,
-      organizationId,
-      status: 'rejected',
-      isDeleted: false,
-    };
-  }
-
-  const existingCandidate = await Candidate?.findOne({
-    name: parsedData.name,
-    email: parsedData.email,
-    organizationId,
-    isDeleted: false,
-  });
-  if (existingCandidate) {
-    return {
-      ...parsedData,
-      organizationId,
-      status: 'rejected',
-      isDeleted: false,
-      error: 'Candidate with this name and email already exists',
-    };
-  }
-
-  const { scores: _scores, ...parsedDataWithoutScores } = parsedData;
-  return {
-    ...parsedDataWithoutScores,
-    organizationId,
-    status: 'applied',
-    isDeleted: false,
-  };
 }
 
 export async function POST(request: NextRequest) {
@@ -165,33 +105,26 @@ export async function POST(request: NextRequest) {
   }
 
   const settings = (await Settings.findOne({ organizationId })
-    .select('aiProviders gemini')
+    .select('bulkCvAi aiProviders gemini')
     .lean()
-    .exec()) as Pick<ISettings, 'aiProviders' | 'gemini'> | null;
+    .exec()) as Pick<ISettings, 'bulkCvAi' | 'aiProviders' | 'gemini'> | null;
   if (!settings) {
     return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
   }
 
-  let aiProvider: IAIProviders | AIProviders | undefined =
-    settings.aiProviders as IAIProviders | AIProviders | undefined;
-  if (!aiProvider) {
-    const legacyGeminiKey = settings.gemini?.gemini_key || '';
-    aiProvider = {
-      activeProvider: 'gemini',
-      gemini: { api_key: legacyGeminiKey, model: 'gemini-1.5-flash', customModel: '' },
-      openai: { api_key: '', model: 'gpt-4o-mini', customModel: '' },
-      anthropic: { api_key: '', model: 'claude-3-5-sonnet-20241022', customModel: '' },
-      perplexity: { api_key: '', model: 'sonar-pro', customModel: '' },
-    } as IAIProviders;
-  }
-
-  const decryptedAiProviders = decryptProviderKeys(
-    aiProvider as ProvidersConfig,
-    organizationId,
-  ) as AIProviders;
-  const apiKey = decryptedAiProviders[decryptedAiProviders.activeProvider]?.api_key;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Active AI provider API key not found' }, { status: 404 });
+  let cvParseContext;
+  try {
+    cvParseContext = buildOrgCvParseContextFromSettings(organizationId, settings);
+  } catch (routingError) {
+    return NextResponse.json(
+      {
+        error:
+          routingError instanceof Error
+            ? routingError.message
+            : 'CV parsing is not configured',
+      },
+      { status: 404 },
+    );
   }
 
   const batch = await CVBatch.findOne({
@@ -247,6 +180,7 @@ export async function POST(request: NextRequest) {
   for (let i = 0; i < retryableFailedItems.length; i += BATCH_SIZE) {
     const chunk = retryableFailedItems.slice(i, i + BATCH_SIZE);
     for (const item of chunk) {
+      let lastParseFields: BatchItemParseFields | undefined;
       try {
         const fileUrl = item.file?.url || '';
         const base64Data = await loadResumeFileAsBase64FromStoredUrl(
@@ -254,13 +188,55 @@ export async function POST(request: NextRequest) {
           request.url,
           FileUrlMapping,
         );
-        const candidateData = await processResume(
-          base64Data,
-          decryptedAiProviders,
-          organizationId as string,
+        const { data: candidateData, usage: parseUsage } = await processOrgResume(
+          cvParseContext,
+          {
+            base64Resume: base64Data,
+            organizationId: organizationId as string,
+            filename: item.filename,
+          },
         );
+        const parseFields = batchItemFieldsFromParseUsage(parseUsage);
+        lastParseFields = parseFields;
+
         if (candidateData.error) {
-          throw new Error(candidateData.error);
+          const pendingIndex = batch.pendingItems.findIndex(
+            (pending: DeferredPendingItem) =>
+              pending.filename === item.filename
+              && pending.file?.url === item.file?.url
+              && pending.status === 'failed',
+          );
+          if (pendingIndex >= 0) {
+            batch.pendingItems[pendingIndex].processedAt = new Date();
+            batch.pendingItems[pendingIndex].error = candidateData.error;
+          }
+
+          const failedItemIndex = findLatestFailedItemIndex(
+            batch.items,
+            item.filename,
+          );
+          if (failedItemIndex >= 0) {
+            batch.items[failedItemIndex].error = candidateData.error;
+            batch.items[failedItemIndex].processedAt = new Date();
+            batch.items[failedItemIndex].message = 'Retry attempt failed';
+            batch.items[failedItemIndex].cvParseMode = parseFields.cvParseMode;
+            batch.items[failedItemIndex].usedProvider = parseFields.usedProvider;
+            batch.items[failedItemIndex].parseProviderLabel =
+              parseFields.parseProviderLabel;
+          } else {
+            batch.items.push({
+              ...failedCvBatchItemPayload(
+                item.filename,
+                candidateData.error,
+                parseFields,
+              ),
+              message: 'Retry attempt failed',
+            });
+            batch.failureCount += 1;
+          }
+          failed += 1;
+          // eslint-disable-next-line no-continue
+          continue;
         }
 
         const shouldApplyOperations = item.selected && operationsSnapshot.assignJob;
@@ -298,10 +274,6 @@ export async function POST(request: NextRequest) {
           resume: item.file,
         });
 
-        if (!candidateData.name) {
-          throw new Error('Validation Error: Required fields not provided: name');
-        }
-
         await candidate.save();
         createdCandidateIds.push(candidate._id.toString());
 
@@ -329,7 +301,7 @@ export async function POST(request: NextRequest) {
           history: [
             {
               dateTime: new Date(),
-              title: 'cv-process retry failed file',
+              title: CV_BATCH_UPLOAD_HISTORY_TITLE,
               previousInterviewer: null,
               currentInterviewer: null,
               assignmentBy: user.id,
@@ -387,10 +359,13 @@ export async function POST(request: NextRequest) {
         if (failedItemIndex >= 0) {
           batch.items[failedItemIndex].status = 'success';
           batch.items[failedItemIndex].candidateId = candidate._id as Types.ObjectId;
-          batch.items[failedItemIndex].message =
-            'Successfully retried and processed failed deferred file';
+          batch.items[failedItemIndex].message = `Retried via ${parseFields.parseProviderLabel}`;
           batch.items[failedItemIndex].processedAt = new Date();
           batch.items[failedItemIndex].error = undefined;
+          batch.items[failedItemIndex].cvParseMode = parseFields.cvParseMode;
+          batch.items[failedItemIndex].usedProvider = parseFields.usedProvider;
+          batch.items[failedItemIndex].parseProviderLabel =
+            parseFields.parseProviderLabel;
           batch.successCount += 1;
           batch.failureCount = Math.max(batch.failureCount - 1, 0);
         } else {
@@ -403,23 +378,36 @@ export async function POST(request: NextRequest) {
             batch.items[existingItemIndex].status = 'success';
             batch.items[existingItemIndex].candidateId =
               candidate._id as Types.ObjectId;
-            batch.items[existingItemIndex].message =
-              'Successfully retried and processed failed deferred file';
+            batch.items[existingItemIndex].message = `Retried via ${parseFields.parseProviderLabel}`;
             batch.items[existingItemIndex].processedAt = new Date();
             batch.items[existingItemIndex].error = undefined;
+            batch.items[existingItemIndex].cvParseMode = parseFields.cvParseMode;
+            batch.items[existingItemIndex].usedProvider = parseFields.usedProvider;
+            batch.items[existingItemIndex].parseProviderLabel =
+              parseFields.parseProviderLabel;
           } else {
             batch.items.push({
               filename: item.filename,
               candidateId: candidate._id as Types.ObjectId,
               status: 'success',
-              message: 'Successfully retried and processed failed deferred file',
+              message: `Retried via ${parseFields.parseProviderLabel}`,
               processedAt: new Date(),
+              ...parseFields,
             });
           }
           batch.successCount += 1;
         }
         processed += 1;
       } catch (error) {
+        const parseFields = resolveBatchItemParseFieldsForFailure(
+          error,
+          cvParseContext,
+          item.filename,
+          item.file?.size ?? 0,
+          lastParseFields,
+        );
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
         const pendingIndex = batch.pendingItems.findIndex(
           (pending: DeferredPendingItem) =>
             pending.filename === item.filename &&
@@ -428,16 +416,22 @@ export async function POST(request: NextRequest) {
         );
         if (pendingIndex >= 0) {
           batch.pendingItems[pendingIndex].processedAt = new Date();
-          batch.pendingItems[pendingIndex].error =
-            error instanceof Error ? error.message : 'Unknown error';
+          batch.pendingItems[pendingIndex].error = errorMessage;
         }
+
+        const applyParseFields = (index: number) => {
+          if (!parseFields) return;
+          batch.items[index].cvParseMode = parseFields.cvParseMode;
+          batch.items[index].usedProvider = parseFields.usedProvider;
+          batch.items[index].parseProviderLabel = parseFields.parseProviderLabel;
+        };
 
         const failedItemIndex = findLatestFailedItemIndex(batch.items, item.filename);
         if (failedItemIndex >= 0) {
-          batch.items[failedItemIndex].error =
-            error instanceof Error ? error.message : 'Unknown error';
+          batch.items[failedItemIndex].error = errorMessage;
           batch.items[failedItemIndex].processedAt = new Date();
           batch.items[failedItemIndex].message = 'Retry attempt failed';
+          applyParseFields(failedItemIndex);
         } else {
           // Prefer updating an existing latest row for this file to avoid duplicate log entries.
           const existingItemIndex = findLatestItemByFilenameIndex(
@@ -446,16 +440,13 @@ export async function POST(request: NextRequest) {
           );
           if (existingItemIndex >= 0) {
             batch.items[existingItemIndex].status = 'failed';
-            batch.items[existingItemIndex].error =
-              error instanceof Error ? error.message : 'Unknown error';
+            batch.items[existingItemIndex].error = errorMessage;
             batch.items[existingItemIndex].processedAt = new Date();
             batch.items[existingItemIndex].message = 'Retry attempt failed';
+            applyParseFields(existingItemIndex);
           } else {
             batch.items.push({
-              filename: item.filename,
-              status: 'failed',
-              error: error instanceof Error ? error.message : 'Unknown error',
-              processedAt: new Date(),
+              ...failedCvBatchItemPayload(item.filename, errorMessage, parseFields),
               message: 'Retry attempt failed',
             });
             batch.failureCount += 1;

@@ -14,6 +14,9 @@ const customModelRule = (modelField: string, label: string) =>
   });
 
 const bulkCvAiBaseSchema = Yup.object({
+  cvUploadPool: Yup.string()
+    .oneOf(['bulk', 'premium'])
+    .required('Select how dashboard CV uploads should be parsed'),
   doclingParseUrl: Yup.string().max(2048),
 
   groq_api_key: Yup.string().max(500),
@@ -47,11 +50,13 @@ export function createBulkCvAiSchema(initialValues: BulkCvAiFormValues) {
     MIN_BULK_CV_PROVIDERS_MESSAGE,
     (values) => {
       if (!values) return false;
+      const formValues = values as BulkCvAiFormValues;
+      if (formValues.cvUploadPool === 'premium') {
+        return true;
+      }
       return (
-        getConfiguredBulkCvProviderIds(
-          values as BulkCvAiFormValues,
-          initialValues,
-        ).length >= MIN_BULK_CV_PROVIDERS_CONFIGURED
+        getConfiguredBulkCvProviderIds(formValues, initialValues).length >=
+        MIN_BULK_CV_PROVIDERS_CONFIGURED
       );
     },
   );

@@ -21,7 +21,16 @@ export type BulkCvProviderId =
   | 'cerebras'
   | 'mistral';
 
+/** Which CV upload parsing mode the org uses. No automatic switch between modes. */
+export type CvUploadPool = 'bulk' | 'premium';
+
+export function normalizeCvUploadPool(value: unknown): CvUploadPool {
+  return value === 'premium' ? 'premium' : 'bulk';
+}
+
 export interface IBulkCvAi {
+  /** Admin-selected CV upload parsing mode (multiple providers vs single main AI provider). */
+  cvUploadPool?: CvUploadPool;
   doclingParseUrl: string;
   groq: IBulkCvAiProviderSlot;
   gemini: IBulkCvAiProviderSlot;
