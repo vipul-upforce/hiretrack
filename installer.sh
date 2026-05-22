@@ -388,6 +388,15 @@ check_resources() {
     return 0
 }
 
+# Next.js build cache is not needed at runtime; strip after extract (old releases may still ship it).
+strip_next_build_cache() {
+    local app_dir="${1:-$APP_INSTALL_DIR}"
+    if [ -d "$app_dir/.next/cache" ]; then
+        echo "[ CLEAN ] Removing build-only .next/cache..."
+        rm -rf "$app_dir/.next/cache"
+    fi
+}
+
 get_machine_code() {
     local OS_TYPE
     OS_TYPE=$(uname | tr '[:upper:]' '[:lower:]')
@@ -1394,6 +1403,8 @@ rollback() {
         return 1
     fi
 
+    strip_next_build_cache "$APP_INSTALL_DIR"
+
     if [ ! -f "$APP_INSTALL_DIR/package.json" ]; then
         echo "[ ERROR ] package.json not found after extraction." | tee -a "$ROLLBACK_LOG_FILE"
         return 1
@@ -1651,6 +1662,10 @@ check_update_and_install() {
        return 1
    fi
    stop_spinner "success" "Application extracted."
+
+    strip_next_build_cache "$APP_INSTALL_DIR"
+    rm -f "$TMP_FILE" >/dev/null 2>&1 || true
+    log "[ CLEAN ] Removed download archive to free disk before dependency install."
     
     if [ -n "$EXTRACT_OUTPUT" ]; then
         echo "$EXTRACT_OUTPUT" | grep -v "LIBARCHIVE.xattr" | grep -v "^$" >&2 || true

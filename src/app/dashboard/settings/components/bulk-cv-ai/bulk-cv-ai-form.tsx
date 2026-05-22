@@ -27,6 +27,7 @@ import {
   MIN_BULK_CV_PROVIDERS_MESSAGE,
   meetsMinBulkCvProvidersConfigured,
 } from './form-utils';
+import { MIN_BULK_CV_PROVIDERS_CONFIGURED } from '@/lib/cv-processing/config';
 import {
   BULK_CV_PROVIDER_FIELDS,
   type BulkCvAiFormValues,
@@ -105,7 +106,8 @@ function isSaveBlocked(
     formik.values,
     initialValues,
   );
-  return configured.some((id) => !verified[id]);
+  const verifiedCount = configured.filter((id) => verified[id]).length;
+  return verifiedCount < MIN_BULK_CV_PROVIDERS_CONFIGURED;
 }
 
 export default function BulkCvAiForm({

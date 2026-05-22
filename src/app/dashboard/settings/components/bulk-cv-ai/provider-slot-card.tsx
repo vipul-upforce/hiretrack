@@ -3,6 +3,7 @@
 import React from 'react';
 import type { FormikProps } from 'formik';
 import { Loader2 } from 'lucide-react';
+import { PasswordToggleInput } from '../shared/password-toggle-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -74,17 +75,15 @@ export default function BulkProviderSlotCard({
       <CardContent className="space-y-3">
         <div className="space-y-2">
           <Label htmlFor={`${field.id}-key`}>API key</Label>
-          <Input
+          <PasswordToggleInput
             id={`${field.id}-key`}
             name={field.apiKeyField}
-            type="password"
             value={apiKeyValue}
             onChange={(e) => {
               onMarkUnverified();
               formik.handleChange(e);
             }}
             placeholder={field.apiKeyPlaceholder}
-            autoComplete="off"
           />
         </div>
         <div className="space-y-2">

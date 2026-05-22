@@ -176,6 +176,10 @@ jq --arg version "$VERSION_WITHOUT_PREFIX" '.version = $version' package.json > 
 echo "Building Next.js application..."
 NODE_OPTIONS="--max-old-space-size=3072" npx next build
 
+# Build cache is CI-only; do not ship it (often multi-GB on customer disks).
+echo "Removing .next/cache from release artifact..."
+rm -rf .next/cache
+
 # Obfuscate server files (including server-ws.cjs)
 # echo "Obfuscating server files..."
 # npx tsx scripts/obfuscate-server.ts
@@ -194,10 +198,12 @@ if [ "$OS_TYPE" = "macOS" ]; then
     --exclude='.DS_Store' \
     --exclude='.AppleDouble' \
     --exclude='.LSOverride' \
+    --exclude='.next/cache' \
     package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
 else
   # Standard tar for Linux/other systems
   tar -czvf temp/$TARBALL_NAME \
+    --exclude='.next/cache' \
     package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
 fi
 
@@ -213,6 +219,11 @@ if tar -tzf $TARBALL_NAME | grep -q "^\._"; then
   echo -e "${RED}WARNING: Tarball contains ._ files!${NC}"
 else
   echo -e "${GREEN}✓ Tarball is clean (no ._ files)${NC}"
+fi
+if tar -tzf $TARBALL_NAME | grep -q '\.next/cache'; then
+  echo -e "${RED}WARNING: Tarball contains .next/cache (bloats customer disk)!${NC}"
+else
+  echo -e "${GREEN}✓ Tarball excludes .next/cache${NC}"
 fi
 
 # ==================== RELEASE STAGE ====================
