@@ -271,12 +271,20 @@ export const orgApi = baseApi.injectEndpoints({
     }),
     processPendingCvBatches: builder.mutation<
       { message: string; processedBatches: number },
-      { organizationId: string; batchId?: string }
+      { organizationId: string; batchId?: string; batchIds?: string[] }
     >({
-      query: ({ organizationId, batchId }) => ({
-        url: `/process-cv/process-pending?organizationId=${organizationId}${batchId ? `&batchId=${batchId}` : ''}`,
-        method: 'POST',
-      }),
+      query: ({ organizationId, batchId, batchIds }) => {
+        const params = new URLSearchParams({ organizationId });
+        if (batchIds && batchIds.length > 0) {
+          params.set('batchIds', batchIds.join(','));
+        } else if (batchId) {
+          params.set('batchId', batchId);
+        }
+        return {
+          url: `/process-cv/process-pending?${params.toString()}`,
+          method: 'POST',
+        };
+      },
       invalidatesTags: (_result, _error, { organizationId }) => [
         { type: 'Batches', id: organizationId },
       ],

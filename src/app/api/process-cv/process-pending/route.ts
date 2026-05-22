@@ -66,9 +66,15 @@ export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get('organizationId');
   const batchId = searchParams?.get('batchId');
+  const batchIdsRaw = searchParams?.get('batchIds');
   if (!organizationId) {
     return NextResponse.json({ error: 'organizationId is required' }, { status: 400 });
   }
+
+  const batchIdsFromQuery = (batchIdsRaw ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => Types.ObjectId.isValid(id));
 
   const settings = (await Settings.findOne({ organizationId })
     .select('bulkCvAi aiProviders gemini')
@@ -98,7 +104,9 @@ export async function POST(request: NextRequest) {
     status: 'pending',
     processingMode: 'deferred',
   };
-  if (batchId) {
+  if (batchIdsFromQuery.length > 0) {
+    query._id = { $in: batchIdsFromQuery };
+  } else if (batchId && Types.ObjectId.isValid(batchId)) {
     query._id = batchId;
   }
 

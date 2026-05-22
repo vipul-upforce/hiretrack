@@ -11,6 +11,7 @@ import {
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileStack, Loader2, PlayCircle, RotateCcw, ScrollText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -46,8 +47,7 @@ interface CompletedBatchesProps {
   /** Upload, deferred process, or retry in progress — disables conflicting actions */
   isPipelineBusy: boolean;
   isProcessingPending: boolean;
-  onProcessPendingBatch: (batchId: string) => void;
-  onProcessAllPending: () => void;
+  onProcessPending: (options?: { batchId?: string; batchIds?: string[] }) => void;
   onRetryFailedFile: (batchId: string, filename: string) => void;
   onRetryAllFailedInBatch: (batchId: string) => void;
   onRetryAllFailedAcrossBatches: (batchIds: string[]) => void;
@@ -435,8 +435,7 @@ export function CompletedBatches({
   isLoading,
   isPipelineBusy,
   isProcessingPending,
-  onProcessPendingBatch,
-  onProcessAllPending,
+  onProcessPending,
   onRetryFailedFile,
   onRetryAllFailedInBatch,
   onRetryAllFailedAcrossBatches,
@@ -446,6 +445,9 @@ export function CompletedBatches({
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(5);
+  const [selectedDeferredBatchIds, setSelectedDeferredBatchIds] = useState<
+    Set<string>
+  >(() => new Set());
 
   const sortedBatches = useMemo(
     () =>
@@ -460,6 +462,43 @@ export function CompletedBatches({
     [sortedBatches],
   );
   const pendingDeferredBatchCount = pendingDeferredBatches.length;
+  const selectedDeferredCount = selectedDeferredBatchIds.size;
+  const allDeferredSelected =
+    pendingDeferredBatchCount > 0
+    && selectedDeferredCount === pendingDeferredBatchCount;
+
+  useEffect(() => {
+    const validIds = new Set(pendingDeferredBatches.map((batch) => batch._id));
+    setSelectedDeferredBatchIds((prev) => {
+      const next = new Set([...prev].filter((id) => validIds.has(id)));
+      if (next.size === prev.size && [...next].every((id) => prev.has(id))) {
+        return prev;
+      }
+      return next;
+    });
+  }, [pendingDeferredBatches]);
+
+  const toggleDeferredBatchSelection = useCallback((batchId: string) => {
+    setSelectedDeferredBatchIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(batchId)) {
+        next.delete(batchId);
+      } else {
+        next.add(batchId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAllDeferredBatches = useCallback(() => {
+    if (allDeferredSelected) {
+      setSelectedDeferredBatchIds(new Set());
+      return;
+    }
+    setSelectedDeferredBatchIds(
+      new Set(pendingDeferredBatches.map((batch) => batch._id)),
+    );
+  }, [allDeferredSelected, pendingDeferredBatches]);
 
   /** Batches shown in the completed-history table (excludes deferred upload queue). */
   const historySourceBatches = useMemo(
@@ -553,37 +592,93 @@ export function CompletedBatches({
                   </p>
 
                 </div>
-                <TooltipProvider>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="shrink-0"
-                        onClick={onProcessAllPending}
-                        disabled={isPipelineBusy}
-                        aria-label="Process all deferred batches"
-                      >
-                        {isProcessingPending ? (
-                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        ) : (
-                          <PlayCircle className="mr-1 h-4 w-4" />
-                        )}
-                        Process all
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {isProcessingPending
-                          ? 'Processing…'
-                          : 'Process every deferred batch now'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild> */}
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() =>
+                      onProcessPending({
+                        batchIds: [...selectedDeferredBatchIds],
+                      })
+                    }
+                    disabled={isPipelineBusy || selectedDeferredCount === 0}
+                    aria-label="Process selected deferred batches"
+                  >
+                    {isProcessingPending ? (
+                      <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                    ) : (
+                      <PlayCircle className="mr-1 h-4 w-4" />
+                    )}
+                    Process selected ({selectedDeferredCount})
+                  </Button>
+                  {/* </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {selectedDeferredCount === 0
+                            ? 'Select one or more batches'
+                            : `Process ${selectedDeferredCount} selected batch(es)`}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider> */}
+                  <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={() => onProcessPending()}
+                          disabled={isPipelineBusy}
+                          aria-label="Process all deferred batches"
+                        >
+                          {isProcessingPending ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                          ) : (
+                            <PlayCircle className="mr-1 h-4 w-4" />
+                          )}
+                          Process all
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {isProcessingPending
+                            ? 'Processing…'
+                            : 'Process every deferred batch now'}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </CardHeader>
               <CardContent className="min-h-0 flex-1 overflow-y-auto pt-0">
+                <div className="mb-2 flex px-[9px] items-center gap-2 border-b border-border/50 py-2">
+                  <Checkbox
+                    checked={
+                      allDeferredSelected
+                        ? true
+                        : selectedDeferredCount > 0
+                          ? 'indeterminate'
+                          : false
+                    }
+                    disabled={isPipelineBusy || pendingDeferredBatchCount === 0}
+                    onCheckedChange={toggleSelectAllDeferredBatches}
+                    aria-label="Select all deferred batches"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    {allDeferredSelected
+                      ? 'All selected'
+                      : selectedDeferredCount > 0
+                        ? `${selectedDeferredCount} selected`
+                        : 'Select batches to process'}
+                  </span>
+                </div>
                 <Accordion type="multiple" className="w-full rounded-md border border-border/50 bg-background/50">
                   {pendingDeferredBatches.map((batch) => {
                     const date = getBatchDate(batch);
@@ -595,22 +690,30 @@ export function CompletedBatches({
                         className="border-b border-border/50 px-2 last:border-b-0"
                       >
                         <div className="flex w-full items-start gap-1">
+                          <Checkbox
+                            className="mt-3 shrink-0"
+                            checked={selectedDeferredBatchIds.has(batch._id)}
+                            disabled={isPipelineBusy}
+                            onCheckedChange={() => toggleDeferredBatchSelection(batch._id)}
+                            onClick={(event) => event.stopPropagation()}
+                            aria-label={`Select batch from ${date.toLocaleString()}`}
+                          />
                           <div className="min-w-0 flex-1">
                             <AccordionTrigger className="min-h-11 w-full items-start py-3 hover:no-underline [&[data-state=open]]:pb-2">
-                            <div className="min-w-0 flex-1 text-left">
-                              <p className="text-xs font-medium text-foreground">
-                                {date.toLocaleDateString()}
-                                {' '}
-                                ·
-                                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                              <p className="text-[11px] text-muted-foreground">
-                                {fileRows.length || batch.totalFiles}
-                                {' '}
-                                file
-                                {(fileRows.length || batch.totalFiles) === 1 ? '' : 's'}
-                              </p>
-                            </div>
+                              <div className="min-w-0 flex-1 text-left">
+                                <p className="text-xs font-medium text-foreground">
+                                  {date.toLocaleDateString()}
+                                  {' '}
+                                  ·
+                                  {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                <p className="text-[11px] text-muted-foreground">
+                                  {fileRows.length || batch.totalFiles}
+                                  {' '}
+                                  file
+                                  {(fileRows.length || batch.totalFiles) === 1 ? '' : 's'}
+                                </p>
+                              </div>
                             </AccordionTrigger>
                           </div>
                           <div className="flex shrink-0 items-center gap-0.5 py-2">
@@ -631,7 +734,7 @@ export function CompletedBatches({
                               onClick={(event) => {
                                 event.stopPropagation();
                                 event.preventDefault();
-                                onProcessPendingBatch(batch._id);
+                                onProcessPending({ batchId: batch._id });
                               }}
                             >
                               Process

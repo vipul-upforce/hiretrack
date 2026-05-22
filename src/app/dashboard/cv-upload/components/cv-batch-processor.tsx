@@ -649,7 +649,10 @@ export function CVBatchProcessor() {
     )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only ${ops.processingMode === 'deferred' ? 'store CVs for later processing' : 'create candidates'}.`;
   };
 
-  const handleProcessPendingNow = async (batchId?: string) => {
+  const handleProcessPendingNow = async (options?: {
+    batchId?: string;
+    batchIds?: string[];
+  }) => {
     if (
       !user?.organizationId
       || isPosting
@@ -659,20 +662,24 @@ export function CVBatchProcessor() {
     ) {
       return;
     }
+    const batchCount =
+      options?.batchIds?.length
+      ?? (options?.batchId ? 1 : pendingDeferredBatchCount);
     processingRef.current = true;
     setIsProcessingPending(true);
     setUploadProgress({
       current: 0,
-      total: 1,
+      total: batchCount,
       currentBatch: 1,
-      totalBatches: 1,
+      totalBatches: Math.max(batchCount, 1),
       completedBatches: 0,
       phase: 'server-deferred',
     });
     try {
       const response = await processPendingCvBatches({
         organizationId: user.organizationId as string,
-        batchId,
+        batchId: options?.batchId,
+        batchIds: options?.batchIds,
       }).unwrap();
       try {
         await refetchBatches();
@@ -956,8 +963,7 @@ export function CVBatchProcessor() {
             isLoading={isLoading}
             isPipelineBusy={isPipelineBusy}
             isProcessingPending={isProcessingPending}
-            onProcessPendingBatch={(batchId) => handleProcessPendingNow(batchId)}
-            onProcessAllPending={() => handleProcessPendingNow()}
+            onProcessPending={(options) => handleProcessPendingNow(options)}
             onRetryFailedFile={handleRetryFailedFile}
             onRetryAllFailedInBatch={(batchId) => handleRetryFailedFile(batchId)}
             onRetryAllFailedAcrossBatches={handleRetryAllFailedAcrossBatches}
