@@ -1,10 +1,10 @@
 'use client';
 
 import { Progress } from '@/components/ui/progress';
+import type { CvBatchDetail } from '@/lib/features/org/cvBatchTypes';
 import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
-import { Batch } from './cv-batch-processor';
 
-export function BatchProgress({ batch }: { batch: Batch }) {
+export function BatchProgress({ batch }: { batch: CvBatchDetail }) {
   const progress = batch.totalFiles > 0
     ? ((batch.successCount + batch.failureCount) / batch.totalFiles) * 100
     : 0;

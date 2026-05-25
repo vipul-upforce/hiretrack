@@ -15,12 +15,6 @@ import withAuthGuard from '@/components/withAuthGuard';
 import logger from '@/lib/logger';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { useGetEvaluationConfigsQuery } from '@/lib/features/settings/aiApi';
-import {
-  BULK_CV_PROVIDER_IDS,
-  BULK_CV_PROVIDER_LABELS,
-} from '@/lib/cv-processing/config';
-import type { BulkCvProviderId } from '@/lib/types/bulk-cv-ai';
-import { summarizeBatchParseLabels } from '../batch-parse-display';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -58,6 +52,7 @@ export type FileWithPreview = {
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const BATCH_SIZE = 20; // Process 20 files at a time
 const MAX_BATCH_PAYLOAD_BYTES = 8 * 1024 * 1024; // Keep below parser limits with multipart overhead
+const DEFAULT_HISTORY_PAGE_SIZE = 5;
 const DEFAULT_BATCH_OPERATIONS: BatchOperations = {
   processingMode: 'immediate',
   assignJob: false,
@@ -68,60 +63,6 @@ const DEFAULT_BATCH_OPERATIONS: BatchOperations = {
   remark: '',
   isRemarkPrivate: true,
   remarkRating: null,
-};
-
-export type ProcessedItem = {
-  filename: string;
-  candidateId?: string;
-  status: 'success' | 'failure' | 'failed' | 'pending';
-  message?: string;
-  error?: string;
-  processedAt: string;
-  _id: string;
-  cvParseMode?: 'bulk' | 'premium';
-  usedProvider?: string;
-  parseProviderLabel?: string;
-};
-
-/** Persisted batch actions (assign job, status, remark) — same shape as `ICVBatch` / API. */
-export type CvBatchOperationsSnapshot = {
-  assignJob?: boolean;
-  jobId?: string;
-  updateStatus?: boolean;
-  status?: string;
-  addRemark?: boolean;
-  remark?: string;
-  isRemarkPrivate?: boolean;
-  remarkRating?: number | null;
-};
-
-export type Batch = {
-  _id: string;
-  organizationId: string;
-  totalFiles: number;
-  successCount: number;
-  failureCount: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  processingMode?: 'immediate' | 'deferred';
-  operationsSnapshot?: CvBatchOperationsSnapshot;
-  items: ProcessedItem[];
-  pendingItems?: Array<{
-    filename: string;
-    status: 'pending' | 'processed' | 'failed';
-    selected: boolean;
-    error?: string;
-    file: {
-      id?: string;
-      name: string;
-      url: string;
-      type: string;
-      size: number;
-    };
-  }>;
-  startedAt: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
 };
 
 interface ErrorResponse {
@@ -143,7 +84,6 @@ export type UploadProgressState = {
 
 export function CVBatchProcessor() {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
-  const [completedBatches, setCompletedBatches] = useState<Batch[]>([]);
   const [operations, setOperations] = useState<BatchOperations>({
     ...DEFAULT_BATCH_OPERATIONS,
   });
@@ -161,52 +101,45 @@ export function CVBatchProcessor() {
   const [isProcessingPending, setIsProcessingPending] = useState(false);
   const [isRetryingFailed, setIsRetryingFailed] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgressState | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(DEFAULT_HISTORY_PAGE_SIZE);
+  const [historyStartDate, setHistoryStartDate] = useState('');
+  const [historyEndDate, setHistoryEndDate] = useState('');
   const { toast } = useToast();
   const { user } = useAppSelector((state) => state.auth || {});
   const { sanitizeFiles } = useSanitizeFiles();
   const { data: evaluationConfigData } = useGetEvaluationConfigsQuery();
   const {
-    data: cvParseRouting,
     isLoading: isCvParseRoutingLoading,
     isError: isCvParseRoutingError,
   } = useGetCvParseRoutingQuery(undefined, {
     skip: !user?.organizationId,
   });
 
-  const readyBulkProviderLabels = useMemo(() => {
-    const readiness = cvParseRouting?.bulkCvProviderReadiness;
-    if (!readiness) return [];
-    return (BULK_CV_PROVIDER_IDS as readonly BulkCvProviderId[])
-      .filter((id) => Boolean(readiness[id]))
-      .map((id) => BULK_CV_PROVIDER_LABELS[id]);
-  }, [cvParseRouting?.bulkCvProviderReadiness]);
-
   // Fetch all batches using RTK Query
   const {
-    data: batches,
-    error,
+    data: batchHistoryData,
+    error: batchesError,
     isLoading,
+    isFetching: isHistoryFetching,
     refetch: refetchBatches,
-  } = useFetchBatchesQuery(user ? (user?.organizationId as string) : '', {
+  } = useFetchBatchesQuery({
+    organizationId: user ? (user.organizationId as string) : '',
+    page: historyPage,
+    limit: historyPageSize,
+    startDate: historyStartDate || undefined,
+    endDate: historyEndDate || undefined,
+  }, {
     skip: !user?.organizationId,
     refetchOnMountOrArgChange: true,
     refetchOnReconnect: true,
   });
 
-  useEffect(() => {
-    if (batches) {
-      setCompletedBatches(batches);
-    }
-  }, [batches]);
-
   const isPipelineBusy = isPosting || isProcessingPending || isRetryingFailed;
 
   const pendingDeferredBatchCount = useMemo(
-    () =>
-      completedBatches.filter(
-        (b) => b.status === 'pending' && b.processingMode === 'deferred',
-      ).length,
-    [completedBatches],
+    () => batchHistoryData?.deferredBatches.length ?? 0,
+    [batchHistoryData?.deferredBatches.length],
   );
 
   useEffect(() => {
@@ -559,24 +492,6 @@ export function CVBatchProcessor() {
       }
 
       if (allResults.length > 0) {
-        let parserHint: string | null = null;
-        if (normalizedOperations.processingMode !== 'deferred') {
-          try {
-            const refetchResult = await refetchBatches();
-            const list = refetchResult.data;
-            if (list && list.length > 0) {
-              const newest = [...list].sort(
-                (a, b) =>
-                  new Date(b.completedAt ?? b.createdAt).getTime() -
-                  new Date(a.completedAt ?? a.createdAt).getTime(),
-              )[0];
-              parserHint = newest ? summarizeBatchParseLabels(newest.items) : null;
-            }
-          } catch {
-            parserHint = null;
-          }
-        }
-
         toast({
           title:
             normalizedOperations.processingMode === 'deferred'
@@ -587,9 +502,7 @@ export function CVBatchProcessor() {
               ? `Stored ${processedCount} file(s) in ${allResults.length} deferred batch(es).`
               : [
                 `Processed ${processedCount} file(s) in ${allResults.length} batch(es).`,
-                parserHint
-                  ? `Parsers used: ${parserHint}. Open History → Files for per-file detail.`
-                  : 'Open History → Files to see which AI handled each CV.',
+                'Open History → Files to see which AI handled each CV.',
               ].join(' '),
         });
       }
@@ -860,7 +773,7 @@ export function CVBatchProcessor() {
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
-      {error && <p className="text-sm text-destructive">Error fetching batches.</p>}
+      {batchesError && <p className="text-sm text-destructive">Error fetching batches.</p>}
       <Tabs defaultValue="upload" className="flex min-h-0 w-full flex-1 flex-col gap-3">
         <div className="w-fit max-w-full shrink-0 rounded-lg border border-border/50 bg-muted/25 p-1 shadow-sm dark:bg-muted/20">
           <TabsList className="h-8 w-fit gap-1 border-0 bg-transparent p-0 shadow-none">
@@ -959,8 +872,34 @@ export function CVBatchProcessor() {
           className="mt-0 min-h-0 flex-1 overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
         >
           <CompletedBatches
-            batches={completedBatches}
+            historyBatches={batchHistoryData?.history.data ?? []}
+            historyPagination={batchHistoryData?.history.pagination}
+            deferredBatches={batchHistoryData?.deferredBatches ?? []}
+            retryableFailedBatchIds={batchHistoryData?.retryableFailedBatchIds ?? []}
+            currentPage={historyPage}
+            pageSize={historyPageSize}
+            startDate={historyStartDate}
+            endDate={historyEndDate}
+            onPageChange={setHistoryPage}
+            onPageSizeChange={(nextPageSize) => {
+              setHistoryPageSize(nextPageSize);
+              setHistoryPage(1);
+            }}
+            onStartDateChange={(nextStartDate) => {
+              setHistoryStartDate(nextStartDate);
+              setHistoryPage(1);
+            }}
+            onEndDateChange={(nextEndDate) => {
+              setHistoryEndDate(nextEndDate);
+              setHistoryPage(1);
+            }}
+            onClearFilters={() => {
+              setHistoryStartDate('');
+              setHistoryEndDate('');
+              setHistoryPage(1);
+            }}
             isLoading={isLoading}
+            isHistoryFetching={isHistoryFetching}
             isPipelineBusy={isPipelineBusy}
             isProcessingPending={isProcessingPending}
             onProcessPending={(options) => handleProcessPendingNow(options)}

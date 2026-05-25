@@ -11,7 +11,6 @@ import connectToDatabase, {
 } from '@/lib/mongodb';
 import { handleSingleFile } from '@/lib/fileUtils';
 import { batchItemFieldsFromParseUsage } from '@/lib/cv-processing/cv-parse-usage';
-import { formatBatchItemParseLabel } from '@/lib/cv-processing/batch-item-parse-display';
 import {
   batchItemParseFieldsFromContext,
   failedCvBatchItemPayload,
@@ -24,11 +23,10 @@ import {
 } from '@/lib/cv-upload/batch-item-upsert';
 import {
   buildOrgCvParseContextFromSettings,
-  loadOrgCvParseContext,
 } from '@/lib/cv-processing/server/cv-parse-routing';
 import { processOrgResume } from '@/lib/cv-processing/server/process-org-resume';
 import { NotificationService } from '@/lib/notifications/notificationService';
-import { Types } from 'mongoose';
+import { Types, type PipelineStage } from 'mongoose';
 import { PDFDocument } from 'pdf-lib';
 import { getAuthenticatedUser } from '@/app/actions/auth';
 import { ISettings } from '@/lib/models/settings';
@@ -93,6 +91,78 @@ interface StoredFileEntry {
 
 const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
   'Candidate already exists; counted as success';
+const DEFAULT_HISTORY_PAGE_LIMIT = 5;
+const MAX_HISTORY_PAGE_LIMIT = 50;
+
+function parsePositiveInteger(
+  value: string | null,
+  fallback: number,
+  maxValue = Number.MAX_SAFE_INTEGER,
+): number {
+  const parsed = Number.parseInt(value ?? '', 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return Math.min(parsed, maxValue);
+}
+
+function parseHistoryDateBoundary(
+  value: string | null,
+  boundary: 'start' | 'end',
+): Date | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  if (boundary === 'start') {
+    parsed.setHours(0, 0, 0, 0);
+  } else {
+    parsed.setHours(23, 59, 59, 999);
+  }
+  return parsed;
+}
+
+function buildBatchHistoryBasePipeline(
+  organizationObjectId: Types.ObjectId,
+  startDate: Date | null,
+  endDate: Date | null,
+): PipelineStage[] {
+  const pipeline: PipelineStage[] = [
+    {
+      $match: {
+        organizationId: organizationObjectId,
+        $nor: [{ status: 'pending', processingMode: 'deferred' }],
+      },
+    },
+    {
+      $addFields: {
+        effectiveHistoryAt: {
+          $ifNull: ['$historyAt', { $ifNull: ['$completedAt', '$createdAt'] }],
+        },
+      },
+    },
+  ];
+
+  if (startDate || endDate) {
+    const effectiveHistoryAt: Record<string, Date> = {};
+    if (startDate) {
+      effectiveHistoryAt.$gte = startDate;
+    }
+    if (endDate) {
+      effectiveHistoryAt.$lte = endDate;
+    }
+    pipeline.push({
+      $match: {
+        effectiveHistoryAt,
+      },
+    });
+  }
+
+  return pipeline;
+}
 
 function getPdfPageLimitSkipReason(
   filename: string,
@@ -844,6 +914,7 @@ export async function POST(request: NextRequest) {
 
     cvBatchInfo.status = 'completed';
     cvBatchInfo.completedAt = new Date();
+    cvBatchInfo.historyAt = cvBatchInfo.completedAt;
     await cvBatchInfo.save();
 
     if (createdCandidateIds.length > 0) {
@@ -917,6 +988,7 @@ export async function POST(request: NextRequest) {
       try {
         cvBatchInfo.status = 'failed';
         cvBatchInfo.completedAt = new Date();
+        cvBatchInfo.historyAt = cvBatchInfo.completedAt;
         await cvBatchInfo.save();
       } catch (saveError) {
         logger.error({ error: saveError }, 'Failed to save batch status on error');
@@ -965,10 +1037,52 @@ export async function GET(request: NextRequest) {
   }
   const { searchParams } = new URL(request.url);
   const organizationId = searchParams?.get('organizationId');
+  const requestedPage = parsePositiveInteger(
+    searchParams.get('page'),
+    1,
+    Number.MAX_SAFE_INTEGER,
+  );
+  const limit = parsePositiveInteger(
+    searchParams.get('limit'),
+    DEFAULT_HISTORY_PAGE_LIMIT,
+    MAX_HISTORY_PAGE_LIMIT,
+  );
+  const rawStartDate = searchParams.get('startDate');
+  const rawEndDate = searchParams.get('endDate');
+  const startDate = parseHistoryDateBoundary(rawStartDate, 'start');
+  const endDate = parseHistoryDateBoundary(rawEndDate, 'end');
 
   if (!organizationId) {
     return NextResponse.json(
       { error: 'organizationId is required' },
+      { status: 400 },
+    );
+  }
+
+  if (!Types.ObjectId.isValid(organizationId)) {
+    return NextResponse.json(
+      { error: 'organizationId must be a valid ObjectId' },
+      { status: 400 },
+    );
+  }
+
+  if (rawStartDate && !startDate) {
+    return NextResponse.json(
+      { error: 'startDate must be a valid date string' },
+      { status: 400 },
+    );
+  }
+
+  if (rawEndDate && !endDate) {
+    return NextResponse.json(
+      { error: 'endDate must be a valid date string' },
+      { status: 400 },
+    );
+  }
+
+  if (startDate && endDate && startDate.getTime() > endDate.getTime()) {
+    return NextResponse.json(
+      { error: 'startDate must be before or equal to endDate' },
       { status: 400 },
     );
   }
@@ -978,50 +1092,88 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const batches = await CVBatch.find({ organizationId }).lean();
+    const organizationObjectId = new Types.ObjectId(organizationId);
+    const basePipeline = buildBatchHistoryBasePipeline(
+      organizationObjectId,
+      startDate,
+      endDate,
+    );
 
-    let enrichedBatches = batches;
-    try {
-      const cvParseContext = await loadOrgCvParseContext(organizationId);
-      enrichedBatches = batches.map((batch) => ({
-        ...batch,
-        items: (batch.items ?? []).map((item) => {
-          if (formatBatchItemParseLabel(item)) {
-            return item;
-          }
-          if (item.status !== 'failed') {
-            return item;
-          }
-          const fields = batchItemParseFieldsFromContext(
-            cvParseContext,
-            item.filename,
-            0,
-          );
-          return {
-            ...item,
-            cvParseMode: fields.cvParseMode,
-            usedProvider: fields.usedProvider,
-            parseProviderLabel: fields.parseProviderLabel,
-          };
-        }),
-      }));
-    } catch (routingError) {
-      logger.warn(
-        {
-          organizationId,
-          error:
-            routingError instanceof Error
-              ? routingError.message
-              : String(routingError),
+    const countResult = await CVBatch.aggregate([
+      ...basePipeline,
+      { $count: 'totalCount' },
+    ]);
+    const totalCount = countResult[0]?.totalCount ?? 0;
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+    const page = Math.min(requestedPage, totalPages);
+    const skip = (page - 1) * limit;
+
+    const historyRows = await CVBatch.aggregate([
+      ...basePipeline,
+      { $sort: { effectiveHistoryAt: -1, _id: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 1,
+          organizationId: 1,
+          totalFiles: 1,
+          successCount: 1,
+          failureCount: 1,
+          status: 1,
+          processingMode: 1,
+          operationsSnapshot: 1,
+          startedAt: 1,
+          completedAt: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          historyAt: '$effectiveHistoryAt',
         },
-        'Could not enrich CV batch items with parse provider labels',
-      );
-    }
+      },
+    ]);
 
-    return NextResponse.json(enrichedBatches, {
+    const [deferredBatches, retryableFailedBatchDocs] = await Promise.all([
+      CVBatch.find({
+        organizationId: organizationObjectId,
+        status: 'pending',
+        processingMode: 'deferred',
+      })
+        .select(
+          'organizationId totalFiles successCount failureCount status processingMode operationsSnapshot items pendingItems startedAt completedAt createdAt updatedAt historyAt',
+        )
+        .sort({ createdAt: -1, _id: -1 })
+        .lean(),
+      CVBatch.find({
+        organizationId: organizationObjectId,
+        'items.status': 'failed',
+      })
+        .select('_id')
+        .lean(),
+    ]);
+
+    return NextResponse.json(
+      {
+        history: {
+          data: historyRows,
+          pagination: {
+            page,
+            limit,
+            totalCount,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+          },
+        },
+        deferredBatches,
+        retryableFailedBatchIds: retryableFailedBatchDocs.map((batch) =>
+          batch._id.toString(),
+        ),
+      },
+      {
       status: 200,
       headers: JSON_NO_STORE_HEADERS,
-    });
+      },
+    );
   } catch (error) {
     logger.error({ error, url: request.url }, 'Error fetching CV batches');
     return NextResponse.json(

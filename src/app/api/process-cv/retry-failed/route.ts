@@ -528,6 +528,7 @@ export async function POST(request: NextRequest) {
   );
   batch.status = hasPending ? 'pending' : 'completed';
   batch.completedAt = hasPending ? undefined : new Date();
+  batch.historyAt = batch.completedAt ?? batch.historyAt;
   await batch.save();
 
   if (createdCandidateIds.length > 0) {

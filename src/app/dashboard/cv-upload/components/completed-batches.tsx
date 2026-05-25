@@ -8,12 +8,13 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileStack, Loader2, PlayCircle, RotateCcw, ScrollText } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileStack, Loader2, PlayCircle, RotateCcw, ScrollText, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Table,
@@ -31,19 +32,40 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { useFetchJobByIdQuery } from '@/lib/features/job/jobApi';
+import { useLazyFetchBatchDetailQuery } from '@/lib/features/org/orgApi';
+import type {
+  CvBatchDetail,
+  CvBatchHistoryPagination,
+  CvBatchSummary,
+} from '@/lib/features/org/cvBatchTypes';
 import { resolveItemParseLabel } from '../batch-parse-display';
 import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
-import type { Batch } from './cv-batch-processor';
 
-function isDeferredPendingBatch(batch: Batch): boolean {
+function isDeferredPendingBatch(batch: CvBatchSummary): boolean {
   return batch.status === 'pending' && batch.processingMode === 'deferred';
 }
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const;
+const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
+  'Candidate already exists; counted as success';
+const HISTORY_LOADING_ROW_COUNT = 5;
 
 interface CompletedBatchesProps {
-  batches: Batch[];
+  historyBatches: CvBatchSummary[];
+  historyPagination?: CvBatchHistoryPagination;
+  deferredBatches: CvBatchDetail[];
+  retryableFailedBatchIds: string[];
+  currentPage: number;
+  pageSize: number;
+  startDate: string;
+  endDate: string;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  onStartDateChange: (value: string) => void;
+  onEndDateChange: (value: string) => void;
+  onClearFilters: () => void;
   isLoading: boolean;
+  isHistoryFetching: boolean;
   /** Upload, deferred process, or retry in progress — disables conflicting actions */
   isPipelineBusy: boolean;
   isProcessingPending: boolean;
@@ -54,23 +76,8 @@ interface CompletedBatchesProps {
   isRetryingFailed: boolean;
 }
 
-function getBatchDate(batch: Batch): Date {
+function getBatchDate(batch: CvBatchSummary): Date {
   return new Date(batch.completedAt ?? batch.createdAt);
-}
-
-function inDateRange(date: Date, startDate: string, endDate: string): boolean {
-  if (!startDate && !endDate) {
-    return true;
-  }
-
-  const timestamp = date.getTime();
-  const fromTimestamp = startDate
-    ? new Date(startDate).setHours(0, 0, 0, 0)
-    : Number.NEGATIVE_INFINITY;
-  const toTimestamp = endDate
-    ? new Date(endDate).setHours(23, 59, 59, 999)
-    : Number.POSITIVE_INFINITY;
-  return timestamp >= fromTimestamp && timestamp <= toTimestamp;
 }
 
 /** File row UI shared by the completed-batches table and the deferred-uploads panel. */
@@ -78,6 +85,7 @@ function BatchFileListEntry({
   filename,
   status,
   error,
+  isDuplicate,
   parseProviderLabel,
   fileUrl,
   actionSlot,
@@ -85,6 +93,7 @@ function BatchFileListEntry({
   filename: string;
   status: string;
   error?: string;
+  isDuplicate?: boolean;
   parseProviderLabel?: string;
   fileUrl?: string;
   actionSlot?: ReactNode;
@@ -93,7 +102,23 @@ function BatchFileListEntry({
     <div className="rounded-md border border-border/60 bg-muted/10 px-2 py-1">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium">{filename}</p>
+          <div className="flex items-center gap-1">
+            <p className="truncate text-xs font-medium">{filename}</p>
+            {isDuplicate ? (
+              <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <span className="shrink-0 text-amber-600 dark:text-amber-400">
+                      <TriangleAlert className="h-3.5 w-3.5" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Duplicate candidate already exists</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : null}
+          </div>
           <p className="text-[11px] capitalize text-muted-foreground">{status}</p>
           {parseProviderLabel ? (
             <Badge variant="secondary" className="mt-1 max-w-full truncate text-[10px] font-normal">
@@ -123,7 +148,9 @@ function BatchFileListEntry({
   );
 }
 
-function batchHasActionSummary(snap: Batch['operationsSnapshot'] | undefined): boolean {
+function batchHasActionSummary(
+  snap: CvBatchSummary['operationsSnapshot'] | undefined,
+): boolean {
   if (!snap) {
     return false;
   }
@@ -140,7 +167,7 @@ function batchHasActionSummary(snap: Batch['operationsSnapshot'] | undefined): b
 }
 
 /** Inner panel: job / status / remark (popover or hover surface). */
-function BatchActionsPopoverPanel({ batch }: { batch: Batch }) {
+function BatchActionsPopoverPanel({ batch }: { batch: CvBatchSummary }) {
   const snap = batch.operationsSnapshot;
   const jobId = snap?.assignJob && snap.jobId?.trim() ? snap.jobId.trim() : '';
   const { data: job, isFetching } = useFetchJobByIdQuery(jobId, {
@@ -192,7 +219,7 @@ function BatchActionsPopoverPanel({ batch }: { batch: Batch }) {
  * Compact trigger + popover. Opens on hover (with delay before close so the pointer can move into the panel).
  * Tap/click toggles for touch devices.
  */
-function BatchActionsPopover({ batch }: { batch: Batch }) {
+function BatchActionsPopover({ batch }: { batch: CvBatchSummary }) {
   const [open, setOpen] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -258,11 +285,22 @@ type BatchFileRow = {
   filename: string;
   status: string;
   error?: string;
+  isDuplicate?: boolean;
   parseProviderLabel?: string;
   fileUrl?: string;
 };
 
-function buildStoredFileUrlByFilename(batch: Batch): Map<string, string> {
+function isDuplicateBatchItemMessage(message?: string): boolean {
+  return message?.trim() === DUPLICATE_CANDIDATE_SUCCESS_MESSAGE;
+}
+
+function hasInlineBatchDetail(
+  batch: CvBatchSummary | CvBatchDetail,
+): batch is CvBatchDetail {
+  return Array.isArray((batch as CvBatchDetail).items);
+}
+
+function buildStoredFileUrlByFilename(batch: CvBatchDetail): Map<string, string> {
   const lookup = new Map<string, string>();
   for (const pendingItem of batch.pendingItems ?? []) {
     const key = pendingItem.filename || pendingItem.file?.name || '';
@@ -274,7 +312,7 @@ function buildStoredFileUrlByFilename(batch: Batch): Map<string, string> {
   return lookup;
 }
 
-function getDeferredBatchFileRows(batch: Batch): BatchFileRow[] {
+function getDeferredBatchFileRows(batch: CvBatchDetail): BatchFileRow[] {
   const pending = batch.pendingItems ?? [];
   if (pending.length > 0) {
     return pending.map((entry, index) => ({
@@ -290,20 +328,27 @@ function getDeferredBatchFileRows(batch: Batch): BatchFileRow[] {
     filename: item.filename,
     status: item.status,
     error: item.error,
+    isDuplicate: isDuplicateBatchItemMessage(item.message),
   }));
 }
 
 /** Processed items when present; otherwise deferred / pending file rows. */
-function getBatchFileRowsForDisplay(batch: Batch): BatchFileRow[] {
+function getBatchFileRowsForDisplay(batch: CvBatchDetail): BatchFileRow[] {
   const storedFileUrlByFilename = buildStoredFileUrlByFilename(batch);
+  const pendingFileUrlsInOrder = (batch.pendingItems ?? []).map(
+    (pendingItem) => pendingItem.file?.url,
+  );
   if (batch.items.length > 0) {
-    return dedupeBatchItemsByFilename(batch.items).map((item) => ({
+    return dedupeBatchItemsByFilename(batch.items).map((item, index) => ({
       key: item._id,
       filename: item.filename,
       status: item.status,
       error: item.error,
+      isDuplicate: isDuplicateBatchItemMessage(item.message),
       parseProviderLabel: resolveItemParseLabel(item),
-      fileUrl: storedFileUrlByFilename.get(item.filename),
+      fileUrl:
+        storedFileUrlByFilename.get(item.filename)
+        ?? pendingFileUrlsInOrder[index],
     }));
   }
   return getDeferredBatchFileRows(batch);
@@ -318,42 +363,39 @@ function BatchResumeFilesHoverPopover({
   onRetryFailedFile,
   onRetryAllFailedInBatch,
 }: {
-  batch: Batch;
+  batch: CvBatchSummary | CvBatchDetail;
   isPipelineBusy: boolean;
   onRetryFailedFile: (batchId: string, filename: string) => void;
   onRetryAllFailedInBatch: (batchId: string) => void;
 }) {
-  const rows = getBatchFileRowsForDisplay(batch);
+  const [fetchBatchDetail, batchDetailState] = useLazyFetchBatchDetailQuery();
   const [open, setOpen] = useState(false);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const requestedDetailRef = useRef(false);
+  const inlineDetail = hasInlineBatchDetail(batch) ? batch : null;
+  const detailBatch = inlineDetail ?? batchDetailState.data?.batch;
+  const rows = detailBatch ? getBatchFileRowsForDisplay(detailBatch) : [];
+  const fileCount = detailBatch
+    ? rows.length || batch.totalFiles
+    : batch.totalFiles;
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current !== null) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
+  useEffect(() => {
+    if (!open || inlineDetail || requestedDetailRef.current) {
+      return;
     }
-  }, []);
+    requestedDetailRef.current = true;
+    void fetchBatchDetail({
+      organizationId: batch.organizationId,
+      batchId: batch._id,
+    });
+  }, [batch._id, batch.organizationId, fetchBatchDetail, inlineDetail, open]);
 
-  const openPopover = useCallback(() => {
-    clearCloseTimer();
-    setOpen(true);
-  }, [clearCloseTimer]);
-
-  const scheduleClose = useCallback(() => {
-    clearCloseTimer();
-    closeTimerRef.current = setTimeout(() => {
-      setOpen(false);
-      closeTimerRef.current = null;
-    }, 280);
-  }, [clearCloseTimer]);
-
-  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
-
-  if (rows.length === 0) {
+  if (fileCount === 0) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
 
-  const hasFailed = rows.some((row) => row.status === 'failed');
+  const hasFailed =
+    (detailBatch?.failureCount ?? batch.failureCount) > 0
+    || rows.some((row) => row.status === 'failed');
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -363,13 +405,11 @@ function BatchResumeFilesHoverPopover({
           variant="outline"
           size="sm"
           className="h-8 shrink-0 gap-1.5 px-2 text-xs tabular-nums"
-          aria-label={`View ${rows.length} resume file(s) in this batch`}
+          aria-label={`View ${fileCount} resume file(s) in this batch`}
           onPointerDown={(event) => event.stopPropagation()}
-          onMouseEnter={openPopover}
-          onMouseLeave={scheduleClose}
         >
           <FileStack className="h-3.5 w-3.5 shrink-0" />
-          {rows.length}
+          {fileCount}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -377,8 +417,6 @@ function BatchResumeFilesHoverPopover({
         align="start"
         side="bottom"
         sideOffset={8}
-        onMouseEnter={openPopover}
-        onMouseLeave={scheduleClose}
         onOpenAutoFocus={(event) => event.preventDefault()}
       >
         <div className="border-b border-border/60 bg-muted/25 px-4 py-3">
@@ -388,7 +426,7 @@ function BatchResumeFilesHoverPopover({
               {' '}
               <span className="font-medium text-foreground tabular-nums">
                 (
-                {rows.length}
+                {fileCount}
                 )
               </span>
             </p>
@@ -410,6 +448,17 @@ function BatchResumeFilesHoverPopover({
           </div>
         </div>
         <div className="max-h-[min(70vh,28rem)] space-y-2 overflow-y-auto p-4">
+          {batchDetailState.isFetching && !detailBatch ? (
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Loading file list...
+            </div>
+          ) : null}
+          {batchDetailState.isError && !detailBatch ? (
+            <p className="text-[11px] text-red-600 dark:text-red-300">
+              Could not load file details for this batch.
+            </p>
+          ) : null}
           {rows.map((row) => {
             const canRetry = row.status === 'failed';
             return (
@@ -418,6 +467,7 @@ function BatchResumeFilesHoverPopover({
                 filename={row.filename}
                 status={row.status}
                 error={row.error}
+                isDuplicate={row.isDuplicate}
                 parseProviderLabel={row.parseProviderLabel}
                 fileUrl={row.fileUrl}
                 actionSlot={
@@ -443,7 +493,7 @@ function BatchResumeFilesHoverPopover({
   );
 }
 
-function getStatusStyles(status: Batch['status']): string {
+function getStatusStyles(status: CvBatchSummary['status']): string {
   if (status === 'completed') {
     return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
   }
@@ -460,8 +510,21 @@ function getStatusStyles(status: Batch['status']): string {
 }
 
 export function CompletedBatches({
-  batches,
+  historyBatches,
+  historyPagination,
+  deferredBatches,
+  retryableFailedBatchIds,
+  currentPage,
+  pageSize,
+  startDate,
+  endDate,
+  onPageChange,
+  onPageSizeChange,
+  onStartDateChange,
+  onEndDateChange,
+  onClearFilters,
   isLoading,
+  isHistoryFetching,
   isPipelineBusy,
   isProcessingPending,
   onProcessPending,
@@ -470,25 +533,13 @@ export function CompletedBatches({
   onRetryAllFailedAcrossBatches,
   isRetryingFailed,
 }: CompletedBatchesProps) {
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState<number>(5);
   const [selectedDeferredBatchIds, setSelectedDeferredBatchIds] = useState<
     Set<string>
   >(() => new Set());
 
-  const sortedBatches = useMemo(
-    () =>
-      [...batches].sort(
-        (a, b) => getBatchDate(b).getTime() - getBatchDate(a).getTime(),
-      ),
-    [batches],
-  );
-
   const pendingDeferredBatches = useMemo(
-    () => sortedBatches.filter(isDeferredPendingBatch),
-    [sortedBatches],
+    () => deferredBatches.filter(isDeferredPendingBatch),
+    [deferredBatches],
   );
   const pendingDeferredBatchCount = pendingDeferredBatches.length;
   const selectedDeferredCount = selectedDeferredBatchIds.size;
@@ -528,47 +579,22 @@ export function CompletedBatches({
       new Set(pendingDeferredBatches.map((batch) => batch._id)),
     );
   }, [allDeferredSelected, pendingDeferredBatches]);
-
-  /** Batches shown in the completed-history table (excludes deferred upload queue). */
-  const historySourceBatches = useMemo(
-    () => sortedBatches.filter((batch) => !isDeferredPendingBatch(batch)),
-    [sortedBatches],
-  );
-
-  const filteredHistoryBatches = useMemo(
-    () =>
-      historySourceBatches.filter((batch) =>
-        inDateRange(getBatchDate(batch), startDate, endDate),
-      ),
-    [historySourceBatches, startDate, endDate],
-  );
-  const retryableFailedBatchIds = useMemo(
-    () =>
-      sortedBatches
-        .filter((batch) => batch.items.some((item) => item.status === 'failed'))
-        .map((batch) => batch._id),
-    [sortedBatches],
-  );
   const hasRetryableFailedBatches = retryableFailedBatchIds.length > 0;
+  const totalPages = historyPagination?.totalPages ?? 1;
+  const responsePage = historyPagination?.page;
+  const isPageTransitioning =
+    isHistoryFetching &&
+    responsePage !== undefined &&
+    responsePage !== currentPage;
+  const showHistoryLoading = isLoading || isPageTransitioning;
+  const shouldRenderHistoryTable = showHistoryLoading || historyBatches.length > 0;
+  const shouldRenderPagination = totalPages > 1 || currentPage > 1 || showHistoryLoading;
 
-  const totalPages = Math.max(1, Math.ceil(filteredHistoryBatches.length / pageSize));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginatedHistoryBatches = filteredHistoryBatches.slice(
-    (safePage - 1) * pageSize,
-    safePage * pageSize,
-  );
-
-  const onPageChange = (nextPage: number) => {
+  const handlePageChange = (nextPage: number) => {
     if (nextPage < 1 || nextPage > totalPages) {
       return;
     }
-    setCurrentPage(nextPage);
-  };
-
-  const clearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setCurrentPage(1);
+    onPageChange(nextPage);
   };
 
   return (
@@ -783,6 +809,7 @@ export function CompletedBatches({
                                     filename={row.filename}
                                     status={row.status}
                                     error={row.error}
+                                    isDuplicate={row.isDuplicate}
                                     fileUrl={row.fileUrl}
                                     actionSlot={
                                       canRetry ? (
@@ -825,10 +852,7 @@ export function CompletedBatches({
                 <Input
                   type="date"
                   value={startDate}
-                  onChange={(event) => {
-                    setStartDate(event.target.value);
-                    setCurrentPage(1);
-                  }}
+                  onChange={(event) => onStartDateChange(event.target.value)}
                   className="w-full sm:w-[170px]"
                 />
               </div>
@@ -837,10 +861,7 @@ export function CompletedBatches({
                 <Input
                   type="date"
                   value={endDate}
-                  onChange={(event) => {
-                    setEndDate(event.target.value);
-                    setCurrentPage(1);
-                  }}
+                  onChange={(event) => onEndDateChange(event.target.value)}
                   min={startDate || undefined}
                   className="w-full sm:w-[170px]"
                 />
@@ -849,10 +870,7 @@ export function CompletedBatches({
                 <p className="text-xs text-muted-foreground">Rows per page</p>
                 <select
                   value={pageSize}
-                  onChange={(event) => {
-                    setPageSize(Number(event.target.value));
-                    setCurrentPage(1);
-                  }}
+                  onChange={(event) => onPageSizeChange(Number(event.target.value))}
                   className="h-9 w-full rounded-md border border-input bg-secondary px-3 py-1 text-sm shadow-sm dark:bg-transparent sm:w-[120px]"
                 >
                   {PAGE_SIZE_OPTIONS.map((size) => (
@@ -865,7 +883,7 @@ export function CompletedBatches({
               <Button
                 type="button"
                 variant="ghost"
-                onClick={clearFilters}
+                onClick={onClearFilters}
                 disabled={!startDate && !endDate}
               >
                 Clear
@@ -873,13 +891,7 @@ export function CompletedBatches({
             </div>
           </div>
 
-          {isLoading && (
-            <div className="rounded-xl border border-border/60 p-6 text-center text-sm text-muted-foreground">
-              Loading batches...
-            </div>
-          )}
-
-          {!isLoading && filteredHistoryBatches.length === 0 && (
+          {!shouldRenderHistoryTable && (
             <div className="rounded-xl border border-border/60 bg-muted/20 p-8 text-center">
               <Clock3 className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
@@ -888,7 +900,7 @@ export function CompletedBatches({
             </div>
           )}
 
-          {!isLoading && filteredHistoryBatches.length > 0 && (
+          {shouldRenderHistoryTable && (
             <>
               <div className="overflow-hidden rounded-xl border border-border/70">
                 <Table>
@@ -907,66 +919,103 @@ export function CompletedBatches({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedHistoryBatches.map((batch) => {
-                      const date = getBatchDate(batch);
-                      return (
-                        <TableRow key={batch._id}>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {date.toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-sm">
-                            {date.toLocaleTimeString()}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">{batch.totalFiles}</TableCell>
-                          <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-300">
-                            {batch.successCount}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-red-600 dark:text-red-300">
-                            {batch.failureCount}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(batch.status)}`}>
-                              {batch.status}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center align-middle">
-                            <div className="inline-flex justify-center">
-                              <BatchActionsPopover batch={batch} />
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <BatchResumeFilesHoverPopover
-                              batch={batch}
-                              isPipelineBusy={isPipelineBusy}
-                              onRetryFailedFile={onRetryFailedFile}
-                              onRetryAllFailedInBatch={onRetryAllFailedInBatch}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {showHistoryLoading
+                      ? Array.from({ length: Math.min(pageSize, HISTORY_LOADING_ROW_COUNT) }).map(
+                          (_, index) => (
+                            <TableRow key={`history-loading-${index}`}>
+                              <TableCell>
+                                <Skeleton className="h-4 w-24" />
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-4 w-20" />
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end">
+                                  <Skeleton className="h-4 w-8" />
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end">
+                                  <Skeleton className="h-4 w-8" />
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end">
+                                  <Skeleton className="h-4 w-8" />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-6 w-20 rounded-full" />
+                              </TableCell>
+                              <TableCell className="text-center align-middle">
+                                <div className="inline-flex justify-center">
+                                  <Skeleton className="h-7 w-7 rounded-md" />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Skeleton className="h-8 w-14 rounded-md" />
+                              </TableCell>
+                            </TableRow>
+                          ),
+                        )
+                      : historyBatches.map((batch) => {
+                          const date = getBatchDate(batch);
+                          return (
+                            <TableRow key={batch._id}>
+                              <TableCell className="whitespace-nowrap text-sm">
+                                {date.toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-sm">
+                                {date.toLocaleTimeString()}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">{batch.totalFiles}</TableCell>
+                              <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-300">
+                                {batch.successCount}
+                              </TableCell>
+                              <TableCell className="text-right font-medium text-red-600 dark:text-red-300">
+                                {batch.failureCount}
+                              </TableCell>
+                              <TableCell>
+                                <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(batch.status)}`}>
+                                  {batch.status}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center align-middle">
+                                <div className="inline-flex justify-center">
+                                  <BatchActionsPopover batch={batch} />
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <BatchResumeFilesHoverPopover
+                                  batch={batch}
+                                  isPipelineBusy={isPipelineBusy}
+                                  onRetryFailedFile={onRetryFailedFile}
+                                  onRetryAllFailedInBatch={onRetryAllFailedInBatch}
+                                />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                   </TableBody>
                 </Table>
               </div>
 
-              {totalPages > 1 && (
+              {shouldRenderPagination && (
                 <div className="flex items-center justify-between rounded-xl border border-border/60 px-4 py-3">
                   <p className="text-sm text-muted-foreground">
-                    Showing page
-                    {' '}
-                    {safePage}
-                    {' '}
-                    of
-                    {' '}
-                    {totalPages}
+                    {showHistoryLoading
+                      ? (isPageTransitioning
+                          ? `Loading page ${currentPage}...`
+                          : 'Loading batches...')
+                      : `Showing page ${currentPage} of ${totalPages}`}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => onPageChange(safePage - 1)}
-                      disabled={safePage <= 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage <= 1 || isHistoryFetching}
                     >
                       <ChevronLeft className="mr-1 h-4 w-4" />
                       Previous
@@ -975,8 +1024,8 @@ export function CompletedBatches({
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => onPageChange(safePage + 1)}
-                      disabled={safePage >= totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage >= totalPages || isHistoryFetching}
                     >
                       Next
                       <ChevronRight className="ml-1 h-4 w-4" />

@@ -389,6 +389,7 @@ export async function POST(request: NextRequest) {
     );
     batch.status = remainingPending ? 'pending' : 'completed';
     batch.completedAt = remainingPending ? undefined : new Date();
+    batch.historyAt = batch.completedAt ?? batch.historyAt;
     await batch.save();
     batchResults.push({ batchId: batch._id.toString(), processed, failed });
   }

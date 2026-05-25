@@ -51,6 +51,7 @@ export interface ICVBatch {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   startedAt: Date;
   completedAt?: Date;
+  historyAt: Date;
   createdBy?: mongoose.Types.ObjectId;
 }
 
@@ -122,6 +123,7 @@ const cvBatchSchema = new mongoose.Schema<ICVBatch>(
     },
     startedAt: { type: Date, default: Date.now },
     completedAt: { type: Date },
+    historyAt: { type: Date, default: Date.now },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   {
@@ -138,6 +140,26 @@ cvBatchSchema.index(
     'pendingItems.status': 1,
   },
   { name: 'idx_org_status_pendingItems_filename_pendingStatus', background: true },
+);
+
+cvBatchSchema.index(
+  {
+    organizationId: 1,
+    historyAt: -1,
+    _id: -1,
+  },
+  { name: 'idx_org_historyAt_id', background: true },
+);
+
+cvBatchSchema.index(
+  {
+    organizationId: 1,
+    status: 1,
+    processingMode: 1,
+    createdAt: -1,
+    _id: -1,
+  },
+  { name: 'idx_org_status_processingMode_createdAt_id', background: true },
 );
 
 export default cvBatchSchema;

@@ -1,5 +1,11 @@
 import { ITag } from '@/lib/models/organization';
 import { baseApi } from '@/lib/api/baseApi';
+import type {
+  CvBatchDetailQueryArgs,
+  CvBatchDetailResponse,
+  CvBatchHistoryQueryArgs,
+  CvBatchHistoryResponse,
+} from './cvBatchTypes';
 
 export interface CreateAdminRequest {
   email: string;
@@ -78,45 +84,6 @@ export interface CreateOrgResponse {
   _id?: string;
 }
 
-// Define the Batch and ProcessedItem types
-export interface ProcessedItem {
-  filename: string;
-  candidateId?: string;
-  status: 'success' | 'failure' | 'failed' | 'pending';
-  message?: string;
-  error?: string;
-  processedAt: string;
-  _id: string;
-  cvParseMode?: 'bulk' | 'premium';
-  usedProvider?: string;
-  parseProviderLabel?: string;
-}
-
-export interface PendingBatchItem {
-  filename: string;
-  status: 'pending' | 'processed' | 'failed';
-  selected: boolean;
-  error?: string;
-  file: {
-    id?: string;
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-  };
-}
-
-export interface CvBatchOperationsSnapshot {
-  assignJob?: boolean;
-  jobId?: string;
-  updateStatus?: boolean;
-  status?: string;
-  addRemark?: boolean;
-  remark?: string;
-  isRemarkPrivate?: boolean;
-  remarkRating?: number | null;
-}
-
 /** GET `/api/process-cv/bulk-ai` — which CV parser the org will use on upload. */
 export interface CvParseRoutingResponse {
   status: 'ok';
@@ -126,23 +93,6 @@ export interface CvParseRoutingResponse {
   bulkReadyCount: number;
   premiumReady: boolean;
   premiumActiveProvider?: string;
-}
-
-export interface Batch {
-  _id: string;
-  organizationId: string;
-  totalFiles: number;
-  successCount: number;
-  failureCount: number;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  processingMode?: 'immediate' | 'deferred';
-  operationsSnapshot?: CvBatchOperationsSnapshot;
-  items: ProcessedItem[];
-  pendingItems?: PendingBatchItem[];
-  startedAt: string;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export const orgApi = baseApi.injectEndpoints({
@@ -246,12 +196,34 @@ export const orgApi = baseApi.injectEndpoints({
         method: 'GET',
       }),
     }),
-    fetchBatches: builder.query<Batch[], string>({
-      query: (organizationId) => ({
-        url: `/process-cv?organizationId=${organizationId}`,
+    fetchBatches: builder.query<CvBatchHistoryResponse, CvBatchHistoryQueryArgs>({
+      query: ({ organizationId, page = 1, limit = 5, startDate, endDate }) => {
+        const params = new URLSearchParams({
+          organizationId,
+          page: String(page),
+          limit: String(limit),
+        });
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
+        return {
+          url: `/process-cv?${params.toString()}`,
+          method: 'GET',
+        };
+      },
+      providesTags: (_result, _error, { organizationId }) => [
+        { type: 'Batches' as const, id: organizationId },
+      ],
+    }),
+    fetchBatchDetail: builder.query<CvBatchDetailResponse, CvBatchDetailQueryArgs>({
+      query: ({ organizationId, batchId }) => ({
+        url: `/process-cv/batches/${batchId}?organizationId=${organizationId}`,
         method: 'GET',
       }),
-      providesTags: (_result, _error, organizationId) => [
+      providesTags: (_result, _error, { organizationId }) => [
         { type: 'Batches' as const, id: organizationId },
       ],
     }),
@@ -337,6 +309,8 @@ export const {
   useLazyGetCustomFieldsByOrgNameQuery,
   useGetCvParseRoutingQuery,
   useFetchBatchesQuery,
+  useFetchBatchDetailQuery,
+  useLazyFetchBatchDetailQuery,
   usePostBatchMutation,
   useProcessPendingCvBatchesMutation,
   useRetryFailedCvFilesMutation,

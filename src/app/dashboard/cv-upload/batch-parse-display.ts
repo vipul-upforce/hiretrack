@@ -1,12 +1,14 @@
 import { formatBatchItemParseLabel } from '@/lib/cv-processing/batch-item-parse-display';
-import type { ProcessedItem } from './components/cv-batch-processor';
+import type { ProcessedItem } from '@/lib/features/org/cvBatchTypes';
 
 /** Label for one processed file (stored fields or legacy message text). */
 export function resolveItemParseLabel(
-  item: Pick<
-    ProcessedItem,
-    'parseProviderLabel' | 'message' | 'cvParseMode' | 'usedProvider'
-  >,
+  item: {
+    parseProviderLabel?: ProcessedItem['parseProviderLabel'];
+    message?: ProcessedItem['message'];
+    cvParseMode?: ProcessedItem['cvParseMode'];
+    usedProvider?: ProcessedItem['usedProvider'];
+  },
 ): string | undefined {
   const fromFields = formatBatchItemParseLabel(item);
   if (fromFields) {
