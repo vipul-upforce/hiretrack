@@ -29,6 +29,9 @@ export interface ExtendedOrgResumeData extends ProcessedResumeData {
   status: string;
   isDeleted: boolean;
   error?: string;
+  isDuplicate?: boolean;
+  duplicateCandidateId?: string;
+  duplicateReason?: string;
 }
 
 export interface ProcessOrgResumeResult {
@@ -63,9 +66,11 @@ async function finalizeParsedResume(
     return {
       ...normalized,
       organizationId,
-      status: 'rejected',
+      status: existingCandidate.status || 'applied',
       isDeleted: false,
-      error: 'Candidate with this name and email already exists',
+      isDuplicate: true,
+      duplicateCandidateId: existingCandidate._id.toString(),
+      duplicateReason: 'Candidate with this name and email already exists',
     };
   }
 

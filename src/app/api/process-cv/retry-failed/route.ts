@@ -33,6 +33,8 @@ import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume
 import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
 
 const BATCH_SIZE = 20;
+const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
+  'Candidate already exists; counted as success';
 
 function findLatestFailedItemIndex(
   items: Array<{
@@ -199,6 +201,68 @@ export async function POST(request: NextRequest) {
         const parseFields = batchItemFieldsFromParseUsage(parseUsage);
         lastParseFields = parseFields;
 
+        if (candidateData.isDuplicate && candidateData.duplicateCandidateId) {
+          const pendingIndex = batch.pendingItems.findIndex(
+            (pending: DeferredPendingItem) =>
+              pending.filename === item.filename
+              && pending.file?.url === item.file?.url
+              && pending.status === 'failed',
+          );
+          if (pendingIndex >= 0) {
+            batch.pendingItems[pendingIndex].status = 'processed';
+            batch.pendingItems[pendingIndex].processedAt = new Date();
+            batch.pendingItems[pendingIndex].error = undefined;
+          }
+
+          const existingCandidateId = new Types.ObjectId(
+            candidateData.duplicateCandidateId,
+          );
+          const failedItemIndex = findLatestFailedItemIndex(batch.items, item.filename);
+          if (failedItemIndex >= 0) {
+            batch.items[failedItemIndex].status = 'success';
+            batch.items[failedItemIndex].candidateId = existingCandidateId;
+            batch.items[failedItemIndex].message = DUPLICATE_CANDIDATE_SUCCESS_MESSAGE;
+            batch.items[failedItemIndex].processedAt = new Date();
+            batch.items[failedItemIndex].error = undefined;
+            batch.items[failedItemIndex].cvParseMode = parseFields.cvParseMode;
+            batch.items[failedItemIndex].usedProvider = parseFields.usedProvider;
+            batch.items[failedItemIndex].parseProviderLabel =
+              parseFields.parseProviderLabel;
+            batch.successCount += 1;
+            batch.failureCount = Math.max(batch.failureCount - 1, 0);
+          } else {
+            const existingItemIndex = findLatestItemByFilenameIndex(
+              batch.items,
+              item.filename,
+            );
+            if (existingItemIndex >= 0) {
+              batch.items[existingItemIndex].status = 'success';
+              batch.items[existingItemIndex].candidateId = existingCandidateId;
+              batch.items[existingItemIndex].message =
+                DUPLICATE_CANDIDATE_SUCCESS_MESSAGE;
+              batch.items[existingItemIndex].processedAt = new Date();
+              batch.items[existingItemIndex].error = undefined;
+              batch.items[existingItemIndex].cvParseMode = parseFields.cvParseMode;
+              batch.items[existingItemIndex].usedProvider = parseFields.usedProvider;
+              batch.items[existingItemIndex].parseProviderLabel =
+                parseFields.parseProviderLabel;
+            } else {
+              batch.items.push({
+                filename: item.filename,
+                candidateId: existingCandidateId,
+                status: 'success',
+                message: DUPLICATE_CANDIDATE_SUCCESS_MESSAGE,
+                processedAt: new Date(),
+                ...parseFields,
+              });
+            }
+            batch.successCount += 1;
+          }
+          processed += 1;
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
         if (candidateData.error) {
           const pendingIndex = batch.pendingItems.findIndex(
             (pending: DeferredPendingItem) =>
@@ -300,6 +364,7 @@ export async function POST(request: NextRequest) {
           jobId: null,
           history: [
             {
+              attachments: [item.file],
               dateTime: new Date(),
               title: CV_BATCH_UPLOAD_HISTORY_TITLE,
               previousInterviewer: null,

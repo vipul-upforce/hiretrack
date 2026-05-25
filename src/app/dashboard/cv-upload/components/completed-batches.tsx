@@ -79,12 +79,14 @@ function BatchFileListEntry({
   status,
   error,
   parseProviderLabel,
+  fileUrl,
   actionSlot,
 }: {
   filename: string;
   status: string;
   error?: string;
   parseProviderLabel?: string;
+  fileUrl?: string;
   actionSlot?: ReactNode;
 }) {
   return (
@@ -99,7 +101,20 @@ function BatchFileListEntry({
             </Badge>
           ) : null}
         </div>
-        {actionSlot ?? null}
+        <div className="flex items-center gap-2">
+          {fileUrl ? (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] text-blue-600 hover:underline"
+              onClick={(event) => event.stopPropagation()}
+            >
+              Open
+            </a>
+          ) : null}
+          {actionSlot ?? null}
+        </div>
       </div>
       {error ? (
         <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">{error}</p>
@@ -238,12 +253,28 @@ function BatchActionsPopover({ batch }: { batch: Batch }) {
   );
 }
 
-function getDeferredBatchFileRows(batch: Batch): Array<{
+type BatchFileRow = {
   key: string;
   filename: string;
   status: string;
   error?: string;
-}> {
+  parseProviderLabel?: string;
+  fileUrl?: string;
+};
+
+function buildStoredFileUrlByFilename(batch: Batch): Map<string, string> {
+  const lookup = new Map<string, string>();
+  for (const pendingItem of batch.pendingItems ?? []) {
+    const key = pendingItem.filename || pendingItem.file?.name || '';
+    const url = pendingItem.file?.url || '';
+    if (key && url) {
+      lookup.set(key, url);
+    }
+  }
+  return lookup;
+}
+
+function getDeferredBatchFileRows(batch: Batch): BatchFileRow[] {
   const pending = batch.pendingItems ?? [];
   if (pending.length > 0) {
     return pending.map((entry, index) => ({
@@ -251,6 +282,7 @@ function getDeferredBatchFileRows(batch: Batch): Array<{
       filename: entry.filename || entry.file?.name || 'Unknown file',
       status: entry.status,
       error: entry.error,
+      fileUrl: entry.file?.url,
     }));
   }
   return batch.items.map((item) => ({
@@ -262,13 +294,8 @@ function getDeferredBatchFileRows(batch: Batch): Array<{
 }
 
 /** Processed items when present; otherwise deferred / pending file rows. */
-function getBatchFileRowsForDisplay(batch: Batch): Array<{
-  key: string;
-  filename: string;
-  status: string;
-  error?: string;
-  parseProviderLabel?: string;
-}> {
+function getBatchFileRowsForDisplay(batch: Batch): BatchFileRow[] {
+  const storedFileUrlByFilename = buildStoredFileUrlByFilename(batch);
   if (batch.items.length > 0) {
     return dedupeBatchItemsByFilename(batch.items).map((item) => ({
       key: item._id,
@@ -276,6 +303,7 @@ function getBatchFileRowsForDisplay(batch: Batch): Array<{
       status: item.status,
       error: item.error,
       parseProviderLabel: resolveItemParseLabel(item),
+      fileUrl: storedFileUrlByFilename.get(item.filename),
     }));
   }
   return getDeferredBatchFileRows(batch);
@@ -391,6 +419,7 @@ function BatchResumeFilesHoverPopover({
                 status={row.status}
                 error={row.error}
                 parseProviderLabel={row.parseProviderLabel}
+                fileUrl={row.fileUrl}
                 actionSlot={
                   canRetry ? (
                     <Button
@@ -754,6 +783,7 @@ export function CompletedBatches({
                                     filename={row.filename}
                                     status={row.status}
                                     error={row.error}
+                                    fileUrl={row.fileUrl}
                                     actionSlot={
                                       canRetry ? (
                                         <Button

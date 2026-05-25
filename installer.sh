@@ -194,6 +194,13 @@ REMINDERS_CRON_SCRIPT="$HOME/.hiretrack/reminders-cron.sh"
 MANUAL_LOG_FILE="$LOG_DIR/manual_update.log"
 ROLLBACK_LOG_FILE="$LOG_DIR/rollback.log"
 
+# Local PDF → Markdown service (pymupdf4llm); used by bulk CV parsing (DOCLING_PARSE_URL).
+MARKDOWN_PARSER_DIR="$HOME/.hiretrack/markdown-parser"
+MARKDOWN_PARSER_PORT="${MARKDOWN_PARSER_PORT:-8000}"
+MARKDOWN_PARSER_PM2_NAME="markdown-parser"
+MARKDOWN_PARSER_URL="http://127.0.0.1:${MARKDOWN_PARSER_PORT}/parse"
+SKIP_MARKDOWN_PARSER="${SKIP_MARKDOWN_PARSER:-0}"
+
 API_URL="https://admin.hiretrack.in/api/license/register"
 API_URL_UPDATE_LIC="https://admin.hiretrack.in/api/license/update"
 LATEST_VERSION_API="https://admin.hiretrack.in/api/version/list"
@@ -344,6 +351,135 @@ ensure_tesseract_for_cv_ocr() {
         echo "[ OK ] Tesseract OCR installed ($(command -v tesseract))."
     else
         echo "[ WARNING ] Tesseract package installed but binary not on PATH. Set TESSERACT_CMD in .env if needed."
+    fi
+}
+
+# Local FastAPI PDF→Markdown service for bulk CV uploads (replaces external Docling VM when installed).
+ensure_markdown_parser_service() {
+    if [ "$SKIP_MARKDOWN_PARSER" = "1" ]; then
+        echo "[ INFO ] Skipping markdown parser service (--skip-markdown-parser)."
+        return 0
+    fi
+
+    echo ""
+    echo "========================================"
+    echo "   Markdown Parser Service (bulk CV)"
+    echo "========================================"
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "[ WARNING ] python3 not found. Install Python 3 or set DOCLING_PARSE_URL manually in .env."
+        return 0
+    fi
+
+    if ! python3 -m venv --help >/dev/null 2>&1; then
+        echo "[ PACKAGE ] Installing python3-venv..."
+        if command -v apt-get >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y python3-venv python3-pip
+        elif command -v dnf >/dev/null 2>&1; then
+            sudo dnf install -y python3 python3-pip
+        elif command -v yum >/dev/null 2>&1; then
+            sudo yum install -y python3 python3-pip
+        else
+            echo "[ WARNING ] Could not install python3-venv. Skipping markdown parser setup."
+            return 0
+        fi
+    fi
+
+    local PM2_BIN
+    PM2_BIN=$(command -v pm2 2>/dev/null || true)
+    if [ -z "$PM2_BIN" ]; then
+        PM2_BIN="$(resolve_pm2_bin 2>/dev/null || true)"
+    fi
+    if [ -z "$PM2_BIN" ]; then
+        echo "[ PACKAGE ] Installing PM2 for markdown parser..."
+        npm install -g pm2 >/dev/null 2>&1 || true
+        PM2_BIN="$(resolve_pm2_bin 2>/dev/null || true)"
+    fi
+    if [ -z "$PM2_BIN" ]; then
+        echo "[ WARNING ] PM2 not available; skipping markdown parser. Set DOCLING_PARSE_URL in .env."
+        return 0
+    fi
+
+    mkdir -p "$MARKDOWN_PARSER_DIR"
+
+    if [ ! -d "$MARKDOWN_PARSER_DIR/venv" ]; then
+        echo "[ PACKAGE ] Creating Python virtual environment..."
+        python3 -m venv "$MARKDOWN_PARSER_DIR/venv"
+    fi
+
+    if [ ! -x "$MARKDOWN_PARSER_DIR/venv/bin/pip" ]; then
+        echo "[ ERROR ] venv pip missing at $MARKDOWN_PARSER_DIR/venv"
+        return 1
+    fi
+
+    echo "[ PACKAGE ] Installing FastAPI, uvicorn, pymupdf4llm..."
+    "$MARKDOWN_PARSER_DIR/venv/bin/pip" install -q --upgrade pip
+    "$MARKDOWN_PARSER_DIR/venv/bin/pip" install -q fastapi uvicorn python-multipart pymupdf4llm
+
+    echo "[ PACKAGE ] Writing $MARKDOWN_PARSER_DIR/main.py..."
+    cat << 'MARKDOWN_PARSER_MAIN_EOF' > "$MARKDOWN_PARSER_DIR/main.py"
+from fastapi import FastAPI, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
+import pymupdf4llm
+import tempfile
+import os
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.post("/parse")
+async def parse_cv(file: UploadFile = File(...)):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
+        temp_pdf.write(await file.read())
+        temp_path = temp_pdf.name
+
+    try:
+        markdown_text = pymupdf4llm.to_markdown(temp_path)
+        return {"status": "success", "markdown": markdown_text}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+MARKDOWN_PARSER_MAIN_EOF
+
+    "$PM2_BIN" delete "$MARKDOWN_PARSER_PM2_NAME" >/dev/null 2>&1 || true
+
+    echo "[ START ] Starting markdown parser on 127.0.0.1:${MARKDOWN_PARSER_PORT}..."
+    (
+        cd "$MARKDOWN_PARSER_DIR" || exit 1
+        "$PM2_BIN" start "$MARKDOWN_PARSER_DIR/venv/bin/uvicorn" \
+            --name "$MARKDOWN_PARSER_PM2_NAME" \
+            --cwd "$MARKDOWN_PARSER_DIR" \
+            --interpreter none \
+            -- main:app --host 127.0.0.1 --port "$MARKDOWN_PARSER_PORT"
+    )
+
+    pm2_configure_autostart
+    "$PM2_BIN" save --force >/dev/null 2>&1 || true
+
+    local i=0 ready=0
+    while [ "$i" -lt 30 ]; do
+        if curl -sf "http://127.0.0.1:${MARKDOWN_PARSER_PORT}/docs" >/dev/null 2>&1; then
+            ready=1
+            break
+        fi
+        sleep 1
+        i=$((i + 1))
+    done
+
+    if [ "$ready" -eq 1 ]; then
+        echo "[ OK ] Markdown parser online at ${MARKDOWN_PARSER_URL}"
+    else
+        echo "[ WARNING ] Markdown parser started but health check failed. Check: pm2 logs $MARKDOWN_PARSER_PM2_NAME"
     fi
 }
 
@@ -528,7 +664,27 @@ write_env_server_details() {
     echo "[ OK ] BASE_URL and NEXT_PUBLIC_BASE_URL updated in $ENV_FILE ($BASE_URL)"
 
     ensure_cron_secret_in_env "$ENV_FILE"
+    ensure_docling_parse_url_in_env "$ENV_FILE"
     sync_hiretrack_reminders_cron
+}
+
+# Bulk CV pipeline: POST PDF to this URL for Markdown (see parse-pdf-to-markdown.ts).
+ensure_docling_parse_url_in_env() {
+    local ENV_FILE="${1:-$APP_INSTALL_DIR/.env}"
+    mkdir -p "$(dirname "$ENV_FILE")"
+    touch "$ENV_FILE"
+
+    local existing
+    existing=$(grep -m1 -E '^DOCLING_PARSE_URL=' "$ENV_FILE" 2>/dev/null | sed 's/^DOCLING_PARSE_URL=//' | tr -d '\r' || true)
+    if [ -n "$existing" ]; then
+        echo "[ OK ] DOCLING_PARSE_URL already set in $ENV_FILE"
+        return 0
+    fi
+
+    grep -v '^DOCLING_PARSE_URL=' "$ENV_FILE" > "${ENV_FILE}.tmp" 2>/dev/null || cp "$ENV_FILE" "${ENV_FILE}.tmp"
+    mv "${ENV_FILE}.tmp" "$ENV_FILE"
+    printf '%s\n' "DOCLING_PARSE_URL=${MARKDOWN_PARSER_URL}" >> "$ENV_FILE"
+    echo "[ OK ] Set DOCLING_PARSE_URL=${MARKDOWN_PARSER_URL} in $ENV_FILE"
 }
 
 # One unique CRON_SECRET per deployment (.env); skip if already set.
@@ -1449,6 +1605,7 @@ rollback() {
     fi
 
     write_env_server_details
+    ensure_markdown_parser_service
     check_pm2
 
     echo "[ START ] Restarting previous version with PM2..." | tee -a "$ROLLBACK_LOG_FILE"
@@ -1770,6 +1927,7 @@ check_update_and_install() {
         return 1
     fi
     write_env_server_details
+    ensure_markdown_parser_service
     check_pm2
 
     log "[ START ] Restarting PM2 process..."
@@ -3102,6 +3260,8 @@ show_help() {
     echo
     echo "  --help                        Show this help message and exit"
     echo
+    echo "  --skip-markdown-parser          Skip local PDF→Markdown PM2 service (bulk CV)"
+    echo
 }
 
 # ------------------------------------------------
@@ -3113,12 +3273,20 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
     exit 0
 fi
 
+for _installer_arg in "$@"; do
+    if [ "$_installer_arg" = "--skip-markdown-parser" ]; then
+        SKIP_MARKDOWN_PARSER=1
+        break
+    fi
+done
+
 check_dep curl
 check_dep jq
 check_dep tar
 check_dep shasum
 ensure_tesseract_for_cv_ocr
 check_pm2
+ensure_markdown_parser_service
 
 # Initialize channel (production / beta / staging) from config.json (with command line override)
 init_channel_mode "$@"

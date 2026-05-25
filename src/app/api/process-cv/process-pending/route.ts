@@ -52,6 +52,9 @@ interface DeferredPendingItem {
   processedAt?: Date;
 }
 
+const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
+  'Candidate already exists; counted as success';
+
 export async function POST(request: NextRequest) {
   await connectToDatabase();
   if (!Candidate || !Settings || !CVBatch || !History) {
@@ -173,6 +176,30 @@ export async function POST(request: NextRequest) {
           const parseFields = batchItemFieldsFromParseUsage(parseUsage);
           lastParseFields = parseFields;
 
+          if (candidateData.isDuplicate && candidateData.duplicateCandidateId) {
+            const pendingIndex = batch.pendingItems.findIndex(
+              (pending: DeferredPendingItem) =>
+                pending.filename === item.filename
+                && pending.file?.url === item.file?.url
+                && pending.status === 'pending',
+            );
+            if (pendingIndex >= 0) {
+              batch.pendingItems[pendingIndex].status = 'processed';
+              batch.pendingItems[pendingIndex].processedAt = new Date();
+              batch.pendingItems[pendingIndex].error = undefined;
+            }
+
+            upsertBatchItemSuccess(batch, {
+              filename: item.filename,
+              candidateId: new Types.ObjectId(candidateData.duplicateCandidateId),
+              parseFields,
+              message: DUPLICATE_CANDIDATE_SUCCESS_MESSAGE,
+            });
+            processed += 1;
+            // eslint-disable-next-line no-continue
+            continue;
+          }
+
           if (candidateData.error) {
             const pendingIndex = batch.pendingItems.findIndex(
               (pending: DeferredPendingItem) =>
@@ -257,6 +284,7 @@ export async function POST(request: NextRequest) {
             jobId: null,
             history: [
               {
+                attachments: [item.file],
                 dateTime: new Date(),
                 title: CV_BATCH_UPLOAD_HISTORY_TITLE,
                 previousInterviewer: null,

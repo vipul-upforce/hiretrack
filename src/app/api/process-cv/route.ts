@@ -91,6 +91,9 @@ interface StoredFileEntry {
   resumeFile: FileObject;
 }
 
+const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
+  'Candidate already exists; counted as success';
+
 function getPdfPageLimitSkipReason(
   filename: string,
   pageCount: number,
@@ -611,6 +614,35 @@ export async function POST(request: NextRequest) {
           normalizedOperations.updateStatus;
         const previousStatus = candidateData.status || 'applied';
 
+        if (candidateData.isDuplicate && candidateData.duplicateCandidateId) {
+          upsertBatchItemSuccess(cvBatchInfo, {
+            filename,
+            candidateId: new Types.ObjectId(candidateData.duplicateCandidateId),
+            parseFields,
+            message: DUPLICATE_CANDIDATE_SUCCESS_MESSAGE,
+          });
+
+          const pendingIndex = cvBatchInfo.pendingItems.findIndex(
+            (pendingItem) =>
+              pendingItem.filename === filename
+              && pendingItem.file?.url === resumeFile.url
+              && pendingItem.status === 'pending',
+          );
+          if (pendingIndex >= 0) {
+            cvBatchInfo.pendingItems[pendingIndex].status = 'processed';
+            cvBatchInfo.pendingItems[pendingIndex].processedAt = new Date();
+            cvBatchInfo.pendingItems[pendingIndex].error = undefined;
+          }
+
+          results.push({
+            filename,
+            candidateId: new Types.ObjectId(candidateData.duplicateCandidateId),
+            status: 'success',
+          });
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
         // Check if the CV was invalid
         if (candidateData.error) {
           // Add error item to batch
@@ -699,6 +731,7 @@ export async function POST(request: NextRequest) {
           jobId: null,
           history: [
             {
+              attachments: [resumeFile],
               dateTime: new Date(),
               title: CV_BATCH_UPLOAD_HISTORY_TITLE,
               previousInterviewer: null,

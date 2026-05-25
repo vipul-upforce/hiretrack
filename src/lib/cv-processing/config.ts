@@ -5,7 +5,7 @@ import type {
 } from '@/lib/types/bulk-cv-ai';
 
 /** Fallback when `DOCLING_PARSE_URL` is unset (override in production via env). */
-export const DEFAULT_DOCLING_PARSE_URL = 'http://185.185.126.124:8000/parse';
+export const DEFAULT_DOCLING_PARSE_URL = 'http://127.0.0.1:8000/parse';
 
 export const DEFAULT_GROQ_RESUME_MODEL = 'llama-3.1-8b-instant';
 export const DEFAULT_DEEPSEEK_RESUME_MODEL = 'deepseek-chat';
