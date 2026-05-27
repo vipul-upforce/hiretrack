@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from '@/app/actions/auth';
 import { AIProviderFactory } from '@/lib/ai-providers';
 import { logger } from '@/lib/logger/logger.server';
 import {
+  BULK_CV_PROVIDER_LABELS,
   CEREBRAS_API_BASE_URL,
   DEEPSEEK_API_BASE_URL,
   DEFAULT_CEREBRAS_RESUME_MODEL,
@@ -14,6 +15,12 @@ import {
   MISTRAL_API_BASE_URL,
   OPENROUTER_API_BASE_URL,
 } from '@/lib/cv-processing/config';
+import { getDefaultModel } from '@/lib/ai-providers/models-config';
+import {
+  discoverGeminiModels,
+  selectPreferredGeminiModel,
+} from '@/lib/ai-providers/gemini-model-discovery';
+import { validateWithModelFallbacks } from '@/lib/ai-providers/validation-fallbacks';
 import type { BulkCvProviderId } from '@/lib/types/bulk-cv-ai';
 
 type BulkValidateProvider = BulkCvProviderId;
@@ -78,6 +85,35 @@ async function probeOpenAICompatibleKey(opts: {
   return { ok: false, error: message, status: response.status };
 }
 
+async function validateOpenAICompatibleProvider(params: {
+  apiKey: string;
+  baseUrl: string;
+  extraHeaders?: Record<string, string>;
+  provider: BulkValidateProvider;
+  requestedModel?: string;
+}) {
+  return validateWithModelFallbacks({
+    provider: params.provider,
+    providerLabel:
+      BULK_CV_PROVIDER_LABELS[params.provider] ?? params.provider,
+    requestedModel: params.requestedModel,
+    validateModel: async (candidateModel) => {
+      const result = await probeOpenAICompatibleKey({
+        baseUrl: params.baseUrl,
+        apiKey: params.apiKey,
+        model: candidateModel,
+        extraHeaders: params.extraHeaders,
+      });
+
+      return {
+        error: result.ok ? undefined : result.error,
+        ok: result.ok,
+        status: result.ok ? undefined : result.status,
+      };
+    },
+  });
+}
+
 export async function POST(req: NextRequest) {
   try {
     const userData = await getAuthenticatedUser(req, 'admin');
@@ -94,139 +130,234 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const providerLabel = BULK_CV_PROVIDER_LABELS[provider] ?? provider;
+
     if (provider === 'gemini') {
       const gemini = AIProviderFactory.getProvider('gemini');
-      const validationResult = await gemini.validateApiKey(apiKey, model);
+      const requestedModel = model?.trim();
+      const discoveredModelsResult = await discoverGeminiModels(apiKey);
+
+      if (!discoveredModelsResult.isValid) {
+        return NextResponse.json({
+          isValid: false,
+          error: discoveredModelsResult.error || 'Invalid Gemini API key',
+          provider,
+          model: requestedModel,
+        });
+      }
+
+      if (discoveredModelsResult.models.length === 0) {
+        return NextResponse.json({
+          isValid: false,
+          error: 'No Gemini generateContent models are available for this API key',
+          provider,
+          model: requestedModel,
+        });
+      }
+
+      const selectedModel = selectPreferredGeminiModel(
+        discoveredModelsResult.models,
+        requestedModel,
+        getDefaultModel('gemini'),
+      );
+
+      if (!selectedModel) {
+        return NextResponse.json({
+          isValid: false,
+          error: 'No compatible Gemini models were discovered',
+          provider,
+          model: requestedModel,
+        });
+      }
+
+      const validationResult = await gemini.validateApiKey(apiKey, selectedModel);
+
       if (!validationResult.isValid) {
         return NextResponse.json({
           isValid: false,
-          error:
-            validationResult.error || 'Invalid Gemini API key or model',
+          error: validationResult.error || 'Invalid Gemini API key or model',
           provider,
-          model,
+          model: selectedModel,
+          requestedModel,
+          availableModels: discoveredModelsResult.models,
         });
       }
+
+      const usedFallback = Boolean(
+        requestedModel && requestedModel !== selectedModel,
+      );
+
       return NextResponse.json({
         isValid: true,
-        message: 'Gemini API key is valid',
+        message: usedFallback
+          ? `Gemini API key is valid. '${requestedModel}' is not available for this key, so '${selectedModel}' was selected from the live Gemini catalog.`
+          : 'Gemini API key is valid',
         provider,
-        model,
+        model: selectedModel,
+        requestedModel,
+        usedFallback,
+        availableModels: discoveredModelsResult.models,
       });
     }
 
     if (provider === 'groq') {
-      const groqModel = model?.trim() || DEFAULT_GROQ_RESUME_MODEL;
       const groq = new Groq({ apiKey });
-      await groq.chat.completions.create({
-        messages: [{ role: 'user', content: 'ping' }],
-        model: groqModel,
-        max_tokens: 1,
-        temperature: 0,
+      const validationResult = await validateWithModelFallbacks({
+        provider,
+        providerLabel,
+        requestedModel: model?.trim() || DEFAULT_GROQ_RESUME_MODEL,
+        validateModel: async (candidateModel) => {
+          try {
+            await groq.chat.completions.create({
+              messages: [{ role: 'user', content: 'ping' }],
+              model: candidateModel,
+              max_tokens: 1,
+              temperature: 0,
+            });
+
+            return { ok: true };
+          } catch (error) {
+            return {
+              error:
+                error instanceof Error ? error.message : 'Groq validation failed',
+              ok: false,
+            };
+          }
+        },
       });
+
+      if (!validationResult.isValid) {
+        return NextResponse.json({
+          isValid: false,
+          error: validationResult.error || 'Invalid Groq API key or model',
+          provider,
+          model: validationResult.model,
+          requestedModel: validationResult.requestedModel,
+          usedFallback: validationResult.usedFallback,
+        });
+      }
+
       return NextResponse.json({
         isValid: true,
-        message: 'Groq API key is valid',
+        message: validationResult.message,
         provider,
-        model: groqModel,
+        model: validationResult.model,
+        requestedModel: validationResult.requestedModel,
+        usedFallback: validationResult.usedFallback,
       });
     }
 
     if (provider === 'deepseek') {
-      const deepseekModel = model?.trim() || DEFAULT_DEEPSEEK_RESUME_MODEL;
-      const result = await probeOpenAICompatibleKey({
-        baseUrl: DEEPSEEK_API_BASE_URL,
+      const validationResult = await validateOpenAICompatibleProvider({
         apiKey,
-        model: deepseekModel,
+        baseUrl: DEEPSEEK_API_BASE_URL,
+        provider,
+        requestedModel: model?.trim() || DEFAULT_DEEPSEEK_RESUME_MODEL,
       });
-      if (!result.ok) {
+      if (!validationResult.isValid) {
         return NextResponse.json({
           isValid: false,
-          error: result.error || 'Invalid DeepSeek API key or model',
+          error: validationResult.error || 'Invalid DeepSeek API key or model',
           provider,
-          model: deepseekModel,
+          model: validationResult.model,
+          requestedModel: validationResult.requestedModel,
+          usedFallback: validationResult.usedFallback,
         });
       }
       return NextResponse.json({
         isValid: true,
-        message: 'DeepSeek API key is valid',
+        message: validationResult.message,
         provider,
-        model: deepseekModel,
+        model: validationResult.model,
+        requestedModel: validationResult.requestedModel,
+        usedFallback: validationResult.usedFallback,
       });
     }
 
     if (provider === 'openrouter') {
-      const openrouterModel =
-        model?.trim() || DEFAULT_OPENROUTER_RESUME_MODEL;
-      const result = await probeOpenAICompatibleKey({
-        baseUrl: OPENROUTER_API_BASE_URL,
+      const validationResult = await validateOpenAICompatibleProvider({
         apiKey,
-        model: openrouterModel,
+        baseUrl: OPENROUTER_API_BASE_URL,
         extraHeaders: {
           'HTTP-Referer':
             process.env.OPENROUTER_HTTP_REFERER?.trim() || 'https://hiretrack',
           'X-Title':
             process.env.OPENROUTER_APP_TITLE?.trim() || 'HireTrack Bulk CV',
         },
+        provider,
+        requestedModel: model?.trim() || DEFAULT_OPENROUTER_RESUME_MODEL,
       });
-      if (!result.ok) {
+      if (!validationResult.isValid) {
         return NextResponse.json({
           isValid: false,
-          error: result.error || 'Invalid OpenRouter API key or model',
+          error: validationResult.error || 'Invalid OpenRouter API key or model',
           provider,
-          model: openrouterModel,
+          model: validationResult.model,
+          requestedModel: validationResult.requestedModel,
+          usedFallback: validationResult.usedFallback,
         });
       }
       return NextResponse.json({
         isValid: true,
-        message: 'OpenRouter API key is valid',
+        message: validationResult.message,
         provider,
-        model: openrouterModel,
+        model: validationResult.model,
+        requestedModel: validationResult.requestedModel,
+        usedFallback: validationResult.usedFallback,
       });
     }
 
     if (provider === 'cerebras') {
-      const cerebrasModel = model?.trim() || DEFAULT_CEREBRAS_RESUME_MODEL;
-      const result = await probeOpenAICompatibleKey({
-        baseUrl: CEREBRAS_API_BASE_URL,
+      const validationResult = await validateOpenAICompatibleProvider({
         apiKey,
-        model: cerebrasModel,
+        baseUrl: CEREBRAS_API_BASE_URL,
+        provider,
+        requestedModel: model?.trim() || DEFAULT_CEREBRAS_RESUME_MODEL,
       });
-      if (!result.ok) {
+      if (!validationResult.isValid) {
         return NextResponse.json({
           isValid: false,
-          error: result.error || 'Invalid Cerebras API key or model',
+          error: validationResult.error || 'Invalid Cerebras API key or model',
           provider,
-          model: cerebrasModel,
+          model: validationResult.model,
+          requestedModel: validationResult.requestedModel,
+          usedFallback: validationResult.usedFallback,
         });
       }
       return NextResponse.json({
         isValid: true,
-        message: 'Cerebras API key is valid',
+        message: validationResult.message,
         provider,
-        model: cerebrasModel,
+        model: validationResult.model,
+        requestedModel: validationResult.requestedModel,
+        usedFallback: validationResult.usedFallback,
       });
     }
 
     if (provider === 'mistral') {
-      const mistralModel = model?.trim() || DEFAULT_MISTRAL_RESUME_MODEL;
-      const result = await probeOpenAICompatibleKey({
-        baseUrl: MISTRAL_API_BASE_URL,
+      const validationResult = await validateOpenAICompatibleProvider({
         apiKey,
-        model: mistralModel,
+        baseUrl: MISTRAL_API_BASE_URL,
+        provider,
+        requestedModel: model?.trim() || DEFAULT_MISTRAL_RESUME_MODEL,
       });
-      if (!result.ok) {
+      if (!validationResult.isValid) {
         return NextResponse.json({
           isValid: false,
-          error: result.error || 'Invalid Mistral API key or model',
+          error: validationResult.error || 'Invalid Mistral API key or model',
           provider,
-          model: mistralModel,
+          model: validationResult.model,
+          requestedModel: validationResult.requestedModel,
+          usedFallback: validationResult.usedFallback,
         });
       }
       return NextResponse.json({
         isValid: true,
-        message: 'Mistral API key is valid',
+        message: validationResult.message,
         provider,
-        model: mistralModel,
+        model: validationResult.model,
+        requestedModel: validationResult.requestedModel,
+        usedFallback: validationResult.usedFallback,
       });
     }
 
@@ -235,7 +366,7 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   } catch (error) {
-    logger.error({ error, url: req.url }, 'Bulk CV AI validate error');
+    logger.error(`Bulk CV AI validate error at ${req.url}`, error);
     return NextResponse.json(
       {
         isValid: false,

@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { AIProviderType } from '@/lib/ai-providers';
 import { getDefaultModel } from '@/lib/ai-providers/models-config';
+import type { DiscoveredProviderModel } from '@/lib/ai-providers/gemini-model-discovery';
 import { useValidateAiProviderMutation } from '@/lib/features/settings';
+
+type VerifyApiKeyOptions = {
+  onAvailableModels?: (models: DiscoveredProviderModel[]) => void;
+  onValidatedModel?: (
+    validatedModel: string,
+    availableModels?: DiscoveredProviderModel[],
+  ) => void;
+};
 
 export const useAiVerification = () => {
   const [verificationStatus, setVerificationStatus] = useState<
@@ -28,6 +37,7 @@ export const useAiVerification = () => {
     provider: AIProviderType,
     apiKey: string,
     model: string,
+    options?: VerifyApiKeyOptions,
   ) => {
     const trimmedApiKey = apiKey.trim();
     const finalModel = model || getDefaultModel(provider);
@@ -56,6 +66,11 @@ export const useAiVerification = () => {
       }).unwrap();
 
       const { isValid } = result;
+      const validatedModel = result.model || finalModel;
+
+      if (result.availableModels?.length) {
+        options?.onAvailableModels?.(result.availableModels);
+      }
 
       setVerificationStatus((prev) => ({
         ...prev,
@@ -64,12 +79,18 @@ export const useAiVerification = () => {
 
       setVerifiedConfig((prev) => ({
         ...prev,
-        [provider]: isValid ? { apiKey: trimmedApiKey, model: finalModel } : null,
+        [provider]: isValid
+          ? { apiKey: trimmedApiKey, model: validatedModel }
+          : null,
       }));
 
+      if (isValid && validatedModel !== finalModel) {
+        options?.onValidatedModel?.(validatedModel, result.availableModels);
+      }
+
       const message = isValid
-        ? result.message || '✅ API key and model are valid'
-        : result.error || '❌ API key or model is invalid';
+        ? result.message || 'API key and model are valid'
+        : result.error || 'API key or model is invalid';
 
       setVerificationMessages((prev) => ({
         ...prev,
@@ -88,7 +109,7 @@ export const useAiVerification = () => {
 
       setVerificationMessages((prev) => ({
         ...prev,
-        [provider]: `âŒ Verification failed: ${errorMessage}`,
+        [provider]: `Verification failed: ${errorMessage}`,
       }));
     }
   };

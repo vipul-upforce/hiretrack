@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Eye, EyeOff } from 'lucide-react';
 import { getProviderModels } from '@/lib/ai-providers/models-config';
+import type { DiscoveredProviderModel } from '@/lib/ai-providers/gemini-model-discovery';
 import { FormFieldName } from '../types';
 import { VerificationStatus } from './provider-card-header-actions';
 
@@ -127,6 +128,8 @@ type ModelSelectSectionProps = {
   provider: string;
   modelField: FormFieldName;
   modelValue: string;
+  modelOptions?: DiscoveredProviderModel[];
+  onOpenModelSelect?: () => void;
   setFieldValue: (field: string, value: string) => void;
 };
 
@@ -134,9 +137,28 @@ export function ModelSelectSection({
   provider,
   modelField,
   modelValue,
+  modelOptions,
+  onOpenModelSelect,
   setFieldValue,
 }: ModelSelectSectionProps) {
   const providerModels = getProviderModels(provider);
+  const selectableModels = modelOptions?.length
+    ? modelOptions.map((modelOption) => ({
+        id: modelOption.id,
+        isLiveDiscovered: !providerModels.some(
+          (providerModel) => providerModel.id === modelOption.id,
+        ),
+        knownModel: providerModels.find(
+          (providerModel) => providerModel.id === modelOption.id,
+        ),
+        name: modelOption.name,
+      }))
+    : providerModels.map((providerModel) => ({
+        id: providerModel.id,
+        isLiveDiscovered: false,
+        knownModel: providerModel,
+        name: providerModel.name,
+      }));
 
   return (
     <div className="space-y-2">
@@ -145,13 +167,18 @@ export function ModelSelectSection({
       </Label>
       <Select
         value={modelValue}
+        onOpenChange={(open) => {
+          if (open) {
+            onOpenModelSelect?.();
+          }
+        }}
         onValueChange={(v) => setFieldValue(modelField, v)}
       >
         <SelectTrigger className="h-[60px]">
           <SelectValue placeholder="Select model" />
         </SelectTrigger>
         <SelectContent className="max-h-96">
-          {providerModels.map((modelInfo) => (
+          {selectableModels.map((modelInfo) => (
             <SelectItem
               key={modelInfo.id}
               value={modelInfo.id}
@@ -160,22 +187,30 @@ export function ModelSelectSection({
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
                   {modelInfo.name}
-                  {modelInfo.isDefault && (
+                  {modelInfo.knownModel?.isDefault && (
                     <Badge variant="secondary" className="text-xs">
                       Default
                     </Badge>
                   )}
-                  {modelInfo.isDeprecated && (
+                  {modelInfo.knownModel?.isDeprecated && (
                     <Badge variant="destructive" className="text-xs">
                       Deprecated
                     </Badge>
                   )}
-                  <Badge variant="outline" className="text-xs">
-                    {modelInfo.capabilities.costTier}
-                  </Badge>
+                  {modelInfo.knownModel?.capabilities.costTier ? (
+                    <Badge variant="outline" className="text-xs">
+                      {modelInfo.knownModel.capabilities.costTier}
+                    </Badge>
+                  ) : null}
+                  {modelInfo.isLiveDiscovered ? (
+                    <Badge variant="outline" className="text-xs">
+                      Live
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                  {modelInfo.capabilities.description}
+                  {modelInfo.knownModel?.capabilities.description
+                    || 'Discovered from the provider using this API key.'}
                 </p>
               </div>
             </SelectItem>

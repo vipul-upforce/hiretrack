@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, Formik } from 'formik';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useUpdateAIProvidersMutation } from '@/lib/features/settings';
+import { getProviderModels } from '@/lib/ai-providers/models-config';
+import type { DiscoveredProviderModel } from '@/lib/ai-providers/gemini-model-discovery';
 import { AIProvidersValues } from '../types';
 import { aiProvidersSchema } from '../schema';
 import { PROVIDER_CONFIGS } from '../constants';
@@ -22,6 +24,11 @@ interface AIProvidersFormProps {
   onRefetch: () => void;
   embedded?: boolean;
 }
+
+type CachedDiscoveredModels = {
+  apiKey: string;
+  models: DiscoveredProviderModel[];
+};
 
 function getProviderFormValue(
   values: AIProvidersValues,
@@ -74,6 +81,86 @@ export default function AIProvidersForm({
     getVerificationState,
   } = useAiVerification();
   const [showSaveHint, setShowSaveHint] = useState(false);
+  const [availableModelsByProvider, setAvailableModelsByProvider] = useState<
+    Partial<Record<(typeof PROVIDER_CONFIGS)[number]['provider'], DiscoveredProviderModel[]>>
+  >({});
+  const discoveredModelsCacheRef = React.useRef<
+    Partial<Record<(typeof PROVIDER_CONFIGS)[number]['provider'], CachedDiscoveredModels>>
+  >({});
+
+  useEffect(() => {
+    setAvailableModelsByProvider({});
+    discoveredModelsCacheRef.current = {};
+  }, [initialValues]);
+
+  const cacheDiscoveredModels = (
+    provider: (typeof PROVIDER_CONFIGS)[number]['provider'],
+    apiKey: string,
+    models: DiscoveredProviderModel[],
+  ) => {
+    discoveredModelsCacheRef.current[provider] = {
+      apiKey: apiKey.trim(),
+      models,
+    };
+  };
+
+  const getCachedDiscoveredModels = (
+    provider: (typeof PROVIDER_CONFIGS)[number]['provider'],
+    apiKey: string,
+  ): DiscoveredProviderModel[] | null => {
+    const cacheEntry = discoveredModelsCacheRef.current[provider];
+    if (!cacheEntry || cacheEntry.apiKey !== apiKey.trim()) {
+      return null;
+    }
+
+    return cacheEntry.models;
+  };
+
+  const clearProviderModelOptions = (
+    provider: (typeof PROVIDER_CONFIGS)[number]['provider'],
+  ) =>
+    setAvailableModelsByProvider((prev) => {
+      if (!prev[provider]) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      delete next[provider];
+      return next;
+    });
+
+  const applyValidatedModel = (
+    provider: (typeof PROVIDER_CONFIGS)[number]['provider'],
+    validatedModel: string,
+    availableModels: DiscoveredProviderModel[] | undefined,
+    setFieldValue: (
+      field: string,
+      value: string,
+      shouldValidate?: boolean,
+    ) => Promise<unknown>,
+  ) => {
+    const config = PROVIDER_CONFIGS.find((item) => item.provider === provider);
+
+    if (!config) {
+      return;
+    }
+
+    const isKnownModel = Boolean(
+      availableModels?.some((modelInfo) => modelInfo.id === validatedModel)
+      || getProviderModels(provider).some(
+        (modelInfo) => modelInfo.id === validatedModel,
+      ),
+    );
+
+    void setFieldValue(
+      config.modelField,
+      isKnownModel ? validatedModel : 'custom',
+    );
+    void setFieldValue(
+      config.customModelField,
+      isKnownModel ? '' : validatedModel,
+    );
+  };
 
   const handleSubmit = async (values: AIProvidersValues) => {
     const activeConfig = PROVIDER_CONFIGS.find(
@@ -241,8 +328,71 @@ export default function AIProvidersForm({
                       verificationStatus={verificationState.status}
                       verificationMessage={verificationState.message}
                       showApiKey={!!showApiKeys[config.provider]}
+                      modelOptions={availableModelsByProvider[config.provider]}
+                      onOpenModelSelect={() => {
+                        if (config.provider !== 'gemini' || !apiKeyValue.trim()) {
+                          return;
+                        }
+
+                        const cachedModels = getCachedDiscoveredModels(
+                          config.provider,
+                          apiKeyValue,
+                        );
+
+                        if (cachedModels?.length) {
+                          setAvailableModelsByProvider((prev) => ({
+                            ...prev,
+                            [config.provider]: cachedModels,
+                          }));
+                          return;
+                        }
+
+                        clearProviderModelOptions(config.provider);
+
+                        void verifyApiKey(config.provider, apiKeyValue, finalModelForVerification, {
+                          onAvailableModels: (availableModels) =>
+                            {
+                              cacheDiscoveredModels(
+                                config.provider,
+                                apiKeyValue,
+                                availableModels,
+                              );
+                              setAvailableModelsByProvider((prev) => ({
+                                ...prev,
+                                [config.provider]: availableModels,
+                              }));
+                            },
+                          onValidatedModel: (validatedModel, availableModels) =>
+                            applyValidatedModel(
+                              config.provider,
+                              validatedModel,
+                              availableModels,
+                              formik.setFieldValue,
+                            ),
+                        });
+                      }}
                       onVerify={(key, model) =>
-                        verifyApiKey(config.provider, key, model)
+                        verifyApiKey(config.provider, key, model, {
+                          onAvailableModels: (availableModels) =>
+                            {
+                              cacheDiscoveredModels(
+                                config.provider,
+                                key,
+                                availableModels,
+                              );
+                              setAvailableModelsByProvider((prev) => ({
+                                ...prev,
+                                [config.provider]: availableModels,
+                              }));
+                            },
+                          onValidatedModel: (validatedModel, availableModels) =>
+                            applyValidatedModel(
+                              config.provider,
+                              validatedModel,
+                              availableModels,
+                              formik.setFieldValue,
+                            ),
+                        })
                       }
                       onToggleVisibility={() =>
                         toggleApiKeyVisibility(config.provider)

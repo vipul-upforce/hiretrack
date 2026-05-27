@@ -295,6 +295,19 @@ export const AI_PROVIDER_MODELS: ProviderModels = {
         description: 'Free-tier Gemma 2 instruct-tuned via OpenRouter',
       },
     },
+    {
+      id: 'openai/gpt-4o-mini',
+      name: 'GPT-4o Mini (OpenRouter)',
+      capabilities: {
+        supportsPDF: false,
+        supportsVision: true,
+        supportsJSON: true,
+        maxTokens: 128000,
+        costTier: 'medium',
+        description:
+          'Generic OpenRouter fallback when rotating free-tier models are unavailable',
+      },
+    },
   ],
   cerebras: [
     {

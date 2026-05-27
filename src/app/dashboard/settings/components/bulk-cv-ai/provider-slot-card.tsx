@@ -2,12 +2,13 @@
 
 import React from 'react';
 import type { FormikProps } from 'formik';
-import { Loader2 } from 'lucide-react';
+import { ExternalLink, Loader2, X } from 'lucide-react';
 import { PasswordToggleInput } from '../shared/password-toggle-input';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -21,6 +22,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getProviderModels } from '@/lib/ai-providers/models-config';
+import type { DiscoveredProviderModel } from '@/lib/ai-providers/gemini-model-discovery';
+import {
+  PROVIDER_API_KEY_DOC_URLS,
+  PROVIDER_MODEL_DOC_URLS,
+} from '@/lib/ai-providers/provider-doc-links';
 import type { BulkCvProviderId } from '@/lib/types/bulk-cv-ai';
 import type {
   BulkCvAiFormValues,
@@ -32,7 +38,11 @@ export interface BulkProviderSlotCardProps {
   formik: FormikProps<BulkCvAiFormValues>;
   verified: boolean;
   isValidating: boolean;
+  modelOptions?: DiscoveredProviderModel[];
+  onApiKeyChange: () => void;
   onMarkUnverified: () => void;
+  onOpenModelSelect?: () => void;
+  onRemove: () => void;
   onVerify: (params: {
     provider: BulkCvProviderId;
     apiKey: string;
@@ -52,27 +62,76 @@ export default function BulkProviderSlotCard({
   formik,
   verified,
   isValidating,
+  modelOptions,
+  onApiKeyChange,
   onMarkUnverified,
+  onOpenModelSelect,
+  onRemove,
   onVerify,
 }: BulkProviderSlotCardProps) {
   const apiKeyValue = String(formik.values[field.apiKeyField] ?? '');
   const modelValue = String(formik.values[field.modelField] ?? '');
   const customModelValue = String(formik.values[field.customModelField] ?? '');
-  const models = getProviderModels(field.id);
+  const knownModels = getProviderModels(field.id);
+  const models = modelOptions?.length
+    ? modelOptions.map((modelOption) => ({
+        id: modelOption.id,
+        name: modelOption.name,
+      }))
+    : knownModels.map((modelInfo) => ({
+        id: modelInfo.id,
+        name: modelInfo.name,
+      }));
 
   return (
-    <Card>
+    <Card className="h-[100%]">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-base">
-          <span>{field.label}</span>
-          {verified && apiKeyValue.trim() ? (
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-              Verified
-            </span>
-          ) : null}
-        </CardTitle>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <CardTitle className="text-base">{field.label}</CardTitle>
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <a
+                href={PROVIDER_API_KEY_DOC_URLS[field.id] ?? '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+              >
+                Get API key
+                <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href={PROVIDER_MODEL_DOC_URLS[field.id]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
+              >
+                View models
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {verified && apiKeyValue.trim() ? (
+              <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                Verified
+              </span>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onRemove}
+              aria-label={`Remove ${field.label} provider`}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex flex-col justify-between">
+
+
         <div className="space-y-2">
           <Label htmlFor={`${field.id}-key`}>API key</Label>
           <PasswordToggleInput
@@ -80,7 +139,7 @@ export default function BulkProviderSlotCard({
             name={field.apiKeyField}
             value={apiKeyValue}
             onChange={(e) => {
-              onMarkUnverified();
+              onApiKeyChange();
               formik.handleChange(e);
             }}
             placeholder={field.apiKeyPlaceholder}
@@ -90,6 +149,11 @@ export default function BulkProviderSlotCard({
           <Label>Model</Label>
           <Select
             value={modelValue}
+            onOpenChange={(open) => {
+              if (open) {
+                onOpenModelSelect?.();
+              }
+            }}
             onValueChange={(v) => {
               onMarkUnverified();
               formik.setFieldValue(field.modelField, v);
@@ -115,14 +179,20 @@ export default function BulkProviderSlotCard({
               id={`${field.id}-custom`}
               name={field.customModelField}
               value={customModelValue}
-              onChange={formik.handleChange}
+              onChange={(e) => {
+                onMarkUnverified();
+                formik.handleChange(e);
+              }}
               placeholder={field.customModelPlaceholder}
             />
           </div>
         )}
+      </CardContent>
+      <CardFooter className="">
         <Button
           type="button"
           variant="secondary"
+          className="w-full bottom-0 left-0 right-0"
           disabled={isValidating || !apiKeyValue.trim()}
           onClick={() =>
             onVerify({
@@ -138,7 +208,8 @@ export default function BulkProviderSlotCard({
           ) : null}
           Verify {field.label}
         </Button>
-      </CardContent>
+
+      </CardFooter>
     </Card>
   );
 }

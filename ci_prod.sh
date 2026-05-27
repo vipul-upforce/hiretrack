@@ -174,7 +174,7 @@ jq --arg version "$VERSION_WITHOUT_PREFIX" '.version = $version' package.json > 
 
 # Build Next.js
 echo "Building Next.js application..."
-NODE_OPTIONS="--max-old-space-size=3072" npx next build
+NODE_OPTIONS="--max-old-space-size=8192" npx next build
 
 # Build cache is CI-only; do not ship it (often multi-GB on customer disks).
 echo "Removing .next/cache from release artifact..."

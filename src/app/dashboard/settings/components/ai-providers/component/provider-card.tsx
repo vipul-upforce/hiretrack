@@ -19,6 +19,12 @@ import {
   CardHeaderActions,
   VerificationStatus,
 } from './provider-card-header-actions';
+import {
+  PROVIDER_API_KEY_DOC_URLS,
+  PROVIDER_MODEL_DOC_URLS,
+} from '@/lib/ai-providers/provider-doc-links';
+import { ExternalLink } from 'lucide-react';
+import type { DiscoveredProviderModel } from '@/lib/ai-providers/gemini-model-discovery';
 
 function getProviderFormValue(values: AIProvidersValues, field: FormFieldName) {
   // Avoid dynamic indexing to satisfy security lint rules.
@@ -104,6 +110,8 @@ interface ProviderCardProps {
   verificationStatus: 'idle' | 'loading' | 'success' | 'error';
   verificationMessage?: string;
   showApiKey: boolean;
+  modelOptions?: DiscoveredProviderModel[];
+  onOpenModelSelect?: () => void;
   onVerify: (apiKey: string, model: string) => void;
   onToggleVisibility: () => void;
 }
@@ -116,6 +124,8 @@ export function ProviderCard({
   verificationStatus,
   verificationMessage,
   showApiKey,
+  modelOptions,
+  onOpenModelSelect,
   onVerify,
   onToggleVisibility,
 }: ProviderCardProps) {
@@ -187,6 +197,26 @@ export function ProviderCard({
               <CardDescription className="text-sm">
                 {description}
               </CardDescription>
+              <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
+                <a
+                  href={PROVIDER_API_KEY_DOC_URLS[provider] ?? '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  Get API key
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+                <a
+                  href={PROVIDER_MODEL_DOC_URLS[provider]}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  View models
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
             </div>
           </div>
           <CardHeaderActions
@@ -220,6 +250,8 @@ export function ProviderCard({
           provider={provider}
           modelField={modelField}
           modelValue={modelValue}
+          modelOptions={modelOptions}
+          onOpenModelSelect={onOpenModelSelect}
           setFieldValue={setFieldValue}
         />
 

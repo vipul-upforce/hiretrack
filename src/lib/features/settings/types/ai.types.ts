@@ -1,5 +1,6 @@
 import type { IBulkCvAi } from '@/lib/types/bulk-cv-ai';
 import { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
+import type { DiscoveredProviderModel } from '@/lib/ai-providers/gemini-model-discovery';
 
 export interface EvaluationConfigItem {
   temperature: number;
@@ -39,6 +40,10 @@ export interface ValidateAiProviderResponse {
   isValid: boolean;
   message?: string;
   error?: string;
+  model?: string;
+  requestedModel?: string;
+  usedFallback?: boolean;
+  availableModels?: DiscoveredProviderModel[];
 }
 
 export interface GetBulkCvAiResponse {
@@ -79,4 +84,7 @@ export interface ValidateBulkCvAiResponse {
   error?: string;
   provider?: string;
   model?: string;
+  requestedModel?: string;
+  usedFallback?: boolean;
+  availableModels?: DiscoveredProviderModel[];
 }
