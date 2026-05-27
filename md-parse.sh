@@ -117,13 +117,17 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if ! command -v python3 >/dev/null 2>&1; then
-  log_err "python3 is required. On macOS: brew install python"
-  exit 1
+PY_VENV_BIN=""
+if command -v python3 >/dev/null 2>&1 && python3 -m venv --help >/dev/null 2>&1; then
+  PY_VENV_BIN="python3"
 fi
 
-if ! python3 -m venv --help >/dev/null 2>&1; then
-  log_err "python3 venv support is missing."
+if [ -z "$PY_VENV_BIN" ] && command -v python3.12 >/dev/null 2>&1 && python3.12 -m venv --help >/dev/null 2>&1; then
+  PY_VENV_BIN="python3.12"
+fi
+
+if [ -z "$PY_VENV_BIN" ]; then
+  log_err "Python venv support is missing. Install python3.12-venv (Debian/Ubuntu) or python3-venv, then retry."
   exit 1
 fi
 
@@ -131,7 +135,7 @@ mkdir -p "$INSTALL_DIR"
 
 if [ ! -d "$INSTALL_DIR/venv" ]; then
   log_info "Creating virtual environment at $INSTALL_DIR/venv"
-  python3 -m venv "$INSTALL_DIR/venv"
+  "$PY_VENV_BIN" -m venv "$INSTALL_DIR/venv"
 fi
 
 if [ ! -x "$INSTALL_DIR/venv/bin/pip" ]; then

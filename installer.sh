@@ -366,24 +366,47 @@ ensure_markdown_parser_service() {
     echo "   Markdown Parser Service (bulk CV)"
     echo "========================================"
 
-    if ! command -v python3 >/dev/null 2>&1; then
-        echo "[ WARNING ] python3 not found. Install Python 3 or set DOCLING_PARSE_URL manually in .env."
+    if ! command -v python3 >/dev/null 2>&1 && ! command -v python3.12 >/dev/null 2>&1; then
+        echo "[ WARNING ] Python not found. Install Python 3.12+ or set DOCLING_PARSE_URL manually in .env."
         return 0
     fi
 
-    if ! python3 -m venv --help >/dev/null 2>&1; then
-        echo "[ PACKAGE ] Installing python3-venv..."
+    local PY_VENV_BIN="python3"
+    local HAS_PY3_VENV=0
+    local HAS_PY312_VENV=0
+
+    if python3 -m venv --help >/dev/null 2>&1; then
+        HAS_PY3_VENV=1
+    fi
+
+    if command -v python3.12 >/dev/null 2>&1 && python3.12 -m venv --help >/dev/null 2>&1; then
+        HAS_PY312_VENV=1
+    fi
+
+    if [ "$HAS_PY3_VENV" -eq 0 ] && [ "$HAS_PY312_VENV" -eq 0 ]; then
+        echo "[ PACKAGE ] Installing python3.12-venv..."
         if command -v apt-get >/dev/null 2>&1; then
             sudo apt-get update -qq
-            sudo apt-get install -y python3-venv python3-pip
+            sudo apt-get install -y python3.12-venv python3-pip
         elif command -v dnf >/dev/null 2>&1; then
             sudo dnf install -y python3 python3-pip
         elif command -v yum >/dev/null 2>&1; then
             sudo yum install -y python3 python3-pip
         else
-            echo "[ WARNING ] Could not install python3-venv. Skipping markdown parser setup."
+            echo "[ WARNING ] Could not install python3.12-venv. Skipping markdown parser setup."
             return 0
         fi
+    fi
+
+    # Re-check after any attempted install and choose a python binary that
+    # definitely supports `-m venv`.
+    if python3 -m venv --help >/dev/null 2>&1; then
+        PY_VENV_BIN="python3"
+    elif command -v python3.12 >/dev/null 2>&1 && python3.12 -m venv --help >/dev/null 2>&1; then
+        PY_VENV_BIN="python3.12"
+    else
+        echo "[ WARNING ] Python venv support is still missing. Skipping markdown parser setup."
+        return 0
     fi
 
     local PM2_BIN
@@ -405,7 +428,7 @@ ensure_markdown_parser_service() {
 
     if [ ! -d "$MARKDOWN_PARSER_DIR/venv" ]; then
         echo "[ PACKAGE ] Creating Python virtual environment..."
-        python3 -m venv "$MARKDOWN_PARSER_DIR/venv"
+        "$PY_VENV_BIN" -m venv "$MARKDOWN_PARSER_DIR/venv"
     fi
 
     if [ ! -x "$MARKDOWN_PARSER_DIR/venv/bin/pip" ]; then
