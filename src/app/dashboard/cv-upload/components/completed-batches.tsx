@@ -77,7 +77,7 @@ interface CompletedBatchesProps {
 }
 
 function getBatchDate(batch: CvBatchSummary): Date {
-  return new Date(batch.completedAt ?? batch.createdAt);
+  return new Date(batch.historyAt ?? batch.completedAt ?? batch.createdAt);
 }
 
 /** File row UI shared by the completed-batches table and the deferred-uploads panel. */

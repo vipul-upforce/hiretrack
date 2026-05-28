@@ -33,6 +33,7 @@ import {
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
 import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume-file-from-stored-url';
+import { finalizeCvBatchStatus } from '@/lib/cv-upload/finalize-cv-batch-status';
 import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
 
 const BATCH_SIZE = 20;
@@ -125,6 +126,10 @@ export async function POST(request: NextRequest) {
     batch.status = 'processing';
     await batch.save();
 
+    let processed = 0;
+    let failed = 0;
+
+    try {
     const pendingItems = (batch.pendingItems || []).filter(
       (item: DeferredPendingItem) => item.status === 'pending',
     );
@@ -150,9 +155,6 @@ export async function POST(request: NextRequest) {
         });
       }
     }
-
-    let processed = 0;
-    let failed = 0;
 
     for (let i = 0; i < pendingItems.length; i += BATCH_SIZE) {
       const chunk = pendingItems.slice(i, i + BATCH_SIZE);
@@ -384,14 +386,23 @@ export async function POST(request: NextRequest) {
       await batch.save();
     }
 
-    const remainingPending = (batch.pendingItems || []).some(
-      (item: DeferredPendingItem) => item.status === 'pending',
-    );
-    batch.status = remainingPending ? 'pending' : 'completed';
-    batch.completedAt = remainingPending ? undefined : new Date();
-    batch.historyAt = batch.completedAt ?? batch.historyAt;
-    await batch.save();
+    await finalizeCvBatchStatus(batch);
     batchResults.push({ batchId: batch._id.toString(), processed, failed });
+    } catch (batchError) {
+      logger.error(
+        { error: batchError, batchId: batch._id.toString(), organizationId },
+        'Deferred CV batch processing failed unexpectedly; finalizing batch status',
+      );
+      try {
+        await finalizeCvBatchStatus(batch);
+      } catch (finalizeError) {
+        logger.error(
+          { error: finalizeError, batchId: batch._id.toString() },
+          'Failed to finalize deferred CV batch status after processing error',
+        );
+      }
+      batchResults.push({ batchId: batch._id.toString(), processed, failed });
+    }
   }
 
   if (createdCandidateIds.length > 0) {

@@ -31,6 +31,11 @@ import {
 } from '@/lib/cv-upload/operations';
 import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume-file-from-stored-url';
 import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
+import {
+  collectRetryableFailedItems,
+  findPendingItemIndexForRetry,
+} from '@/lib/cv-upload/collect-retryable-failed-items';
+import { finalizeCvBatchStatus } from '@/lib/cv-upload/finalize-cv-batch-status';
 
 const BATCH_SIZE = 20;
 const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
@@ -67,21 +72,6 @@ function findLatestItemByFilenameIndex(
     }
   }
   return -1;
-}
-
-interface DeferredPendingItem {
-  filename: string;
-  status: 'pending' | 'processed' | 'failed';
-  file: {
-    id?: string;
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-  };
-  selected: boolean;
-  error?: string;
-  processedAt?: Date;
 }
 
 export async function POST(request: NextRequest) {
@@ -137,13 +127,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
   }
 
-  batch.status = 'processing';
-  await batch.save();
-
-  const retryableFailedItems = (batch.pendingItems || []).filter(
-    (item: DeferredPendingItem) =>
-      item.status === 'failed' && (filename ? item.filename === filename : true),
-  );
+  const retryableFailedItems = collectRetryableFailedItems(batch, filename);
   if (retryableFailedItems.length === 0) {
     return NextResponse.json({
       message: filename
@@ -152,6 +136,9 @@ export async function POST(request: NextRequest) {
       retried: 0,
     });
   }
+
+  batch.status = 'processing';
+  await batch.save();
 
   const operationsSnapshot = batch.operationsSnapshot || {};
   let targetJob: { _id: unknown; title?: string; lanes?: string[]; useCustomLanes?: boolean } | null =
@@ -179,6 +166,7 @@ export async function POST(request: NextRequest) {
   let processed = 0;
   let failed = 0;
 
+  try {
   for (let i = 0; i < retryableFailedItems.length; i += BATCH_SIZE) {
     const chunk = retryableFailedItems.slice(i, i + BATCH_SIZE);
     for (const item of chunk) {
@@ -202,11 +190,9 @@ export async function POST(request: NextRequest) {
         lastParseFields = parseFields;
 
         if (candidateData.isDuplicate && candidateData.duplicateCandidateId) {
-          const pendingIndex = batch.pendingItems.findIndex(
-            (pending: DeferredPendingItem) =>
-              pending.filename === item.filename
-              && pending.file?.url === item.file?.url
-              && pending.status === 'failed',
+          const pendingIndex = findPendingItemIndexForRetry(
+            batch.pendingItems,
+            item,
           );
           if (pendingIndex >= 0) {
             batch.pendingItems[pendingIndex].status = 'processed';
@@ -264,13 +250,12 @@ export async function POST(request: NextRequest) {
         }
 
         if (candidateData.error) {
-          const pendingIndex = batch.pendingItems.findIndex(
-            (pending: DeferredPendingItem) =>
-              pending.filename === item.filename
-              && pending.file?.url === item.file?.url
-              && pending.status === 'failed',
+          const pendingIndex = findPendingItemIndexForRetry(
+            batch.pendingItems,
+            item,
           );
           if (pendingIndex >= 0) {
+            batch.pendingItems[pendingIndex].status = 'failed';
             batch.pendingItems[pendingIndex].processedAt = new Date();
             batch.pendingItems[pendingIndex].error = candidateData.error;
           }
@@ -408,11 +393,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        const pendingIndex = batch.pendingItems.findIndex(
-          (pending: DeferredPendingItem) =>
-            pending.filename === item.filename &&
-            pending.file?.url === item.file?.url &&
-            pending.status === 'failed',
+        const pendingIndex = findPendingItemIndexForRetry(
+          batch.pendingItems,
+          item,
         );
         if (pendingIndex >= 0) {
           batch.pendingItems[pendingIndex].status = 'processed';
@@ -473,13 +456,12 @@ export async function POST(request: NextRequest) {
         );
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
-        const pendingIndex = batch.pendingItems.findIndex(
-          (pending: DeferredPendingItem) =>
-            pending.filename === item.filename &&
-            pending.file?.url === item.file?.url &&
-            pending.status === 'failed',
+        const pendingIndex = findPendingItemIndexForRetry(
+          batch.pendingItems,
+          item,
         );
         if (pendingIndex >= 0) {
+          batch.pendingItems[pendingIndex].status = 'failed';
           batch.pendingItems[pendingIndex].processedAt = new Date();
           batch.pendingItems[pendingIndex].error = errorMessage;
         }
@@ -523,13 +505,30 @@ export async function POST(request: NextRequest) {
     await batch.save();
   }
 
-  const hasPending = (batch.pendingItems || []).some(
-    (item: DeferredPendingItem) => item.status === 'pending',
-  );
-  batch.status = hasPending ? 'pending' : 'completed';
-  batch.completedAt = hasPending ? undefined : new Date();
-  batch.historyAt = batch.completedAt ?? batch.historyAt;
-  await batch.save();
+  await finalizeCvBatchStatus(batch);
+  } catch (retryError) {
+    logger.error(
+      { error: retryError, batchId: batch._id.toString(), organizationId },
+      'CV batch retry failed unexpectedly; finalizing batch status',
+    );
+    try {
+      await finalizeCvBatchStatus(batch);
+    } catch (finalizeError) {
+      logger.error(
+        { error: finalizeError, batchId: batch._id.toString() },
+        'Failed to finalize CV batch status after retry error',
+      );
+    }
+    return NextResponse.json(
+      {
+        error:
+          retryError instanceof Error
+            ? retryError.message
+            : 'Retry failed unexpectedly',
+      },
+      { status: 500 },
+    );
+  }
 
   if (createdCandidateIds.length > 0) {
     try {

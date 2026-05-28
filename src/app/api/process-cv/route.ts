@@ -43,6 +43,7 @@ import {
   resolveCandidateStatus,
 } from '@/lib/cv-upload/operations';
 import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
+import { collectRetryableFailedItems } from '@/lib/cv-upload/collect-retryable-failed-items';
 
 /** Avoid stale batch lists behind CDNs / reverse proxies (prod UI not updating after upload). */
 const JSON_NO_STORE_HEADERS = {
@@ -1147,9 +1148,13 @@ export async function GET(request: NextRequest) {
         organizationId: organizationObjectId,
         'items.status': 'failed',
       })
-        .select('_id')
+        .select('_id pendingItems items')
         .lean(),
     ]);
+
+    const retryableFailedBatchIds = retryableFailedBatchDocs
+      .filter((batch) => collectRetryableFailedItems(batch).length > 0)
+      .map((batch) => batch._id.toString());
 
     return NextResponse.json(
       {
@@ -1165,9 +1170,7 @@ export async function GET(request: NextRequest) {
           },
         },
         deferredBatches,
-        retryableFailedBatchIds: retryableFailedBatchDocs.map((batch) =>
-          batch._id.toString(),
-        ),
+        retryableFailedBatchIds,
       },
       {
       status: 200,
