@@ -86,7 +86,7 @@ function StorageStep() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="overflow-hidden">
+        <DialogContent className="overflow-hidden" size="xl">
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>File Storage Configuration</DialogTitle>
             <DialogDescription>

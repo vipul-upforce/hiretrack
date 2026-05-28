@@ -30,9 +30,15 @@ function WelcomeStep() {
     },
     {
       icon: Bot,
-      title: 'AI-Powered Resume Processing',
+      title: 'AI Providers & Evaluation',
       description:
-        'Configure AI providers to automatically process and score resumes',
+        'Configure your main AI provider for evaluation and advanced scoring controls',
+    },
+    {
+      icon: Bot,
+      title: 'Bulk CV Processing',
+      description:
+        'Set up high-volume CV upload and automated parsing for bulk resume intake',
     },
     {
       icon: Mail,
@@ -43,7 +49,13 @@ function WelcomeStep() {
       icon: Video,
       title: 'Meeting Integration',
       description:
-        'Connect Google Meet, Zoom, or Microsoft Teams for video interviews',
+        'Connect Google Meet, Zoom, or Microsoft Teams for interview scheduling',
+    },
+    {
+      icon: Video,
+      title: 'Teams Bot Reminders',
+      description:
+        'Enable Microsoft Teams reminder templates and bot-driven meeting/follow-up notifications',
     },
     {
       icon: Clock,

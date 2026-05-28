@@ -54,8 +54,7 @@ function MeetingIntegrationStep() {
               Meeting Integration
             </h2>
             <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-              Connect Google Meet, Zoom, or Microsoft Teams to schedule video
-              interviews directly from the candidate assignment dialog.
+              Connect Google Meet, Zoom, or Microsoft Teams for assignment-based interview scheduling and reminders.
             </p>
           </div>
         </div>
@@ -64,6 +63,13 @@ function MeetingIntegrationStep() {
           className={`border-2 ${isConfigured ? 'border-green-500/30 bg-green-50/50 dark:border-green-500/20 dark:bg-green-900/10' : 'border-border'}`}
         >
           <CardContent className="p-6">
+            <div className="mb-4 space-y-2 text-sm text-muted-foreground">
+              <p>Choose from Google Meet, Zoom, or Microsoft Teams.</p>
+              <p>
+                One meeting provider is used per assignment, and Teams supports
+                reminder templates and bot-driven notifications.
+              </p>
+            </div>
             <Button
               variant="primary"
               onClick={handleOpenDialog}
@@ -92,9 +98,9 @@ function MeetingIntegrationStep() {
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>Meeting Integration</DialogTitle>
             <DialogDescription>
-              Connect Google Meet, Zoom, or Microsoft Teams to schedule
-              interviews directly from the candidate assignment dialog. Any one
-              integration is sufficient.
+              Configure Google Meet, Zoom, or Microsoft Teams for assignment
+              scheduling. One provider is used per assignment, and Teams can use
+              template-based bot reminders and follow-up notifications.
             </DialogDescription>
           </DialogHeader>
 

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import AIProvidersConfigs from '@/app/dashboard/settings/components/ai-providers';
+import AICommunicationSettings from '@/app/dashboard/settings/components/communication/ai-settings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import logger from '@/lib/logger';
 import { Button } from '@/components/ui/button';
@@ -64,21 +64,22 @@ function AIProviderStep() {
   const aiProviders = [
     {
       name: 'Google Gemini',
-      description: 'Fast and cost-effective AI processing',
+      description: 'Premium evaluation provider with strong document understanding',
     },
-    { name: 'OpenAI GPT', description: 'Industry-leading language models' },
+    { name: 'OpenAI GPT', description: 'High-quality evaluation and scoring models' },
     {
       name: 'Anthropic Claude',
-      description: 'Advanced reasoning and analysis',
+      description: 'Advanced reasoning for candidate analysis',
     },
-    { name: 'Perplexity', description: 'Research-focused AI with web access' },
+    { name: 'Perplexity', description: 'Context-rich model support for evaluation workflows' },
   ];
 
   const features = [
-    'Automatic resume parsing and data extraction',
-    'Intelligent candidate scoring and ranking',
-    'Skills and experience matching',
-    'Candidate evaluation insights',
+    'Main AI provider setup for candidate evaluation and scoring',
+    'Free-tier bulk AI pool option for cost-optimized high-volume CV processing',
+    'Bulk CV pipeline support for automated resume parsing',
+    'Enhanced evaluation toggles: confidence scores, red flags, skills matrix',
+    'Custom prompts and temperature tuning for organization-level evaluation',
   ];
 
   return (
@@ -93,7 +94,7 @@ function AIProviderStep() {
             AI Provider Configuration
           </h2>
           <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-            Enable AI-powered resume processing and candidate scoring.
+            Configure your primary evaluation AI provider and choose a bulk CV strategy, including the free-tier AI pool for high-volume intake.
           </p>
         </div>
       </div>
@@ -162,7 +163,7 @@ function AIProviderStep() {
                 className="flex items-center gap-2"
               >
                 <Settings className="h-4 w-4" />
-                Configure AI Providers
+                Configure AI Settings
               </Button>
 
               <Button
@@ -219,12 +220,12 @@ function AIProviderStep() {
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>AI Provider Configuration</DialogTitle>
             <DialogDescription>
-              Enable AI-powered resume processing and candidate scoring.
+              Configure main AI providers, open the Bulk CV AI pool tab, and tune evaluation settings in one place.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden overflow-y-auto px-6 py-0">
-            <AIProvidersConfigs onClose={handleCloseDialog} />
+            <AICommunicationSettings onClose={handleCloseDialog} />
           </div>
         </DialogContent>
       </Dialog>

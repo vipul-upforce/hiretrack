@@ -72,7 +72,7 @@ export const getDefaultSteps = (): OnboardingStep[] => [
   {
     id: 'aiProviders',
     title: 'AI Providers',
-    description: 'Configure AI providers for resume processing',
+    description: 'Configure main AI evaluation providers and bulk CV processing strategy',
     icon: Bot,
     isCompleted: false,
     isSkipped: false,
@@ -90,7 +90,7 @@ export const getDefaultSteps = (): OnboardingStep[] => [
   {
     id: 'meetingIntegration',
     title: 'Meeting Integration',
-    description: 'Connect Google Meet, Zoom, or Microsoft Teams for interviews',
+    description: 'Connect Google Meet, Zoom, or Microsoft Teams with assignment-based scheduling and reminders',
     icon: Video,
     isCompleted: false,
     isSkipped: false,

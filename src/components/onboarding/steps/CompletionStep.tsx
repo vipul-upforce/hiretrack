@@ -108,7 +108,7 @@ function CompletionStep() {
             Setup Complete!
           </h2>
           <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-            Your HireTrack platform is ready to streamline your hiring process.
+            Your HireTrack platform is ready with AI evaluation, bulk CV intake, and meeting integrations.
           </p>
         </div>
       </div>
@@ -163,11 +163,10 @@ function CompletionStep() {
                 <Settings className="mt-0.5 h-5 w-5 text-purple-500 dark:text-purple-400" />
                 <div>
                   <div className="font-medium text-purple-900 dark:text-purple-100">
-                    Complete Skipped Settings
+                    Complete Advanced Integrations
                   </div>
                   <div className="text-sm text-purple-700 dark:text-purple-200">
-                    You can always complete skipped configurations from the
-                    settings page
+                    Finalize skipped items like bulk CV pipeline setup, enhanced AI evaluation controls, and Teams reminder templates from settings
                   </div>
                 </div>
               </div>

@@ -85,7 +85,7 @@ function CaptchConfigStep(): React.ReactElement {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
-        <DialogContent className="overflow-hidden">
+        <DialogContent className="overflow-hidden" size="xl">
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>Captcha Configuration</DialogTitle>
             <DialogDescription>

@@ -219,6 +219,7 @@ function EmailConfigStep() {
       <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
         <DialogContent
           className="hide-scrollbar flex max-h-[90vh] w-[60vw] flex-col overflow-y-auto p-0"
+          size="xl"
         >
           <DialogHeader className="px-6 py-4 pr-12">
             <DialogTitle>Email Configuration</DialogTitle>
