@@ -212,7 +212,7 @@ export const useHandleLoginSubmit = ({
             response.user || user,
             isMultiple,
           );
-          dispatch(fetchUserFromToken());
+          await dispatch(fetchUserFromToken());
           const target = redirectUrl !== '/' ? redirectUrl : '/dashboard';
           router.push(target);
           setUserLoggedIn(true);
