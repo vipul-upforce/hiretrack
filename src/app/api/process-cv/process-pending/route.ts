@@ -36,6 +36,11 @@ import { loadResumeFileAsBase64FromStoredUrl } from '@/lib/cv-upload/load-resume
 import { finalizeCvBatchStatus } from '@/lib/cv-upload/finalize-cv-batch-status';
 import { CV_BATCH_UPLOAD_HISTORY_TITLE } from '@/lib/cv-upload/history-titles';
 
+export const dynamic = 'force-dynamic';
+
+/** Long-running deferred batch processing (one batch per client request). */
+export const maxDuration = 300;
+
 const BATCH_SIZE = 20;
 
 interface DeferredPendingItem {
@@ -430,9 +435,18 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const totals = batchResults.reduce(
+    (acc, row) => ({
+      processed: acc.processed + row.processed,
+      failed: acc.failed + row.failed,
+    }),
+    { processed: 0, failed: 0 },
+  );
+
   return NextResponse.json({
     message: 'Deferred CV batches processed',
     processedBatches: batchResults.length,
     batchResults,
+    totals,
   });
 }

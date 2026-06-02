@@ -92,3 +92,19 @@ export interface CvBatchDetailQueryArgs {
 export interface CvBatchDetailResponse {
   batch: CvBatchDetail;
 }
+
+export interface ProcessPendingBatchResult {
+  batchId: string;
+  processed: number;
+  failed: number;
+}
+
+export interface ProcessPendingCvBatchesResponse {
+  message: string;
+  processedBatches: number;
+  batchResults?: ProcessPendingBatchResult[];
+  totals?: {
+    processed: number;
+    failed: number;
+  };
+}

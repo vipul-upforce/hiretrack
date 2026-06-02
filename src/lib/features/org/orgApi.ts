@@ -5,6 +5,7 @@ import type {
   CvBatchDetailResponse,
   CvBatchHistoryQueryArgs,
   CvBatchHistoryResponse,
+  ProcessPendingCvBatchesResponse,
 } from './cvBatchTypes';
 
 export interface CreateAdminRequest {
@@ -242,14 +243,12 @@ export const orgApi = baseApi.injectEndpoints({
       ],
     }),
     processPendingCvBatches: builder.mutation<
-      { message: string; processedBatches: number },
-      { organizationId: string; batchId?: string; batchIds?: string[] }
+      ProcessPendingCvBatchesResponse,
+      { organizationId: string; batchId?: string }
     >({
-      query: ({ organizationId, batchId, batchIds }) => {
+      query: ({ organizationId, batchId }) => {
         const params = new URLSearchParams({ organizationId });
-        if (batchIds && batchIds.length > 0) {
-          params.set('batchIds', batchIds.join(','));
-        } else if (batchId) {
+        if (batchId) {
           params.set('batchId', batchId);
         }
         return {

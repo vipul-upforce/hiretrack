@@ -40,10 +40,7 @@ import type {
 } from '@/lib/features/org/cvBatchTypes';
 import { resolveItemParseLabel } from '../batch-parse-display';
 import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
-
-function isDeferredPendingBatch(batch: CvBatchSummary): boolean {
-  return batch.status === 'pending' && batch.processingMode === 'deferred';
-}
+import { isDeferredPendingBatch } from '@/lib/cv-upload/deferred-batch-ids';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const;
 const DUPLICATE_CANDIDATE_SUCCESS_MESSAGE =
@@ -689,8 +686,12 @@ export function CompletedBatches({
                           variant="secondary"
                           size="sm"
                           className="shrink-0"
-                          onClick={() => onProcessPending()}
-                          disabled={isPipelineBusy}
+                          onClick={() =>
+                            onProcessPending({
+                              batchIds: pendingDeferredBatches.map((batch) => batch._id),
+                            })
+                          }
+                          disabled={isPipelineBusy || pendingDeferredBatchCount === 0}
                           aria-label="Process all deferred batches"
                         >
                           {isProcessingPending ? (

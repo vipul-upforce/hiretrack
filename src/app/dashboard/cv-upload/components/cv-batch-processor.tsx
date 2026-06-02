@@ -36,6 +36,7 @@ import {
   type ConfirmProcessingPayload,
 } from './batch-processing-dialogs';
 import { CurrentBatchPanel } from './current-batch-panel';
+import { resolveDeferredBatchIdsToProcess } from '@/lib/cv-upload/deferred-batch-ids';
 
 export type FileWithPreview = {
   id: string;
@@ -575,45 +576,109 @@ export function CVBatchProcessor() {
     ) {
       return;
     }
-    const batchCount =
-      options?.batchIds?.length
-      ?? (options?.batchId ? 1 : pendingDeferredBatchCount);
+
+    const deferredBatches = batchHistoryData?.deferredBatches ?? [];
+    const batchIdsToRun = resolveDeferredBatchIdsToProcess(
+      deferredBatches,
+      options,
+    );
+
+    if (batchIdsToRun.length === 0) {
+      toast({
+        title: 'No Pending Batches',
+        description: 'No deferred batches are waiting to be processed.',
+      });
+      return;
+    }
+
     processingRef.current = true;
     setIsProcessingPending(true);
     setUploadProgress({
       current: 0,
-      total: batchCount,
+      total: batchIdsToRun.length,
       currentBatch: 1,
-      totalBatches: Math.max(batchCount, 1),
+      totalBatches: batchIdsToRun.length,
       completedBatches: 0,
       phase: 'server-deferred',
     });
+
+    let batchesSucceeded = 0;
+    let batchesFailed = 0;
+    let totalFilesProcessed = 0;
+    let totalFilesFailed = 0;
+
     try {
-      const response = await processPendingCvBatches({
-        organizationId: user.organizationId as string,
-        batchId: options?.batchId,
-        batchIds: options?.batchIds,
-      }).unwrap();
-      try {
-        await refetchBatches();
-      } catch (refetchErr) {
-        logger.warn(
-          refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after process-pending',
-        );
+      for (let index = 0; index < batchIdsToRun.length; index += 1) {
+        const batchId = batchIdsToRun[index]!;
+        setUploadProgress({
+          current: index,
+          total: batchIdsToRun.length,
+          currentBatch: index + 1,
+          totalBatches: batchIdsToRun.length,
+          completedBatches: index,
+          phase: 'server-deferred',
+        });
+
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const response = await processPendingCvBatches({
+            organizationId: user.organizationId as string,
+            batchId,
+          }).unwrap();
+
+          batchesSucceeded += 1;
+          const batchResult = response.batchResults?.[0];
+          if (batchResult) {
+            totalFilesProcessed += batchResult.processed;
+            totalFilesFailed += batchResult.failed;
+          } else if (response.totals) {
+            totalFilesProcessed += response.totals.processed;
+            totalFilesFailed += response.totals.failed;
+          }
+
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            await refetchBatches();
+          } catch (refetchErr) {
+            logger.warn(
+              refetchErr instanceof Error
+                ? refetchErr.message
+                : 'refetchBatches failed after process-pending batch',
+            );
+          }
+        } catch (batchError) {
+          batchesFailed += 1;
+          logger.error(
+            batchError instanceof Error
+              ? batchError.message
+              : 'process-pending batch failed',
+          );
+          toast({
+            variant: 'destructive',
+            title: `Batch ${index + 1} of ${batchIdsToRun.length} failed`,
+            description:
+              batchError instanceof Error
+                ? batchError.message
+                : 'Request failed',
+          });
+        }
       }
-      toast({
-        title: 'Pending Processing Triggered',
-        description:
-          response?.processedBatches && response.processedBatches > 0
-            ? `Processed ${response.processedBatches} pending batch(es).`
-            : 'No pending deferred batches found.',
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to Process Pending Batches',
-        description: error instanceof Error ? error.message : 'Request failed',
-      });
+
+      if (batchesSucceeded > 0) {
+        toast({
+          title: 'Deferred Processing Completed',
+          description:
+            batchesFailed > 0
+              ? `Processed ${batchesSucceeded} of ${batchIdsToRun.length} batch(es): ${totalFilesProcessed} file(s) succeeded, ${totalFilesFailed} failed. ${batchesFailed} batch request(s) failed.`
+              : `Processed ${batchesSucceeded} batch(es): ${totalFilesProcessed} file(s) succeeded, ${totalFilesFailed} failed.`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to Process Deferred Batches',
+          description: 'Every batch request failed. Check logs and try again.',
+        });
+      }
     } finally {
       processingRef.current = false;
       setIsProcessingPending(false);
