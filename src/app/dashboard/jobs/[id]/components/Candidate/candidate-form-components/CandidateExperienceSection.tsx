@@ -25,15 +25,15 @@ export function CandidateExperienceSection() {
         </Label>
         <Input
           id="relevantExperience"
-          placeholder="Enter relevant experience in years"
-          type="number"
-          step="0.1"
+          placeholder="Enter relevant exp"
+          type="text"
+          inputMode="decimal"
+          pattern="^\d+(\.\d+)?$"
           {...relevantExperienceField}
-          className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${
-            relevantExperienceMeta.error && (relevantExperienceMeta.touched || submitCount > 0)
-              ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
-          }`}
+          className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${relevantExperienceMeta.error && (relevantExperienceMeta.touched || submitCount > 0)
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+            : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+            }`}
         />
         {(relevantExperienceMeta.touched || submitCount > 0) && relevantExperienceMeta.error && (
           <p className="text-sm text-red-500 flex items-center gap-1">
@@ -54,15 +54,15 @@ export function CandidateExperienceSection() {
         </Label>
         <Input
           id="experience"
-          placeholder="Enter total experience in years"
-          type="number"
-          step="0.1"
+          placeholder="Enter total exp"
+          type="text"
+          inputMode="decimal"
+          pattern="^\d+(\.\d+)?$"
           {...experienceField}
-          className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${
-            experienceMeta.error && (experienceMeta.touched || submitCount > 0)
-              ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-              : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
-          }`}
+          className={`h-9 px-3 transition-all duration-200 w-full lg:max-w-xs ${experienceMeta.error && (experienceMeta.touched || submitCount > 0)
+            ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+            : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500/20'
+            }`}
         />
         {(experienceMeta.touched || submitCount > 0) && experienceMeta.error && (
           <p className="text-sm text-red-500 flex items-center gap-1">

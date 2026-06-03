@@ -1,4 +1,5 @@
 import type { DoclingParseResponse } from '../types';
+import logger from '@/lib/logger';
 
 /** Per-request timeout for local PDF → markdown service (ms). */
 const DEFAULT_DOCLING_PARSE_TIMEOUT_MS = 180_000;
@@ -89,24 +90,62 @@ export async function parsePdfToMarkdownViaDocling(
       );
 
       if (!response.ok) {
+        logger.warn({
+          event: 'cv_docling_http_non_ok',
+          fileName: file.name,
+          fileSize: file.size,
+          parseUrl,
+          attempt: attempt + 1,
+          status: response.status,
+        });
         throw new Error(
           `PDF parse service failed with status: ${response.status}`,
         );
       }
 
       const data = (await response.json()) as DoclingParseResponse;
+      const markdownChars =
+        typeof data.markdown === 'string' ? data.markdown.trim().length : -1;
       if (
         data.status !== 'success'
         || typeof data.markdown !== 'string'
         || !data.markdown.trim()
       ) {
-        throw new Error('PDF parse service did not return usable markdown');
+        logger.warn({
+          event: 'cv_docling_unusable_markdown',
+          fileName: file.name,
+          fileSize: file.size,
+          parseUrl,
+          attempt: attempt + 1,
+          statusField: data.status,
+          markdownChars,
+        });
+        throw new Error(
+          `PDF parse service did not return usable markdown (status=${String(data.status)}, markdownChars=${String(markdownChars)})`,
+        );
       }
 
+      logger.info({
+        event: 'cv_docling_success',
+        fileName: file.name,
+        fileSize: file.size,
+        parseUrl,
+        attempt: attempt + 1,
+        markdownChars,
+      });
       return data.markdown;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       lastError = err;
+      logger.warn({
+        event: 'cv_docling_attempt_failed',
+        fileName: file.name,
+        fileSize: file.size,
+        parseUrl,
+        attempt: attempt + 1,
+        error: err.message,
+        willRetry: attempt === 0 && isTransientFetchError(err.message),
+      });
       if (attempt === 0 && isTransientFetchError(err.message)) {
         continue;
       }

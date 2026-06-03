@@ -24,6 +24,8 @@ import {
 } from '../pipelines/bulk-cv-resume';
 import { resolveRoundRobinIndex } from '../routing/provider-round-robin';
 import { parsePdfToMarkdownViaDocling } from '../docling/parse-pdf-to-markdown';
+import logger from '@/lib/logger';
+import { extractPdfTextForCv } from '@/lib/cv-upload/pdf-text-extraction';
 
 export type BulkCvProviderReadiness = Record<BulkCvExtractorProvider, boolean>;
 
@@ -207,6 +209,12 @@ export interface BulkCvExtractFromFileResult {
   usedBulkCvProvider: BulkCvExtractorProvider;
 }
 
+async function extractFallbackTextViaOcr(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const base64Pdf = Buffer.from(arrayBuffer).toString('base64');
+  return extractPdfTextForCv(base64Pdf);
+}
+
 /**
  * PDF → markdown → round-robin across ready bulk providers until one succeeds.
  */
@@ -233,23 +241,82 @@ export async function extractBulkCvResumeFromPdfFile(
 
   const order = buildServerFallbackOrder(ready, file.name, file.size);
   const attemptFields = batchItemFieldsFromBulkAttempts(order);
+  logger.info({
+    event: 'cv_bulk_pipeline_started',
+    fileName: file.name,
+    fileSize: file.size,
+    parseUrl: ctx.doclingUrl,
+    providerOrder: order,
+  });
 
   let markdown: string;
   try {
     markdown = await parsePdfToMarkdownViaDocling(file, ctx.doclingUrl);
+    logger.info({
+      event: 'cv_bulk_pipeline_markdown_ready',
+      fileName: file.name,
+      fileSize: file.size,
+      markdownChars: markdown.trim().length,
+      providerOrder: order,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new CvResumeProcessError(`PDF parse failed before extraction: ${msg}`, {
-      cvParseMode: 'bulk',
-      usedProvider: order[0] ?? '',
-      parseProviderLabel: 'Bulk parsing · PDF parse',
+    logger.error({
+      event: 'cv_bulk_pipeline_markdown_failed',
+      fileName: file.name,
+      fileSize: file.size,
+      parseUrl: ctx.doclingUrl,
+      providerOrder: order,
+      error: msg,
     });
+    const isUnusableMarkdownError = msg.includes('did not return usable markdown');
+    if (!isUnusableMarkdownError) {
+      throw new CvResumeProcessError(`PDF parse failed before extraction: ${msg}`, {
+        cvParseMode: 'bulk',
+        usedProvider: order[0] ?? '',
+        parseProviderLabel: 'Bulk parsing · PDF parse',
+      });
+    }
+
+    try {
+      markdown = await extractFallbackTextViaOcr(file);
+      logger.warn({
+        event: 'cv_bulk_pipeline_ocr_fallback_used',
+        fileName: file.name,
+        fileSize: file.size,
+        markdownChars: markdown.trim().length,
+      });
+    } catch (ocrError) {
+      const ocrMessage =
+        ocrError instanceof Error ? ocrError.message : String(ocrError);
+      logger.error({
+        event: 'cv_bulk_pipeline_ocr_fallback_failed',
+        fileName: file.name,
+        fileSize: file.size,
+        parseUrl: ctx.doclingUrl,
+        error: ocrMessage,
+      });
+      throw new CvResumeProcessError(
+        `PDF parse failed before extraction: ${msg}; OCR fallback failed: ${ocrMessage}`,
+        {
+          cvParseMode: 'bulk',
+          usedProvider: order[0] ?? '',
+          parseProviderLabel: 'Bulk parsing · PDF parse',
+        },
+      );
+    }
   }
 
   const errors: string[] = [];
 
   for (const provider of order) {
     try {
+      logger.info({
+        event: 'cv_bulk_provider_attempt_started',
+        fileName: file.name,
+        fileSize: file.size,
+        provider,
+      });
       const full = buildPipelineOptions(
         bulkCvAi,
         keys,
@@ -262,10 +329,23 @@ export async function extractBulkCvResumeFromPdfFile(
         ...rest,
         provider,
       });
+      logger.info({
+        event: 'cv_bulk_provider_attempt_succeeded',
+        fileName: file.name,
+        fileSize: file.size,
+        provider,
+      });
       return { data, usedBulkCvProvider: provider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`${provider}: ${msg}`);
+      logger.warn({
+        event: 'cv_bulk_provider_attempt_failed',
+        fileName: file.name,
+        fileSize: file.size,
+        provider,
+        error: msg,
+      });
     }
   }
 

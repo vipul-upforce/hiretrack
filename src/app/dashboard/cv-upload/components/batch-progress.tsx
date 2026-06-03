@@ -3,10 +3,16 @@
 import { Progress } from '@/components/ui/progress';
 import type { CvBatchDetail } from '@/lib/features/org/cvBatchTypes';
 import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
+import {
+  computeBatchDisplayCounts,
+  deriveBatchDisplayStatus,
+} from '@/lib/cv-upload/batch-display-stats';
 
 export function BatchProgress({ batch }: { batch: CvBatchDetail }) {
-  const progress = batch.totalFiles > 0
-    ? ((batch.successCount + batch.failureCount) / batch.totalFiles) * 100
+  const counts = computeBatchDisplayCounts(batch);
+  const displayStatus = deriveBatchDisplayStatus(batch);
+  const progress = counts.total > 0
+    ? ((counts.success + counts.failed) / counts.total) * 100
     : 0;
 
   return (
@@ -14,7 +20,7 @@ export function BatchProgress({ batch }: { batch: CvBatchDetail }) {
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Processing Status</h3>
         <span className="text-sm text-muted-foreground capitalize">
-          {batch?.status}
+          {displayStatus}
         </span>
       </div>
 
@@ -23,15 +29,15 @@ export function BatchProgress({ batch }: { batch: CvBatchDetail }) {
       <div className="grid grid-cols-3 gap-4 text-sm">
         <div>
           <p className="text-muted-foreground">Total Files</p>
-          <p className="font-medium">{batch.totalFiles}</p>
+          <p className="font-medium">{counts.total}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Successful</p>
-          <p className="font-medium text-green-600">{batch.successCount}</p>
+          <p className="font-medium text-green-600">{counts.success}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Failed</p>
-          <p className="font-medium text-red-600">{batch.failureCount}</p>
+          <p className="font-medium text-red-600">{counts.failed}</p>
         </div>
       </div>
 

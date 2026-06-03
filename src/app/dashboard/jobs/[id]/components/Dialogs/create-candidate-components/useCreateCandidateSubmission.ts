@@ -15,6 +15,7 @@ import {
   uploadCandidateFilesOneByOne,
   type CandidateFileUploadValues,
 } from '@/lib/utils/candidateFileUpload';
+import { normalizeExperienceToYears } from '@/lib/utils/experience';
 // import { v4 } from 'uuid';
 import { ICandidateHistory } from '@/lib/models/history';
 import { Resume } from '@/lib/redux/types';
@@ -161,9 +162,9 @@ export function useCreateCandidateSubmission({
         },
         currentCTC: Number(parseFloat(String(values.currentCTC)).toFixed(2)),
         expectedCTC: Number(parseFloat(String(values.expectedCTC)).toFixed(2)),
-        experience: Number(parseFloat(String(values.experience)).toFixed(2)),
-        relevantExperience: Number(
-          parseFloat(String(values.relevantExperience)).toFixed(2),
+        experience: normalizeExperienceToYears(values.experience),
+        relevantExperience: normalizeExperienceToYears(
+          values.relevantExperience,
         ),
         noticePeriod: Number(
           parseFloat(String(values.noticePeriod)).toFixed(0),

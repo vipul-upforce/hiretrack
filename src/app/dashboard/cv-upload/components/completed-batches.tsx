@@ -40,6 +40,11 @@ import type {
 } from '@/lib/features/org/cvBatchTypes';
 import { resolveItemParseLabel } from '../batch-parse-display';
 import { dedupeBatchItemsByFilename } from '@/lib/cv-upload/batch-item-dedupe';
+import {
+  computeBatchDisplayCounts,
+  displayErrorForBatchFileRow,
+  getBatchDisplayCountsAndStatus,
+} from '@/lib/cv-upload/batch-display-stats';
 import { isDeferredPendingBatch } from '@/lib/cv-upload/deferred-batch-ids';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 50] as const;
@@ -95,6 +100,8 @@ function BatchFileListEntry({
   fileUrl?: string;
   actionSlot?: ReactNode;
 }) {
+  const visibleError = displayErrorForBatchFileRow(status, error);
+
   return (
     <div className="rounded-md border border-border/60 bg-muted/10 px-2 py-1">
       <div className="flex items-center justify-between gap-2">
@@ -138,8 +145,8 @@ function BatchFileListEntry({
           {actionSlot ?? null}
         </div>
       </div>
-      {error ? (
-        <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">{error}</p>
+      {visibleError ? (
+        <p className="line-clamp-2 text-[11px] text-red-600 dark:text-red-300">{visibleError}</p>
       ) : null}
     </div>
   );
@@ -316,7 +323,7 @@ function getDeferredBatchFileRows(batch: CvBatchDetail): BatchFileRow[] {
       key: `${batch._id}-pending-${entry.file?.id ?? index}-${entry.filename || entry.file?.name || ''}`,
       filename: entry.filename || entry.file?.name || 'Unknown file',
       status: entry.status,
-      error: entry.error,
+      error: displayErrorForBatchFileRow(entry.status, entry.error),
       fileUrl: entry.file?.url,
     }));
   }
@@ -340,7 +347,7 @@ function getBatchFileRowsForDisplay(batch: CvBatchDetail): BatchFileRow[] {
       key: item._id,
       filename: item.filename,
       status: item.status,
-      error: item.error,
+      error: displayErrorForBatchFileRow(item.status, item.error),
       isDuplicate: isDuplicateBatchItemMessage(item.message),
       parseProviderLabel: resolveItemParseLabel(item),
       fileUrl:
@@ -372,8 +379,8 @@ function BatchResumeFilesHoverPopover({
   const detailBatch = inlineDetail ?? batchDetailState.data?.batch;
   const rows = detailBatch ? getBatchFileRowsForDisplay(detailBatch) : [];
   const fileCount = detailBatch
-    ? rows.length || batch.totalFiles
-    : batch.totalFiles;
+    ? rows.length || computeBatchDisplayCounts(detailBatch).total
+    : computeBatchDisplayCounts(batch).total;
 
   useEffect(() => {
     if (!open || inlineDetail || requestedDetailRef.current) {
@@ -390,9 +397,11 @@ function BatchResumeFilesHoverPopover({
     return <span className="text-xs text-muted-foreground">—</span>;
   }
 
+  const displayCounts = detailBatch
+    ? computeBatchDisplayCounts(detailBatch)
+    : computeBatchDisplayCounts(batch);
   const hasFailed =
-    (detailBatch?.failureCount ?? batch.failureCount) > 0
-    || rows.some((row) => row.status === 'failed');
+    displayCounts.failed > 0 || rows.some((row) => row.status === 'failed');
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -961,6 +970,8 @@ export function CompletedBatches({
                         )
                       : historyBatches.map((batch) => {
                           const date = getBatchDate(batch);
+                          const { counts, displayStatus } =
+                            getBatchDisplayCountsAndStatus(batch);
                           return (
                             <TableRow key={batch._id}>
                               <TableCell className="whitespace-nowrap text-sm">
@@ -969,16 +980,16 @@ export function CompletedBatches({
                               <TableCell className="whitespace-nowrap text-sm">
                                 {date.toLocaleTimeString()}
                               </TableCell>
-                              <TableCell className="text-right font-medium">{batch.totalFiles}</TableCell>
+                              <TableCell className="text-right font-medium">{counts.total}</TableCell>
                               <TableCell className="text-right font-medium text-emerald-600 dark:text-emerald-300">
-                                {batch.successCount}
+                                {counts.success}
                               </TableCell>
                               <TableCell className="text-right font-medium text-red-600 dark:text-red-300">
-                                {batch.failureCount}
+                                {counts.failed}
                               </TableCell>
                               <TableCell>
-                                <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(batch.status)}`}>
-                                  {batch.status}
+                                <span className={`rounded-full px-2 py-1 text-xs font-medium capitalize ${getStatusStyles(displayStatus)}`}>
+                                  {displayStatus}
                                 </span>
                               </TableCell>
                               <TableCell className="text-center align-middle">

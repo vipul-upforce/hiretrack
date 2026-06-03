@@ -1,4 +1,5 @@
 import { Interviewer } from '@/lib/features/user/userApi';
+import { normalizeExperienceToYears } from '@/lib/utils/experience';
 import * as Yup from 'yup';
 
 export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
@@ -33,9 +34,15 @@ export const candidateSchema = (customFields: Yup.Schema<unknown>) =>
         'Location must include at least one letter and cannot consist of only numbers or symbols.',
       ),
     experience: Yup.number()
+      .transform((_, originalValue) =>
+        normalizeExperienceToYears(originalValue),
+      )
       .required('Experience is required')
       .min(0, 'Experience cannot be negative'),
     relevantExperience: Yup.number()
+      .transform((_, originalValue) =>
+        normalizeExperienceToYears(originalValue),
+      )
       .required('Relevant Experience is required')
       .min(0, 'Relevant Experience cannot be negative')
       .test(
