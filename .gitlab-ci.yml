@@ -163,7 +163,6 @@ build:
       echo "TARBALL_NAME=$TARBALL_NAME" >> version.env
   artifacts:
     paths:
-      - hiretrack-*.tar.gz
       - version.env
   environment: demo
   only:
@@ -288,6 +287,21 @@ release_job:
       fi
 
       echo "Tarball uploaded successfully as: $TARBALL_NAME"
+    - |
+      source version.env
+      echo "Creating and uploading chunked release parts..."
+      bash installer.sh --release-chunk-assets "$TARBALL_NAME" "$CURRENT_VERSION" 50
+      MANIFEST_NAME="${TARBALL_NAME}.manifest.json"
+      UPLOAD_URL=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID | jq -r .upload_url | sed "s/{?name,label}//")
+      curl -sf -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" \
+        --data-binary @"$MANIFEST_NAME" "$UPLOAD_URL?name=$MANIFEST_NAME"
+      for PART_FILE in "${TARBALL_NAME}.part-"*; do
+        [ -f "$PART_FILE" ] || continue
+        curl -sf -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" \
+          --data-binary @"$PART_FILE" "$UPLOAD_URL?name=$(basename "$PART_FILE")"
+      done
+      echo "Chunked release assets uploaded."
+      bash scripts/cleanup-release-artifacts.sh "$CI_PROJECT_DIR" "$TARBALL_NAME"
       echo "✅ Release $CURRENT_VERSION created successfully!"
 
 # deploy:

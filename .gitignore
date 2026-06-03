@@ -42,3 +42,9 @@ next-env.d.ts
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# CI / ci_prod release artifacts (published to GitHub; large, do not commit)
+/hiretrack-v*.tar.gz
+/hiretrack-v*.tar.gz.manifest.json
+/hiretrack-v*.tar.gz.part-*
+/temp/hiretrack-v*.tar.gz

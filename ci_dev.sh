@@ -317,6 +317,40 @@ if [ "$UPLOAD_HTTP_CODE" != "201" ]; then
   exit 1
 fi
 
+# Chunked download assets (installer + admin.hiretrack.in) — see mds/ASSET_CHUNKED_DOWNLOAD.md
+echo -e "${BLUE}Creating chunked release parts (50MB)...${NC}"
+bash "${CURRENT_DIR}/installer.sh" --release-chunk-assets "$TARBALL_NAME" "$CURRENT_VERSION" 50
+
+upload_release_asset() {
+  local FILE_PATH="$1"
+  local ASSET_NAME="$2"
+  local CONTENT_TYPE="${3:-application/octet-stream}"
+  local UPLOAD_RESPONSE UPLOAD_HTTP_CODE UPLOAD_BODY
+  echo "Uploading release asset: $ASSET_NAME"
+  UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+    -H "Authorization: Bearer $GITHUB_TOKEN_DEV" \
+    -H "Content-Type: ${CONTENT_TYPE}" \
+    --data-binary @"$FILE_PATH" \
+    "$UPLOAD_URL?name=${ASSET_NAME}")
+  UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -n1)
+  UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
+  if [ "$UPLOAD_HTTP_CODE" != "201" ]; then
+    echo -e "${RED}ERROR: Failed to upload $ASSET_NAME (HTTP $UPLOAD_HTTP_CODE)${NC}"
+    echo "Response: $UPLOAD_BODY"
+    exit 1
+  fi
+}
+
+MANIFEST_NAME="${TARBALL_NAME}.manifest.json"
+upload_release_asset "$MANIFEST_NAME" "$MANIFEST_NAME" "application/json"
+
+for PART_FILE in "${TARBALL_NAME}.part-"*; do
+  [ -f "$PART_FILE" ] || continue
+  upload_release_asset "$PART_FILE" "$(basename "$PART_FILE")" "application/octet-stream"
+done
+
+echo -e "${GREEN}Chunked release assets uploaded (manifest + parts).${NC}"
+
 # Check for migration.cjs and upload as asset
 MIGRATION_SCRIPT="migration-scripts/migration.cjs"
 MIGRATION_ASSET_NAME="migrationScriptUrl.cjs"
@@ -344,6 +378,9 @@ fi
 echo -e "${GREEN}✅ Release $CURRENT_VERSION created successfully!${NC}"
 echo "Tarball uploaded: $TARBALL_NAME"
 echo "Migration script uploaded: $MIGRATION_ASSET_NAME"
+
+echo -e "\n${BLUE}Cleaning up local release artifacts...${NC}"
+bash "${CURRENT_DIR}/scripts/cleanup-release-artifacts.sh" "${CURRENT_DIR}" "$TARBALL_NAME"
 
 echo -e "\n${BLUE}=== Pipeline Completed ===${NC}"
 echo -e "OS: ${YELLOW}$OS_TYPE${NC}"

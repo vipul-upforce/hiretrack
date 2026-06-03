@@ -205,6 +205,9 @@ API_URL="https://admin.hiretrack.in/api/license/register"
 API_URL_UPDATE_LIC="https://admin.hiretrack.in/api/license/update"
 LATEST_VERSION_API="https://admin.hiretrack.in/api/version/list"
 ASSET_DOWNLOAD_API="https://admin.hiretrack.in/api/asset/download"
+ASSET_DOWNLOAD_META_API="https://admin.hiretrack.in/api/asset/download/meta"
+# Default part size (bytes) when manifest omits partSizeBytes; must match CI split (50MB).
+ASSET_CHUNK_PART_BYTES="${ASSET_CHUNK_PART_BYTES:-52428800}"
 ASSET_MIGRATION_API="https://admin.hiretrack.in/api/migration/download"
 MONGODB_VERSION="${MONGODB_VERSION:-7.0}"
 # NODE_VERSION_DEFAULT=20
@@ -354,6 +357,80 @@ ensure_tesseract_for_cv_ocr() {
     fi
 }
 
+# Probe whether a Python binary can create a working venv (not just --help).
+python_venv_works() {
+    local py_bin="$1"
+    local test_dir
+    test_dir=$(mktemp -d "${TMPDIR:-/tmp}/hiretrack-venv-test.XXXXXX" 2>/dev/null || mktemp -d /tmp/hiretrack-venv-test.XXXXXX)
+    if "$py_bin" -m venv "$test_dir" 2>/dev/null && [ -x "$test_dir/bin/pip" ]; then
+        rm -rf "$test_dir"
+        return 0
+    fi
+    rm -rf "$test_dir"
+    return 1
+}
+
+# Install OS packages for python3 -m venv (e.g. python3.12-venv on Ubuntu). Idempotent.
+ensure_python_venv_packages() {
+    if [ "$SKIP_MARKDOWN_PARSER" = "1" ]; then
+        return 0
+    fi
+
+    if command -v apt-get >/dev/null 2>&1; then
+        echo "[ PACKAGE ] Installing Python venv support (python3.12-venv)..."
+        # Do not pass DEBIAN_FRONTEND on the sudo line — many sudoers configs reject it.
+        sudo apt-get update -qq
+        if sudo apt-get install -y \
+            python3 python3-pip python3.12-venv 2>/dev/null; then
+            echo "[ OK ] python3.12-venv installed."
+            return 0
+        fi
+        echo "[ PACKAGE ] Retrying with python3-venv package..."
+        sudo apt-get install -y python3 python3-pip python3-venv || {
+            echo "[ WARNING ] Could not install python3 venv packages via apt."
+            return 1
+        }
+        echo "[ OK ] python3-venv installed."
+        return 0
+    fi
+
+    if command -v dnf >/dev/null 2>&1; then
+        echo "[ PACKAGE ] Installing Python venv support..."
+        sudo dnf install -y python3 python3-pip && echo "[ OK ] Python packages installed."
+        return 0
+    fi
+
+    if command -v yum >/dev/null 2>&1; then
+        echo "[ PACKAGE ] Installing Python venv support..."
+        sudo yum install -y python3 python3-pip && echo "[ OK ] Python packages installed."
+        return 0
+    fi
+
+    return 0
+}
+
+# Install venv packages if needed, then echo a python binary that supports -m venv.
+resolve_python_venv_bin() {
+    local candidate
+
+    for candidate in python3.12 python3; do
+        if command -v "$candidate" >/dev/null 2>&1 && python_venv_works "$candidate"; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+
+    ensure_python_venv_packages || return 1
+
+    for candidate in python3.12 python3; do
+        if command -v "$candidate" >/dev/null 2>&1 && python_venv_works "$candidate"; then
+            echo "$candidate"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Local FastAPI PDF→Markdown service for bulk CV uploads (replaces external Docling VM when installed).
 ensure_markdown_parser_service() {
     if [ "$SKIP_MARKDOWN_PARSER" = "1" ]; then
@@ -366,48 +443,19 @@ ensure_markdown_parser_service() {
     echo "   Markdown Parser Service (bulk CV)"
     echo "========================================"
 
+    ensure_python_venv_packages || true
+
     if ! command -v python3 >/dev/null 2>&1 && ! command -v python3.12 >/dev/null 2>&1; then
         echo "[ WARNING ] Python not found. Install Python 3.12+ or set DOCLING_PARSE_URL manually in .env."
         return 0
     fi
 
-    local PY_VENV_BIN="python3"
-    local HAS_PY3_VENV=0
-    local HAS_PY312_VENV=0
-
-    if python3 -m venv --help >/dev/null 2>&1; then
-        HAS_PY3_VENV=1
-    fi
-
-    if command -v python3.12 >/dev/null 2>&1 && python3.12 -m venv --help >/dev/null 2>&1; then
-        HAS_PY312_VENV=1
-    fi
-
-    if [ "$HAS_PY3_VENV" -eq 0 ] && [ "$HAS_PY312_VENV" -eq 0 ]; then
-        echo "[ PACKAGE ] Installing python3.12-venv..."
-        if command -v apt-get >/dev/null 2>&1; then
-            sudo apt-get update -qq
-            sudo apt-get install -y python3.12-venv python3-pip
-        elif command -v dnf >/dev/null 2>&1; then
-            sudo dnf install -y python3 python3-pip
-        elif command -v yum >/dev/null 2>&1; then
-            sudo yum install -y python3 python3-pip
-        else
-            echo "[ WARNING ] Could not install python3.12-venv. Skipping markdown parser setup."
-            return 0
-        fi
-    fi
-
-    # Re-check after any attempted install and choose a python binary that
-    # definitely supports `-m venv`.
-    if python3 -m venv --help >/dev/null 2>&1; then
-        PY_VENV_BIN="python3"
-    elif command -v python3.12 >/dev/null 2>&1 && python3.12 -m venv --help >/dev/null 2>&1; then
-        PY_VENV_BIN="python3.12"
-    else
-        echo "[ WARNING ] Python venv support is still missing. Skipping markdown parser setup."
+    local PY_VENV_BIN
+    PY_VENV_BIN=$(resolve_python_venv_bin) || {
+        echo "[ WARNING ] Python venv support is missing. Skipping markdown parser setup."
+        echo "[ HINT ] On Ubuntu run: sudo apt install -y python3.12-venv python3-pip"
         return 0
-    fi
+    }
 
     local PM2_BIN
     PM2_BIN=$(command -v pm2 2>/dev/null || true)
@@ -426,14 +474,19 @@ ensure_markdown_parser_service() {
 
     mkdir -p "$MARKDOWN_PARSER_DIR"
 
-    if [ ! -d "$MARKDOWN_PARSER_DIR/venv" ]; then
+    if [ ! -d "$MARKDOWN_PARSER_DIR/venv" ] || [ ! -x "$MARKDOWN_PARSER_DIR/venv/bin/pip" ]; then
+        rm -rf "$MARKDOWN_PARSER_DIR/venv"
         echo "[ PACKAGE ] Creating Python virtual environment..."
+        set +e
         "$PY_VENV_BIN" -m venv "$MARKDOWN_PARSER_DIR/venv"
-    fi
-
-    if [ ! -x "$MARKDOWN_PARSER_DIR/venv/bin/pip" ]; then
-        echo "[ ERROR ] venv pip missing at $MARKDOWN_PARSER_DIR/venv"
-        return 1
+        local VENV_STATUS=$?
+        set -e
+        if [ "$VENV_STATUS" -ne 0 ] || [ ! -x "$MARKDOWN_PARSER_DIR/venv/bin/pip" ]; then
+            rm -rf "$MARKDOWN_PARSER_DIR/venv"
+            echo "[ WARNING ] Could not create Python venv. Skipping markdown parser setup."
+            echo "[ HINT ] On Ubuntu run: sudo apt install -y python3.12-venv python3-pip"
+            return 0
+        fi
     fi
 
     echo "[ PACKAGE ] Installing FastAPI, uvicorn, pymupdf4llm..."
@@ -1428,6 +1481,229 @@ update_license() {
     write_config "email" "$EMAIL"
 }
 
+# Returns byte size of a file, or 0 if missing.
+file_byte_size() {
+    local path="$1"
+    stat -f%z "$path" 2>/dev/null || stat -c%s "$path" 2>/dev/null || echo "0"
+}
+
+# Report license/download HTTP errors using JSON body when available.
+report_download_http_error() {
+    local dest="$1"
+    local http_code="$2"
+    if [ -f "$dest" ] && [ -s "$dest" ]; then
+        local first_char
+        first_char=$(head -c 1 "$dest" 2>/dev/null || echo "")
+        if [ "$first_char" = "{" ]; then
+            local error_msg
+            error_msg=$(jq -r '.error // .message // "Unknown error"' "$dest" 2>/dev/null || echo "Download validation failed")
+            echo "[ ERROR ] Download validation failed: $error_msg" >&2
+            return
+        fi
+    fi
+    if [ -z "$http_code" ] || [ "$http_code" = "000" ]; then
+        echo "[ ERROR ] Network error: could not reach download server." >&2
+    elif [ -f "$dest" ] && [ ! -s "$dest" ]; then
+        echo "[ ERROR ] Download validation failed: HTTP $http_code (No response body)" >&2
+    else
+        echo "[ ERROR ] Download validation failed: HTTP $http_code" >&2
+    fi
+}
+
+# Verify file matches expected sha256 hex digest.
+verify_file_sha256() {
+    local expected="$1"
+    local file="$2"
+    if [ -z "$expected" ] || [ "$expected" = "null" ]; then
+        return 1
+    fi
+    if command -v sha256sum >/dev/null 2>&1; then
+        echo "${expected}  ${file}" | sha256sum -c - >/dev/null 2>&1
+        return $?
+    fi
+    echo "${expected}  ${file}" | shasum -a 256 -c >/dev/null 2>&1
+}
+
+# Download release via chunked API (meta + N part requests). Returns 1 if meta unavailable.
+# Args: meta_url asset_url dest
+download_asset_chunked() {
+    local meta_url="$1"
+    local asset_url="$2"
+    local dest="$3"
+    local meta_tmp="${dest}.manifest.json"
+    local http_code=""
+    local meta_body=""
+
+    mkdir -p "$(dirname "$dest")"
+    rm -f "$dest" "${dest}.part."*
+
+    http_code=$(curl -sS -o "$meta_tmp" -w "%{http_code}" \
+        --connect-timeout 30 \
+        --max-time 120 \
+        "$meta_url" 2>/dev/null) || return 1
+
+    http_code="${http_code//[$'\r\n ']/}"
+    if [ "$http_code" != "200" ]; then
+        rm -f "$meta_tmp"
+        return 1
+    fi
+
+    if ! jq -e '.chunked == true and (.parts | tonumber) > 0' "$meta_tmp" >/dev/null 2>&1; then
+        rm -f "$meta_tmp"
+        return 1
+    fi
+
+    local parts total_bytes expected_sha
+    parts=$(jq -r '.parts' "$meta_tmp")
+    total_bytes=$(jq -r '.totalBytes' "$meta_tmp")
+    expected_sha=$(jq -r '.sha256' "$meta_tmp")
+
+    echo "[ DOWNLOAD ] Chunked release: ${parts} parts, ${total_bytes} bytes expected..." >&2
+
+    local i=0
+    local part_file http_part
+    while [ "$i" -lt "$parts" ]; do
+        part_file="${dest}.part.${i}"
+        echo "[ DOWNLOAD ] Part $((i + 1))/${parts}..." >&2
+        http_part=$(curl -sS -o "$part_file" -w "%{http_code}" \
+            --connect-timeout 30 \
+            --max-time 300 \
+            "${asset_url}&part=${i}" 2>/dev/null) || {
+            rm -f "$part_file" "$dest" "${dest}.part."* "$meta_tmp"
+            return 1
+        }
+        http_part="${http_part//[$'\r\n ']/}"
+        if [ "$http_part" != "200" ]; then
+            report_download_http_error "$part_file" "$http_part"
+            rm -f "$part_file" "$dest" "${dest}.part."* "$meta_tmp"
+            return 1
+        fi
+        cat "$part_file" >> "$dest"
+        rm -f "$part_file"
+        i=$((i + 1))
+    done
+
+    rm -f "$meta_tmp"
+
+    local assembled_size
+    assembled_size=$(file_byte_size "$dest")
+    if [ -n "$total_bytes" ] && [ "$total_bytes" != "null" ] && [ "$assembled_size" != "$total_bytes" ]; then
+        echo "[ ERROR ] Assembled size ${assembled_size} does not match expected ${total_bytes}." >&2
+        rm -f "$dest"
+        return 1
+    fi
+
+    if ! verify_file_sha256 "$expected_sha" "$dest"; then
+        echo "[ ERROR ] SHA256 checksum mismatch after chunked download." >&2
+        rm -f "$dest"
+        return 1
+    fi
+
+    if ! gzip -t "$dest" 2>/dev/null; then
+        echo "[ ERROR ] Assembled file is not a valid gzip archive." >&2
+        rm -f "$dest"
+        return 1
+    fi
+
+    echo "[ OK ] Chunked download complete ($(file_byte_size "$dest") bytes)." >&2
+    return 0
+}
+
+# Download a large release asset with retry and gzip validation (monolithic / legacy).
+# Args: url dest [max_attempts]
+download_url_to_file() {
+    local url="$1"
+    local dest="$2"
+    local max_attempts="${3:-6}"
+    local max_time_per_attempt="${4:-900}"
+    local curl_err="${dest}.curlerr"
+    local attempt=1
+    local last_curl_exit=0
+    local http_code=""
+
+    mkdir -p "$(dirname "$dest")"
+
+    while [ "$attempt" -le "$max_attempts" ]; do
+        if [ "$attempt" -gt 1 ]; then
+            echo "[ DOWNLOAD ] Retry ${attempt}/${max_attempts} (full download restart)..." >&2
+            rm -f "$dest" "$curl_err"
+            sleep $((attempt * 3))
+        fi
+
+        last_curl_exit=0
+        http_code=""
+        : > "$curl_err"
+        http_code=$(curl -sS -L \
+            -o "$dest" \
+            -w "%{http_code}" \
+            --connect-timeout 30 \
+            --max-time "$max_time_per_attempt" \
+            "$url" 2>>"$curl_err") || last_curl_exit=$?
+
+        http_code="${http_code//[$'\r\n ']/}"
+
+        if [ "$last_curl_exit" -ne 0 ]; then
+            if [ -s "$curl_err" ]; then
+                tail -3 "$curl_err" >&2 || true
+            fi
+            case "$last_curl_exit" in
+                18)
+                    echo "[ WARNING ] Transfer ended early (curl 18, $(file_byte_size "$dest") bytes) — retrying..." >&2
+                    ;;
+                33)
+                    echo "[ WARNING ] Server does not support resume (curl 33) — retrying full download..." >&2
+                    ;;
+                *)
+                    echo "[ WARNING ] curl failed with exit $last_curl_exit on attempt ${attempt}/${max_attempts}" >&2
+                    ;;
+            esac
+            rm -f "$dest"
+            attempt=$((attempt + 1))
+            continue
+        fi
+
+        if [ "$http_code" != "200" ]; then
+            report_download_http_error "$dest" "$http_code"
+            rm -f "$dest" "$curl_err"
+            return 1
+        fi
+
+        if [ ! -s "$dest" ]; then
+            echo "[ WARNING ] Empty download on attempt ${attempt}/${max_attempts}" >&2
+            attempt=$((attempt + 1))
+            continue
+        fi
+
+        local first_byte
+        first_byte=$(head -c 1 "$dest" 2>/dev/null || echo "")
+        if [ "$first_byte" = "{" ]; then
+            report_download_http_error "$dest" "$http_code"
+            rm -f "$dest" "$curl_err"
+            return 1
+        fi
+
+        if ! gzip -t "$dest" 2>/dev/null; then
+            echo "[ WARNING ] Incomplete or corrupt gzip ($(file_byte_size "$dest") bytes) on attempt ${attempt}/${max_attempts} — retrying..." >&2
+            attempt=$((attempt + 1))
+            continue
+        fi
+
+        rm -f "$curl_err"
+        return 0
+    done
+
+    echo "[ ERROR ] Download failed after ${max_attempts} attempts (last curl exit: ${last_curl_exit})." >&2
+    if [ "$last_curl_exit" = "18" ]; then
+        echo "[ HINT ] Server closed the connection before the full file was sent." >&2
+        echo "[ HINT ] Ask your provider to raise nginx timeouts on admin.hiretrack.in for /api/asset/download." >&2
+    fi
+    if [ -s "$curl_err" ]; then
+        echo "[ HINT ] $(tail -1 "$curl_err")" >&2
+    fi
+    rm -f "$dest" "$curl_err"
+    return 1
+}
+
 validate_license_and_get_asset() {
     local VERSION="${1:-}"
     if [ ! -f "$LICENSE_PATH" ]; then
@@ -1451,54 +1727,38 @@ validate_license_and_get_asset() {
     fi
     
     local TMP_FILE="$HOME/.hiretrack/tmp_asset.tar.gz"
-    local HTTP_CODE
     
-    rm -f "$TMP_FILE"
+    if [ -f "$TMP_FILE" ] && gzip -t "$TMP_FILE" 2>/dev/null; then
+        echo "[ OK ] Complete download already present ($(file_byte_size "$TMP_FILE") bytes)." >&2
+        echo "$TMP_FILE"
+        return 0
+    fi
+    if [ -f "$TMP_FILE" ] && [ -s "$TMP_FILE" ]; then
+        echo "[ INFO ] Resuming partial download ($(file_byte_size "$TMP_FILE") bytes already saved)..." >&2
+    else
+        rm -f "$TMP_FILE" "${TMP_FILE}.curlerr"
+    fi
     
-    if ! check_resources 100 1000 "Downloading Core Assets"; then
+    if ! check_resources 100 2000 "Downloading Core Assets"; then
         return 1
     fi
     
     echo "[ DOWNLOAD ] Downloading asset with server validation..." >&2
     local ASSET_URL="${ASSET_DOWNLOAD_API}?${QUERY_PARAMS}"
+    local META_URL="${ASSET_DOWNLOAD_META_API}?${QUERY_PARAMS}"
     ASSET_URL=$(append_channel_param "$ASSET_URL")
-    
-    HTTP_CODE=$(curl -w "\n%{http_code}" -o "$TMP_FILE" \
-        --progress-bar \
-        "$ASSET_URL" 2>&1 | grep -E '^[0-9]{3}$' | tail -n1 || echo "000")
-        
-    if [ -z "$HTTP_CODE" ] || ! echo "$HTTP_CODE" | grep -qE '^[0-9]{3}$'; then
-        echo "[ ERROR ] Network error: Failed to connect to server. Please check your internet connection." >&2
-        rm -f "$TMP_FILE"
-        return 1
-    fi
-    
-    if [ "$HTTP_CODE" != "200" ]; then
-        if [ -f "$TMP_FILE" ] && [ -s "$TMP_FILE" ]; then
-            local FIRST_CHAR
-            FIRST_CHAR=$(head -c 1 "$TMP_FILE" 2>/dev/null || echo "")
-            if [ "$FIRST_CHAR" = "{" ]; then
-                local ERROR_MSG
-                ERROR_MSG=$(jq -r '.error // .message // "Unknown error"' "$TMP_FILE" 2>/dev/null || echo "Download validation failed")
-                echo "[ ERROR ] Download validation failed: $ERROR_MSG" >&2
-            else
-                echo "[ ERROR ] Download validation failed: HTTP $HTTP_CODE" >&2
-            fi
-        else
-            echo "[ ERROR ] Download validation failed: HTTP $HTTP_CODE (No response body)" >&2
+    META_URL=$(append_channel_param "$META_URL")
+
+    if ! download_asset_chunked "$META_URL" "$ASSET_URL" "$TMP_FILE"; then
+        echo "[ INFO ] Chunked download unavailable; trying full archive download..." >&2
+        rm -f "$TMP_FILE" "${TMP_FILE}.curlerr" "${TMP_FILE}.manifest.json" "${TMP_FILE}.part."*
+        if ! download_url_to_file "$ASSET_URL" "$TMP_FILE" 6 900; then
+            return 1
         fi
-        rm -f "$TMP_FILE"
-        return 1
-    fi
-    
-    if [ ! -f "$TMP_FILE" ] || [ ! -s "$TMP_FILE" ]; then
-        echo "[ ERROR ] Downloaded file is empty or missing." >&2
-        rm -f "$TMP_FILE"
-        return 1
     fi
     
     local FILE_SIZE
-    FILE_SIZE=$(stat -f%z "$TMP_FILE" 2>/dev/null || stat -c%s "$TMP_FILE" 2>/dev/null || echo "0")
+    FILE_SIZE=$(file_byte_size "$TMP_FILE")
     if [ "$FILE_SIZE" -lt 1000 ]; then
         echo "[ ERROR ] Downloaded file is too small ($FILE_SIZE bytes). File may be corrupted or incomplete." >&2
         rm -f "$TMP_FILE"
@@ -2682,6 +2942,7 @@ server {
 
     client_max_body_size 500M;
     chunked_transfer_encoding on;
+    send_timeout 600s;
 
     proxy_buffer_size 256k;
     proxy_buffers 8 256k;
@@ -2744,6 +3005,7 @@ server {
 
     client_max_body_size 500M;
     chunked_transfer_encoding on;
+    send_timeout 600s;
 
     ssl_certificate $CERT_PATH;
     ssl_certificate_key $KEY_PATH;
@@ -3237,6 +3499,78 @@ install_all() {
     exit 0
 }
 
+# Split a release tarball into ~50MB parts + manifest.json (CI / release pipeline).
+# Args: tarball_path [version] [part_size_mb]
+release_chunk_assets() {
+    local tarball="${1:?tarball path required}"
+    local version="${2:-}"
+    local part_mb="${3:-50}"
+
+    if [ ! -f "$tarball" ]; then
+        echo "[ ERROR ] Tarball not found: $tarball" >&2
+        return 1
+    fi
+
+    if ! command -v split >/dev/null 2>&1; then
+        echo "[ ERROR ] split command not found (install coreutils)." >&2
+        return 1
+    fi
+
+    local part_prefix="${tarball}.part-"
+    local manifest="${tarball}.manifest.json"
+
+    echo "[ PACKAGE ] Splitting $(basename "$tarball") into ${part_mb}MB parts..."
+    rm -f "${part_prefix}"*
+    split -b "${part_mb}M" -d -a 3 "$tarball" "$part_prefix"
+
+    local total sha256 part_count part_bytes
+    total=$(file_byte_size "$tarball")
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256=$(sha256sum "$tarball" | awk '{print $1}')
+    else
+        sha256=$(shasum -a 256 "$tarball" | awk '{print $1}')
+    fi
+
+    part_count=0
+    local _part_file
+    for _part_file in "${part_prefix}"*; do
+        [ -f "$_part_file" ] || continue
+        part_count=$((part_count + 1))
+    done
+
+    if [ "$part_count" -eq 0 ]; then
+        echo "[ ERROR ] split produced no parts for $tarball" >&2
+        return 1
+    fi
+
+    part_bytes=$((part_mb * 1024 * 1024))
+
+    jq -n \
+        --arg filename "$(basename "$tarball")" \
+        --arg version "$version" \
+        --argjson partSizeBytes "$part_bytes" \
+        --argjson parts "$part_count" \
+        --argjson totalBytes "$total" \
+        --arg sha256 "$sha256" \
+        --arg partPrefix "$(basename "${part_prefix}")" \
+        --argjson partPad 3 \
+        '{
+            filename: $filename,
+            version: $version,
+            chunked: true,
+            partSizeBytes: $partSizeBytes,
+            parts: $parts,
+            totalBytes: $totalBytes,
+            sha256: $sha256,
+            partPrefix: $partPrefix,
+            partPad: $partPad
+        }' > "$manifest"
+
+    echo "[ OK ] Created ${part_count} parts (${part_mb}MB each) and $(basename "$manifest")"
+    echo "[ INFO ] totalBytes=${total} sha256=${sha256:0:16}..."
+    return 0
+}
+
 # ------------------------------------------------
 # Help (no dependency checks when showing help)
 # ------------------------------------------------
@@ -3281,6 +3615,10 @@ show_help() {
     echo "  --staging-on                  Use staging repository"
     echo "  --staging-off                 Use production repository"
     echo
+    echo "  --release-chunk-assets <tarball> [version] [part_mb]"
+    echo "                                Split release tarball for chunked installer downloads"
+    echo "                                Example: $0 --release-chunk-assets hiretrack-v1.1.9.tar.gz v1.1.9 50"
+    echo
     echo "  --help                        Show this help message and exit"
     echo
     echo "  --skip-markdown-parser          Skip local PDF→Markdown PM2 service (bulk CV)"
@@ -3296,6 +3634,13 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
     exit 0
 fi
 
+# Release pipeline only (CI): split tarball — no PM2/markdown/tesseract setup
+if [ "${1:-}" = "--release-chunk-assets" ]; then
+    check_dep jq
+    release_chunk_assets "${2:?tarball path required}" "${3:-}" "${4:-50}" || exit 1
+    exit 0
+fi
+
 for _installer_arg in "$@"; do
     if [ "$_installer_arg" = "--skip-markdown-parser" ]; then
         SKIP_MARKDOWN_PARSER=1
@@ -3308,6 +3653,7 @@ check_dep jq
 check_dep tar
 check_dep shasum
 ensure_tesseract_for_cv_ocr
+ensure_python_venv_packages
 check_pm2
 ensure_markdown_parser_service
 
