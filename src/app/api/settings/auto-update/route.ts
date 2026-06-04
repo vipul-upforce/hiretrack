@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
-import path from 'path';
 import { logger } from '@/lib/logger/logger.server';
+import { getConfigPath } from '@/lib/hiretrack-data-dir';
 import { ConfigData } from '@/lib/licenseUtils';
 import { getReleaseChannel } from '@/lib/configUtils';
 
-// Path to config.json in the parent of the current project root
-const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
+const CONFIG_PATH = getConfigPath();
 
 // Helper to read config file
 function readConfig() {

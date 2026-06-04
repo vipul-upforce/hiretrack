@@ -1,5 +1,7 @@
 import { baseApi } from '@/lib/api/baseApi';
+import { downloadAssetsArchive } from '@/lib/assets-archive/download-client';
 import {
+  DownloadAssetsArgs,
   DownloadAssetsResponse,
   EmailHistoryRecord,
   PortalConfigData,
@@ -51,46 +53,28 @@ export const portalApi = baseApi.injectEndpoints({
       query: () => ({ url: '/download/assets', method: 'POST', body: {} }),
       providesTags: ['Assets'],
     }),
-    downloadAssets: builder.mutation<DownloadAssetsResponse, void>({
-      queryFn: async (_arg, _api, _extraOptions, baseQuery) => {
-        const result = await baseQuery({
-          url: '/download/assets',
-          method: 'GET',
-          responseHandler: (response) =>
-            response.ok ? response.blob() : response.json(),
-        });
-
-        // 1. Handle Network Errors
-        if (result.error) {
-          return { error: result.error };
-        }
-
-        const { data, meta } = result;
-        const response = (meta as { response?: Response })?.response;
-
-        // 2. Handle API Errors
-        if (!response?.ok) {
+    downloadAssets: builder.mutation<
+      DownloadAssetsResponse,
+      DownloadAssetsArgs | void
+    >({
+      queryFn: async (arg) => {
+        try {
+          const data = await downloadAssetsArchive({
+            basePath: '/api/download/assets',
+            onProgress: arg?.onProgress,
+          });
+          return { data };
+        } catch (err) {
+          const message =
+            err instanceof Error ? err.message : 'Failed to download assets';
           return {
             error: {
-              status: response?.status ?? 500,
-              data,
+              status: 'CUSTOM_ERROR' as const,
+              error: message,
+              data: { message },
             },
-          } 
+          };
         }
-
-        // 3. Handle Success
-        const contentDisposition = response.headers.get('Content-Disposition');
-        const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-        const filename = fileNameMatch
-          ? fileNameMatch[1]
-          : `assets-${Date.now()}.tar.gz`;
-
-        return {
-          data: {
-            blob: data as Blob,
-            filename,
-          },
-        };
       },
       invalidatesTags: ['Assets'],
     }),

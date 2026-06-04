@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import mime from 'mime-types';
+import {
+  getAssetsDir,
+  getBackupsDir,
+  resolveStoredPathName,
+} from '@/lib/hiretrack-data-dir';
 import { validateQueryParams } from '@/lib/inputValidation';
 import { logger } from '@/lib/logger/logger.server';
 
@@ -32,20 +37,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // SECURITY FIX: Define allowed directories based on actual implementation
-    const projectRoot = process.cwd();
-    const allowedDirectories = [
+    const allowedPrefixes = [
       '../assets/images/',
       '../assets/documents/',
       '../assets/organizations/',
       '../backups',
     ];
 
-    // Normalize and validate the path
     const sanitizedPath = path.normalize(pathName);
 
-    // Security check 1: Ensure path starts with allowed directories
-    const isAllowedPath = allowedDirectories.some((allowedDir) => {
+    const isAllowedPath = allowedPrefixes.some((allowedDir) => {
       const normalizedAllowedDir = path.normalize(allowedDir);
       return sanitizedPath.startsWith(normalizedAllowedDir);
     });
@@ -57,15 +58,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Security check 2: Prevent path traversal attacks
-    const resolvedPath = path.resolve(projectRoot, sanitizedPath);
-    const allowedBasePaths = allowedDirectories.map((dir) =>
-      path.resolve(projectRoot, dir),
-    );
+    let filePath: string;
+    try {
+      filePath = resolveStoredPathName(sanitizedPath);
+    } catch {
+      return NextResponse.json(
+        { error: 'Access denied - path traversal detected' },
+        { status: 403 },
+      );
+    }
 
-    const isWithinAllowedBase = allowedBasePaths.some((basePath) =>
-      resolvedPath.startsWith(basePath),
-    );
+    const allowedBasePaths = [
+      path.join(getAssetsDir(), 'images'),
+      path.join(getAssetsDir(), 'documents'),
+      path.join(getAssetsDir(), 'organizations'),
+      getBackupsDir(),
+    ];
+    const isWithinAllowedBase = allowedBasePaths.some((basePath) => {
+      const baseResolved = path.resolve(basePath);
+      const withSep = `${baseResolved}${path.sep}`;
+      return (
+        filePath === baseResolved ||
+        filePath.startsWith(withSep) ||
+        (basePath === getBackupsDir() &&
+          (filePath === baseResolved || filePath.startsWith(withSep)))
+      );
+    });
 
     if (!isWithinAllowedBase) {
       return NextResponse.json(
@@ -73,8 +91,6 @@ export async function GET(request: NextRequest) {
         { status: 403 },
       );
     }
-
-    const filePath = resolvedPath;
 
     // Check if file exists
     try {

@@ -1,66 +1,142 @@
+import { existsSync } from 'fs';
+import fs from 'fs/promises';
+import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import path from 'path';
-import fs from 'fs/promises';
-import { existsSync } from 'fs';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import {
+  calculateDirectorySize,
+  getAssetsRoot,
+  getSessionDir,
+  readLastArchiveTimestamp,
+  readSessionManifest,
+  resolvePartPath,
+  saveLastArchiveTimestamp,
+  streamFileResponse,
+  assertValidGzipFile,
+} from '@/lib/assets-archive';
+import { getHiretrackTempDir } from '@/lib/hiretrack-data-dir';
 import { logger } from '@/lib/logger/logger.server';
 
 const execAsync = promisify(exec);
 
-// Path to store the last archive timestamp
-const metadataDir = path.join(process.cwd(), '..', 'metadata');
-const lastArchiveFile = path.join(metadataDir, 'last_archive.json');
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
-// Save the last archive timestamp
-async function saveLastArchiveTimestamp(organizationId: string) {
-  const timestamp = new Date().toISOString();
-  const metadata = { [organizationId]: timestamp };
-
-  try {
-    if (!existsSync(metadataDir)) {
-      await fs.mkdir(metadataDir, { recursive: true });
-    }
-    await fs.writeFile(lastArchiveFile, JSON.stringify(metadata, null, 2));
-  } catch (error) {
-    logger.error({ error }, 'Error saving last archive timestamp.');
+function parsePartIndex(partParam: string | null): number | null {
+  if (partParam === null || partParam === '') {
+    return null;
   }
+  const index = Number.parseInt(partParam, 10);
+  if (!Number.isInteger(index) || index < 0) {
+    return null;
+  }
+  return index;
 }
 
-// Read the last archive timestamp
-async function readLastArchiveTimestamp(
+async function handlePartDownload(
   organizationId: string,
-): Promise<string | null> {
-  try {
-    if (existsSync(lastArchiveFile)) {
-      const data = await fs.readFile(lastArchiveFile, 'utf-8');
-      const metadata = JSON.parse(data);
-      return metadata[organizationId] || null;
-    }
-  } catch (error) {
-    logger.error({ error }, 'Error reading last archive timestamp.');
+  sessionId: string,
+  partIndex: number,
+): Promise<NextResponse> {
+  const sessionDir = getSessionDir(organizationId, sessionId);
+  if (!existsSync(sessionDir)) {
+    return NextResponse.json(
+      { message: 'Archive session not found or expired' },
+      { status: 404 },
+    );
   }
-  return null;
+
+  const manifest = await readSessionManifest(sessionDir);
+  if (!manifest || manifest.sessionId !== sessionId) {
+    return NextResponse.json(
+      { message: 'Invalid archive session' },
+      { status: 404 },
+    );
+  }
+
+  if (partIndex >= manifest.parts) {
+    return NextResponse.json({ message: 'Part index out of range' }, { status: 400 });
+  }
+
+  let partPath: string;
+  try {
+    partPath = resolvePartPath(
+      sessionDir,
+      manifest.partPrefix,
+      manifest.partPad,
+      partIndex,
+    );
+  } catch {
+    return NextResponse.json({ message: 'Invalid part request' }, { status: 400 });
+  }
+
+  if (!existsSync(partPath)) {
+    return NextResponse.json({ message: 'Part file not found' }, { status: 404 });
+  }
+
+  const stat = await fs.stat(partPath);
+
+  return streamFileResponse({
+    filePath: partPath,
+    contentType: 'application/octet-stream',
+    contentLength: stat.size,
+  });
 }
 
-// Recursively calculate the total size of all files in a directory
-async function calculateDirectorySize(dirPath: string): Promise<number> {
-  let totalSize = 0;
-  const entries = await fs.readdir(dirPath, { withFileTypes: true });
+/** Legacy monolithic download: tar directly from assets, stream without readFile. */
+async function handleMonolithicDownload(
+  organizationId: string,
+  assetsRoot: string,
+): Promise<NextResponse> {
+  const timestamp = Date.now().toString();
+  const archiveFileName = `assets-${timestamp}.tar.gz`;
+  const tempDir = path.join(
+    getHiretrackTempDir(),
+    `assets-legacy-${organizationId}-${timestamp}`,
+  );
+  const tempArchivePath = path.join(tempDir, archiveFileName);
 
-  for (const entry of entries) {
-    const entryPath = path.join(dirPath, entry.name);
-    if (entry.isDirectory()) {
-      totalSize += await calculateDirectorySize(entryPath);
-    } else if (entry.isFile()) {
-      const stats = await fs.stat(entryPath);
-      totalSize += stats.size;
-    }
+  await fs.mkdir(tempDir, { recursive: true });
+
+  const tarCommand = `tar -czf "${tempArchivePath}" -C "${assetsRoot}" .`;
+  try {
+    await execAsync(tarCommand);
+  } catch (tarError) {
+    logger.error({ tarError }, 'Legacy assets compression failed');
+    await fs.rm(tempDir, { recursive: true, force: true });
+    return NextResponse.json(
+      { message: 'Failed to compress assets', error: String(tarError) },
+      { status: 500 },
+    );
   }
 
-  return totalSize;
+  try {
+    await assertValidGzipFile(tempArchivePath);
+  } catch (gzipError) {
+    logger.error({ gzipError }, 'Legacy assets archive failed gzip validation');
+    await fs.rm(tempDir, { recursive: true, force: true });
+    return NextResponse.json(
+      { message: 'Failed to validate assets archive' },
+      { status: 500 },
+    );
+  }
+
+  await saveLastArchiveTimestamp(organizationId);
+
+  const stat = await fs.stat(tempArchivePath);
+
+  return streamFileResponse({
+    filePath: tempArchivePath,
+    contentType: 'application/gzip',
+    contentDisposition: `attachment; filename="${archiveFileName}"`,
+    contentLength: stat.size,
+    onComplete: async () => {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    },
+  });
 }
 
 export async function GET(req: NextRequest) {
@@ -69,19 +145,13 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ message: 'Not Authorized' }, { status: 401 });
     }
-    const { organizationId } = user;
-    const assetsRoot = path.join(process.cwd(), '..', 'assets');
-    const timestamp = Date.now().toString();
-    const archiveFileName = `assets-${timestamp}.tar.gz`;
-    const tempDir = path.join(
-      process.cwd(),
-      '..',
-      'temp',
-      `assets-${timestamp}`,
-    );
-    const tempArchivePath = path.join(tempDir, archiveFileName);
 
-    // Check if assets directory exists
+    const { organizationId } = user;
+    const assetsRoot = getAssetsRoot();
+    const { searchParams } = new URL(req.url);
+    const partParam = searchParams.get('part');
+    const sessionId = searchParams.get('sessionId');
+
     if (!existsSync(assetsRoot)) {
       return NextResponse.json(
         { message: 'Assets directory does not exist' },
@@ -89,46 +159,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Create temporary directory
-    await fs.mkdir(tempDir, { recursive: true });
+    const partIndex = parsePartIndex(partParam);
 
-    // Copy assets to temporary directory
-    const tempAssetsDir = path.join(tempDir, 'assets');
-    await fs.mkdir(tempAssetsDir, { recursive: true });
-    await fs.cp(assetsRoot, tempAssetsDir, { recursive: true });
-
-    // Compress the assets to tar.gz
-    const tarCommand = `tar -czf "${tempArchivePath}" -C "${tempAssetsDir}" .`;
-    try {
-      await execAsync(tarCommand);
-    } catch (tarError) {
-      logger.error({ tarError, url: req.url }, 'Compression failed:');
-      await fs.rm(tempDir, { recursive: true, force: true });
-      return NextResponse.json(
-        { message: 'Failed to compress assets', error: String(tarError) },
-        { status: 500 },
-      );
+    if (partIndex !== null) {
+      if (!sessionId) {
+        return NextResponse.json(
+          { message: 'sessionId is required when downloading a part' },
+          { status: 400 },
+        );
+      }
+      return handlePartDownload(organizationId, sessionId, partIndex);
     }
 
-    // Read the archive into memory
-    const archiveBuffer = await fs.readFile(tempArchivePath);
-
-    // Save the last archive timestamp
-    await saveLastArchiveTimestamp(organizationId);
-
-    // Clean up temporary directory
-    await fs.rm(tempDir, { recursive: true, force: true });
-
-    // Send the archive in the response
-    // eslint-disable-next-line no-undef
-    return new NextResponse(archiveBuffer as BodyInit, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/gzip',
-        'Content-Disposition': `attachment; filename="${archiveFileName}"`,
-        'Content-Length': archiveBuffer.length.toString(),
-      },
-    });
+    return handleMonolithicDownload(organizationId, assetsRoot);
   } catch (error) {
     logger.error(
       { error, url: req.url },
@@ -151,9 +194,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Not Authorized' }, { status: 401 });
     }
     const { organizationId } = user;
-    const assetsRoot = path.join(process.cwd(), '..', 'assets');
+    const assetsRoot = getAssetsRoot();
 
-    // Check if assets directory exists
     if (!existsSync(assetsRoot)) {
       return NextResponse.json(
         { message: 'Assets directory does not exist' },
@@ -161,7 +203,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get metadata for the assets directory
     const totalSize = await calculateDirectorySize(assetsRoot);
     const lastArchivedAt = await readLastArchiveTimestamp(organizationId);
     const formattedDate = await getFormattedDate(req, lastArchivedAt as string);

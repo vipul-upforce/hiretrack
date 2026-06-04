@@ -180,6 +180,10 @@ NODE_OPTIONS="--max-old-space-size=8192" npx next build
 echo "Removing .next/cache from release artifact..."
 rm -rf .next/cache
 
+# Next standalone tracing can copy host paths (Documents/, ~/.hiretrack) — strip before packaging.
+echo "Pruning mistaken standalone traced paths..."
+rm -rf .next/standalone/Documents .next/standalone/.hiretrack 2>/dev/null || true
+
 # Obfuscate server files (including server-ws.cjs)
 # echo "Obfuscating server files..."
 # npx tsx scripts/obfuscate-server.ts
@@ -199,11 +203,15 @@ if [ "$OS_TYPE" = "macOS" ]; then
     --exclude='.AppleDouble' \
     --exclude='.LSOverride' \
     --exclude='.next/cache' \
+    --exclude='.next/standalone/Documents' \
+    --exclude='.next/standalone/.hiretrack' \
     package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
 else
   # Standard tar for Linux/other systems
   tar -czvf temp/$TARBALL_NAME \
     --exclude='.next/cache' \
+    --exclude='.next/standalone/Documents' \
+    --exclude='.next/standalone/.hiretrack' \
     package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
 fi
 
@@ -224,6 +232,11 @@ if tar -tzf $TARBALL_NAME | grep -q '\.next/cache'; then
   echo -e "${RED}WARNING: Tarball contains .next/cache (bloats customer disk)!${NC}"
 else
   echo -e "${GREEN}✓ Tarball excludes .next/cache${NC}"
+fi
+if tar -tzf $TARBALL_NAME | grep -qE '\.next/standalone/(Documents|\.hiretrack)'; then
+  echo -e "${RED}WARNING: Tarball contains traced host paths under .next/standalone!${NC}"
+else
+  echo -e "${GREEN}✓ Tarball excludes standalone host-path bloat${NC}"
 fi
 
 # ==================== RELEASE STAGE ====================
@@ -304,7 +317,7 @@ UPLOAD_URL=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github
 UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "Content-Type: application/gzip" \
-  --data-binary @$TARBALL_NAME \
+  --upload-file "$TARBALL_NAME" \
   "$UPLOAD_URL?name=$TARBALL_NAME")
 
 UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -n1)
@@ -329,7 +342,7 @@ upload_release_asset() {
   UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H "Content-Type: ${CONTENT_TYPE}" \
-    --data-binary @"$FILE_PATH" \
+    --upload-file "$FILE_PATH" \
     "$UPLOAD_URL?name=${ASSET_NAME}")
   UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -n1)
   UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed '$d')
@@ -358,7 +371,7 @@ if [ -f "$MIGRATION_SCRIPT" ]; then
   MIGRATION_UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H "Content-Type: application/javascript" \
-    --data-binary @"$MIGRATION_SCRIPT" \
+    --upload-file "$MIGRATION_SCRIPT" \
     "$UPLOAD_URL?name=$MIGRATION_ASSET_NAME")
 
   MIGRATION_UPLOAD_HTTP_CODE=$(echo "$MIGRATION_UPLOAD_RESPONSE" | tail -n1)

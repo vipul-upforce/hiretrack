@@ -9,10 +9,11 @@ import {
   getReleaseChannel as getReleaseChannelFromConfig,
 } from '@/lib/configUtils';
 
-// License file path (in project root parent directory)
-export const LICENSE_PATH = path.join(process.cwd(), '..', 'license.json');
+import { getConfigPath, getLicensePath } from '@/lib/hiretrack-data-dir';
+
+export const LICENSE_PATH = getLicensePath();
 /** @deprecated Use PARENT_CONFIG_PATH from @/lib/configUtils for parent config.json */
-export const CONFIG_PATH = path.join(process.cwd(), '..', 'config.json');
+export const CONFIG_PATH = getConfigPath();
 
 /** Reads the release channel from parent config.json. Re-exported from configUtils for convenience. */
 export const getReleaseChannel = getReleaseChannelFromConfig;

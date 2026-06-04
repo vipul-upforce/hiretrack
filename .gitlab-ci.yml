@@ -146,6 +146,8 @@ build:
     - echo ""
     - NODE_OPTIONS="--max-old-space-size=3072" npx next build
     # - npx next build
+    - rm -rf .next/cache
+    - rm -rf .next/standalone/Documents .next/standalone/.hiretrack 2>/dev/null || true
     - |
       # Source the version environment file
       source version.env
@@ -153,7 +155,11 @@ build:
       echo "Creating tarball with name: $TARBALL_NAME"
 
       mkdir -p temp
-      tar -czvf temp/$TARBALL_NAME package.json package-lock.json ecosystem.config.cjs next.config.ts .next .env public server-ws.cjs
+      tar -czvf temp/$TARBALL_NAME \
+        --exclude='.next/cache' \
+        --exclude='.next/standalone/Documents' \
+        --exclude='.next/standalone/.hiretrack' \
+        package.json package-lock.json ecosystem.config.cjs next.config.ts .next .env public server-ws.cjs
       echo "Tarball contents:"
       tar -tzf temp/$TARBALL_NAME
       mv temp/$TARBALL_NAME .
@@ -274,7 +280,7 @@ release_job:
       UPLOAD_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
         -H "Authorization: Bearer $GITHUB_TOKEN" \
         -H "Content-Type: application/gzip" \
-        --data-binary @$TARBALL_NAME \
+        --upload-file "$TARBALL_NAME" \
         "$UPLOAD_URL?name=$TARBALL_NAME")
 
       UPLOAD_HTTP_CODE=$(echo "$UPLOAD_RESPONSE" | tail -n1)
@@ -294,11 +300,11 @@ release_job:
       MANIFEST_NAME="${TARBALL_NAME}.manifest.json"
       UPLOAD_URL=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPO/releases/$RELEASE_ID | jq -r .upload_url | sed "s/{?name,label}//")
       curl -sf -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" \
-        --data-binary @"$MANIFEST_NAME" "$UPLOAD_URL?name=$MANIFEST_NAME"
+        --upload-file "$MANIFEST_NAME" "$UPLOAD_URL?name=$MANIFEST_NAME"
       for PART_FILE in "${TARBALL_NAME}.part-"*; do
         [ -f "$PART_FILE" ] || continue
         curl -sf -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/octet-stream" \
-          --data-binary @"$PART_FILE" "$UPLOAD_URL?name=$(basename "$PART_FILE")"
+          --upload-file "$PART_FILE" "$UPLOAD_URL?name=$(basename "$PART_FILE")"
       done
       echo "Chunked release assets uploaded."
       bash scripts/cleanup-release-artifacts.sh "$CI_PROJECT_DIR" "$TARBALL_NAME"

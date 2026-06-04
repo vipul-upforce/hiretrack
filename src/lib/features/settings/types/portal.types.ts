@@ -40,3 +40,14 @@ export interface DownloadAssetsResponse {
   blob: Blob;
   filename: string;
 }
+
+/** Re-exported manifest shape for portal assets chunked download */
+export type { AssetsArchiveManifest } from '@/lib/assets-archive/types';
+
+export interface DownloadAssetsArgs {
+  onProgress?: (
+    current: number,
+    total: number,
+    phase: 'prepare' | 'download',
+  ) => void;
+}

@@ -75,3 +75,41 @@ Admin should store manifest + part files alongside the full tarball when ingesti
 ## Local cleanup after release
 
 `ci_prod.sh` / `ci_dev.sh` / GitLab release job run `scripts/cleanup-release-artifacts.sh` after upload to remove `hiretrack-v*.tar.gz`, `.manifest.json`, and `.part-*` from the repo working tree. These paths are in `.gitignore`.
+
+## Portal media assets backup (Hiretrack app)
+
+Settings → Media Assets uses the same manifest shape plus `sessionId` for multi-tenant part downloads.
+
+### Metadata
+
+```http
+GET /api/download/assets/meta
+```
+
+**200** — manifest JSON (`chunked`, `parts`, `sha256`, `sessionId`, …). Builds tar from `../assets`, splits into 50MB parts under `../temp/assets-archive/{organizationId}/{sessionId}/`.
+
+**401** / **404** / **500** — JSON errors.
+
+`maxDuration` = 300s on meta and download routes.
+
+### Part
+
+```http
+GET /api/download/assets?part=3&sessionId=<uuid>
+```
+
+**200** — raw bytes of part `3` (`application/octet-stream`).
+
+### Monolithic fallback
+
+```http
+GET /api/download/assets
+```
+
+Streams full `.tar.gz` without loading into memory (legacy / when meta fails). Prefer chunked flow from the UI.
+
+### Client
+
+`src/lib/assets-archive/download-client.ts` — fetches meta, downloads parts with retries, verifies `totalBytes` and SHA-256, returns one `Blob` for browser download.
+
+Sessions expire after 2 hours (`cleanupStaleSessions` on each meta request).

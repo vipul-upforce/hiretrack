@@ -210,6 +210,16 @@ const nextConfig: NextConfig = {
   },
   // Optimize output
   output: 'standalone',
+  // Prevent Next file tracing from bundling local data dirs into standalone output
+  outputFileTracingExcludes: {
+    '*': [
+      '**/assets/**',
+      '**/temp/**',
+      '**/.hiretrack/**',
+      '**/backups/**',
+      '**/metadata/**',
+    ],
+  },
   // Optimize compression
   compress: true,
   // Optimize powered by header

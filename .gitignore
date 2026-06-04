@@ -48,3 +48,4 @@ next-env.d.ts
 /hiretrack-v*.tar.gz.manifest.json
 /hiretrack-v*.tar.gz.part-*
 /temp/hiretrack-v*.tar.gz
+/temp/assets-archive/

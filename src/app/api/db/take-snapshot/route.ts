@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { existsSync } from 'fs';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { getBackupsDir } from '@/lib/hiretrack-data-dir';
 import { logger } from '@/lib/logger/logger.server';
 
 const execAsync = promisify(exec);
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const backupsRoot = path.join(process.cwd(), '..', 'backups');
+    const backupsRoot = getBackupsDir();
     const timestamp = Date.now().toString();
     const backupFileName = `backup - ${timestamp}.tar.gz`;
     const tempDumpDir = path.join(backupsRoot, `dump-${timestamp}`);
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const backupsRoot = path.join(process.cwd(), '..', 'backups');
+    const backupsRoot = getBackupsDir();
     const filePath = path.join(backupsRoot, fileName);
 
     if (!existsSync(filePath)) {

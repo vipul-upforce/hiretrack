@@ -3,11 +3,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getFormattedDate } from '@/components/timezoneFormat/getFormattedTZ';
 import { getAuthenticatedUser } from '@/app/actions/auth';
+import { getBackupsDir } from '@/lib/hiretrack-data-dir';
 import { logger } from '@/lib/logger/logger.server';
 
 export async function GET(req: NextRequest) {
   try {
-    const backupsDir = path.join(process.cwd(), '..', 'backups');
+    const backupsDir = getBackupsDir();
     const session = await getAuthenticatedUser(req, 'admin');
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

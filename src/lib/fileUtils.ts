@@ -10,6 +10,11 @@ import {
 } from 'cloudinary';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { FileStorageValues } from '@/app/dashboard/settings/components/file-storage/schema';
+import {
+  getAssetsDir,
+  resolveStoredPathName,
+  toAssetsPathName,
+} from '@/lib/hiretrack-data-dir';
 import { Settings, FileUrlMapping } from './mongodb';
 import logger from './logger';
 // import { NextRequest } from "next/server";
@@ -153,29 +158,32 @@ export async function saveFileLocally(
   folder: 'documents' | 'images' | 'organizations' | string,
   fileName: string,
 ) {
-  const publicPath = path.join(process.cwd(), '..', 'assets');
+  const publicPath = getAssetsDir();
   await ensureDirectoryExists(publicPath);
   await ensureDirectoryExists(path.join(publicPath, folder));
 
   const base64Data = base64.replace(/^data:[^;]+;base64,/, '');
-  let filePath = path.join('..', 'assets', folder, fileName);
+  let storedPathName = toAssetsPathName(folder, fileName);
 
   // Check for existing file and make the name unique if needed
   const ext = path.extname(fileName);
   const base = path.basename(fileName, ext);
   let uniqueFileName = fileName;
   let counter = 1;
-  let uniqueFilePath = filePath;
-  while (fs.existsSync(uniqueFilePath)) {
+  let uniqueStoredPath = storedPathName;
+  while (fs.existsSync(resolveStoredPathName(uniqueStoredPath))) {
     uniqueFileName = `${base}_${counter}${ext}`;
-    uniqueFilePath = path.join('..', 'assets', folder, uniqueFileName);
+    uniqueStoredPath = toAssetsPathName(folder, uniqueFileName);
     counter += 1;
   }
-  filePath = uniqueFilePath;
+  storedPathName = uniqueStoredPath;
 
-  await fs.promises.writeFile(filePath, Buffer.from(base64Data, 'base64'));
+  await fs.promises.writeFile(
+    resolveStoredPathName(storedPathName),
+    Buffer.from(base64Data, 'base64'),
+  );
 
-  return `/api/files?pathName=${filePath}`;
+  return `/api/files?pathName=${storedPathName}`;
 }
 
 export interface FileAttachment {
@@ -486,8 +494,9 @@ export async function getFileFromProvider(
     switch (fileStorage.storageType) {
       case 'local': {
         // For local files, read from the file system
-        const publicPath = path.join(process.cwd(), '..', 'assets');
-        const fullPath = path.join(publicPath, filePath);
+        const fullPath = filePath.startsWith('../assets/')
+          ? resolveStoredPathName(filePath)
+          : path.join(getAssetsDir(), filePath);
 
         if (!fs.existsSync(fullPath)) {
           return { success: false, error: 'File not found' };

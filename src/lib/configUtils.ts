@@ -1,13 +1,9 @@
-import path from 'path';
 import { promises as fs } from 'fs';
+import { getConfigPath } from '@/lib/hiretrack-data-dir';
 import logger from '@/lib/logger/';
 
-/** Path to config.json in the parent of the current project root (e.g. monorepo root). */
-export const PARENT_CONFIG_PATH = path.resolve(
-  process.cwd(),
-  '..',
-  'config.json',
-);
+/** Path to config.json under the HireTrack data directory (~/.hiretrack). */
+export const PARENT_CONFIG_PATH = getConfigPath();
 
 export type ReleaseChannel = 'beta' | 'staging' | 'production';
 

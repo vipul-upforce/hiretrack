@@ -1,12 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { formatFileSize } from '@/components/ui/file-upload';
 import { toast } from '@/hooks/use-toast';
 import { FolderIcon, Loader, LucideDownload } from 'lucide-react';
 import {
   useFetchAssetsMetadataQuery,
-  useDownloadAssetsMutation, // Import the new hook
+  useDownloadAssetsMutation,
 } from '@/lib/features/settings';
 import logger from '@/lib/logger';
 import AssetsLoadingSkeleton from './loading-skeleton';
@@ -26,11 +27,25 @@ export default function AssetsDialog() {
   const [triggerDownload, { isLoading: isDownloading }] =
     useDownloadAssetsMutation();
 
+  const [downloadPhase, setDownloadPhase] = useState<
+    'idle' | 'prepare' | 'download'
+  >('idle');
+  const [partProgress, setPartProgress] = useState({ current: 0, total: 0 });
+
   const assetsMetadata: AssetMetadata | null = data?.data || null;
 
   const archiveAssets = async () => {
+    setDownloadPhase('prepare');
+    setPartProgress({ current: 0, total: 0 });
     try {
-      const { blob, filename } = await triggerDownload().unwrap();
+      const { blob, filename } = await triggerDownload({
+        onProgress: (current, total, phase) => {
+          setDownloadPhase(phase);
+          if (phase === 'download') {
+            setPartProgress({ current, total });
+          }
+        },
+      }).unwrap();
 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -49,15 +64,28 @@ export default function AssetsDialog() {
       });
     } catch (err) {
       logger.error('Failed to archive assets:', err);
+      const errMessage =
+        (err as { data?: { message?: string }; error?: string })?.data
+          ?.message ??
+        (err as { error?: string })?.error ??
+        'Failed to create assets archive';
       toast({
         title: 'Error',
-        description:
-          (err as { data?: { message?: string } })?.data?.message ||
-          'Failed to create assets archive',
+        description: errMessage,
         variant: 'destructive',
       });
+    } finally {
+      setDownloadPhase('idle');
+      setPartProgress({ current: 0, total: 0 });
     }
   };
+
+  const downloadStatusLabel =
+    downloadPhase === 'prepare'
+      ? 'Preparing archive…'
+      : downloadPhase === 'download' && partProgress.total > 0
+        ? `Downloading part ${partProgress.current} of ${partProgress.total}…`
+        : null;
 
   if (isLoading || isFetching) return <AssetsLoadingSkeleton />;
 
@@ -88,18 +116,26 @@ export default function AssetsDialog() {
                 </span>
               </div>
 
-              <Button
-                variant="ghost"
-                onClick={archiveAssets}
-                className="text-portal-primary text-xs hover:underline"
-                disabled={isDownloading}
-              >
-                {isDownloading ? (
-                  <Loader className="h-4 w-4 animate-spin" />
-                ) : (
-                  <LucideDownload className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex flex-col items-end gap-1">
+                {downloadStatusLabel ? (
+                  <span className="text-xs text-gray-500">
+                    {downloadStatusLabel}
+                  </span>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  onClick={archiveAssets}
+                  className="text-portal-primary text-xs hover:underline"
+                  disabled={isDownloading}
+                  aria-busy={isDownloading}
+                >
+                  {isDownloading ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <LucideDownload className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
