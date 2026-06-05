@@ -57,11 +57,12 @@ export const portalApi = baseApi.injectEndpoints({
       DownloadAssetsResponse,
       DownloadAssetsArgs | void
     >({
-      queryFn: async (arg) => {
+      queryFn: async (arg, api) => {
         try {
           const data = await downloadAssetsArchive({
             basePath: '/api/download/assets',
             onProgress: arg?.onProgress,
+            dispatch: api.dispatch,
           });
           return { data };
         } catch (err) {

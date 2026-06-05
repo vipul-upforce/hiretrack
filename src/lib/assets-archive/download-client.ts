@@ -1,3 +1,5 @@
+import { fetchWithReauth } from '@/lib/api/baseApi';
+import type { AppDispatch } from '@/lib/redux/store';
 import { assemblePartBuffers } from './assemble-parts';
 import type { AssetsArchiveManifest } from './types';
 
@@ -6,6 +8,8 @@ export interface DownloadAssetsArchiveOptions {
   basePath?: string;
   onProgress?: (current: number, total: number, phase: 'prepare' | 'download') => void;
   maxPartRetries?: number;
+  /** Redux dispatch — refreshes user state after token renewal during long downloads */
+  dispatch?: AppDispatch;
 }
 
 export interface DownloadAssetsArchiveResult {
@@ -77,15 +81,19 @@ async function fetchPartWithRetry(
   url: string,
   maxRetries: number,
   partIndex: number,
+  dispatch?: AppDispatch,
 ): Promise<ArrayBuffer> {
   let lastError: Error | null = null;
   for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
     try {
-      const response = await fetch(url, {
-        method: 'GET',
-        credentials: 'include',
-        cache: 'no-store',
-      });
+      const response = await fetchWithReauth(
+        url,
+        {
+          method: 'GET',
+          cache: 'no-store',
+        },
+        dispatch,
+      );
       if (!response.ok) {
         throw new Error(await parseErrorMessage(response));
       }
@@ -133,12 +141,16 @@ async function fetchPartWithRetry(
 
 async function downloadMonolithic(
   assetsPath: string,
+  dispatch?: AppDispatch,
 ): Promise<DownloadAssetsArchiveResult> {
-  const response = await fetch(assetsPath, {
-    method: 'GET',
-    credentials: 'include',
-    cache: 'no-store',
-  });
+  const response = await fetchWithReauth(
+    assetsPath,
+    {
+      method: 'GET',
+      cache: 'no-store',
+    },
+    dispatch,
+  );
   if (!response.ok) {
     throw new Error(await parseErrorMessage(response));
   }
@@ -159,6 +171,7 @@ async function downloadChunked(
   manifest: AssetsArchiveManifest,
   onProgress?: DownloadAssetsArchiveOptions['onProgress'],
   maxPartRetries = 3,
+  dispatch?: AppDispatch,
 ): Promise<DownloadAssetsArchiveResult> {
   const normalized = normalizeManifest(manifest);
   const { parts, sessionId, filename, totalBytes, sha256 } = normalized;
@@ -167,7 +180,12 @@ async function downloadChunked(
   for (let i = 0; i < parts; i += 1) {
     onProgress?.(i + 1, parts, 'download');
     const partUrl = `${assetsPath}?part=${i}&sessionId=${encodeURIComponent(sessionId)}`;
-    const partBuffer = await fetchPartWithRetry(partUrl, maxPartRetries, i);
+    const partBuffer = await fetchPartWithRetry(
+      partUrl,
+      maxPartRetries,
+      i,
+      dispatch,
+    );
     partBuffers.push(partBuffer);
   }
 
@@ -193,11 +211,14 @@ export async function downloadAssetsArchive(
 
   options.onProgress?.(0, 1, 'prepare');
 
-  const metaResponse = await fetch(metaPath, {
-    method: 'GET',
-    credentials: 'include',
-    cache: 'no-store',
-  });
+  const metaResponse = await fetchWithReauth(
+    metaPath,
+    {
+      method: 'GET',
+      cache: 'no-store',
+    },
+    options.dispatch,
+  );
 
   if (metaResponse.ok) {
     const manifest: unknown = await metaResponse.json();
@@ -207,10 +228,11 @@ export async function downloadAssetsArchive(
         manifest,
         options.onProgress,
         maxPartRetries,
+        options.dispatch,
       );
     }
   }
 
   options.onProgress?.(1, 1, 'download');
-  return downloadMonolithic(base);
+  return downloadMonolithic(base, options.dispatch);
 }

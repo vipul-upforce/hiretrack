@@ -421,3 +421,75 @@ export const baseApi = createApi({
 export function shouldSkipAuth(url: string, method?: string): boolean {
   return isPublicEndpoint(url, method);
 }
+
+function resolveApiPath(url: string): string {
+  const withoutQuery = url.split('?')[0];
+  if (withoutQuery.startsWith('/api')) {
+    return withoutQuery;
+  }
+  if (withoutQuery.startsWith('http')) {
+    try {
+      return new URL(withoutQuery).pathname;
+    } catch {
+      return withoutQuery;
+    }
+  }
+  return `/api${withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`}`;
+}
+
+/**
+ * Browser fetch with the same 401 → refresh → retry behavior as RTK Query.
+ * Use for long-running flows (chunked downloads) that cannot go through baseQuery.
+ */
+export async function fetchWithReauth(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  dispatch?: AppDispatch,
+): Promise<Response> {
+  const requestUrl =
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : input.url;
+  const method = init?.method?.toUpperCase() ?? 'GET';
+  const apiPath = resolveApiPath(requestUrl);
+  const isPublic = isPublicEndpoint(apiPath, method);
+
+  const requestInit: RequestInit = {
+    ...init,
+    credentials: init?.credentials ?? 'include',
+  };
+
+  let response = await fetch(input, requestInit);
+
+  if (
+    response.status === 401 &&
+    !isPublic &&
+    !apiPath.includes('/auth/refresh')
+  ) {
+    if (isRefreshing && refreshPromise) {
+      try {
+        await refreshPromise;
+        response = await fetch(input, requestInit);
+      } catch {
+        return response;
+      }
+    } else {
+      try {
+        await refreshAccessToken(dispatch);
+        response = await fetch(input, requestInit);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === 'Token refresh timeout'
+        ) {
+          return response;
+        }
+        throw error;
+      }
+    }
+  }
+
+  return response;
+}
