@@ -1,0 +1,473 @@
+/* eslint-disable max-lines */
+import { useEffect, useState } from 'react';
+import { toast } from '@/hooks/use-toast';
+import {
+  useUpdateCandidateMutation,
+  useUpdateCandidateHistoryMutation,
+  useUpdateCandidateRemarkMutation,
+} from '@/lib/features/candidate/candidateApi';
+import { Candidate } from '@/types/candidate';
+import { ICandidateHistory } from '@/lib/models/history';
+import { usePathname } from 'next/navigation';
+import dayjs, { Dayjs } from 'dayjs';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
+
+export const useRemarkHandlers = (
+  localCandidate: Candidate | null,
+  // refetch: () => void,
+  refetchAssignment?: () => void,
+  onUpdate?: (candidate: Candidate) => void,
+  refetchCandidates?: () => void,
+) => {
+  const user = useAppSelector((state) => state.auth.user);
+  const pathname = usePathname();
+  const [updateCandidate] = useUpdateCandidateMutation();
+  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  const [updateCandidateRemark] = useUpdateCandidateRemarkMutation();
+  const [newRemark, setNewRemark] = useState('');
+
+  const [newFollowUp, setNewFollowUp] = useState(
+    localCandidate?.followUp?.note && localCandidate?.followUp?.note.length > 1
+      ? localCandidate?.followUp?.note
+      : '',
+  );
+  const [newFollowUpDate, setNewFollowUpDate] = useState<Dayjs | null>(
+    localCandidate?.followUp?.date &&
+      (localCandidate?.followUp?.date as string).length > 1
+      ? dayjs(localCandidate.followUp.date)
+      : null,
+  );
+  const [remarkRating, setRemarkRating] = useState<number | null>(null);
+  const [remarkRatingHistory, setRemarkRatingHistory] = useState<number | null>(
+    null,
+  );
+  const [isSubRemarkPrivate, setIsSubRemarkPrivate] = useState(true);
+  const [isRemarkSubmitting, setIsRemarkSubmitting] = useState(false);
+  const [isFollowUpSubmitting, setIsFollowUpSubmitting] = useState(false);
+  const [MADFollowup, setMADFollowup] = useState<string | null>(null);
+  useEffect(() => {
+    if (user?.role === 'interviewer') {
+      setIsSubRemarkPrivate(false);
+    }
+  }, [user]);
+
+  const handleAddFollowUp = async () => {
+    if (!newFollowUp.trim() && !newFollowUpDate?.toISOString()) {
+      logger.error('Please provide either a follow-up note or a date. ');
+      return;
+    }
+    // debugger;
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'Please add the follow-up note.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setIsFollowUpSubmitting(true);
+    try {
+      const followUpSeparator = '|||||\n'; // Matches regex separator
+
+      const combinedNote = MADFollowup
+        ? `${newFollowUp.trim()}${followUpSeparator}${MADFollowup}`
+        : newFollowUp.trim();
+
+      const newFollowUpObj = {
+        // note: String(newFollowUp).trim(),
+        note: combinedNote,
+        date: newFollowUpDate?.toISOString() || '',
+        // rating: remarkRating ? Number(remarkRating) : undefined,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+      setMADFollowup(null);
+
+      const newHistoryEntry: ICandidateHistory = {
+        dateTime: new Date().toISOString(),
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user!.id,
+        title: 'Followup Created',
+        note: {
+          description: newFollowUp,
+          date: newFollowUpDate?.toISOString() || '',
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
+      const updateData = {
+        _id: localCandidate?._id,
+        name: localCandidate?.name,
+        followUp: newFollowUpObj,
+      };
+
+      const result = await updateCandidate(updateData).unwrap();
+
+      // Update local state with the result - no need to refetch since we have the updated data
+      if (onUpdate && result) {
+        onUpdate(result);
+      }
+
+      if (localCandidate) {
+        await updateCandidateHistory({
+          candidateId: localCandidate?._id,
+          jobId: localCandidate?.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+      }
+
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      } else if (pathname === '/dashboard/search') {
+        refetchCandidates?.();
+      }
+      // Note: Removed individual candidate refetch calls - we already have the updated result
+      setNewFollowUp('');
+      setNewFollowUpDate(null);
+
+      toast({
+        title: 'Success',
+        description: 'Followup created successfully',
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsFollowUpSubmitting(false);
+    }
+  };
+
+  // Update follow-up state when candidate data changes
+  useEffect(() => {
+    if (
+      localCandidate?.followUp?.note &&
+      localCandidate?.followUp?.note.length > 1
+    ) {
+      setNewFollowUp(localCandidate.followUp.note);
+    } else {
+      // Only clear state when follow-up is removed, don't auto-create
+      setNewFollowUp('');
+    }
+
+    if (
+      localCandidate?.followUp?.date &&
+      (localCandidate?.followUp?.date as string).length > 1
+    ) {
+      setNewFollowUpDate(dayjs(localCandidate.followUp.date));
+    } else {
+      setNewFollowUpDate(null);
+    }
+  }, [localCandidate?.followUp?.note, localCandidate?.followUp?.date]);
+
+  const handleRemarkUpdate = async (
+    id: string,
+    description: string,
+    isPrivate?: boolean,
+  ) => {
+    try {
+      await updateCandidateRemark({
+        id,
+        isPrivate,
+        description,
+        rating: remarkRatingHistory,
+      }).unwrap();
+
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Note: updateCandidateRemark doesn't return the full candidate, so we can't use onUpdate
+      // The remark update is reflected via RTK Query cache invalidation
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      }
+      // Note: Removed individual candidate refetch - RTK Query cache will handle updates
+
+      toast({
+        title: 'Success',
+        description: 'Remark status updated successfully',
+      });
+    } catch (e) {
+      logger.error('Failed to update remark:', e);
+      toast({
+        title: 'Error',
+        description: 'Failed to update remark. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAddRemark = async (
+    selectedMentionUserIds?: string[],
+    removeFollowUp?: boolean,
+  ) => {
+    if (!newRemark.trim() || !user?.id) {
+      toast({
+        title: 'Error',
+        description: 'Please add remarks',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsRemarkSubmitting(true);
+    if (removeFollowUp) setIsFollowUpSubmitting(true);
+
+    try {
+      const newRemarkObj = {
+        description: String(newRemark).trim(),
+        date: new Date().toISOString(),
+        rating: remarkRating ? Number(remarkRating) : undefined,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+      const newRemarkHistoryObj = {
+        isPrivate: isSubRemarkPrivate,
+        description: String(newRemark).trim(),
+        date: new Date().toISOString(),
+        rating: remarkRatingHistory ? Number(remarkRatingHistory) : undefined,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+        selectedMentionUserIds: selectedMentionUserIds || [], // Store selected mention user IDs
+      };
+      const newHistoryEntry: ICandidateHistory = {
+        dateTime: new Date().toISOString(),
+        remark: newRemarkHistoryObj,
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user!.id,
+        title: null,
+        note: {
+          description: '',
+          date: '',
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
+
+      const updateData: Partial<Candidate> = {
+        _id: localCandidate?._id,
+        name: localCandidate?.name,
+        jobId: localCandidate?.jobId,
+        remarks: [...(localCandidate?.remarks || []), newRemarkObj],
+      };
+
+      if (removeFollowUp && user) {
+        updateData.followUp = {
+          date: null,
+          note: null,
+          userId: {
+            _id: user.id,
+            name: user.name,
+            email: user.email,
+          },
+        };
+      }
+
+      if (localCandidate) {
+        // Add Remark History
+        await updateCandidateHistory({
+          candidateId: localCandidate?._id,
+          jobId: localCandidate?.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+
+        // Add Followup Removed History if needed
+        if (removeFollowUp) {
+          const removedFUHistoryEntry: ICandidateHistory = {
+            dateTime: new Date().toISOString(),
+            currentInterviewer: null,
+            previousInterviewer: null,
+            assignmentBy: user!.id,
+            title: 'Followup Removed',
+            note: {
+              description: '',
+              date: '',
+              rating: 0,
+              userId: null,
+            },
+            attachments: [],
+          };
+          await updateCandidateHistory({
+            candidateId: localCandidate?._id,
+            jobId: localCandidate?.jobId,
+            newEntry: removedFUHistoryEntry,
+          }).unwrap();
+        }
+      }
+
+      const result = await updateCandidate(updateData).unwrap();
+
+      // Update local state with the result - no need to refetch since we have the updated data
+      if (onUpdate && result) {
+        onUpdate(result);
+      }
+
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      } else if (pathname === '/dashboard/search') {
+        refetchCandidates?.();
+      }
+      // Note: Removed individual candidate refetch calls - we already have the updated result
+      setNewRemark('');
+      setRemarkRating(null);
+      setRemarkRatingHistory(null);
+
+      if (removeFollowUp) {
+        setNewFollowUp('');
+        setNewFollowUpDate(null);
+      }
+
+      toast({
+        title: 'Success',
+        description: removeFollowUp
+          ? 'Remark added and followup removed successfully'
+          : 'Remark added successfully',
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsRemarkSubmitting(false);
+      setIsFollowUpSubmitting(false);
+    }
+  };
+  const handleRemoveFollowUp = async () => {
+    setIsFollowUpSubmitting(true);
+    if (!localCandidate) {
+      toast({
+        title: 'Error',
+        description: 'Candidate not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'User not found',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const newFollowUpObj = {
+        date: null,
+        note: null,
+        userId: {
+          _id: user.id,
+          name: user.name,
+          email: user.email,
+        },
+      };
+
+      const newHistoryEntry: ICandidateHistory = {
+        dateTime: new Date().toISOString(),
+        currentInterviewer: null,
+        previousInterviewer: null,
+        assignmentBy: user!.id,
+        title: 'Followup Removed',
+        note: {
+          description: '',
+          date: '',
+          rating: 0,
+          userId: null,
+        },
+        attachments: [],
+      };
+      const updateData = {
+        _id: localCandidate._id,
+        name: localCandidate.name,
+        followUp: newFollowUpObj,
+      };
+
+      const result = await updateCandidate(updateData).unwrap();
+
+      // Update local state with the result - no need to refetch since we have the updated data
+      if (onUpdate && result) {
+        onUpdate(result);
+      }
+
+      if (localCandidate) {
+        await updateCandidateHistory({
+          candidateId: localCandidate?._id,
+          jobId: localCandidate?.jobId,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+      }
+
+      // Only refetch assignments list for dashboard (to update the list view)
+      // Don't refetch individual candidate since we already have the updated result
+      if (pathname === '/dashboard') {
+        refetchAssignment?.();
+      } else if (pathname === '/dashboard/search') {
+        refetchCandidates?.();
+      }
+      // Note: Removed individual candidate refetch calls - we already have the updated result
+      setNewFollowUp('');
+      setNewFollowUpDate(null);
+
+      toast({
+        title: 'Success',
+        description: 'Followup removed successfully',
+      });
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsFollowUpSubmitting(false);
+    }
+  };
+
+  return {
+    newRemark,
+    setNewRemark,
+    remarkRating,
+    setRemarkRating,
+    remarkRatingHistory,
+    setRemarkRatingHistory,
+    isSubRemarkPrivate,
+    setIsSubRemarkPrivate,
+    handleRemarkUpdate,
+    isRemarkSubmitting,
+    handleAddRemark,
+    handleAddFollowUp,
+    setNewFollowUp,
+    setNewFollowUpDate,
+    newFollowUp,
+    newFollowUpDate,
+    MADFollowup,
+    setMADFollowup,
+    handleRemoveFollowUp,
+    isFollowUpSubmitting,
+  };
+};

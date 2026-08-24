@@ -1,0 +1,292 @@
+'use client';
+
+import { useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
+import {
+  Upload,
+  File as FileIcon,
+  Pencil,
+  X,
+  Paperclip,
+  AlertCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { RenameFileDialog } from './rename-file-dialog';
+
+interface FileUploadProps {
+  onFileSelect: (files: File[]) => void;
+  colorScheme?: 'blue' | 'green';
+  isResume?: boolean;
+  dropZone?: boolean;
+  onExistingFilesChange?: (
+    files: Array<{
+      id: string;
+      name: string;
+      url: string;
+      type: string;
+      size: number;
+    }>,
+  ) => void;
+  isEdit?: boolean;
+  accept: Record<string, string[]>;
+  maxFiles?: number;
+  files: File[];
+  setter: (files: File[]) => void;
+  existingFiles?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>;
+  id?: string;
+  maxFileSizeLabel?: string;
+  errorMessage?: string;
+}
+
+interface RenameFileState {
+  file: File | null;
+  isExisting: boolean;
+  existingFile?: {
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  };
+}
+
+export const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
+};
+
+export function FileUpload({
+  onFileSelect,
+  dropZone = false,
+  accept,
+  maxFiles = 1,
+  files,
+  existingFiles = [],
+  id = '',
+  setter,
+  isEdit = true,
+  colorScheme = 'blue',
+  isResume = false,
+  maxFileSizeLabel = '3MB',
+  errorMessage,
+}: FileUploadProps) {
+  const [renameFile, setRenameFile] = useState<RenameFileState>({
+    file: null,
+    isExisting: false,
+  });
+
+  const getColorClasses = (scheme: 'blue' | 'green') => {
+    switch (scheme) {
+      case 'green':
+        return {
+          bg: 'bg-green-50 dark:bg-green-900/20',
+          border: 'border-green-200 dark:border-green-800',
+          icon: 'text-green-600 dark:text-green-400',
+          text: 'text-green-700 dark:text-green-300',
+          hoverBg: 'hover:bg-green-100 dark:hover:bg-green-800/50',
+        };
+      case 'blue':
+      default:
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-900/20',
+          border: 'border-blue-200 dark:border-blue-800',
+          icon: 'text-blue-600 dark:text-blue-400',
+          text: 'text-blue-700 dark:text-blue-300',
+          hoverBg: 'hover:bg-blue-100 dark:hover:bg-blue-800/50',
+        };
+    }
+  };
+
+  const colors = getColorClasses(colorScheme);
+
+  const handleRename = (newName: string) => {
+    if (renameFile.file) {
+      if (renameFile.file instanceof File) {
+        const newFile = new File([renameFile.file], newName, {
+          type: renameFile.file.type,
+        });
+        const updatedFiles = files.map((f) =>
+          f === renameFile.file ? newFile : f,
+        );
+        setter?.(updatedFiles);
+      } else {
+        const updatedFiles = files.map((f) =>
+          f === renameFile.file ? { ...f, name: newName } : f,
+        );
+        setter?.(updatedFiles);
+      }
+    }
+  };
+
+  const handleRemoveFile = (fileNameToRemove: string) => {
+    const updatedFiles = files.filter(
+      (file) => file?.name !== fileNameToRemove,
+    );
+    setter(updatedFiles);
+  };
+
+  const onDrop = useCallback(
+    (acceptedFiles: File[]) => {
+      onFileSelect(acceptedFiles);
+    },
+    [onFileSelect],
+  );
+
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDrop,
+    accept,
+    noClick: true,
+    noKeyboard: true,
+  });
+
+  return (
+    <div className="space-y-4" id={id}>
+      {/* Always render the hidden input for both modes */}
+      <input {...getInputProps()} id="file-upload-input" className="hidden" />
+
+      {dropZone ? (
+        <div
+          {...getRootProps()}
+          className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center ${
+            isDragActive ? 'bg-primary/10 border-primary' : 'border-border'
+          }`}
+        >
+          <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isDragActive
+              ? 'Drop the files here...'
+              : "Drag 'n' drop files here, or click to select files"}
+          </p>
+
+          <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {maxFiles > 1 && <p>Maximum {maxFiles} files allowed</p>}
+            <p>File size should be less than {maxFileSizeLabel}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            onClick={open}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Paperclip className="h-4 w-4" />
+            {isResume ? 'Resume' : 'Add Documents'}
+          </Button>
+
+          {/* Dynamic Helper Text */}
+          <div className="flex items-center gap-2 space-y-1 text-sm text-muted-foreground">
+            {maxFiles > 1 && <p className="mt-1">Max {maxFiles} files</p>}
+            <p className="m-0">{maxFileSizeLabel} per file</p>
+          </div>
+        </div>
+      )}
+
+      {/* File Previews */}
+      <div className="space-y-2 overflow-y-auto">
+        {existingFiles.map((file) => (
+          <div
+            key={file.id}
+            className="flex items-center justify-between break-all rounded border p-2"
+          >
+            <div className="flex items-center space-x-2">
+              <FileIcon className="h-4 w-4" />
+              <span className="max-w-[350px] break-words text-sm">
+                {file.name}
+              </span>
+              <span className="text-xs text-gray-500">
+                ({formatFileSize(file.size)})
+              </span>
+              <button
+                type="button"
+                className="rounded-md p-2 hover:bg-muted hover:text-red-500"
+                onClick={() => handleRemoveFile(file.name)}
+              >
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </div>
+            <button
+              type="button"
+              className="rounded-md p-2 hover:bg-muted"
+              onClick={() =>
+                setRenameFile({
+                  file: null,
+                  isExisting: true,
+                  existingFile: file,
+                })
+              }
+            >
+              <Pencil className="h-4 w-4 text-muted-foreground" />
+            </button>
+          </div>
+        ))}
+
+        {/* Error Message Display */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* New Files List */}
+        {files.map((file) => (
+          <div
+            key={file.name}
+            className={`flex items-center justify-between p-3 ${colors.bg} ${colors.border} rounded-lg`}
+          >
+            <div className="flex items-center gap-2">
+              <FileIcon className={`h-4 w-4 ${colors.icon}`} />
+              <span className={`text-sm font-medium ${colors.text}`}>
+                {file.name}
+              </span>
+              <span className={`text-xs ${colors.icon}`}>
+                ({formatFileSize(file.size)})
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              {isEdit && (
+                <button
+                  type="button"
+                  className={`p-2 ${colors.hoverBg} rounded-md text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300`}
+                  onClick={() =>
+                    setRenameFile({
+                      file,
+                      isExisting: false,
+                    })
+                  }
+                >
+                  <Pencil className="h-4" />
+                </button>
+              )}
+              <button
+                type="button"
+                className="rounded-md p-2 text-red-600 hover:bg-red-100 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/50 dark:hover:text-red-300"
+                onClick={() => handleRemoveFile(file.name)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <RenameFileDialog
+        isOpen={!!renameFile.file || !!renameFile.existingFile}
+        onClose={() => setRenameFile({ file: null, isExisting: false })}
+        fileName={renameFile.file?.name || renameFile.existingFile?.name || ''}
+        onRename={handleRename}
+      />
+    </div>
+  );
+}

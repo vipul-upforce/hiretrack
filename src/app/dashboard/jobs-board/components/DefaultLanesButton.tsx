@@ -1,0 +1,460 @@
+'use client';
+
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DroppableProvided,
+  DraggableStateSnapshot,
+  DroppableStateSnapshot,
+  DraggableProvided,
+} from '@hello-pangea/dnd';
+import {
+  Plus,
+  X,
+  Edit2,
+  GripVertical,
+  AlertCircle,
+  Save,
+  Settings,
+} from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useDefaultLanes } from '@/app/dashboard/jobs-board/hooks/useDefaultLanes';
+
+interface DefaultLanesButtonProps {
+  userRole?: string;
+}
+
+function DefaultLanesButton({ userRole }: DefaultLanesButtonProps) {
+  const {
+    isOpen,
+    setIsOpen,
+    defaultLanes,
+    saving,
+    portalContainer,
+    editingLane,
+    editValue,
+    setEditValue,
+    newLaneName,
+    setNewLaneName,
+    showAddForm,
+    setShowAddForm,
+    deleteConfirm,
+    setDeleteConfirm,
+    isLoading,
+    canManage,
+    handleDragEnd,
+    startEdit,
+    saveEdit,
+    cancelEdit,
+    confirmDelete,
+    saveDefaultLanes,
+    addNewLane,
+    deleteLane,
+    isRestricted,
+  } = useDefaultLanes({ userRole });
+
+  if (!canManage) {
+    return null; // Don't show button if user doesn't have permission
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        onClick={() => setIsOpen(true)}
+        className="flex items-center gap-2"
+      >
+        <Settings />
+        Default Lanes
+      </Button>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent
+          className="max-h-[95vh] max-w-4xl overflow-y-auto overflow-x-visible"
+          onEscapeKeyDown={(e) => {
+            // Prevent dialog from closing if we're editing
+            if (editingLane || showAddForm) {
+              e.preventDefault();
+            }
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Manage Default Lanes
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Configure the default workflow lanes that will be applied to new
+              jobs. You can reorder, rename, and add lanes, but some system
+              lanes cannot be modified.
+            </p>
+          </DialogHeader>
+
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+            </div>
+          ) : (
+            <TooltipProvider delayDuration={0}>
+              <div className="h-[500px] space-y-4 overflow-y-auto">
+                {/* Lanes List */}
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="default-lanes">
+                    {(
+                      provided: DroppableProvided,
+                      snapshot: DroppableStateSnapshot,
+                    ) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className={`space-y-2 px-2 ${
+                          snapshot.isDraggingOver
+                            ? 'max-h-[300px] overflow-y-scroll rounded-lg bg-muted/20 p-2'
+                            : `${showAddForm ? 'max-h-[282px]' : 'max-h-[305px]'} overflow-y-scroll`
+                        }`}
+                      >
+                        {defaultLanes.map((lane, index) => (
+                          <Draggable
+                            key={lane}
+                            draggableId={lane}
+                            index={index}
+                          >
+                            {(
+                              draggableProvided: DraggableProvided,
+                              draggableSnapshot: DraggableStateSnapshot,
+                            ) => {
+                              const draggingComponent = (
+                                <div
+                                  ref={draggableProvided.innerRef}
+                                  {...draggableProvided.draggableProps}
+                                  style={{
+                                    ...draggableProvided.draggableProps.style,
+                                    ...(draggableSnapshot.isDragging && {
+                                      position: 'fixed',
+                                      zIndex: 9999,
+                                      pointerEvents: 'none',
+                                      transform:
+                                        draggableProvided.draggableProps.style
+                                          ?.transform || 'none',
+                                    }),
+                                  }}
+                                >
+                                  <div
+                                    className={`rounded-none border bg-card transition-all ${
+                                      draggableSnapshot.isDragging
+                                        ? 'scale-105 border-2 border-primary bg-white opacity-95 shadow-2xl dark:bg-black'
+                                        : 'shadow-sm hover:shadow-md'
+                                    }`}
+                                    style={{
+                                      ...(draggableSnapshot.isDragging && {
+                                        width: '320px',
+                                        minWidth: '320px',
+                                      }),
+                                    }}
+                                  >
+                                    <div className="p-3">
+                                      <div className="flex items-center gap-2">
+                                        <div
+                                          {...draggableProvided.dragHandleProps}
+                                          className="cursor-grab rounded p-1 text-muted-foreground hover:bg-muted/50 hover:text-foreground active:cursor-grabbing"
+                                        >
+                                          <GripVertical className="h-4 w-4" />
+                                        </div>
+
+                                        <div className="flex-1">
+                                          {editingLane === lane ? (
+                                            <div className="flex items-center gap-2">
+                                              <Input
+                                                value={editValue}
+                                                onChange={(e) =>
+                                                  setEditValue(e.target.value)
+                                                }
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    saveEdit();
+                                                  }
+                                                  if (e.key === 'Escape') {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    cancelEdit();
+                                                  }
+                                                }}
+                                                className="h-8"
+                                                autoFocus
+                                              />
+                                              <Button
+                                                size="sm"
+                                                onClick={saveEdit}
+                                                className="h-8 w-8 p-0"
+                                                variant="primary"
+                                              >
+                                                <Save className="h-3 w-3" />
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={cancelEdit}
+                                                className="h-8 w-8 p-0"
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-2">
+                                              <span
+                                                className={`select-none font-medium capitalize text-foreground ${
+                                                  !isRestricted(lane, 'edit')
+                                                    ? 'cursor-pointer'
+                                                    : 'cursor-default'
+                                                }`}
+                                                onDoubleClick={() =>
+                                                  !isRestricted(lane, 'edit') &&
+                                                  startEdit(lane)
+                                                }
+                                                title={
+                                                  !isRestricted(lane, 'edit')
+                                                    ? 'Double-click to edit'
+                                                    : undefined
+                                                }
+                                              >
+                                                {lane}
+                                              </span>
+                                              {isRestricted(lane, 'edit') && (
+                                                <Tooltip>
+                                                  <TooltipTrigger asChild>
+                                                    <AlertCircle className="h-3 w-3 cursor-help text-muted-foreground" />
+                                                  </TooltipTrigger>
+                                                  <TooltipContent>
+                                                    <p>
+                                                      This column is required
+                                                      and cannot be modified
+                                                    </p>
+                                                  </TooltipContent>
+                                                </Tooltip>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                          {!isRestricted(lane, 'edit') && (
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => startEdit(lane)}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              <Edit2 className="h-3 w-3" />
+                                            </Button>
+                                          )}
+                                          {!isRestricted(lane, 'delete') && (
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() =>
+                                                confirmDelete(lane)
+                                              }
+                                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+
+                              // Use portal for dragging items to ensure visibility
+                              if (
+                                draggableSnapshot.isDragging &&
+                                portalContainer
+                              ) {
+                                return createPortal(
+                                  draggingComponent,
+                                  portalContainer,
+                                );
+                              }
+
+                              return draggingComponent;
+                            }}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+
+                {/* Add New Lane */}
+                {showAddForm ? (
+                  <div className="rounded-none border bg-card">
+                    <div className="p-3">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="newLane" className="sr-only">
+                          New Lane Name
+                        </Label>
+                        <Input
+                          id="newLane"
+                          placeholder="Enter lane name"
+                          value={newLaneName}
+                          onChange={(e) => setNewLaneName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addNewLane();
+                            }
+                            if (e.key === 'Escape') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowAddForm(false);
+                              setNewLaneName('');
+                            }
+                          }}
+                          className="flex-1"
+                          autoFocus
+                        />
+                        <Button
+                          onClick={addNewLane}
+                          size="sm"
+                          variant="primary"
+                        >
+                          Add
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddForm(false);
+                            setNewLaneName('');
+                          }}
+                          size="sm"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex w-full items-center justify-center">
+                    <Button
+                      variant="primary"
+                      onClick={() => setShowAddForm(true)}
+                      className="w-[96%] border-dashed"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New Lane
+                    </Button>
+                  </div>
+                )}
+
+                {/* Info */}
+                <div className="rounded-none bg-muted/50 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                    <div className="text-sm text-muted-foreground">
+                      <p className="mb-1 font-medium">Important Notes:</p>
+                      <ul className="space-y-1 text-xs">
+                        <li>
+                          These default lanes will be applied to all new jobs
+                        </li>
+                        <li>
+                          System lanes (Applied, Accepted, Rejected) cannot be
+                          modified
+                        </li>
+                        <li>
+                          Existing jobs will continue using their current lanes
+                        </li>
+                        <li>
+                          Individual jobs can override these defaults if needed
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TooltipProvider>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={saveDefaultLanes}
+              disabled={saving || isLoading}
+              variant="primary"
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteConfirm.show}
+        onOpenChange={(open) =>
+          setDeleteConfirm((prev) => ({ ...prev, show: open }))
+        }
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Lane</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the &quot;
+              {deleteConfirm.lane}
+              &quot; lane? This will remove it from the default lanes for new
+              jobs.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={deleteLane}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+export default DefaultLanesButton;

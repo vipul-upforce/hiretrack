@@ -1,0 +1,178 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, {
+  Candidate,
+  JobLaneConfig,
+  Job,
+} from '@/lib/mongodb';
+import { filterChecklistByRole } from '@/lib/utils/checklistVisibility';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { UserRole } from '@/lib/models/JobLaneConfig';
+import { logger } from '@/lib/logger/logger.server';
+
+// POST - Validate if candidate can move to a new lane based on checklist requirements
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  try {
+    const [userData, { id }, body] = await Promise.all([
+      getAuthenticatedUser(req),
+      params,
+      req.json(),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json(
+        { message: 'Unauthorised Access' },
+        { status: 401 },
+      );
+    }
+
+    // Check if models are initialized
+    if (!Candidate || !Job || !JobLaneConfig) {
+      logger.error({ url: req.url }, 'Database models not initialized');
+      return NextResponse.json(
+        { error: 'Database models not initialized' },
+        { status: 500 },
+      );
+    }
+
+    const { currentLane, targetLane, movementType } = body;
+
+    if (!currentLane || !targetLane || !movementType) {
+      return NextResponse.json(
+        { error: 'Current lane, target lane, and movement type are required' },
+        { status: 400 },
+      );
+    }
+
+    // Get candidate
+    const candidate = await Candidate!
+      .findById(id)
+      .select('_id jobId checklistData')
+      .lean()
+      .exec();
+    if (!candidate) {
+      return NextResponse.json(
+        { error: 'Candidate not found' },
+        { status: 404 },
+      );
+    }
+
+    // Get job configuration
+    const job = await Job!.findById(candidate.jobId);
+    if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    }
+
+    // Get job lane configuration
+    const laneConfig = await JobLaneConfig!.findOne({ jobId: job._id });
+    if (!laneConfig) {
+      // No checklists configured, allow movement
+      return NextResponse.json({
+        success: true,
+        canMove: true,
+        requiresChecklist: false,
+      });
+    }
+
+    // Determine which checklist to check based on movement type
+    let checklistToValidate = null;
+    let laneToCheck = null;
+
+    if (movementType === 'outgoing') {
+      // Moving out of current lane - check outgoing checklist
+      laneToCheck = laneConfig.laneConfigs.find(
+        (lc) => lc.laneId === currentLane,
+      );
+      if (laneToCheck?.outgoingChecklist) {
+        checklistToValidate = laneToCheck.outgoingChecklist;
+      }
+    } else {
+      // Moving into target lane - check incoming checklist
+      laneToCheck = laneConfig.laneConfigs.find(
+        (lc) => lc.laneId === targetLane,
+      );
+      if (laneToCheck?.incomingChecklist) {
+        checklistToValidate = laneToCheck.incomingChecklist;
+      }
+    }
+
+    // If no checklist for this movement, allow
+    if (!checklistToValidate) {
+      return NextResponse.json({
+        success: true,
+        canMove: true,
+        requiresChecklist: false,
+      });
+    }
+    const userRole = userData?.role as UserRole;
+    const filteredChecklist = filterChecklistByRole(
+      checklistToValidate,
+      userRole,
+      'form',
+    );
+
+    // If no fields are visible to this user, skip checklist entirely
+    if (!filteredChecklist) {
+      return NextResponse.json({
+        success: true,
+        canMove: true,
+        requiresChecklist: false,
+        message: 'No checklist fields visible to current user role',
+      });
+    }
+
+    // Check if checklist is mandatory
+    if (!checklistToValidate.isMandatory) {
+      // Optional checklist - return info but allow movement
+      return NextResponse.json({
+        success: true,
+        canMove: true,
+        requiresChecklist: true,
+        checklist: filteredChecklist,
+        isMandatory: false,
+      });
+    }
+
+    // For mandatory checklist, check if already completed
+    const candidateChecklistData =
+      (candidate.checklistData &&
+        candidate.checklistData[laneToCheck!.laneId]) ||
+      {};
+    // const candidateChecklistData = candidate.checklistData?.get?.(laneToCheck.laneId);
+    const checklistData =
+      movementType === 'outgoing'
+        ? candidateChecklistData?.outgoing
+        : candidateChecklistData?.incoming;
+
+    if (checklistData && checklistData.checklistId === checklistToValidate.id) {
+      // Checklist already completed
+      return NextResponse.json({
+        success: true,
+        canMove: true,
+        requiresChecklist: false,
+        checklistCompleted: true,
+      });
+    }
+
+    // Mandatory checklist not completed - block movement
+    return NextResponse.json({
+      success: true,
+      canMove: false,
+      requiresChecklist: true,
+      checklist: filteredChecklist,
+      isMandatory: true,
+      message: 'This checklist must be completed before moving the candidate',
+    });
+  } catch (error) {
+    logger.error({ error }, 'Error validating checklist');
+    return NextResponse.json(
+      {
+        error: 'Failed to validate checklist',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 },
+    );
+  }
+}

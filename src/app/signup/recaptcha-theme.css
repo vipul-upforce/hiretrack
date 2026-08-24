@@ -1,0 +1,98 @@
+/* Custom reCAPTCHA Theme Styling */
+
+/* Dark theme styles */
+.dark .g-recaptcha {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+.dark .g-recaptcha iframe {
+    background: transparent !important;
+}
+
+/* Light theme styles */
+.light .g-recaptcha {
+    filter: none;
+}
+
+/* Custom container styling */
+.recaptcha-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+    background-color: hsl(var(--muted) / 0.1);
+    border: 1px solid hsl(var(--border));
+}
+
+/* Dark theme container */
+.dark .recaptcha-container {
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+}
+
+/* Light theme container */
+.light .recaptcha-container {
+    background-color: hsl(var(--muted) / 0.1);
+    border: 1px solid hsl(var(--border));
+}
+
+/* Hover effects */
+.recaptcha-container:hover {
+    border-color: hsl(var(--primary));
+    background-color: hsl(var(--muted) / 0.2);
+}
+
+.dark .recaptcha-container:hover {
+    background-color: hsl(var(--muted) / 0.8);
+}
+
+/* Focus styles */
+.recaptcha-container:focus-within {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+}
+
+/* Additional reCAPTCHA styling for better theme integration */
+.g-recaptcha {
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+/* Ensure reCAPTCHA iframe respects theme */
+.g-recaptcha iframe {
+    border-radius: 0.25rem;
+}
+
+/* Dark theme specific reCAPTCHA adjustments */
+.dark .g-recaptcha {
+    background: transparent;
+}
+
+/* Light theme specific reCAPTCHA adjustments */
+.light .g-recaptcha {
+    background: transparent;
+}
+
+/* Enhanced reCAPTCHA theme styling */
+.dark .g-recaptcha>div {
+    background-color: hsl(var(--muted)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+}
+
+.light .g-recaptcha>div {
+    background-color: hsl(var(--muted) / 0.1) !important;
+    border: 1px solid hsl(var(--border)) !important;
+}
+
+/* reCAPTCHA checkbox styling */
+.dark .g-recaptcha .recaptcha-checkbox {
+    background-color: hsl(var(--muted)) !important;
+    border-color: hsl(var(--border)) !important;
+}
+
+.light .g-recaptcha .recaptcha-checkbox {
+    background-color: hsl(var(--background)) !important;
+    border-color: hsl(var(--border)) !important;
+}

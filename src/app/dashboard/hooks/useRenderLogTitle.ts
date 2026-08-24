@@ -1,0 +1,88 @@
+'use client';
+
+import { useCallback } from 'react';
+import { LogEntry } from '../settings/logs/server/types';
+import { isCvBatchUploadHistoryTitle } from '@/lib/cv-upload/history-titles';
+
+/**
+ * Hook to render a log title string
+ * for candidate/job activity logs.
+ */
+export function useRenderLogTitle() {
+  const renderLogTitle = useCallback((log: LogEntry): string => {
+    const noteDescription =
+      typeof log?.note?.description === 'string' ? log.note.description : '';
+
+    if (
+      (log.title !== '' || !log.title) &&
+      log.title !== 'Assigned to Job' &&
+      !log.title?.includes('Followup') &&
+      !log.title?.startsWith('Direct Email') &&
+      !log.title?.startsWith('Email sent: ') &&
+      !noteDescription.startsWith('Email sent')
+    ) {
+      // CASE 1: Assigned / Reassigned
+      if (
+        Array.isArray(log.currentInterviewer) &&
+        log.currentInterviewer.length > 0
+      ) {
+        if (
+          Array.isArray(log.previousInterviewer) &&
+          log.previousInterviewer.length > 0
+        ) {
+          return `${log.previousInterviewer[0].name} → ${log.currentInterviewer[0].name}`;
+        }
+        return `Assigned to ${log.currentInterviewer[0].name}`;
+      }
+
+      // CASE 2: Remark Added
+      if (log.remark && log.remark.description) {
+        return log.title || 'Remark Added';
+      }
+
+      // CASE 3: Candidate Added
+      if (log.title === 'Candidate Added' && log.assignmentBy?.length > 0) {
+        return `${log.candidateData?.name || 'Candidate'} was added by ${
+          log.assignmentBy[0].name || 'someone'
+        }`;
+      }
+
+      // CASE 4: Self Applied
+      if (log.title === 'Self Applied') {
+        return `${log.candidateData?.name || 'Candidate'} applied from portal`;
+      }
+
+      // CASE 5: Updated
+      if (log.title?.includes('Updated')) {
+        return log.title;
+      }
+
+      if (isCvBatchUploadHistoryTitle(log.title)) {
+        return `${log.candidateData?.name || 'Candidate'} was added from CV Batch Upload`;
+      }
+
+      // CASE 6: Archived / Unarchived
+      if (log.title === 'Archived') {
+        return `${log.candidateData?.name || 'Candidate'} was Archived`;
+      }
+      if (log.title === 'Unarchived') {
+        return `${log.candidateData?.name || 'Candidate'} was Unarchived`;
+      }
+
+      // CASE 7: Unassigned
+      if (
+        Array.isArray(log.previousInterviewer) &&
+        log.previousInterviewer.length > 0
+      ) {
+        return `Unassigned from ${log.previousInterviewer[0].name}`;
+      }
+
+      // Fallback
+      return log.title || '—';
+    }
+
+    return log.title || '—';
+  }, []);
+
+  return { renderLogTitle };
+}

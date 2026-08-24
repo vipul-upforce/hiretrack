@@ -1,0 +1,814 @@
+import { IEmailTemplate } from '@/app/dashboard/settings/components/types';
+import { EvaluationCustomFieldSelection } from '@/lib/evaluation/custom-field-context';
+import type { IBulkCvAi } from '@/lib/types/bulk-cv-ai';
+import { Schema, Document } from 'mongoose';
+
+/* eslint-disable max-lines */
+
+const fileMetaSchema = new Schema(
+  {
+    id: { type: String, required: true },
+    name: { type: String, required: true },
+    url: { type: String, required: true },
+    type: { type: String, default: null },
+    size: { type: Number, required: true },
+  },
+  { _id: false, strict: true },
+);
+
+const templateSchema = new Schema(
+  {
+    templateId: { type: String, required: true },
+    templateName: { type: String, required: true },
+    subject: { type: String, required: true },
+    html: { type: String, required: true },
+  },
+  { _id: false },
+);
+
+const teamsReminderTemplateSchema = new Schema(
+  {
+    templateId: { type: String, required: true },
+    templateName: { type: String, required: true },
+    eventType: {
+      type: String,
+      required: true,
+      enum: ['followup.reminder', 'assignment.reminder'],
+    },
+    content: { type: String, required: true },
+    variables: {
+      type: [String],
+      default: [],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  { _id: false },
+);
+
+const settingsSchema = new Schema({
+  organizationId: { type: String, required: true },
+  multipleOrg: { type: Boolean, default: false, required: true }, // Fixed typo: "requred" -> "required"
+  fileStorage: {
+    storageType: { type: String, default: '' },
+    cloudinaryCloudName: { type: String, default: '' },
+    cloudinaryApiSecret: { type: String, default: '' },
+    cloudinaryApiKey: { type: String, default: '' },
+    awsRegion: { type: String, default: '' },
+    awsAccessKeyId: { type: String, default: '' },
+    awsSecretAccessKey: { type: String, default: '' },
+    awsBucketName: { type: String, default: '' },
+  },
+  mailConfig: {
+    mailProvider: { type: String, default: '' },
+    smtp_host: { type: String, default: '' },
+    smtp_port: { type: String, default: '' },
+    smtp_user: { type: String, default: '' },
+    smtp_password: { type: String, default: '' },
+    smtp_from: { type: String, default: '' },
+    resend_api_key: { type: String, default: '' },
+    resend_from: { type: String, default: '' },
+    resend_reply_to: { type: String, default: '' },
+    brevo_api_key: { type: String, default: '' },
+    brevo_from: { type: String, default: '' },
+    brevo_reply_to: { type: String, default: '' },
+  },
+  portalConfigs: {
+    portalLogo: {
+      type: fileMetaSchema,
+      default: null,
+    },
+    portalLogoDark: {
+      type: fileMetaSchema,
+      default: null,
+    },
+    portalFavicon: {
+      type: fileMetaSchema,
+      default: null,
+    },
+    portalHeader: {
+      type: fileMetaSchema,
+      default: null,
+    },
+    portalFooter: {
+      type: fileMetaSchema,
+      default: null,
+    },
+    portalName: {
+      type: String,
+      default: '',
+    },
+    primaryColor: {
+      type: String,
+      default: '#6366f1',
+    },
+    secondaryColor: {
+      type: String,
+      default: '#8b5cf6',
+    },
+  },
+  aiProviders: {
+    activeProvider: {
+      type: String,
+      enum: ['gemini', 'openai', 'anthropic', 'perplexity'],
+      default: 'gemini',
+    },
+    gemini: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'gemini-1.5-flash' },
+      customModel: { type: String, default: '' },
+    },
+    openai: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'gpt-4o-mini' },
+      customModel: { type: String, default: '' },
+    },
+    anthropic: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'claude-3-5-sonnet-20241022' },
+      customModel: { type: String, default: '' },
+    },
+    perplexity: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'sonar-pro' },
+      customModel: { type: String, default: '' },
+    },
+  },
+  /** Bulk CV parsing providers (separate from main AI Providers evaluation). */
+  bulkCvAi: {
+    cvUploadPool: {
+      type: String,
+      enum: ['bulk', 'premium'],
+      default: 'bulk',
+    },
+    doclingParseUrl: { type: String, default: '' },
+    groq: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'llama-3.1-8b-instant' },
+      customModel: { type: String, default: '' },
+    },
+    gemini: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'gemini-1.5-flash' },
+      customModel: { type: String, default: '' },
+    },
+    deepseek: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'deepseek-chat' },
+      customModel: { type: String, default: '' },
+    },
+    openrouter: {
+      api_key: { type: String, default: '' },
+      model: {
+        type: String,
+        default: 'meta-llama/llama-3.1-8b-instruct:free',
+      },
+      customModel: { type: String, default: '' },
+    },
+    cerebras: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'llama3.1-8b' },
+      customModel: { type: String, default: '' },
+    },
+    mistral: {
+      api_key: { type: String, default: '' },
+      model: { type: String, default: 'mistral-small-latest' },
+      customModel: { type: String, default: '' },
+    },
+  },
+  timeZone: {
+    name: {
+      type: String,
+    },
+    offset: {
+      type: String,
+    },
+  },
+  emailTemplates: {
+    type: Map,
+    of: templateSchema,
+    default: new Map(),
+  },
+  twoFA: {
+    enable2FA: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  googleCalendar: {
+    isConnected: {
+      type: Boolean,
+      default: false,
+    },
+    clientId: {
+      type: String,
+      default: '',
+    },
+    clientSecret: {
+      type: String,
+      default: '',
+    },
+    accessToken: {
+      type: String,
+      default: '',
+    },
+    refreshToken: {
+      type: String,
+      default: '',
+    },
+    expiryDate: {
+      type: Number,
+      default: null,
+    },
+    connectedEmail: {
+      type: String,
+      default: '',
+    },
+  },
+  zoom: {
+    isConnected: {
+      type: Boolean,
+      default: false,
+    },
+    accountId: {
+      type: String,
+      default: '',
+    },
+    clientId: {
+      type: String,
+      default: '',
+    },
+    clientSecret: {
+      type: String,
+      default: '',
+    },
+    accessToken: {
+      type: String,
+      default: '',
+    },
+    expiryDate: {
+      type: Number,
+      default: null,
+    },
+    connectedEmail: {
+      type: String,
+      default: '',
+    },
+  },
+  microsoftTeams: {
+    isConnected: {
+      type: Boolean,
+      default: false,
+    },
+    tenantId: {
+      type: String,
+      default: '',
+    },
+    clientId: {
+      type: String,
+      default: '',
+    },
+    clientSecret: {
+      type: String,
+      default: '',
+    },
+    accessToken: {
+      type: String,
+      default: '',
+    },
+    refreshToken: {
+      type: String,
+      default: '',
+    },
+    expiryDate: {
+      type: Number,
+      default: null,
+    },
+    connectedEmail: {
+      type: String,
+      default: '',
+    },
+    isFollowUpReminderEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    followUpReminderOffsetMinutes: {
+      type: Number,
+      default: 5,
+      min: 0,
+    },
+    botUsername: {
+      type: String,
+      default: '',
+    },
+    botPassword: {
+      type: String,
+      default: '',
+    },
+    botUserId: {
+      type: String,
+      default: '',
+    },
+    messageTemplates: {
+      type: Map,
+      of: teamsReminderTemplateSchema,
+      default: new Map(),
+    },
+  },
+  onboardingStatus: {
+    isCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    completedSteps: {
+      type: [String],
+      default: [],
+    },
+    skippedSteps: {
+      type: [String],
+      default: [],
+    },
+    doNotShowAgain: {
+      type: Boolean,
+      default: false,
+    },
+    currentStep: {
+      type: Number,
+      default: 0,
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  captcha: {
+    enableCaptcha: {
+      type: Boolean,
+      default: false,
+    },
+    captchaType: {
+      type: String,
+      enum: ['v2', 'v3'],
+      default: 'v2',
+    },
+    captchaVariant: {
+      type: String,
+      enum: ['checkbox', 'invisible'],
+      default: 'checkbox',
+    },
+    siteKey: {
+      type: String,
+      default: '',
+    },
+    secretKey: {
+      type: String,
+      default: '',
+    },
+  },
+  organizationEmailNotifications: {
+    defaultSettings: {
+      newApplications: {
+        type: Boolean,
+        default: true,
+      },
+      interviewAssignments: {
+        type: Boolean,
+        default: true,
+      },
+      statusUpdates: {
+        type: Boolean,
+        default: true,
+      },
+      newRemarks: {
+        type: Boolean,
+        default: true,
+      },
+      stepCompleted: {
+        type: Boolean,
+        default: true,
+      },
+      mentions: {
+        type: Boolean,
+        default: true,
+      },
+      detailsUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      meetingScheduled: {
+        type: Boolean,
+        default: true,
+      },
+      meetingUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      meetingCancelled: {
+        type: Boolean,
+        default: true,
+      },
+      meetingInviteAccepted: {
+        type: Boolean,
+        default: true,
+      },
+      meetingInviteDeclined: {
+        type: Boolean,
+        default: true,
+      },
+      meetingInviteTentative: {
+        type: Boolean,
+        default: true,
+      },
+      followupAdded: {
+        type: Boolean,
+        default: true,
+      },
+      followupUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      followupRemoved: {
+        type: Boolean,
+        default: true,
+      },
+      jobCreated: {
+        type: Boolean,
+        default: true,
+      },
+      jobUpdated: {
+        type: Boolean,
+        default: true,
+      },
+      userAdded: {
+        type: Boolean,
+        default: true,
+      },
+      bulkImportCompleted: {
+        type: Boolean,
+        default: true,
+      },
+      candidateRejected: {
+        type: Boolean,
+        default: true,
+      },
+      interviewCompleted: {
+        type: Boolean,
+        default: true,
+      },
+      candidateMoved: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    adminOverrides: {
+      type: Map,
+      of: {
+        newApplications: { type: Boolean },
+        interviewAssignments: { type: Boolean },
+        statusUpdates: { type: Boolean },
+        newRemarks: { type: Boolean },
+        stepCompleted: { type: Boolean },
+        mentions: { type: Boolean },
+        detailsUpdated: { type: Boolean },
+        meetingScheduled: { type: Boolean },
+        meetingUpdated: { type: Boolean },
+        meetingCancelled: { type: Boolean },
+        meetingInviteAccepted: { type: Boolean },
+        meetingInviteDeclined: { type: Boolean },
+        meetingInviteTentative: { type: Boolean },
+        followupAdded: { type: Boolean },
+        followupUpdated: { type: Boolean },
+        followupRemoved: { type: Boolean },
+        jobCreated: { type: Boolean },
+        jobUpdated: { type: Boolean },
+        userAdded: { type: Boolean },
+        bulkImportCompleted: { type: Boolean },
+        candidateRejected: { type: Boolean },
+        interviewCompleted: { type: Boolean },
+        candidateMoved: { type: Boolean },
+      },
+      default: new Map(),
+    },
+  },
+  evaluationConfig: {
+    temperature: {
+      type: Number,
+      default: 0.1,
+      min: 0,
+      max: 1,
+    },
+    customPrompt: {
+      type: String,
+      default: null,
+    },
+    autoEvaluateAllCandidates: {
+      type: Boolean,
+      default: false,
+    },
+    maxPdfPages: {
+      type: Number,
+      default: 4,
+      min: 0,
+    },
+    enableComparativeRanking: {
+      type: Boolean,
+      default: false,
+    },
+    enableConfidenceScores: {
+      type: Boolean,
+      default: true,
+    },
+    enableRedFlagsDetection: {
+      type: Boolean,
+      default: true,
+    },
+    enableSkillsMatrix: {
+      type: Boolean,
+      default: true,
+    },
+    useCustomFieldsPrompt: {
+      type: Boolean,
+      default: false,
+    },
+    customFieldsPrompt: {
+      type: String,
+      default: null,
+    },
+    selectedCustomFields: {
+      type: [
+        {
+          fieldId: {
+            type: String,
+            required: true,
+          },
+          formId: {
+            type: String,
+            required: true,
+          },
+          formName: {
+            type: String,
+            required: true,
+          },
+          label: {
+            type: String,
+            required: true,
+          },
+          target: {
+            type: String,
+            enum: ['job', 'candidate'],
+            required: true,
+          },
+          scope: {
+            type: String,
+            enum: ['global', 'job-specific', 'candidate-specific'],
+            required: true,
+          },
+        },
+      ],
+      default: [],
+    },
+  },
+});
+
+// Performance index for organization-based queries
+settingsSchema.index(
+  { organizationId: 1 },
+  { name: 'idx_settings_orgId', background: true, unique: true },
+);
+
+export interface OrganizationEmailNotifications {
+  defaultSettings: {
+    newApplications: boolean;
+    interviewAssignments: boolean;
+    statusUpdates: boolean;
+    newRemarks: boolean;
+    stepCompleted: boolean;
+    mentions: boolean;
+    detailsUpdated: boolean;
+    meetingScheduled: boolean;
+    meetingUpdated: boolean;
+    meetingCancelled: boolean;
+    meetingInviteAccepted: boolean;
+    meetingInviteDeclined: boolean;
+    meetingInviteTentative: boolean;
+    followupAdded: boolean;
+    followupUpdated: boolean;
+    followupRemoved: boolean;
+    jobCreated: boolean;
+    jobUpdated: boolean;
+    userAdded: boolean;
+    bulkImportCompleted: boolean;
+    candidateRejected: boolean;
+    interviewCompleted: boolean;
+    candidateMoved: boolean;
+  };
+  adminOverrides: {
+    [userId: string]: {
+      newApplications?: boolean;
+      interviewAssignments?: boolean;
+      statusUpdates?: boolean;
+      newRemarks?: boolean;
+      stepCompleted?: boolean;
+      mentions?: boolean;
+      detailsUpdated?: boolean;
+      meetingScheduled?: boolean;
+      meetingUpdated?: boolean;
+      meetingCancelled?: boolean;
+      meetingInviteAccepted?: boolean;
+      meetingInviteDeclined?: boolean;
+      meetingInviteTentative?: boolean;
+      followupAdded?: boolean;
+      followupUpdated?: boolean;
+      followupRemoved?: boolean;
+      jobCreated?: boolean;
+      jobUpdated?: boolean;
+      userAdded?: boolean;
+      bulkImportCompleted?: boolean;
+      candidateRejected?: boolean;
+      interviewCompleted?: boolean;
+      candidateMoved?: boolean;
+    };
+  };
+}
+
+export interface IAIProviders {
+  activeProvider: 'gemini' | 'openai' | 'anthropic' | 'perplexity';
+  gemini: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+  openai: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+  anthropic: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+  perplexity: {
+    api_key: string;
+    model: string;
+    customModel: string;
+  };
+}
+
+export interface Ifs {
+  storageType: string;
+  cloudinaryCloudName?: string;
+  cloudinaryApiSecret?: string;
+  cloudinaryApiKey?: string;
+  awsRegion?: string;
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
+  awsBucketName?: string;
+}
+
+export interface Ismtp {
+  smtp_host: string;
+  smtp_port: string;
+  smtp_user: string;
+  smtp_password: string;
+  smtp_from: string;
+  resend_api_key: string;
+  resend_from: string;
+  resend_reply_to: string;
+  brevo_api_key: string;
+  brevo_from: string;
+  brevo_reply_to: string;
+  mailProvider: string;
+}
+
+export interface ITwoFA {
+  enable2FA: boolean;
+}
+
+export interface IGoogleCalendar {
+  isConnected: boolean;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  refreshToken: string;
+  expiryDate: number | null;
+  connectedEmail: string;
+}
+
+export interface IZoomConfig {
+  isConnected: boolean;
+  accountId: string;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  expiryDate: number | null;
+  connectedEmail?: string;
+}
+
+export interface IMicrosoftTeamsConfig {
+  isConnected: boolean;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  accessToken: string;
+  refreshToken: string;
+  expiryDate: number | null;
+  connectedEmail?: string;
+  isFollowUpReminderEnabled?: boolean;
+  followUpReminderOffsetMinutes?: number;
+  botUsername?: string;
+  botPassword?: string;
+  botUserId?: string;
+  messageTemplates?: {
+    [key: string]: {
+      templateId: string;
+      templateName: string;
+      eventType: 'followup.reminder' | 'assignment.reminder';
+      content: string;
+      variables: string[];
+      isActive?: boolean;
+    };
+  };
+}
+
+export interface IOnboardingStatus {
+  isCompleted: boolean;
+  completedSteps: string[];
+  skippedSteps: string[];
+  doNotShowAgain: boolean;
+  currentStep: number;
+  lastUpdated: Date;
+}
+export interface ICaptcha {
+  enableCaptcha: boolean;
+  captchaType?: 'v2' | 'v3';
+  captchaVariant?: 'checkbox' | 'invisible';
+  siteKey: string;
+  secretKey: string;
+  captchaProvider?: string;
+}
+
+export interface IFileMeta {
+  id: string;
+  name: string;
+  url: string;
+  type: string | null;
+  size: number;
+}
+
+export interface IGemini {
+  gemini_key: string;
+}
+
+export interface IEvaluationConfig {
+  temperature: number;
+  customPrompt: string | null;
+  autoEvaluateAllCandidates: boolean;
+  maxPdfPages: number;
+  enableComparativeRanking?: boolean;
+  enableConfidenceScores?: boolean;
+  enableRedFlagsDetection?: boolean;
+  enableSkillsMatrix?: boolean;
+  useCustomFieldsPrompt?: boolean;
+  customFieldsPrompt?: string | null;
+  selectedCustomFields?: EvaluationCustomFieldSelection[];
+}
+
+export interface ISettings {
+  organizationId: string;
+  multipleOrg: boolean;
+  fileStorage: Ifs;
+  mailConfig: Ismtp;
+  aiProviders?: IAIProviders;
+  bulkCvAi?: IBulkCvAi;
+  gemini?: IGemini; // Keep for backward compatibility
+  portalConfigs?: {
+    portalLogo: IFileMeta | null;
+    portalLogoDark: IFileMeta | null;
+    portalFavicon: IFileMeta | null;
+    portalHeader: IFileMeta | null;
+    portalFooter: IFileMeta | null;
+    portalName: string;
+    primaryColor: string;
+    secondaryColor: string;
+  };
+  timeZone: {
+    name: string;
+    offset: string;
+  };
+  emailTemplates: { [key: string]: IEmailTemplate };
+  twoFA?: ITwoFA;
+  googleCalendar?: IGoogleCalendar;
+  zoom?: IZoomConfig;
+  microsoftTeams?: IMicrosoftTeamsConfig;
+  onboardingStatus?: IOnboardingStatus;
+  organizationEmailNotifications?: OrganizationEmailNotifications;
+  captcha?: ICaptcha;
+  evaluationConfig?: IEvaluationConfig;
+}
+
+export interface SettingsDocument extends Document, ISettings {}
+
+export default settingsSchema;

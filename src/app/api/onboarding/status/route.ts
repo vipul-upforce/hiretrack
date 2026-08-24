@@ -1,0 +1,99 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Settings } from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { logger } from '@/lib/logger/logger.server';
+import type { IOnboardingStatus } from '@/lib/models/settings';
+
+export async function GET(req: NextRequest) {
+  try {
+    await connectToDatabase();
+
+    const user = await getAuthenticatedUser(req, 'admin');
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 401 },
+      );
+    }
+
+    const settings = await Settings?.findOne({
+      organizationId: user.organizationId,
+    })
+      .select('onboardingStatus')
+      .lean()
+      .exec();
+
+    if (!settings) {
+      return NextResponse.json(
+        { error: 'Settings not found' },
+        { status: 404 },
+      );
+    }
+
+    const onboardingStatus = settings.onboardingStatus || {
+      isCompleted: false,
+      completedSteps: [],
+      skippedSteps: [],
+      doNotShowAgain: false,
+      currentStep: 0,
+      lastUpdated: new Date(),
+    };
+
+    return NextResponse.json({ onboardingStatus });
+  } catch (error) {
+    logger.error({ error, url: req.url }, 'Error fetching onboarding status');
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}
+export async function PUT(req: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser(req, 'admin');
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    await connectToDatabase();
+    const body = (await req.json()) as Partial<IOnboardingStatus>;
+
+    const allowedFields: Array<keyof IOnboardingStatus> = [
+      'completedSteps',
+      'skippedSteps',
+      'doNotShowAgain',
+      'currentStep',
+      'isCompleted',
+    ];
+
+    const $set: Record<string, string[] | boolean | number | Date> = {
+      'onboardingStatus.lastUpdated': new Date(),
+    };
+
+    for (const key of allowedFields) {
+      if (key in body && body[key] !== undefined) {
+        $set[`onboardingStatus.${key}`] = body[key] as
+          | string[]
+          | boolean
+          | number;
+      }
+    }
+
+    const updated = await Settings?.findOneAndUpdate(
+      { organizationId: user.organizationId },
+      { $set },
+      { new: true },
+    ).select('onboardingStatus');
+
+    return NextResponse.json({
+      success: true,
+      onboardingStatus: updated?.onboardingStatus,
+    });
+  } catch (error) {
+    logger.error({ error, url: req.url }, 'Error updating onboarding status');
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}

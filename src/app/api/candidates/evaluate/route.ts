@@ -1,0 +1,374 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Candidate, History, Settings } from '@/lib/mongodb';
+import { broadcastCandidateUpdate } from '@/lib/broadcast/broadCastCandidate';
+import { ICandidate } from '@/lib/models/candidate';
+import { AIEvaluationService } from '@/lib/ai-providers/evaluation-provider';
+import { DEFAULT_EVALUATION_CONFIG } from '@/lib/ai-providers/evaluation-constants';
+import { getEffectiveMaxPdfPages } from '@/lib/ai-providers/evaluation-config';
+import { ISettings, IEvaluationConfig } from '@/lib/models/settings';
+import { IHistory, ICandidateHistory } from '@/lib/models/history';
+import { EvaluationResult } from '@/lib/ai-providers/evaluation-types';
+import mongoose from 'mongoose';
+import logger from '@/lib/logger';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import { EvaluateCandidateRequest, PopulatedJob } from './types';
+import {
+  isPopulatedJob,
+  extractJobDataForEvaluation,
+  extractOrganizationId,
+} from './utils/candidate-utils';
+import {
+  generateBase64,
+  fetchResumeAsBase64,
+  normalizeResumeUrl,
+} from './utils/resume-utils';
+import { calculateComparativeRanking } from './utils/ranking-utils';
+import {
+  getDecryptedAIProviders,
+  getActiveProviderApiKey,
+} from './utils/settings-utils';
+import { decryptBulkCvAi } from '@/lib/encryption';
+import {
+  validatePdfPageCount,
+  getResumeForEvaluation,
+} from './utils/pdf-utils';
+
+export async function GET(): Promise<NextResponse> {
+  return NextResponse.json({
+    message: 'SUCESSSS',
+  });
+}
+
+export async function PUT(request: NextRequest): Promise<NextResponse> {
+  try {
+    await connectToDatabase();
+
+    const user = await getAuthenticatedUser(request, [
+      'admin',
+      'hr',
+      'interviewer',
+      'guest',
+      'candidate',
+    ]);
+
+    if (!Candidate || !Settings) {
+      return NextResponse.json(
+        { error: 'Database not connected' },
+        { status: 400 },
+      );
+    }
+
+    const data = (await request.json()) as EvaluateCandidateRequest;
+    if (!data || !data.candidateId) {
+      return NextResponse.json(
+        { error: 'Candidate ID is required' },
+        { status: 400 },
+      );
+    }
+
+    const { candidateId } = data;
+    const candidate = await Candidate.findById(candidateId)
+      .select('resume jobId contact scores expectedCTC currentCTC customFields')
+      .populate({
+        path: 'jobId',
+        select:
+          'description organizationId title skills salary experience evaluationWeights customFields',
+      });
+
+    if (!candidate) {
+      return NextResponse.json(
+        { error: 'Candidate not found' },
+        { status: 404 },
+      );
+    }
+    if (!candidate?.jobId) {
+      return NextResponse.json({ error: 'Job ID not found' }, { status: 404 });
+    }
+
+    const candidateJobIdForOrg = candidate?.jobId as
+      | mongoose.Types.ObjectId
+      | PopulatedJob
+      | undefined;
+    const organizationId = extractOrganizationId(candidateJobIdForOrg);
+    const settingsData = (await Settings.findOne({
+      organizationId,
+    })
+      .select('aiProviders evaluationConfig fileStorage gemini timeZone bulkCvAi')
+      .lean()
+      .exec()) as Pick<
+      ISettings,
+      | 'aiProviders'
+      | 'evaluationConfig'
+      | 'fileStorage'
+      | 'gemini'
+      | 'timeZone'
+      | 'bulkCvAi'
+    > | null;
+
+    if (!settingsData) {
+      return NextResponse.json(
+        { error: 'Settings not found' },
+        { status: 404 },
+      );
+    }
+
+    // Get decrypted AI providers with backward compatibility
+    const aiProviders = getDecryptedAIProviders(settingsData, organizationId);
+    const { activeProvider } = aiProviders;
+    const apiKey = getActiveProviderApiKey(aiProviders);
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: `API key not found for active provider: ${activeProvider}` },
+        { status: 404 },
+      );
+    }
+
+    // Process resume URL and convert to base64
+    let resumeUrl: string = candidate?.resume?.url || '';
+    const origin = request.headers.get('origin') || '';
+    resumeUrl = normalizeResumeUrl(resumeUrl, origin);
+
+    if (!resumeUrl) {
+      return NextResponse.json(
+        { error: 'Resume URL not found' },
+        { status: 400 },
+      );
+    }
+
+    let base64Resume: string;
+    const fileStorage = settingsData.fileStorage?.storageType || 'local';
+    if (fileStorage === 'local') {
+      base64Resume = await generateBase64(resumeUrl);
+    } else {
+      const normalizedUrl = normalizeResumeUrl(resumeUrl, origin);
+      base64Resume = await fetchResumeAsBase64(normalizedUrl);
+    }
+
+    // Merge with defaults so enableRedFlagsDetection and other flags are set when DB has partial config
+    const evaluationConfig: IEvaluationConfig = {
+      ...DEFAULT_EVALUATION_CONFIG,
+      ...(settingsData.evaluationConfig &&
+      typeof settingsData.evaluationConfig === 'object'
+        ? settingsData.evaluationConfig
+        : {}),
+    };
+
+    await validatePdfPageCount(base64Resume, evaluationConfig);
+
+    const resumeForEvaluation = await getResumeForEvaluation(
+      base64Resume,
+      getEffectiveMaxPdfPages(evaluationConfig),
+    );
+
+    // Extract job data for evaluation
+    const candidateJobIdForData = candidate?.jobId as
+      | mongoose.Types.ObjectId
+      | PopulatedJob
+      | undefined;
+    const jobData = extractJobDataForEvaluation(candidateJobIdForData);
+
+    const decryptedBulkCvAi = decryptBulkCvAi(
+      settingsData.bulkCvAi,
+      organizationId,
+    );
+
+    // Create settings object with decrypted aiProviders and merged evaluationConfig
+    const settingsForEvaluation: Partial<ISettings> = {
+      ...(settingsData || {}),
+      aiProviders,
+      evaluationConfig,
+      bulkCvAi: decryptedBulkCvAi ?? undefined,
+    };
+
+    // Convert candidate to ICandidate format for AIEvaluationService
+    const candidateJobIdForEval = candidate?.jobId as
+      | mongoose.Types.ObjectId
+      | PopulatedJob
+      | undefined;
+    const scores: EvaluationResult = await AIEvaluationService.evaluateResume(
+      resumeForEvaluation,
+      settingsForEvaluation,
+      jobData,
+      candidate,
+    );
+
+    // Calculate weighted score if job has custom weights
+    if (
+      isPopulatedJob(candidateJobIdForEval) &&
+      candidateJobIdForEval.evaluationWeights
+    ) {
+      const { evaluationWeights } = candidateJobIdForEval;
+      const weightedScore = AIEvaluationService.calculateWeightedScore(
+        {
+          overall: scores.overall,
+          skills: scores.skills,
+          experience: scores.experience,
+          affordability: scores.affordability || 0,
+        },
+        evaluationWeights,
+      );
+      scores.weightedScore = weightedScore;
+    }
+
+    // Calculate comparative ranking if enabled
+    if (evaluationConfig.enableComparativeRanking) {
+      const candidateJobIdForRanking = candidate?.jobId as
+        | mongoose.Types.ObjectId
+        | PopulatedJob
+        | undefined;
+      let jobIdForRanking: mongoose.Types.ObjectId | string;
+
+      if (isPopulatedJob(candidateJobIdForRanking)) {
+        const jobIdValue = candidateJobIdForRanking._id;
+        jobIdForRanking =
+          typeof jobIdValue === 'string' ? jobIdValue : jobIdValue;
+      } else {
+        jobIdForRanking = candidateJobIdForRanking as
+          | mongoose.Types.ObjectId
+          | string;
+      }
+
+      const comparativeRanking = await calculateComparativeRanking(
+        candidate?._id,
+        jobIdForRanking,
+        {
+          overall: scores.overall,
+          skills: scores.skills,
+          experience: scores.experience,
+          affordability: scores.affordability,
+          weightedScore: scores.weightedScore,
+        },
+      );
+      scores.comparativeRanking = comparativeRanking;
+    }
+    // Update candidate scores
+    const candidateDocument = await Candidate?.findById(candidate?._id);
+    if (!candidateDocument) {
+      return NextResponse.json(
+        { error: 'Candidate not found for update' },
+        { status: 404 },
+      );
+    }
+
+    candidateDocument.scores = scores;
+    await candidateDocument.save();
+
+    // Fetch full candidate with populated fields
+    const fullCandidate = (await Candidate?.findById(candidate?._id)
+      .populate([
+        {
+          path: 'assignment.interviewerId',
+          select: '_id name email',
+        },
+        {
+          path: 'remarks.userId',
+          select: '_id name email',
+        },
+        {
+          path: 'jobId',
+          select: '_id description title',
+        },
+        {
+          path: 'status',
+          select: 'name',
+          transform: (status: { name?: string } | null) =>
+            status?.name?.toLowerCase() ?? null,
+        },
+      ])
+      .lean()) as ICandidate | null;
+
+    if (!fullCandidate) {
+      return NextResponse.json(
+        { error: 'Failed to fetch updated candidate' },
+        { status: 500 },
+      );
+    }
+
+    // CRITICAL FIX: Use find() instead of findOne() to get ALL history documents
+    // A candidate can have multiple History documents (one per job + batch upload with jobId: null)
+    const populateFields = [
+      { path: 'history.assignmentBy', select: '_id name email' },
+      { path: 'history.currentInterviewer', select: '_id name email' },
+      { path: 'history.previousInterviewer', select: '_id name email' },
+      { path: 'history.note.userId', select: '_id name email' },
+    ];
+
+    const historyDocuments = await History?.find({
+      candidateId: candidate?._id,
+    })
+      .populate(populateFields)
+      .lean()
+      .exec();
+
+    // Merge all history entries from all documents
+    const allHistory: ICandidateHistory[] = [];
+    if (historyDocuments && historyDocuments.length > 0) {
+      historyDocuments.forEach((doc) => {
+        if (doc.history && Array.isArray(doc.history)) {
+          allHistory.push(...doc.history);
+        }
+      });
+      // Sort by dateTime (newest first)
+      allHistory.sort(
+        (a, b) =>
+          new Date(b.dateTime ?? 0).getTime() -
+          new Date(a.dateTime ?? 0).getTime(),
+      );
+    }
+
+    const candidateHistoryPopulated = { history: allHistory };
+
+    // Ensure broadcast sends status as lane name string (not ObjectId) so Client B does not apply wrong lane deltas
+    const statusLaneName =
+      (typeof fullCandidate.status === 'string'
+        ? fullCandidate.status
+        : (fullCandidate.status as { name?: string })?.name) ?? 'applied';
+    const statusForBroadcast =
+      typeof statusLaneName === 'string'
+        ? statusLaneName.toLowerCase()
+        : 'applied';
+
+    // Broadcast candidate update (status sent as lane name string for SSE clients)
+    const dataTobroadcast = {
+      ...fullCandidate,
+      status: statusForBroadcast,
+      history: candidateHistoryPopulated?.history,
+      duplicateCount: fullCandidate.duplicateCount || 0,
+    };
+
+    // Fire-and-forget broadcast - errors handled internally
+    broadcastCandidateUpdate(dataTobroadcast).catch((error) => {
+      logger.error(
+        { error },
+        'Failed to broadcast candidate evaluation update',
+      );
+    });
+
+    if (user?.role !== 'admin' && user?.role !== 'hr') {
+      return NextResponse.json(
+        {
+          message: 'Candidate scores updated successfully',
+        },
+        { status: 200 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        message: 'Candidate scores updated successfully',
+        candidate: scores,
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    logger.error({ error, url: request?.url }, 'Error evaluating candidate.');
+    if (error instanceof Error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 },
+    );
+  }
+}

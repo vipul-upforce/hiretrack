@@ -1,0 +1,151 @@
+'use client';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { ErrorMessage, Form, Formik } from 'formik';
+import * as Yup from 'yup';
+import {
+  useGetGeminiConfigsQuery,
+  useUpdateGeminiMutation,
+} from '@/lib/features/settings';
+import React from 'react';
+
+export interface PortalLogo {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+export interface geminiValues {
+  gemini_key: string;
+}
+
+type FormFieldName = keyof geminiValues;
+
+export default function GeminiConfigs({ onClose }: { onClose: () => void }) {
+  const { toast } = useToast();
+  const { data, isLoading, refetch } = useGetGeminiConfigsQuery(undefined);
+  const [updateGeminiConfigs, { isLoading: isUpdating }] =
+    useUpdateGeminiMutation();
+  React.useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  const initialValues: geminiValues = {
+    gemini_key: data?.gemini?.gemini_key ?? null,
+  };
+
+  const validationSchema = Yup.object({
+    gemini_key: Yup.string().max(50, 'Max length 50 chars'),
+  });
+
+  const handleSubmit = async (values: typeof initialValues) => {
+    try {
+      if (values) {
+        const dataToSubmit = {
+          gemini_key: values.gemini_key.trim(),
+        };
+
+        await updateGeminiConfigs(dataToSubmit).unwrap();
+        toast({
+          title: 'Success',
+          description: 'Gemini settings updated successfully',
+        });
+        refetch();
+        onClose();
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to update portal settings',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (isLoading) return <div className="px-6 py-4">Loading...</div>;
+
+  const formFields: Array<{
+    label: string;
+    name: FormFieldName;
+    placeholder: string;
+    type?: string;
+  }> = [
+    {
+      label: 'Gemini Key',
+      name: 'gemini_key',
+      placeholder: 'Please enter your Gemini Key',
+    },
+  ];
+
+  return (
+    <Formik<geminiValues>
+      initialValues={initialValues}
+      validationSchema={validationSchema}
+      onSubmit={handleSubmit}
+      enableReinitialize
+    >
+      {({
+        values,
+        handleChange,
+        handleBlur,
+        handleSubmit: formikHandleSubmit,
+        isSubmitting,
+        errors,
+        touched,
+      }) => (
+        <Form onSubmit={formikHandleSubmit} className="flex h-full flex-col">
+          <div className="space-y-4 px-6 py-4">
+            {formFields.map(({ label, name, placeholder }) => (
+              <div key={name} className="space-y-2">
+                <Label htmlFor={name}>{label}</Label>
+                <Input
+                  id={name}
+                  name={name}
+                  value={
+                    typeof values[name] === 'string'
+                      ? (values[name] as string)
+                      : ''
+                  }
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  placeholder={placeholder}
+                  className={
+                    errors[name] && touched[name] ? 'border-red-500' : ''
+                  }
+                />
+                <ErrorMessage
+                  name={name}
+                  component="div"
+                  className="text-sm text-red-500"
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-auto flex justify-end gap-2 border-t border-border/10 px-6 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting || isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={isSubmitting || isUpdating}
+            >
+              {isSubmitting || isUpdating ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </Form>
+      )}
+    </Formik>
+  );
+}

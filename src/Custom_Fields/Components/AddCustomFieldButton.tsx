@@ -1,0 +1,77 @@
+'use client';
+
+import React, { useContext, useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FolderOpen } from 'lucide-react';
+import Stepper from './Stepper';
+import { CustomFieldsContext } from '../Context';
+import CustomFieldDialog from './Common/CustomFieldDialog';
+
+function AddCustomFields() {
+  const { setStepName } = useContext(CustomFieldsContext);
+  const [isOpen, setIsOpen] = useState(false);
+  const searchParams = useSearchParams();
+
+  const onClick = () => {
+    setTimeout(() => {
+      setIsOpen(true);
+    }, 200);
+  };
+
+  useEffect(() => {
+    const config = searchParams?.get('config');
+    if (config === 'cf') {
+      setIsOpen(true);
+    }
+  }, [searchParams]);
+
+  const handleClose = useCallback(() => {
+    setStepName('FormList');
+    setIsOpen(false);
+  }, [setStepName]);
+
+  useEffect(
+    () => () => {
+      handleClose();
+    },
+    [handleClose],
+  );
+
+  return (
+    <div className="group">
+      <Card
+        className="h-full cursor-pointer border border-gray-200 bg-white transition-all duration-200 hover:border-gray-300 hover:shadow-lg dark:border-gray-800 dark:bg-black dark:hover:border-gray-600"
+        onClick={onClick}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-gray-100 p-2 dark:bg-gray-700">
+              <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-base font-medium text-gray-900 dark:text-gray-100">
+                Personalized form fields
+              </CardTitle>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            Configure global metadata fields for your organization
+          </p>
+        </CardContent>
+      </Card>
+
+      <CustomFieldDialog
+        isOpen={isOpen}
+        onClose={handleClose}
+        title="Personalized form fields"
+      >
+        <Stepper />
+      </CustomFieldDialog>
+    </div>
+  );
+}
+
+export default React.memo(AddCustomFields);

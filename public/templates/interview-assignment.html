@@ -1,0 +1,49 @@
+<div
+    style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #2c3e50; margin-top: 0;">Interview Assignment</h2>
+        <p style="margin: 0 0 15px 0;">Hello {{interviewerName}},</p>
+
+        <p style="margin: 0 0 15px 0;">You have been assigned to conduct an interview for the following candidate:</p>
+
+        <div
+            style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0; border: 1px solid #dee2e6;">
+            <h3 style="margin-top: 0; color: #495057;">Interview Details</h3>
+            <p style="margin: 5px 0;"><strong>Candidate:</strong> {{candidateName}}</p>
+            <p style="margin: 5px 0;"><strong>Position:</strong> {{jobTitle}}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> {{interviewDate}}</p>
+            <p style="margin: 5px 0;"><strong>Type:</strong> {{interviewType}}</p>
+            <p style="margin: 5px 0;"><strong>Meeting Link:</strong>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{meetingLink}}"
+                    style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; display: inline-block;">Google
+                    Calendar</a>
+                <a href="{{outlookCalendarLink}}"
+                    style="background-color: #007bdf; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Outlook
+                    Calendar</a>
+            </div>
+            </p>
+        </div>
+
+        <div
+            style="background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #28a745;">
+            <p style="margin: 0 0 10px 0;"><strong>Next Steps:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li style="margin: 5px 0;">Review the candidate's profile and resume</li>
+                <li style="margin: 5px 0;">Prepare interview questions</li>
+                <li style="margin: 5px 0;">Join the meeting at the scheduled time</li>
+                <li style="margin: 5px 0;">Submit feedback after the interview</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <a href="{{candidateProfileLink}}"
+                style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px; display: inline-block;">View
+                Candidate</a>
+            <a href="{{dashboardLink}}"
+                style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Dashboard</a>
+        </div>
+
+        <p style="margin: 15px 0 0 0;">Best regards,<br>{{organizationName}} Hiring Team</p>
+    </div>
+</div>
