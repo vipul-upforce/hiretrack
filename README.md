@@ -430,13 +430,16 @@ CMD ["npm", "start"]
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## Troubleshooting
 
-### Documentation
+- **Installer cannot find a release:** `main` alone is not enough. Create a GitHub Release (tag `vX.Y.Z`) that includes `hiretrack-vX.Y.Z.tar.gz` (and optional chunked parts). See [chunked downloads](docs/chunked-downloads.md).
+- **Local `npm run dev` fails to start:** MongoDB must be running. Copy `.env.example` to `.env.local` and set `MONGODB_URI` and `JWT_SECRET`.
+- **Production calendar webhooks fail:** set `GOOGLE_CALENDAR_WEBHOOK_TOKEN` in the server environment. Do not rely on a default token.
+
+## Support
 
 - [User Guide](docs/user-guide.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Troubleshooting](docs/troubleshooting.md)
+- [OpenAPI spec](docs/api-documentation.yaml) (also served at `/swagger.html` when the app is running)
+- [Chunked release downloads](docs/chunked-downloads.md)
 
 _Built with ❤️ in India, using Next.js, TypeScript, and MongoDB_

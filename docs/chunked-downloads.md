@@ -1,10 +1,10 @@
 # Chunked release asset download
 
-Installers on restrictive networks may fail on single ~600MB downloads. Releases include split parts plus a manifest. The installer downloads those assets from **GitHub Releases** (no license server).
+Installers on restrictive networks may fail on a single large tarball download. GitHub Releases include split parts plus a manifest. The installer prefers those assets from **GitHub Releases**.
 
 ## Release artifacts (CI)
 
-Create parts via installer (no separate script required on release runners):
+The [Release](../.github/workflows/release.yml) workflow builds the tarball, then splits it:
 
 ```bash
 ./installer.sh --release-chunk-assets hiretrack-v1.1.9.tar.gz v1.1.9 50
@@ -14,7 +14,7 @@ For `hiretrack-v1.1.9.tar.gz`:
 
 | File | Purpose |
 |------|---------|
-| `hiretrack-v1.1.9.tar.gz` | Full tarball (optional, legacy installer) |
+| `hiretrack-v1.1.9.tar.gz` | Full tarball (fallback if chunks are missing) |
 | `hiretrack-v1.1.9.tar.gz.part-000` … `part-N` | 50MB chunks (`split -d -a 3`) |
 | `hiretrack-v1.1.9.tar.gz.manifest.json` | Metadata for assembly |
 
@@ -34,7 +34,7 @@ For `hiretrack-v1.1.9.tar.gz`:
 }
 ```
 
-Part file for index `i` (0-based): `{partPrefix}{i padded to partPad digits}` e.g. `hiretrack-v1.1.9.tar.gz.part-003`.
+Part file for index `i` (0-based): `{partPrefix}` padded to `partPad` digits, for example `hiretrack-v1.1.9.tar.gz.part-003`.
 
 ## GitHub Releases
 
@@ -43,7 +43,7 @@ The installer reads the release JSON for tag `vX.Y.Z` and downloads:
 - `hiretrack-vX.Y.Z.tar.gz.manifest.json` when present, then each `.part-000` …
 - or the full `hiretrack-vX.Y.Z.tar.gz` if chunked assets are missing
 
-Optional `GITHUB_TOKEN` is used for private repos. There is no license query string.
+Optional `GITHUB_TOKEN` is used for private repos.
 
 ## Installer behavior
 
@@ -52,6 +52,4 @@ Optional `GITHUB_TOKEN` is used for private repos. There is no license query str
 3. Verify `totalBytes`, `sha256`, and `gzip -t`.
 4. If the manifest is missing or fails, download the full tarball.
 
-## Local cleanup after release
-
-`ci_prod.sh` / `ci_dev.sh` / GitLab release job run `scripts/cleanup-release-artifacts.sh` after upload to remove `hiretrack-v*.tar.gz`, `.manifest.json`, and `.part-*` from the repo working tree. These paths are in `.gitignore`.
+Tarball, manifest, and `.part-*` files are gitignored. GitHub Actions builds them on the runner and uploads them to the Release; they are not committed.
