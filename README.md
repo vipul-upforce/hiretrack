@@ -176,13 +176,14 @@ HireTrack is open source. There is no license server and no license file.
 **Self-host from GitHub Releases** (recommended for production):
 
 ```bash
-export GITHUB_RELEASE_REPO=rahulp162/hiretrack
 curl -fsSL https://raw.githubusercontent.com/rahulp162/hiretrack/main/installer.sh -o installer.sh
 chmod +x installer.sh
 ./installer.sh --install
 ```
 
-The installer downloads `hiretrack-vX.Y.Z.tar.gz` from that repo’s GitHub Releases, then sets up MongoDB, nginx, and PM2. Optional: `GITHUB_TOKEN` for private repos.
+The installer already points at `rahulp162/hiretrack`. It downloads `hiretrack-vX.Y.Z.tar.gz` from that repo’s **Releases** tab (not from `main`). Source on `main` is not an installable build.
+
+Until a Release exists, the installer will fail with GitHub API `Not Found`. Maintainers: GitHub → **Actions → Release → Run workflow**, or tag `vX.Y.Z` and push that tag to GitHub. Forks only: `export GITHUB_RELEASE_REPO=yourname/hiretrack`. Optional: `GITHUB_TOKEN` for private repos.
 
 **Local development:**
 

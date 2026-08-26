@@ -200,9 +200,11 @@ MARKDOWN_PARSER_PM2_NAME="markdown-parser"
 MARKDOWN_PARSER_URL="http://127.0.0.1:${MARKDOWN_PARSER_PORT}/parse"
 SKIP_MARKDOWN_PARSER="${SKIP_MARKDOWN_PARSER:-0}"
 
-# GitHub Releases host install tarballs. Set GITHUB_RELEASE_REPO=owner/name
-# or config.json githubReleaseRepo. Optional GITHUB_TOKEN for private repos.
+# GitHub Releases host install tarballs. Optional GITHUB_RELEASE_REPO=owner/name
+# (or config.json githubReleaseRepo) only if you fork. Optional GITHUB_TOKEN
+# for private repos.
 GITHUB_API_BASE="https://api.github.com"
+DEFAULT_GITHUB_RELEASE_REPO="rahulp162/hiretrack"
 # Default part size (bytes) when manifest omits partSizeBytes; must match CI split (50MB).
 ASSET_CHUNK_PART_BYTES="${ASSET_CHUNK_PART_BYTES:-52428800}"
 MONGODB_VERSION="${MONGODB_VERSION:-7.0}"
@@ -245,7 +247,7 @@ resolve_github_release_repo() {
             return 0
         fi
     fi
-    echo "rahulp162/hiretrack"
+    echo "$DEFAULT_GITHUB_RELEASE_REPO"
 }
 
 persist_github_release_repo() {
@@ -301,6 +303,10 @@ fetch_github_release_json() {
         local msg
         msg=$(echo "$json" | jq -r '.message // empty' 2>/dev/null || true)
         [ -n "$msg" ] && echo "[ HINT ] GitHub API: $msg" >&2
+        if [ "$msg" = "Not Found" ]; then
+            echo "[ HINT ] Source on main is not enough. Publish a GitHub Release with hiretrack-vX.Y.Z.tar.gz." >&2
+            echo "[ HINT ] Maintainers: GitHub → Actions → Release → Run workflow, or push tag vX.Y.Z." >&2
+        fi
         return 1
     fi
     printf '%s' "$json"
@@ -825,7 +831,7 @@ write_env_server_details() {
         echo "BASE_URL=$BASE_URL" >> "${ENV_FILE}.tmp"
         echo "NEXT_PUBLIC_BASE_URL=$BASE_URL" >> "${ENV_FILE}.tmp"
         echo "ALLOWED_ORIGINS=$BASE_URL" >> "${ENV_FILE}.tmp"
-        echo "GITHUB_RELEASE_REPO=${GITHUB_RELEASE_REPO:-rahulp162/hiretrack}" >> "${ENV_FILE}.tmp"
+        echo "GITHUB_RELEASE_REPO=${GITHUB_RELEASE_REPO:-$DEFAULT_GITHUB_RELEASE_REPO}" >> "${ENV_FILE}.tmp"
         mv "${ENV_FILE}.tmp" "$ENV_FILE"
 
         echo "[ OK ] BASE_URL and NEXT_PUBLIC_BASE_URL updated in $ENV_FILE ($BASE_URL)"
@@ -2768,7 +2774,7 @@ setup_nginx() {
 	    echo "BASE_URL=$BASE_URL" >> "${ENV_FILE}.tmp"
 	    echo "NEXT_PUBLIC_BASE_URL=$BASE_URL" >> "${ENV_FILE}.tmp"
 	    echo "ALLOWED_ORIGINS=$BASE_URL" >> "${ENV_FILE}.tmp"
-	    echo "GITHUB_RELEASE_REPO=${GITHUB_RELEASE_REPO:-rahulp162/hiretrack}" >> "${ENV_FILE}.tmp"
+	    echo "GITHUB_RELEASE_REPO=${GITHUB_RELEASE_REPO:-$DEFAULT_GITHUB_RELEASE_REPO}" >> "${ENV_FILE}.tmp"
 	    mv "${ENV_FILE}.tmp" "$ENV_FILE"
 
 	    echo "[ OK ] BASE_URL and NEXT_PUBLIC_BASE_URL updated in $ENV_FILE ($BASE_URL)"
@@ -3703,7 +3709,7 @@ show_help() {
     echo "  $0 [command] [options]"
     echo
     echo "Releases:"
-    echo "  Default GitHub repo: rahulp162/hiretrack (override with GITHUB_RELEASE_REPO)."
+    echo "  Default GitHub repo: ${DEFAULT_GITHUB_RELEASE_REPO} (override with GITHUB_RELEASE_REPO only if you fork)."
     echo "  Optional GITHUB_TOKEN for private repositories or higher GitHub API limits."
     echo
     echo "Commands:"

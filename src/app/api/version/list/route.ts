@@ -26,7 +26,10 @@ interface GitHubApiError {
   message?: string;
 }
 
-async function resolveGithubReleaseRepo(): Promise<string | null> {
+/** Matches installer.sh DEFAULT_GITHUB_RELEASE_REPO. Override with env or config.json. */
+const DEFAULT_GITHUB_RELEASE_REPO = 'rahulp162/hiretrack';
+
+async function resolveGithubReleaseRepo(): Promise<string> {
   const fromEnv = process.env.GITHUB_RELEASE_REPO?.trim();
   if (fromEnv) {
     return fromEnv;
@@ -43,7 +46,7 @@ async function resolveGithubReleaseRepo(): Promise<string | null> {
     // Parent config is optional (local development).
   }
 
-  return null;
+  return DEFAULT_GITHUB_RELEASE_REPO;
 }
 
 function mapRelease(release: GitHubRelease) {
@@ -63,15 +66,6 @@ function mapRelease(release: GitHubRelease) {
 export async function GET(request: NextRequest) {
   try {
     const repo = await resolveGithubReleaseRepo();
-    if (!repo) {
-      return NextResponse.json(
-        {
-          error:
-            'GITHUB_RELEASE_REPO is not configured. Set owner/name or githubReleaseRepo in config.json.',
-        },
-        { status: 500 },
-      );
-    }
 
     const channel = await getReleaseChannel();
     const headers: Record<string, string> = {
