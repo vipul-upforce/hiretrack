@@ -149,31 +149,35 @@ HireTrack is a comprehensive, AI-powered hiring management platform designed to 
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-- Node.js 18+
-- MongoDB 5.0+
-- npm or yarn package manager
-
-## System Requirements
-
-### Minimum Requirements:
-
-- **RAM**: 1GB
-- **CPU**:
-- **Storage**: 4GB
-
-### Recommended Requirements:
-
-- **RAM**: 4GB
-- **CPU**:
-- **Storage**: 10GB
-
-### Installation
-
 HireTrack is open source. There is no license server and no license file.
 
-**Self-host from GitHub Releases** (recommended for production):
+Choose one path:
+
+| Path | Use when |
+|------|----------|
+| **Installer (GitHub Releases)** | Production / self-hosting on a server |
+| **Local from source** | Development on your machine |
+
+### System requirements (self-host / production)
+
+| | Minimum | Recommended |
+|---|---------|-------------|
+| **RAM** | 1 GB | 4 GB+ |
+| **CPU** | 1 vCPU | 2+ vCPUs |
+| **Storage** | 4 GB | 10 GB+ |
+| **OS** | Linux (Ubuntu 22.04+) or macOS | Ubuntu 22.04/24.04 |
+
+### Path A — Installer (recommended for production)
+
+The installer downloads a **pre-built** release tarball, installs Node/MongoDB/PM2 as needed, and starts the app under PM2.
+
+**Prerequisites**
+
+- Linux or macOS with `sudo` / root for package installs
+- Outbound HTTPS (GitHub Releases + package mirrors)
+- `curl` available
+
+**Install**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/rahulp162/hiretrack/main/installer.sh -o installer.sh
@@ -181,75 +185,138 @@ chmod +x installer.sh
 ./installer.sh --install
 ```
 
-The installer already points at `rahulp162/hiretrack`. It downloads `hiretrack-vX.Y.Z.tar.gz` from that repo’s **Releases** tab (not from `main`). Source on `main` is not an installable build.
+The installer is interactive. It will ask how to connect MongoDB (Atlas vs local) and can configure domain / Nginx / SSL.
 
-Until a Release exists, the installer will fail with GitHub API `Not Found`. Maintainers: GitHub → **Actions → Release → Run workflow**, or tag `vX.Y.Z` and push that tag to GitHub. Forks only: `export GITHUB_RELEASE_REPO=yourname/hiretrack`. Optional: `GITHUB_TOKEN` for private repos.
+**What it does**
 
-**Local development:**
+- Installs into `~/.hiretrack/APP`
+- Writes `.env` in that directory (not `.env.local`)
+- Starts the app with PM2 on port **3000** (or behind Nginx if you set a domain)
+- Optionally sets up auto-update cron and a local PDF→Markdown helper for bulk CV parsing
 
-1. Clone the repository
+**After install**
+
+1. Open the app: `http://YOUR_SERVER_IP:3000` (or the domain you configured).
+2. Create your organization: `/register/org`
+3. Sign in at `/auth/login`
+4. In **Settings**, configure email, file storage, and AI keys.
+
+**Useful installer commands**
+
+```bash
+./installer.sh --help              # full command list
+./installer.sh --update            # install newer release
+./installer.sh --domain            # domain + Nginx + SSL
+./installer.sh --rollback          # roll back to previous version
+./installer.sh --setup-cron        # auto-update cron
+./installer.sh --backup            # backup ~/.hiretrack (excludes node_modules)
+```
+
+Logs: `pm2 logs` (or files under `~/.hiretrack/logs`).
+
+**Releases vs `main`**
+
+The installer points at `rahulp162/hiretrack` and downloads `hiretrack-vX.Y.Z.tar.gz` from that repo’s **Releases** tab. Source on `main` is **not** an installable build.
+
+Until a Release exists, the installer fails with GitHub API `Not Found`. Maintainers: GitHub → **Actions → Release → Run workflow**, or tag `vX.Y.Z` and push that tag. Forks only: `export GITHUB_RELEASE_REPO=yourname/hiretrack`. Optional: `GITHUB_TOKEN` for private repos or higher API limits. See [chunked downloads](docs/chunked-downloads.md).
+
+### Path B — Local development
+
+**Prerequisites**
+
+- **Node.js 20** (18+ may work; releases and CI use 20)
+- **MongoDB 5.0+** already running (local or Atlas)
+- npm
+
+**Setup**
+
+1. Clone and install
 
    ```bash
    git clone https://github.com/rahulp162/hiretrack.git
    cd hiretrack
-   ```
-
-2. Install dependencies
-
-   ```bash
    npm install
    ```
 
-3. Copy environment variables
+2. Environment file (local uses `.env.local`)
 
    ```bash
    cp .env.example .env.local
    ```
 
-   Set at least `MONGODB_URI` and `JWT_SECRET`.
+   Set at least:
 
-4. Start the development server
+   | Variable | Required | Notes |
+   |----------|----------|--------|
+   | `MONGODB_URI` | Yes | e.g. `mongodb://localhost:27017/hiretrack` |
+   | `JWT_SECRET` | Yes | long random string |
+   | `CRON_SECRET` | Yes | long random string (reminder / cron routes) |
+   | `BASE_URL` / `NEXT_PUBLIC_BASE_URL` | Recommended | default `http://localhost:3000` |
+   | `GOOGLE_CALENDAR_WEBHOOK_TOKEN` | Production calendar | do not rely on the built-in default |
+
+   Optional keys (AI, Sentry, reCAPTCHA, storage) are listed in `.env.example` and can also be set in the app UI.
+
+3. Start the dev server
 
    ```bash
    npm run dev
    ```
 
-5. Production build (from source)
+4. Open `http://localhost:3000` → register at `/register/org` → sign in at `/auth/login`.
 
-   ```bash
-   npm run build
-   npm start
-   ```
+`npm run dev` uses Next.js only. Production `npm start` runs the custom WebSocket server (`server-ws.cjs`).
+
+### Production build from source (without installer)
+
+Prefer the installer for servers. If you build from a clone:
+
+```bash
+cp .env.example .env   # production uses .env
+# fill MONGODB_URI, JWT_SECRET, CRON_SECRET, BASE_URL, NEXT_PUBLIC_BASE_URL, ALLOWED_ORIGINS
+npm ci --legacy-peer-deps --include=dev
+unset NODE_ENV
+npm run build
+npm start              # runs server-ws.cjs on port 3000
+```
+
+With PM2 (repo includes `ecosystem.config.cjs`):
+
+```bash
+pm2 start ecosystem.config.cjs
+# or: pm2 start "npm run start" --name hiretrack
+```
 
 ## 📋 Configuration Guide
 
-### Organization Setup
+Do this after the app is reachable (installer or local).
 
-1. Create a new organization through the registration portal
-2. Configure organization settings and branding
-3. Set up email templates and notifications
-4. Configure file storage (Local/Cloudinary/AWS S3)
-5. Set up custom fields for jobs and candidates
+### Organization setup
 
-### AI Configuration
+1. Open `/register/org` and create the organization + admin account
+2. Sign in at `/auth/login`
+3. Configure branding, timezone, and team users in Settings
+4. Set email templates and notifications
+5. Configure file storage (Local / Cloudinary / AWS S3)
+6. Add custom fields for jobs and candidates if needed
 
-1. Obtain Google Gemini API key
-2. Configure AI settings in organization dashboard
-3. Set up resume processing parameters
-4. Configure evaluation criteria and scoring
+### AI configuration
 
-### Email Setup
+1. Obtain a Google Gemini API key (or configure another supported provider in Settings)
+2. Set AI options in the organization dashboard / Settings
+3. Tune resume processing and evaluation criteria as needed
 
-1. Choose email provider (SMTP/Resend/Brevo)
-2. Configure SMTP settings or API keys
-3. Customize email templates
-4. Test email delivery
+### Email setup
 
-### File Storage Configuration
+1. Choose provider (SMTP / Resend / Brevo)
+2. Add SMTP settings or API keys in Settings
+3. Customize templates
+4. Send a test email
 
-1. **Local Storage**: Default file storage on server
-2. **Cloudinary**: Configure cloud name, API key, and secret
-3. **AWS S3**: Configure region, access keys, and bucket name
+### File storage
+
+1. **Local** — default on the server disk
+2. **Cloudinary** — cloud name, API key, secret
+3. **AWS S3** — region, access keys, bucket
 
 ## 📊 API Endpoints
 
@@ -337,22 +404,19 @@ Until a Release exists, the installer will fail with GitHub API `Not Found`. Mai
 
 ## 🚀 Deployment
 
-### Production Deployment
+**Preferred:** use Path A (installer). It handles Node, MongoDB options, PM2, cron, and optional Nginx/SSL via `./installer.sh --domain`.
 
-1. **Environment Setup**
+### Manual production (from source)
 
-   ```bash
-   npm run build
-   npm start
-   ```
-
-2. **PM2 Process Management**
+1. Build and run with `.env` filled (see Path B / production build above).
+2. Keep the process up with PM2:
 
    ```bash
-   pm2 start "npm run start" --name "hiretrack"
+   pm2 start ecosystem.config.cjs
+   # or: pm2 start "npm run start" --name hiretrack
    ```
 
-3. **Nginx Configuration**
+3. Put Nginx (or another reverse proxy) in front of port 3000. Minimal example:
 
    ```nginx
    server {
@@ -370,19 +434,11 @@ Until a Release exists, the installer will fail with GitHub API `Not Found`. Mai
    }
    ```
 
-### Docker Deployment
+   For automated domain + SSL, prefer `./installer.sh --domain`.
 
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+### Docker
 
+A multi-stage production image definition lives in [`dockerfile`](dockerfile) (Node 20, custom WebSocket server). Build and run with your own runtime env (`MONGODB_URI`, `JWT_SECRET`, `CRON_SECRET`, `BASE_URL`, etc.) — do not bake secrets into the image.
 ## 📈 Performance Optimization
 
 ### Frontend Optimization
@@ -434,13 +490,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Troubleshooting
 
 - **Installer cannot find a release:** `main` alone is not enough. Create a GitHub Release (tag `vX.Y.Z`) that includes `hiretrack-vX.Y.Z.tar.gz` (and optional chunked parts). See [chunked downloads](docs/chunked-downloads.md).
-- **Local `npm run dev` fails to start:** MongoDB must be running. Copy `.env.example` to `.env.local` and set `MONGODB_URI` and `JWT_SECRET`.
+- **Local `npm run dev` fails to start:** MongoDB must be running. Copy `.env.example` to `.env.local` and set `MONGODB_URI`, `JWT_SECRET`, and `CRON_SECRET`.
+- **Installer finished but I can’t open the app:** check `pm2 status` / `pm2 logs`, confirm port 3000 (or your Nginx domain), and open `/register/org` for first-time setup.
 - **Production calendar webhooks fail:** set `GOOGLE_CALENDAR_WEBHOOK_TOKEN` in the server environment. Do not rely on a default token.
+- **Bulk CV / PDF parsing issues after install:** the installer may skip the markdown parser if Python venv support is missing. On Ubuntu: `sudo apt install -y python3.12-venv python3-pip`, then re-run install/update, or set `DOCLING_PARSE_URL` in `.env`.
 
 ## Support
 
 - [User Guide](docs/user-guide.md)
 - [OpenAPI spec](docs/api-documentation.yaml) (also served at `/swagger.html` when the app is running)
 - [Chunked release downloads](docs/chunked-downloads.md)
+- Installer help: `./installer.sh --help`
 
 _Built with ❤️ in India, using Next.js, TypeScript, and MongoDB_
