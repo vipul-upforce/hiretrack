@@ -27,7 +27,7 @@ interface GitHubApiError {
 }
 
 /** Matches installer.sh DEFAULT_GITHUB_RELEASE_REPO. Override with env or config.json. */
-const DEFAULT_GITHUB_RELEASE_REPO = 'rahulp162/hiretrack';
+const DEFAULT_GITHUB_RELEASE_REPO = 'vipul-upforce/hiretrack';
 
 async function resolveGithubReleaseRepo(): Promise<string> {
   const fromEnv = process.env.GITHUB_RELEASE_REPO?.trim();

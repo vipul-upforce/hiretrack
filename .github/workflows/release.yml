@@ -38,7 +38,7 @@ jobs:
           BASE_URL=http://localhost:3000
           NEXT_PUBLIC_BASE_URL=http://localhost:3000
           ALLOWED_ORIGINS=http://localhost:3000
-          GITHUB_RELEASE_REPO=rahulp162/hiretrack
+          GITHUB_RELEASE_REPO=vipul-upforce/hiretrack
           NODE_VERSION=$(node -v)
           EOF
 

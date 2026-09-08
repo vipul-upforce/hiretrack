@@ -204,7 +204,7 @@ SKIP_MARKDOWN_PARSER="${SKIP_MARKDOWN_PARSER:-0}"
 # (or config.json githubReleaseRepo) only if you fork. Optional GITHUB_TOKEN
 # for private repos.
 GITHUB_API_BASE="https://api.github.com"
-DEFAULT_GITHUB_RELEASE_REPO="rahulp162/hiretrack"
+DEFAULT_GITHUB_RELEASE_REPO="vipul-upforce/hiretrack"
 # Default part size (bytes) when manifest omits partSizeBytes; must match CI split (50MB).
 ASSET_CHUNK_PART_BYTES="${ASSET_CHUNK_PART_BYTES:-52428800}"
 MONGODB_VERSION="${MONGODB_VERSION:-7.0}"
