@@ -1,0 +1,1081 @@
+'use client';
+
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import type { FileRejection } from 'react-dropzone';
+import {
+  usePostBatchMutation,
+  useFetchBatchesQuery,
+  useGetCvParseRoutingQuery,
+  useProcessPendingCvBatchesMutation,
+  useRetryFailedCvFilesMutation,
+} from '@/lib/features/org/orgApi';
+import { useToast } from '@/hooks/use-toast';
+import { useSanitizeFiles } from '@/hooks/useSanitizeFiles';
+import withAuthGuard from '@/components/withAuthGuard';
+import logger from '@/lib/logger';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { useGetEvaluationConfigsQuery } from '@/lib/features/settings/aiApi';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { CompletedBatches } from './completed-batches';
+import { FileUploader } from './file-uploader';
+import { type BatchOperations } from './batch-operations';
+import {
+  BatchActionsDialog,
+  ConfirmProcessingDialog,
+  ConfirmRemoveSelectedDialog,
+  type ConfirmProcessingPayload,
+} from './batch-processing-dialogs';
+import { CurrentBatchPanel } from './current-batch-panel';
+import { resolveDeferredBatchIdsToProcess } from '@/lib/cv-upload/deferred-batch-ids';
+import { getEffectiveMaxPdfPages } from '@/lib/ai-providers/evaluation-config';
+
+export type FileWithPreview = {
+  id: string;
+  file: File;
+  preview?: string;
+  error?: string;
+  isZip?: boolean;
+  skipped?: boolean;
+  skipReason?: string;
+  selected?: boolean;
+};
+
+// File size limits (same as backend)
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const BATCH_SIZE = 20; // Process 20 files at a time
+const MAX_BATCH_PAYLOAD_BYTES = 8 * 1024 * 1024; // Keep below parser limits with multipart overhead
+const DEFAULT_HISTORY_PAGE_SIZE = 5;
+const DEFAULT_BATCH_OPERATIONS: BatchOperations = {
+  processingMode: 'immediate',
+  assignJob: false,
+  jobId: '',
+  updateStatus: false,
+  status: '',
+  addRemark: false,
+  remark: '',
+  isRemarkPrivate: true,
+  remarkRating: null,
+};
+
+interface ErrorResponse {
+  error?: string;
+}
+
+const LEAVE_PROCESSING_MESSAGE =
+  'Work is still running on the server (upload or deferred processing). Leaving now may leave things incomplete. Do you want to continue?';
+
+/** Tracks multipart upload chunks; optional phase when work runs in one server request (deferred / retry). */
+export type UploadProgressState = {
+  current: number;
+  total: number;
+  currentBatch: number;
+  totalBatches: number;
+  completedBatches: number;
+  phase?: 'client-upload' | 'server-deferred' | 'server-retry';
+};
+
+export function CVBatchProcessor() {
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [operations, setOperations] = useState<BatchOperations>({
+    ...DEFAULT_BATCH_OPERATIONS,
+  });
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isRemoveSelectedConfirmOpen, setIsRemoveSelectedConfirmOpen] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [pendingNavigationUrl, setPendingNavigationUrl] = useState<string | null>(null);
+  const [confirmPayload, setConfirmPayload] = useState<ConfirmProcessingPayload | null>(null);
+  const processingRef = useRef(false);
+  const [postBatch] = usePostBatchMutation();
+  const [processPendingCvBatches] = useProcessPendingCvBatchesMutation();
+  const [retryFailedCvFiles] = useRetryFailedCvFilesMutation();
+  const [isPosting, setIsPosting] = useState(false);
+  const [isProcessingPending, setIsProcessingPending] = useState(false);
+  const [isRetryingFailed, setIsRetryingFailed] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgressState | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(DEFAULT_HISTORY_PAGE_SIZE);
+  const [historyStartDate, setHistoryStartDate] = useState('');
+  const [historyEndDate, setHistoryEndDate] = useState('');
+  const { toast } = useToast();
+  const { user } = useAppSelector((state) => state.auth || {});
+  const { sanitizeFiles } = useSanitizeFiles();
+  const { data: evaluationConfigData } = useGetEvaluationConfigsQuery();
+  const {
+    isLoading: isCvParseRoutingLoading,
+    isError: isCvParseRoutingError,
+  } = useGetCvParseRoutingQuery(undefined, {
+    skip: !user?.organizationId,
+  });
+
+  // Fetch all batches using RTK Query
+  const {
+    data: batchHistoryData,
+    error: batchesError,
+    isLoading,
+    isFetching: isHistoryFetching,
+    refetch: refetchBatches,
+  } = useFetchBatchesQuery({
+    organizationId: user ? (user.organizationId as string) : '',
+    page: historyPage,
+    limit: historyPageSize,
+    startDate: historyStartDate || undefined,
+    endDate: historyEndDate || undefined,
+  }, {
+    skip: !user?.organizationId,
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+  });
+
+  const isPipelineBusy = isPosting || isProcessingPending || isRetryingFailed;
+
+  const effectiveMaxPdfPages = useMemo(
+    () => getEffectiveMaxPdfPages(evaluationConfigData?.evaluationConfig),
+    [evaluationConfigData?.evaluationConfig],
+  );
+
+  const pendingDeferredBatchCount = useMemo(
+    () => batchHistoryData?.deferredBatches.length ?? 0,
+    [batchHistoryData?.deferredBatches.length],
+  );
+
+  useEffect(() => {
+    if (!isPipelineBusy) {
+      return undefined;
+    }
+
+    const guardedUrl = window.location.href;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = LEAVE_PROCESSING_MESSAGE;
+      return LEAVE_PROCESSING_MESSAGE;
+    };
+
+    const requestNavigationConfirmation = (targetUrl: string) => {
+      setPendingNavigationUrl(targetUrl);
+      setIsLeaveDialogOpen(true);
+    };
+
+    const handleDocumentClickCapture = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
+      if (!anchor) {
+        return;
+      }
+
+      if (
+        anchor.target === '_blank'
+        || event.metaKey
+        || event.ctrlKey
+        || event.shiftKey
+        || event.altKey
+      ) {
+        return;
+      }
+
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('#')) {
+        return;
+      }
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+      if (nextUrl.origin !== window.location.origin) {
+        return;
+      }
+
+      if (nextUrl.pathname === window.location.pathname && nextUrl.search === window.location.search) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      requestNavigationConfirmation(nextUrl.href);
+    };
+
+    const handlePopState = () => {
+      const destinationUrl = window.location.href;
+      window.history.pushState(null, '', guardedUrl);
+      requestNavigationConfirmation(destinationUrl);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('click', handleDocumentClickCapture, true);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleDocumentClickCapture, true);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [isPipelineBusy]);
+
+  const selectableFiles = files.filter((file) => !file.skipped);
+  const selectedCount = selectableFiles.filter((file) => file.selected).length;
+  const hasSelectableFiles = selectableFiles.length > 0;
+  const allSelected =
+    hasSelectableFiles && selectedCount === selectableFiles.length;
+
+  const toggleFileSelection = useCallback((id: string) => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.id === id ? { ...file, selected: !file.selected } : file,
+      ),
+    );
+  }, []);
+
+  const selectAllFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: true },
+      ),
+    );
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: false },
+      ),
+    );
+  }, []);
+
+  const invertSelection = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: !file.selected },
+      ),
+    );
+  }, []);
+
+  const removeSelectedFiles = useCallback(() => {
+    setFiles((prevFiles) =>
+      prevFiles.filter((file) => file.skipped || !file.selected),
+    );
+  }, []);
+
+  const handleFilesAdded = useCallback((newFiles: File[]) => {
+    const sanitizedFiles = sanitizeFiles(newFiles);
+    const processedFiles: FileWithPreview[] = [];
+    const skippedFiles: FileWithPreview[] = [];
+
+    sanitizedFiles.forEach((file) => {
+      const isZip = file.type === 'application/zip' || file.name.endsWith('.zip');
+      const maxSize = MAX_FILE_SIZE;
+      const sizeLabel = '10MB';
+
+      if (!isZip && file.size > maxSize) {
+        skippedFiles.push({
+          id: crypto.randomUUID(),
+          file,
+          isZip,
+          skipped: true,
+          skipReason: `File size (${(file.size / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${sizeLabel})`,
+        });
+      } else {
+        processedFiles.push({
+          id: crypto.randomUUID(),
+          file,
+          isZip,
+          selected: true,
+        });
+      }
+    });
+
+    if (skippedFiles.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Some Files Skipped',
+        description: `${skippedFiles.length} file(s) were skipped because PDF size exceeded 10MB.`,
+      });
+    }
+
+    setFiles((prevFiles) => {
+      const existingFiles = prevFiles.map((file) =>
+        file.skipped ? file : { ...file, selected: true },
+      );
+      return [...existingFiles, ...processedFiles, ...skippedFiles];
+    });
+
+    if (processedFiles.length > 0) {
+      // Start each newly dropped batch with clean post-process settings.
+      setOperations({ ...DEFAULT_BATCH_OPERATIONS });
+      setIsActionsOpen(true);
+    }
+  }, [sanitizeFiles, toast]);
+
+  const handleFilesRejected = useCallback((rejections: FileRejection[]) => {
+    if (rejections.length === 0) {
+      return;
+    }
+
+    const skippedFromRejections: FileWithPreview[] = rejections.map((rejection) => ({
+      id: crypto.randomUUID(),
+      file: rejection.file,
+      isZip: rejection.file.type === 'application/zip' || rejection.file.name.endsWith('.zip'),
+      skipped: true,
+      skipReason: rejection.errors.map((error) => error.message).join(' '),
+    }));
+
+    setFiles((prevFiles) => [...prevFiles, ...skippedFromRejections]);
+    toast({
+      variant: 'destructive',
+      title: 'Some Files Rejected',
+      description: `${rejections.length} file(s) were rejected because they did not match the supported format or constraints.`,
+    });
+  }, [toast]);
+
+  const handleRemoveFile = useCallback((id: string) => {
+    setFiles((prevFiles) => prevFiles.filter((file) => file.id !== id));
+  }, []);
+
+  const handleProcessBatchInternal = async (
+    operationsOverride?: BatchOperations,
+  ) => {
+    if (
+      files.length === 0
+      || processingRef.current
+      || isProcessingPending
+      || isRetryingFailed
+    ) {
+      return;
+    }
+
+    // Filter out skipped files
+    const filesToProcess = files.filter((f) => !f.skipped);
+    if (filesToProcess.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'No Files to Process',
+        description: 'All files were skipped due to size limits.',
+      });
+      return;
+    }
+
+    const sourceOperations = operationsOverride ?? operations;
+    const trimmedRemark = sourceOperations.remark.trim();
+    const normalizedOperations: BatchOperations = {
+      processingMode: sourceOperations.processingMode,
+      assignJob: sourceOperations.assignJob && sourceOperations.jobId.trim().length > 0,
+      jobId: sourceOperations.jobId.trim(),
+      updateStatus:
+        sourceOperations.assignJob &&
+        sourceOperations.updateStatus &&
+        sourceOperations.status.trim().length > 0,
+      status: sourceOperations.status.trim(),
+      addRemark: sourceOperations.addRemark && trimmedRemark.length > 0,
+      remark: trimmedRemark,
+      isRemarkPrivate: sourceOperations.isRemarkPrivate,
+      remarkRating: sourceOperations.remarkRating,
+    };
+
+    if (sourceOperations.assignJob && !normalizedOperations.jobId) {
+      toast({
+        variant: 'destructive',
+        title: 'Job Required',
+        description: 'Please select a job to assign before processing.',
+      });
+      return;
+    }
+
+    setIsPosting(true);
+    processingRef.current = true;
+
+    try {
+      const organizationId = (user?.organizationId as string) || '';
+
+      // Split files into chunks by both count and payload size.
+      // This prevents multipart/form-data requests from crossing parser body limits.
+      const chunks: FileWithPreview[][] = [];
+      let currentChunk: FileWithPreview[] = [];
+      let currentChunkBytes = 0;
+      for (const file of filesToProcess) {
+        const fileSize = file.file.size || 0;
+        const wouldExceedCount = currentChunk.length >= BATCH_SIZE;
+        const wouldExceedBytes =
+          currentChunkBytes > 0
+          && currentChunkBytes + fileSize > MAX_BATCH_PAYLOAD_BYTES;
+
+        if (wouldExceedCount || wouldExceedBytes) {
+          chunks.push(currentChunk);
+          currentChunk = [];
+          currentChunkBytes = 0;
+        }
+
+        currentChunk.push(file);
+        currentChunkBytes += fileSize;
+      }
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+
+      const totalBatches = chunks.length;
+      setUploadProgress({
+        current: 0,
+        total: filesToProcess.length,
+        currentBatch: 0,
+        totalBatches,
+        completedBatches: 0,
+        phase: 'client-upload',
+      });
+
+      const allResults: unknown[] = [];
+      let processedCount = 0;
+
+      // Process each chunk sequentially
+      for (let i = 0; i < chunks.length; i += 1) {
+        const chunk = chunks[i];
+
+        setUploadProgress({
+          current: processedCount,
+          total: filesToProcess.length,
+          currentBatch: i + 1,
+          totalBatches,
+          completedBatches: i,
+          phase: 'client-upload',
+        });
+
+        const formData = new FormData();
+        chunk.forEach((file) => {
+          formData.append('file', file.file);
+          formData.append('fileId', file.id);
+        });
+
+        const selectedFileIds =
+          normalizedOperations.assignJob || normalizedOperations.addRemark
+            ? chunk.filter((file) => file.selected).map((file) => file.id)
+            : [];
+        formData.append('operations', JSON.stringify(normalizedOperations));
+        formData.append('selectedFileIds', JSON.stringify(selectedFileIds));
+
+        // eslint-disable-next-line no-await-in-loop
+        const { data: batchResult, error: batchError } = await postBatch({
+          formData,
+          organizationId,
+        });
+
+        if (batchError) {
+          toast({
+            variant: 'destructive',
+            title: `Batch ${i + 1} Failed`,
+            description:
+              'data' in batchError && typeof batchError.data === 'object' && batchError.data
+                ? (batchError.data as ErrorResponse).error || 'Failed to process batch'
+                : 'Failed to process batch',
+          });
+          // Continue with next batch even if one fails
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+
+        if (batchResult) {
+          allResults.push(batchResult);
+          processedCount += chunk.length;
+        }
+
+        // Prod: RTK invalidation + CDN-safe refetch — ensures deferred batches appear in the sidebar
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await refetchBatches();
+        } catch (refetchErr) {
+          logger.warn(
+            refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after chunk',
+          );
+        }
+      }
+
+      if (allResults.length > 0) {
+        toast({
+          title:
+            normalizedOperations.processingMode === 'deferred'
+              ? 'Files Stored'
+              : 'Processing Completed',
+          description:
+            normalizedOperations.processingMode === 'deferred'
+              ? `Stored ${processedCount} file(s) in ${allResults.length} deferred batch(es).`
+              : [
+                `Processed ${processedCount} file(s) in ${allResults.length} batch(es).`,
+                'Open History → Files to see which AI handled each CV.',
+              ].join(' '),
+        });
+      }
+
+      // Remove processed files (keep skipped files for reference)
+      setFiles((prevFiles) => prevFiles.filter((f) => f.skipped));
+      setOperations({ ...DEFAULT_BATCH_OPERATIONS });
+    } catch (e) {
+      logger.error(e instanceof Error ? e.message : 'Failed to process batch');
+      toast({
+        variant: 'destructive',
+        title: 'Processing Failed',
+        description: e instanceof Error ? e.message : 'Failed to process batch',
+      });
+    } finally {
+      processingRef.current = false;
+      setIsPosting(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const buildConfirmationMessage = (ops: BatchOperations) => {
+    const hasAssign = ops.assignJob;
+    const hasStatus = ops.assignJob && ops.updateStatus;
+    const hasRemark = ops.addRemark;
+    const enabledActions = [
+      hasAssign ? 'Assign Job' : null,
+      hasStatus ? 'Update Status' : null,
+      hasRemark ? 'Add Remark' : null,
+    ].filter(Boolean) as string[];
+
+    const totalSelectable = selectableFiles.length;
+    const selectedSelectable = selectedCount;
+
+    if (enabledActions.length === 0) {
+      return totalSelectable === 0
+        ? 'This will process the batch and create candidates for all uploaded CVs.'
+        : ops.processingMode === 'deferred'
+          ? 'This will store all uploaded CVs for later processing. No extra actions are selected.'
+          : 'This will process the batch and create candidates for all uploaded CVs. No extra actions are selected.';
+    }
+
+    if (selectedSelectable === 0) {
+      return `No CVs are selected, so these actions won’t be applied: ${enabledActions.join(
+        ', ',
+      )}. The batch will only ${ops.processingMode === 'deferred' ? 'store CVs for later' : 'create candidates'}.`;
+    }
+
+    if (selectedSelectable === totalSelectable) {
+      return `${ops.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
+        ', ',
+      )}) will be applied to all ${totalSelectable} selected CVs ${ops.processingMode === 'deferred' ? 'when processing later' : ''}.`;
+    }
+
+    return `${ops.processingMode === 'deferred' ? 'Saved actions' : 'Actions'} (${enabledActions.join(
+      ', ',
+    )}) will be applied to ${selectedSelectable} of ${totalSelectable} selected CVs. The rest will only ${ops.processingMode === 'deferred' ? 'store CVs for later processing' : 'create candidates'}.`;
+  };
+
+  const handleProcessPendingNow = async (options?: {
+    batchId?: string;
+    batchIds?: string[];
+  }) => {
+    if (
+      !user?.organizationId
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+      || processingRef.current
+    ) {
+      return;
+    }
+
+    const deferredBatches = batchHistoryData?.deferredBatches ?? [];
+    const batchIdsToRun = resolveDeferredBatchIdsToProcess(
+      deferredBatches,
+      options,
+    );
+
+    if (batchIdsToRun.length === 0) {
+      toast({
+        title: 'No Pending Batches',
+        description: 'No deferred batches are waiting to be processed.',
+      });
+      return;
+    }
+
+    processingRef.current = true;
+    setIsProcessingPending(true);
+    setUploadProgress({
+      current: 0,
+      total: batchIdsToRun.length,
+      currentBatch: 1,
+      totalBatches: batchIdsToRun.length,
+      completedBatches: 0,
+      phase: 'server-deferred',
+    });
+
+    let batchesSucceeded = 0;
+    let batchesFailed = 0;
+    let totalFilesProcessed = 0;
+    let totalFilesFailed = 0;
+
+    try {
+      for (let index = 0; index < batchIdsToRun.length; index += 1) {
+        const batchId = batchIdsToRun[index]!;
+        setUploadProgress({
+          current: index,
+          total: batchIdsToRun.length,
+          currentBatch: index + 1,
+          totalBatches: batchIdsToRun.length,
+          completedBatches: index,
+          phase: 'server-deferred',
+        });
+
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          const response = await processPendingCvBatches({
+            organizationId: user.organizationId as string,
+            batchId,
+          }).unwrap();
+
+          batchesSucceeded += 1;
+          const batchResult = response.batchResults?.[0];
+          if (batchResult) {
+            totalFilesProcessed += batchResult.processed;
+            totalFilesFailed += batchResult.failed;
+          } else if (response.totals) {
+            totalFilesProcessed += response.totals.processed;
+            totalFilesFailed += response.totals.failed;
+          }
+
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            await refetchBatches();
+          } catch (refetchErr) {
+            logger.warn(
+              refetchErr instanceof Error
+                ? refetchErr.message
+                : 'refetchBatches failed after process-pending batch',
+            );
+          }
+        } catch (batchError) {
+          batchesFailed += 1;
+          logger.error(
+            batchError instanceof Error
+              ? batchError.message
+              : 'process-pending batch failed',
+          );
+          toast({
+            variant: 'destructive',
+            title: `Batch ${index + 1} of ${batchIdsToRun.length} failed`,
+            description:
+              batchError instanceof Error
+                ? batchError.message
+                : 'Request failed',
+          });
+        }
+      }
+
+      if (batchesSucceeded > 0) {
+        toast({
+          title: 'Deferred Processing Completed',
+          description:
+            batchesFailed > 0
+              ? `Processed ${batchesSucceeded} of ${batchIdsToRun.length} batch(es): ${totalFilesProcessed} file(s) succeeded, ${totalFilesFailed} failed. ${batchesFailed} batch request(s) failed.`
+              : `Processed ${batchesSucceeded} batch(es): ${totalFilesProcessed} file(s) succeeded, ${totalFilesFailed} failed.`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to Process Deferred Batches',
+          description: 'Every batch request failed. Check logs and try again.',
+        });
+      }
+    } finally {
+      processingRef.current = false;
+      setIsProcessingPending(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const handleRetryFailedFile = async (batchId: string, filename?: string) => {
+    if (
+      !user?.organizationId
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+      || processingRef.current
+    ) {
+      return;
+    }
+    processingRef.current = true;
+    setIsRetryingFailed(true);
+    setUploadProgress({
+      current: 0,
+      total: 1,
+      currentBatch: 1,
+      totalBatches: 1,
+      completedBatches: 0,
+      phase: 'server-retry',
+    });
+    try {
+      const response = await retryFailedCvFiles({
+        organizationId: user.organizationId as string,
+        batchId,
+        filename,
+      }).unwrap();
+      try {
+        await refetchBatches();
+      } catch (refetchErr) {
+        logger.warn(
+          refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after retry',
+        );
+      }
+      toast({
+        title: 'Retry Completed',
+        description:
+          response?.retried && response.retried > 0
+            ? filename
+              ? `Retried ${response.retried} failed file(s): ${response.processed} processed, ${response.failed} still failed.`
+              : `Retried all failed files in batch: ${response.processed} processed, ${response.failed} still failed.`
+            : filename
+              ? 'No retriable failed deferred files were found.'
+              : 'No retriable failed files found in this batch.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Retry Failed',
+        description: error instanceof Error ? error.message : 'Request failed',
+      });
+    } finally {
+      processingRef.current = false;
+      setIsRetryingFailed(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const handleRetryAllFailedAcrossBatches = async (batchIds: string[]) => {
+    if (
+      !user?.organizationId
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+      || processingRef.current
+    ) {
+      return;
+    }
+
+    const uniqueBatchIds = [...new Set(batchIds)];
+    if (uniqueBatchIds.length === 0) {
+      toast({
+        title: 'No Failed Files',
+        description: 'No retriable failed files were found.',
+      });
+      return;
+    }
+
+    processingRef.current = true;
+    setIsRetryingFailed(true);
+    setUploadProgress({
+      current: 0,
+      total: 1,
+      currentBatch: 1,
+      totalBatches: 1,
+      completedBatches: 0,
+      phase: 'server-retry',
+    });
+    let retried = 0;
+    let processed = 0;
+    let failed = 0;
+
+    try {
+      for (const batchId of uniqueBatchIds) {
+        // eslint-disable-next-line no-await-in-loop
+        const response = await retryFailedCvFiles({
+          organizationId: user.organizationId as string,
+          batchId,
+        }).unwrap();
+        retried += response.retried ?? 0;
+        processed += response.processed ?? 0;
+        failed += response.failed ?? 0;
+      }
+
+      try {
+        await refetchBatches();
+      } catch (refetchErr) {
+        logger.warn(
+          refetchErr instanceof Error ? refetchErr.message : 'refetchBatches failed after retry-all',
+        );
+      }
+      toast({
+        title: 'Retry All Completed',
+        description:
+          retried > 0
+            ? `Retried ${retried} failed file(s) across ${uniqueBatchIds.length} batch(es): ${processed} processed, ${failed} still failed.`
+            : 'No retriable failed files were found.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Retry All Failed',
+        description: error instanceof Error ? error.message : 'Request failed',
+      });
+    } finally {
+      processingRef.current = false;
+      setIsRetryingFailed(false);
+      setUploadProgress(null);
+    }
+  };
+
+  const handleProcessBatch = () => {
+    if (
+      files.length === 0
+      || processingRef.current
+      || isPosting
+      || isProcessingPending
+      || isRetryingFailed
+    ) {
+      return;
+    }
+    const message = buildConfirmationMessage(operations);
+    setConfirmPayload({
+      total: selectableFiles.length,
+      selected: selectedCount,
+      message,
+      operationsForRun: { ...operations },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  return (
+    <div className="flex min-h-0 w-full flex-1 flex-col gap-4">
+      {batchesError && <p className="text-sm text-destructive">Error fetching batches.</p>}
+      <Tabs defaultValue="upload" className="flex min-h-0 w-full flex-1 flex-col gap-3">
+        <div className="w-fit max-w-full shrink-0 rounded-lg border border-border/50 bg-muted/25 p-1 shadow-sm dark:bg-muted/20">
+          <TabsList className="h-8 w-fit gap-1 border-0 bg-transparent p-0 shadow-none">
+            <TabsTrigger value="upload" className="gap-2 px-4">
+              Upload
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-2 px-4">
+              History
+              {pendingDeferredBatchCount > 0 ? (
+                <Badge
+                  variant="secondary"
+                  className="h-5 min-w-5 rounded-full px-1.5 text-[10px] font-semibold tabular-nums"
+                >
+                  {pendingDeferredBatchCount}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
+          </TabsList>
+
+        </div>
+        {isCvParseRoutingLoading ? (
+          <Alert>
+            <AlertTitle>Checking CV parser configuration…</AlertTitle>
+          </Alert>
+        ) : null}
+        {isCvParseRoutingError ? (
+          <Alert variant="destructive">
+            <AlertTitle>CV parser not configured</AlertTitle>
+            <AlertDescription>
+              Open Settings → Bulk CV AI, choose how CV uploads are parsed, and
+              configure the matching provider keys before uploading.
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        <TabsContent value="upload" className="mt-0 flex min-h-0 flex-col gap-8 focus-visible:ring-0 focus-visible:ring-offset-0">
+
+          {/* {cvParseRouting?.cvParseMode === 'bulk' ? (
+            <Alert>
+              <AlertTitle>Multiple providers</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  CV uploads rotate across your configured provider keys
+                  {readyBulkProviderLabels.length > 0
+                    ? `: ${readyBulkProviderLabels.join(', ')}`
+                    : ''}
+                  .
+                </p>
+              </AlertDescription>
+            </Alert>
+          ) : cvParseRouting?.cvParseMode === 'premium' ? (
+            <Alert>
+              <AlertTitle>Main AI provider (single)</AlertTitle>
+              <AlertDescription>
+                CV uploads use the active provider from Settings → AI Providers
+                {cvParseRouting.premiumActiveProvider
+                  ? ` (${cvParseRouting.premiumActiveProvider})`
+                  : ''}
+                . To use multiple provider keys instead, switch parsing mode under
+                Settings → Bulk CV AI.
+              </AlertDescription>
+            </Alert>
+          ) : null} */}
+          <FileUploader
+            isProcessing={isPipelineBusy}
+            onFilesAdded={handleFilesAdded}
+            onFilesRejected={handleFilesRejected}
+            maxPdfPages={effectiveMaxPdfPages}
+          />
+
+          <CurrentBatchPanel
+            files={files}
+            isPipelineBusy={isPipelineBusy}
+            processingMode={operations.processingMode}
+            hasSelectableFiles={hasSelectableFiles}
+            selectedCount={selectedCount}
+            selectableCount={selectableFiles.length}
+            batchSize={BATCH_SIZE}
+            allSelected={allSelected}
+            uploadProgress={uploadProgress}
+            onOpenActions={() => setIsActionsOpen(true)}
+            onProcessingModeChange={(mode) =>
+              setOperations((prev) => ({ ...prev, processingMode: mode }))
+            }
+            onToggleSelectAll={allSelected ? clearSelection : selectAllFiles}
+            onInvertSelection={invertSelection}
+            onRemoveSelected={() => setIsRemoveSelectedConfirmOpen(true)}
+            onProcessBatch={handleProcessBatch}
+            onRemoveFile={handleRemoveFile}
+            onToggleSelect={toggleFileSelection}
+          />
+        </TabsContent>
+
+        <TabsContent
+          value="history"
+          className="mt-0 min-h-0 flex-1 overflow-y-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+        >
+          <CompletedBatches
+            historyBatches={batchHistoryData?.history.data ?? []}
+            historyPagination={batchHistoryData?.history.pagination}
+            deferredBatches={batchHistoryData?.deferredBatches ?? []}
+            retryableFailedBatchIds={batchHistoryData?.retryableFailedBatchIds ?? []}
+            currentPage={historyPage}
+            pageSize={historyPageSize}
+            startDate={historyStartDate}
+            endDate={historyEndDate}
+            onPageChange={setHistoryPage}
+            onPageSizeChange={(nextPageSize) => {
+              setHistoryPageSize(nextPageSize);
+              setHistoryPage(1);
+            }}
+            onStartDateChange={(nextStartDate) => {
+              setHistoryStartDate(nextStartDate);
+              setHistoryPage(1);
+            }}
+            onEndDateChange={(nextEndDate) => {
+              setHistoryEndDate(nextEndDate);
+              setHistoryPage(1);
+            }}
+            onClearFilters={() => {
+              setHistoryStartDate('');
+              setHistoryEndDate('');
+              setHistoryPage(1);
+            }}
+            isLoading={isLoading}
+            isHistoryFetching={isHistoryFetching}
+            isPipelineBusy={isPipelineBusy}
+            isProcessingPending={isProcessingPending}
+            onProcessPending={(options) => handleProcessPendingNow(options)}
+            onRetryFailedFile={handleRetryFailedFile}
+            onRetryAllFailedInBatch={(batchId) => handleRetryFailedFile(batchId)}
+            onRetryAllFailedAcrossBatches={handleRetryAllFailedAcrossBatches}
+            isRetryingFailed={isRetryingFailed}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <BatchActionsDialog
+        open={isActionsOpen}
+        onOpenChange={setIsActionsOpen}
+        operations={operations}
+        onOperationsChange={setOperations}
+        onApplyAndProcess={(nextOperations) => {
+          setConfirmPayload({
+            total: selectableFiles.length,
+            selected: selectedCount,
+            message: buildConfirmationMessage(nextOperations),
+            operationsForRun: { ...nextOperations },
+          });
+          setIsConfirmOpen(true);
+        }}
+        isPipelineBusy={isPipelineBusy}
+        organizationId={(user?.organizationId as string) || ''}
+        userRole={user?.role || ''}
+      />
+
+      <ConfirmProcessingDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        payload={confirmPayload}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          const ops = confirmPayload?.operationsForRun;
+          if (ops) {
+            void handleProcessBatchInternal(ops);
+          }
+        }}
+      />
+
+      <ConfirmRemoveSelectedDialog
+        open={isRemoveSelectedConfirmOpen}
+        onOpenChange={setIsRemoveSelectedConfirmOpen}
+        selectedCount={selectedCount}
+        onConfirm={() => {
+          removeSelectedFiles();
+          setIsRemoveSelectedConfirmOpen(false);
+        }}
+      />
+
+      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <DialogContent className="max-w-md p-0">
+          <DialogHeader>
+            <DialogTitle className="pt-3">
+              Leave CV Upload?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 px-6 py-2 text-sm text-muted-foreground">
+            <p>
+              An upload or server job (deferred processing or retry) may still be running.
+              Leaving might interrupt your browser session; the server may continue, but you
+              will not see live results here.
+            </p>
+            <p>Do you still want to continue?</p>
+          </div>
+          <DialogFooter className="border-t bg-background px-6 py-4">
+            <div className="flex w-full items-center justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setIsLeaveDialogOpen(false);
+                  setPendingNavigationUrl(null);
+                }}
+              >
+                Stay on Page
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  const url = pendingNavigationUrl;
+                  setIsLeaveDialogOpen(false);
+                  setPendingNavigationUrl(null);
+                  if (url) {
+                    window.location.assign(url);
+                  }
+                }}
+              >
+                Leave Page
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+export default withAuthGuard(CVBatchProcessor, {
+  requiredRoles: ['admin', 'hr'],
+  fallbackPath: '/dashboard',
+  checkAllowance: false,
+  allowAuthenticated: true,
+});

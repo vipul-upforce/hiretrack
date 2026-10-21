@@ -1,0 +1,45 @@
+'use client';
+
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useIsDesktop } from '@/hooks/useIsDesktop';
+import { useOnboarding } from './OnboardingProvider';
+import OnboardingWizard from './OnboardingWizard';
+
+function OnboardingModal() {
+  const { isOpen, setIsOpen, isLoading } = useOnboarding();
+  const isDesktop = useIsDesktop();
+
+  const dialogClassName = isDesktop
+    ? 'dialog-modal-mode xl-max-w-65vw overflow-hidden p-0 gap-0 flex flex-col'
+    : '!max-w-[95vw] !w-[95vw] !h-[95vh] !left-[50%] !top-[50%] !translate-x-[-50%] !translate-y-[-50%] overflow-hidden p-0 gap-0 rounded-lg flex flex-col';
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent
+        className={dialogClassName}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        {/* Compact Header */}
+        <DialogHeader className="flex-shrink-0 border-b border-border px-6 py-2">
+          <DialogTitle className="text-lg font-semibold text-foreground">
+            Setup Wizard
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Scrollable Content */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-background">
+          {!isLoading && <OnboardingWizard />}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default OnboardingModal;

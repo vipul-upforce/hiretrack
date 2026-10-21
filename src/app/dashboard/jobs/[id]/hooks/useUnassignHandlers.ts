@@ -1,0 +1,127 @@
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
+import {
+  useUpdateCandidateMutation,
+  useUpdateCandidateHistoryMutation,
+} from '@/lib/features/candidate/candidateApi';
+import { useSendUnassignMailMutation } from '@/lib/features/org/orgApi';
+import { Candidate } from '@/types/candidate';
+import { ICandidateHistory } from '@/lib/models/history';
+import { usePathname } from 'next/navigation';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { getJobId } from '../utils/candidateAccessors';
+
+export const useUnassignHandlers = (
+  localCandidate: Candidate | null,
+  _refetch: () => Promise<void>, // No longer used - kept for API compatibility
+  setLocalCandidate: (candidate: Candidate) => void,
+  // unassignNote?: string | null,
+  // unassignRating?: number | null,
+  onUpdate?: (candidate: Candidate) => void,
+  refetchAssignment?: () => void,
+  onOpenChange?: (open: boolean) => void,
+) => {
+  const pathname = usePathname();
+  const [confirmUnassignOpen, setConfirmUnassignOpen] = useState(false);
+  const [isUnassigning, setIsUnassigning] = useState(false);
+  const [updateCandidate] = useUpdateCandidateMutation();
+  const [updateCandidateHistory] = useUpdateCandidateHistoryMutation();
+  const [sendUnassignEmail] = useSendUnassignMailMutation();
+  const user = useAppSelector((state) => state.auth.user);
+  const handleUnassign = () => {
+    setConfirmUnassignOpen(true);
+  };
+
+  const confirmUnassign = async (
+    unassignNote?: string | null,
+    unassignRating?: number | null,
+  ) => {
+    setIsUnassigning(true);
+    try {
+      const updatedCandidate = {
+        ...localCandidate,
+        assignment: null,
+      };
+
+      const result = await updateCandidate(updatedCandidate).unwrap();
+      if (result) {
+        // Update local state with the result - no need to refetch individual candidate
+        onUpdate?.(result);
+        setLocalCandidate(result);
+
+        // Only refetch assignments list for dashboard/calendar (to update the list view)
+        // Don't refetch individual candidate since we already have the updated result
+        if (pathname === '/dashboard' || pathname === '/dashboard/calendar') {
+          refetchAssignment?.();
+        }
+        // Note: Removed individual candidate refetch - we already have the updated result
+        // debugger;
+        const previousInterviewerId =
+          typeof localCandidate?.assignment?.interviewerId === 'object'
+            ? Object(localCandidate?.assignment?.interviewerId?._id)
+            : null;
+        const previousInterviewerEmail =
+          typeof localCandidate?.assignment?.interviewerId === 'object'
+            ? (localCandidate?.assignment?.interviewerId?.email ?? undefined)
+            : undefined;
+        const newHistoryEntry: ICandidateHistory = {
+          dateTime: new Date().toISOString(),
+          currentInterviewer: null,
+          previousInterviewer: previousInterviewerId,
+          assignmentBy: user!.id,
+          title: null,
+          note: {
+            description: unassignNote || '',
+            date: '',
+            rating: unassignRating || 0,
+            userId: null,
+          },
+          attachments: [],
+        };
+        await updateCandidateHistory({
+          candidateId: updatedCandidate._id || '',
+          jobId: getJobId(localCandidate) || null,
+          newEntry: newHistoryEntry,
+        }).unwrap();
+        sendUnassignEmail({
+          name: result.name,
+          candidateId: updatedCandidate._id || '',
+          jobId: localCandidate?.jobId._id || localCandidate?.jobId || '',
+          title: localCandidate?.jobId?.title || localCandidate?.jobId || '',
+          dateTime: new Date().toISOString(),
+          status: localCandidate?.status,
+          feedback: newHistoryEntry.note,
+          previousInterviewerId: previousInterviewerId ?? undefined,
+          previousInterviewerEmail,
+        });
+
+        if (pathname === '/dashboard/calendar') {
+          onOpenChange?.(false);
+        }
+        toast({
+          title: 'Success',
+          description: 'Interviewer has been unassigned successfully',
+        });
+      }
+    } catch (error: unknown) {
+      toast({
+        title: `Error: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+        description: 'Failed to unassign interviewer',
+        variant: 'destructive',
+      });
+    } finally {
+      setConfirmUnassignOpen(false);
+      setIsUnassigning(false);
+    }
+  };
+
+  return {
+    confirmUnassignOpen,
+    setConfirmUnassignOpen,
+    isLoading: isUnassigning,
+    handleUnassign,
+    confirmUnassign,
+  };
+};

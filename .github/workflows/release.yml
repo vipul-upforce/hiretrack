@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --include=dev
+
+      - name: Write release env
+        env:
+          JWT_SECRET_INPUT: ${{ secrets.JWT_SECRET }}
+          CRON_SECRET_INPUT: ${{ secrets.CRON_SECRET }}
+        run: |
+          JWT_SECRET="${JWT_SECRET_INPUT:-$(openssl rand -hex 32)}"
+          CRON_SECRET="${CRON_SECRET_INPUT:-$(openssl rand -hex 32)}"
+          cat > .env << EOF
+          MONGODB_URI=mongodb://localhost:27017/hiretrack
+          JWT_SECRET=$JWT_SECRET
+          CRON_SECRET=$CRON_SECRET
+          ENVIRONMENT=production
+          BASE_URL=http://localhost:3000
+          NEXT_PUBLIC_BASE_URL=http://localhost:3000
+          ALLOWED_ORIGINS=http://localhost:3000
+          GITHUB_RELEASE_REPO=vipul-upforce/hiretrack
+          NODE_VERSION=$(node -v)
+          EOF
+
+      - name: Build
+        run: |
+          unset NODE_ENV
+          NODE_OPTIONS="--max-old-space-size=8192" npx next build
+          rm -rf .next/cache
+
+      - name: Package tarball
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            TAG="v$(node -p "require('./package.json').version")"
+          fi
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          TARBALL="hiretrack-${TAG}.tar.gz"
+          tar -czvf "$TARBALL" \
+            --exclude='.next/cache' \
+            package.json package-lock.json ecosystem.config.cjs .next .env public server-ws.cjs
+          echo "TARBALL_NAME=$TARBALL" >> "$GITHUB_ENV"
+          bash installer.sh --release-chunk-assets "$TARBALL" "$TAG" 50
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --generate-notes \
+            "$TARBALL_NAME" \
+            "${TARBALL_NAME}.manifest.json" \
+            ${TARBALL_NAME}.part-* \
+            || gh release upload "$TAG" \
+              "$TARBALL_NAME" \
+              "${TARBALL_NAME}.manifest.json" \
+              ${TARBALL_NAME}.part-* \
+              --clobber

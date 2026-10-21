@@ -1,0 +1,99 @@
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  TooltipProps,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { TrendData } from './ApplicationTrendsChart';
+
+interface ConversionTooltipProps extends TooltipProps<number, string> {
+  payload?: {
+    name?: string;
+    value?: number | string;
+    color?: string;
+  }[];
+  label?: string;
+}
+
+function ConversionTooltip({ active, payload, label }: ConversionTooltipProps) {
+  if (active && payload && payload.length > 0) {
+    return (
+      <div className="rounded-lg border bg-background p-3 shadow-lg">
+        <p className="font-semibold text-foreground">{label}</p>
+        {payload.map((entry) => (
+          <p key={`item-${entry?.name}`} className="text-foreground">
+            {entry.name}: <span className="font-bold">{entry.value}%</span>
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
+export function ConversionRateChart({ data }: { data: TrendData[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={450}>
+      <LineChart
+        data={data}
+        margin={{
+          top: 20,
+          right: 30,
+          left: 20,
+          bottom: 60,
+        }}
+      >
+        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+        <XAxis
+          dataKey="date"
+          angle={-45}
+          textAnchor="end"
+          height={80}
+          interval={0}
+          fontSize={12}
+        />
+        <YAxis
+          label={{
+            value: 'Acceptance / Rejection Rate (%)',
+            angle: -90,
+            position: 'insideLeft',
+            style: { textAnchor: 'middle', fontSize: 16 },
+          }}
+        />
+
+        {/* Pass the extracted component */}
+        <Tooltip content={<ConversionTooltip />} />
+
+        <ReferenceLine
+          y={20}
+          stroke="#10B981"
+          strokeDasharray="5 5"
+          label="Target: 20%"
+        />
+        <Line
+          type="monotone"
+          dataKey="conversionRate"
+          stroke="#10B981"
+          strokeWidth={2}
+          dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+          name="Conversion Rate"
+        />
+        <Line
+          type="monotone"
+          dataKey="rejectionRate"
+          stroke="#EF4444"
+          strokeWidth={2}
+          dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+          name="Rejection Rate"
+        />
+        <Legend />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}

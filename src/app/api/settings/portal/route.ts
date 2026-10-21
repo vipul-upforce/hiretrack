@@ -1,0 +1,587 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectToDatabase, { Organization, Settings } from '@/lib/mongodb';
+import { handleSingleFile } from '@/lib/fileUtils';
+import { getAuthenticatedUser } from '@/app/actions/auth';
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import http from 'http';
+import { pipeline } from 'stream';
+import { promisify } from 'util';
+// Removed sharp import
+import { parse } from 'url';
+import {
+  validateQueryParams,
+  VALIDATION_PATTERNS,
+  MAX_LENGTHS,
+} from '@/lib/inputValidation';
+import { apiRateLimiter } from '@/lib/rateLimiter';
+import { logger } from '@/lib/logger/logger.server';
+
+const streamPipeline = promisify(pipeline);
+
+// saveFavicon now just copies the image as-is, no resizing or format conversion
+async function saveFavicon(
+  sourceUrl: string,
+  destPath: string,
+  _?: string,
+  token?: string,
+): Promise<void> {
+  try {
+    if (!sourceUrl || typeof sourceUrl !== 'string') {
+      throw new Error('Invalid or missing source URL');
+    }
+    if (!destPath || typeof destPath !== 'string') {
+      throw new Error('Invalid or missing destination path');
+    }
+
+    const finalDestPath = destPath.endsWith('.png')
+      ? destPath
+      : path.join(path.dirname(destPath), 'favicon.png');
+
+    const destDir = path.dirname(finalDestPath);
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+
+    const isRemote =
+      sourceUrl.startsWith('http') || sourceUrl.startsWith('/api/');
+
+    // CASE A: Remote File (URL or Internal API)
+    if (isRemote) {
+      // Resolve full URL if it's an internal API path
+      let fullUrl = sourceUrl;
+      const parsedUrl = parse(sourceUrl, true);
+      const pathName = parsedUrl.query.pathName as string | undefined;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+
+      if (pathName) {
+        const normalizedPath = path.posix
+          .normalize(decodeURI(pathName))
+          .replace(/\\/g, '/');
+        fullUrl = `${baseUrl}/api/files?pathName=${encodeURIComponent(normalizedPath)}`;
+      } else if (sourceUrl.startsWith('/api/')) {
+        // Handle direct /api/ paths that might not have pathName params
+        fullUrl = `${baseUrl}${sourceUrl}`;
+      }
+
+      // Stream directly from Network -> Final File
+      await new Promise<void>((resolve, reject) => {
+        const protocol = fullUrl.startsWith('https') ? https : http;
+        const options = {
+          headers: token ? { Cookie: `token=${token}` } : {},
+        };
+
+        const request = protocol.get(fullUrl, options, (res) => {
+          if (res.statusCode !== 200) {
+            reject(
+              new Error(
+                `Failed to download image: HTTP status ${res.statusCode}`,
+              ),
+            );
+            return;
+          }
+
+          // Create the write stream directly to the final destination
+          const fileWriteStream = fs.createWriteStream(finalDestPath);
+
+          // pipeline to manage flow and errors automatically
+          streamPipeline(res, fileWriteStream)
+            .then(() => resolve())
+            .catch((err) => {
+              // close stream on error
+              fileWriteStream.end();
+              reject(new Error(`Stream pipeline error: ${err.message}`));
+            });
+        });
+
+        request.on('error', (err) =>
+          reject(new Error(`Network error: ${err.message}`)),
+        );
+      });
+    }
+    // CASE B: Local File
+    else {
+      const inputImagePath = path.resolve(process.cwd(), decodeURI(sourceUrl));
+
+      if (!fs.existsSync(inputImagePath)) {
+        throw new Error(`Local source file does not exist: ${inputImagePath}`);
+      }
+
+      // Simple copy for local files (highly optimized by OS)
+      await fs.promises.copyFile(inputImagePath, finalDestPath);
+    }
+  } catch (error) {
+    logger.error({ error }, `saveFavicon error`);
+  }
+}
+
+const handleGetPortalData = async (req: NextRequest) => {
+  try {
+    // SECURITY FIX: Validate query parameters
+    const validation = validateQueryParams(req.nextUrl.searchParams, {
+      org: {
+        type: 'string',
+        maxLength: MAX_LENGTHS.shortText,
+        pattern: VALIDATION_PATTERNS.safeString,
+      },
+      subdomain: {
+        type: 'string',
+        maxLength: MAX_LENGTHS.shortText,
+        pattern: VALIDATION_PATTERNS.slug,
+      },
+    });
+
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { error: 'Invalid query parameters', details: validation.errors },
+        { status: 400 },
+      );
+    }
+
+    await connectToDatabase();
+
+    // Give models a moment to initialize if they haven't already
+    let retries = 0;
+    while ((!Settings || !Organization) && retries < 5) {
+      await new Promise<void>((resolve) => {
+        setTimeout(() => resolve(), 100);
+      });
+      retries += 1;
+    }
+
+    if (!Settings || !Organization) {
+      return NextResponse.json(
+        { error: 'Database models not initialized' },
+        { status: 500 },
+      );
+    }
+
+    let organizationId = '';
+    let isAuthenticated = false;
+
+    // Try to get organization from auth token
+    try {
+      const userData = await getAuthenticatedUser(req);
+      if (userData) {
+        organizationId = userData.organizationId || '';
+        isAuthenticated = true;
+      }
+    } catch {
+      // Ignore auth errors for public portal access
+    }
+
+    let settings = null;
+
+    if (organizationId) {
+      // Authenticated user - get specific organization settings
+      settings = await Settings.findOne(
+        { organizationId },
+        {
+          'fileStorage.storageType': 1,
+          portalConfigs: 1,
+          smtpConfigs: 1,
+        },
+      )
+        .lean()
+        .exec();
+    } else {
+      // Anonymous user - get default organization settings
+      // Try to find a default organization or the first available one
+      const defaultOrg = await Organization.findOne({}).sort({ createdAt: 1 });
+      if (defaultOrg) {
+        settings = await Settings.findOne(
+          { organizationId: defaultOrg._id.toString() },
+          {
+            portalConfigs: 1,
+          },
+        )
+          .lean()
+          .exec();
+      }
+    }
+
+    if (!settings) {
+      return NextResponse.json({
+        fileStorage: null,
+        portalLogo: null,
+        portalHeader: null,
+        portalFooter: null,
+        portalName: null,
+      });
+    }
+
+    // For anonymous users, only return portal branding (no sensitive data)
+    const response = isAuthenticated
+      ? {
+          fileStorage: settings.fileStorage,
+          portalLogo: settings.portalConfigs?.portalLogo || null,
+          portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
+          portalFavicon: settings.portalConfigs?.portalFavicon || null,
+          portalHeader: settings.portalConfigs?.portalHeader || null,
+          portalFooter: settings.portalConfigs?.portalFooter || null,
+          portalName: settings.portalConfigs?.portalName || '',
+          primaryColor: settings.portalConfigs?.primaryColor || '#6366f1',
+          secondaryColor: settings.portalConfigs?.secondaryColor || '#8b5cf6',
+        }
+      : {
+          // Anonymous users only get public portal branding
+          fileStorage: null,
+          portalLogo: settings.portalConfigs?.portalLogo || null,
+          portalLogoDark: settings.portalConfigs?.portalLogoDark || null,
+          portalFavicon: settings.portalConfigs?.portalFavicon || null,
+          portalHeader: settings.portalConfigs?.portalHeader || null,
+          portalFooter: settings.portalConfigs?.portalFooter || null,
+          portalName: settings.portalConfigs?.portalName || '',
+          primaryColor: settings.portalConfigs?.primaryColor || '#6366f1',
+          secondaryColor: settings.portalConfigs?.secondaryColor || '#8b5cf6',
+        };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    logger.error({ error, url: req.url }, 'Portal settings API error');
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
+  }
+};
+
+export async function GET(req: NextRequest) {
+  return apiRateLimiter(req as NextRequest, handleGetPortalData);
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    const [userData] = await Promise.all([
+      getAuthenticatedUser(req, 'admin'),
+      connectToDatabase(),
+    ]);
+    if (!userData) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = req.cookies.get('auth_token')?.value || '';
+    const organizationId = userData.organizationId || '';
+    const fileStorage = userData.fileStorage || 'local';
+
+    const org = await Organization?.findById(organizationId);
+    if (!org) {
+      return NextResponse.json(
+        { error: 'Organization not found' },
+        { status: 404 },
+      );
+    }
+
+    const data = await req.json();
+    const currentSettings = await Settings!
+      .findOne({ organizationId })
+      .select('portalConfigs')
+      .lean()
+      .exec();
+
+    let uploadedLogo = null;
+    let uploadedLogoDark = null;
+    let uploadedFavicon = null;
+    let uploadedHeader = null;
+    let uploadedFooter = null;
+
+    // Handle HTML content for header
+    if (data?.portalHeaderHtml) {
+      try {
+        const headerPath = path.join(
+          process.cwd(),
+          '..',
+          'assets',
+          'organizations',
+          organizationId,
+          'header.html',
+        );
+
+        // Ensure directory exists
+        const headerDir = path.dirname(headerPath);
+        if (!fs.existsSync(headerDir)) {
+          fs.mkdirSync(headerDir, { recursive: true });
+        }
+
+        // Remove existing header file if it exists
+        if (fs.existsSync(headerPath)) {
+          fs.unlinkSync(headerPath);
+        }
+
+        // Write HTML content to file
+        await fs.promises.writeFile(headerPath, data.portalHeaderHtml, 'utf8');
+
+        uploadedHeader = {
+          id: Date.now().toString(),
+          name: 'header.html',
+          url: `/api/files?pathName=../assets/organizations/${organizationId}/header.html`,
+          type: 'text/html',
+          size: Buffer.byteLength(data.portalHeaderHtml, 'utf8'),
+        };
+      } catch (error) {
+        logger.error({ error }, 'Failed to save header HTML');
+        return NextResponse.json(
+          {
+            error: `Failed to save header HTML: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+          { status: 500 },
+        );
+      }
+    }
+
+    // Handle HTML content for footer
+    if (data?.portalFooterHtml) {
+      try {
+        const footerPath = path.join(
+          process.cwd(),
+          '..',
+          'assets',
+          'organizations',
+          organizationId,
+          'footer.html',
+        );
+
+        // Ensure directory exists
+        const footerDir = path.dirname(footerPath);
+        if (!fs.existsSync(footerDir)) {
+          fs.mkdirSync(footerDir, { recursive: true });
+        }
+
+        // Remove existing footer file if it exists
+        if (fs.existsSync(footerPath)) {
+          fs.unlinkSync(footerPath);
+        }
+
+        // Write HTML content to file
+        await fs.promises.writeFile(footerPath, data.portalFooterHtml, 'utf8');
+
+        uploadedFooter = {
+          id: Date.now().toString(),
+          name: 'footer.html',
+          url: `/api/files?pathName=../assets/organizations/${organizationId}/footer.html`,
+          type: 'text/html',
+          size: Buffer.byteLength(data.portalFooterHtml, 'utf8'),
+        };
+      } catch (error) {
+        return NextResponse.json(
+          {
+            error: `Failed to save footer HTML: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+          { status: 500 },
+        );
+      }
+    }
+
+    if (data?.portalLogo) {
+      try {
+        uploadedLogo = await handleSingleFile(
+          data.portalLogo,
+          fileStorage,
+          organizationId,
+        );
+      } catch (fileError) {
+        return NextResponse.json(
+          {
+            error: `Failed to process logo file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
+          },
+          { status: 400 },
+        );
+      }
+
+      const faviconTargetPath = path.join(
+        process.cwd(),
+        '..',
+        'assets',
+        'organizations',
+        organizationId,
+        'favicon.png',
+      );
+      const source = uploadedLogo?.url;
+
+      if (source) {
+        try {
+          await saveFavicon(source, faviconTargetPath, undefined, token);
+        } catch (faviconError) {
+          return NextResponse.json(
+            {
+              error: `Failed to save favicon: ${faviconError instanceof Error ? faviconError.message : 'Unknown error'}`,
+            },
+            { status: 500 },
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'No valid logo URL provided for favicon' },
+          { status: 400 },
+        );
+      }
+    } else {
+      const faviconPath = path.join(
+        process.cwd(),
+        '..',
+        'assets',
+        'organizations',
+        organizationId,
+        'favicon.png',
+      );
+
+      if (fs.existsSync(faviconPath)) {
+        fs.unlinkSync(faviconPath);
+      }
+    }
+
+    // Handle dark logo upload
+    if (data?.portalLogoDark) {
+      try {
+        uploadedLogoDark = await handleSingleFile(
+          data.portalLogoDark,
+          fileStorage,
+          organizationId,
+        );
+      } catch (fileError) {
+        return NextResponse.json(
+          {
+            error: `Failed to process dark logo file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Handle favicon upload
+    if (data?.portalFavicon) {
+      try {
+        uploadedFavicon = await handleSingleFile(
+          data.portalFavicon,
+          fileStorage,
+          organizationId,
+        );
+      } catch (fileError) {
+        return NextResponse.json(
+          {
+            error: `Failed to process favicon file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Handle removal of header HTML file if no content provided
+    if (!data?.portalHeaderHtml) {
+      const headerRelativePath = path.join(
+        '..',
+        'assets',
+        'organizations',
+        organizationId,
+        'header.html',
+      );
+      const headerPath = path.join(process.cwd(), headerRelativePath);
+
+      if (fs.existsSync(headerPath)) {
+        fs.unlinkSync(headerPath);
+        uploadedHeader = null; // Clear the header reference
+      }
+    }
+
+    // Handle removal of footer HTML file if no content provided
+    if (!data?.portalFooterHtml) {
+      const footerRelativePath = path.join(
+        '..',
+        'assets',
+        'organizations',
+        organizationId,
+        'footer.html',
+      );
+      const footerPath = path.join(process.cwd(), footerRelativePath);
+
+      if (fs.existsSync(footerPath)) {
+        fs.unlinkSync(footerPath);
+        uploadedFooter = null; // Clear the footer reference
+      }
+    }
+
+    const updatedPortal = {
+      portalHeader:
+        uploadedHeader || currentSettings?.portalConfigs?.portalHeader || null,
+      portalFooter:
+        uploadedFooter || currentSettings?.portalConfigs?.portalFooter || null,
+      portalLogo:
+        uploadedLogo || currentSettings?.portalConfigs?.portalLogo || null,
+      portalLogoDark:
+        uploadedLogoDark ||
+        currentSettings?.portalConfigs?.portalLogoDark ||
+        null,
+      portalFavicon:
+        uploadedFavicon ||
+        currentSettings?.portalConfigs?.portalFavicon ||
+        null,
+      portalName:
+        data.portalName || currentSettings?.portalConfigs?.portalName || '',
+      primaryColor:
+        data.primaryColor ||
+        currentSettings?.portalConfigs?.primaryColor ||
+        '#6366f1',
+      secondaryColor:
+        data.secondaryColor ||
+        currentSettings?.portalConfigs?.secondaryColor ||
+        '#8b5cf6',
+    };
+    if (
+      data?.portalName &&
+      data?.portalName !== currentSettings?.portalConfigs?.portalName
+    ) {
+      await Organization?.findByIdAndUpdate(organizationId, {
+        name: updatedPortal.portalName,
+      });
+    }
+
+    const updatedSettings = await Settings?.findOneAndUpdate(
+      { organizationId },
+      { portalConfigs: updatedPortal },
+      {
+        new: true,
+        runValidators: true,
+        upsert: true,
+        select: {
+          'fileStorage.storageType': 1,
+          portalConfigs: 1,
+          smtpConfigs: 1,
+        },
+      },
+    );
+
+    if (!updatedSettings) {
+      return NextResponse.json(
+        { error: 'Settings not found' },
+        { status: 404 },
+      );
+    }
+    const settings = {
+      fileStorage: updatedSettings.fileStorage,
+      portalLogo: updatedSettings.portalConfigs?.portalLogo || null,
+      portalLogoDark: updatedSettings.portalConfigs?.portalLogoDark || null,
+      portalFavicon: updatedSettings.portalConfigs?.portalFavicon || null,
+      portalHeader: updatedSettings.portalConfigs?.portalHeader || null,
+      portalFooter: updatedSettings.portalConfigs?.portalFooter || null,
+      portalName: updatedSettings.portalConfigs?.portalName || '',
+      primaryColor: updatedSettings.portalConfigs?.primaryColor || '#6366f1',
+      secondaryColor:
+        updatedSettings.portalConfigs?.secondaryColor || '#8b5cf6',
+    };
+
+    return NextResponse.json({
+      message: 'Settings updated successfully',
+      portalConfigs: settings,
+    });
+  } catch (error) {
+    logger.error({ error, url: req.url }, 'Portal settings PUT error');
+    return NextResponse.json(
+      {
+        error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      },
+      { status: 500 },
+    );
+  }
+}

@@ -1,0 +1,66 @@
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { execSync } from 'child_process';
+import { logger } from '@/lib/logger/logger.server';
+
+function getFolderSizeWin(folderPath: string): number {
+  let total = 0;
+
+  const files = fs.readdirSync(folderPath);
+  for (const file of files) {
+    const fullPath = path.join(folderPath, file);
+    const stats = fs.statSync(fullPath);
+
+    if (stats.isDirectory()) {
+      total += getFolderSizeWin(fullPath);
+    } else {
+      total += stats.size;
+    }
+  }
+  return total;
+}
+
+export async function GET(request: NextRequest) {
+  const isLinux = process.platform === 'linux';
+  const logDir =
+    process.env.NGINX_LOG_DIR ||
+    (isLinux ? '/var/log/nginx' : path.join(os.homedir(), 'hiretrack', 'logs'));
+
+  try {
+    const files = fs.readdirSync(logDir);
+
+    const filteredFiles = files.filter(
+      (file) => !file.endsWith('.gz') && !file.endsWith('.tsbuildinfo'),
+    );
+
+    let sizeBytes = 0;
+
+    if (isLinux) {
+      try {
+        const output = execSync(`du -sb "${logDir}"`).toString();
+        sizeBytes = parseInt(output.split('\t')[0], 10) || 0;
+      } catch (err) {
+        logger.error({ err, url: request.url }, 'Failed to run du:');
+      }
+    } else {
+      sizeBytes = getFolderSizeWin(logDir);
+    }
+
+    const sizeMB = `${(sizeBytes / 1024 / 1024).toFixed(2)} MB`;
+
+    return NextResponse.json({
+      path: logDir,
+      files: filteredFiles,
+      sizeBytes,
+      size: sizeMB,
+    });
+  } catch (error) {
+    logger.error({ error, url: request.url });
+    return NextResponse.json(
+      { error: 'Failed to read nginx log directory' },
+      { status: 500 },
+    );
+  }
+}
